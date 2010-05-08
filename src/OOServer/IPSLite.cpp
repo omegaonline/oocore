@@ -47,8 +47,8 @@ namespace
 	class RootKey;
 
 	class HiveKey :
-		public ObjectBase,
-		public IKey
+			public ObjectBase,
+			public IKey
 	{
 	public:
 		void Init(::Registry::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
@@ -87,9 +87,9 @@ namespace
 	};
 
 	class RootKey :
-		public ObjectBase,
-		public ::Registry::Manager,
-		public IKey
+			public ObjectBase,
+			public ::Registry::Manager,
+			public IKey
 	{
 	public:
 		void Init();
@@ -473,7 +473,7 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 		OMEGA_THROW(err);
 
 	std::set<Omega::string_t> setOutSubKeys;
-	for (std::set<std::string>::const_iterator i=setSubKeys.begin();i!=setSubKeys.end();++i)
+	for (std::set<std::string>::const_iterator i=setSubKeys.begin(); i!=setSubKeys.end(); ++i)
 		setOutSubKeys.insert(string_t(i->c_str(),true));
 
 	return setOutSubKeys;
@@ -491,7 +491,7 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 		OMEGA_THROW(err);
 
 	std::set<Omega::string_t> setOutValues;
-	for (std::set<std::string>::const_iterator i=setValues.begin();i!=setValues.end();++i)
+	for (std::set<std::string>::const_iterator i=setValues.begin(); i!=setValues.end(); ++i)
 		setOutValues.insert(string_t(i->c_str(),true));
 
 	return setOutValues;

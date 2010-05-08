@@ -24,9 +24,9 @@
 #if defined(_WIN32)
 
 OOBase::Win32::SocketImpl::SocketImpl(HANDLE hSocket) :
-	m_hSocket(hSocket),
-	m_hReadEvent(NULL),
-	m_hWriteEvent(NULL)
+		m_hSocket(hSocket),
+		m_hReadEvent(NULL),
+		m_hWriteEvent(NULL)
 {
 }
 
@@ -52,7 +52,7 @@ int OOBase::Win32::SocketImpl::send(const void* buf, size_t len, const OOBase::t
 
 	OVERLAPPED ov = {0};
 	ov.hEvent = m_hWriteEvent;
-	
+
 	const char* cbuf = reinterpret_cast<const char*>(buf);
 	while (len > 0)
 	{
@@ -85,14 +85,14 @@ int OOBase::Win32::SocketImpl::send(const void* buf, size_t len, const OOBase::t
 				}
 			}
 		}
-			
+
 		if (!GetOverlappedResult(m_hSocket,&ov,&dwWritten,TRUE))
 		{
 			DWORD ret = GetLastError();
 			CancelIo(m_hSocket);
 			return ret;
 		}
-		
+
 		cbuf += dwWritten;
 		len -= dwWritten;
 	}
@@ -117,7 +117,7 @@ size_t OOBase::Win32::SocketImpl::recv(void* buf, size_t len, int* perr, const O
 
 	OVERLAPPED ov = {0};
 	ov.hEvent = m_hReadEvent;
-	
+
 	char* cbuf = reinterpret_cast<char*>(buf);
 	size_t total = len;
 	while (total > 0)
@@ -195,10 +195,10 @@ OOBase::LocalSocket::uid_t OOBase::Win32::LocalSocket::get_uid()
 
 	if (!RevertToSelf())
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	if (!bRes)
 		OOBase_CallCriticalFailure(err);
-	
+
 	return uid.detach();
 }
 
@@ -213,18 +213,18 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 	for (;;)
 	{
 		hPipe = CreateFileA(pipe_name.c_str(),
-			PIPE_ACCESS_DUPLEX,
-			0,
-			NULL,
-			OPEN_EXISTING,
-			FILE_FLAG_OVERLAPPED,
-			NULL);
+							PIPE_ACCESS_DUPLEX,
+							0,
+							NULL,
+							OPEN_EXISTING,
+							FILE_FLAG_OVERLAPPED,
+							NULL);
 
 		if (hPipe != INVALID_HANDLE_VALUE)
 			break;
-		
+
 		DWORD dwErr = GetLastError();
-		if (dwErr != ERROR_PIPE_BUSY) 
+		if (dwErr != ERROR_PIPE_BUSY)
 		{
 			*perr = dwErr;
 			return 0;
@@ -240,7 +240,7 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 			return 0;
 		}
 	}
-	
+
 	LocalSocket* pSocket = 0;
 	OOBASE_NEW(pSocket,Win32::LocalSocket(hPipe));
 	if (!pSocket)
@@ -248,9 +248,9 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 		*perr = ERROR_OUTOFMEMORY;
 		return 0;
 	}
-	
+
 	hPipe.detach();
-	
+
 	return pSocket;
 }
 

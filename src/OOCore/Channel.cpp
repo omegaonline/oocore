@@ -28,8 +28,8 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::ChannelBase::ChannelBase() :
-	m_channel_id(0),
-	m_marshal_flags(0)
+		m_channel_id(0),
+		m_marshal_flags(0)
 {
 }
 
@@ -41,7 +41,7 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 
 	if (m_message_oid != guid_t::Null())
 		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
-	
+
 	// Connect the OM to us
 	m_ptrOM = pOM;
 	if (m_ptrOM)
@@ -97,7 +97,7 @@ uint32_t OOCore::ChannelBase::GetSource()
 bool_t OOCore::ChannelBase::IsConnected()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	
+
 	return (!m_ptrOM ? false : true);
 }
 
@@ -110,7 +110,7 @@ void OOCore::ChannelBase::GetManager(const guid_t& iid, IObject*& pObject)
 {
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	
+
 	pObject = 0;
 	if (m_ptrOM)
 		pObject = m_ptrOM->QueryInterface(iid);
@@ -198,11 +198,11 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	{
 		try
 		{
-		
+
 			// Wrap the response
 			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
 			ptrRecv->init(*response);
-			
+
 			// Unwrap the payload...
 			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
 		}
@@ -217,7 +217,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-	
+
 	try
 	{
 		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
@@ -228,11 +228,11 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		disconnect();
 		throw;
 	}
-	
+
 	uint32_t other_end = 0;
 	if (response && !response->read(other_end))
 		OMEGA_THROW(L"Unexpected end of message");
-	
+
 	// Return in the same format as we marshal
 	pMessage->WriteValue(L"m_channel_id",other_end);
 	pMessage->WriteValue(L"m_message_oid",m_message_oid);
@@ -256,7 +256,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pM
 	{
 		// If we get here, then we are loaded into a different exe from OOServer,
 		// therefore we do simple unmarshalling
-	
+
 		uint32_t channel_id = pMessage->ReadValue(L"m_channel_id").cast<uint32_t>();
 		guid_t message_oid = pMessage->ReadValue(L"m_message_oid").cast<guid_t>();
 

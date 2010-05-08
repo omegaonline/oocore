@@ -52,7 +52,7 @@ using namespace OTL;
 namespace
 {
 	class OidNotFoundException :
-		public ExceptionImpl<Omega::Activation::IOidNotFoundException>
+			public ExceptionImpl<Omega::Activation::IOidNotFoundException>
 	{
 	public:
 		static void Throw(const any_t& oid, IException* pE = 0);
@@ -73,10 +73,10 @@ namespace
 	};
 
 	class NoAggregationException :
-		public ExceptionImpl<Activation::INoAggregationException>
+			public ExceptionImpl<Activation::INoAggregationException>
 	{
 	public:
-		guid_t	m_oid;
+		guid_t  m_oid;
 
 		BEGIN_INTERFACE_MAP(NoAggregationException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
@@ -91,7 +91,7 @@ namespace
 	};
 
 	class LibraryNotFoundException :
-		public ExceptionImpl<Activation::ILibraryNotFoundException>
+			public ExceptionImpl<Activation::ILibraryNotFoundException>
 	{
 	public:
 		static void Throw(const string_t& strName, IException* pE = 0);
@@ -178,7 +178,7 @@ namespace
 
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
 		{
 			bool_t erase = false;
 			try
@@ -245,10 +245,10 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 
 	IObject* pObj = 0;
 	const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
-		System::Internal::marshal_info<const guid_t&>::safe_type::coerce(oid)
-		,flags,
-		System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
-		System::Internal::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
+				System::Internal::marshal_info<const guid_t&>::safe_type::coerce(oid)
+				,flags,
+				System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
+				System::Internal::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
 
 	if (GetLibraryObject_Exception)
 		System::Internal::throw_correct_exception(GetLibraryObject_Exception);

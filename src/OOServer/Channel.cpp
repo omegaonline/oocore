@@ -29,9 +29,9 @@ using namespace OTL;
 OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 
 User::Channel::Channel() :
-	m_pManager(0),
-	m_channel_id(0),
-	m_marshal_flags(0)
+		m_pManager(0),
+		m_channel_id(0),
+		m_marshal_flags(0)
 {
 }
 
@@ -46,7 +46,7 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 
 	if (m_message_oid != guid_t::Null())
 		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
-		
+
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess | Activation::DontLaunch);
 
@@ -65,7 +65,7 @@ void User::Channel::disconnect()
 
 	if (m_ptrOM)
 		m_ptrOM->Shutdown();
-	
+
 	m_ptrOM.Release();
 	m_ptrMarshaller.Release();
 }
@@ -135,7 +135,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			// Wrap the response
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrRecv = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 			ptrRecv->init(*response);
-					
+
 			// Unwrap the payload...
 			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
 		}
@@ -160,7 +160,7 @@ uint32_t User::Channel::GetSource()
 bool_t User::Channel::IsConnected()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	
+
 	return (!m_ptrOM ? false : true);
 }
 
@@ -185,7 +185,7 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 	if (!response)
 		OMEGA_THROW(L"No response received");
-		
+
 	Omega::uint32_t other_end = 0;
 	if (!response->read(other_end))
 		OMEGA_THROW(response->last_error());
@@ -199,7 +199,7 @@ void User::Channel::GetManager(const guid_t& iid, IObject*& pObject)
 {
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	
+
 	pObject = m_ptrOM->QueryInterface(iid);
 }
 

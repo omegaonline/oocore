@@ -38,7 +38,7 @@ namespace OOSvrBase
 			virtual ~PipeAcceptor();
 
 			int init(Acceptor* sync_handler);
-			
+
 			int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
 			{
 				return ERROR_INVALID_FUNCTION;
@@ -65,7 +65,7 @@ namespace OOSvrBase
 			std::string                m_pipe_name;
 			LPSECURITY_ATTRIBUTES      m_psa;
 			HANDLE                     m_hWait;
-			
+
 			static VOID CALLBACK accept_named_pipe_i(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/);
 			void do_accept();
 		};
@@ -73,12 +73,12 @@ namespace OOSvrBase
 }
 
 OOSvrBase::Win32::PipeAcceptor::PipeAcceptor(ProactorImpl* pProactor, const std::string& pipe_name, LPSECURITY_ATTRIBUTES psa) :
-	m_pProactor(pProactor),
-	m_closed(false),
-	m_sync_handler(0),
-	m_pipe_name(pipe_name),
-	m_psa(psa),
-	m_hWait(0)
+		m_pProactor(pProactor),
+		m_closed(false),
+		m_sync_handler(0),
+		m_pipe_name(pipe_name),
+		m_psa(psa),
+		m_hWait(0)
 {
 	ZeroMemory(&m_ov,sizeof(OVERLAPPED));
 }
@@ -94,7 +94,7 @@ OOSvrBase::Win32::PipeAcceptor::~PipeAcceptor()
 int OOSvrBase::Win32::PipeAcceptor::init(Acceptor* sync_handler)
 {
 	m_sync_handler = sync_handler;
-	
+
 	assert(!m_ov.hEvent);
 	m_ov.hEvent = CreateEventW(NULL,TRUE,TRUE,NULL);
 	if (!m_ov.hEvent)
@@ -108,7 +108,7 @@ int OOSvrBase::Win32::PipeAcceptor::init(Acceptor* sync_handler)
 		m_ov.hEvent = NULL;
 		return res;
 	}
-		
+
 	return 0;
 }
 
@@ -140,16 +140,16 @@ int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe(bool bExclusive)
 		dwOpenMode |= FILE_FLAG_FIRST_PIPE_INSTANCE;
 
 	m_hPipe = CreateNamedPipeA(m_pipe_name.c_str(),dwOpenMode,
-		PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-		PIPE_UNLIMITED_INSTANCES,
-		0,
-		0,
-		0,
-		m_psa);
+							   PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+							   PIPE_UNLIMITED_INSTANCES,
+							   0,
+							   0,
+							   0,
+							   m_psa);
 
 	if (!m_hPipe.is_valid())
 		return GetLastError();
-	
+
 	DWORD dwErr = 0;
 	if (ConnectNamedPipe(m_hPipe,&m_ov))
 		dwErr = ERROR_PIPE_CONNECTED;
@@ -180,7 +180,7 @@ int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe(bool bExclusive)
 
 	if (dwErr != 0)
 		CloseHandle(m_hPipe.detach());
-	
+
 	return dwErr;
 }
 
@@ -219,10 +219,10 @@ void OOSvrBase::Win32::PipeAcceptor::do_accept()
 		else
 			m_hPipe.detach();
 	}
-	
+
 	// Call the acceptor
 	bool again = m_sync_handler->on_accept(pSocket,dwErr) && (dwErr == 0);
-	
+
 	// Submit another accept if we want
 	if (again)
 	{

@@ -44,7 +44,7 @@ namespace OOBase
 			{
 				return m_hSocket;
 			}
-		
+
 		protected:
 			SmartHandle m_hSocket;
 
@@ -54,13 +54,13 @@ namespace OOBase
 		};
 
 		template <typename Base>
-		class SocketTempl : 
-			public Base,
-			public SocketImpl
+		class SocketTempl :
+				public Base,
+				public SocketImpl
 		{
 		public:
 			SocketTempl(HANDLE hSocket) :
-				SocketImpl(hSocket)
+					SocketImpl(hSocket)
 			{}
 
 			virtual ~SocketTempl()
@@ -86,21 +86,21 @@ namespace OOBase
 			SocketTempl& operator = (const SocketTempl&);
 		};
 
-		class Socket : 
-			public SocketTempl<OOBase::Socket>
+		class Socket :
+				public SocketTempl<OOBase::Socket>
 		{
 		public:
 			Socket(HANDLE hSocket) :
-				SocketTempl<OOBase::Socket>(hSocket)
+					SocketTempl<OOBase::Socket>(hSocket)
 			{}
 		};
 
-		class LocalSocket : 
-			public SocketTempl<OOBase::LocalSocket>
+		class LocalSocket :
+				public SocketTempl<OOBase::LocalSocket>
 		{
 		public:
 			LocalSocket(HANDLE hSocket) :
-				SocketTempl<OOBase::LocalSocket>(hSocket)
+					SocketTempl<OOBase::LocalSocket>(hSocket)
 			{}
 
 			virtual OOBase::LocalSocket::uid_t get_uid();

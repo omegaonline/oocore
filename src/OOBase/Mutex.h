@@ -30,7 +30,7 @@ namespace OOBase
 	/// A recursive mutex that can be acquired with a timeout
 	class Mutex
 	{
-	    friend class Condition;
+		friend class Condition;
 
 	public:
 		Mutex();
@@ -123,16 +123,16 @@ namespace OOBase
 	{
 	public:
 		Guard(MUTEX& mutex, bool acq = true) :
-		  m_acquired(false),
-		  m_mutex(mutex)
+				m_acquired(false),
+				m_mutex(mutex)
 		{
 			if (acq)
 				acquire();
 		}
 
 		Guard(MUTEX& mutex, const timeval_t& wait) :
-		  m_acquired(false),
-		  m_mutex(mutex)
+				m_acquired(false),
+				m_mutex(mutex)
 		{
 			acquire(&wait);
 		}
@@ -184,8 +184,8 @@ namespace OOBase
 	{
 	public:
 		ReadGuard(MUTEX& mutex, bool acq = true) :
-		  m_acquired(false),
-		  m_mutex(mutex)
+				m_acquired(false),
+				m_mutex(mutex)
 		{
 			if (acq)
 				acquire();

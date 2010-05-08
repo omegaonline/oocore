@@ -31,16 +31,16 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::UserSession::UserSession() :
-	m_channel_id(0),
-	m_nIPSCookie(0),
-	m_next_apartment(0)
+		m_channel_id(0),
+		m_nIPSCookie(0),
+		m_next_apartment(0)
 {
 }
 
 OOCore::UserSession::~UserSession()
 {
 	// Clear the thread id's of the ThreadContexts
-	for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+	for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		i->second->m_thread_id = 0;
 }
 
@@ -94,7 +94,8 @@ void OOCore::UserSession::init_i(bool bStandalone)
 			OOBase::sleep(OOBase::timeval_t(0,100000));
 
 			countdown.update();
-		} while (wait != OOBase::timeval_t::Zero);
+		}
+		while (wait != OOBase::timeval_t::Zero);
 
 		if (!m_stream)
 			OMEGA_THROW(err);
@@ -142,7 +143,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		typedef const System::Internal::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(const Omega::System::Internal::SafeShim** retval);
+		typedef const System::Internal::SafeShim*(OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(const Omega::System::Internal::SafeShim** retval);
 
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
@@ -232,10 +233,10 @@ void OOCore::UserSession::term()
 
 void OOCore::UserSession::term_i()
 {
-    // Unregister InterProcessService
+	// Unregister InterProcessService
 	if (m_nIPSCookie)
 	{
-	    Activation::RevokeObject(m_nIPSCookie);
+		Activation::RevokeObject(m_nIPSCookie);
 		m_nIPSCookie = 0;
 	}
 
@@ -247,7 +248,7 @@ void OOCore::UserSession::term_i()
 	m_worker_thread.join();
 
 	// Close all apartments
-	for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin();j!=m_mapApartments.end();++j)
+	for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin(); j!=m_mapApartments.end(); ++j)
 	{
 		j->second->close();
 	}
@@ -276,7 +277,7 @@ void OOCore::UserSession::close_singletons_i()
 
 	guard.release();
 
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
 	{
 		(*(i->first))(i->second);
 	}
@@ -303,7 +304,7 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=m_listUninitCalls.begin();i!=m_listUninitCalls.end();++i)
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=m_listUninitCalls.begin(); i!=m_listUninitCalls.end(); ++i)
 	{
 		if (i->first == pfn_dctor && i->second == param)
 		{
@@ -456,7 +457,7 @@ int OOCore::UserSession::run_read_loop()
 						if (waiting == 0)
 						{
 							// This incoming request may not be processed for some time...
-							void* TICKET_91;	// Alert!
+							void* TICKET_91;    // Alert!
 						}
 					}
 				}
@@ -481,7 +482,7 @@ int OOCore::UserSession::run_read_loop()
 					if (waiting == 0)
 					{
 						// This incoming request may not be processed for some time...
-						void* TICKET_91;	// Alert!
+						void* TICKET_91;    // Alert!
 					}
 				}
 			}
@@ -495,7 +496,7 @@ int OOCore::UserSession::run_read_loop()
 	m_stream = 0;
 
 	// Tell all worker threads that we are done with them...
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
 		i->second->m_msg_queue.pulse();
 	}
@@ -561,7 +562,8 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 		// Reset the deadline
 		pContext->m_deadline = old_deadline;
 
-	} while (!bOnce);
+	}
+	while (!bOnce);
 
 	// Decrement the consumers...
 	--m_usage_count;
@@ -576,7 +578,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin();j!=m_mapApartments.end();++j)
+		for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin(); j!=m_mapApartments.end(); ++j)
 		{
 			j->second->process_channel_close(closed_channel_id);
 		}
@@ -589,7 +591,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 		// Unblock all waiting threads
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
 			if (i->second->m_usage_count.value() > 0)
 				i->second->m_msg_queue.pulse();
@@ -712,10 +714,10 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 }
 
 OOCore::UserSession::ThreadContext::ThreadContext() :
-	m_thread_id(0),
-	m_deadline(OOBase::timeval_t::MaxTime),
-	m_seq_no(0),
-	m_current_apt(0)
+		m_thread_id(0),
+		m_deadline(OOBase::timeval_t::MaxTime),
+		m_seq_no(0),
+		m_current_apt(0)
 {
 }
 
@@ -732,7 +734,7 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 
 	try
 	{
-		for (uint16_t i=1;i<=0xFFF;++i)
+		for (uint16_t i=1; i<=0xFFF; ++i)
 		{
 			if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
 			{
@@ -852,7 +854,7 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 {
 	OOBase::CDRStream header(48 + (msg ? msg->buffer()->length() : 0));
 	header.write(header.big_endian());
-	header.write(byte_t(1));	 // version
+	header.write(byte_t(1));     // version
 
 	// Write out the header length and remember where we wrote it
 	header.write(uint32_t(0));
@@ -977,7 +979,8 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 			if (apt_id > 0xFFF)
 				apt_id = m_next_apartment = 1;
 
-		} while (m_mapApartments.find(apt_id) != m_mapApartments.end());
+		}
+		while (m_mapApartments.find(apt_id) != m_mapApartments.end());
 
 		// Create the new object
 		OMEGA_NEW(ptrApt,Apartment(this,apt_id));

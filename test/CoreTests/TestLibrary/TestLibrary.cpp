@@ -2,23 +2,25 @@
 
 #include "../SimpleTest.h"
 
-namespace Omega {
-namespace TestSuite
+namespace Omega
 {
-	extern "C" const Omega::guid_t OID_TestLibrary;
-} }
+	namespace TestSuite
+	{
+		extern "C" const Omega::guid_t OID_TestLibrary;
+	}
+}
 
 OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
 
 class TestLibraryImpl :
-	public OTL::ObjectBase,
-	public OTL::AutoObjectFactory<TestLibraryImpl,&Omega::TestSuite::OID_TestLibrary>,
-	public OTL::IProvideObjectInfoImpl<TestLibraryImpl>,
-	public SimpleTestImpl
+		public OTL::ObjectBase,
+		public OTL::AutoObjectFactory<TestLibraryImpl,&Omega::TestSuite::OID_TestLibrary>,
+		public OTL::IProvideObjectInfoImpl<TestLibraryImpl>,
+		public SimpleTestImpl
 {
 public:
 	TestLibraryImpl()
-	{ 
+	{
 	}
 
 	void Abort();

@@ -54,20 +54,35 @@ extern "C"
 {
 #endif // __cplusplus
 
-OOCORE_EXTERN unsigned int OOCore_GetMajorVersion();
-OOCORE_EXTERN unsigned int OOCore_GetMinorVersion();
-OOCORE_EXTERN unsigned int OOCore_GetPatchVersion();
-OOCORE_EXTERN const char* OOCore_GetVersion();
+	OOCORE_EXTERN unsigned int OOCore_GetMajorVersion();
+	OOCORE_EXTERN unsigned int OOCore_GetMinorVersion();
+	OOCORE_EXTERN unsigned int OOCore_GetPatchVersion();
+	OOCORE_EXTERN const char* OOCore_GetVersion();
 
 #if defined(__cplusplus)
 } // extern "C"
 
 namespace OOCore
 {
-	inline const char* GetVersion() { return OOCore_GetVersion(); }
-	inline unsigned int GetMajorVersion() { return OOCore_GetMajorVersion(); }
-	inline unsigned int GetMinorVersion() { return OOCore_GetMinorVersion(); }
-	inline unsigned int GetPatchVersion() { return OOCore_GetPatchVersion(); }
+	inline const char* GetVersion()
+	{
+		return OOCore_GetVersion();
+	}
+
+	inline unsigned int GetMajorVersion()
+	{
+		return OOCore_GetMajorVersion();
+	}
+
+	inline unsigned int GetMinorVersion()
+	{
+		return OOCore_GetMinorVersion();
+	}
+
+	inline unsigned int GetPatchVersion()
+	{
+		return OOCore_GetPatchVersion();
+	}
 }
 #endif // __cplusplus
 

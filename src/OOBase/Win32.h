@@ -36,7 +36,7 @@ namespace OOBase
 		{
 		public:
 			SmartHandle(HANDLE h = INVALID_HANDLE_VALUE) :
-				m_handle(h)
+					m_handle(h)
 			{}
 
 			SmartHandle& operator = (HANDLE h)

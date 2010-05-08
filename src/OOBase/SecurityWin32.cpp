@@ -26,7 +26,7 @@
 #include <shlwapi.h>
 
 OOSvrBase::Win32::sec_descript_t::sec_descript_t() :
-	m_pACL(NULL), m_psd(NULL)
+		m_pACL(NULL), m_psd(NULL)
 {
 	// Create a new security descriptor
 	m_psd = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
@@ -67,19 +67,19 @@ DWORD OOSvrBase::Win32::GetNameFromToken(HANDLE hToken, std::wstring& strUserNam
 	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
 	if (!ptrUserInfo)
 		return GetLastError();
-	
+
 	SID_NAME_USE name_use;
 	DWORD dwUNameSize = 0;
 	DWORD dwDNameSize = 0;
 	LookupAccountSidW(NULL,ptrUserInfo->User.Sid,NULL,&dwUNameSize,NULL,&dwDNameSize,&name_use);
 	if (dwUNameSize == 0)
 		return GetLastError();
-		
+
 	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > ptrUserName = 0;
 	OOBASE_NEW(ptrUserName,wchar_t[dwUNameSize]);
 	if (!ptrUserName)
 		return ERROR_OUTOFMEMORY;
-		
+
 	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > ptrDomainName = 0;
 	if (dwDNameSize)
 	{
@@ -87,13 +87,13 @@ DWORD OOSvrBase::Win32::GetNameFromToken(HANDLE hToken, std::wstring& strUserNam
 		if (!ptrDomainName)
 			return ERROR_OUTOFMEMORY;
 	}
-				
+
 	if (!LookupAccountSidW(NULL,ptrUserInfo->User.Sid,ptrUserName,&dwUNameSize,ptrDomainName,&dwDNameSize,&name_use))
 		return GetLastError();
-				
+
 	strUserName = ptrUserName;
 	strDomainName = ptrDomainName;
-		
+
 	return ERROR_SUCCESS;
 }
 
@@ -141,7 +141,7 @@ DWORD OOSvrBase::Win32::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile
 
 	if (!LoadUserProfileW(hToken,&profile_info))
 		return GetLastError();
-	
+
 	hProfile = profile_info.hProfile;
 	return ERROR_SUCCESS;
 }
@@ -165,10 +165,10 @@ DWORD OOSvrBase::Win32::GetLogonSID(HANDLE hToken, OOBase::SmartPtr<void,OOBase:
 				pSIDLogon = static_cast<PSID>(malloc(dwLen));
 				if (!pSIDLogon)
 					return ERROR_OUTOFMEMORY;
-				
+
 				if (!CopySid(dwLen,pSIDLogon,ptrGroups->Groups[dwIndex].Sid))
 					return GetLastError();
-					
+
 				return ERROR_SUCCESS;
 			}
 		}
@@ -189,10 +189,10 @@ DWORD OOSvrBase::Win32::SetTokenDefaultDACL(HANDLE hToken)
 	DWORD dwRes = GetLogonSID(hToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		return dwRes;
-	
+
 	const int NUM_ACES = 1;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-	
+
 	// Set maximum access for the logon SID
 	ea[0].grfAccessPermissions = GENERIC_ALL;
 	ea[0].grfAccessMode = GRANT_ACCESS;
@@ -219,7 +219,7 @@ DWORD OOSvrBase::Win32::EnableUserAccessToDir(const wchar_t* pszPath, const TOKE
 {
 	wchar_t szPath[MAX_PATH] = {0};
 	PathCanonicalizeW(szPath,pszPath);
-    PathRemoveFileSpecW(szPath);
+	PathRemoveFileSpecW(szPath);
 
 	PACL pACL = 0;
 	PSECURITY_DESCRIPTOR pSD = 0;
@@ -231,7 +231,7 @@ DWORD OOSvrBase::Win32::EnableUserAccessToDir(const wchar_t* pszPath, const TOKE
 
 	static const int NUM_ACES = 1;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-	
+
 	// Set maximum access for the logon SID
 	ea[0].grfAccessPermissions = GENERIC_ALL;
 	ea[0].grfAccessMode = GRANT_ACCESS;
@@ -263,28 +263,28 @@ DWORD OOSvrBase::Win32::RestrictToken(HANDLE& hToken)
 		//// Use SAFER API
 		//SAFER_LEVEL_HANDLE hAuthzLevel = NULL;
 		//if (!SaferCreateLevel(SAFER_SCOPEID_MACHINE,SAFER_LEVELID_UNTRUSTED,SAFER_LEVEL_OPEN,&hAuthzLevel,NULL))
-		//	return false;
+		//  return false;
 
 		//// Generate the restricted token we will use.
 		//bool bOk = false;
 		//HANDLE hNewToken = NULL;
 		//if (SaferComputeTokenFromLevel(
-		//	hAuthzLevel,    // SAFER Level handle
-		//	hToken,         // Source token
-		//	&hNewToken,     // Target token
-		//	0,              // No flags
-		//	NULL))          // Reserved
+		//  hAuthzLevel,    // SAFER Level handle
+		//  hToken,         // Source token
+		//  &hNewToken,     // Target token
+		//  0,              // No flags
+		//  NULL))          // Reserved
 		//{
-		//	// Swap the tokens
-		//	CloseHandle(hToken);
-		//	hToken = hNewToken;
-		//	bOk = true;
+		//  // Swap the tokens
+		//  CloseHandle(hToken);
+		//  hToken = hNewToken;
+		//  bOk = true;
 		//}
 
 		//SaferCloseLevel(hAuthzLevel);
 		//
 		//if (!bOk)
-		//	return false;
+		//  return false;
 	}
 #endif
 
@@ -316,25 +316,25 @@ void* OOSvrBase::Win32::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls)
 	void* pBuffer = malloc(dwLen);
 	if (!pBuffer)
 		return 0;
-	
+
 	if (!GetTokenInformation(hToken,cls,pBuffer,dwLen,&dwLen))
 	{
 		free(pBuffer);
 		return 0;
 	}
-	
+
 	return pBuffer;
 }
 
 bool OOSvrBase::Win32::MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2)
 {
-	for (ULONG i=0;i<count;++i)
+	for (ULONG i=0; i<count; ++i)
 	{
 		bool bFound = false;
-		for (ULONG j=0;j<count;++j)
+		for (ULONG j=0; j<count; ++j)
 		{
 			if (EqualSid(pSids1[i].Sid,pSids2[j].Sid) &&
-				pSids1[i].Attributes == pSids2[j].Attributes)
+					pSids1[i].Attributes == pSids2[j].Attributes)
 			{
 				bFound = true;
 				break;
@@ -350,14 +350,14 @@ bool OOSvrBase::Win32::MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_A
 
 bool OOSvrBase::Win32::MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2)
 {
-	for (ULONG i=0;i<count;++i)
+	for (ULONG i=0; i<count; ++i)
 	{
 		bool bFound = false;
-		for (ULONG j=0;j<count;++j)
+		for (ULONG j=0; j<count; ++j)
 		{
 			if (Privs1[i].Luid.LowPart == Privs2[j].Luid.LowPart &&
-				Privs1[i].Luid.HighPart == Privs2[j].Luid.HighPart &&
-				Privs1[i].Attributes == Privs2[j].Attributes)
+					Privs1[i].Luid.HighPart == Privs2[j].Luid.HighPart &&
+					Privs1[i].Attributes == Privs2[j].Attributes)
 			{
 				bFound = true;
 				break;

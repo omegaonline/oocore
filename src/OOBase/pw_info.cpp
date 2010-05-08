@@ -24,7 +24,7 @@
 #if defined(HAVE_PWD_H)
 
 OOSvrBase::pw_info::pw_info(uid_t uid) :
-	m_pwd(0), m_buf_len(1024)
+		m_pwd(0), m_buf_len(1024)
 {
 #if defined(_SC_GETPW_R_SIZE_MAX) && defined(HAVE_UNISTD_H)
 	m_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
@@ -51,7 +51,7 @@ OOSvrBase::pw_info::pw_info(uid_t uid) :
 }
 
 OOSvrBase::pw_info::pw_info(const char* uname) :
-	m_pwd(0), m_buf_len(1024)
+		m_pwd(0), m_buf_len(1024)
 {
 #if defined(_SC_GETPW_R_SIZE_MAX) && defined(HAVE_UNISTD_H)
 	m_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;

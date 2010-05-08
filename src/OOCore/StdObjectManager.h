@@ -47,10 +47,10 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 namespace OOCore
 {
 	class StdObjectManager :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
-		public IStdObjectManager,
-		public Omega::Remoting::IMarshaller
+			public OTL::ObjectBase,
+			public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
+			public IStdObjectManager,
+			public Omega::Remoting::IMarshaller
 	{
 	public:
 		StdObjectManager();
@@ -74,7 +74,7 @@ namespace OOCore
 		OOBase::RWMutex                           m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
 		Omega::uint32_t                           m_uNextStubId;
-				
+
 		std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >                                     m_mapStubObjs;
 		std::map<Omega::uint32_t,std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >::iterator> m_mapStubIds;
 		std::map<Omega::uint32_t,OTL::ObjectImpl<Proxy>*>                                                     m_mapProxyIds;
@@ -83,7 +83,7 @@ namespace OOCore
 		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 
 		bool CustomMarshalInterface(OTL::ObjectPtr<Omega::Remoting::IMarshal>& ptrMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
-		
+
 	// IMarshaller members
 	public:
 		void MarshalInterface(const Omega::string_t& name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
@@ -91,7 +91,7 @@ namespace OOCore
 		void UnmarshalInterface(const Omega::string_t& name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout = 0);
-				
+
 	// IStdObjectManager members
 	public:
 		void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);

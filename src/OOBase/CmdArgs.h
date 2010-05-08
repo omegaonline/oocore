@@ -35,7 +35,7 @@ namespace OOSvrBase
 		bool add_argument(const char* id, int position);
 
 		bool parse(int argc, char* argv[], std::map<std::string,std::string>& results, int skip = 1) const;
-		
+
 	private:
 		struct Option
 		{
@@ -43,7 +43,7 @@ namespace OOSvrBase
 			std::string m_long_opt;
 			bool        m_has_value;
 		};
-		
+
 		std::multimap<std::string,Option> m_map_opts;
 		std::map<std::string,int>         m_map_args;
 

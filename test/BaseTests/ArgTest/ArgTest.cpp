@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 	std::map<std::string,std::string> results;
 	TEST(cmd_args.parse(argc,argv,results));
 
-	for (std::map<std::string,std::string>::iterator i=results.begin();i!=results.end();++i)
+	for (std::map<std::string,std::string>::iterator i=results.begin(); i!=results.end(); ++i)
 	{
 		printf("%s = %s\n",i->first.c_str(),i->second.c_str());
 	}
@@ -123,5 +123,5 @@ bool run_test(pfnTest t, const char* pszName)
 		output("[Unhandled C++ exception!]\n");
 	}
 
-    return false;
+	return false;
 }

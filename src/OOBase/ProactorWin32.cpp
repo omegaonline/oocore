@@ -75,9 +75,9 @@ OOSvrBase::AsyncSocket* OOSvrBase::Win32::ProactorImpl::attach_socket(IOHandler*
 }
 
 OOSvrBase::Win32::AsyncSocket::AsyncSocket(OOSvrBase::Win32::ProactorImpl* pProactor, HANDLE handle, OOSvrBase::IOHandler* handler) :
-	m_pProactor(pProactor),
-	m_handle(handle),
-	m_handler(handler)
+		m_pProactor(pProactor),
+		m_handle(handle),
+		m_handler(handler)
 {
 	m_read_complete.m_is_reading = true;
 	m_read_complete.m_buffer = 0;
@@ -153,7 +153,8 @@ int OOSvrBase::Win32::AsyncSocket::read_next()
 		memset(&m_read_complete.m_ov,0,sizeof(OVERLAPPED));
 		m_read_complete.m_buffer = read.m_buffer;
 		m_read_complete.m_to_read = read.m_to_read;
-	} while (!do_read(static_cast<DWORD>(m_read_complete.m_to_read)));
+	}
+	while (!do_read(static_cast<DWORD>(m_read_complete.m_to_read)));
 
 	return 0;
 }
@@ -205,7 +206,8 @@ int OOSvrBase::Win32::AsyncSocket::write_next()
 		memset(&m_write_complete.m_ov,0,sizeof(OVERLAPPED));
 		m_write_complete.m_buffer = buffer;
 
-	} while (!do_write());
+	}
+	while (!do_write());
 
 	return 0;
 }
@@ -225,7 +227,7 @@ VOID CALLBACK OOSvrBase::Win32::AsyncSocket::completion_fn(DWORD dwErrorCode, DW
 bool OOSvrBase::Win32::AsyncSocket::do_read(DWORD dwToRead)
 {
 	addref();
-	
+
 	if (dwToRead == 0)
 		dwToRead = static_cast<DWORD>(m_read_complete.m_buffer->space());
 
@@ -309,7 +311,7 @@ void OOSvrBase::Win32::AsyncSocket::handle_read(DWORD dwErrorCode, DWORD dwNumbe
 bool OOSvrBase::Win32::AsyncSocket::do_write()
 {
 	addref();
-	
+
 	DWORD dwWritten = 0;
 	if (!WriteFile(m_handle,m_write_complete.m_buffer->rd_ptr(),static_cast<DWORD>(m_write_complete.m_buffer->length()),&dwWritten,&m_write_complete.m_ov))
 	{
@@ -391,12 +393,12 @@ void OOSvrBase::Win32::AsyncSocket::close()
 	m_handler = 0;
 
 	// Empty the queues
-	for (std::deque<AsyncRead>::iterator i=m_async_reads.begin();i!=m_async_reads.end();++i)
+	for (std::deque<AsyncRead>::iterator i=m_async_reads.begin(); i!=m_async_reads.end(); ++i)
 		i->m_buffer->release();
 
 	m_async_reads.clear();
 
-	for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin();i!=m_async_writes.end();++i)
+	for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin(); i!=m_async_writes.end(); ++i)
 		(*i)->release();
 
 	m_async_writes.clear();

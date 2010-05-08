@@ -37,8 +37,8 @@ namespace Omega
 		virtual void Release() = 0;
 		virtual IObject* QueryInterface(const guid_t& iid) = 0;
 
-    protected:
-        virtual ~IObject() {}
+	protected:
+		virtual ~IObject() {}
 	};
 
 	interface IException : public IObject
@@ -106,7 +106,7 @@ namespace Omega
 			typeSTLMap = 0x28,
 			typeSTLMultimap
 		};
-		
+
 		enum Modifier
 		{
 			modifierConst = 0x80,
@@ -177,8 +177,8 @@ namespace Omega
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	interface __declspec(uuid(guid)) n_space::type; \
 	namespace Omega { namespace System { namespace Internal { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(__uuidof(n_space::type)); return v; } }; \
-	} } }
+				template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(__uuidof(n_space::type)); return v; } }; \
+			} } }
 
 #elif defined(DOXYGEN)
 
@@ -189,8 +189,8 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace Internal { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(OMEGA_WIDEN_STRING(guid)); return v; } }; \
-	} } }
+				template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(OMEGA_WIDEN_STRING(guid)); return v; } }; \
+			} } }
 
 #endif
 

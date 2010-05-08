@@ -53,12 +53,12 @@ namespace OOBase
 
 		template <class Base>
 		class SocketTempl :
-			public Base,
-			public SocketImpl
+				public Base,
+				public SocketImpl
 		{
 		public:
 			SocketTempl(int fd) :
-				SocketImpl(fd)
+					SocketImpl(fd)
 			{}
 
 			virtual ~SocketTempl()
@@ -85,29 +85,29 @@ namespace OOBase
 		};
 
 		class Socket :
-			public SocketTempl<OOBase::Socket>
+				public SocketTempl<OOBase::Socket>
 		{
 		public:
 			Socket(int fd) :
-				SocketTempl<OOBase::Socket>(fd)
+					SocketTempl<OOBase::Socket>(fd)
 			{}
 		};
 
 		class LocalSocket :
-			public SocketTempl<OOBase::LocalSocket>
+				public SocketTempl<OOBase::LocalSocket>
 		{
 		public:
 			LocalSocket(int fd, const std::string& path) :
-				SocketTempl<OOBase::LocalSocket>(fd),
-				m_path(path)
+					SocketTempl<OOBase::LocalSocket>(fd),
+					m_path(path)
 			{}
 
 			virtual ~LocalSocket()
 			{
-			#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_UNISTD_H)
 				if (!m_path.empty())
 					unlink(m_path.c_str());
-			#endif
+#endif
 			}
 
 			virtual OOBase::LocalSocket::uid_t get_uid();

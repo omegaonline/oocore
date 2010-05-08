@@ -33,31 +33,31 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(Omega::Remoting::IMarshaller* pMarshaller = 0) :
-		  ObjectPtrBase<Omega::Remoting::IMarshaller>(pMarshaller)
+				ObjectPtrBase<Omega::Remoting::IMarshaller>(pMarshaller)
 		{ }
 
 		template <typename I>
-	    ObjectPtr(I* pObject) :
-		  ObjectPtrBase<Omega::Remoting::IMarshaller>(0)
+		ObjectPtr(I* pObject) :
+				ObjectPtrBase<Omega::Remoting::IMarshaller>(0)
 		{
 			if (pObject)
 				this->m_ptr = static_cast<Omega::Remoting::IMarshaller*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::Remoting::IMarshaller)));
 		}
 
 		ObjectPtr(const ObjectPtr<Omega::Remoting::IMarshaller>& rhs) :
-		  ObjectPtrBase<Omega::Remoting::IMarshaller>(rhs)
+				ObjectPtrBase<Omega::Remoting::IMarshaller>(rhs)
 		{ }
 
 		template <typename I>
 		ObjectPtr(const ObjectPtr<I>& rhs) :
-		  ObjectPtrBase<Omega::Remoting::IMarshaller>(0)
-		{ 
+				ObjectPtrBase<Omega::Remoting::IMarshaller>(0)
+		{
 			if (rhs)
 				this->m_ptr = static_cast<Omega::Remoting::IMarshaller*>(rhs->QueryInterface(OMEGA_GUIDOF(Omega::Remoting::IMarshaller)));
 		}
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::Remoting::IMarshaller>& rhs)
-		{ 
+		{
 			if (this != &rhs)
 				*this = rhs.m_ptr;
 
@@ -75,7 +75,7 @@ namespace OTL
 		{
 			Omega::IObject* pObj = 0;
 			m_ptr->UnmarshalInterface(strName,pMessage,OMEGA_GUIDOF(I),pObj);
-			
+
 			ObjectPtr<I> ptrObj;
 			ptrObj.Attach(static_cast<I*>(pObj));
 			return ptrObj;
@@ -87,31 +87,31 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(Omega::Remoting::IChannel* pMarshaller = 0) :
-		  ObjectPtrBase<Omega::Remoting::IChannel>(pMarshaller)
+				ObjectPtrBase<Omega::Remoting::IChannel>(pMarshaller)
 		{ }
 
 		template <typename I>
-	    ObjectPtr(I* pObject) :
-		  ObjectPtrBase<Omega::Remoting::IChannel>(0)
+		ObjectPtr(I* pObject) :
+				ObjectPtrBase<Omega::Remoting::IChannel>(0)
 		{
 			if (pObject)
 				this->m_ptr = static_cast<Omega::Remoting::IChannel*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::Remoting::IChannel)));
 		}
 
 		ObjectPtr(const ObjectPtr<Omega::Remoting::IChannel>& rhs) :
-		  ObjectPtrBase<Omega::Remoting::IChannel>(rhs)
+				ObjectPtrBase<Omega::Remoting::IChannel>(rhs)
 		{ }
 
 		template <typename I>
 		ObjectPtr(const ObjectPtr<I>& rhs) :
-		  ObjectPtrBase<Omega::Remoting::IChannel>(0)
-		{ 
+				ObjectPtrBase<Omega::Remoting::IChannel>(0)
+		{
 			if (rhs)
 				this->m_ptr = static_cast<Omega::Remoting::IChannel*>(rhs->QueryInterface(OMEGA_GUIDOF(Omega::Remoting::IChannel)));
 		}
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::Remoting::IChannel>& rhs)
-		{ 
+		{
 			if (this != &rhs)
 				*this = rhs.m_ptr;
 
@@ -129,7 +129,7 @@ namespace OTL
 		{
 			Omega::IObject* pObj = 0;
 			m_ptr->GetManager(OMEGA_GUIDOF(I),pObj);
-			
+
 			ObjectPtr<I> ptrObj;
 			ptrObj.Attach(static_cast<I*>(pObj));
 			return ptrObj;

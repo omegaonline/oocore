@@ -76,7 +76,7 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 
 	std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 	assert(p.second);
-		
+
 	m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
 
 	return nCookie;
@@ -95,7 +95,7 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 	std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
 	if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
 	{
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid);j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid;++j)
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid); j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid; ++j)
 		{
 			if (j->second->first == cookie)
 			{
@@ -115,12 +115,12 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid); i!=m_mapObjectsByOid.end() && i->first==oid; ++i)
 		{
 			if (Remoting::IsAlive(i->second->second.m_ptrObject))
 				ptrRet = i->second->second.m_ptrObject;
 			else
-				listDeadEntries.push_back(i->second->first);	
+				listDeadEntries.push_back(i->second->first);
 		}
 	}
 
@@ -129,10 +129,10 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 		// We found at least one dead proxy
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::list<uint32_t>::iterator i=listDeadEntries.begin();i!=listDeadEntries.end();++i)
+		for (std::list<uint32_t>::iterator i=listDeadEntries.begin(); i!=listDeadEntries.end(); ++i)
 		{
 			std::map<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*i);
-			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator k=m_mapObjectsByOid.find(j->second.m_oid);k!=m_mapObjectsByOid.end() && k->first==j->second.m_oid;++k)
+			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator k=m_mapObjectsByOid.find(j->second.m_oid); k!=m_mapObjectsByOid.end() && k->first==j->second.m_oid; ++k)
 			{
 				if (k->second->first == *i)
 				{
@@ -146,7 +146,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 
 	if (ptrRet != 0)
 		return ptrRet.AddRef();
-	
+
 	if (m_ptrROT != 0)
 	{
 		// Route to global rot

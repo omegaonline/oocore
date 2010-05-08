@@ -43,7 +43,7 @@ namespace Omega
 					return val;
 				}
 			};
-			
+
 			template <typename T>
 			struct std_safe_type_ref
 			{
@@ -66,8 +66,8 @@ namespace Omega
 
 			template <typename T> struct custom_safe_type;
 			template <typename T> struct custom_wire_type;
-			
-			template <typename T> 
+
+			template <typename T>
 			struct custom_safe_type_wrapper
 			{
 				typedef typename custom_safe_type<T>::impl impl;
@@ -112,7 +112,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct custom_safe_type_const_wrapper
 			{
 				typedef typename custom_safe_type<T>::impl impl;
@@ -157,7 +157,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct custom_safe_type_ref_wrapper
 			{
 				typedef typename custom_safe_type<T>::impl impl;
@@ -180,7 +180,7 @@ namespace Omega
 
 				struct ref_holder_lite : public ref_holder
 				{
-					ref_holder_lite(type val) :	ref_holder(val)
+					ref_holder_lite(type val) : ref_holder(val)
 					{}
 
 					~ref_holder_lite()
@@ -192,7 +192,7 @@ namespace Omega
 				struct ref_holder_full : public ref_holder
 				{
 					ref_holder_full(type val, const guid_base_t* piid) :
-						ref_holder(val), m_piid(piid)
+							ref_holder(val), m_piid(piid)
 					{}
 
 					~ref_holder_full()
@@ -214,7 +214,7 @@ namespace Omega
 				protected:
 					typename impl::safe_type_wrapper m_val;
 					T&                               m_dest;
-					
+
 					ref_holder_safe(T& val) : m_val(val), m_dest(val)
 					{}
 
@@ -238,8 +238,8 @@ namespace Omega
 
 				struct ref_holder_safe_full : public ref_holder_safe
 				{
-					ref_holder_safe_full(T& val, const guid_t& iid) : 
-						ref_holder_safe(val), m_iid(iid)
+					ref_holder_safe_full(T& val, const guid_t& iid) :
+							ref_holder_safe(val), m_iid(iid)
 					{}
 
 					~ref_holder_safe_full()
@@ -252,7 +252,7 @@ namespace Omega
 
 				private:
 					const guid_t& m_iid;
-					
+
 					ref_holder_safe_full& operator = (const ref_holder_safe_full&);
 				};
 
@@ -285,7 +285,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct custom_safe_type_const_ref_wrapper
 			{
 				typedef typename custom_safe_type<T>::impl impl;
@@ -321,23 +321,23 @@ namespace Omega
 			};
 
 			// Don't pass pointers by const& - just pass the pointer
-			template <typename T> 
+			template <typename T>
 			struct custom_safe_type_const_ref_wrapper<T*>;
 
 			template <typename T> struct marshal_info;
-			
-			template <typename T> 
+
+			template <typename T>
 			struct array_safe_type
 			{
 				typedef typename marshal_info<T>::safe_type::type* safe_type;
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type vals, size_t cbSize) : 
-						m_val(default_value<typename marshal_info<T>::safe_type::type>::value()),
-						m_pVals(0), 
-						m_pOrig(vals), 
-						m_cbSize(cbSize)
+					type_wrapper(safe_type vals, size_t cbSize) :
+							m_val(default_value<typename marshal_info<T>::safe_type::type>::value()),
+							m_pVals(0),
+							m_pOrig(vals),
+							m_cbSize(cbSize)
 					{
 						if (m_pOrig)
 						{
@@ -346,7 +346,7 @@ namespace Omega
 							else if (cbSize > 1)
 							{
 								OMEGA_NEW(m_pVals,T[cbSize]);
-								for (size_t i=0;i<cbSize;++i)
+								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
 							}
 						}
@@ -358,14 +358,14 @@ namespace Omega
 						{
 							if (m_pVals)
 							{
-								for (size_t i=0;i<m_cbSize;++i)
+								for (size_t i=0; i<m_cbSize; ++i)
 									static_cast<T&>(marshal_info<T&>::safe_type::coerce(m_pOrig+i)) = m_pVals[i];
 
 								delete [] m_pVals;
 							}
 							else
 								m_val.update(*m_pOrig);
-						}						
+						}
 					}
 
 					operator T*()
@@ -389,11 +389,11 @@ namespace Omega
 				{
 					typedef typename marshal_info<T>::safe_type::type arr_type;
 
-					safe_type_wrapper(T* vals, size_t cbSize) : 
-						m_val(default_value<T>::value()),
-						m_pVals(0), 
-						m_pOrig(vals), 
-						m_cbSize(cbSize)
+					safe_type_wrapper(T* vals, size_t cbSize) :
+							m_val(default_value<T>::value()),
+							m_pVals(0),
+							m_pOrig(vals),
+							m_cbSize(cbSize)
 					{
 						if (m_pOrig)
 						{
@@ -402,7 +402,7 @@ namespace Omega
 							else if (cbSize > 1)
 							{
 								OMEGA_NEW(m_pVals,arr_type[cbSize]);
-								for (size_t i=0;i<cbSize;++i)
+								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
 							}
 						}
@@ -414,14 +414,14 @@ namespace Omega
 						{
 							if (m_pVals)
 							{
-								for (size_t i=0;i<m_cbSize;++i)
+								for (size_t i=0; i<m_cbSize; ++i)
 									*marshal_info<T&>::safe_type::coerce(m_pOrig[i]) = m_pVals[i];
 
 								delete [] m_pVals;
 							}
 							else
 								m_val.update(*m_pOrig);
-						}	
+						}
 					}
 
 					operator safe_type()
@@ -442,17 +442,17 @@ namespace Omega
 				};
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct array_safe_type<const T>
 			{
 				typedef typename marshal_info<const T>::safe_type::type* safe_type;
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type vals, size_t cbSize) : 
-						m_bNull(!vals),
-						m_val(default_value<T>::value()),
-						m_pVals(0)
+					type_wrapper(safe_type vals, size_t cbSize) :
+							m_bNull(!vals),
+							m_val(default_value<T>::value()),
+							m_pVals(0)
 					{
 						if (!m_bNull)
 						{
@@ -461,7 +461,7 @@ namespace Omega
 							else if (cbSize > 1)
 							{
 								OMEGA_NEW(m_pVals,T[cbSize]);
-								for (size_t i=0;i<cbSize;++i)
+								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
 							}
 						}
@@ -493,10 +493,10 @@ namespace Omega
 				{
 					typedef typename marshal_info<T>::safe_type::type arr_type;
 
-					safe_type_wrapper(const T* vals, size_t cbSize) : 
-						m_bNull(!vals),
-						m_val(default_value<arr_type>::value()),
-						m_pVals(0)
+					safe_type_wrapper(const T* vals, size_t cbSize) :
+							m_bNull(!vals),
+							m_val(default_value<arr_type>::value()),
+							m_pVals(0)
 					{
 						if (!m_bNull)
 						{
@@ -505,7 +505,7 @@ namespace Omega
 							else if (cbSize > 1)
 							{
 								OMEGA_NEW(m_pVals,arr_type[cbSize]);
-								for (size_t i=0;i<cbSize;++i)
+								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
 							}
 						}
@@ -534,7 +534,7 @@ namespace Omega
 				};
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct custom_safe_type<T*>
 			{
 				typedef array_safe_type<T> impl;
@@ -564,7 +564,7 @@ namespace Omega
 					string_t m_val;
 				};
 				friend struct type_wrapper;
-				
+
 				struct safe_type_wrapper
 				{
 					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::addref(val,false))
@@ -580,7 +580,7 @@ namespace Omega
 						dest = string_t_safe_type::create(m_val,true);
 					}
 
-					operator safe_type ()
+					operator safe_type()
 					{
 						return m_val;
 					}
@@ -613,12 +613,12 @@ namespace Omega
 				static safe_type addref(const string_t& val, bool own)
 				{
 					// We only need to take ownership if we are passing out of a dll that isn't OOCore
-				#if !defined(OOCORE_INTERNAL)
+#if !defined(OOCORE_INTERNAL)
 					return string_t::addref(val.m_handle,own);
-				#else
+#else
 					OMEGA_UNUSED_ARG(own);
 					return string_t::addref(val.m_handle,false);
-				#endif
+#endif
 				}
 
 				static void release(safe_type val)
@@ -668,7 +668,7 @@ namespace Omega
 						dest = (m_val != 0);
 					}
 
-					operator safe_type ()
+					operator safe_type()
 					{
 						return m_val;
 					}
@@ -728,7 +728,7 @@ namespace Omega
 						dest = m_val;
 					}
 
-					operator safe_type ()
+					operator safe_type()
 					{
 						return m_val;
 					}
@@ -770,7 +770,7 @@ namespace Omega
 						uint64_t         ui64Val;
 						float4_t         fl4Val;
 						float8_t         fl8Val;
-						
+
 						// Custom safe types
 						custom_safe_type<bool_t>::safe_type bVal;
 						string_t_safe_type::safe_type       pstrVal;
@@ -798,7 +798,7 @@ namespace Omega
 					any_t m_val;
 				};
 				friend struct type_wrapper;
-				
+
 				struct safe_type_wrapper
 				{
 					safe_type_wrapper(const any_t& val) : m_val(any_t_safe_type::addref(val))
@@ -814,7 +814,7 @@ namespace Omega
 						dest = any_t_safe_type::create(m_val,true);
 					}
 
-					operator safe_type ()
+					operator safe_type()
 					{
 						return m_val;
 					}
@@ -873,7 +873,7 @@ namespace Omega
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");
-					}					
+					}
 				}
 
 				static safe_type addref(const any_t& val)
@@ -947,19 +947,55 @@ namespace Omega
 			};
 
 			// These are the types that can be natively marshalled
-			template <> struct is_message_type<bool_t> { enum { result = 1 }; };
-			template <> struct is_message_type<byte_t> { enum { result = 1 }; };
-			template <> struct is_message_type<int16_t> { enum { result = 1 }; };
-			template <> struct is_message_type<uint16_t> { enum { result = 1 }; };
-			template <> struct is_message_type<int32_t> { enum { result = 1 }; };
-			template <> struct is_message_type<uint32_t> { enum { result = 1 }; };
-			template <> struct is_message_type<int64_t> { enum { result = 1 }; };
-			template <> struct is_message_type<uint64_t> { enum { result = 1 }; };
-			template <> struct is_message_type<float4_t> { enum { result = 1 }; };
-			template <> struct is_message_type<float8_t> { enum { result = 1 }; };
-			template <> struct is_message_type<string_t> { enum { result = 1 }; };
-			template <> struct is_message_type<guid_t> { enum { result = 1 }; };
-			
+			template <> struct is_message_type<bool_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<byte_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<int16_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<uint16_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<int32_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<uint32_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<int64_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<uint64_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<float4_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<float8_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<string_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_message_type<guid_t>
+			{
+				enum { result = 1 };
+			};
+
 			template <typename T> struct is_message_type<const T>
 			{
 				enum { result = is_message_type<T>::result };
@@ -976,13 +1012,13 @@ namespace Omega
 				typedef typename if_else_t<
 					is_c_abi<T>::result,
 					std_safe_type<T>,
-					custom_safe_type_wrapper<T> 
+					custom_safe_type_wrapper<T>
 				>::result safe_type;
-				
+
 				typedef typename if_else_t<
 					is_message_type<T>::result,
 					std_wire_type<T>,
-					custom_wire_type_wrapper<T> 
+					custom_wire_type_wrapper<T>
 				>::result wire_type;
 			};
 
@@ -991,13 +1027,13 @@ namespace Omega
 				typedef typename if_else_t<
 					is_c_abi<T>::result,
 					std_safe_type<const T>,
-					custom_safe_type_const_wrapper<T> 
+					custom_safe_type_const_wrapper<T>
 				>::result safe_type;
-				
+
 				typedef typename if_else_t<
 					is_message_type<T>::result,
 					std_wire_type<const T>,
-					custom_wire_type_wrapper<const T> 
+					custom_wire_type_wrapper<const T>
 				>::result wire_type;
 			};
 
@@ -1096,7 +1132,7 @@ namespace Omega
 			}
 
 			IObject* create_safe_proxy(const SafeShim* shim, const guid_t& iid);
-			
+
 			template <typename I>
 			I* create_safe_proxy(const SafeShim* shim)
 			{
@@ -1114,7 +1150,7 @@ namespace Omega
 				struct type_wrapper
 				{
 					type_wrapper(safe_type pS) :
-						m_pI(0)
+							m_pI(0)
 					{
 						m_pI = create_safe_proxy<I>(pS);
 					}
@@ -1134,7 +1170,7 @@ namespace Omega
 					{
 						if (pS)
 							release_safe(pS);
-													
+
 						pS = create_safe_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
 					}
 

@@ -27,41 +27,39 @@
 #endif
 
 #define OMEGA_UNUSED_ARG(n)    (void)(n)
-
 #define OMEGA_COMPILER_STRING  "gcc " __VERSION__
-
-#define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
+#define OMEGA_FUNCNAME         __PRETTY_FUNCTION__
 
 /* stop lots of attributes warnings */
 #if !defined(__x86_64__)
-    #define OMEGA_CALL   __attribute__((__cdecl__))
+	#define OMEGA_CALL   __attribute__((__cdecl__))
 #else
-    #define OMEGA_CALL
+	#define OMEGA_CALL
 #endif /* ndef __x86_64__ */
 
 #if defined(__LP64__)
-    #define OMEGA_64
+	#define OMEGA_64
 #endif
 
 #if !defined(__EXCEPTIONS) || (__EXCEPTIONS != 1)
-#error Dont use -fno-exceptions!
+	#error Dont use -fno-exceptions!
 #endif
 
 #if defined(__ELF__)
 	#define OMEGA_IMPORT
 
-    #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 2) || (__GNUC__ > 4)
-        #define OMEGA_EXPORT  __attribute__((visibility("default")))
-    #elif !defined(OMEGA_MODULE_PRIVATE_NAME)
+	#if (__GNUC__ == 4 && __GNUC_MINOR__ >= 2) || (__GNUC__ > 4)
+		#define OMEGA_EXPORT  __attribute__((visibility("default")))
+	#elif !defined(OMEGA_MODULE_PRIVATE_NAME)
 		#error You must define OMEGA_MODULE_PRIVATE_NAME to control symbol visibility
 	#else
 		#define OMEGA_EXPORT
-    #endif
+	#endif
 #elif defined(_WIN32)
-    #define OMEGA_IMPORT  __attribute__((dllimport))
-    #define OMEGA_EXPORT  __attribute__((dllexport))
+	#define OMEGA_IMPORT  __attribute__((dllimport))
+	#define OMEGA_EXPORT  __attribute__((dllexport))
 #else
-    #error No idea how to control symbol visibility for this compiler/linker/output format!
+	#error No idea how to control symbol visibility for this compiler/linker/output format!
 #endif
 
 #ifdef __cplusplus

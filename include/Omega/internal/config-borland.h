@@ -43,7 +43,7 @@
 #define OMEGA_HAS_INT64_T
 #define OMEGA_HAS_UINT64_T
 
-#define OMEGA_UNUSED_ARG(n)	(n)
+#define OMEGA_UNUSED_ARG(n) (n)
 
 // Dont know how to do this better!
 #pragma comment (lib, "ACE_bsd.lib")

@@ -93,7 +93,7 @@ size_t OOBase::measure_utf8(const char* sz, size_t len)
 	int actual_len = MultiByteToWideChar(CP_UTF8,0,sz,static_cast<int>(len),NULL,0);
 	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	return static_cast<size_t>(actual_len);
 }
 
@@ -109,7 +109,7 @@ size_t OOBase::from_utf8(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
 	int actual_len = MultiByteToWideChar(CP_UTF8,0,sz,static_cast<int>(len),wsz,static_cast<int>(wlen));
 	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	return static_cast<size_t>(actual_len);
 }
 
@@ -121,7 +121,7 @@ size_t OOBase::measure_native(const char* sz, size_t len)
 	int actual_len = MultiByteToWideChar(CP_THREAD_ACP,0,sz,static_cast<int>(len),NULL,0);
 	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	return static_cast<size_t>(actual_len);
 }
 
@@ -137,7 +137,7 @@ size_t OOBase::from_native(wchar_t* wsz, size_t wlen, const char* sz, size_t len
 	int actual_len = MultiByteToWideChar(CP_THREAD_ACP,0,sz,static_cast<int>(len),wsz,static_cast<int>(wlen));
 	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	return static_cast<size_t>(actual_len);
 }
 
@@ -149,7 +149,7 @@ size_t OOBase::measure_utf8(const wchar_t* wsz, size_t len)
 	int actual_len = WideCharToMultiByte(CP_UTF8,0,wsz,static_cast<int>(len),NULL,0,NULL,NULL);
 	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	return static_cast<size_t>(actual_len);
 }
 
@@ -171,7 +171,7 @@ size_t OOBase::to_utf8(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
 
 		OOBase_CallCriticalFailure(err);
 	}
-	
+
 	return static_cast<size_t>(actual_len);
 }
 
@@ -181,14 +181,14 @@ namespace
 {
 	static const int trailingBytesForUTF8[256] =
 	{
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x00 - 0x1F
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x20 - 0x3F
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x40 - 0x5F
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x60 - 0x7F
-		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,	// 0x80 - 0x9F
-		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,	// 0xA0 - 0xBF
-		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,	// 0xC0 - 0xDF
-		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,11,11,11,4,4,4,4,5,5,6,7	// 0xE0 - 0xFF
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,   // 0x00 - 0x1F
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,   // 0x20 - 0x3F
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,   // 0x40 - 0x5F
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,   // 0x60 - 0x7F
+		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,   // 0x80 - 0x9F
+		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,   // 0xA0 - 0xBF
+		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,   // 0xC0 - 0xDF
+		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,11,11,11,4,4,4,4,5,5,6,7 // 0xE0 - 0xFF
 	};
 }
 
@@ -198,7 +198,7 @@ size_t OOBase::measure_utf8(const char* sz, size_t len)
 		return (len == size_t(-1) ? 1 : 0);
 
 	size_t required_len = 0;
-	for (const char* p=sz;len == size_t(-1) ? *p!='\0' : size_t(p-sz)<len;)
+	for (const char* p=sz; len == size_t(-1) ? *p!='\0' : size_t(p-sz)<len;)
 	{
 		unsigned int c;
 		unsigned char v = *p++;
@@ -226,7 +226,7 @@ size_t OOBase::measure_utf8(const char* sz, size_t len)
 			c = L'\xFFFD';
 		}
 
-		for (int i=trailers;i>0;--i,++p)
+		for (int i=trailers; i>0; --i,++p)
 		{
 			if (len == size_t(-1) ? *p=='\0' : size_t(p-sz)>=len)
 			{
@@ -252,13 +252,13 @@ size_t OOBase::measure_utf8(const char* sz, size_t len)
 
 	if (len == size_t(-1))
 		++required_len;
-		
+
 	return required_len;
 }
 
 size_t OOBase::from_utf8(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
 {
-    if (!sz)
+	if (!sz)
 	{
 		if (wlen)
 			*wsz = L'\0';
@@ -267,7 +267,7 @@ size_t OOBase::from_utf8(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
 
 	wchar_t* wp = wsz;
 	size_t required_len = 0;
-	for (const char* p=sz;len == size_t(-1) ? *p!='\0' : size_t(p-sz)<len;)
+	for (const char* p=sz; len == size_t(-1) ? *p!='\0' : size_t(p-sz)<len;)
 	{
 		unsigned int c;
 		unsigned char v = *p++;
@@ -295,7 +295,7 @@ size_t OOBase::from_utf8(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
 			c = L'\xFFFD';
 		}
 
-		for (int i=0;i<trailers;++i,++p)
+		for (int i=0; i<trailers; ++i,++p)
 		{
 			if (len == size_t(-1) ? *p=='\0' : size_t(p-sz)>=len)
 			{
@@ -351,7 +351,7 @@ size_t OOBase::measure_utf8(const wchar_t* wsz, size_t len)
 		return (len == size_t(-1) ? 1 : 0);
 
 	size_t required_len = 0;
-	for (const wchar_t* p=wsz;len == size_t(-1) ? *p!=L'\0' : size_t(p-wsz)<len;)
+	for (const wchar_t* p=wsz; len == size_t(-1) ? *p!=L'\0' : size_t(p-wsz)<len;)
 	{
 		unsigned int v = *p++;
 
@@ -397,7 +397,7 @@ size_t OOBase::measure_utf8(const wchar_t* wsz, size_t len)
 
 size_t OOBase::to_utf8(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
 {
-    if (!wsz)
+	if (!wsz)
 	{
 		if (len)
 			*sz = '\0';
@@ -406,7 +406,7 @@ size_t OOBase::to_utf8(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
 
 	char* cp = sz;
 	size_t required_len = 0;
-	for (const wchar_t* p=wsz;wlen == size_t(-1) ? *p!=L'\0' : size_t(p-wsz)<wlen;)
+	for (const wchar_t* p=wsz; wlen == size_t(-1) ? *p!=L'\0' : size_t(p-wsz)<wlen;)
 	{
 		unsigned int v = *p++;
 		if (sizeof(wchar_t) == 2)
@@ -511,7 +511,7 @@ size_t OOBase::measure_native(const char* sz, size_t len)
 	wchar_t wc[2];
 	mbstate_t state = {0};
 	size_t required_len = 0;
-	for (const char* p=sz;size_t(p-sz)<len;)
+	for (const char* p=sz; size_t(p-sz)<len;)
 	{
 		size_t c = (len == size_t(-1) ? MB_CUR_MAX : size_t(p-sz));
 		size_t count = mbrtowc(wc,p,c,&state);
@@ -550,7 +550,7 @@ size_t OOBase::from_native(wchar_t* wsz, size_t wlen, const char* sz, size_t len
 	wchar_t* wp = wsz;
 	mbstate_t state = {0};
 	size_t required_len = 0;
-	for (const char* p=sz;size_t(p-sz)<len && size_t(wp-wsz)<wlen;)
+	for (const char* p=sz; size_t(p-sz)<len && size_t(wp-wsz)<wlen;)
 	{
 		size_t c = (len == size_t(-1) ? MB_CUR_MAX : size_t(p-sz));
 		size_t count = mbrtowc(wp++,p,c,&state);

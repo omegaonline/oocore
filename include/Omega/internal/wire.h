@@ -133,7 +133,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),Remoting::IMessage*,pParamsOut))
 				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
 			)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
 				Omega::Remoting, IStubController,
@@ -142,7 +142,7 @@ namespace Omega
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
 				OMEGA_METHOD_VOID(MarshalStub,2,((in),Remoting::IMessage*,pParamsIn,(in),Remoting::IMessage*,pParamsOut))
 			)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
 				Omega::Remoting, IProxy,
@@ -154,7 +154,7 @@ namespace Omega
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
 				OMEGA_METHOD(IObject*,QueryIObject,0,())
 			)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
 				Omega::Remoting, IMarshaller,
@@ -165,12 +165,12 @@ namespace Omega
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
 			)
-			
+
 			template <typename T>
 			struct std_wire_type
 			{
 				typedef typename remove_const<T>::type type;
-								
+
 				static void init(Remoting::IMarshaller*, type&)
 				{ }
 
@@ -228,7 +228,7 @@ namespace Omega
 					size_t                          m_alloc_count;
 					typename remove_const<T>::type* m_pVals;
 				};
-				
+
 				static void init(Remoting::IMarshaller* pManager, type& val, size_t count)
 				{
 					val.init(pManager,count);
@@ -237,14 +237,14 @@ namespace Omega
 				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, size_t count)
 				{
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
-					
+
 					// Stop overflow
 					if (count2 > count)
 						count2 = count;
 
 					if (pVals)
 					{
-						for (uint32_t c=0;c<count;++c)
+						for (uint32_t c=0; c<count; ++c)
 							marshal_info<T>::wire_type::read(string_t(),pManager,pMessage,pVals[c]);
 					}
 
@@ -255,7 +255,7 @@ namespace Omega
 				{
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(count));
 
-					for (uint32_t c=0;c<count;++c)
+					for (uint32_t c=0; c<count; ++c)
 						marshal_info<T>::wire_type::write(string_t(),pManager,pMessage,pVals[c]);
 
 					pMessage->WriteArrayEnd();
@@ -266,12 +266,12 @@ namespace Omega
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
 					assert(count == count2);
-					
+
 					// Stop overflow
 					if (count2 > count)
 						count2 = count;
 
-					for (uint32_t c=0;c<count2;++c)
+					for (uint32_t c=0; c<count2; ++c)
 						marshal_info<T>::wire_type::unpack(string_t(),pManager,pMessage,pVals[c]);
 
 					pMessage->ReadArrayEnd();
@@ -283,7 +283,7 @@ namespace Omega
 
 					val.init(pManager,count);
 
-					for (uint32_t c=0;c<count;++c)
+					for (uint32_t c=0; c<count; ++c)
 						marshal_info<T>::wire_type::read(string_t(),pManager,pMessage,val.m_pVals[c]);
 
 					pMessage->ReadArrayEnd();
@@ -297,7 +297,7 @@ namespace Omega
 
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(count));
 
-					for (uint32_t c=0;c<count;++c)
+					for (uint32_t c=0; c<count; ++c)
 						marshal_info<T>::wire_type::write(string_t(),pManager,pMessage,val.m_pVals[c]);
 
 					pMessage->WriteArrayEnd();
@@ -313,7 +313,7 @@ namespace Omega
 					if (count2 > val.m_alloc_count)
 						count2 = val.m_alloc_count;
 
-					for (uint32_t c=0;c<count2;++c)
+					for (uint32_t c=0; c<count2; ++c)
 						marshal_info<T>::wire_type::unpack(string_t(),pManager,pMessage,val.m_pVals[c]);
 
 					pMessage->ReadArrayEnd();
@@ -322,8 +322,8 @@ namespace Omega
 				static void no_op(bool, size_t = 0)
 				{ }
 			};
-			
-			template <typename T> 
+
+			template <typename T>
 			struct custom_wire_type_wrapper
 			{
 				// If this line fails then you are attempting to marshal an unsupported type...
@@ -432,10 +432,10 @@ namespace Omega
 				typedef const SafeShim* safe_type;
 
 				typedef typename marshal_info<typename Coll::value_type>::safe_type impl;
-				
+
 				struct type_wrapper
 				{
-					type_wrapper(safe_type val) 
+					type_wrapper(safe_type val)
 					{
 						if (val)
 						{
@@ -443,7 +443,7 @@ namespace Omega
 							if (msg)
 							{
 								size_t count = msg->ReadValue(string_t()).template cast<size_t>();
-								for (size_t i=0;i<count;++i)
+								for (size_t i=0; i<count; ++i)
 								{
 									typename impl::type v = default_value<typename impl::type>::value();
 									read(msg,v);
@@ -453,11 +453,11 @@ namespace Omega
 						}
 					}
 
-					void update(safe_type& val) 
+					void update(safe_type& val)
 					{
 						// Ensure any existing shim is released
 						auto_safe_shim shim = val;
-						
+
 						if (m_val.empty())
 							val = 0;
 						else
@@ -465,13 +465,13 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),m_val.size());
-							for (typename Coll::reverse_iterator i=m_val.rbegin();i!=m_val.rend();++i)
+							for (typename Coll::reverse_iterator i=m_val.rbegin(); i!=m_val.rend(); ++i)
 								write(msg,static_cast<typename impl::type>(impl::clone(*i)));
-							
+
 							val = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
 						}
 					}
-					
+
 					operator Coll&()
 					{
 						return m_val;
@@ -492,7 +492,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),val.size());
-							for (typename Coll::const_reverse_iterator i=val.rbegin();i!=val.rend();++i)
+							for (typename Coll::const_reverse_iterator i=val.rbegin(); i!=val.rend(); ++i)
 								write(msg,static_cast<typename impl::type>(impl::coerce(*i)));
 
 							m_shim = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
@@ -505,17 +505,17 @@ namespace Omega
 							release_safe(m_shim);
 					}
 
-					void update(Coll& dest) 
+					void update(Coll& dest)
 					{
 						dest.clear();
-						
+
 						if (m_shim)
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = create_safe_proxy<Remoting::IMessage>(m_shim);
 							if (msg)
 							{
 								size_t count = msg->ReadValue(string_t()).template cast<size_t>();
-								for (size_t i=0;i<count;++i)
+								for (size_t i=0; i<count; ++i)
 								{
 									typename impl::type v = default_value<typename impl::type>::value();
 									read(msg,v);
@@ -524,8 +524,8 @@ namespace Omega
 							}
 						}
 					}
-					
-					operator safe_type ()
+
+					operator safe_type()
 					{
 						return m_shim;
 					}
@@ -578,7 +578,7 @@ namespace Omega
 			// std::vector<bool> is badly broken in the C++ standard and shouldn't be used
 			template <>
 			struct stl_safe_type_coll1<std::vector<bool> >;
-						
+
 			template <typename Coll>
 			struct stl_wire_type_coll1
 			{
@@ -591,7 +591,7 @@ namespace Omega
 				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
-					for (uint32_t c = 0;c<count;++c)
+					for (uint32_t c = 0; c<count; ++c)
 					{
 						typename Coll::value_type v_val = default_value<typename Coll::value_type>::value();
 						marshal_info<typename Coll::value_type>::wire_type::read(string_t(),pMarshaller,pMessage,v_val);
@@ -603,8 +603,8 @@ namespace Omega
 				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(val.size()));
-					
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
+
+					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 						marshal_info<typename Coll::value_type>::wire_type::write(string_t(),pMarshaller,pMessage,*i);
 
 					pMessage->WriteStructEnd();
@@ -616,7 +616,7 @@ namespace Omega
 
 					assert(count == val.size());
 
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
+					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 						marshal_info<typename Coll::value_type>::wire_type::unpack(string_t(),pMarshaller,pMessage,*i);
 
 					pMessage->ReadArrayEnd();
@@ -630,10 +630,10 @@ namespace Omega
 
 				typedef typename marshal_info<typename Coll::key_type>::safe_type key_impl;
 				typedef typename marshal_info<typename Coll::mapped_type>::safe_type mapped_impl;
-				
+
 				struct type_wrapper
 				{
-					type_wrapper(safe_type val) 
+					type_wrapper(safe_type val)
 					{
 						if (val)
 						{
@@ -641,7 +641,7 @@ namespace Omega
 							if (msg)
 							{
 								size_t count = msg->ReadValue(string_t()).template cast<size_t>();
-								for (size_t i=0;i<count;++i)
+								for (size_t i=0; i<count; ++i)
 								{
 									typename key_impl::type k = default_value<typename key_impl::type>::value();
 									typename mapped_impl::type m = default_value<typename mapped_impl::type>::value();
@@ -653,11 +653,11 @@ namespace Omega
 						}
 					}
 
-					void update(safe_type& val) 
+					void update(safe_type& val)
 					{
 						// Ensure any existing shim is released
 						auto_safe_shim shim = val;
-						
+
 						if (m_val.empty())
 							val = 0;
 						else
@@ -665,16 +665,16 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),m_val.size());
-							for (typename Coll::reverse_iterator i=m_val.rbegin();i!=m_val.rend();++i)
+							for (typename Coll::reverse_iterator i=m_val.rbegin(); i!=m_val.rend(); ++i)
 							{
 								write(msg,key_impl::clone(i->first));
 								write(msg,mapped_impl::clone(i->second));
 							}
-							
+
 							val = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
 						}
 					}
-					
+
 					operator Coll&()
 					{
 						return m_val;
@@ -695,7 +695,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),val.size());
-							for (typename Coll::const_reverse_iterator i=val.rbegin();i!=val.rend();++i)
+							for (typename Coll::const_reverse_iterator i=val.rbegin(); i!=val.rend(); ++i)
 							{
 								write(msg,static_cast<typename key_impl::type>(key_impl::coerce(i->first)));
 								write(msg,static_cast<typename mapped_impl::type>(mapped_impl::coerce(i->second)));
@@ -711,17 +711,17 @@ namespace Omega
 							release_safe(m_shim);
 					}
 
-					void update(Coll& dest) 
+					void update(Coll& dest)
 					{
 						dest.clear();
-						
+
 						if (m_shim)
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = create_safe_proxy<Remoting::IMessage>(m_shim);
 							if (msg)
 							{
 								size_t count = msg->ReadValue(string_t()).template cast<size_t>();
-								for (size_t i=0;i<count;++i)
+								for (size_t i=0; i<count; ++i)
 								{
 									typename key_impl::type k = default_value<typename key_impl::type>::value();
 									typename mapped_impl::type m = default_value<typename mapped_impl::type>::value();
@@ -732,8 +732,8 @@ namespace Omega
 							}
 						}
 					}
-					
-					operator safe_type ()
+
+					operator safe_type()
 					{
 						return m_shim;
 					}
@@ -795,7 +795,7 @@ namespace Omega
 				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
-					for (uint32_t c = 0;c<count;++c)
+					for (uint32_t c = 0; c<count; ++c)
 					{
 						pMessage->ReadStructStart(string_t(),L"$pair");
 
@@ -816,7 +816,7 @@ namespace Omega
 				{
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(val.size()));
 
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
+					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 					{
 						pMessage->WriteStructStart(string_t(),L"$pair");
 
@@ -834,7 +834,7 @@ namespace Omega
 
 					assert(count == val.size());
 
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
+					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 					{
 						pMessage->ReadStructStart(string_t(),L"$pair");
 
@@ -869,7 +869,7 @@ namespace Omega
 				static void unpack(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, const any_t&)
 				{
 					pMessage->ReadValue(strName);
-				}				
+				}
 			};
 
 			// We could probably do something clever with SFINAE here...
@@ -902,13 +902,13 @@ namespace Omega
 			{
 				typedef stl_safe_type_coll1<std::list<V> > impl;
 			};
-			
+
 			template <typename V>
 			struct custom_wire_type<std::list<V> >
 			{
 				typedef stl_wire_type_coll1<std::list<V> > impl;
 			};
-			
+
 			template <typename V>
 			struct custom_safe_type<std::set<V> >
 			{

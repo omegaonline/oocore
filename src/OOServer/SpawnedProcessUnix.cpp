@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -54,28 +54,28 @@
 // Will need this!
 #include "posix_utils.h"
 /*
-	char szBuf[64];
+    char szBuf[64];
 #if defined(OMEGA_DEBUG)
     OOBase::timeval_t now = OOBase::gettimeofday();
-	snprintf(szBuf,63,"%lx-%lx",uid,now.tv_usec);
+    snprintf(szBuf,63,"%lx-%lx",uid,now.tv_usec);
 #else
-	snprintf(szBuf,63,"%lx",uid);
+    snprintf(szBuf,63,"%lx",uid);
 #endif
 
-	if (mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
-	{
-		int err = last_error();
-		if (err != EEXIST)
-			return "";
-	}
+    if (mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    {
+        int err = last_error();
+        if (err != EEXIST)
+            return "";
+    }
 
-	// Try to make it public
-	chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
+    // Try to make it public
+    chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
 
-	// Attempt to remove anything already there
-	unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
+    // Attempt to remove anything already there
+    unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
 
-	return "/tmp/omegaonline/" + strPrefix + szBuf;
+    return "/tmp/omegaonline/" + strPrefix + szBuf;
 */
 
 namespace
@@ -95,8 +95,8 @@ namespace
 
 	private:
 		bool    m_bSandbox;
-		uid_t	m_uid;
-		pid_t	m_pid;
+		uid_t   m_uid;
+		pid_t   m_pid;
 
 		bool clean_environment();
 		void close_all_fds(int except_fd);
@@ -130,7 +130,7 @@ namespace
 }
 
 SpawnedProcessUnix::SpawnedProcessUnix() :
-	m_pid(-1)
+		m_pid(-1)
 {
 }
 
@@ -139,7 +139,7 @@ SpawnedProcessUnix::~SpawnedProcessUnix()
 	if (m_pid != pid_t(-1))
 	{
 		pid_t retv = 0;
-		for (int i=0;i<10;++i)
+		for (int i=0; i<10; ++i)
 		{
 			int ec;
 			retv = waitpid(m_pid,&ec,WNOHANG);
@@ -245,7 +245,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 		}
 
 		/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
-		for (dirent* pfile; (pfile = readdir(pdir)); )
+		for (dirent* pfile; (pfile = readdir(pdir));)
 		{
 			int fd;
 			if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
@@ -276,10 +276,10 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid
 
 		// Prompt for continue...
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-			"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
-			"Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
-			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.",
-			pw->pw_name);
+							   "ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
+							   "Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
+							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.",
+							   pw->pw_name);
 
 		bUnsafeStart = true;
 	}
@@ -295,9 +295,9 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid
 		// We are the child...
 
 		// This all needs sorting out badly!
-        // We should be spawning the user's shell with -c
-        // Set pwd to user's home dir, etc...
-        void* POSIX_TODO;
+		// We should be spawning the user's shell with -c
+		// Set pwd to user's home dir, etc...
+		void* POSIX_TODO;
 
 		if (!bUnsafeStart)
 		{
@@ -334,16 +334,16 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid
 		// Close all open handles - not that we should have any ;)
 		close_all_fds(pass_fd);
 
-        // Clean up environment...
+		// Clean up environment...
 		if (!clean_environment())
 			exit(errno);
 
-        // Exec the user process
+		// Exec the user process
 		const char* cmd_line[] =
 		{
-		    "./oosvruser", //  argv[0] = Process name
-		    0,             //  argv[1] = Pipe name
-		    0
+			"./oosvruser", //  argv[0] = Process name
+			0,             //  argv[1] = Pipe name
+			0
 		};
 		std::ostringstream os;
 		os.imbue(std::locale::classic());
@@ -470,7 +470,7 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 
 
 	//if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
-	//	LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
+	//  LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
 	void* TODO;
@@ -518,7 +518,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	// Add FD_CLOEXEC to fd[0]
 	int oldflags = fcntl(fd[0],F_GETFD);
 	if (oldflags == -1 ||
-		fcntl(fd[0],F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			fcntl(fd[0],F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		int err = errno;
 		::close(fd[1]);

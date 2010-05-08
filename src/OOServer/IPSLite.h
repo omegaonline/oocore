@@ -23,8 +23,8 @@
 #define OOSERVER_IPSLITE_H_INCLUDED_
 
 class InterProcessService :
-	public OTL::ObjectBase,
-	public OOCore::IInterProcessService
+		public OTL::ObjectBase,
+		public OOCore::IInterProcessService
 {
 public:
 	void Init() {}
@@ -35,7 +35,10 @@ public:
 
 // OOCore::IInterProcessService members
 public:
-	Omega::bool_t IsStandalone() { return true; }
+	Omega::bool_t IsStandalone()
+	{
+		return true;
+	}
 	Omega::Registry::IKey* GetRegistry();
 	Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
 	void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);

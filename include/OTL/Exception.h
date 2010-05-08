@@ -28,13 +28,13 @@ namespace OTL
 {
 	template <typename E>
 	class ExceptionImpl :
-		public ObjectBase,
-		public E
+			public ObjectBase,
+			public E
 	{
 	public:
-		ObjectPtr<Omega::IException>	m_ptrCause;
-		Omega::string_t					m_strDesc;
-		Omega::string_t					m_strSource;
+		ObjectPtr<Omega::IException>    m_ptrCause;
+		Omega::string_t                 m_strDesc;
+		Omega::string_t                 m_strSource;
 
 		BEGIN_INTERFACE_MAP(ExceptionImpl)
 			INTERFACE_ENTRY(Omega::IException)
@@ -67,8 +67,8 @@ namespace OTL
 
 	template <typename E>
 	class ExceptionMarshalFactoryImpl :
-		public ObjectBase,
-		public Omega::Remoting::IMarshalFactory
+			public ObjectBase,
+			public Omega::Remoting::IMarshalFactory
 	{
 	public:
 		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
@@ -87,8 +87,8 @@ namespace OTL
 
 	template <typename E, const Omega::guid_t* pOID>
 	class ExceptionAutoMarshalImpl :
-		public OTL::ExceptionImpl<E>,
-		public Omega::Remoting::IMarshal
+			public OTL::ExceptionImpl<E>,
+			public Omega::Remoting::IMarshal
 	{
 	public:
 		BEGIN_INTERFACE_MAP(ExceptionAutoMarshalImpl)

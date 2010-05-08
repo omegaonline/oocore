@@ -27,7 +27,7 @@
 namespace OOCore
 {
 	class LoopChannel :
-		public ChannelBase
+			public ChannelBase
 	{
 	public:
 		static Omega::IObject* create(Omega::uint32_t channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);

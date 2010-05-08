@@ -43,9 +43,9 @@ namespace OOSvrBase
 		struct filenum_t
 		{
 			filenum_t(Priority priority, const char* pszFilename, unsigned int nLine) :
-				m_priority(priority),
-				m_pszFilename(pszFilename),
-				m_nLine(nLine)
+					m_priority(priority),
+					m_pszFilename(pszFilename),
+					m_nLine(nLine)
 			{}
 
 			void log(const char* fmt, ...);

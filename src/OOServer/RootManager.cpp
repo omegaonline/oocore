@@ -23,13 +23,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -39,8 +39,8 @@
 #include "Protocol.h"
 
 Root::Manager::Manager(const std::map<std::string,std::string>& args) :
-	m_cmd_args(args),
-	m_sandbox_channel(0)
+		m_cmd_args(args),
+		m_sandbox_channel(0)
 {
 	// Root channel is fixed
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
@@ -53,7 +53,7 @@ Root::Manager::~Manager()
 int Root::Manager::run()
 {
 	// Loop until we quit
-	for (bool bQuit=false;!bQuit;)
+	for (bool bQuit=false; !bQuit;)
 	{
 		// Load the config
 		if (!load_config())
@@ -66,7 +66,7 @@ int Root::Manager::run()
 		// Start the handler
 		if (!start_request_threads())
 			return EXIT_FAILURE;
-		
+
 		// Just so we can exit cleanly...
 		bool bOk = false;
 
@@ -88,7 +88,7 @@ int Root::Manager::run()
 			// Close all channels
 			close_channels();
 		}
-	
+
 		// Stop the MessageHandler
 		stop_request_threads();
 
@@ -199,7 +199,7 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 			// See if we have a process already
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
+			for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 			{
 				if (i->second.ptrSpawn->Compare(uid))
 				{
@@ -273,7 +273,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check we haven't created a duplicate while we spawned...
-		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
+		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 		{
 			if (i->second.ptrSpawn->Compare(uid))
 			{

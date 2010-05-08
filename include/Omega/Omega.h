@@ -29,7 +29,7 @@
 //////////////////////////////////////////////
 // Set up the correct export macros
 
-#if !defined(OOCORE_INTERNAL) 
+#if !defined(OOCORE_INTERNAL)
 
 #if !defined(DOXYGEN)
 
@@ -146,7 +146,7 @@ OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFact
 inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(oid,flags));
-	
+
 	IObject* pObject = 0;
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 	return pObject;

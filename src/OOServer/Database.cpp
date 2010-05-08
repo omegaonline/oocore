@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -97,17 +97,17 @@ sqlite3_stmt* Db::Statement::statement()
 }
 
 Db::Statement::Statement(sqlite3_stmt* pStmt) :
-   m_pStmt(pStmt)
+		m_pStmt(pStmt)
 { }
 
 
 Db::Transaction::Transaction(sqlite3* db) :
-   m_db(db)
+		m_db(db)
 {
 }
 
 Db::Database::Database() :
-	m_db(0)
+		m_db(0)
 {
 	assert(sqlite3_threadsafe());
 }
@@ -118,9 +118,9 @@ Db::Database::~Database()
 	{
 		// Close all prepared statements...
 		sqlite3_stmt* pStmt;
-		while((pStmt = sqlite3_next_stmt(m_db, 0)) != 0)
+		while ((pStmt = sqlite3_next_stmt(m_db, 0)) != 0)
 			sqlite3_finalize(pStmt);
-		
+
 		// Now close the db
 		if (sqlite3_close(m_db) != SQLITE_OK)
 			LOG_ERROR(("sqlite3_close failed: %s",sqlite3_errmsg(m_db)));

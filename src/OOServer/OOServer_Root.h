@@ -21,11 +21,11 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
 /////////////////////////////////////////////////////////////
 

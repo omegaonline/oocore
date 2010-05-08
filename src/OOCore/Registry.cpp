@@ -37,7 +37,7 @@ using namespace OTL;
 namespace
 {
 	class BadNameException :
-		public ExceptionImpl<Registry::IBadNameException>
+			public ExceptionImpl<Registry::IBadNameException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(BadNameException)
@@ -73,20 +73,20 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((i
 
 	ObjectPtr<Registry::IKey> ptrKey;
 	ptrKey.Attach(static_cast<Registry::IKey*>(OOCore::GetInterProcessService()->GetRegistry()));
-	
+
 	if (key == L"\\")
 		return ptrKey.AddRef();
 	else
 		return ptrKey->OpenSubKey(key.Mid(1),flags);
 }
 
-namespace 
+namespace
 {
 	static string_t SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts)
 	{
 		string_t strRes1 = strName;
-		
-		for (std::map<string_t,string_t>::const_iterator i=mapSubsts.begin();i!=mapSubsts.end();++i)
+
+		for (std::map<string_t,string_t>::const_iterator i=mapSubsts.begin(); i!=mapSubsts.end(); ++i)
 		{
 			string_t strRes2;
 			const wchar_t* p1 = strRes1.c_str();
@@ -98,7 +98,7 @@ namespace
 					strRes2 += p1;
 					break;
 				}
-				
+
 				strRes2 += string_t(p1,p2 - p1,false) + i->second;
 				p1 = p2 + i->first.Length();
 			}
@@ -143,7 +143,7 @@ namespace
 					ptrKey->DeleteKey(strName);
 				else
 					return ptrKey.OpenSubKey(strName,Registry::IKey::OpenExisting);
-			}			
+			}
 		}
 
 		return ObjectPtr<Registry::IKey>();
@@ -169,9 +169,9 @@ namespace
 			p += 2;
 			base = 16;
 		}
-		
+
 		int64_t val = 0;
-		for (;;++p)
+		for (;; ++p)
 		{
 			int v = 0;
 			if (*p >= L'0' && *p <= L'9')
@@ -205,7 +205,7 @@ namespace
 			OMEGA_THROW(L"Expected name attribute not found");
 
 		string_t strName = SubstituteNames(i->second,mapSubsts);
-			
+
 		string_t strType = L"String";
 		i = attribs.find(L"type");
 		if (i != attribs.end())
@@ -242,7 +242,7 @@ namespace
 		bool bHasContent;
 		string_t strName;
 		OOCore::Xml::ParseXMLElement(rd_ptr,strName,bHasContent,attribs);
-		
+
 		// Get out the namespaces
 		std::map<string_t,string_t> namespaces2 = namespaces;
 		OOCore::Xml::ParseXMLNamespaces(attribs,namespaces2);
@@ -267,8 +267,8 @@ namespace
 			{
 				// Skip any leading guff..
 				string_t strGuff;
-				OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);	
-				
+				OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
+
 				// Read key contents...
 				while (wcsncmp(rd_ptr,L"</",2) != 0)
 				{
@@ -288,13 +288,13 @@ namespace
 
 			if (bHasContent)
 			{
-				OOCore::Xml::ParseXMLCharData(rd_ptr,strData);	
+				OOCore::Xml::ParseXMLCharData(rd_ptr,strData);
 				OOCore::Xml::ParseXMLEndElement(rd_ptr,strName);
 			}
 
 			// Sort out attributes...
 			ProcessXmlValue(attribs,ptrKey,strData,bAdd,mapSubsts);
-		}		
+		}
 	}
 
 	static void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
@@ -303,7 +303,7 @@ namespace
 		bool bHasContent;
 		string_t strName;
 		OOCore::Xml::ParseXMLElement(rd_ptr,strName,bHasContent,attribs);
-		
+
 		// Get out the namespaces
 		std::map<string_t,string_t> namespaces2 = namespaces;
 		OOCore::Xml::ParseXMLNamespaces(attribs,namespaces2);
@@ -326,7 +326,7 @@ namespace
 		{
 			// Skip any leading guff..
 			string_t strGuff;
-			OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);	
+			OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
 
 			// Read key contents...
 			while (wcsncmp(rd_ptr,L"</",2) != 0)
@@ -335,7 +335,7 @@ namespace
 
 				// Skip guff...
 				OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
-			} 
+			}
 
 			OOCore::Xml::ParseXMLEndElement(rd_ptr,strName);
 		}
@@ -357,9 +357,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 		const wchar_t* p = wcspbrk(rd_ptr,L"=; ");
 		if (!p)
 			break;
-		
+
 		string_t strName = L"%" + string_t(rd_ptr,p - rd_ptr,false) + L"%";
-		
+
 		if (p[0] != L'=' && p[0] != L';')
 			p += wcsspn(p,L" ");
 
@@ -374,16 +374,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 			strVal = string_t(rd_ptr,static_cast<size_t>(p - rd_ptr));
 		else
 			strVal = string_t(rd_ptr,string_t::npos);
-		
+
 		mapSubsts.insert(std::map<string_t,string_t>::value_type(strName,strVal));
 
 		if (p)
 			rd_ptr = p + 1;
 
 		if (!p || p[0] == L'\0')
-			break;	
+			break;
 	}
-	
+
 	// Parse the xml prolog
 	rd_ptr = strXML.c_str();
 	OOCore::Xml::ParseXMLProlog(rd_ptr);
@@ -393,7 +393,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 	bool bHasContent;
 	std::map<string_t,string_t> attribs;
 	OOCore::Xml::ParseXMLElement(rd_ptr,strName,bHasContent,attribs);
-	
+
 	// Get out the namespaces
 	std::map<string_t,string_t> namespaces;
 	OOCore::Xml::ParseXMLNamespaces(attribs,namespaces);
@@ -411,7 +411,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 
 	if (!bHasContent)
 		OMEGA_THROW(L"Unexpected empty root element");
-		
+
 	// Skip the guff...
 	string_t strGuff;
 	OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
@@ -427,7 +427,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 		// Skip any guff...
 		OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
 
-	} while (wcsncmp(rd_ptr,L"</",2) != 0);
+	}
+	while (wcsncmp(rd_ptr,L"</",2) != 0);
 
 	// End of root element
 	OOCore::Xml::ParseXMLEndElement(rd_ptr,strName);

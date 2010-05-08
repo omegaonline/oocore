@@ -75,7 +75,7 @@ bool OOBase::Condition::wait(Condition::Mutex& mutex, const timeval_t* wait)
 		wt.tv_sec = now.tv_sec();
 		wt.tv_nsec = now.tv_usec() * 1000;
 
-    	err = pthread_cond_timedwait(&m_var,&mutex.m_mutex,&wt);
+		err = pthread_cond_timedwait(&m_var,&mutex.m_mutex,&wt);
 	}
 
 	if (err == 0)

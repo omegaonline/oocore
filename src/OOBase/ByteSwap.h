@@ -33,7 +33,7 @@
 
 #if defined(_MSC_VER)
 
-#define FAST_BYTESWAP_2(x) _byteswap_ushort((unsigned short)(x)) 
+#define FAST_BYTESWAP_2(x) _byteswap_ushort((unsigned short)(x))
 #define FAST_BYTESWAP_4(x) _byteswap_ulong((unsigned long)(x))
 #define FAST_BYTESWAP_8(x) _byteswap_uint64((unsigned __int64)(x))
 
@@ -81,15 +81,15 @@ namespace OOBase
 			template <typename T>
 			static T byte_swap(T val)
 			{
-	#if defined(FAST_BYTESWAP_2)
+#if defined(FAST_BYTESWAP_2)
 				return (T)(FAST_BYTESWAP_2(val));
-	#else
+#else
 				char* v = (char*)&val;
 				char r[2];
 				r[0] = v[1];
 				r[1] = v[0];
 				return *(T*)r;
-	#endif
+#endif
 			}
 		};
 
@@ -99,9 +99,9 @@ namespace OOBase
 			template <typename T>
 			static T byte_swap(T val)
 			{
-	#if defined(FAST_BYTESWAP_4)
+#if defined(FAST_BYTESWAP_4)
 				return (T)(FAST_BYTESWAP_4(val));
-	#else
+#else
 				char* v = (char*)&val;
 				char r[4];
 				r[0] = v[3];
@@ -109,7 +109,7 @@ namespace OOBase
 				r[2] = v[1];
 				r[3] = v[0];
 				return *(T*)r;
-	#endif
+#endif
 			}
 		};
 
@@ -119,9 +119,9 @@ namespace OOBase
 			template <typename T>
 			static T byte_swap(T val)
 			{
-	#if defined(FAST_BYTESWAP_8)
+#if defined(FAST_BYTESWAP_8)
 				return (T)(FAST_BYTESWAP_8(val));
-	#else
+#else
 				char* v = (char*)&val;
 				char r[8];
 				r[0] = v[7];
@@ -133,7 +133,7 @@ namespace OOBase
 				r[6] = v[1];
 				r[7] = v[0];
 				return *(T*)r;
-	#endif
+#endif
 			}
 		};
 	}

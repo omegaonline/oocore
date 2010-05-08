@@ -28,13 +28,13 @@ namespace User
 
 	namespace Registry
 	{
-		class Key : 
-			public OTL::ObjectBase,
-			public Omega::Registry::IKey
+		class Key :
+				public OTL::ObjectBase,
+				public Omega::Registry::IKey
 		{
 		public:
 			void Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
-			
+
 			BEGIN_INTERFACE_MAP(Key)
 				INTERFACE_ENTRY(Omega::Registry::IKey)
 			END_INTERFACE_MAP()
@@ -68,7 +68,7 @@ namespace User
 			std::set<Omega::string_t> EnumSubKeys();
 			std::set<Omega::string_t> EnumValues();
 			void DeleteKey(const Omega::string_t& strSubKey);
-			void DeleteValue(const Omega::string_t& strName);	
+			void DeleteValue(const Omega::string_t& strName);
 		};
 	}
 }

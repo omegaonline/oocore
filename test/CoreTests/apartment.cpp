@@ -62,7 +62,7 @@ bool apartment_dll_tests()
 {
 	output("\n");
 
-	for (const wchar_t** pszDlls = get_dlls();*pszDlls;++pszDlls)
+	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
 		if (!do_apt_library_test(*pszDlls,bSkipped))

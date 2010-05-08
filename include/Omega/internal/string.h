@@ -41,40 +41,64 @@ namespace Omega
 		string_t();
 		string_t(const string_t& s);
 
-		template <size_t S> 
+		template <size_t S>
 		string_t(const wchar_t (&arr)[S], bool copy = false);
 		string_t(const wchar_t (&arr)[1]);
 		string_t(const wchar_t* wsz, size_t length, bool copy = true);
 
 		string_t(const char* sz, bool bUTF8, size_t length = npos);
-		
+
 		~string_t();
 
 		string_t& operator = (const string_t& s);
-		
+
 		string_t& operator += (const string_t& s);
 		string_t& operator += (const wchar_t* wsz);
 		string_t& operator += (wchar_t c);
 
 		const wchar_t* c_str() const;
-		const wchar_t operator[](size_t i) const { return c_str()[i]; }
+		const wchar_t operator[](size_t i) const
+		{
+			return c_str()[i];
+		}
 
 		size_t ToUTF8(char* sz, size_t size) const;
 		std::string ToUTF8() const;
 
-		template <typename T> bool operator == (T v) const { return Compare(v) == 0; }
-		template <typename T> bool operator != (T v) const { return Compare(v) != 0; }
-		template <typename T> bool operator < (T v) const { return Compare(v) < 0; }
-		template <typename T> bool operator <= (T v) const { return Compare(v) <= 0; }
-		template <typename T> bool operator > (T v) const { return Compare(v) > 0; }
-		template <typename T> bool operator >= (T v) const { return Compare(v) >= 0; }
+		template <typename T> bool operator == (T v) const
+		{
+			return Compare(v) == 0;
+		}
+		template <typename T> bool operator != (T v) const
+		{
+			return Compare(v) != 0;
+		}
+		template <typename T> bool operator < (T v) const
+		{
+			return Compare(v) < 0;
+		}
+		template <typename T> bool operator <= (T v) const
+		{
+			return Compare(v) <= 0;
+		}
+		template <typename T> bool operator > (T v) const
+		{
+			return Compare(v) > 0;
+		}
+		template <typename T> bool operator >= (T v) const
+		{
+			return Compare(v) >= 0;
+		}
 
 		int Compare(const string_t& s) const;
 		int Compare(const string_t& s, size_t pos, size_t length = npos, bool bIgnoreCase = false) const;
 		int Compare(const wchar_t* wsz, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
-		
+
 		bool IsEmpty() const;
-		bool operator !() const { return IsEmpty(); }
+		bool operator !() const
+		{
+			return IsEmpty();
+		}
 
 		size_t Length() const;
 		string_t& Clear();
@@ -84,12 +108,12 @@ namespace Omega
 		size_t FindNot(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
 		size_t ReverseFind(wchar_t c, size_t pos = npos, bool bIgnoreCase = false) const;
 		size_t FindOneOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t FindNotOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;		
+		size_t FindNotOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
 
 		string_t Left(size_t length) const;
 		string_t Mid(size_t start, size_t length = npos) const;
 		string_t Right(size_t length) const;
-		
+
 		string_t ToLower() const;
 		string_t ToUpper() const;
 
@@ -97,7 +121,7 @@ namespace Omega
 		string_t TrimLeft(const string_t& str) const;
 		string_t TrimRight(wchar_t c = L' ') const;
 		string_t TrimRight(const string_t& str) const;
-		
+
 		template <typename T>
 		string_t& operator %= (T val);
 
@@ -107,7 +131,7 @@ namespace Omega
 		static int64_t wcsto64(const string_t& str, size_t& end_pos, unsigned int base);
 		static uint64_t wcstou64(const string_t& str, size_t& end_pos, unsigned int base);
 		static float8_t wcstod(const string_t& str, size_t& end_pos);
-		
+
 	private:
 		struct handle_t
 		{
@@ -120,7 +144,7 @@ namespace Omega
 		static void release(handle_t* h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
-		
+
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
 #endif

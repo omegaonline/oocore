@@ -27,16 +27,16 @@
 #if defined(DOXYGEN)
 
 /* Define to if you have atomic exchange for 32bit values */
-#define ATOMIC_EXCH_32(t,v) 
+#define ATOMIC_EXCH_32(t,v)
 
 /* Define to if you have atomic inc and dec for 32bit values */
-#define ATOMIC_INC_32(t) 
-#define ATOMIC_DEC_32(t) 
-#define ATOMIC_ADD_32(t,v) 
-#define ATOMIC_SUB_32(t,v) 
+#define ATOMIC_INC_32(t)
+#define ATOMIC_DEC_32(t)
+#define ATOMIC_ADD_32(t,v)
+#define ATOMIC_SUB_32(t,v)
 
 /* Define to if you have atomic exchange for 64bit values */
-#define ATOMIC_EXCH_64(t,v) 
+#define ATOMIC_EXCH_64(t,v)
 
 /* Define to if you have atomic exchange for 64bit values */
 #define ATOMIC_INC_64(t)
@@ -140,7 +140,7 @@ namespace OOBase
 					Guard<SpinLock> guard(m_lock);
 					m_val = rhs.value();
 				}
-				
+
 				return *this;
 			}
 
@@ -169,12 +169,12 @@ namespace OOBase
 				Guard<SpinLock> guard(m_lock);
 				return m_val;
 			}
-			
+
 		protected:
 			AtomicValImpl_Raw() {}
 
 			mutable SpinLock m_lock;
-			T                m_val;	
+			T                m_val;
 		};
 
 		template <typename T, const size_t S>
@@ -184,12 +184,12 @@ namespace OOBase
 			AtomicValImpl(T v) : AtomicValImpl_Raw<T>(v) {}
 			AtomicValImpl(const T& v) : AtomicValImpl_Raw<T>(v) {}
 			AtomicValImpl(const AtomicValImpl& rhs) : AtomicValImpl_Raw<T>(rhs.value()) {}
-			
+
 			AtomicValImpl& operator = (const AtomicValImpl& rhs)
 			{
 				if (this != &rhs)
 					AtomicValImpl_Raw<T>::operator = (rhs.value());
-					
+
 				return *this;
 			}
 
@@ -204,12 +204,12 @@ namespace OOBase
 			AtomicIntImpl() : AtomicValImpl_Raw<T>(T(0)) {}
 			AtomicIntImpl(const T& v) : AtomicValImpl_Raw<T>(v) {}
 			AtomicIntImpl(const AtomicIntImpl& rhs) : AtomicValImpl_Raw<T>(rhs.value()) {}
-			
+
 			AtomicIntImpl& operator = (const AtomicIntImpl& rhs)
 			{
 				if (this != &rhs)
 					AtomicValImpl_Raw<T>::operator = (rhs.value());
-					
+
 				return *this;
 			}
 
@@ -252,7 +252,7 @@ namespace OOBase
 		{
 			if (this != &rhs)
 				detail::AtomicValImpl<T,sizeof(T)>::operator = (rhs.value());
-				
+
 			return *this;
 		}
 
@@ -273,7 +273,7 @@ namespace OOBase
 		{
 			if (this != &rhs)
 				detail::AtomicIntImpl<T,sizeof(T)>::operator = (rhs.value());
-				
+
 			return *this;
 		}
 
@@ -287,14 +287,14 @@ namespace OOBase
 			return detail::AtomicIntImpl<T,sizeof(T)>::operator --();
 		}
 
-		T operator ++(int) 
-		{ 
-			return ++*this - 1; 
+		T operator ++(int)
+		{
+			return ++*this - 1;
 		}
 
-		T operator --(int) 
+		T operator --(int)
 		{
-			return --*this + 1; 
+			return --*this + 1;
 		}
 	};
 
@@ -318,7 +318,7 @@ namespace OOBase
 			{
 				if (this != &rhs)
 					ATOMIC_EXCH_32(&m_val,rhs.m_val);
-				
+
 				return *this;
 			}
 
@@ -346,11 +346,11 @@ namespace OOBase
 			{
 				return m_val;
 			}
-			
+
 		protected:
 			AtomicValImpl() {}
 
-			volatile T m_val;			
+			volatile T m_val;
 		};
 	}
 #endif // ATOMIC_EXCH_32
@@ -375,7 +375,7 @@ namespace OOBase
 			{
 				if (this != &rhs)
 					ATOMIC_EXCH_64(&m_val,rhs.m_val);
-				
+
 				return *this;
 			}
 
@@ -403,7 +403,7 @@ namespace OOBase
 			{
 				return m_val;
 			}
-			
+
 		protected:
 			AtomicValImpl();
 
@@ -422,12 +422,12 @@ namespace OOBase
 			AtomicIntImpl() : AtomicValImpl<T,4>(0) {}
 			AtomicIntImpl(const T& v) : AtomicValImpl<T,4>(v) {}
 			AtomicIntImpl(const AtomicIntImpl& rhs) : AtomicValImpl<T,4>(rhs.value()) {}
-			
+
 			AtomicIntImpl& operator = (const AtomicIntImpl& rhs)
 			{
 				if (this != &rhs)
 					AtomicValImpl<T,4>::operator = (rhs.value());
-					
+
 				return *this;
 			}
 
@@ -466,12 +466,12 @@ namespace OOBase
 			AtomicIntImpl() : AtomicValImpl<T,8>(0) {}
 			AtomicIntImpl(const T& v) : AtomicValImpl<T,8>(v) {}
 			AtomicIntImpl(const AtomicIntImpl& rhs) : AtomicValImpl<T,8>(rhs.value()) {}
-			
+
 			AtomicIntImpl& operator = (const AtomicIntImpl& rhs)
 			{
 				if (this != &rhs)
 					AtomicValImpl<T,8>::operator = (rhs.value());
-					
+
 				return *this;
 			}
 

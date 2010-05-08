@@ -2,15 +2,17 @@
 #include <Omega/Remoting.h>
 #include "interfaces.h"
 
-namespace Omega {
-namespace TestSuite
+namespace Omega
 {
-	extern "C" const Omega::guid_t OID_TestLibrary;
-	extern "C" const Omega::guid_t OID_TestProcess;
-} }
+	namespace TestSuite
+	{
+		extern "C" const Omega::guid_t OID_TestLibrary;
+		extern "C" const Omega::guid_t OID_TestProcess;
+	}
+}
 
 OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
 
 #include "Test.h"
 
@@ -153,7 +155,7 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 namespace
 {
 	class Aggregator :
-		public Omega::TestSuite::ISimpleTest2
+			public Omega::TestSuite::ISimpleTest2
 	{
 	public:
 		Aggregator() : m_pInner(0)
@@ -182,7 +184,7 @@ namespace
 		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			if (iid == OMEGA_GUIDOF(Omega::IObject) ||
-				iid == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest2))
+					iid == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest2))
 			{
 				AddRef();
 				return this;
@@ -544,7 +546,7 @@ bool interface_dll_tests()
 {
 	output("\n");
 
-	for (const wchar_t** pszDlls = get_dlls();*pszDlls;++pszDlls)
+	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
 		if (!do_local_library_test(*pszDlls,bSkipped))
@@ -584,7 +586,7 @@ bool interface_process_tests()
 {
 	output("\n");
 
-	for (const wchar_t** pszExes = get_exes();*pszExes;++pszExes)
+	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
 		if (!do_local_process_test(*pszExes,bSkipped))
@@ -653,7 +655,7 @@ static bool interface_tests_i(const wchar_t* pszHost)
 {
 	output("\n");
 
-	for (const wchar_t** pszDlls = get_dlls();*pszDlls;++pszDlls)
+	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
 		if (!do_library_test(*pszDlls,pszHost,bSkipped))
@@ -664,7 +666,7 @@ static bool interface_tests_i(const wchar_t* pszHost)
 
 	output("  %-46s","Result");
 
-	for (const wchar_t** pszExes = get_exes();*pszExes;++pszExes)
+	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
 		if (!do_process_test(*pszExes,pszHost,bSkipped))

@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It can be run as Administrator/setuid root
+//  It can be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -119,16 +119,16 @@ namespace Root
 		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, OOBase::timeval_t* deadline, Omega::uint32_t attribs);
 
 		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
-				
+
 	protected:
 		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
-				
+
 		bool start_request_threads();
 		void close_channels();
 		void stop_request_threads();
 
 		Omega::uint32_t register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
-		
+
 		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs) = 0;
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
 		virtual bool on_channel_open(Omega::uint32_t channel);
@@ -137,7 +137,7 @@ namespace Root
 
 		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
 		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
-		
+
 	private:
 		MessageHandler(const MessageHandler&);
 		MessageHandler& operator = (const MessageHandler&);
@@ -157,7 +157,7 @@ namespace Root
 		{
 			Message() {}
 			Message(size_t len) : m_payload(len) {}
-				
+
 			Omega::uint16_t   m_dest_thread_id;
 			Omega::uint16_t   m_src_thread_id;
 			Omega::uint32_t   m_src_channel_id;
@@ -190,7 +190,7 @@ namespace Root
 
 		private:
 			friend class OOBase::TLSSingleton<ThreadContext,MessageHandler>;
-			
+
 			ThreadContext();
 			~ThreadContext();
 

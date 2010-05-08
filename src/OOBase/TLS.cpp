@@ -72,7 +72,7 @@ namespace
 #if defined(_WIN32)
 
 	Win32TLSGlobal::Win32TLSGlobal() :
-		m_key(TLS_OUT_OF_INDEXES)
+			m_key(TLS_OUT_OF_INDEXES)
 	{
 		m_key = TlsAlloc();
 		if (m_key == TLS_OUT_OF_INDEXES)
@@ -157,14 +157,14 @@ namespace
 		{
 			try
 			{
-				for (std::map<const void*,tls_val>::iterator i=inst->m_mapVals.begin();i!=inst->m_mapVals.end();++i)
+				for (std::map<const void*,tls_val>::iterator i=inst->m_mapVals.begin(); i!=inst->m_mapVals.end(); ++i)
 				{
 					if (i->second.m_destructor)
 						(*(i->second.m_destructor))(i->second.m_val);
 				}
 				inst->m_mapVals.clear();
 			}
-			catch(std::exception& e)
+			catch (std::exception& e)
 			{
 				OOBase_CallCriticalFailure(e.what());
 			}
@@ -207,7 +207,7 @@ void OOBase::TLS::Add(const void* key, void (*destructor)(void*))
 			inst->m_mapVals.insert(std::map<const void*,TLSMap::tls_val>::value_type(key,v));
 		}
 	}
-	catch(std::exception& e)
+	catch (std::exception& e)
 	{
 		OOBase_CallCriticalFailure(e.what());
 	}
@@ -225,7 +225,7 @@ bool OOBase::TLS::Get(const void* key, void** val)
 
 		*val = i->second.m_val;
 	}
-	catch(std::exception& e)
+	catch (std::exception& e)
 	{
 		OOBase_CallCriticalFailure(e.what());
 	}
@@ -251,7 +251,7 @@ void OOBase::TLS::Set(const void* key, void* val)
 			inst->m_mapVals.insert(std::map<const void*,TLSMap::tls_val>::value_type(key,v));
 		}
 	}
-	catch(std::exception& e)
+	catch (std::exception& e)
 	{
 		OOBase_CallCriticalFailure(e.what());
 	}
@@ -263,7 +263,7 @@ void OOBase::TLS::Remove(const void* key)
 	{
 		TLSMap::instance()->m_mapVals.erase(key);
 	}
-	catch(std::exception& e)
+	catch (std::exception& e)
 	{
 		OOBase_CallCriticalFailure(e.what());
 	}

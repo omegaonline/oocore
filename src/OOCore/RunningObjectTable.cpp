@@ -30,7 +30,7 @@ using namespace OTL;
 namespace
 {
 	class DuplicateRegistrationException :
-		public ExceptionImpl<Activation::IDuplicateRegistrationException>
+			public ExceptionImpl<Activation::IDuplicateRegistrationException>
 	{
 	public:
 		static void Throw(const guid_t& oid);
@@ -108,7 +108,7 @@ OOCore::ServiceManager::ServiceManager() : m_nNextCookie(1)
 OOCore::ServiceManager::~ServiceManager()
 {
 	// Because the DLL can be deleted without close being called...
-	for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin();i!=m_mapServicesByCookie.end();++i)
+	for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin(); i!=m_mapServicesByCookie.end(); ++i)
 	{
 		// Just detach and leak every object...
 		i->second.m_ptrObject.Detach();
@@ -123,14 +123,14 @@ void OOCore::ServiceManager::close()
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin();i!=m_mapServicesByCookie.end();++i)
+		for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin(); i!=m_mapServicesByCookie.end(); ++i)
 		{
 			listCookies.push_back(i->first);
 		}
 
 		guard.release();
 
-		for (std::list<uint32_t>::iterator i=listCookies.begin();i!=listCookies.end();++i)
+		for (std::list<uint32_t>::iterator i=listCookies.begin(); i!=listCookies.end(); ++i)
 		{
 			RevokeObject(*i);
 		}
@@ -167,7 +167,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
 
 		// Check if we have someone registered already
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid); i!=m_mapServicesByOid.end() && i->first==oid; ++i)
 		{
 			if (!(i->second->second.m_reg_flags & Activation::MultipleRegistration))
 				DuplicateRegistrationException::Throw(oid);
@@ -190,7 +190,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		}
 
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
-		assert(p.second);			
+		assert(p.second);
 
 		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
 
@@ -212,7 +212,7 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
+	for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid); i!=m_mapServicesByOid.end() && i->first==oid; ++i)
 	{
 		if ((i->second->second.m_flags & flags) == i->second->second.m_flags)
 			return i->second->second.m_ptrObject->QueryInterface(iid);
@@ -233,7 +233,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 	{
 		rot_cookie = i->second.m_rot_cookie;
 
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid);j!=m_mapServicesByOid.end() && j->first==i->second.m_oid;++j)
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid); j!=m_mapServicesByOid.end() && j->first==i->second.m_oid; ++j)
 		{
 			if (j->second->first == cookie)
 			{
@@ -242,7 +242,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 			}
 		}
 		m_mapServicesByCookie.erase(i);
-		
+
 		guard.release();
 
 		if (rot_cookie)

@@ -45,7 +45,7 @@ namespace Omega
 		{
 			virtual void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
 		};
-		
+
 		enum Flags
 		{
 			InProcess = 1,                         ///< Use dll/so if available
@@ -74,12 +74,12 @@ namespace Omega
 		void RevokeObject(uint32_t cookie);
 
 		guid_t NameToOid(const string_t& strObjectName);
-		
+
 		interface IOidNotFoundException : public IException
 		{
 			virtual any_t GetMissingOid() = 0;
 		};
-		
+
 		interface INoAggregationException : public IException
 		{
 			virtual guid_t GetFailingOid() = 0;
@@ -97,7 +97,7 @@ namespace Omega
 		{
 			virtual guid_t GetObject() = 0;
 		};
-		
+
 		// WARNING - THIS IS GOING TO CHANGE!!!
 		interface IRunningObjectTable : public IObject
 		{
@@ -112,7 +112,7 @@ namespace Omega
 	namespace TypeInfo
 	{
 		interface IInterfaceInfo : public IObject
-		{	
+		{
 			virtual string_t GetName() = 0;
 			virtual guid_t GetIID() = 0;
 			virtual uint32_t GetMethodCount() = 0;
@@ -164,28 +164,28 @@ namespace Omega
 
 			static IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
-		
+
 		interface INotFoundException : public IException
 		{
 			virtual string_t GetName() = 0;
 		};
-		
+
 		interface IAlreadyExistsException : public IException
 		{
 			virtual string_t GetKeyName() = 0;
 		};
-		
+
 		interface IBadNameException : public IException
 		{
 			virtual string_t GetName() = 0;
 		};
-		
+
 		interface IWrongValueTypeException : public IException
 		{
 			virtual string_t GetValueName() = 0;
 			virtual ValueType_t GetValueType() = 0;
 		};
-		
+
 		interface IAccessDeniedException : public IException
 		{
 			virtual string_t GetKeyName() = 0;
@@ -248,7 +248,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(string_t,GetName,0,())
 	OMEGA_METHOD(guid_t,GetIID,0,())
 	OMEGA_METHOD(Omega::TypeInfo::IInterfaceInfo*,GetBaseType,0,())
-	OMEGA_METHOD(uint32_t,GetMethodCount,0,())				
+	OMEGA_METHOD(uint32_t,GetMethodCount,0,())
 	OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),Remoting::IMessage*&,return_type))
 	OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),Remoting::IMessage*&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
 	OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
@@ -401,7 +401,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, IAccessDeniedException, Omega, IException, "{08AE0A04-1765-493b-93A3-8738768F09BC}",
-	
+
 	// Methods
 	OMEGA_METHOD(string_t,GetKeyName,0,())
 )
@@ -418,7 +418,7 @@ OMEGA_DEFINE_INTERFACE
 OMEGA_DEFINE_INTERFACE
 (
 	Omega::IO, IAsyncStreamNotify, "{1E587515-AE98-45ef-9E74-497784169F38}",
-	
+
 	// Methods
 	OMEGA_METHOD_VOID(OnOpened,0,())
 	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
@@ -429,7 +429,7 @@ OMEGA_DEFINE_INTERFACE
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Net, IConnectedStream, Omega::IO, IStream, "{C5C3AB92-9127-4bb5-9AA8-AA0953843E5A}",
-	
+
 	// Methods
 	OMEGA_METHOD(string_t,GetRemoteEndpoint,0,())
 	OMEGA_METHOD(string_t,GetLocalEndpoint,0,())
@@ -438,7 +438,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 OMEGA_DEFINE_INTERFACE
 (
 	Omega::Net, IProtocolHandler, "{76416648-0AFE-4474-BD8F-FEB033F17EAF}",
-	
+
 	// Methods
 	OMEGA_METHOD(Net::IConnectedStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
 )
@@ -446,7 +446,7 @@ OMEGA_DEFINE_INTERFACE
 OMEGA_DEFINE_INTERFACE
 (
 	Omega::TypeInfo, IProvideObjectInfo, "{F66A857D-C474-4c9e-B08B-68135AC8459E}",
-		
+
 	// Methods
 	OMEGA_METHOD(std::list<guid_t>,EnumInterfaces,0,())
 )

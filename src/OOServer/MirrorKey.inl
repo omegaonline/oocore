@@ -303,10 +303,10 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 
 	if (!ptrNewLocal && !ptrNewSystem)
 		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
-	
+
 	ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
 	ptrNew->Init(m_strKey + L"\\" + strSubKey,ptrNewLocal,ptrNewSystem);
-	return ptrNew.AddRef();	
+	return ptrNew.AddRef();
 }
 
 std::set<string_t> User::Registry::MirrorKey::EnumSubKeys()
@@ -314,7 +314,7 @@ std::set<string_t> User::Registry::MirrorKey::EnumSubKeys()
 	std::set<string_t> ret;
 	if (m_ptrLocal)
 		ret = m_ptrLocal->EnumSubKeys();
-	
+
 	if (m_ptrSystem)
 	{
 		std::set<string_t> ret2 = m_ptrSystem->EnumSubKeys();
@@ -329,7 +329,7 @@ std::set<string_t> User::Registry::MirrorKey::EnumValues()
 	std::set<string_t> ret;
 	if (m_ptrLocal)
 		ret = m_ptrLocal->EnumValues();
-	
+
 	if (m_ptrSystem)
 	{
 		std::set<string_t> ret2 = m_ptrSystem->EnumValues();

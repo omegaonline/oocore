@@ -27,7 +27,7 @@ namespace Omega
 	namespace System
 	{
 		namespace Internal
-		{	
+		{
 			struct type_holder
 			{
 				TypeInfo::Type_t   type;
@@ -112,7 +112,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t[2] = 
+					static const type_holder t[2] =
 					{
 						{ TypeInfo::typeSTLMap, type_kind<T1>::type() },
 						{ TypeInfo::typeSTLMap, type_kind<T2>::type() }
@@ -125,7 +125,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t[2] = 
+					static const type_holder t[2] =
 					{
 						{ TypeInfo::typeSTLMultimap, type_kind<T1>::type() },
 						{ TypeInfo::typeSTLMultimap, type_kind<T2>::type() }

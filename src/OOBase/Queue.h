@@ -41,12 +41,12 @@ namespace OOBase
 		};
 
 		BoundedQueue(size_t bound = 10) :
-			m_bound(bound),
-			m_waiters(0),
-			m_closed(false),
-			m_pulsed(false)
+				m_bound(bound),
+				m_waiters(0),
+				m_closed(false),
+				m_pulsed(false)
 		{}
-		
+
 		Result push(const T& val, const timeval_t* wait = 0)
 		{
 			timeval_t wait2;
@@ -105,12 +105,12 @@ namespace OOBase
 
 			if (m_pulsed)
 				return pulsed;
-			
+
 			if (!m_queue.empty())
 			{
 				val=m_queue.front();
 				m_queue.pop();
-				
+
 				guard.release();
 
 				m_space.broadcast();
@@ -176,7 +176,7 @@ namespace OOBase
 		Condition        m_available;
 		Condition        m_space;
 		std::queue<T>    m_queue;
-	};	
+	};
 }
 
 #endif // OOBASE_QUEUE_H_INCLUDED_

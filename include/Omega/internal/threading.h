@@ -80,8 +80,8 @@ namespace Omega
 		{
 		public:
 			Guard(MUTEX& mutex, bool acq = true) :
-			  m_acquired(false),
-			  m_mutex(mutex)
+					m_acquired(false),
+					m_mutex(mutex)
 			{
 				if (acq)
 					Acquire();
@@ -120,8 +120,8 @@ namespace Omega
 		{
 		public:
 			ReadGuard(MUTEX& mutex, bool acq = true) :
-			  m_acquired(false),
-			  m_mutex(mutex)
+					m_acquired(false),
+					m_mutex(mutex)
 			{
 				if (acq)
 					Acquire();
@@ -182,12 +182,12 @@ namespace Omega
 		public:
 			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 			static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-			
+
 		private:
 			ModuleDestructor(const ModuleDestructor&);
 			ModuleDestructor& operator = (const ModuleDestructor&);
 
-			ModuleDestructor() 
+			ModuleDestructor()
 			{
 			}
 
@@ -241,10 +241,10 @@ namespace Omega
 		namespace Internal
 		{
 			// Callback is C ABI safe
-			template <> 
-			struct is_c_abi<const SafeShim*()> 
-			{ 
-				enum { result = 1 }; 
+			template <>
+			struct is_c_abi<const SafeShim*()>
+			{
+				enum { result = 1 };
 			};
 		}
 	}

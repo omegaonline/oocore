@@ -27,7 +27,7 @@ namespace Root
 	enum RootOpCode
 	{
 		// Root -> User
-				
+
 		// User -> Root
 		KeyExists = 0x80,
 		CreateKey,

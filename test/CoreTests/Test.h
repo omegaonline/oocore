@@ -20,17 +20,17 @@ void output_exception(Omega::IException* pE);
 typedef bool (*pfnTest)();
 bool run_test(pfnTest t, const char* pszName);
 
-#define RUN_TEST(test)		run_test(test,#test)
+#define RUN_TEST(test)      run_test(test,#test)
 
 #define TEST(expr) \
 	if (!(expr)) \
 		return print_result(#expr,__FILE__,__LINE__); \
 	else \
 		add_success()
-	
+
 #define TEST_FAIL(expr) \
 	return print_result(#expr,__FILE__,__LINE__); \
-
+	 
 #define TEST_VOID(expr) \
 	(expr); add_success();
 

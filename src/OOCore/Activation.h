@@ -38,7 +38,7 @@ namespace OOCore
 
 	private:
 		friend class Omega::Threading::Singleton<ServiceManager,Omega::Threading::InitialiseDestructor<OOCore::DLL> >;
-		
+
 		ServiceManager();
 		~ServiceManager();
 		ServiceManager(const ServiceManager&);

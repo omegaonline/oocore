@@ -28,7 +28,7 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_SystemExceptionMarshalFactory;
 
 	class SystemException :
-		public OTL::ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
+			public OTL::ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
 	{
 		typedef OTL::ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory> baseClass;
 	public:
@@ -65,8 +65,8 @@ namespace OOCore
 	};
 
 	class SystemExceptionMarshalFactoryImpl :
-		public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public OTL::ExceptionMarshalFactoryImpl<SystemException>
+			public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::ExceptionMarshalFactoryImpl<SystemException>
 	{
 	};
 
@@ -74,7 +74,7 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
 
 	class NoInterfaceException :
-		public OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
+			public OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
 	{
 		typedef OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory> baseClass;
 	public:
@@ -111,8 +111,8 @@ namespace OOCore
 	};
 
 	class NoInterfaceExceptionMarshalFactoryImpl :
-		public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public OTL::ExceptionMarshalFactoryImpl<NoInterfaceException>
+			public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::ExceptionMarshalFactoryImpl<NoInterfaceException>
 	{
 	};
 
@@ -120,7 +120,7 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 
 	class TimeoutException :
-		public OTL::ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
+			public OTL::ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
 	{
 		typedef OTL::ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory> baseClass;
 	public:
@@ -130,8 +130,8 @@ namespace OOCore
 	};
 
 	class TimeoutExceptionMarshalFactoryImpl :
-		public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public OTL::ExceptionMarshalFactoryImpl<TimeoutException>
+			public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::ExceptionMarshalFactoryImpl<TimeoutException>
 	{
 	};
 
@@ -139,7 +139,7 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
 
 	class ChannelClosedException :
-		public OTL::ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>
+			public OTL::ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>
 	{
 		typedef OTL::ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory> baseClass;
 	public:
@@ -149,8 +149,8 @@ namespace OOCore
 	};
 
 	class ChannelClosedExceptionMarshalFactoryImpl :
-		public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public OTL::ExceptionMarshalFactoryImpl<ChannelClosedException>
+			public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::ExceptionMarshalFactoryImpl<ChannelClosedException>
 	{
 	};
 }

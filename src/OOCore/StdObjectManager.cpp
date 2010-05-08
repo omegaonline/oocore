@@ -29,14 +29,14 @@
 // This is all the SEH guff - needs to go into the surrogate project
 #if 0
 
-#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
-#include <setjmp.h>
-#endif
+	#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
+	#include <setjmp.h>
+	#endif
 
-namespace SEH
+	namespace SEH
 	{
 
-#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
+	#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
 
 		struct ExceptInfo
 		{
@@ -50,85 +50,85 @@ namespace SEH
 			longjmp(*frame->pjb,record->ExceptionCode);
 			return 0;
 		}
-#endif
+	#endif
 
 		void DoInvoke2(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
 		int DoInvoke(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
 	}
 
-void OOCore::SEH::DoInvoke2(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
-{
-	try
+	void OOCore::SEH::DoInvoke2(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 	{
-		System::Internal::IException_Safe* pSE = pStub->Invoke_Safe(
-			System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsIn),
-			System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsOut));
+		try
+		{
+			System::Internal::IException_Safe* pSE = pStub->Invoke_Safe(
+				System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsIn),
+				System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsOut));
 
-		if (pSE)
-			throw_correct_exception(pSE);
+			if (pSE)
+				throw_correct_exception(pSE);
+		}
+		catch (IException* pE2)
+		{
+			pE = pE2;
+		}
 	}
-	catch (IException* pE2)
+
+	int OOCore::SEH::DoInvoke(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 	{
-		pE = pE2;
-	}
-}
+		int err = 0;
 
-int OOCore::SEH::DoInvoke(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
-{
-	int err = 0;
-
-#if defined(_WIN32)
-	#if defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS)
-		LPEXCEPTION_POINTERS ex = 0;
-		ACE_SEH_TRY
-		{
-			DoInvoke2(pStub,pParamsIn,pParamsOut,pE);
-		}
-		ACE_SEH_EXCEPT((ex = GetExceptionInformation(),EXCEPTION_EXECUTE_HANDLER))
-		{
-			err = ex->ExceptionRecord->ExceptionCode;
-		}
-	#elif defined (__GNUC__) && !defined(OMEGA_WIN64)
-
-		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
-		jmp_buf jmpb;
-		ExceptInfo xc;
-		xc.handler = ExceptHandler;
-		xc.pjb = &jmpb;
-
-		// Install SEH handler
-		__asm__ __volatile__ ("movl %%fs:0, %0" : "=r" (xc.prev));
-		__asm__ __volatile__ ("movl %0, %%fs:0" : : "r" (&xc));
-
-		err = setjmp(jmpb);
-		if (err == 0)
-		{
-			try
+	#if defined(_WIN32)
+		#if defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS)
+			LPEXCEPTION_POINTERS ex = 0;
+			ACE_SEH_TRY
 			{
 				DoInvoke2(pStub,pParamsIn,pParamsOut,pE);
 			}
-			catch (...)
+			ACE_SEH_EXCEPT((ex = GetExceptionInformation(),EXCEPTION_EXECUTE_HANDLER))
 			{
-				// Remove SEH handler
-				__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
-				throw;
+				err = ex->ExceptionRecord->ExceptionCode;
 			}
-		}
+		#elif defined (__GNUC__) && !defined(OMEGA_WIN64)
 
-		// Remove SEH handler
-		__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
+			// This is hideous scary stuff... but it taps into the Win32 SEH stuff
+			jmp_buf jmpb;
+			ExceptInfo xc;
+			xc.handler = ExceptHandler;
+			xc.pjb = &jmpb;
 
+			// Install SEH handler
+			__asm__ __volatile__ ("movl %%fs:0, %0" : "=r" (xc.prev));
+			__asm__ __volatile__ ("movl %0, %%fs:0" : : "r" (&xc));
+
+			err = setjmp(jmpb);
+			if (err == 0)
+			{
+				try
+				{
+					DoInvoke2(pStub,pParamsIn,pParamsOut,pE);
+				}
+				catch (...)
+				{
+					// Remove SEH handler
+					__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
+					throw;
+				}
+			}
+
+			// Remove SEH handler
+			__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
+
+		#else
+			void* TODO; // You have no protection around Invoke for your compiler...
+			DoInvoke2(pStub,pParamsIn,pParamsOut,pE);
+		#endif
 	#else
-		void* TODO; // You have no protection around Invoke for your compiler...
+		void* TODO; // Some kind of signal handler here please?
 		DoInvoke2(pStub,pParamsIn,pParamsOut,pE);
 	#endif
-#else
-	void* TODO; // Some kind of signal handler here please?
-	DoInvoke2(pStub,pParamsIn,pParamsOut,pE);
-#endif
 
-	return err;
-}
+		return err;
+	}
 
 #endif
 
@@ -140,9 +140,9 @@ namespace
 	struct CallContext
 	{
 		CallContext() :
-			m_deadline(OOBase::timeval_t::MaxTime),
-			m_src_id(0),
-			m_flags(0)
+				m_deadline(OOBase::timeval_t::MaxTime),
+				m_src_id(0),
+				m_flags(0)
 		{}
 
 		virtual ~CallContext()
@@ -155,8 +155,8 @@ namespace
 	};
 
 	class StdCallContext :
-		public ObjectBase,
-		public Remoting::ICallContext
+			public ObjectBase,
+			public Remoting::ICallContext
 	{
 		BEGIN_INTERFACE_MAP(StdCallContext)
 			INTERFACE_ENTRY(Remoting::ICallContext)
@@ -224,7 +224,7 @@ Remoting::MarshalFlags_t StdCallContext::SourceType()
 }
 
 OOCore::StdObjectManager::StdObjectManager() :
-	m_uNextStubId(1)
+		m_uNextStubId(1)
 {
 }
 
@@ -250,14 +250,14 @@ void OOCore::StdObjectManager::Shutdown()
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Copy the stub map
-	for (std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator i=m_mapStubObjs.begin();i!=m_mapStubObjs.end();++i)
+	for (std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator i=m_mapStubObjs.begin(); i!=m_mapStubObjs.end(); ++i)
 		listStubs.push_back(i->second);
 
 	m_mapStubIds.clear();
 	m_mapStubObjs.clear();
 
 	// Copy the proxys
-	for (std::map<uint32_t,ObjectImpl<Proxy>* >::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
+	for (std::map<uint32_t,ObjectImpl<Proxy>* >::iterator j=m_mapProxyIds.begin(); j!=m_mapProxyIds.end(); ++j)
 		listProxies.push_back(j->second);
 
 	m_mapProxyIds.clear();
@@ -275,7 +275,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	string_t strOID = pParamsIn->ReadValue(L"oid").cast<string_t>();
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
 	Activation::Flags_t act_flags = pParamsIn->ReadValue(L"flags").cast<Activation::Flags_t>();
-	
+
 	// Check our permissions
 	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
 		act_flags |= Activation::RemoteActivation;
@@ -306,7 +306,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 	pCC = OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 	CallContext old_context;
 	if (pCC)
-        old_context = *pCC;
+		old_context = *pCC;
 
 	try
 	{
@@ -483,7 +483,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	{
 		ObjectPtr<Remoting::IMessage> ptrRecv;
 		ptrRecv.Attach(pInternalRecv);
-		
+
 		if (!(attribs & TypeInfo::Asynchronous))
 		{
 			assert(pInternalRecv);
@@ -559,11 +559,11 @@ void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParam
 {
 	// Read the iid
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
-	
+
 	// Get the type info
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
 	ptrII.Attach(OOCore::GetInterfaceInfo(iid));
-	
+
 	// Write it out and return
 	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),ptrII);
 }
@@ -625,7 +625,7 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarsh
 
 		throw;
 	}
-	
+
 	return true;
 }
 
@@ -670,11 +670,11 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		// See if pObject does custom marshalling...
 		if (!ptrMarshal)
 			ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(pObject->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
-		
+
 		// See if custom marshalling is possible...
 		if (ptrMarshal && CustomMarshalInterface(ptrMarshal,iid,pMessage))
 			return;
-						
+
 		// Create a new stub and stub id
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -792,13 +792,13 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 		ptrObj.Attach(pObj);
 
 		ObjectPtr<ObjectImpl<Stub> > ptrStub;
-		
+
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::const_iterator i=m_mapStubObjs.find(ptrObj);
 		if (i != m_mapStubObjs.end())
 			ptrStub = i->second;
-		
+
 		guard.release();
 
 		// If there is no stub... what are we unmarshalling?

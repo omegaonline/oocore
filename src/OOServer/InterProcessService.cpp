@@ -84,16 +84,16 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 
 void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
-	// Find the OID key... 
+	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
-	
+
 	string_t strAppName = ptrOidKey->GetStringValue(L"Application");
 
 	// Find the name of the executable to run...
 	ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User\\Applications\\" + strAppName + L"\\Activation");
-	
+
 	string_t strProcess = ptrServer->GetStringValue(L"Path");
-	
+
 	// The timeout needs to be related to the request timeout...
 	OOBase::timeval_t wait(15);
 	ObjectPtr<Remoting::ICallContext> ptrCC;
@@ -121,7 +121,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			{
 				m_mapInProgress.erase(strProcess);
 				ptrProcess = 0;
-			}			
+			}
 		}
 
 		if (!ptrProcess)
@@ -130,7 +130,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 			// Create a new process
 			ptrProcess = User::Process::exec(strProcess.c_str());
-						
+
 			m_mapInProgress.insert(std::map<string_t,OOBase::SmartPtr<User::Process> >::value_type(strProcess,ptrProcess));
 			bStarted = true;
 		}
@@ -174,7 +174,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		m_mapInProgress.erase(strProcess);
 		guard.release();
 
-	} while (!bStarted);
+	}
+	while (!bStarted);
 
 	OMEGA_THROW(ENOENT);
 }
@@ -182,7 +183,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
 {
 	OOBase::timeval_t wait(timeout/1000,(timeout % 1000) * 1000);
-	
+
 	int ret = m_pManager->pump_requests((timeout ? &wait : 0),true);
 	if (ret == -1)
 		OMEGA_THROW(L"Request processing failed");

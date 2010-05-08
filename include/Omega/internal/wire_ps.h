@@ -34,11 +34,11 @@ namespace Omega
 			{
 			public:
 				IObject* add(IObject* pProxy, IObject* pObject);
-				
+
 				IObject* find(IObject* pProxy);
 
 				void remove(IObject* pProxy);
-				
+
 			private:
 				Threading::Mutex            m_lock;
 				std::map<IObject*,IObject*> m_map;
@@ -48,14 +48,14 @@ namespace Omega
 			class Wire_Proxy_Base
 			{
 			protected:
-				Wire_Proxy_Base(Remoting::IProxy* pProxy) : 
-					 m_ptrProxy(pProxy)
+				Wire_Proxy_Base(Remoting::IProxy* pProxy) :
+						m_ptrProxy(pProxy)
 				{
 					m_ptrProxy->AddRef();
 					m_internal.m_pProxy = this;
 
 					m_ptrMarshaller = m_ptrProxy->GetMarshaller();
-					
+
 					static const IObject_Safe_VTable vt =
 					{
 						&AddRef_Safe,
@@ -73,7 +73,7 @@ namespace Omega
 					m_refcount.AddRef();
 				}
 
-				virtual ~Wire_Proxy_Base() 
+				virtual ~Wire_Proxy_Base()
 				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const = 0;
@@ -225,7 +225,7 @@ namespace Omega
 					return except;
 				}
 			};
-			
+
 			template <typename I, typename D>
 			class Wire_Proxy;
 
@@ -241,8 +241,8 @@ namespace Omega
 				}
 
 			protected:
-				Wire_Proxy(Remoting::IProxy* pProxy) : 
-					 Wire_Proxy_Base(pProxy)
+				Wire_Proxy(Remoting::IProxy* pProxy) :
+						Wire_Proxy_Base(pProxy)
 				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
@@ -303,14 +303,14 @@ namespace Omega
 			private:
 				auto_iface_ptr<IObject> m_ptrProxyObj;
 
-				Wire_Proxy_IObject(Remoting::IProxy* pProxy) : 
-					 Wire_Proxy<IObject,IObject>(pProxy)
-				{ 
+				Wire_Proxy_IObject(Remoting::IProxy* pProxy) :
+						Wire_Proxy<IObject,IObject>(pProxy)
+				{
 					// QI for base object of pProxy
 					m_ptrProxyObj = pProxy->QueryInterface(OMEGA_GUIDOF(IObject));
 				}
 
-				virtual ~Wire_Proxy_IObject() 
+				virtual ~Wire_Proxy_IObject()
 				{
 					WIRE_HOLDER::instance()->remove(m_ptrProxyObj);
 				}
@@ -339,7 +339,7 @@ namespace Omega
 
 			protected:
 				Wire_Stub_Base(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
-					m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController), m_bPinned(false)
+						m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController), m_bPinned(false)
 				{
 					m_bPinned = PinObjectPointer(m_pController);
 
@@ -362,7 +362,7 @@ namespace Omega
 					OMEGA_THROW(L"Invoke called with invalid method index");
 				}
 
-				static const uint32_t MethodCount = 3;	// This must match the proxy
+				static const uint32_t MethodCount = 3;  // This must match the proxy
 
 			private:
 				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
@@ -370,7 +370,7 @@ namespace Omega
 				Remoting::IStubController*            m_pController;
 				bool                                  m_bPinned;
 				Threading::AtomicRefCount             m_refcount;
-				
+
 				Wire_Stub_Base(const Wire_Stub_Base&);
 				Wire_Stub_Base& operator = (const Wire_Stub_Base&);
 
@@ -390,7 +390,7 @@ namespace Omega
 				IObject* QueryInterface(const guid_t& iid)
 				{
 					if (iid == OMEGA_GUIDOF(IObject) ||
-						iid == OMEGA_GUIDOF(Remoting::IStub))
+							iid == OMEGA_GUIDOF(Remoting::IStub))
 					{
 						AddRef();
 						return this;
@@ -402,20 +402,20 @@ namespace Omega
 				{
 					static const MethodTableEntry MethodTable[] =
 					{
-						&Release_Wire,			// -1 
-						&QueryInterface_Wire,	// 0
-						&QueryIObject_Wire,		// 1
-						&MarshalStub_Wire		// 2
+						&Release_Wire,          // -1
+						&QueryInterface_Wire,   // 0
+						&QueryIObject_Wire,     // 1
+						&MarshalStub_Wire       // 2
 					};
-					
+
 					uint32_t method_id = pParamsIn->ReadValue(L"$method_id").cast<uint32_t>() + 1;
 
 					if (method_id < 4)
 						return MethodTable[method_id](this,pParamsIn,pParamsOut);
 					else
-						Invoke(method_id-1,pParamsIn,pParamsOut);					
-				}			
-				
+						Invoke(method_id-1,pParamsIn,pParamsOut);
+				}
+
 				static void Release_Wire(Wire_Stub_Base* pThis, Remoting::IMessage*, Remoting::IMessage*)
 				{
 					pThis->m_pController->RemoteRelease();
@@ -454,7 +454,7 @@ namespace Omega
 
 			protected:
 				Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
-					Wire_Stub_Base(pController,pMarshaller,pI)
+						Wire_Stub_Base(pController,pMarshaller,pI)
 				{
 				}
 
@@ -491,7 +491,7 @@ namespace Omega
 						return i->second;
 				}
 				catch (...)
-				{}
+					{}
 
 				return 0;
 			}
@@ -511,19 +511,19 @@ namespace Omega
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
-					Wire_Proxy* pThis; 
+					Wire_Proxy* pThis;
 					OMEGA_NEW(pThis,Wire_Proxy(pProxy));
 					return pThis->QIReturn__proxy__();
 				}
 
 			protected:
-				Wire_Proxy(Remoting::IProxy* pProxy) : 
-					 Base(pProxy) 
-				{ } 
+				Wire_Proxy(Remoting::IProxy* pProxy) :
+						Base(pProxy)
+				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const
 				{
-					if (iid == OMEGA_GUIDOF(IException)) 
+					if (iid == OMEGA_GUIDOF(IException))
 						return true;
 
 					return Base::IsDerived__proxy__(iid);
@@ -537,7 +537,7 @@ namespace Omega
 					guid_t iid = GetThrownIID();
 					if (IsDerived__proxy__(iid))
 						throw static_cast<D*>(this);
-					
+
 					IException* pE = Wire_Proxy_Base::Throw(iid);
 					if (!pE)
 						throw static_cast<D*>(this);
@@ -545,7 +545,7 @@ namespace Omega
 					this->Release();
 					pE->Throw();
 				}
-				
+
 				OMEGA_DECLARE_WIRE_PROXY_METHODS
 				(
 					OMEGA_METHOD_VOID(Throw__dummy__,0,())

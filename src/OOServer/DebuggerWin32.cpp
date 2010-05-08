@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It can be run as Administrator/setuid root
+//  It can be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -86,9 +86,9 @@ static bool AttachVSDebugger(DWORD our_pid)
 		if (ptrUnk != NULL)
 		{
 			EnvDTE::_DTEPtr ptrDTE = ptrUnk;
-			
+
 			EnvDTE::ProcessesPtr ptrProcesses = ptrDTE->Debugger->LocalProcesses;
-			for (long i = 1;i <= ptrProcesses->Count; ++i)
+			for (long i = 1; i <= ptrProcesses->Count; ++i)
 			{
 				EnvDTE::ProcessPtr ptrProcess = ptrProcesses->Item(i);
 				if (ptrProcess->ProcessID == static_cast<long>(our_pid))

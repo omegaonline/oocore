@@ -76,9 +76,9 @@ using namespace OTL;
 
 // UserManager
 User::Manager::Manager() :
-	m_nIPSCookie(0),
-	m_bIsSandbox(false),
-	m_nNextRemoteChannel(0)
+		m_nIPSCookie(0),
+		m_bIsSandbox(false),
+		m_nNextRemoteChannel(0)
 {
 }
 
@@ -176,7 +176,7 @@ bool User::Manager::init(const std::string& strPipe)
 	// Add FD_CLOEXEC to fd
 	int oldflags = fcntl(fd,F_GETFD);
 	if (oldflags == -1 ||
-		fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 	}
@@ -278,7 +278,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 		Manager* pThis = static_cast<Manager*>(pParams);
 
 		if (!pThis->bootstrap(sandbox_channel) ||
-			!pThis->m_acceptor.start(pThis,strNewPipe))
+				!pThis->m_acceptor.start(pThis,strNewPipe))
 		{
 			quit();
 		}
@@ -356,7 +356,7 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
+		for (std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();)
 		{
 			bool bErase = false;
 			if (i->first == channel)

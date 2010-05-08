@@ -26,15 +26,15 @@
 // string_t starts here
 
 #ifdef OMEGA_DEBUG
-#define OMEGA_DEBUG_STASH_STRING()	m_debug_value = (m_handle ? OOCore_string_t_cast(m_handle) : L"")
+#define OMEGA_DEBUG_STASH_STRING()  m_debug_value = (m_handle ? OOCore_string_t_cast(m_handle) : L"")
 #else
-#define OMEGA_DEBUG_STASH_STRING()	(void)0
+#define OMEGA_DEBUG_STASH_STRING()  (void)0
 #endif
 
 OOCORE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,h));
 
 inline Omega::string_t::string_t(handle_t* h, bool bAddref) :
-	m_handle(bAddref ? addref(h,false) : h)
+		m_handle(bAddref ? addref(h,false) : h)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -46,7 +46,7 @@ inline Omega::string_t::string_t() : m_handle(0)
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const char*,sz,(in),size_t,len,(in),int,bUTF8));
 inline Omega::string_t::string_t(const char* sz, bool bUTF8, size_t length) :
-	m_handle(0)
+		m_handle(0)
 {
 	if (sz)
 		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor1(sz,length,bUTF8 ? 1 : 0));
@@ -64,7 +64,7 @@ inline Omega::string_t::handle_t* Omega::string_t::addref(handle_t* h, bool own)
 }
 
 inline Omega::string_t::string_t(const Omega::string_t& s) :
-	m_handle(addref(s.m_handle,false))
+		m_handle(addref(s.m_handle,false))
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -73,7 +73,7 @@ OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,3,((in),const wchar_t*
 
 template <size_t S>
 inline Omega::string_t::string_t(const wchar_t (&arr)[S], bool copy) :
-	m_handle(0)
+		m_handle(0)
 {
 	m_handle = static_cast<handle_t*>(OOCore_string_t__ctor2(arr,S-1,copy ? 1 : 0));
 
@@ -81,13 +81,13 @@ inline Omega::string_t::string_t(const wchar_t (&arr)[S], bool copy) :
 }
 
 inline Omega::string_t::string_t(const wchar_t (&)[1]) :
-	m_handle(0)
+		m_handle(0)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
 
 inline Omega::string_t::string_t(const wchar_t* wsz, size_t length, bool copy) :
-	m_handle(0)
+		m_handle(0)
 {
 	if (wsz)
 		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor2(wsz,length,copy ? 1 : 0));
@@ -327,7 +327,7 @@ inline Omega::string_t& Omega::string_t::Clear()
 	m_handle = 0;
 
 	OMEGA_DEBUG_STASH_STRING();
-	
+
 	return *this;
 }
 
@@ -475,7 +475,7 @@ namespace Omega
 			{
 				static string_t ToString(const T& val, const string_t& strFormat = string_t())
 				{
-					return val.ToString(strFormat);	
+					return val.ToString(strFormat);
 				}
 			};
 
@@ -491,25 +491,25 @@ namespace Omega
 				>::result type;
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct formatter_t<const T>
 			{
 				typedef typename formatter_t<T>::type type;
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct formatter_t<T&>
 			{
 				typedef typename formatter_t<T>::type type;
 			};
 
-			template <typename T, size_t S> 
+			template <typename T, size_t S>
 			struct formatter_t<T[S]>
 			{
 				typedef typename formatter_t<T*>::type type;
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct formatter_t<const T*>
 			{
 				typedef typename formatter_t<T*>::type type;
@@ -528,7 +528,7 @@ inline Omega::string_t Omega::Formatting::ToString(const string_t& val, const st
 {
 	if (!strFormat.IsEmpty())
 		throw Formatting::IFormattingException::Create(L"Invalid string_t format string: {0}" % strFormat);
-	
+
 	return val;
 }
 
@@ -551,16 +551,16 @@ inline Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFor
 template <typename T>
 inline Omega::string_t& Omega::string_t::operator %= (T val)
 {
-	for (size_t index = 0;;++index)
+	for (size_t index = 0;; ++index)
 	{
 		void* format = 0;
 		void* h = m_handle;
 
 		if (!OOCore_string_t_get_arg(index,&h,&format))
 			break;
-		
+
 		m_handle = static_cast<handle_t*>(h);
-	
+
 		string_t strVal = Formatting::ToString(val,string_t(static_cast<handle_t*>(format),false));
 		OOCore_string_t_set_arg(m_handle,strVal.m_handle);
 	}
@@ -582,7 +582,7 @@ inline int Omega::guid_t::Compare(const guid_t& rhs) const
 		return (Data3 < rhs.Data3 ? -1 : 1);
 	else if (*reinterpret_cast<const uint64_t*>(Data4) != *reinterpret_cast<const uint64_t*>(rhs.Data4))
 	{
-		for (int i=0;i<8;++i)
+		for (int i=0; i<8; ++i)
 		{
 			if (Data4[i] != rhs.Data4[i])
 				return (Data4[i] < rhs.Data4[i] ? -1 : 1);

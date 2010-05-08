@@ -6,19 +6,21 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace Omega {
-namespace TestSuite
+namespace Omega
 {
-	extern "C" const Omega::guid_t OID_TestProcess;
-} }
+	namespace TestSuite
+	{
+		extern "C" const Omega::guid_t OID_TestProcess;
+	}
+}
 
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
 
 class TestProcessImpl :
-	public OTL::ObjectBase,
-	public OTL::AutoObjectFactory<TestProcessImpl,&Omega::TestSuite::OID_TestProcess>,
-	public OTL::IProvideObjectInfoImpl<TestProcessImpl>,
-	public SimpleTestImpl
+		public OTL::ObjectBase,
+		public OTL::AutoObjectFactory<TestProcessImpl,&Omega::TestSuite::OID_TestProcess>,
+		public OTL::IProvideObjectInfoImpl<TestProcessImpl>,
+		public SimpleTestImpl
 {
 public:
 	TestProcessImpl()
@@ -54,9 +56,9 @@ static int install(int argc, char* argv[])
 
 		if (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--install") == 0)
 		{
-	#if !defined(_WIN32)
+#if !defined(_WIN32)
 			if (argc != 3) return -1;
-	#endif
+#endif
 
 			OTL::GetModule()->InstallObjects(true,true,strSubsts);
 			return EXIT_SUCCESS;

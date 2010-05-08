@@ -134,11 +134,11 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		auto_iface_ptr<Remoting::IProxy> ptrProxy = create_safe_proxy<Remoting::IProxy>(proxy);
 
 		assert(ptrProxy->RemoteQueryInterface(iid));
-			
+
 		// Create a wire proxy
 		return create_wire_proxy(ptrProxy,iid);
 	}
-	
+
 	IObject* obj = 0;
 	if (guid_t(*shim->m_iid) == OMEGA_GUIDOF(IObject))
 	{
@@ -156,7 +156,7 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		// Fall back to IObject for completely unknown interfaces
 		if (!rtti)
 			rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
-			
+
 		obj = (*rtti->pfnCreateSafeProxy)(shim);
 	}
 
@@ -189,7 +189,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 		shim = SAFE_HOLDER::instance()->find(pObj);
 		if (shim)
 			return shim;
-	}	
+	}
 
 	// See if pObj is actually a proxy...
 	auto_iface_ptr<ISafeProxy> ptrProxy = static_cast<ISafeProxy*>(pObj->QueryInterface(OMEGA_GUIDOF(ISafeProxy)));

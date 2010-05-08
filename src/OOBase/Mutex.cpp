@@ -49,7 +49,7 @@ void OOBase::SpinLock::release()
 }
 
 OOBase::Mutex::Mutex() :
-	m_mutex(NULL)
+		m_mutex(NULL)
 {
 	m_mutex = CreateMutexW(NULL,FALSE,NULL);
 	if (!m_mutex)

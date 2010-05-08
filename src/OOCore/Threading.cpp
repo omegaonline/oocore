@@ -25,7 +25,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 {
 	// The value pointed to is definitely volatile under race conditions
 	volatile void* pVal = *val;
-	
+
 	// Do a double lock... this is so we can call it more than once
 	if (!pVal)
 	{
@@ -110,7 +110,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,m1))
 {
-	 return ((*static_cast<OOBase::AtomicInt<size_t>*>(m1))++ == 0);
+	return ((*static_cast<OOBase::AtomicInt<size_t>*>(m1))++ == 0);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,m1))

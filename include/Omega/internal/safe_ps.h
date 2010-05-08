@@ -50,7 +50,7 @@ namespace Omega
 						Release();
 
 						m_pI = rhs.m_pI;
-						
+
 						AddRef();
 					}
 					return *this;
@@ -111,7 +111,7 @@ namespace Omega
 						Release();
 
 						m_pS = rhs.m_pS;
-						
+
 						AddRef();
 					}
 					return *this;
@@ -192,14 +192,14 @@ namespace Omega
 			class Safe_Proxy_Base
 			{
 			protected:
-				Safe_Proxy_Base(const SafeShim* shim) : 
-					 m_shim(shim)
+				Safe_Proxy_Base(const SafeShim* shim) :
+						m_shim(shim)
 				{
 					m_internal.m_pProxy = this;
 					AddRef();
 				}
 
-				virtual ~Safe_Proxy_Base() 
+				virtual ~Safe_Proxy_Base()
 				{ }
 
 				const SafeShim* m_shim;
@@ -223,7 +223,7 @@ namespace Omega
 
 						// This can result in a circular dependancy
 						release_safe(m_shim);
-						
+
 						if (m_intcount.Release() && m_pincount.IsZero())
 							delete this;
 					}
@@ -321,7 +321,7 @@ namespace Omega
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnUnpin_Safe(m_shim);
 						if (except)
 							throw_correct_exception(except);
-						
+
 						if (m_intcount.IsZero() && m_refcount.IsZero())
 							delete this;
 					}
@@ -351,7 +351,7 @@ namespace Omega
 					return ret;
 				}
 			};
-			
+
 			template <typename I, typename D>
 			class Safe_Proxy;
 
@@ -362,13 +362,13 @@ namespace Omega
 				static IObject* bind(const SafeShim* shim)
 				{
 					Safe_Proxy* pThis;
-					OMEGA_NEW(pThis,Safe_Proxy(shim));		
+					OMEGA_NEW(pThis,Safe_Proxy(shim));
 					return pThis->QIReturn__proxy__();
 				}
 
 			protected:
-				Safe_Proxy(const SafeShim* shim) : 
-					 Safe_Proxy_Base(shim)
+				Safe_Proxy(const SafeShim* shim) :
+						Safe_Proxy_Base(shim)
 				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
@@ -407,7 +407,7 @@ namespace Omega
 				{
 					Safe_Proxy_IObject* pThis;
 					OMEGA_NEW(pThis,Safe_Proxy_IObject(shim));
-					
+
 					// Add to the map...
 					IObject* pExisting = SAFE_HOLDER::instance()->add(shim,pThis);
 					if (pExisting)
@@ -420,11 +420,11 @@ namespace Omega
 				}
 
 			private:
-				Safe_Proxy_IObject(const SafeShim* shim) : 
-					 Safe_Proxy<IObject,IObject>(shim)
+				Safe_Proxy_IObject(const SafeShim* shim) :
+						Safe_Proxy<IObject,IObject>(shim)
 				{ }
 
-				virtual ~Safe_Proxy_IObject() 
+				virtual ~Safe_Proxy_IObject()
 				{
 					SAFE_HOLDER::instance()->remove(this);
 				}
@@ -462,18 +462,18 @@ namespace Omega
 				}
 
 				virtual bool IsDerived(const guid_t& iid) const = 0;
-				
+
 			protected:
 				IObject* m_pI;
 				SafeShim m_shim;
-				
-				Safe_Stub_Base(IObject* pI) : 
-					 m_pI(pI)
+
+				Safe_Stub_Base(IObject* pI) :
+						m_pI(pI)
 				{
 					AddRef();
 				}
 
-				virtual ~Safe_Stub_Base() 
+				virtual ~Safe_Stub_Base()
 				{ }
 
 				void Pin()
@@ -506,11 +506,11 @@ namespace Omega
 				}
 
 				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
-				
+
 			private:
 				Threading::AtomicRefCount m_refcount;
 				Threading::AtomicRefCount m_pincount;
-				
+
 				Safe_Stub_Base(const Safe_Stub_Base&);
 				Safe_Stub_Base& operator =(const Safe_Stub_Base&);
 			};
@@ -530,8 +530,8 @@ namespace Omega
 				}
 
 			protected:
-				Safe_Stub(IObject* pI, const guid_t& iid) : 
-					 Safe_Stub_Base(pI)
+				Safe_Stub(IObject* pI, const guid_t& iid) :
+						Safe_Stub_Base(pI)
 				{
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;
@@ -540,7 +540,7 @@ namespace Omega
 
 				static const IObject_Safe_VTable* get_vt()
 				{
-					static const IObject_Safe_VTable vt = 
+					static const IObject_Safe_VTable vt =
 					{
 						&AddRef_Safe,
 						&Release_Safe,
@@ -558,7 +558,7 @@ namespace Omega
 					// Do not return (iid == OMEGA_GUIDOF(IObject))
 					return false;
 				}
-				
+
 			private:
 				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
 				{
@@ -644,7 +644,7 @@ namespace Omega
 					return except;
 				}
 			};
-						
+
 			class Safe_Stub_IObject : public Safe_Stub<IObject>
 			{
 			public:
@@ -665,12 +665,12 @@ namespace Omega
 				}
 
 			private:
-				Safe_Stub_IObject(IObject* pI, const guid_t& iid) : 
-					 Safe_Stub<IObject>(pI,iid)
-				{					
+				Safe_Stub_IObject(IObject* pI, const guid_t& iid) :
+						Safe_Stub<IObject>(pI,iid)
+				{
 				}
 
-				virtual ~Safe_Stub_IObject() 
+				virtual ~Safe_Stub_IObject()
 				{
 					SAFE_HOLDER::instance()->remove(&m_shim);
 				}
@@ -718,7 +718,7 @@ namespace Omega
 			};
 
 			OMEGA_DECLARE_FORWARDS(Omega,IException)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE_NOPROXY
 			(
 				Omega, IException,
@@ -733,27 +733,27 @@ namespace Omega
 			template <typename D>
 			class Safe_Proxy<IException,D> : public Safe_Proxy<IObject,D>
 			{
-				const vtable_info<IException>::type* deref_vt() 
-				{ 
-					return static_cast<const vtable_info<IException>::type*>(this->m_shim->m_vtable); 
+				const vtable_info<IException>::type* deref_vt()
+				{
+					return static_cast<const vtable_info<IException>::type*>(this->m_shim->m_vtable);
 				}
 
 			public:
 				static IObject* bind(const SafeShim* shim)
 				{
-					Safe_Proxy* pThis; 
+					Safe_Proxy* pThis;
 					OMEGA_NEW(pThis,Safe_Proxy(shim));
 					return pThis->QIReturn__proxy__();
 				}
 
 			protected:
-				Safe_Proxy(const SafeShim* shim) : 
-					 Safe_Proxy<IObject,D>(shim) 
+				Safe_Proxy(const SafeShim* shim) :
+						Safe_Proxy<IObject,D>(shim)
 				{}
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const
 				{
-					if (iid == OMEGA_GUIDOF(IException)) 
+					if (iid == OMEGA_GUIDOF(IException))
 						return true;
 
 					return Safe_Proxy<IObject,D>::IsDerived__proxy__(iid);
@@ -765,7 +765,7 @@ namespace Omega
 					guid_t iid = GetThrownIID();
 					if (IsDerived__proxy__(iid))
 						throw static_cast<D*>(this);
-										
+
 					// QI m_shim
 					auto_safe_shim retval;
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(this->m_shim->m_vtable)->pfnQueryInterface_Safe(this->m_shim,&retval,&iid);
@@ -777,11 +777,11 @@ namespace Omega
 
 					if (!retval)
 						throw static_cast<D*>(this);
-					
+
 					this->Release();
 					static_cast<IException*>(create_safe_proxy(retval,OMEGA_GUIDOF(IException)))->Throw();
 				}
-				
+
 				OMEGA_DECLARE_SAFE_PROXY_METHODS
 				(
 					OMEGA_METHOD(guid_t,GetThrownIID,0,())

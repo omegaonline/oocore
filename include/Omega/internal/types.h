@@ -27,16 +27,16 @@
 
 namespace Omega
 {
-	
+
 #if defined(_WIN32)
 	typedef struct _GUID guid_base_t;
 #else
 	struct guid_base_t
 	{
-		uint32_t	Data1;
-		uint16_t	Data2;
-		uint16_t	Data3;
-		byte_t		Data4[8];
+		uint32_t    Data1;
+		uint16_t    Data2;
+		uint16_t    Data3;
+		byte_t      Data4[8];
 	};
 #endif
 
@@ -47,18 +47,36 @@ namespace Omega
 
 		guid_t(const string_t& str);
 
-		bool operator == (const guid_t& rhs) const { return Compare(rhs) == 0; }
-		bool operator != (const guid_t& rhs) const { return Compare(rhs) != 0; }
-		bool operator < (const guid_t& rhs) const { return Compare(rhs) < 0; }
-		bool operator <= (const guid_t& rhs) const { return Compare(rhs) <= 0; }
-		bool operator > (const guid_t& rhs) const { return Compare(rhs) > 0; }
-		bool operator >= (const guid_t& rhs) const { return Compare(rhs) >= 0; }
+		bool operator == (const guid_t& rhs) const
+		{
+			return Compare(rhs) == 0;
+		}
+		bool operator != (const guid_t& rhs) const
+		{
+			return Compare(rhs) != 0;
+		}
+		bool operator < (const guid_t& rhs) const
+		{
+			return Compare(rhs) < 0;
+		}
+		bool operator <= (const guid_t& rhs) const
+		{
+			return Compare(rhs) <= 0;
+		}
+		bool operator > (const guid_t& rhs) const
+		{
+			return Compare(rhs) > 0;
+		}
+		bool operator >= (const guid_t& rhs) const
+		{
+			return Compare(rhs) >= 0;
+		}
 		int Compare(const guid_t& rhs) const;
 
 		static guid_t Create();
 
 		static bool FromString(const string_t& str, guid_t& guid);
-		
+
 		static const guid_t& Null()
 		{
 			static const guid_base_t sbNull = {0,0,0,{0,0,0,0,0,0,0,0}};
@@ -146,28 +164,76 @@ namespace Omega
 			};
 
 			// These are defined by the C ABI
-			template <> struct is_c_abi<void> { enum { result = 1 }; };
-			template <> struct is_c_abi<char> { enum { result = 1 }; };
-			template <> struct is_c_abi<signed char> { enum { result = 1 }; };
-			template <> struct is_c_abi<unsigned char> { enum { result = 1 }; };
-			template <> struct is_c_abi<signed short> { enum { result = 1 }; };
-			template <> struct is_c_abi<unsigned short> { enum { result = 1 }; };
-			template <> struct is_c_abi<signed int> { enum { result = 1 }; };
-			template <> struct is_c_abi<unsigned int> { enum { result = 1 }; };
-			template <> struct is_c_abi<signed long> { enum { result = 1 }; };
-			template <> struct is_c_abi<unsigned long> { enum { result = 1 }; };
-			template <> struct is_c_abi<float> { enum { result = 1 }; };
-			template <> struct is_c_abi<double> { enum { result = 1 }; };
+			template <> struct is_c_abi<void>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<char>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<signed char>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<unsigned char>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<signed short>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<unsigned short>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<signed int>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<unsigned int>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<signed long>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<unsigned long>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<float>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<double>
+			{
+				enum { result = 1 };
+			};
 
 			// Platform specific - therefore safe
-			template <> struct is_c_abi<wchar_t> { enum { result = 1 }; };
+			template <> struct is_c_abi<wchar_t>
+			{
+				enum { result = 1 };
+			};
 
 			// Fairly sure about these
-			template <> struct is_c_abi<int64_t> { enum { result = 1 }; };
-			template <> struct is_c_abi<uint64_t> { enum { result = 1 }; };
+			template <> struct is_c_abi<int64_t>
+			{
+				enum { result = 1 };
+			};
+			template <> struct is_c_abi<uint64_t>
+			{
+				enum { result = 1 };
+			};
 
 			// Simple structures
-			template <> struct is_c_abi<guid_base_t> { enum { result = 1 }; };
+			template <> struct is_c_abi<guid_base_t>
+			{
+				enum { result = 1 };
+			};
 
 			// Pointers are also C ABI compliant
 			template <typename T> struct is_c_abi<T*>

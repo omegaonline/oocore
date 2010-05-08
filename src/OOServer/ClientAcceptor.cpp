@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -40,8 +40,8 @@
 #endif
 
 Root::ClientAcceptor::ClientAcceptor() :
-	m_pManager(0),
-	m_pSocket(0)
+		m_pManager(0),
+		m_pSocket(0)
 {
 }
 
@@ -143,10 +143,10 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	PSID pSID;
 	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
 	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
-		SECURITY_BUILTIN_DOMAIN_RID,
-		DOMAIN_ALIAS_RID_USERS,
-		0, 0, 0, 0, 0, 0,
-		&pSID))
+								  SECURITY_BUILTIN_DOMAIN_RID,
+								  DOMAIN_ALIAS_RID_USERS,
+								  0, 0, 0, 0, 0, 0,
+								  &pSID))
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	}

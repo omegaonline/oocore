@@ -32,17 +32,18 @@
 
 #if defined(__MINGW32__)
 
-typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
-    DWORD SidCount;
-    DWORD SidLength;
-    PSID_AND_ATTRIBUTES Sids;
-    DWORD RestrictedSidCount;
-    DWORD RestrictedSidLength;
-    PSID_AND_ATTRIBUTES RestrictedSids;
-    DWORD PrivilegeCount;
-    DWORD PrivilegeLength;
-    PLUID_AND_ATTRIBUTES Privileges;
-    LUID AuthenticationId;
+typedef struct _TOKEN_GROUPS_AND_PRIVILEGES
+{
+	DWORD SidCount;
+	DWORD SidLength;
+	PSID_AND_ATTRIBUTES Sids;
+	DWORD RestrictedSidCount;
+	DWORD RestrictedSidLength;
+	PSID_AND_ATTRIBUTES RestrictedSids;
+	DWORD PrivilegeCount;
+	DWORD PrivilegeLength;
+	PLUID_AND_ATTRIBUTES Privileges;
+	LUID AuthenticationId;
 } TOKEN_GROUPS_AND_PRIVILEGES;
 
 extern "C"
@@ -50,16 +51,16 @@ WINADVAPI
 BOOL
 APIENTRY
 CreateRestrictedToken(
-    HANDLE ExistingTokenHandle,
-    DWORD Flags,
-    DWORD DisableSidCount,
-    PSID_AND_ATTRIBUTES SidsToDisable,
-    DWORD DeletePrivilegeCount,
-    PLUID_AND_ATTRIBUTES PrivilegesToDelete,
-    DWORD RestrictedSidCount,
-    PSID_AND_ATTRIBUTES SidsToRestrict,
-    PHANDLE NewTokenHandle
-    );
+	HANDLE ExistingTokenHandle,
+	DWORD Flags,
+	DWORD DisableSidCount,
+	PSID_AND_ATTRIBUTES SidsToDisable,
+	DWORD DeletePrivilegeCount,
+	PLUID_AND_ATTRIBUTES PrivilegesToDelete,
+	DWORD RestrictedSidCount,
+	PSID_AND_ATTRIBUTES SidsToRestrict,
+	PHANDLE NewTokenHandle
+);
 
 #ifndef DISABLE_MAX_PRIVILEGE
 #define DISABLE_MAX_PRIVILEGE   0x1

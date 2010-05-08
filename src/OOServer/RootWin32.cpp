@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -43,89 +43,89 @@
 #include <shlobj.h>
 
 #ifndef PROTECTED_DACL_SECURITY_INFORMATION
-#define PROTECTED_DACL_SECURITY_INFORMATION	 (0x80000000L)
+#define PROTECTED_DACL_SECURITY_INFORMATION  (0x80000000L)
 #endif
 
 /*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
-	std::wstring strFilename = OOBase::from_utf8(strFile.c_str());
+    std::wstring strFilename = OOBase::from_utf8(strFile.c_str());
 
-	// Create a SID for the BUILTIN\Users group.
-	PSID pSid;
-	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
-	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
-		SECURITY_BUILTIN_DOMAIN_RID,
-		DOMAIN_ALIAS_RID_USERS,
-		0, 0, 0, 0, 0, 0,
-		&pSid))
-	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	}
-	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
+    // Create a SID for the BUILTIN\Users group.
+    PSID pSid;
+    SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
+    if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
+        SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_USERS,
+        0, 0, 0, 0, 0, 0,
+        &pSid))
+    {
+        LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+    }
+    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
 
-	// Create a SID for the BUILTIN\Administrators group.
-	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
-		SECURITY_BUILTIN_DOMAIN_RID,
-		DOMAIN_ALIAS_RID_ADMINS,
-		0, 0, 0, 0, 0, 0,
-		&pSid))
-	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	}
-	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
+    // Create a SID for the BUILTIN\Administrators group.
+    if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
+        SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS,
+        0, 0, 0, 0, 0, 0,
+        &pSid))
+    {
+        LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+    }
+    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
-	const int NUM_ACES  = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+    const int NUM_ACES  = 2;
+    EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
 
-	if (bPublicRead)
-	{
-		// Set read access for Users.
-		ea[0].grfAccessPermissions = FILE_GENERIC_READ;
-		ea[0].grfAccessMode = SET_ACCESS;
-		ea[0].grfInheritance = NO_INHERITANCE;
-		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers;
-	}
-	else
-	{
-		ea[0].grfAccessPermissions = 0;//FILE_GENERIC_READ;
-		ea[0].grfAccessMode = REVOKE_ACCESS;
-		ea[0].grfInheritance = NO_INHERITANCE;
-		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers;
-	}
+    if (bPublicRead)
+    {
+        // Set read access for Users.
+        ea[0].grfAccessPermissions = FILE_GENERIC_READ;
+        ea[0].grfAccessMode = SET_ACCESS;
+        ea[0].grfInheritance = NO_INHERITANCE;
+        ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+        ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+        ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers;
+    }
+    else
+    {
+        ea[0].grfAccessPermissions = 0;//FILE_GENERIC_READ;
+        ea[0].grfAccessMode = REVOKE_ACCESS;
+        ea[0].grfInheritance = NO_INHERITANCE;
+        ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+        ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+        ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers;
+    }
 
-	// Set full control for Administrators.
-	ea[1].grfAccessPermissions = GENERIC_ALL;
-	ea[1].grfAccessMode = GRANT_ACCESS;
-	ea[1].grfInheritance = NO_INHERITANCE;
-	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDAdmin;
+    // Set full control for Administrators.
+    ea[1].grfAccessPermissions = GENERIC_ALL;
+    ea[1].grfAccessMode = GRANT_ACCESS;
+    ea[1].grfInheritance = NO_INHERITANCE;
+    ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+    ea[1].Trustee.ptstrName = (LPWSTR)pSIDAdmin;
 
-	PACL pACL = 0;
-	DWORD dwErr = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
-	if (dwErr != 0)
-		LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+    PACL pACL = 0;
+    DWORD dwErr = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
+    if (dwErr != 0)
+        LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
-	OOBase::SmartPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
+    OOBase::SmartPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
 
-	// Try to modify the object's DACL.
-	dwErr = SetNamedSecurityInfoW(
-		const_cast<wchar_t*>(strFilename.c_str()), // name of the object
-		SE_FILE_OBJECT,                          // type of object
-		DACL_SECURITY_INFORMATION |              // change only the object's DACL
-		PROTECTED_DACL_SECURITY_INFORMATION,     // And don't inherit!
-		NULL, NULL,                              // don't change owner or group
-		pACL,                                    // DACL specified
-		NULL);                                   // don't change SACL
+    // Try to modify the object's DACL.
+    dwErr = SetNamedSecurityInfoW(
+        const_cast<wchar_t*>(strFilename.c_str()), // name of the object
+        SE_FILE_OBJECT,                          // type of object
+        DACL_SECURITY_INFORMATION |              // change only the object's DACL
+        PROTECTED_DACL_SECURITY_INFORMATION,     // And don't inherit!
+        NULL, NULL,                              // don't change owner or group
+        pACL,                                    // DACL specified
+        NULL);                                   // don't change SACL
 
-	if (dwErr != 0)
-		LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+    if (dwErr != 0)
+        LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
-	return true;
+    return true;
 }*/
 
 bool Root::Manager::load_config()
@@ -146,7 +146,7 @@ bool Root::Manager::load_config()
 
 		if (!PathFileExistsW(szBuf))
 			LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
-		
+
 		std::string dir = OOBase::to_utf8(szBuf).c_str();
 		if (*dir.rbegin() != '\\')
 			dir += '\\';
@@ -156,7 +156,7 @@ bool Root::Manager::load_config()
 		std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("conf-file");
 		if (f != m_cmd_args.end())
 			return load_config_file(f->second);
-		
+
 		// Read from registry
 		HKEY hKey = 0;
 		LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
@@ -168,7 +168,7 @@ bool Root::Manager::load_config()
 		try
 		{
 			// Loop pulling out registry values
-			for (DWORD dwIndex=0;;++dwIndex)
+			for (DWORD dwIndex=0;; ++dwIndex)
 			{
 				char valName[16383 + 1];
 				DWORD dwNameLen = 16383 + 1;

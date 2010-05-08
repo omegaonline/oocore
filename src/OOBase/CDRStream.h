@@ -33,13 +33,13 @@ namespace OOBase
 		static const int MaxAlignment = 8;
 
 		CDRStream(size_t len = 256) :
-			m_buffer(0),
+				m_buffer(0),
 #if (OMEGA_BYTE_ORDER == OMEGA_BIG_ENDIAN)
-			m_big_endian(true),
+				m_big_endian(true),
 #else
-			m_big_endian(false),
+				m_big_endian(false),
 #endif
-			m_last_error(0)
+				m_last_error(0)
 		{
 			OOBASE_NEW(m_buffer,Buffer(len + MaxAlignment));
 			if (!m_buffer)
@@ -49,21 +49,21 @@ namespace OOBase
 		}
 
 		CDRStream(Buffer* buffer) :
-			m_buffer(0),
+				m_buffer(0),
 #if (OMEGA_BYTE_ORDER == OMEGA_BIG_ENDIAN)
-			m_big_endian(true),
+				m_big_endian(true),
 #else
-			m_big_endian(false),
+				m_big_endian(false),
 #endif
-			m_last_error(0)
+				m_last_error(0)
 		{
 			m_buffer = buffer->duplicate();
 		}
 
 		CDRStream(const CDRStream& rhs) :
-			m_buffer(0),
-			m_big_endian(rhs.m_big_endian),
-			m_last_error(rhs.m_last_error)
+				m_buffer(0),
+				m_big_endian(rhs.m_big_endian),
+				m_last_error(rhs.m_last_error)
 		{
 			m_buffer = rhs.m_buffer->duplicate();
 		}
@@ -127,8 +127,8 @@ namespace OOBase
 		}
 
 		/** Templatized variable read function.
-		 *	This function reads a value of type \p T, and advances rd_ptr() by \p sizeof(T).
-		 *	\return \p true on sucess or \p false if length() < \p sizeof(T).
+		 *  This function reads a value of type \p T, and advances rd_ptr() by \p sizeof(T).
+		 *  \return \p true on sucess or \p false if length() < \p sizeof(T).
 		 */
 		template <typename T>
 		bool read(T& val)
@@ -229,10 +229,10 @@ namespace OOBase
 			return count;
 		}
 
-		/**	Templatized variable write function.
-		 *	This function writes a value of type \p T, and advances wr_ptr() by \p sizeof(T).
-		 *	This function will call space() to increase the internal buffer capacity.
-		 *	\return \p true on sucess or \p false if there is no more heap available.
+		/** Templatized variable write function.
+		 *  This function writes a value of type \p T, and advances wr_ptr() by \p sizeof(T).
+		 *  This function will call space() to increase the internal buffer capacity.
+		 *  \return \p true on sucess or \p false if there is no more heap available.
 		 */
 		template <typename T>
 		bool write(const T& val)
@@ -303,14 +303,14 @@ namespace OOBase
 
 			memcpy(m_buffer->wr_ptr(),pszText,len);
 			m_buffer->wr_ptr(len);
-			
+
 			return true;
 		}
 
 		/// A specialization of write() for type \p std::string.
 		bool write(const std::string& strText)
 		{
-			return write(strText.data(),strText.size());			
+			return write(strText.data(),strText.size());
 		}
 
 		/// A specialization of write() for type \p bool.
@@ -358,9 +358,9 @@ namespace OOBase
 			return count;
 		}
 
-		/**	Templatized variable replace function.
-		 *	This function writes a value of type \p T, at position \p mark.
-		 *	This function does no buffer expansion or alignment.
+		/** Templatized variable replace function.
+		 *  This function writes a value of type \p T, at position \p mark.
+		 *  This function does no buffer expansion or alignment.
 		 */
 		template <typename T>
 		void replace(const T& val, size_t mark)

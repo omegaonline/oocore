@@ -29,7 +29,7 @@ using namespace OTL;
 namespace
 {
 	class FormattingException :
-		public ExceptionImpl<Formatting::IFormattingException>
+			public ExceptionImpl<Formatting::IFormattingException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(FormattingException)
@@ -152,7 +152,7 @@ namespace
 		char grouping_trans[128] = {0};
 		const char* grouping = grouping_trans;
 		size_t g = 0;
-		for (const char* c = grouping_buf;*c != '\0' && g<sizeof(grouping_trans)-1;++g)
+		for (const char* c = grouping_buf; *c != '\0' && g<sizeof(grouping_trans)-1; ++g)
 		{
 			grouping_trans[g] = static_cast<char>(atoi(c));
 			if (!grouping_trans[g])
@@ -385,7 +385,7 @@ namespace
 			// Build a crt style grouping
 
 			size_t g = 0;
-			for (const char* c = grouping_buf;*c != '\0' && g<sizeof(trans_grouping)-1;++g)
+			for (const char* c = grouping_buf; *c != '\0' && g<sizeof(trans_grouping)-1; ++g)
 			{
 				trans_grouping[g] = static_cast<char>(atoi(c));
 				if (!trans_grouping[g])
@@ -746,7 +746,7 @@ namespace
 	{
 		string_t s;
 		double p = 0.0;
-		for (int i=0;i<10 && val != p;++i)
+		for (int i=0; i<10 && val != p; ++i)
 		{
 			s = fmt_general(val,false,precision+i);
 
@@ -895,7 +895,7 @@ namespace
 		int width = 0;
 		int exp_digits = 0;
 
-		for (size_t pos = 0;pos < strFormat.Length();)
+		for (size_t pos = 0; pos < strFormat.Length();)
 		{
 			size_t found = find_skip_quote(strFormat,pos,strFind);
 			if (found == string_t::npos)
@@ -921,7 +921,7 @@ namespace
 
 					if (sci != string_t::npos)
 					{
-						for (;strFormat[found] == L'0' && found<strFormat.Length();++found)
+						for (; strFormat[found] == L'0' && found<strFormat.Length(); ++found)
 							++exp_digits;
 
 						break;
@@ -946,9 +946,9 @@ namespace
 			else if (strFormat.Compare(thousands,found,thousands.Length()) == 0)
 			{
 				if (!group && dec_place == string_t::npos &&
-					found > 0 && found < strFormat.Length()-1 &&
-					(strFormat[found-1]==L'#' || strFormat[found-1]==L'0') &&
-					(strFormat[found+1]==L'#' || strFormat[found+1]==L'0'))
+						found > 0 && found < strFormat.Length()-1 &&
+						(strFormat[found-1]==L'#' || strFormat[found-1]==L'0') &&
+						(strFormat[found+1]==L'#' || strFormat[found+1]==L'0'))
 				{
 					group = true;
 					found += thousands.Length()-1;
@@ -994,7 +994,7 @@ namespace
 		bool done_neg = false;
 		size_t numpos = 0;
 		group = false;
-		for (size_t pos = 0;pos < strFormat.Length();++pos)
+		for (size_t pos = 0; pos < strFormat.Length(); ++pos)
 		{
 			wchar_t wc = strFormat[pos];
 			switch (wc)
@@ -1088,9 +1088,9 @@ namespace
 				else if (strFormat.Compare(thousands,pos,thousands.Length()) == 0)
 				{
 					if (!group && !seen_decimal &&
-						pos > 0 && pos < strFormat.Length()-1 &&
-						(strFormat[pos-1]==L'#' || strFormat[pos-1]==L'0') &&
-						(strFormat[pos+1]==L'#' || strFormat[pos+1]==L'0'))
+							pos > 0 && pos < strFormat.Length()-1 &&
+							(strFormat[pos-1]==L'#' || strFormat[pos-1]==L'0') &&
+							(strFormat[pos+1]==L'#' || strFormat[pos+1]==L'0'))
 					{
 						group = true;
 						pos += thousands.Length()-1;
@@ -1263,7 +1263,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	// These need internationalisation...
 	if (strFormat.IsEmpty())
 		return (val ? string_t(L"true") : string_t(L"false"));
-	
+
 	std::vector<string_t> parts;
 	if (parse_custom(strFormat,parts) != 2)
 		throw Formatting::IFormattingException::Create(L"Invalid Omega::bool_t format string: {0}" % strFormat);
@@ -1327,7 +1327,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcsto64,3,((in),const Omega
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;
 	int64_t v = OOCore::wcsto64(start,end,base);
-	
+
 	end_pos = static_cast<size_t>(end - start);
 	if (end_pos >= str.Length())
 		end_pos = string_t::npos;
@@ -1340,7 +1340,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstou64,3,((in),const Ome
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;
 	uint64_t v = OOCore::wcstou64(start,end,base);
-	
+
 	end_pos = static_cast<size_t>(end - start);
 	if (end_pos >= str.Length())
 		end_pos = string_t::npos;
@@ -1353,7 +1353,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_wcstod,2,((in),const Omega
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;
 	float8_t v = OOCore::wcstod(start,end);
-	
+
 	end_pos = static_cast<size_t>(end - start);
 	if (end_pos >= str.Length())
 		end_pos = string_t::npos;

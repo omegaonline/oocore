@@ -22,11 +22,11 @@
 #include "Buffer.h"
 
 OOBase::Buffer::Buffer(size_t cbSize) :
-	m_refcount(1),
-	m_capacity(0),
-	m_buffer(0),
-	m_wr_ptr(0),
-	m_rd_ptr(0)
+		m_refcount(1),
+		m_capacity(0),
+		m_buffer(0),
+		m_wr_ptr(0),
+		m_rd_ptr(0)
 {
 	int err = priv_malloc(m_buffer,cbSize);
 	if (err == 0)
@@ -37,11 +37,11 @@ OOBase::Buffer::Buffer(size_t cbSize) :
 }
 
 OOBase::Buffer::Buffer(const Buffer& rhs) :
-	m_refcount(1),
-	m_capacity(0),
-	m_buffer(0),
-	m_wr_ptr(0),
-	m_rd_ptr(0)
+		m_refcount(1),
+		m_capacity(0),
+		m_buffer(0),
+		m_wr_ptr(0),
+		m_rd_ptr(0)
 {
 	size_t cbSize = rhs.m_capacity;
 	int err = priv_malloc(m_buffer,cbSize);
@@ -188,7 +188,7 @@ size_t OOBase::Buffer::space() const
 }
 
 /**
- *	\warning A reallocation may occur updating rd_ptr() and wr_ptr().
+ *  \warning A reallocation may occur updating rd_ptr() and wr_ptr().
  */
 int OOBase::Buffer::space(size_t cbSpace)
 {

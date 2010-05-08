@@ -102,7 +102,7 @@ namespace Omega
 			virtual guid_t MessageOid() = 0;
 			virtual IChannelSink* Open(const string_t& strEndpoint, IChannelSink* pSink) = 0;
 		};
-		
+
 		/// {63EB243E-6AE3-43BD-B073-764E096775F8}
 		OOCORE_DECLARE_OID(OID_StdObjectManager);
 	}

@@ -31,8 +31,8 @@
 namespace User
 {
 	class InterProcessService :
-		public OTL::ObjectBase,
-		public OOCore::IInterProcessService
+			public OTL::ObjectBase,
+			public OOCore::IInterProcessService
 	{
 	public:
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager);
@@ -52,7 +52,10 @@ namespace User
 
 	// OOCore::IInterProcessService members
 	public:
-		Omega::bool_t IsStandalone() { return false; }
+		Omega::bool_t IsStandalone()
+		{
+			return false;
+		}
 		Omega::Registry::IKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
 		void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);

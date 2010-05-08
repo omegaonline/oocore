@@ -29,8 +29,8 @@
 #endif
 
 User::Acceptor::Acceptor() :
-	m_pManager(0),
-	m_pSocket(0)
+		m_pManager(0),
+		m_pSocket(0)
 {
 }
 

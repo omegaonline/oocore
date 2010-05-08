@@ -58,11 +58,11 @@ namespace OOSvrBase
 		{
 		public:
 			AsyncSocket(ProactorImpl* pProactor) :
-				m_proactor(pProactor),
-				m_read_watcher(0),
-				m_write_watcher(0),
-				m_handler(0),
-				m_current_write(0)
+					m_proactor(pProactor),
+					m_read_watcher(0),
+					m_write_watcher(0),
+					m_handler(0),
+					m_current_write(0)
 			{
 				m_current_read.m_buffer = 0;
 			}
@@ -107,11 +107,11 @@ namespace OOSvrBase
 		{
 		public:
 			AcceptSocket(ProactorImpl* pProactor, const std::string& path) :
-				m_proactor(pProactor),
-				m_watcher(0),
-				m_handler(0),
-				m_closing(false),
-				m_path(path)
+					m_proactor(pProactor),
+					m_watcher(0),
+					m_handler(0),
+					m_closing(false),
+					m_path(path)
 			{}
 
 			int init(Acceptor* handler, int fd);
@@ -184,12 +184,12 @@ void OOSvrBase::Ev::AsyncSocket::close()
 		m_handler = 0;
 
 		// Empty the queues
-		for (std::deque<AsyncRead>::iterator i=m_async_reads.begin();i!=m_async_reads.end();++i)
+		for (std::deque<AsyncRead>::iterator i=m_async_reads.begin(); i!=m_async_reads.end(); ++i)
 			i->m_buffer->release();
 
 		m_async_reads.clear();
 
-		for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin();i!=m_async_writes.end();++i)
+		for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin(); i!=m_async_writes.end(); ++i)
 			(*i)->release();
 
 		m_async_writes.clear();
@@ -257,7 +257,8 @@ int OOSvrBase::Ev::AsyncSocket::read_next()
 			return ENOMEM;
 		}
 
-	} while (!do_read(m_current_read.m_to_read));
+	}
+	while (!do_read(m_current_read.m_to_read));
 
 	return m_proactor->start_watcher(m_read_watcher);
 }
@@ -362,7 +363,8 @@ int OOSvrBase::Ev::AsyncSocket::write_next()
 			return ENOMEM;
 		}
 
-	} while (!do_write());
+	}
+	while (!do_write());
 
 	return m_proactor->start_watcher(m_write_watcher);
 }
@@ -473,7 +475,7 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 	// Add FD_CLOEXEC
 	int oldflags = fcntl(new_fd,F_GETFD);
 	if (oldflags == -1 ||
-		fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		err = errno;
 		::close(new_fd);
@@ -527,7 +529,7 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::close()
 }
 
 OOSvrBase::Ev::ProactorImpl::ProactorImpl() :
-	m_pLoop(0), m_pIOQueue(0), m_bStop(false)
+		m_pLoop(0), m_pIOQueue(0), m_bStop(false)
 {
 	// Create an ev loop
 	m_pLoop = ev_loop_new(EVFLAG_AUTO | EVFLAG_NOENV);
@@ -545,7 +547,7 @@ OOSvrBase::Ev::ProactorImpl::ProactorImpl() :
 
 	// Create the worker pool
 	int num_procs = 2;
-	for (int i=0;i<num_procs;++i)
+	for (int i=0; i<num_procs; ++i)
 	{
 		OOBase::SmartPtr<OOBase::Thread> ptrThread;
 		OOBASE_NEW(ptrThread,OOBase::Thread());
@@ -569,7 +571,7 @@ OOSvrBase::Ev::ProactorImpl::~ProactorImpl()
 	guard.release();
 
 	// Wait for all the threads to finish
-	for (std::vector<OOBase::SmartPtr<OOBase::Thread> >::iterator i=m_workers.begin();i!=m_workers.end();++i)
+	for (std::vector<OOBase::SmartPtr<OOBase::Thread> >::iterator i=m_workers.begin(); i!=m_workers.end(); ++i)
 	{
 		(*i)->join();
 	}
@@ -615,7 +617,7 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 				OOBase::Guard<OOBase::SpinLock> guard2(m_lock);
 
 				// Check for add and remove of watchers
-				for (std::deque<io_info>::iterator i=m_update_queue.begin();i!=m_update_queue.end();++i)
+				for (std::deque<io_info>::iterator i=m_update_queue.begin(); i!=m_update_queue.end(); ++i)
 				{
 					if (i->op == 0)
 					{
@@ -630,7 +632,7 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 						if (i->op == 2)
 						{
 							// Remove from the pending queue...
-							for (std::deque<io_watcher*>::iterator j=io_queue.begin();j!=io_queue.end();)
+							for (std::deque<io_watcher*>::iterator j=io_queue.begin(); j!=io_queue.end();)
 							{
 								if (i->watcher == *j)
 									io_queue.erase(j++);
@@ -647,13 +649,14 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 				if (m_bStop)
 					return 0;
 			}
-		} while (io_queue.empty());
+		}
+		while (io_queue.empty());
 
 		// Release the loop mutex...
 		guard.release();
 
 		// Process our queue
-		for (std::deque<io_watcher*>::iterator i=io_queue.begin();i!=io_queue.end();++i)
+		for (std::deque<io_watcher*>::iterator i=io_queue.begin(); i!=io_queue.end(); ++i)
 		{
 			if ((*i)->callback)
 				(*(*i)->callback)((*i)->param);
@@ -780,7 +783,7 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	// Set non-blocking
 	int oldflags = fcntl(fd,F_GETFL);
 	if (oldflags == -1 ||
-		fcntl(fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
+			fcntl(fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
 	{
 		*perr = errno;
 		close(fd);
@@ -790,7 +793,7 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	// Add FD_CLOEXEC
 	oldflags = fcntl(fd,F_GETFD);
 	if (oldflags == -1 ||
-		fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		*perr = errno;
 		close(fd);
@@ -870,7 +873,7 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 	// Set non-blocking
 	int oldflags = fcntl(new_fd,F_GETFL);
 	if (oldflags == -1 ||
-		fcntl(new_fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
+			fcntl(new_fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
 	{
 		*perr = errno;
 		close(new_fd);
@@ -880,7 +883,7 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 	// Add FD_CLOEXEC
 	oldflags = fcntl(new_fd,F_GETFD);
 	if (oldflags == -1 ||
-		fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		*perr = errno;
 		close(new_fd);

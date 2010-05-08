@@ -28,35 +28,35 @@ namespace OOBase
 {
 	/// Used to read and write data to a variable length memory buffer
 	/**
-	 *	A Buffer instance maintains two pointers, one to the read position: rd_ptr(),
-	 *	and one to the write position: wr_ptr(). 
-	 *	
-	 *	The size of the internal buffer maintained by the class is controlled by space(), 
-	 *	but care should be exercised because the values returned by rd_ptr() and wr_ptr() 
-	 *	might change due to reallocation.
+	 *  A Buffer instance maintains two pointers, one to the read position: rd_ptr(),
+	 *  and one to the write position: wr_ptr().
 	 *
-	 *	The following diagram shows the relationships between the read and write pointers 
-	 *	and the internal buffer:
+	 *  The size of the internal buffer maintained by the class is controlled by space(),
+	 *  but care should be exercised because the values returned by rd_ptr() and wr_ptr()
+	 *  might change due to reallocation.
 	 *
-	 *	\verbatim
-		  *.............*...............*..............*
-		m_buffer     rd_ptr()        wr_ptr()     m_capacity
-						|<------------->|<------------>|
-							 length()        space()      \endverbatim
-	 *	\warning This class is not thread-safe.
+	 *  The following diagram shows the relationships between the read and write pointers
+	 *  and the internal buffer:
+	 *
+	 *  \verbatim
+	      *.............*...............*..............*
+	    m_buffer     rd_ptr()        wr_ptr()     m_capacity
+	                    |<------------->|<------------>|
+	                         length()        space()      \endverbatim
+	 *  \warning This class is not thread-safe.
 	 */
 	class Buffer
 	{
 	public:
 		/// The constructor allocates the internal buffer to size \p cbSize.
 		Buffer(size_t cbSize = 256);
-		
+
 		/// Return a reference counted copy
 		Buffer* duplicate();
 
 		/// Release a reference
 		void release();
-		
+
 		/// Get the current read pointer value.
 		const char* rd_ptr() const;
 
@@ -65,7 +65,7 @@ namespace OOBase
 
 		/// Advance the read pointer to \p align byte boundary.
 		void align_rd_ptr(size_t align);
-		
+
 		/// Get the current write pointer value.
 		char* wr_ptr();
 
@@ -74,10 +74,10 @@ namespace OOBase
 
 		/// Advance the write pointer to \p align byte boundary.
 		int align_wr_ptr(size_t align);
-		
+
 		/// Get the used length of the buffer, the difference between rd_ptr() and wr_ptr().
 		size_t length() const;
-		
+
 		/// Reset the read and write pointers to start().
 		int reset(size_t align = 1);
 
@@ -107,10 +107,10 @@ namespace OOBase
 
 		AtomicInt<size_t> m_refcount; ///< The reference count.
 
-		size_t	m_capacity;	///< The total allocated bytes for \p m_buffer.
-		char*	m_buffer;	///< The actual underlying buffer.
-		char*	m_wr_ptr;	///< The current write pointer.
-		char*	m_rd_ptr;	///< The current read pointer.
+		size_t  m_capacity; ///< The total allocated bytes for \p m_buffer.
+		char*   m_buffer;   ///< The actual underlying buffer.
+		char*   m_wr_ptr;   ///< The current write pointer.
+		char*   m_rd_ptr;   ///< The current read pointer.
 
 		int priv_malloc(char*& ptr, size_t& bytes);
 		int priv_realloc(char*& ptr, size_t& bytes);

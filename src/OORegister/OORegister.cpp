@@ -58,9 +58,9 @@ typedef Omega::System::Internal::SafeShim* (OMEGA_CALL *pfnRegisterLib)(Omega::S
 static void call_fn(pfnRegisterLib pfn, Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts)
 {
 	Omega::System::Internal::SafeShim* pSE = pfn(
-		Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
-		Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::coerce(bLocal),
-		Omega::System::Internal::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
+				Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
+				Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::coerce(bLocal),
+				Omega::System::Internal::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
 
 	if (pSE)
 		Omega::System::Internal::throw_correct_exception(pSE);
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 	bool bSilent = (args["silent"] == "true");
 
 	if ((args["install"].empty() && args["uninstall"].empty()) ||
-		(!args["install"].empty() && !args["uninstall"].empty()))
+			(!args["install"].empty() && !args["uninstall"].empty()))
 	{
 		if (!bSilent)
 		{
@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
 	bool bInstall = !args["install"].empty();
 
 	bool bOk = true;
-	for (int i=0;bOk;++i)
+	for (int i=0; bOk; ++i)
 	{
 		std::ostringstream ss;
 		ss.imbue(std::locale::classic());

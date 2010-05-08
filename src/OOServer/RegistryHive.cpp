@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -35,9 +35,9 @@
 #include "RegistryHive.h"
 
 Registry::Hive::Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions) :
-	m_pManager(pManager),
-	m_strdb(strdb),
-	m_default_permissions(default_permissions)
+		m_pManager(pManager),
+		m_strdb(strdb),
+		m_default_permissions(default_permissions)
 {
 }
 
@@ -213,7 +213,7 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 	if (flags == 0 /*OpenExisting*/)
 		return err;
-	
+
 	if (flags == 1 /*OpenCreate*/ && err != ENOENT)
 		return err;
 
@@ -222,7 +222,7 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 	// Start inserting
 	OOBase::SmartPtr<Db::Transaction> ptrTrans;
-	
+
 	// Need to add more...
 	if (access_mask & Hive::write_check)
 	{
@@ -264,7 +264,7 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 		strSubKey = strSubKey.substr(pos+1);
 		uSubKey = uKey;
 	}
-	
+
 	if (ptrTrans->commit() != SQLITE_OK)
 		return EIO;
 
@@ -317,7 +317,8 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 				return res;
 		}
 
-	} while (err == SQLITE_ROW);
+	}
+	while (err == SQLITE_ROW);
 
 	if (err != SQLITE_DONE)
 		return EIO;
@@ -418,7 +419,8 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 				setSubKeys.insert(strSubKey);
 		}
 
-	} while (err == SQLITE_ROW);
+	}
+	while (err == SQLITE_ROW);
 
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
@@ -492,7 +494,8 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 				return;
 			}
 		}
-	} while (err == SQLITE_ROW);
+	}
+	while (err == SQLITE_ROW);
 
 	if (err == SQLITE_DONE)
 	{
@@ -541,7 +544,8 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 				setValues.insert(v);
 		}
 
-	} while (err == SQLITE_ROW);
+	}
+	while (err == SQLITE_ROW);
 
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
@@ -605,7 +609,8 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 				return;
 			}
 		}
-	} while (err == SQLITE_ROW);
+	}
+	while (err == SQLITE_ROW);
 
 	if (err == SQLITE_DONE)
 	{

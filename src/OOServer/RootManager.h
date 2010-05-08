@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -45,8 +45,8 @@ namespace Root
 	typedef OOBase::Singleton<OOSvrBase::Proactor,Root::Module> Proactor;
 
 	class Manager :
-		public MessageHandler,
-		public Registry::Manager
+			public MessageHandler,
+			public Registry::Manager
 	{
 	public:
 		Manager(const std::map<std::string,std::string>& args);
@@ -69,7 +69,7 @@ namespace Root
 		// Configuration members
 		std::map<std::string,std::string> m_cmd_args;
 		std::map<std::string,std::string> m_config_args;
-		
+
 		// I/O members
 		OOBase::RWMutex m_lock;
 		Omega::uint32_t m_sandbox_channel;

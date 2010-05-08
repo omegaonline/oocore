@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -142,15 +142,15 @@ namespace
 
 		// Create the named pipe instance
 		HANDLE hPipe = CreateNamedPipeA(("\\\\.\\pipe\\" + strPipe).c_str(),
-			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
-			PIPE_TYPE_BYTE |
-			PIPE_READMODE_BYTE |
-			PIPE_WAIT,
-			1,
-			0,
-			0,
-			0,
-			&sa);
+										PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
+										PIPE_TYPE_BYTE |
+										PIPE_READMODE_BYTE |
+										PIPE_WAIT,
+										1,
+										0,
+										0,
+										0,
+										&sa);
 
 		if (hPipe == INVALID_HANDLE_VALUE)
 			LOG_ERROR(("CreateNamedPipeA failed: %s",OOBase::Win32::FormatMessage().c_str()));
@@ -215,7 +215,7 @@ namespace
 		size_t len = wcslen(szKey.Buffer);
 		szKey.Length = static_cast<USHORT>(len * sizeof(wchar_t));
 		szKey.MaximumLength = static_cast<USHORT>((len+1) * sizeof(wchar_t));
-		
+
 		PLSA_UNICODE_STRING pszVal;
 		dwErr = LsaNtStatusToWinError(LsaRetrievePrivateData(hPolicy,&szKey,&pszVal));
 		if (dwErr != ERROR_SUCCESS)
@@ -457,9 +457,9 @@ namespace
 }
 
 SpawnedProcessWin32::SpawnedProcessWin32() :
-	m_hToken(NULL),
-	m_hProcess(NULL),
-	m_hProfile(NULL)
+		m_hToken(NULL),
+		m_hProcess(NULL),
+		m_hProfile(NULL)
 {
 }
 
@@ -494,10 +494,10 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 			DWORD dwRes = GetLastError();
 			LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
 		}
-			
+
 		// Strip off our name, and add OOSvrUser.exe
 		PathRemoveFileSpecW(szPath);
-		
+
 		strCurDir = szPath;
 
 		if (!PathAppendW(szPath,L"OOSvrUser.exe"))
@@ -596,18 +596,18 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		strTitle = strAppPath;
 
 		// Get the names associated with the user SID
-        std::wstring strUserName;
-        std::wstring strDomainName;
-        if (OOSvrBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
-        {
-            strTitle += L" - ";
-            strTitle += strDomainName;
-            strTitle += L"\\";
-            strTitle += strUserName;
-        }
+		std::wstring strUserName;
+		std::wstring strDomainName;
+		if (OOSvrBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
+		{
+			strTitle += L" - ";
+			strTitle += strDomainName;
+			strTitle += L"\\";
+			strTitle += strUserName;
+		}
 
-        if (bSandbox)
-            strTitle += L" [Sandbox]";
+		if (bSandbox)
+			strTitle += L" [Sandbox]";
 	}
 	else
 #endif
@@ -628,7 +628,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		}
 	}
 	if (!strTitle.empty())
-        startup_info.lpTitle = (LPWSTR)strTitle.c_str();
+		startup_info.lpTitle = (LPWSTR)strTitle.c_str();
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
@@ -722,7 +722,7 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HA
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
 				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-			
+
 			// Get the names associated with the user SID
 			std::wstring strUserName;
 			std::wstring strDomainName;
@@ -752,7 +752,7 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HA
 
 			// Stash our original token as the process token
 			CloseHandle(m_hToken);
-				
+
 			// Duplicate the impersonated token...
 			DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
 		}
@@ -823,11 +823,11 @@ bool SpawnedProcessWin32::Compare(HANDLE hToken)
 		return false;
 
 	return (pStats1->SidCount==pStats2->SidCount &&
-		pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
-		pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
-		OOSvrBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
-		OOSvrBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
-		OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
+			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
+			pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
+			OOSvrBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
+			OOSvrBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
+			OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
 bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
@@ -867,7 +867,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 
 			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
 				LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::Win32::FormatMessage().c_str()),false);
-			
+
 			strHive = OOBase::to_utf8(szBuf).c_str();
 			if (*strHive.rbegin() != '\\')
 				strHive += '\\';
@@ -888,7 +888,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 			if (!strDomainName.empty())
 				strHive += "." + OOBase::to_utf8(strDomainName.c_str());
 		}
-	
+
 		strHive += ".regdb";
 
 		// Now confirm the file exists, and if it doesn't, copy default_user.regdb
@@ -913,7 +913,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
 
 	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-		
+
 	OOBase::Win32::SmartHandle sandbox_uid;
 	if (bSandbox)
 	{
@@ -929,7 +929,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
 				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),(SpawnedProcess*)0);
-			
+
 			// Get the names associated with the user SID
 			std::wstring strUserName;
 			std::wstring strDomainName;
@@ -981,7 +981,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 	if (!pSpawn32->Spawn(strAppName,bUnsafe,uid,strRootPipe,bSandbox))
 		return 0;
-	
+
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
 		return 0;

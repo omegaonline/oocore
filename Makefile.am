@@ -6,9 +6,9 @@ gitbundle:
 	git bundle create omega.git --all
 
 astyle:
-	astyle -A1 -T4 -K -N -w -U -c -n -R *.h
-	astyle -A1 -T4 -K -N -w -U -c -n -R *.inl
-	astyle -A1 -T4 -K -N -w -U -c -n -R *.cpp
+	astyle -A1 -T4 -K -N -w -U -c -n -R $(srcdir)/*.h
+	astyle -A1 -T4 -K -N -w -U -c -n -R $(srcdir)/*.inl
+	astyle -A1 -T4 -K -N -w -U -c -n -R $(srcdir)/*.cpp
 
 reallyclean: maintainer-clean
 	rm -f Makefile

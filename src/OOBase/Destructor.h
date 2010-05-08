@@ -78,8 +78,8 @@ namespace OOBase
 			try
 			{
 				Guard<SpinLock> guard(m_lock);
-			
-				for (std::list<std::pair<pfn_destructor,void*> >::iterator i=m_list.begin();i!=m_list.end();++i)
+
+				for (std::list<std::pair<pfn_destructor,void*> >::iterator i=m_list.begin(); i!=m_list.end(); ++i)
 				{
 					(*(i->first))(i->second);
 				}

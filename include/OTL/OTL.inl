@@ -48,10 +48,10 @@ inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t&
 	if (!(flags & Omega::Activation::InProcess))
 		return 0;
 
-    const CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0;g[i].pfnOid!=0;++i)
+	const CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
-	    if (*(g[i].pfnOid)() == oid)
+		if (*(g[i].pfnOid)() == oid)
 		{
 			return g[i].pfnCreate(iid,flags);
 		}
@@ -64,7 +64,7 @@ inline void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::b
 	Omega::string_t strXML;
 
 	const CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0;g[i].pfnOid!=0;++i)
+	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
 		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
@@ -165,7 +165,7 @@ inline void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega
 inline void OTL::ProcessModule::RegisterObjectFactories()
 {
 	CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0;g[i].pfnOid!=0;++i)
+	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
 		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF;
 		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory),Omega::Activation::InProcess)));
@@ -177,7 +177,7 @@ inline void OTL::ProcessModule::RegisterObjectFactories()
 inline void OTL::ProcessModule::UnregisterObjectFactories()
 {
 	CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0;g[i].pfnOid!=0;++i)
+	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
 		Omega::Activation::RevokeObject(g[i].cookie);
 		g[i].cookie = 0;

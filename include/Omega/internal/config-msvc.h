@@ -30,26 +30,26 @@
 /////////////////////////////////////////////////////////
 
 #if !defined(_MSC_VER)
-#error This is the MSVC build!
+	#error This is the MSVC build!
 #elif (_MSC_VER < 1310)
-#error Omega Online will not compile with a pre Visual C++ .NET 2003 compiler
+	#error Omega Online will not compile with a pre Visual C++ .NET 2003 compiler
 #endif
 
 #if defined(__cplusplus) && !defined(_CPPUNWIND)
-#error You must enable exception handling /GX
+	#error You must enable exception handling /GX
 #endif
 
 #ifndef _MT
-#error You must enable multithreaded library use /MT, /MTd, /MD or /MDd
+	#error You must enable multithreaded library use /MT, /MTd, /MD or /MDd
 #endif
 
 #if defined(_DEBUG) && !defined(OMEGA_DEBUG)
-#define OMEGA_DEBUG
+	#define OMEGA_DEBUG
 #endif
 
 #define OMEGA_MAX_DEFINES 249
 
-#define OMEGA_UNUSED_ARG(n)	(n)
+#define OMEGA_UNUSED_ARG(n) (n)
 
 #define OMEGA_COMPILER_STRING_III(n)  #n
 #define OMEGA_COMPILER_STRING_II(a,b) OMEGA_COMPILER_STRING_III(a b)
@@ -66,39 +66,37 @@
 #define OMEGA_HAS_UUIDOF
 
 #ifndef _DEBUG
-// Optimization sometimes re-orders things causing this error
-#pragma warning(disable : 4702)
+	// Optimization sometimes re-orders things causing this error
+	#pragma warning(disable : 4702)
 #endif
 
 // Check for 64-bit builds
 #if defined(_M_IA64) || defined(_M_X64)
-#define OMEGA_64
+	#define OMEGA_64
 #endif
 
 #ifdef __cplusplus
 	#include <new>
-
 	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 		if ((void)0,true) { \
 			POINTER = new (std::nothrow) CONSTRUCTOR; \
 			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
 		} else (void)0
-
 #endif
 
 #if defined(_WIN32_WCE)
-#include "config-wince.h"
+	#include "config-wince.h"
 #elif defined(_WIN32)
-#include "config-win32.h"
+	#include "config-win32.h"
 #else
-#error What else can MSVC compile?
+	#error What else can MSVC compile?
 #endif
 
 #include <errno.h>
 #include <assert.h>
 
 #if !defined(EINVAL)
-#define EINVAL 22
+	#define EINVAL 22
 #endif
 
 #endif // OOCORE_CONFIG_MSVC_H_INCLUDED_

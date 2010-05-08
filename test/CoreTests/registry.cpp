@@ -136,15 +136,15 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 
 	std::set<Omega::string_t> values = pKey->EnumValues();
-	
+
 	TEST(!values.empty());
 	TEST(values.find(strTestValue) != values.end());
-	
+
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 
 	values = pKey->EnumValues();
 	TEST(values.find(strTestValue) == values.end());
-	
+
 	return true;
 }
 
@@ -261,7 +261,7 @@ static bool test_key(const Omega::string_t& strKey)
 	{
 		bTest = test_key2(pKey,strKey);
 	}
-	catch(...)
+	catch (...)
 	{
 		pKey->Release();
 		throw;
@@ -331,7 +331,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 
 	if (bCanWriteToRoot)
 		test_privates(pKey,L"System");
-	
+
 	return true;
 }
 
@@ -345,7 +345,7 @@ bool registry_tests()
 	{
 		bTest = test_root_key(pRootKey);
 	}
-	catch(...)
+	catch (...)
 	{
 		pRootKey->Release();
 		throw;

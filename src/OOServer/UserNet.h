@@ -26,9 +26,9 @@ namespace User
 {
 	class Manager;
 
-	class RemoteChannel : 
-		public OTL::ObjectBase,
-		public Omega::Remoting::IChannelSink
+	class RemoteChannel :
+			public OTL::ObjectBase,
+			public Omega::Remoting::IChannelSink
 	{
 	public:
 		RemoteChannel();
@@ -37,7 +37,7 @@ namespace User
 		void server_init(Manager* pManager, Omega::Remoting::IChannelSink* pSink, const Omega::guid_t& message_oid, Omega::uint32_t channel_id);
 		void send_away(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 		void channel_closed(Omega::uint32_t channel_id);
-				
+
 		BEGIN_INTERFACE_MAP(RemoteChannel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannelSink)
 		END_INTERFACE_MAP()
@@ -57,10 +57,10 @@ namespace User
 		void process_here_i(OOBase::CDRStream& input);
 		void send_away_i(Omega::Remoting::IMessage* pPayload, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 		void do_channel_closed_i(Omega::uint32_t channel_id);
-		
+
 		static void do_channel_closed(void* pParam, OOBase::CDRStream& input);
 		static void process_here(void* pParams, OOBase::CDRStream& input);
-		
+
 	// IChannelSink members
 	public:
 		void Send(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pMsg, Omega::uint32_t timeout);

@@ -73,7 +73,7 @@ namespace
 			{
 				LPVOID lpBuffer = 0;
 				if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-					strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
+								   strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
 				{
 					strRet = (LPWSTR)lpBuffer;
 					LocalFree(lpBuffer);

@@ -27,15 +27,15 @@
 namespace OOCore
 {
 	class UserSession;
-	
+
 	class ChannelBase :
-		public OTL::ObjectBase,
-		public Omega::Remoting::IChannel,
-		public Omega::Remoting::IMarshal
+			public OTL::ObjectBase,
+			public Omega::Remoting::IChannel,
+			public Omega::Remoting::IMarshal
 	{
 	public:
 		ChannelBase();
-		
+
 		virtual void disconnect();
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager();
@@ -51,7 +51,7 @@ namespace OOCore
 		void init(Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 
 		OOBase::SpinLock                                  m_lock;
-		Omega::uint32_t	                                  m_channel_id;
+		Omega::uint32_t                                   m_channel_id;
 		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
 		Omega::guid_t                                     m_message_oid;
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
@@ -79,7 +79,7 @@ namespace OOCore
 	};
 
 	class Channel :
-		public ChannelBase
+			public ChannelBase
 	{
 	public:
 		Channel() : m_pSession(0), m_src_apt_id(0)
@@ -87,7 +87,7 @@ namespace OOCore
 
 		void init(UserSession* pSession, Omega::uint16_t apt_id, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void disconnect();
-		
+
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)
 		END_INTERFACE_MAP()
@@ -96,7 +96,7 @@ namespace OOCore
 		UserSession*                                 m_pSession;
 		Omega::uint16_t                              m_src_apt_id;
 		OTL::ObjectPtr<Omega::Remoting::IMarshaller> m_ptrMarshaller;
-		
+
 	public:
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
@@ -106,9 +106,9 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::InProcess>,
-		public Omega::Remoting::IMarshalFactory
+			public OTL::ObjectBase,
+			public OTL::AutoObjectFactorySingleton<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::InProcess>,
+			public Omega::Remoting::IMarshalFactory
 	{
 	public:
 		BEGIN_INTERFACE_MAP(ChannelMarshalFactory)
@@ -121,9 +121,9 @@ namespace OOCore
 	};
 
 	class CDRMessageMarshalFactory :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<CDRMessageMarshalFactory,&OID_CDRMessageMarshalFactory,Omega::Activation::InProcess>,
-		public Omega::Remoting::IMarshalFactory
+			public OTL::ObjectBase,
+			public OTL::AutoObjectFactorySingleton<CDRMessageMarshalFactory,&OID_CDRMessageMarshalFactory,Omega::Activation::InProcess>,
+			public Omega::Remoting::IMarshalFactory
 	{
 	public:
 		BEGIN_INTERFACE_MAP(CDRMessageMarshalFactory)

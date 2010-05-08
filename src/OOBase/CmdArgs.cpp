@@ -69,7 +69,7 @@ bool OOSvrBase::CmdArgs::parse(int argc, char* argv[], std::map<std::string,std:
 {
 	bool bEndOfOpts = false;
 	int pos = 0;
-	for (int i=skip;i<argc;++i)
+	for (int i=skip; i<argc; ++i)
 	{
 		if (strcmp(argv[i],"--") == 0)
 		{
@@ -106,7 +106,7 @@ bool OOSvrBase::CmdArgs::parse(int argc, char* argv[], std::map<std::string,std:
 
 bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& results, char** argv, int& arg, int argc) const
 {
-	for (std::multimap<std::string,Option>::const_iterator i=m_map_opts.begin();i!=m_map_opts.end();++i)
+	for (std::multimap<std::string,Option>::const_iterator i=m_map_opts.begin(); i!=m_map_opts.end(); ++i)
 	{
 		std::string value = "true";
 		if (i->second.m_long_opt == argv[arg]+2)
@@ -129,7 +129,7 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 		{
 			if (i->second.m_has_value)
 				value = &argv[arg][i->second.m_long_opt.length()+3];
-			
+
 			results[i->first] = value;
 			return true;
 		}
@@ -141,10 +141,10 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 
 bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& results, char** argv, int& arg, int argc) const
 {
-	for (char* c = argv[arg]+1;*c!='\0';++c)
+	for (char* c = argv[arg]+1; *c!='\0'; ++c)
 	{
 		std::multimap<std::string,Option>::const_iterator i;
-		for (i=m_map_opts.begin();i!=m_map_opts.end();++i)
+		for (i=m_map_opts.begin(); i!=m_map_opts.end(); ++i)
 		{
 			if (i->second.m_short_opt == *c)
 			{
@@ -188,7 +188,7 @@ bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& 
 
 void OOSvrBase::CmdArgs::parse_arg(std::map<std::string,std::string>& results, const char* arg, int position) const
 {
-	for (std::map<std::string,int>::const_iterator i=m_map_args.begin();i!=m_map_args.end();++i)
+	for (std::map<std::string,int>::const_iterator i=m_map_args.begin(); i!=m_map_args.end(); ++i)
 	{
 		if (position == i->second)
 		{
@@ -196,7 +196,7 @@ void OOSvrBase::CmdArgs::parse_arg(std::map<std::string,std::string>& results, c
 			return;
 		}
 	}
-	
+
 	std::ostringstream ss;
 	ss.imbue(std::locale::classic());
 	ss << "arg" << position;

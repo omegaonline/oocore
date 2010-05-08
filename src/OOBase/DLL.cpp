@@ -24,7 +24,7 @@
 #if defined(_WIN32)
 
 OOBase::DLL::DLL() :
-	m_module(0)
+		m_module(0)
 {
 }
 
@@ -93,7 +93,7 @@ namespace
 }
 
 OOBase::DLL::DLL() :
-	m_module(0)
+		m_module(0)
 {
 }
 

@@ -73,7 +73,7 @@ void OOBase::sleep(const timeval_t& wait)
 	for (;;)
 	{
 		if (!nanosleep(&wt,&wt))
-		break;
+			break;
 
 		if (errno != EINTR)
 			OOBase_CallCriticalFailure(errno);
@@ -130,8 +130,8 @@ OOBase::timeval_t OOBase::timeval_t::deadline(unsigned long msec)
 }
 
 OOBase::Countdown::Countdown(timeval_t* wait) :
-	m_start(gettimeofday()),
-	m_wait(wait)
+		m_start(gettimeofday()),
+		m_wait(wait)
 {
 	assert(wait);
 }

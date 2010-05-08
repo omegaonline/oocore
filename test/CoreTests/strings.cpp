@@ -303,7 +303,7 @@ bool string_tests_utf8()
 		if (!fread(szBuf,sizeof(Omega::uint16_t),128,pInUTF16))
 			break;
 
-		for (int i=0;i<128;++i)
+		for (int i=0; i<128; ++i)
 		{
 			unsigned int v = szBuf[i];
 			if (sizeof(wchar_t) == 4)
@@ -352,14 +352,14 @@ bool guid_tests()
 
 	// Create a load of unique guid_t's
 	Omega::guid_t arr[100];
-	for (size_t i=0;i<sizeof(arr)/sizeof(arr[0]);++i)
+	for (size_t i=0; i<sizeof(arr)/sizeof(arr[0]); ++i)
 		arr[i] = Omega::guid_t::Create();
 
 	// Make sure they are unique!
 	bool bTest = true;
-	for (size_t j=0;j<sizeof(arr)/sizeof(arr[0]) && bTest;++j)
+	for (size_t j=0; j<sizeof(arr)/sizeof(arr[0]) && bTest; ++j)
 	{
-		for (size_t k=0;k<sizeof(arr)/sizeof(arr[0]) && bTest;++k)
+		for (size_t k=0; k<sizeof(arr)/sizeof(arr[0]) && bTest; ++k)
 		{
 			if (j != k)
 				bTest = (arr[j] != arr[k]);

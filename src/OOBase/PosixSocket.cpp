@@ -157,7 +157,7 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 	// Add FD_CLOEXEC
 	int oldflags = fcntl(fd,F_GETFD);
 	if (oldflags == -1 ||
-		fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		*perr = errno;
 		::close(fd);
@@ -189,7 +189,7 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 }
 
 OOBase::POSIX::SocketImpl::SocketImpl(int fd) :
-	m_fd(fd)
+		m_fd(fd)
 {
 }
 

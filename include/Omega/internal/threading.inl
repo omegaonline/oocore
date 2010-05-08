@@ -24,7 +24,7 @@
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,());
 inline Omega::Threading::Mutex::Mutex() :
-	m_handle(static_cast<handle_t*>(OOCore_cs__ctor()))
+		m_handle(static_cast<handle_t*>(OOCore_cs__ctor()))
 {
 }
 
@@ -48,8 +48,8 @@ inline void Omega::Threading::Mutex::Release()
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,());
 inline Omega::Threading::ReaderWriterLock::ReaderWriterLock() :
-	m_handle(static_cast<handle_t*>(OOCore_rw_lock__ctor()))
-{	
+		m_handle(static_cast<handle_t*>(OOCore_rw_lock__ctor()))
+{
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,h));
@@ -96,7 +96,7 @@ inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor(void (OME
 	ModuleDestructor& inst = instance();
 	Guard<Mutex> guard(inst.m_lock);
 
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=inst.m_list.begin();i!=inst.m_list.end();++i)
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=inst.m_list.begin(); i!=inst.m_list.end(); ++i)
 	{
 		if (i->first == pfn_dctor && i->second == param)
 		{
@@ -118,7 +118,7 @@ inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 
 	guard.Release();
 
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
 	{
 		try
 		{
@@ -252,14 +252,14 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 }
 
 #ifdef OMEGA_DEBUG
-#define OMEGA_DEBUG_STASH_ATOMIC(expr)	m_debug_value expr
+#define OMEGA_DEBUG_STASH_ATOMIC(expr)  m_debug_value expr
 #else
-#define OMEGA_DEBUG_STASH_ATOMIC(expr)	(void)0
+#define OMEGA_DEBUG_STASH_ATOMIC(expr)  (void)0
 #endif
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,());
 inline Omega::Threading::AtomicRefCount::AtomicRefCount() :
-	m_handle(static_cast<handle_t*>(OOCore_atomic__ctor()))
+		m_handle(static_cast<handle_t*>(OOCore_atomic__ctor()))
 {
 	OMEGA_DEBUG_STASH_ATOMIC(=0);
 }

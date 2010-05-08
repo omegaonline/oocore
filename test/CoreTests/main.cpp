@@ -66,7 +66,7 @@ int main(int /*argc*/, char* /*argv*/[])
 
 		Omega::Uninitialize();
 	}
-	
+
 	return test_summary();
 }
 
@@ -188,5 +188,5 @@ bool run_test(pfnTest t, const char* pszName)
 		output("[C++ exception!]\n");
 	}
 
-    return false;
+	return false;
 }

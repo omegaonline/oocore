@@ -144,21 +144,21 @@ namespace OTL
 	{
 	public:
 		ObjectPtrBase(OBJECT* obj) :
-			m_ptr(obj)
+				m_ptr(obj)
 		{
 			if (m_ptr)
 				m_ptr->AddRef();
 		}
 
 		ObjectPtrBase(const ObjectPtrBase& rhs) :
-			m_ptr(rhs.m_ptr)
+				m_ptr(rhs.m_ptr)
 		{
 			if (m_ptr)
 				m_ptr->AddRef();
 		}
 
 		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
-			m_ptr(0)
+				m_ptr(0)
 		{
 			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
 		}
@@ -222,7 +222,7 @@ namespace OTL
 			return m_ptr;
 		}
 
-		operator OBJECT* () const
+		operator OBJECT*() const
 		{
 			return m_ptr;
 		}
@@ -239,39 +239,39 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(OBJECT* obj = 0) :
-		  ObjectPtrBase<OBJECT>(obj)
+				ObjectPtrBase<OBJECT>(obj)
 		{ }
 
 		template <typename I>
 		ObjectPtr(I* pObject) :
-		  ObjectPtrBase<OBJECT>(0)
+				ObjectPtrBase<OBJECT>(0)
 		{
 			if (pObject)
 				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(OMEGA_GUIDOF(OBJECT)));
 		}
 
 		ObjectPtr(const ObjectPtr<OBJECT>& rhs) :
-		  ObjectPtrBase<OBJECT>(rhs)
+				ObjectPtrBase<OBJECT>(rhs)
 		{ }
 
 		template <typename I>
 		ObjectPtr(const ObjectPtr<I>& rhs) :
-		  ObjectPtrBase<OBJECT>(0)
-		{ 
+				ObjectPtrBase<OBJECT>(0)
+		{
 			if (rhs)
 				this->m_ptr = static_cast<OBJECT*>(rhs->QueryInterface(OMEGA_GUIDOF(OBJECT)));
 		}
 
 		ObjectPtr(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
-		  ObjectPtrBase<OBJECT>(oid,flags,pOuter)
+				ObjectPtrBase<OBJECT>(oid,flags,pOuter)
 		{ }
 
 		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
-		  ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
+				ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
 		ObjectPtr(const Omega::string_t& name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
-		  ObjectPtrBase<OBJECT>(name,flags,pOuter)
+				ObjectPtrBase<OBJECT>(name,flags,pOuter)
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
@@ -294,15 +294,15 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(Omega::IObject* obj = 0) :
-		  ObjectPtrBase<Omega::IObject>(obj)
+				ObjectPtrBase<Omega::IObject>(obj)
 		{ }
 
 		ObjectPtr(const ObjectPtr<Omega::IObject>& rhs) :
-		  ObjectPtrBase<Omega::IObject>(rhs)
+				ObjectPtrBase<Omega::IObject>(rhs)
 		{ }
 
 		ObjectPtr(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = 0) :
-		  ObjectPtrBase<Omega::IObject>(oid,flags,pOuter)
+				ObjectPtrBase<Omega::IObject>(oid,flags,pOuter)
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
@@ -357,17 +357,17 @@ namespace OTL
 			PFNMEMQI pfnMemQI;
 		};
 
-	#if !defined(__BORLANDC__)
+#if !defined(__BORLANDC__)
 	protected:
-	#endif
+#endif
 
 		virtual Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
 		{
-			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
+			for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 			{
 				if (*(pEntries[i].pGuid) == iid ||
-					*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
-					iid == OMEGA_GUIDOF(Omega::IObject))
+						*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
+						iid == OMEGA_GUIDOF(Omega::IObject))
 				{
 					return pEntries[i].pfnQI(iid,this,pEntries[i].offset,pEntries[i].pfnMemQI);
 				}
@@ -432,13 +432,13 @@ namespace OTL
 		void IncLockCount();
 		void DecLockCount();
 		Omega::Threading::Mutex& GetLock();
-		
+
 		virtual void RegisterObjectFactories()
 		{
 			// Override this in a derived class, or do not call
 			assert(false);
 		}
-		
+
 		virtual void UnregisterObjectFactories()
 		{
 			// Override this in a derived class, or do not call
@@ -482,7 +482,7 @@ namespace OTL
 	{
 		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)();
 	}
-	
+
 	inline static ModuleBase* GetModule()
 	{
 		return Module::OMEGA_PRIVATE_FN_CALL(GetModuleBase)();
@@ -523,8 +523,16 @@ namespace OTL
 
 	// IObject members
 	public:
-		virtual void AddRef() { this->Internal_AddRef(); }
-		virtual void Release() { this->Internal_Release(); }
+		virtual void AddRef()
+		{
+			this->Internal_AddRef();
+		}
+
+		virtual void Release()
+		{
+			this->Internal_Release();
+		}
+
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
@@ -557,8 +565,16 @@ namespace OTL
 
 	// IObject members
 	public:
-		virtual void AddRef() { this->Internal_AddRef(); }
-		virtual void Release() { this->Internal_Release(); }
+		virtual void AddRef()
+		{
+			this->Internal_AddRef();
+		}
+
+		virtual void Release()
+		{
+			this->Internal_Release();
+		}
+
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
@@ -575,8 +591,8 @@ namespace OTL
 
 	public:
 		ContainedObjectImpl(Omega::IObject* pOuter) :
-			m_pOuter(pOuter), m_bPinned(false)
-		{ 
+				m_pOuter(pOuter), m_bPinned(false)
+		{
 			m_bPinned = Omega::System::PinObjectPointer(m_pOuter);
 		}
 
@@ -596,8 +612,16 @@ namespace OTL
 
 	// IObject members
 	public:
-		virtual void AddRef() { m_pOuter->AddRef(); }
-		virtual void Release() { m_pOuter->Release(); }
+		virtual void AddRef()
+		{
+			m_pOuter->AddRef();
+		}
+
+		virtual void Release()
+		{
+			m_pOuter->Release();
+		}
+
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return m_pOuter->QueryInterface(iid);
@@ -687,7 +711,7 @@ namespace OTL
 
 	protected:
 		SingletonObjectImpl() : ROOT()
-		{ 
+		{
 			ROOT::Init();
 		}
 
@@ -696,8 +720,16 @@ namespace OTL
 
 	// IObject members
 	public:
-		virtual void AddRef() { GetModule()->IncLockCount(); }
-		virtual void Release() { GetModule()->DecLockCount(); }
+		virtual void AddRef()
+		{
+			GetModule()->IncLockCount();
+		}
+
+		virtual void Release()
+		{
+			GetModule()->DecLockCount();
+		}
+
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
@@ -763,8 +795,8 @@ namespace OTL
 
 	template <typename T1, typename T2>
 	class ObjectFactoryImpl :
-		public ObjectBase,
-		public Omega::Activation::IObjectFactory
+			public ObjectBase,
+			public Omega::Activation::IObjectFactory
 	{
 	public:
 		BEGIN_INTERFACE_MAP(ObjectFactoryImpl)
@@ -872,16 +904,16 @@ namespace OTL
 
 	template <typename ROOT>
 	class IProvideObjectInfoImpl :
-		public Omega::TypeInfo::IProvideObjectInfo
+			public Omega::TypeInfo::IProvideObjectInfo
 	{
-	// IProvideObjectInfo members
+		// IProvideObjectInfo members
 	public:
 		virtual std::list<Omega::guid_t> EnumInterfaces()
 		{
 			std::list<Omega::guid_t> retval;
 
 			const ObjectBase::QIEntry* pEntries = ROOT::getQIEntries();
-			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
+			for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 			{
 				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
 				{

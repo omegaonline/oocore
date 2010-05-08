@@ -48,7 +48,7 @@ namespace
 		struct wrapper
 		{
 			OOBase::Win32::SmartHandle m_hEvent;
-			int                      (*m_thread_fn)(void*);
+			int (*m_thread_fn)(void*);
 			void*                      m_param;
 		};
 
@@ -59,7 +59,7 @@ namespace
 	};
 
 	Win32Thread::Win32Thread() :
-		m_hThread(0)
+			m_hThread(0)
 	{
 	}
 
@@ -187,7 +187,7 @@ namespace
 		struct wrapper
 		{
 			PthreadThread*     m_pThis;
-			int                (*m_thread_fn)(void*);
+			int (*m_thread_fn)(void*);
 			void*              m_param;
 		};
 
@@ -200,7 +200,7 @@ namespace
 	};
 
 	PthreadThread::PthreadThread() :
-		m_running(false)
+			m_running(false)
 	{
 		int err = pthread_cond_init(&m_condition,NULL);
 		if (err)
@@ -349,7 +349,7 @@ namespace
 }
 
 OOBase::Thread::Thread() :
-	m_impl(0)
+		m_impl(0)
 {
 #if defined(_WIN32)
 	OOBASE_NEW(m_impl,Win32Thread());

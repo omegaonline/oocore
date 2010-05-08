@@ -30,7 +30,7 @@
 #endif
 
 OOSvrBase::Proactor::Proactor() :
-	m_impl(0)
+		m_impl(0)
 {
 #if defined(_WIN32)
 	OOBASE_NEW(m_impl,Win32::ProactorImpl());

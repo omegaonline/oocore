@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -35,9 +35,9 @@
 #include "MessageConnection.h"
 
 Root::MessageConnection::MessageConnection(MessageHandler* pHandler) :
-	m_pHandler(pHandler),
-	m_pSocket(0),
-	m_channel_id(0)
+		m_pHandler(pHandler),
+		m_pSocket(0),
+		m_channel_id(0)
 {
 }
 
@@ -60,7 +60,7 @@ void Root::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
 void Root::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-		
+
 	m_channel_id = channel_id;
 }
 
@@ -96,7 +96,7 @@ bool Root::MessageConnection::read()
 	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
-	
+
 	// Swap out the buffer
 	int err = pBuffer->reset(OOBase::CDRStream::MaxAlignment);
 	if (err != 0)
@@ -106,7 +106,7 @@ bool Root::MessageConnection::read()
 	}
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	
+
 	if (!m_pSocket)
 	{
 		pBuffer->release();
@@ -117,7 +117,7 @@ bool Root::MessageConnection::read()
 	pSocket->addref();
 
 	guard.release();
-		
+
 	err = pSocket->read(pBuffer);
 
 	pBuffer->release();
@@ -125,7 +125,7 @@ bool Root::MessageConnection::read()
 
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-	
+
 	return true;
 }
 
@@ -141,7 +141,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 	// Mark the read point
 	size_t mark_rd = buffer->mark_rd_ptr();
 	const char* mark_rd_ptr = buffer->rd_ptr();
-	
+
 	size_t read_more = 0;
 	bool bSuccess = false;
 	bool bRelease = false;
@@ -162,7 +162,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 		// Read the payload specific data
 		bool big_endian;
 		header.read(big_endian);
-	
+
 		// Set the read for the right endianess
 		header.big_endian(big_endian);
 
@@ -174,14 +174,14 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 			LOG_ERROR(("Invalid protocol version"));
 			break;
 		}
-		
+
 		// Room for 2 bytes here!
 
 		// Read the length
 		Omega::uint32_t read_len = 0;
 		header.read(read_len);
 
-		// If we add anything extra here to the header, 
+		// If we add anything extra here to the header,
 		// it must be padded to 8 bytes.
 
 		err = header.last_error();
@@ -213,14 +213,14 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 		input.buffer()->wr_ptr(read_len);
 		input.buffer()->rd_ptr(header_len);
 		input.big_endian(header.big_endian());
-		
+
 		// Give the handler a chance to process the message
 		if (!m_pHandler->parse_message(input,mark_rd))
 			break;
 
 		// Move the current rd_ptr
 		buffer->rd_ptr(read_len - header_len);
-		
+
 		// Shuffle the rest of the buffer up to the top
 		if (buffer->length() > 0)
 		{
@@ -241,7 +241,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 				if (new_buffer)
 				{
 					new_buffer->reset(OOBase::CDRStream::MaxAlignment);
-					
+
 					// Just replace the buffer...
 					buffer = new_buffer;
 					bRelease = true;
@@ -268,7 +268,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 			}
 
 			if (bRelease)
-				buffer->release();				
+				buffer->release();
 		}
 	}
 
@@ -311,13 +311,13 @@ void Root::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
 }
 
 Root::MessageHandler::MessageHandler() :
-	m_uChannelId(0),
-	m_uChannelMask(0),
-	m_uChildMask(0),
-	m_uUpstreamChannel(0),
-	m_uNextChannelId(0),
-	m_uNextChannelMask(0),
-	m_uNextChannelShift(0)
+		m_uChannelId(0),
+		m_uChannelMask(0),
+		m_uChildMask(0),
+		m_uUpstreamChannel(0),
+		m_uNextChannelId(0),
+		m_uNextChannelMask(0),
+		m_uNextChannelShift(0)
 {
 }
 
@@ -328,7 +328,7 @@ Root::MessageHandler::~MessageHandler()
 	try
 	{
 		// Tell every thread context that we have gone...
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
 			i->second->m_pHandler = 0;
 		}
@@ -376,7 +376,7 @@ bool Root::MessageHandler::start_thread()
 
 int Root::MessageHandler::request_worker_fn(void* pParam)
 {
-    return static_cast<MessageHandler*>(pParam)->pump_requests();
+	return static_cast<MessageHandler*>(pParam)->pump_requests();
 }
 
 bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_rd)
@@ -462,7 +462,7 @@ bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_r
 
 		// Attach input
 		msg->m_payload = input;
-		
+
 		// Route it correctly...
 		io_result::type res = queue_message(msg);
 		if (res == io_result::success || res == io_result::timedout)
@@ -502,7 +502,7 @@ bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_r
 int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnce)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
-	
+
 	do
 	{
 		// Wait up to 15 secs
@@ -516,7 +516,7 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,&wait2);
-		
+
 		// Dec usage count
 		--m_waiting_threads;
 
@@ -527,7 +527,7 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 				// Check to see which threads are still alive
-				for (std::list<OOBase::Thread*>::iterator i=m_threads.begin();i!=m_threads.end();)
+				for (std::list<OOBase::Thread*>::iterator i=m_threads.begin(); i!=m_threads.end();)
 				{
 					if (!(*i)->is_running())
 					{
@@ -632,7 +632,8 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 		else
 			LOG_ERROR(("Discarding response in message pump"));
 
-	} while (!bOnce);
+	}
+	while (!bOnce);
 
 	return 1;
 }
@@ -649,7 +650,7 @@ void Root::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::uint32
 
 	// Turn child mask into a shift...
 	m_uNextChannelMask = m_uChildMask;
-	for (m_uNextChannelShift = 0;!(m_uNextChannelMask & 1);++m_uNextChannelShift)
+	for (m_uNextChannelShift = 0; !(m_uNextChannelMask & 1); ++m_uNextChannelShift)
 	{
 		m_uNextChannelMask >>= 1;
 	}
@@ -677,7 +678,8 @@ Omega::uint32_t Root::MessageHandler::register_channel(OOBase::SmartPtr<MessageC
 				do
 				{
 					channel_id = m_uChannelId | ((++m_uNextChannelId & m_uNextChannelMask) << m_uNextChannelShift);
-				} while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
+				}
+				while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
 			}
 
 			m_mapChannelIds.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::value_type(channel_id,ptrMC));
@@ -719,14 +721,14 @@ void Root::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
 	// Read the payload specific data
 	bool big_endian;
 	input.read(big_endian);
-	
+
 	// Set the read for the right endianess
 	input.big_endian(big_endian);
 
 	// Read the version byte
 	Omega::byte_t version;
 	input.read(version);
-			
+
 	// Read the length
 	Omega::uint32_t read_len = 0;
 	input.read(read_len);
@@ -789,12 +791,12 @@ void Root::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uin
 	try
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-		
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 		{
 			// Always route upstream, and/or follow routing rules
 			if (i->first != channel_id && i->first != src_channel_id &&
-				(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
+					(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
 			{
 				send_channel_close(i->first,channel_id);
 			}
@@ -896,10 +898,10 @@ Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instan
 }
 
 Root::MessageHandler::ThreadContext::ThreadContext() :
-	m_thread_id(0),
-	m_pHandler(0),
-	m_deadline(OOBase::timeval_t::MaxTime),
-	m_seq_no(0)
+		m_thread_id(0),
+		m_pHandler(0),
+		m_deadline(OOBase::timeval_t::MaxTime),
+		m_seq_no(0)
 {
 }
 
@@ -916,7 +918,7 @@ Omega::uint16_t Root::MessageHandler::insert_thread_context(Root::MessageHandler
 
 	try
 	{
-		for (Omega::uint16_t i=1;i<=0xFFF;++i)
+		for (Omega::uint16_t i=1; i<=0xFFF; ++i)
 		{
 			if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
 			{
@@ -948,10 +950,10 @@ void Root::MessageHandler::close_channels()
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > map_copy(m_mapChannelIds);
-		
+
 		guard.release();
 
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=map_copy.begin();i!=map_copy.end();++i)
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=map_copy.begin(); i!=map_copy.end(); ++i)
 		{
 			i->second->close();
 		}
@@ -960,7 +962,7 @@ void Root::MessageHandler::close_channels()
 	{
 		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
-	
+
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
@@ -987,7 +989,7 @@ void Root::MessageHandler::stop_request_threads()
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
 			if (i->second->m_usage_count.value() > 0)
 				i->second->m_msg_queue.pulse();
@@ -1032,7 +1034,7 @@ void Root::MessageHandler::stop_request_threads()
 Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
-	
+
 	// Up the usage count on the context
 	++pContext->m_usage_count;
 
@@ -1057,7 +1059,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 			LOG_ERROR(("std::exception thrown %s",e.what()));
 			break;
 		}
-		
+
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.pop(msg,deadline);
@@ -1071,7 +1073,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 		}
 		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 			break;
-		
+
 		Omega::uint32_t recv_seq_no = 0;
 		msg->m_payload.read(recv_seq_no);
 
@@ -1087,7 +1089,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 		int err = msg->m_payload.last_error();
 		if (err != 0)
 			LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
-		else	
+		else
 		{
 			if (type == Message_t::Request)
 			{
@@ -1176,7 +1178,7 @@ void Root::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)
 		// Unblock all waiting threads
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
 			if (i->second->m_usage_count.value() > 0)
 				i->second->m_msg_queue.pulse();
@@ -1236,7 +1238,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 	assert(pfnCall);
 	if (!pfnCall)
 		return false;
-	
+
 	// Create a new message
 	OOBase::SmartPtr<MessageHandler::Message> msg;
 	OOBASE_NEW(msg,MessageHandler::Message(24 + (stream ? stream->buffer()->length() : 0)));
@@ -1270,7 +1272,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-	
+
 	return (queue_message(msg) == io_result::success);
 }
 
@@ -1293,7 +1295,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_request(Omega::
 	if (!(attribs & Message_t::asynchronous))
 	{
 		ThreadContext* pContext = ThreadContext::instance(this);
-		
+
 		try
 		{
 			std::map<Omega::uint32_t,Omega::uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
@@ -1437,7 +1439,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omeg
 		int err = msg->m_payload.last_error();
 		if (err != 0)
 			LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
-			
+
 		// Route it correctly...
 		return queue_message(msg);
 	}
@@ -1461,7 +1463,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 	// Write the header info
 	OOBase::CDRStream header;
 	header.write(header.big_endian());
-	header.write(Omega::byte_t(1));	 // version
+	header.write(Omega::byte_t(1));  // version
 
 	// Write out the header length and remember where we wrote it
 	header.write(Omega::uint32_t(0));
@@ -1506,7 +1508,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
 		if (i == m_mapChannelIds.end())
 			return io_result::channel_closed;
-		
+
 		ptrMC = i->second;
 	}
 	catch (std::exception& e)
@@ -1517,6 +1519,6 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 	// Check the timeout
 	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::gettimeofday())
 		return io_result::timedout;
-		
+
 	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);
 }

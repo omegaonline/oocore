@@ -26,9 +26,9 @@ uid_t get_directory_user(void);
 gid_t get_directory_group(void);
 mode_t get_directory_permissions(void);
 
-bool create_unless_existing_directory(  std::string& dir, 
-                                        mode_t perm = get_directory_permissions(),
-                                        uid_t   uid = get_directory_user(),
-                                        gid_t   gid = get_directory_group());
+bool create_unless_existing_directory(std::string& dir,
+									  mode_t perm = get_directory_permissions(),
+									  uid_t   uid = get_directory_user(),
+									  gid_t   gid = get_directory_group());
 #endif /*HAVE_UNISTD_H */
 #endif /*OOSERVER_POSIX_UTILS_INCLUDED_ */

@@ -25,7 +25,7 @@
 namespace Registry
 {
 	class BadNameException :
-		public ExceptionImpl<IBadNameException>
+			public ExceptionImpl<IBadNameException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(BadNameException)
@@ -43,9 +43,9 @@ namespace Registry
 		static void ValidateSubKey(const string_t& strSubKey, const string_t& strSource)
 		{
 			if (strSubKey.IsEmpty() ||
-				strSubKey == L"\\" ||
-				strSubKey.Right(1) == L"\\" ||
-				strSubKey.Find(L"\\\\") != string_t::npos)
+					strSubKey == L"\\" ||
+					strSubKey.Right(1) == L"\\" ||
+					strSubKey.Find(L"\\\\") != string_t::npos)
 			{
 				Throw(strSubKey,strSource);
 			}
@@ -53,8 +53,8 @@ namespace Registry
 
 		static void ValidateValue(const string_t& strName, const string_t& strSource)
 		{
-			if (strName.IsEmpty() || 
-				strName.Find(L'\\') != string_t::npos)
+			if (strName.IsEmpty() ||
+					strName.Find(L'\\') != string_t::npos)
 			{
 				Throw(strName,strSource);
 			}
@@ -72,7 +72,7 @@ namespace Registry
 	};
 
 	class WrongValueTypeException :
-		public ExceptionImpl<IWrongValueTypeException>
+			public ExceptionImpl<IWrongValueTypeException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(WrongValueTypeException)
@@ -99,7 +99,7 @@ namespace Registry
 			pRE->m_type = actual_type;
 			pRE->m_strValue = strValue;
 			pRE->m_strSource = strSource;
-			
+
 			pRE->m_strDesc = L"Incorrect registry value type, actual value type is {0}.";
 			if (actual_type==String)
 				pRE->m_strDesc %= L"String";
@@ -115,7 +115,7 @@ namespace Registry
 	};
 
 	class NotFoundException :
-		public ExceptionImpl<INotFoundException>
+			public ExceptionImpl<INotFoundException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(NotFoundException)
@@ -142,7 +142,7 @@ namespace Registry
 	};
 
 	class AlreadyExistsException :
-		public ExceptionImpl<IAlreadyExistsException>
+			public ExceptionImpl<IAlreadyExistsException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(AlreadyExistsException)
@@ -169,7 +169,7 @@ namespace Registry
 	};
 
 	class AccessDeniedException :
-		public ExceptionImpl<IAccessDeniedException>
+			public ExceptionImpl<IAccessDeniedException>
 	{
 	public:
 		BEGIN_INTERFACE_MAP(AccessDeniedException)
@@ -195,13 +195,13 @@ namespace Registry
 		}
 	};
 
-	class MirrorKey : 
-		public ObjectBase,
-		public IKey
+	class MirrorKey :
+			public ObjectBase,
+			public IKey
 	{
 	public:
 		void Init(const string_t& strKey, IKey* pLocal, IKey* pSystem);
-		
+
 		BEGIN_INTERFACE_MAP(MirrorKey)
 			INTERFACE_ENTRY(IKey)
 		END_INTERFACE_MAP()
@@ -210,7 +210,7 @@ namespace Registry
 		string_t        m_strKey;
 		ObjectPtr<IKey> m_ptrLocal;
 		ObjectPtr<IKey> m_ptrSystem;
-		
+
 	// IRegistry members
 	public:
 		bool_t IsSubKey(const string_t& strSubKey);
@@ -230,7 +230,7 @@ namespace Registry
 		std::set<string_t> EnumSubKeys();
 		std::set<string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
-		void DeleteValue(const string_t& strName);	
+		void DeleteValue(const string_t& strName);
 	};
 }
 

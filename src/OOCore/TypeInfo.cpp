@@ -31,9 +31,9 @@ namespace OOCore
 
 namespace
 {
-	class TypeInfoImpl : 
-		public ObjectBase,
-		public TypeInfo::IInterfaceInfo
+	class TypeInfoImpl :
+			public ObjectBase,
+			public TypeInfo::IInterfaceInfo
 	{
 	public:
 		TypeInfoImpl();
@@ -84,7 +84,7 @@ namespace
 	public:
 		void insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
 		void remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info);
-		
+
 		TypeInfo::IInterfaceInfo* get_type_info(const guid_t& iid);
 
 	private:
@@ -101,7 +101,7 @@ namespace
 	typedef OOBase::Singleton<TIMapImpl,OOCore::DLL> TIMap;
 
 	class CastException :
-		public ExceptionImpl<Omega::ICastException>
+			public ExceptionImpl<Omega::ICastException>
 	{
 	public:
 		static void Throw(const any_t& value, any_t::CastResult_t reason, const System::Internal::type_holder* typeDest);
@@ -117,8 +117,8 @@ namespace
 
 	// Omega::ICastException members
 	public:
-		any_t GetValue() 
-		{ 
+		any_t GetValue()
+		{
 			return m_value;
 		}
 
@@ -136,7 +136,7 @@ namespace
 	void BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const System::Internal::type_holder* th)
 	{
 		td->WriteValue(L"type",th->type);
-		
+
 		if (th->type == TypeInfo::typeObject)
 		{
 			td->WriteValue(L"iid",guid_t(*(const guid_base_t*)(th->next)));
@@ -155,7 +155,7 @@ namespace
 		}
 
 		if (th->type == TypeInfo::typeSTLMap ||
-			th->type == TypeInfo::typeSTLMultimap)
+				th->type == TypeInfo::typeSTLMultimap)
 		{
 			// Add second part immediately after first part
 			BuildTypeDetail(td,th[1].next);
@@ -239,7 +239,7 @@ namespace
 				string_t strNext2 = BuildTypeString(th[1].next);
 				return L"std::map<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
 			}
-			
+
 		case TypeInfo::typeSTLMultimap:
 			{
 				string_t strNext2 = BuildTypeString(th[1].next);
@@ -248,13 +248,13 @@ namespace
 
 		case TypeInfo::modifierConst:
 			return strNext + L" const";
-			
+
 		case TypeInfo::modifierPointer:
 			return strNext + L'*';
 
 		case TypeInfo::modifierReference:
 			return strNext + L'&';
-			
+
 		default:
 			return string_t(L"Invalid type code: {0}") % th->type;
 		}
@@ -262,7 +262,7 @@ namespace
 }
 
 TypeInfoImpl::TypeInfoImpl() :
-	m_base_methods(0)
+		m_base_methods(0)
 {
 }
 
@@ -270,16 +270,16 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 {
 	m_iid = iid;
 	m_strName = string_t(pszName,string_t::npos);
-	
+
 	// Init the base class
 	if (type_info->base_type)
 	{
 		m_ptrBase.Attach(TIMap::instance()->get_type_info(*type_info->base_type));
 		m_base_methods = m_ptrBase->GetMethodCount();
 	}
-	
+
 	// Copy all the members into our own members... This is so the underlying pointers can be unloaded with their Dll
-	for (const System::Internal::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)();pmi->pszName!=0;++pmi)
+	for (const System::Internal::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)(); pmi->pszName!=0; ++pmi)
 	{
 		MethodInfo mi;
 		mi.strName = string_t(pmi->pszName,string_t::npos);
@@ -288,7 +288,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 		mi.return_type.Attach(Remoting::CreateMemoryMessage());
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
-		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)();ppi->pszName!=0;++ppi)
+		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)(); ppi->pszName!=0; ++ppi)
 		{
 			ParamInfo pi;
 			pi.strName = string_t(ppi->pszName,string_t::npos);
@@ -382,7 +382,7 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 		OMEGA_THROW(L"GetAttributeRef requesting non-ref param reference");
 
 	byte_t idx = 0;
-	for (std::vector<ParamInfo>::const_iterator i=mi.params.begin();i!=mi.params.end();++i,++idx)
+	for (std::vector<ParamInfo>::const_iterator i=mi.params.begin(); i!=mi.params.end(); ++i,++idx)
 	{
 		if (i->strName == pi.strRef)
 			return idx;
@@ -404,7 +404,7 @@ void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti*
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid);i!=m_ti_map.end() && i->first==iid;)
+	for (std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid); i!=m_ti_map.end() && i->first==iid;)
 	{
 		if (i->second.type_info == type_info)
 			m_ti_map.erase(i++);
@@ -424,7 +424,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 		ptrTI->init(iid,i->second.pszName,i->second.type_info);
 		return ptrTI.AddRef();
 	}
-	
+
 	throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 }
 

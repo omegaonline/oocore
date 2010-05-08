@@ -6,8 +6,8 @@ BEGIN_PROCESS_OBJECT_MAP(L"")
 END_PROCESS_OBJECT_MAP()
 
 class StreamNotify :
-	public OTL::ObjectBase,
-	public Omega::IO::IAsyncStreamNotify
+		public OTL::ObjectBase,
+		public Omega::IO::IAsyncStreamNotify
 {
 public:
 	StreamNotify() : m_state(0)
@@ -20,14 +20,14 @@ public:
 
 		return m_state != state;
 	}
-	
+
 	BEGIN_INTERFACE_MAP(StreamNotify)
-		INTERFACE_ENTRY(Omega::IO::IAsyncStreamNotify)
+	INTERFACE_ENTRY(Omega::IO::IAsyncStreamNotify)
 	END_INTERFACE_MAP()
 
 private:
 	int m_state;
-		
+
 // IAsyncStreamNotify members
 public:
 	void OnOpened();
@@ -37,14 +37,14 @@ public:
 };
 
 class HttpNotify :
-	public OTL::ObjectBase,
-	public Omega::Net::Http::IRequestNotify
+		public OTL::ObjectBase,
+		public Omega::Net::Http::IRequestNotify
 {
 public:
 	BEGIN_INTERFACE_MAP(HttpNotify)
-		INTERFACE_ENTRY(Omega::Net::Http::IRequestNotify)
+	INTERFACE_ENTRY(Omega::Net::Http::IRequestNotify)
 	END_INTERFACE_MAP()
-	
+
 // IRequestNotify members
 public:
 	void OnResponseStart(Omega::uint16_t nCode, const Omega::string_t& strMsg);
@@ -70,7 +70,7 @@ void StreamNotify::OnRead(Omega::uint32_t cbBytes, const Omega::byte_t* pData)
 #else
 	strncpy(szBuf,(const char*)pData,len);
 #endif
-	
+
 	m_state = 2;
 }
 
@@ -95,7 +95,7 @@ static bool stream_tests()
 	// Try sync
 	ptrStream.Attach(Omega::IO::OpenStream(L"http://www.google.com"));
 	TEST(ptrStream);
-	
+
 	ptrStream->WriteBytes(strlen(szRequest),(Omega::byte_t*)szRequest);
 
 	Omega::uint32_t cbBytes = 2047;
@@ -117,7 +117,7 @@ static bool stream_tests()
 
 	cbBytes = 2047;
 	ptrStream->ReadBytes(cbBytes,0);
-	
+
 	ptrNotify->wait_for_state(2);
 
 	return true;
@@ -125,60 +125,60 @@ static bool stream_tests()
 
 /*static bool http_tests_sync()
 {
-	OTL::ObjectPtr<Omega::Net::Http::IRequest> ptrRequest(Omega::Net::Http::OID_StdHttpRequest);
+    OTL::ObjectPtr<Omega::Net::Http::IRequest> ptrRequest(Omega::Net::Http::OID_StdHttpRequest);
 
-	ptrRequest->Open(L"GET",L"http://www.google.com");
-	ptrRequest->Send();
+    ptrRequest->Open(L"GET",L"http://www.google.com");
+    ptrRequest->Send();
 
-	Omega::uint32_t cbBytes = 0;
-	ptrRequest->ResponseBody(cbBytes,0);
+    Omega::uint32_t cbBytes = 0;
+    ptrRequest->ResponseBody(cbBytes,0);
 
-	Omega::byte_t* pBuf = new Omega::byte_t[cbBytes+1];
-	ptrRequest->ResponseBody(cbBytes,pBuf);
-		
-	pBuf[cbBytes] = '\0';
-	//output("\n\n%s\n\n",(const char*)pBuf);
+    Omega::byte_t* pBuf = new Omega::byte_t[cbBytes+1];
+    ptrRequest->ResponseBody(cbBytes,pBuf);
 
-	delete [] pBuf;
+    pBuf[cbBytes] = '\0';
+    //output("\n\n%s\n\n",(const char*)pBuf);
 
-	OTL::ObjectPtr<Omega::IO::IStream> ptrStream;
-	ptrStream.Attach(ptrRequest->ResponseStream());
+    delete [] pBuf;
 
-	for (;;)
-	{
-		Omega::byte_t szBuf[256];
-		Omega::uint64_t cbBytes = 255;
-		ptrStream->ReadBytes(cbBytes,szBuf);
+    OTL::ObjectPtr<Omega::IO::IStream> ptrStream;
+    ptrStream.Attach(ptrRequest->ResponseStream());
 
-		if (cbBytes == 0)
-			break;
+    for (;;)
+    {
+        Omega::byte_t szBuf[256];
+        Omega::uint64_t cbBytes = 255;
+        ptrStream->ReadBytes(cbBytes,szBuf);
 
-		szBuf[cbBytes] = '\0';
-		//output("%s",(const char*)szBuf);
-	}
-	//output("\n\n");
+        if (cbBytes == 0)
+            break;
 
-	// This one will barf because it's https
-	ptrRequest->Open(L"GET",L"https://www.tropicalstormsoftware.com/exchange");
-	ptrRequest->Send();
+        szBuf[cbBytes] = '\0';
+        //output("%s",(const char*)szBuf);
+    }
+    //output("\n\n");
 
-	ptrStream.Attach(ptrRequest->ResponseStream());
+    // This one will barf because it's https
+    ptrRequest->Open(L"GET",L"https://www.tropicalstormsoftware.com/exchange");
+    ptrRequest->Send();
 
-	for (;;)
-	{
-		Omega::byte_t szBuf[256];
-		Omega::uint64_t cbBytes = 255;
-		ptrStream->ReadBytes(cbBytes,szBuf);
+    ptrStream.Attach(ptrRequest->ResponseStream());
 
-		if (cbBytes == 0)
-			break;
+    for (;;)
+    {
+        Omega::byte_t szBuf[256];
+        Omega::uint64_t cbBytes = 255;
+        ptrStream->ReadBytes(cbBytes,szBuf);
 
-		szBuf[cbBytes] = '\0';
-		//output("%s",(const char*)szBuf);
-	}
-	//output("\n\n");
+        if (cbBytes == 0)
+            break;
 
-	return true;
+        szBuf[cbBytes] = '\0';
+        //output("%s",(const char*)szBuf);
+    }
+    //output("\n\n");
+
+    return true;
 }*/
 
 void HttpNotify::OnResponseStart(Omega::uint16_t /*nCode*/, const Omega::string_t& /*strMsg*/)
@@ -200,52 +200,52 @@ void HttpNotify::OnError(Omega::IException* pE)
 
 /*static bool http_tests_async()
 {
-	OTL::ObjectPtr<OTL::ObjectImpl<HttpNotify> > ptrNotify = OTL::ObjectImpl<HttpNotify>::CreateInstancePtr();
-	OTL::ObjectPtr<Omega::Net::Http::IRequest> ptrRequest(Omega::Net::Http::OID_StdHttpRequest);
+    OTL::ObjectPtr<OTL::ObjectImpl<HttpNotify> > ptrNotify = OTL::ObjectImpl<HttpNotify>::CreateInstancePtr();
+    OTL::ObjectPtr<Omega::Net::Http::IRequest> ptrRequest(Omega::Net::Http::OID_StdHttpRequest);
 
-	ptrRequest->Open(L"GET",L"http://www.google.com",ptrNotify);
-	ptrRequest->Send();
+    ptrRequest->Open(L"GET",L"http://www.google.com",ptrNotify);
+    ptrRequest->Send();
 
-	if (!ptrRequest->WaitForResponse(30000))
-		return false;
-	
-	Omega::uint32_t cbBytes = 0;
-	ptrRequest->ResponseBody(cbBytes,0);
+    if (!ptrRequest->WaitForResponse(30000))
+        return false;
 
-	Omega::byte_t* pBuf = new Omega::byte_t[cbBytes+1];
-	ptrRequest->ResponseBody(cbBytes,pBuf);
-		
-	pBuf[cbBytes] = '\0';
-	//output("\n\n%s\n\n",(const char*)pBuf);
+    Omega::uint32_t cbBytes = 0;
+    ptrRequest->ResponseBody(cbBytes,0);
 
-	delete [] pBuf;
+    Omega::byte_t* pBuf = new Omega::byte_t[cbBytes+1];
+    ptrRequest->ResponseBody(cbBytes,pBuf);
 
-	OTL::ObjectPtr<Omega::IO::IStream> ptrStream;
-	ptrStream.Attach(ptrRequest->ResponseStream());
+    pBuf[cbBytes] = '\0';
+    //output("\n\n%s\n\n",(const char*)pBuf);
 
-	for (;;)
-	{
-		Omega::byte_t szBuf[256];
-		Omega::uint64_t cbBytes = 255;
-		ptrStream->ReadBytes(cbBytes,szBuf);
+    delete [] pBuf;
 
-		if (cbBytes == 0)
-			break;
+    OTL::ObjectPtr<Omega::IO::IStream> ptrStream;
+    ptrStream.Attach(ptrRequest->ResponseStream());
 
-		szBuf[cbBytes] = '\0';
-		//output("%s",(const char*)szBuf);
-	}
+    for (;;)
+    {
+        Omega::byte_t szBuf[256];
+        Omega::uint64_t cbBytes = 255;
+        ptrStream->ReadBytes(cbBytes,szBuf);
 
-	//output("\n\n");
-	
-	return true;
+        if (cbBytes == 0)
+            break;
+
+        szBuf[cbBytes] = '\0';
+        //output("%s",(const char*)szBuf);
+    }
+
+    //output("\n\n");
+
+    return true;
 }*/
 
 bool net_tests()
 {
 	TEST(stream_tests());
-//	TEST(http_tests_sync());
-//	TEST(http_tests_async());
-	
+//  TEST(http_tests_sync());
+//  TEST(http_tests_async());
+
 	return true;
 }

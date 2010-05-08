@@ -31,13 +31,13 @@ namespace OOCore
 	struct Message;
 	class UserSession;
 	class Apartment;
-	
+
 	class AptChannel :
-		public ChannelBase
+			public ChannelBase
 	{
 	public:
 		void init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
-		
+
 		BEGIN_INTERFACE_MAP(AptChannel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)
 		END_INTERFACE_MAP()
@@ -53,9 +53,9 @@ namespace OOCore
 	{
 	public:
 		Apartment(UserSession* pSession, Omega::uint16_t id);
-		
+
 		void close();
-		
+
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
 
@@ -66,7 +66,7 @@ namespace OOCore
 		OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > create_apartment(Omega::uint16_t apartment_id, const Omega::guid_t& message_oid);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(Omega::uint16_t apartment_id);
 		Omega::IException* apartment_message(Omega::uint16_t apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
-		
+
 	private:
 		OOBase::RWMutex m_lock;
 		UserSession*    m_pSession;
@@ -80,9 +80,9 @@ namespace OOCore
 	OOCORE_DECLARE_OID(OID_StdApartment);
 
 	class ApartmentImpl :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<ApartmentImpl,&OOCore::OID_StdApartment,Omega::Activation::InProcess>,
-		public Omega::Apartment::IApartment
+			public OTL::ObjectBase,
+			public OTL::AutoObjectFactoryNoAggregation<ApartmentImpl,&OOCore::OID_StdApartment,Omega::Activation::InProcess>,
+			public Omega::Apartment::IApartment
 	{
 	public:
 		ApartmentImpl();

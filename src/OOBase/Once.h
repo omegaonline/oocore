@@ -32,7 +32,7 @@ namespace OOBase
 		 *  The platform specific 'once' type.
 		 */
 
-		/** \def ONCE_T_INIT 
+		/** \def ONCE_T_INIT
 		 *  The platform specific 'once' type initialiser
 		 */
 

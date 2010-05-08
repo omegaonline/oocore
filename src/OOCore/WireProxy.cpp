@@ -28,14 +28,14 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::Proxy::Proxy() :
-	m_proxy_id(0)
+		m_proxy_id(0)
 {
 }
 
 OOCore::Proxy::~Proxy()
 {
 	CallRemoteRelease();
-	
+
 	m_pManager->RemoveProxy(m_proxy_id);
 	static_cast<Remoting::IObjectManager*>(m_pManager)->Release();
 }
@@ -86,11 +86,11 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ptrParamsIn.Attach(pParamsIn);
 
 	bool bOk = ptrParamsIn->ReadValue(L"$retval").cast<bool_t>();
-	
+
 	guard.acquire();
 
 	m_iids.insert(std::map<Omega::guid_t,bool_t>::value_type(iid,bOk));
-	
+
 	return bOk;
 }
 
@@ -158,7 +158,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	pParamsOut->WriteValue(L"iid",iid);
 
 	Remoting::IMessage* pParamsIn = 0;
-	
+
 	try
 	{
 		m_pManager->DoMarshalChannel(pMarshaller,pParamsOut);
@@ -238,12 +238,12 @@ void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMar
 	ObjectPtr<Remoting::IMessage> ptrReflect = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"pReflect",pMessage);
 	if (!ptrReflect)
 		OMEGA_THROW(L"No package");
-	
+
 	// Unmarshal the manager
 	ObjectPtr<Remoting::IChannel> ptrChannel = ptrMarshaller.UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",ptrReflect);
 	if (!ptrChannel)
 		OMEGA_THROW(L"No channel");
-		
+
 	// Get the IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller2 = ptrChannel.GetManager<Remoting::IMarshaller>();
 	if (!ptrMarshaller2)

@@ -26,7 +26,7 @@
 
 #if defined(_WIN32)
 
-namespace 
+namespace
 {
 	class Win32Thunk
 	{
@@ -49,7 +49,7 @@ namespace
 		typedef void (__stdcall *pfn_InitializeSRWLock)(SRWLOCK* SRWLock);
 		pfn_InitializeSRWLock m_InitializeSRWLock;
 		static void __stdcall impl_InitializeSRWLock(SRWLOCK* SRWLock);
-		
+
 		typedef void (__stdcall *pfn_AcquireSRWLockShared)(SRWLOCK* SRWLock);
 		pfn_AcquireSRWLockShared m_AcquireSRWLockShared;
 		static void __stdcall impl_AcquireSRWLockShared(SRWLOCK* SRWLock);
@@ -72,7 +72,7 @@ namespace
 
 		typedef BOOL (__stdcall *pfn_SleepConditionVariableCS)(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, DWORD dwMilliseconds);
 		pfn_SleepConditionVariableCS m_SleepConditionVariableCS;
-		
+
 		typedef void (__stdcall *pfn_WakeConditionVariable)(CONDITION_VARIABLE* ConditionVariable);
 		pfn_WakeConditionVariable m_WakeConditionVariable;
 		static void __stdcall impl_WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
@@ -83,7 +83,7 @@ namespace
 
 		typedef BOOL (__stdcall *pfn_BindIoCompletionCallback)(HANDLE FileHandle, LPOVERLAPPED_COMPLETION_ROUTINE Function, ULONG Flags);
 		pfn_BindIoCompletionCallback m_BindIoCompletionCallback;
-		
+
 		HMODULE m_hKernel32;
 
 	private:
@@ -100,9 +100,9 @@ namespace
 	};
 
 	Win32Thunk* Win32Thunk::s_instance = 0;
-	
+
 	Win32Thunk::Win32Thunk() :
-		m_hKernel32(0)
+			m_hKernel32(0)
 	{
 		m_hKernel32 = GetModuleHandleW(L"Kernel32.dll");
 		if (!m_hKernel32)
@@ -117,12 +117,12 @@ namespace
 		m_AcquireSRWLockExclusive = (pfn_AcquireSRWLockExclusive)(GetProcAddress(m_hKernel32,"AcquireSRWLockExclusive"));
 		m_ReleaseSRWLockShared = (pfn_ReleaseSRWLockShared)(GetProcAddress(m_hKernel32,"ReleaseSRWLockShared"));
 		m_ReleaseSRWLockExclusive = (pfn_ReleaseSRWLockExclusive)(GetProcAddress(m_hKernel32,"ReleaseSRWLockExclusive"));
-		
+
 		if (!m_InitializeSRWLock ||
-			!m_AcquireSRWLockShared ||
-			!m_AcquireSRWLockExclusive ||
-			!m_ReleaseSRWLockShared ||
-			!m_ReleaseSRWLockExclusive)
+				!m_AcquireSRWLockShared ||
+				!m_AcquireSRWLockExclusive ||
+				!m_ReleaseSRWLockShared ||
+				!m_ReleaseSRWLockExclusive)
 		{
 			m_InitializeSRWLock = impl_InitializeSRWLock;
 			m_AcquireSRWLockShared = impl_AcquireSRWLockShared;
@@ -135,11 +135,11 @@ namespace
 		m_SleepConditionVariableCS = (pfn_SleepConditionVariableCS)(GetProcAddress(m_hKernel32,"SleepConditionVariableCS"));
 		m_WakeConditionVariable = (pfn_WakeConditionVariable)(GetProcAddress(m_hKernel32,"WakeConditionVariable"));
 		m_WakeAllConditionVariable = (pfn_WakeAllConditionVariable)(GetProcAddress(m_hKernel32,"WakeAllConditionVariable"));
-		
+
 		if (!m_InitializeConditionVariable ||
-			!m_SleepConditionVariableCS ||
-			!m_WakeConditionVariable ||
-			!m_WakeAllConditionVariable)
+				!m_SleepConditionVariableCS ||
+				!m_WakeConditionVariable ||
+				!m_WakeAllConditionVariable)
 		{
 			m_InitializeConditionVariable = impl_InitializeConditionVariable;
 			m_SleepConditionVariableCS = 0;
@@ -156,7 +156,7 @@ namespace
 	{
 #if (WINVER >= 0x0501)
 		typedef BOOL (__stdcall *pfn_HeapSetInformation)(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, void* HeapInformation, SIZE_T HeapInformationLength);
-			
+
 		pfn_HeapSetInformation pfn = (pfn_HeapSetInformation)(GetProcAddress(m_hKernel32,"HeapSetInformation"));
 		if (pfn)
 		{
@@ -180,7 +180,7 @@ namespace
 	BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 	{
 		static_assert(sizeof(LONG) <= sizeof(INIT_ONCE),"Refer to maintainters");
-		
+
 		LONG* check = reinterpret_cast<LONG*>(InitOnce);
 
 		LONG checked = InterlockedCompareExchange(check,-1,0);
@@ -213,14 +213,15 @@ namespace
 				}
 
 				checked = *check;
-						
+
 				// And release
 				if (!ReleaseMutex(mutex))
 					OOBase_CallCriticalFailure(GetLastError());
 
-			} while (checked != 1);
+			}
+			while (checked != 1);
 		}
-		
+
 		return TRUE;
 	}
 
@@ -314,10 +315,10 @@ void OOBase::Win32::DeleteSRWLock(SRWLOCK* SRWLock)
 }
 
 OOBase::Win32::rwmutex_t::rwmutex_t() :
-	m_nReaders(-1),
-	m_hReaderEvent(NULL),
-	m_hEvent(NULL),
-	m_hWriterMutex(NULL)
+		m_nReaders(-1),
+		m_hReaderEvent(NULL),
+		m_hEvent(NULL),
+		m_hWriterMutex(NULL)
 {
 	m_hReaderEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
 	if (!m_hReaderEvent)
@@ -332,8 +333,8 @@ OOBase::Win32::rwmutex_t::rwmutex_t() :
 		OOBase_CallCriticalFailure(GetLastError());
 }
 
-OOBase::Win32::rwmutex_t::~rwmutex_t() 
-{ 
+OOBase::Win32::rwmutex_t::~rwmutex_t()
+{
 }
 
 void OOBase::Win32::rwmutex_t::acquire()
@@ -368,7 +369,7 @@ void OOBase::Win32::rwmutex_t::acquire_read()
 	if (WaitForSingleObject(m_hReaderEvent, INFINITE) != WAIT_OBJECT_0)
 		OOBase_CallCriticalFailure(GetLastError());
 }
-  
+
 void OOBase::Win32::rwmutex_t::release_read()
 {
 	if (InterlockedDecrement(&m_nReaders) < 0)
@@ -479,18 +480,18 @@ void OOBase::Win32::condition_mutex_t::release()
 }
 
 OOBase::Win32::condition_variable_t::condition_variable_t() :
-	m_waiters(0),
-	m_broadcast(false),
-	m_sema(NULL),
-	m_waiters_done(NULL)
+		m_waiters(0),
+		m_broadcast(false),
+		m_sema(NULL),
+		m_waiters_done(NULL)
 {
 	if (!InitializeCriticalSectionAndSpinCount(&m_waiters_lock,4001))
 		OOBase_CallCriticalFailure(GetLastError());
 
 	m_sema = CreateSemaphoreW(NULL,       // no security
-	                          0,          // initially 0
-	                          0x7fffffff, // max count
-	                          NULL);      // unnamed 
+							  0,          // initially 0
+							  0x7fffffff, // max count
+							  NULL);      // unnamed
 	if (!m_sema)
 	{
 		DWORD dwErr = GetLastError();
@@ -499,9 +500,9 @@ OOBase::Win32::condition_variable_t::condition_variable_t() :
 	}
 
 	m_waiters_done = CreateEventW(NULL,  // no security
-	                              FALSE, // auto-reset
-	                              FALSE, // non-signaled initially
-	                              NULL); // unnamed
+								  FALSE, // auto-reset
+								  FALSE, // non-signaled initially
+								  NULL); // unnamed
 	if (!m_waiters_done)
 	{
 		DWORD dwErr = GetLastError();
@@ -535,13 +536,13 @@ bool OOBase::Win32::condition_variable_t::wait(HANDLE hMutex, DWORD dwMillisecon
 
 			LeaveCriticalSection(&m_waiters_lock);
 		}
-	}	
+	}
 	++m_waiters;
 	LeaveCriticalSection(&m_waiters_lock);
 
 	if (dwMilliseconds != INFINITE)
 		countdown.update();
-		
+
 	// This call atomically releases the mutex and waits on the
 	// semaphore until <signal> or <broadcast>
 	// are called by another thread.
@@ -550,7 +551,7 @@ bool OOBase::Win32::condition_variable_t::wait(HANDLE hMutex, DWORD dwMillisecon
 		OOBase_CallCriticalFailure(GetLastError());
 
 	bool ret = (dwWait == WAIT_OBJECT_0);
-	
+
 	// Reacquire lock to avoid race conditions.
 	EnterCriticalSection(&m_waiters_lock);
 
@@ -567,16 +568,16 @@ bool OOBase::Win32::condition_variable_t::wait(HANDLE hMutex, DWORD dwMillisecon
 	if (last_waiter)
 	{
 		// This call atomically signals the <m_waiters_done> event and waits until
-		// it can acquire the <hMutex>.  This is required to ensure fairness. 
+		// it can acquire the <hMutex>.  This is required to ensure fairness.
 		dwWait = SignalObjectAndWait(m_waiters_done,hMutex,INFINITE,FALSE);
 	}
 	else
 	{
 		// Always regain the external mutex since that's the guarantee we
-		// give to our callers. 
+		// give to our callers.
 		dwWait = WaitForSingleObject(hMutex,INFINITE);
 	}
-			
+
 	// Return the correct code
 	if (dwWait != WAIT_OBJECT_0)
 		OOBase_CallCriticalFailure(GetLastError());
@@ -596,7 +597,7 @@ void OOBase::Win32::condition_variable_t::signal()
 	bool have_waiters = m_waiters > 0;
 	LeaveCriticalSection(&m_waiters_lock);
 
-	// If there aren't any waiters, then this is a no-op.  
+	// If there aren't any waiters, then this is a no-op.
 	if (have_waiters && !ReleaseSemaphore(m_sema,1,0))
 		OOBase_CallCriticalFailure(GetLastError());
 }
@@ -608,7 +609,7 @@ void OOBase::Win32::condition_variable_t::broadcast()
 	EnterCriticalSection(&m_waiters_lock);
 	bool have_waiters = false;
 
-	if (m_waiters > 0) 
+	if (m_waiters > 0)
 	{
 		// We are broadcasting, even if there is just one waiter...
 		// Record that we are broadcasting, which helps optimize
@@ -617,7 +618,7 @@ void OOBase::Win32::condition_variable_t::broadcast()
 		have_waiters = true;
 	}
 
-	if (have_waiters) 
+	if (have_waiters)
 	{
 		// Wake up all the waiters atomically.
 		LONG lPrev = 0;
@@ -630,10 +631,10 @@ void OOBase::Win32::condition_variable_t::broadcast()
 
 		LeaveCriticalSection(&m_waiters_lock);
 
-		// Wait for all the awakened threads to acquire the counting semaphore. 
+		// Wait for all the awakened threads to acquire the counting semaphore.
 		DWORD dwWait = WaitForSingleObject(m_waiters_done,INFINITE);
 
-		// This assignment is okay, even without the <m_waiters_lock> held 
+		// This assignment is okay, even without the <m_waiters_lock> held
 		// because no other waiter threads can wake up to access it.
 		m_broadcast = false;
 
@@ -656,12 +657,12 @@ namespace
 
 		LPVOID lpBuf;
 		if (::FormatMessageA(
-			dwFlags,
-			hModule,
-			dwErr,
-			0,
-			(LPSTR)&lpBuf,
-			0,	NULL))
+					dwFlags,
+					hModule,
+					dwErr,
+					0,
+					(LPSTR)&lpBuf,
+					0,  NULL))
 		{
 			OOBase::SmartPtr<char,OOBase::Win32::LocalAllocDestructor<char> > lpMsgBuf = static_cast<char*>(lpBuf);
 			std::string res((LPCSTR)lpMsgBuf);
@@ -687,7 +688,7 @@ std::string OOBase::Win32::FormatMessage(DWORD dwErr)
 		ret << format_msg(dwErr,NULL);
 	else
 		ret << format_msg(dwErr,GetModuleHandleW(L"NTDLL.DLL"));
-		
+
 	return ret.str();
 }
 

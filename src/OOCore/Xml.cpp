@@ -30,7 +30,7 @@ namespace OOCore
 	namespace Xml
 	{
 		void XMLSplitAttr(const string_t& strAttr, std::map<string_t,string_t>& attribs);
-		void XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, size_t cbTerm, std::map<string_t,string_t>& attribs);		
+		void XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, size_t cbTerm, std::map<string_t,string_t>& attribs);
 	}
 }
 
@@ -66,7 +66,7 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 
 	// Skip the starting whitespace
 	rd_ptr += wcsspn(rd_ptr,XML_WHITESPACE);
-	
+
 	for (;;)
 	{
 		// Find the next whitespace or terminator
@@ -78,7 +78,7 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr,false),attribs);
 
 		rd_ptr = p;
-		
+
 		// Skip the rest of the whitespace
 		rd_ptr += wcsspn(rd_ptr,XML_WHITESPACE);
 
@@ -86,13 +86,13 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 		{
 			rd_ptr += cbTerm;
 			break;
-		}		
+		}
 	}
 }
 
 void OOCore::Xml::ParseXMLProlog(const wchar_t*& rd_ptr)
 {
-	// prolog    ::=    XMLDecl? Misc* (doctypedecl Misc*)? 
+	// prolog    ::=    XMLDecl? Misc* (doctypedecl Misc*)?
 
 	// Check for prolog
 	const wchar_t* p = wcsstr(rd_ptr,L"<?xml");
@@ -103,14 +103,14 @@ void OOCore::Xml::ParseXMLProlog(const wchar_t*& rd_ptr)
 
 	std::map<string_t,string_t> attribs;
 	XMLSplitAttrs(rd_ptr,L"?>",2,attribs);
-		
+
 	std::map<string_t,string_t>::iterator i = attribs.find(L"version");
 	if (i==attribs.end() || i->second != L"1.0")
 		OMEGA_THROW(L"Invalid or missing XML version attribute");
 
 	// Now we need to skip the extra stuff...
 	string_t strCharData;
-	ParseXMLCharData(rd_ptr,strCharData);	
+	ParseXMLCharData(rd_ptr,strCharData);
 }
 
 void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, bool& bHasContents, std::map<string_t,string_t>& attribs)
@@ -126,10 +126,10 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 
 	strName = string_t(p,len);
 	rd_ptr += len+1;
-	
+
 	// Skip the starting whitespace
 	rd_ptr += wcsspn(rd_ptr,XML_WHITESPACE);
-	
+
 	bHasContents = false;
 	for (;;)
 	{
@@ -154,13 +154,13 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 				++p;
 				continue;
 			}
-			else				
+			else
 				break;
 		}
 
 		if (p != rd_ptr)
 			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr,false),attribs);
-		
+
 		// Skip the rest of the whitespace
 		p += wcsspn(p,XML_WHITESPACE);
 
@@ -176,7 +176,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 			bHasContents = true;
 			break;
 		}
-		
+
 		rd_ptr = p;
 	}
 }
@@ -230,7 +230,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 				OMEGA_THROW(L"Custom xml escaping isn't supported");
 			}
 		}
-		else 
+		else
 		{
 			if (p == rd_ptr)
 				break;
@@ -249,7 +249,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 				if (!p)
 					OMEGA_THROW(L"Unmatched comment open: {0}" % string_t(rd_ptr,25,false));
 
-				rd_ptr = p + 3;				
+				rd_ptr = p + 3;
 				bFoundOne = true;
 			}
 
@@ -274,7 +274,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 				rd_ptr = p + 3;
 				bFoundOne = true;
 			}
-						
+
 			if (!bFoundOne)
 				break;
 		}
@@ -291,16 +291,16 @@ void OOCore::Xml::ParseXMLEndElement(const wchar_t*& rd_ptr, const string_t& str
 	// Skip whistepace
 	p += strName.Length()+2;
 	p += wcsspn(p,XML_WHITESPACE);
-	
+
 	if (p[0] != L'>')
 		OMEGA_THROW(L"Invalid element end tag: {0}" % string_t(rd_ptr,25,false));
-	
+
 	rd_ptr = p+1;
 }
 
 void OOCore::Xml::ParseXMLNamespaces(const std::map<string_t,string_t>& attribs, std::map<string_t,string_t>& namespaces)
 {
-	for (std::map<string_t,string_t>::const_iterator i=attribs.begin();i!=attribs.end();++i)
+	for (std::map<string_t,string_t>::const_iterator i=attribs.begin(); i!=attribs.end(); ++i)
 	{
 		if (i->first.Length()>6 && i->first.Left(6)==L"xmlns:")
 		{

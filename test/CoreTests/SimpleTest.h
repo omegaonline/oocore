@@ -8,8 +8,8 @@
 #endif
 
 class SimpleTestImpl :
-	public Omega::TestSuite::ISimpleTest,
-	public Omega::TestSuite::ISimpleTest2
+		public Omega::TestSuite::ISimpleTest,
+		public Omega::TestSuite::ISimpleTest2
 {
 public:
 	Omega::bool_t BoolNot1(Omega::bool_t v)

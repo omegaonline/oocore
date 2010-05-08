@@ -33,9 +33,9 @@ namespace OOCore
 namespace OOCore
 {
 	class CDRMessage :
-		public OTL::ObjectBase,
-		public Omega::Remoting::IMessage,
-		public Omega::Remoting::IMarshal
+			public OTL::ObjectBase,
+			public Omega::Remoting::IMessage,
+			public Omega::Remoting::IMarshal
 	{
 	public:
 		void init(const OOBase::CDRStream& stream)
@@ -114,7 +114,7 @@ namespace OOCore
 		void WriteBytes(const Omega::string_t&, Omega::uint32_t count, const Omega::byte_t* val)
 		{
 			if (!m_stream.write(count) ||
-				!m_stream.write_bytes(val,count))
+					!m_stream.write_bytes(val,count))
 			{
 				OMEGA_THROW(m_stream.last_error());
 			}
@@ -147,7 +147,7 @@ namespace OOCore
 				return read<Omega::float8_t>();
 			case Omega::TypeInfo::typeString:
 				return Omega::string_t(read<std::string>().c_str(),true);
-				
+
 			case Omega::TypeInfo::typeGuid:
 				{
 					Omega::byte_t is_null = read<Omega::byte_t>();
@@ -164,8 +164,8 @@ namespace OOCore
 						return g;
 					}
 				}
-						
-			case Omega::TypeInfo::typeVoid:			
+
+			case Omega::TypeInfo::typeVoid:
 				return Omega::any_t();
 
 			default:
@@ -202,7 +202,7 @@ namespace OOCore
 				return write(value.cast<const Omega::float8_t&>());
 			case Omega::TypeInfo::typeString:
 				return write(value.cast<const Omega::string_t&>().ToUTF8());
-								
+
 			case Omega::TypeInfo::typeGuid:
 				{
 					const Omega::guid_t& g = value.cast<const Omega::guid_t&>();
@@ -220,8 +220,8 @@ namespace OOCore
 					}
 				}
 				break;
-						
-			case Omega::TypeInfo::typeVoid:	
+
+			case Omega::TypeInfo::typeVoid:
 				return;
 
 			default:
@@ -230,16 +230,16 @@ namespace OOCore
 		}
 
 		void ReadStructStart(const Omega::string_t&, const Omega::string_t&)
-			{ /* NOP */	}
+		{ /* NOP */ }
 
 		void ReadStructEnd()
-			{ /* NOP */	}
+		{ /* NOP */ }
 
 		void WriteStructStart(const Omega::string_t&, const Omega::string_t&)
-			{ /* NOP */	}
+		{ /* NOP */ }
 
 		void WriteStructEnd()
-			{ /* NOP */	}
+		{ /* NOP */ }
 
 		Omega::uint32_t ReadArrayStart(const Omega::string_t&)
 		{
@@ -247,7 +247,7 @@ namespace OOCore
 		}
 
 		void ReadArrayEnd()
-			{ /* NOP */	}
+		{ /* NOP */ }
 
 		void WriteArrayStart(const Omega::string_t&, Omega::uint32_t count)
 		{
@@ -255,7 +255,7 @@ namespace OOCore
 		}
 
 		void WriteArrayEnd()
-			{ /* NOP */	}
+		{ /* NOP */ }
 	};
 }
 

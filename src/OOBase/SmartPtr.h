@@ -65,8 +65,8 @@ namespace OOBase
 			{
 			public:
 				SmartPtrNode(T* data = 0) :
-					m_data(data),
-					m_refcount(1)
+						m_data(data),
+						m_refcount(1)
 				{}
 
 				void addref()
@@ -178,12 +178,12 @@ namespace OOBase
 				return v;
 			}
 
-			operator T* ()
+			operator T*()
 			{
 				return value();
 			}
 
-			operator const T* () const
+			operator const T*() const
 			{
 				return value();
 			}
@@ -225,7 +225,7 @@ namespace OOBase
 		{
 			if (this != &rhs)
 				baseClass::operator=(rhs);
-			
+
 			return *this;
 		}
 
@@ -261,18 +261,18 @@ namespace OOBase
 		{
 			if (this != &rhs)
 				baseClass::operator=(rhs);
-			
+
 			return *this;
 		}
 
 		template <typename T2>
-		operator T2* ()
+		operator T2*()
 		{
 			return static_cast<T2*>(baseClass::value());
 		}
 
 		template <typename T2>
-		operator const T2* () const
+		operator const T2*() const
 		{
 			return static_cast<T2*>(baseClass::value());
 		}

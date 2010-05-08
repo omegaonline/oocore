@@ -32,7 +32,7 @@ inline Omega::IObject* Omega::System::Internal::wire_holder::add(IObject* pProxy
 		p.first->second->AddRef();
 		return p.first->second;
 	}
-						
+
 	return 0;
 }
 
@@ -46,14 +46,14 @@ inline Omega::IObject* Omega::System::Internal::wire_holder::find(IObject* pProx
 		i->second->AddRef();
 		return i->second;
 	}
-	
+
 	return 0;
 }
 
 inline void Omega::System::Internal::wire_holder::remove(IObject* pProxy)
 {
 	Threading::Guard<Threading::Mutex> guard(m_lock);
-	
+
 	m_map.erase(pProxy);
 }
 
@@ -130,7 +130,7 @@ inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IPro
 {
 	assert(iid != OMEGA_GUIDOF(ISafeProxy));
 	assert(pProxy);
-	
+
 	IObject* obj = 0;
 	if (iid == OMEGA_GUIDOF(IObject))
 	{
@@ -146,7 +146,7 @@ inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IPro
 			if (!rtti)
 				rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
 		}
-			
+
 		obj = (*rtti->pfnCreateWireProxy)(pProxy);
 	}
 
@@ -180,7 +180,7 @@ inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remotin
 		auto_iface_ptr<IObject> ptrQI = pObj->QueryInterface(iid);
 		if (!ptrQI)
 			return 0;
-	
+
 		// Wrap it in a proxy and add it...
 		const wire_rtti* rtti = get_wire_rtti_info(iid);
 		if (!rtti)

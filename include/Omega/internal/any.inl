@@ -73,7 +73,7 @@ inline void Omega::any_t::swap(const any_t& rhs)
 		break;
 	case TypeInfo::typeVoid:
 		break;
-	
+
 	default:
 		OMEGA_THROW(L"Invalid any_t type!");
 	}
@@ -90,72 +90,72 @@ inline Omega::any_t& Omega::any_t::operator = (const any_t& rhs)
 }
 
 inline Omega::any_t::any_t() :
-	m_type(TypeInfo::typeVoid)
+		m_type(TypeInfo::typeVoid)
 {
 }
 
 inline Omega::any_t::any_t(bool_t val) :
-	m_type(TypeInfo::typeBool)
+		m_type(TypeInfo::typeBool)
 {
 	u.bVal = val;
 }
 
 inline Omega::any_t::any_t(byte_t val) :
-	m_type(TypeInfo::typeByte)
+		m_type(TypeInfo::typeByte)
 {
 	u.byVal = val;
 }
 
 inline Omega::any_t::any_t(int16_t val) :
-	m_type(TypeInfo::typeInt16)
+		m_type(TypeInfo::typeInt16)
 {
 	u.i16Val = val;
 }
 
 inline Omega::any_t::any_t(uint16_t val) :
-	m_type(TypeInfo::typeUInt16)
+		m_type(TypeInfo::typeUInt16)
 {
 	u.ui16Val = val;
 }
 
 inline Omega::any_t::any_t(int32_t val) :
-	m_type(TypeInfo::typeInt32)
+		m_type(TypeInfo::typeInt32)
 {
 	u.i32Val = val;
 }
 
 inline Omega::any_t::any_t(uint32_t val) :
-	m_type(TypeInfo::typeUInt32)
+		m_type(TypeInfo::typeUInt32)
 {
 	u.ui32Val = val;
 }
 
 inline Omega::any_t::any_t(const int64_t& val) :
-	m_type(TypeInfo::typeInt64)
+		m_type(TypeInfo::typeInt64)
 {
 	u.i64Val = val;
 }
 
 inline Omega::any_t::any_t(const uint64_t& val) :
-	m_type(TypeInfo::typeUInt64)
+		m_type(TypeInfo::typeUInt64)
 {
 	u.ui64Val = val;
 }
 
 inline Omega::any_t::any_t(float4_t val) :
-	m_type(TypeInfo::typeFloat4)
+		m_type(TypeInfo::typeFloat4)
 {
 	u.fl4Val = val;
 }
 
 inline Omega::any_t::any_t(const float8_t& val) :
-	m_type(TypeInfo::typeFloat8)
+		m_type(TypeInfo::typeFloat8)
 {
 	u.fl8Val = val;
 }
 
 inline Omega::any_t::any_t(const guid_t& val) :
-	m_type(TypeInfo::typeGuid)
+		m_type(TypeInfo::typeGuid)
 {
 	if (val != guid_t::Null())
 		OMEGA_NEW(u.pgVal,guid_t(val));
@@ -164,19 +164,19 @@ inline Omega::any_t::any_t(const guid_t& val) :
 }
 
 inline Omega::any_t::any_t(const string_t& val) :
-	m_type(TypeInfo::typeString)
+		m_type(TypeInfo::typeString)
 {
 	OMEGA_NEW(u.pstrVal,string_t(val));
 }
 
 inline Omega::any_t::any_t(const wchar_t* wsz, size_t length, bool copy) :
-	m_type(TypeInfo::typeString)
+		m_type(TypeInfo::typeString)
 {
 	OMEGA_NEW(u.pstrVal,string_t(wsz,length,copy));
 }
 
 inline Omega::any_t::any_t(const char* sz, bool bUTF8, size_t length) :
-	m_type(TypeInfo::typeString)
+		m_type(TypeInfo::typeString)
 {
 	OMEGA_NEW(u.pstrVal,string_t(sz,bUTF8,length));
 }
@@ -203,7 +203,7 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 
 	if (rhs.m_type != m_type)
 		return OOCore_any_t_equal(*this,rhs);
-	
+
 	switch (m_type)
 	{
 	case TypeInfo::typeVoid:
@@ -251,9 +251,9 @@ namespace Omega
 		namespace Internal
 		{
 			// Internal helper that must be public... do not use
-			void throw_cast_exception(const any_t& value, any_t::CastResult_t reason, const type_holder* typeDest);	
+			void throw_cast_exception(const any_t& value, any_t::CastResult_t reason, const type_holder* typeDest);
 
-			template <typename To, typename From, 
+			template <typename To, typename From,
 				bool to_signed = std::numeric_limits<To>::is_signed,
 				bool from_signed = std::numeric_limits<From>::is_signed,
 				bool no_trunc = std::numeric_limits<To>::digits >= std::numeric_limits<From>::digits>
@@ -335,7 +335,7 @@ namespace Omega
 				}
 			};
 
-			template <typename To, typename From, 
+			template <typename To, typename From,
 				bool no_trunc = std::numeric_limits<To>::digits >= std::numeric_limits<From>::digits>
 			struct flt_conv
 			{
@@ -365,7 +365,7 @@ namespace Omega
 				}
 			};
 
-			template <typename To, typename From, 
+			template <typename To, typename From,
 				bool to_integer = std::numeric_limits<To>::is_integer,
 				bool from_integer = std::numeric_limits<From>::is_integer>
 			struct converter
@@ -397,7 +397,7 @@ namespace Omega
 					From frac_part = std::modf(from,&int_part);
 					if (frac_part != 0)
 						return any_t::castPrecisionLoss;
-					
+
 					return int_conv<To,From>::cast(to,from);
 				}
 			};
@@ -460,7 +460,7 @@ namespace Omega
 				>::result type;
 			};
 
-			template <typename T> 
+			template <typename T>
 			struct scanner_t<const T>
 			{
 				typedef typename scanner_t<T>::type type;
@@ -510,7 +510,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 		return System::Internal::converter<T,float8_t>::cast(v,u.fl8Val);
 	case TypeInfo::typeString:
 		return System::Internal::scanner_t<T>::type::ToNumber(v,*u.pstrVal);
-				
+
 	case TypeInfo::typeVoid:
 	case TypeInfo::typeGuid:
 	default:
@@ -530,7 +530,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(guid_t& v) const
 		if (guid_t::FromString(*u.pstrVal,v))
 			return any_t::castValid;
 	}
-	
+
 	return any_t::castUnrelated;
 }
 
@@ -579,7 +579,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v, const string
 		break;
 
 	case TypeInfo::typeVoid:
-	default: 
+	default:
 		// Never going to happen ;)
 		return any_t::castUnrelated;
 	}
@@ -639,7 +639,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 	case TypeInfo::typeVoid:
 	case TypeInfo::typeGuid:
 		// Always invalid
-	default: 
+	default:
 		// Never going to happen ;)
 		return any_t::castUnrelated;
 	}
@@ -663,9 +663,9 @@ namespace Omega
 	{
 		namespace Internal
 		{
-			template <typename C> 
+			template <typename C>
 			struct cast_helper
-			{ 
+			{
 				static C cast(const any_t& a)
 				{
 					C v = System::Internal::default_value<C>::value();
@@ -677,9 +677,9 @@ namespace Omega
 				}
 			};
 
-			template <typename C> 
+			template <typename C>
 			struct cast_helper<const C>
-			{ 
+			{
 				static const C cast(const any_t& a)
 				{
 					const C v = System::Internal::default_value<const C>::value();
@@ -691,9 +691,9 @@ namespace Omega
 				}
 			};
 
-			template <typename C> 
+			template <typename C>
 			struct cast_helper<const C&>
-			{ 
+			{
 				static const C& cast(const any_t& a)
 				{
 					const C& v = System::Internal::default_value<C>::value();
@@ -705,157 +705,157 @@ namespace Omega
 				}
 			};
 
-			template <> 
-			struct cast_helper<bool_t&> 
-			{ 
-				static bool_t& cast(any_t& a) 
-				{ 
-					return a.GetBoolValue(); 
-				} 
+			template <>
+			struct cast_helper<bool_t&>
+			{
+				static bool_t& cast(any_t& a)
+				{
+					return a.GetBoolValue();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<byte_t&> 
-			{ 
-				static byte_t& cast(any_t& a) 
-				{ 
-					return a.GetByteValue(); 
-				} 
+
+			template <>
+			struct cast_helper<byte_t&>
+			{
+				static byte_t& cast(any_t& a)
+				{
+					return a.GetByteValue();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<int16_t&> 
-			{ 
-				static int16_t& cast(any_t& a) 
-				{ 
-					return a.GetInt16Value(); 
-				} 
+
+			template <>
+			struct cast_helper<int16_t&>
+			{
+				static int16_t& cast(any_t& a)
+				{
+					return a.GetInt16Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<uint16_t&> 
-			{ 
-				static uint16_t& cast(any_t& a) 
-				{ 
-					return a.GetUInt16Value(); 
-				} 
+
+			template <>
+			struct cast_helper<uint16_t&>
+			{
+				static uint16_t& cast(any_t& a)
+				{
+					return a.GetUInt16Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<int32_t&> 
-			{ 
-				static int32_t& cast(any_t& a) 
-				{ 
-					return a.GetInt32Value(); 
-				} 
+
+			template <>
+			struct cast_helper<int32_t&>
+			{
+				static int32_t& cast(any_t& a)
+				{
+					return a.GetInt32Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<uint32_t&> 
-			{ 
-				static uint32_t& cast(any_t& a) 
-				{ 
-					return a.GetUInt32Value(); 
-				} 
+
+			template <>
+			struct cast_helper<uint32_t&>
+			{
+				static uint32_t& cast(any_t& a)
+				{
+					return a.GetUInt32Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<int64_t&> 
-			{ 
-				static int64_t& cast(any_t& a) 
-				{ 
-					return a.GetInt64Value(); 
-				} 
+
+			template <>
+			struct cast_helper<int64_t&>
+			{
+				static int64_t& cast(any_t& a)
+				{
+					return a.GetInt64Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<uint64_t&> 
-			{ 
-				static uint64_t& cast(any_t& a) 
-				{ 
-					return a.GetUInt64Value(); 
-				} 
+
+			template <>
+			struct cast_helper<uint64_t&>
+			{
+				static uint64_t& cast(any_t& a)
+				{
+					return a.GetUInt64Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<float4_t&> 
-			{ 
-				static float4_t& cast(any_t& a) 
-				{ 
-					return a.GetFloat4Value(); 
-				} 
+
+			template <>
+			struct cast_helper<float4_t&>
+			{
+				static float4_t& cast(any_t& a)
+				{
+					return a.GetFloat4Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<float8_t&> 
-			{ 
-				static float8_t& cast(any_t& a) 
-				{ 
-					return a.GetFloat8Value(); 
-				} 
+
+			template <>
+			struct cast_helper<float8_t&>
+			{
+				static float8_t& cast(any_t& a)
+				{
+					return a.GetFloat8Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<guid_t&> 
-			{ 
-				static guid_t& cast(any_t& a) 
-				{ 
+
+			template <>
+			struct cast_helper<guid_t&>
+			{
+				static guid_t& cast(any_t& a)
+				{
 					return a.GetGuidValue();
-				} 
+				}
 			};
-			
-			template <> 
-			struct cast_helper<string_t&> 
-			{ 
-				static string_t& cast(any_t& a) 
-				{ 
-					return a.GetStringValue(); 
-				} 
+
+			template <>
+			struct cast_helper<string_t&>
+			{
+				static string_t& cast(any_t& a)
+				{
+					return a.GetStringValue();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<const int64_t&> 
-			{ 
-				static const int64_t& cast(const any_t& a) 
-				{ 
-					return a.GetInt64Value(); 
-				} 
+
+			template <>
+			struct cast_helper<const int64_t&>
+			{
+				static const int64_t& cast(const any_t& a)
+				{
+					return a.GetInt64Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<const uint64_t&> 
-			{ 
-				static const uint64_t& cast(const any_t& a) 
-				{ 
-					return a.GetUInt64Value(); 
-				} 
+
+			template <>
+			struct cast_helper<const uint64_t&>
+			{
+				static const uint64_t& cast(const any_t& a)
+				{
+					return a.GetUInt64Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<const float8_t&> 
-			{ 
-				static const float8_t& cast(const any_t& a) 
-				{ 
-					return a.GetFloat8Value(); 
-				} 
+
+			template <>
+			struct cast_helper<const float8_t&>
+			{
+				static const float8_t& cast(const any_t& a)
+				{
+					return a.GetFloat8Value();
+				}
 			};
-			
-			template <> 
-			struct cast_helper<const guid_t&> 
-			{ 
-				static const guid_t& cast(const any_t& a) 
-				{ 
+
+			template <>
+			struct cast_helper<const guid_t&>
+			{
+				static const guid_t& cast(const any_t& a)
+				{
 					return a.GetGuidValue();
-				} 
+				}
 			};
-			
-			template <> 
-			struct cast_helper<const string_t&> 
-			{ 
-				static const string_t& cast(const any_t& a) 
-				{ 
-					return a.GetStringValue(); 
-				} 
+
+			template <>
+			struct cast_helper<const string_t&>
+			{
+				static const string_t& cast(const any_t& a)
+				{
+					return a.GetStringValue();
+				}
 			};
 		}
 	}
@@ -1045,13 +1045,13 @@ namespace Omega
 		namespace Internal
 		{
 			// type_holder is safe across DLL boundaries...
-			template <> 
-			struct is_c_abi<type_holder> 
-			{ 
-				enum 
-				{ 
-					result = 1 
-				}; 
+			template <>
+			struct is_c_abi<type_holder>
+			{
+				enum
+				{
+					result = 1
+				};
 			};
 		}
 	}

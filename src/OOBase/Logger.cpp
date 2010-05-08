@@ -36,25 +36,25 @@
 #endif
 
 #if defined(_WIN32)
-	#include <io.h>
+#include <io.h>
 #endif // _WIN32
 
 #if defined(HAVE_FCNTL_H)
-	#include <fcntl.h>
+#include <fcntl.h>
 #endif // HAVE_FCNTL_H
 
 #if defined(HAVE_ASL_H)
-	#include <asl.h>
+#include <asl.h>
 
-	#error Fix me!
+#error Fix me!
 #endif // HAVE_ASL_H
 
 #if defined(HAVE_SYSLOG_H)
-	// Syslog reuses these
-	#undef LOG_WARNING
-	#undef LOG_DEBUG
+// Syslog reuses these
+#undef LOG_WARNING
+#undef LOG_DEBUG
 
-	#include <syslog.h>
+#include <syslog.h>
 #endif // HAVE_SYSLOG_H
 
 namespace
@@ -132,7 +132,7 @@ namespace
 #if defined(_WIN32)
 
 	Win32Logger::Win32Logger() :
-		m_hLog(NULL)
+			m_hLog(NULL)
 	{
 	}
 
@@ -167,7 +167,7 @@ namespace
 			RegSetValueExW(hk,L"EventMessageFile",0,REG_EXPAND_SZ,(LPBYTE)szPath,(DWORD)wcslen(szPath)+1);
 
 			DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
- 			RegSetValueExW(hk,L"TypesSupported",0,REG_DWORD,(LPBYTE)&dwData,sizeof(DWORD));
+			RegSetValueExW(hk,L"TypesSupported",0,REG_DWORD,(LPBYTE)&dwData,sizeof(DWORD));
 
 			RegCloseKey(hk);
 		}
@@ -201,7 +201,7 @@ namespace
 
 		std::string msg = string_printf(fmt,args);
 
-	#if !defined(OMEGA_DEBUG)
+#if !defined(OMEGA_DEBUG)
 		if (m_hLog && priority != OOSvrBase::Logger::Debug)
 		{
 			const char* arrBufs[2] = { msg.c_str(), 0 };
@@ -219,14 +219,14 @@ namespace
 
 			ReportEventA(m_hLog,wType,0,0,psid,1,0,arrBufs,NULL);
 		}
-	#endif
+#endif
 
 		if (priority == OOSvrBase::Logger::Debug)
 		{
 			OutputDebugStringA(msg.c_str());
 			OutputDebugStringA("\n");
 		}
-	
+
 		FILE* out_file = stdout;
 		switch (priority)
 		{

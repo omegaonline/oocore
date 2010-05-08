@@ -27,8 +27,8 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::Stub::Stub() : 
-	m_stub_id(0), m_pManager(0)
+OOCore::Stub::Stub() :
+		m_stub_id(0), m_pManager(0)
 {
 }
 
@@ -43,10 +43,10 @@ void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& 
 {
 	// Make sure we can support the outgoing interface...
 	assert(FindStub(iid) != 0);
-	
+
 	pMessage->WriteValue(L"id",m_stub_id);
 	pMessage->WriteValue(L"iid",iid);
-	
+
 	++m_marshal_count;
 }
 
@@ -76,10 +76,10 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 	std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator i=m_iid_map.find(iid);
 	if (i != m_iid_map.end())
 		return i->second;
-		
+
 	// See if any known interface supports the new interface
 	ObjectPtr<Remoting::IStub> ptrStub;
-	for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+	for (i=m_iid_map.begin(); i!=m_iid_map.end(); ++i)
 	{
 		if (i->second && i->second->SupportsInterface(iid))
 		{
@@ -90,12 +90,12 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 
 	if (!ptrStub)
 		ptrStub.Attach(CreateStub(iid));
-		
+
 	// Now add it...
 	std::pair<std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<Remoting::IStub> >::value_type(iid,ptrStub));
 	if (!p.second)
 		ptrStub = p.first->second;
-			
+
 	return ptrStub;
 }
 
@@ -112,8 +112,8 @@ Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 
 		return System::Internal::create_safe_proxy<Remoting::IStub>(wire_stub);
 	}
-	
-	return System::Internal::create_wire_stub(this,m_pManager,iid,m_ptrObj);	
+
+	return System::Internal::create_wire_stub(this,m_pManager,iid,m_ptrObj);
 }
 
 void OOCore::Stub::RemoteRelease()
@@ -134,34 +134,34 @@ bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
-	
+
 	// Unmarshal the channel
 	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(m_pManager)).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",pParamsIn);
 	if (!ptrChannel)
 		OMEGA_THROW(L"No channel");
-	
+
 	// Create a new message
 	ObjectPtr<Remoting::IMessage> ptrMessage;
 	ptrMessage.Attach(ptrChannel->CreateMessage());
-	
+
 	// Reflect the channel
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	ptrMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
 	ptrMessage->WriteValue(L"$marshal_type",byte_t(2));
 	ptrMessage->WriteValue(L"$oid",ptrChannel->GetReflectUnmarshalFactoryOID());
-	
+
 	ptrChannel->ReflectMarshal(ptrMessage);
-	
+
 	ptrMessage->WriteStructEnd();
-	
+
 	// Get the channel's IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrChannel.GetManager<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
-	
+
 	// Marshal the stub
 	ptrMarshaller->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);
-	
+
 	try
 	{
 		m_pManager->MarshalInterface(L"pReflect",pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);

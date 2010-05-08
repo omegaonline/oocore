@@ -30,8 +30,8 @@ using namespace OTL;
 OMEGA_DEFINE_OID(OOCore,OID_StdApartment,"{6654B003-44F1-497a-B539-80B5FCED73BC}");
 
 OOCore::Apartment::Apartment(UserSession* pSession, uint16_t id) :
-	m_pSession(pSession),
-	m_id(id)
+		m_pSession(pSession),
+		m_id(id)
 {
 }
 
@@ -42,13 +42,13 @@ void OOCore::Apartment::close()
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator j=m_mapChannels.begin();j!=m_mapChannels.end();++j)
+		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator j=m_mapChannels.begin(); j!=m_mapChannels.end(); ++j)
 		{
 			j->second->disconnect();
 		}
 		m_mapChannels.clear();
 
-		for (std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.begin();i!=m_mapApartments.end();++i)
+		for (std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.begin(); i!=m_mapApartments.end(); ++i)
 		{
 			i->second->disconnect();
 		}
@@ -67,7 +67,7 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 
 		std::list<ObjectPtr<ObjectImpl<Channel> > > listChannels;
 
-		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
+		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();)
 		{
 			bool bErase = false;
 			if (i->first == closed_channel_id)
@@ -80,7 +80,7 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 				// Close all apartments on the channel
 				bErase = true;
 			}
-			
+
 			if (bErase)
 			{
 				listChannels.push_back(i->second);
@@ -92,7 +92,7 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 
 		guard.release();
 
-		for (std::list<ObjectPtr<ObjectImpl<Channel> > >::iterator i=listChannels.begin();i!=listChannels.end();++i)
+		for (std::list<ObjectPtr<ObjectImpl<Channel> > >::iterator i=listChannels.begin(); i!=listChannels.end(); ++i)
 		{
 			(*i)->disconnect();
 		}
@@ -112,7 +112,7 @@ bool OOCore::Apartment::is_channel_open(uint32_t channel_id)
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t src_channel_id)
 {
 	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,guid_t::Null());
-	
+
 	return ptrChannel->GetObjectManager();
 }
 
@@ -124,12 +124,12 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
 	if (i != m_mapChannels.end())
 		return i->second;
-	
+
 	read_guard.release();
 
 	// Create a new OM
 	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
-		
+
 	// Create a new channel
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
 	ptrChannel->init(m_pSession,m_id,src_channel_id,ptrOM,message_oid);
@@ -140,7 +140,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 	std::pair<std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
 	if (!p.second)
 		ptrChannel = p.first->second;
-	
+
 	return ptrChannel;
 }
 
@@ -153,7 +153,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
-	
+
 	// Wrap up the request
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
 	ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
@@ -161,7 +161,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 
 	// Unpack the payload
 	ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
-	
+
 	// Check timeout
 	uint32_t timeout = 0;
 	if (deadline != OOBase::timeval_t::MaxTime)
@@ -169,7 +169,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)
 			return;
-			
+
 		timeout = (deadline - now).msec();
 	}
 
@@ -199,7 +199,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(uint16_t apartment_id)
 {
 	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = create_apartment(apartment_id,guid_t::Null());
-	
+
 	return ptrChannel->GetObjectManager();
 }
 
@@ -207,20 +207,20 @@ ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(u
 {
 	// Lookup existing..
 	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
-	
+
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
 	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.find(apartment_id);
 	if (i != m_mapApartments.end())
 		ptrChannel = i->second;
-	
+
 	read_guard.release();
 
 	if (!ptrChannel)
 	{
 		// Create a new OM
 		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
-		
+
 		// Create a new channel
 		ptrChannel = ObjectImpl<AptChannel>::CreateInstancePtr();
 		ptrChannel->init(m_pSession->get_apartment(apartment_id),m_id | m_pSession->get_channel_id(),ptrOM,message_oid);
@@ -244,7 +244,7 @@ IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::Meth
 	// Update session state and timeout
 	uint16_t old_id = 0;
 	old_id = m_pSession->update_state(apt_id,&timeout);
-	
+
 	// Make the call
 	try
 	{
@@ -270,8 +270,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0
 	return OOCore::UserSession::create_apartment();
 }
 
-OOCore::ApartmentImpl::ApartmentImpl() : 
-	m_id(0)
+OOCore::ApartmentImpl::ApartmentImpl() :
+		m_id(0)
 {
 	m_id = UserSession::get_current_apartment();
 }

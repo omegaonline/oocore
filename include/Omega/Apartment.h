@@ -31,7 +31,7 @@ namespace Omega
 		interface IApartment : public IObject
 		{
 			virtual void CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
-						
+
 			static IApartment* Create();
 		};
 	}

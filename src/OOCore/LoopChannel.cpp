@@ -26,11 +26,11 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace 
+namespace
 {
 	class LoopMarshaller :
-		public ObjectBase,
-		public Remoting::IMarshaller
+			public ObjectBase,
+			public Remoting::IMarshaller
 	{
 	public:
 		LoopMarshaller() : m_pChannel(0)

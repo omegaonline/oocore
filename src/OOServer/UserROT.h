@@ -27,8 +27,8 @@
 namespace User
 {
 	class RunningObjectTable :
-		public OTL::ObjectBase,
-		public Omega::Activation::IRunningObjectTable
+			public OTL::ObjectBase,
+			public Omega::Activation::IRunningObjectTable
 	{
 	public:
 		RunningObjectTable();

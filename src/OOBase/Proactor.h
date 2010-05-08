@@ -36,7 +36,7 @@ typedef struct
 namespace OOSvrBase
 {
 	class Proactor;
-		
+
 	class AsyncSocket
 	{
 	public:

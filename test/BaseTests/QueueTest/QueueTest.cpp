@@ -19,7 +19,7 @@ static int producer_func(void* param)
 {
 	size_t id = (size_t)param;
 
-	for (int i=0;i<1000;++i)
+	for (int i=0; i<1000; ++i)
 	{
 		// Sleep a bit
 		OOBase::sleep(OOBase::timeval_t(0,rand()));
@@ -37,7 +37,7 @@ static int consumer_func(void* param)
 {
 	size_t id = (size_t)param;
 
-	for (int i=0;i<1000;++i)
+	for (int i=0; i<1000; ++i)
 	{
 		std::string val;
 		QUEUE::instance()->pop(val);
@@ -64,19 +64,19 @@ int main(int /*argc*/, char* /*argv*/[])
 
 	// Start some producer threads
 	OOBase::Thread producers[25];
-	for (size_t i=0;i<sizeof(producers)/sizeof(producers[0]);++i)
+	for (size_t i=0; i<sizeof(producers)/sizeof(producers[0]); ++i)
 		producers[i].run(producer_func,(void*)i);
 
 	// Start some consumer threads
 	OOBase::Thread consumers[25];
-	for (size_t i=0;i<sizeof(consumers)/sizeof(consumers[0]);++i)
+	for (size_t i=0; i<sizeof(consumers)/sizeof(consumers[0]); ++i)
 		consumers[i].run(consumer_func,(void*)i);
 
 	// Wait for everyone
-	for (size_t i=0;i<sizeof(consumers)/sizeof(consumers[0]);++i)
+	for (size_t i=0; i<sizeof(consumers)/sizeof(consumers[0]); ++i)
 		consumers[i].join();
 
-	for (size_t i=0;i<sizeof(producers)/sizeof(producers[0]);++i)
+	for (size_t i=0; i<sizeof(producers)/sizeof(producers[0]); ++i)
 		producers[i].join();
 
 	return test_summary();
@@ -179,5 +179,5 @@ bool run_test(pfnTest t, const char* pszName)
 		output("[Unhandled C++ exception!]\n");
 	}
 
-    return false;
+	return false;
 }

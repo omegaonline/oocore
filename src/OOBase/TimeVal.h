@@ -45,7 +45,7 @@ namespace OOBase
 
 		timeval_t() {}
 		timeval_t(time_64_t s, int us = 0) :
-			m_tv_sec(s), m_tv_usec(us)
+				m_tv_sec(s), m_tv_usec(us)
 		{
 			normalise();
 		}

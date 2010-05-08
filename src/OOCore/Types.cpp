@@ -81,7 +81,7 @@ namespace
 		{
 			if (m_own)
 				return AddRef();
-			
+
 			StringNode* pNode;
 			OMEGA_NEW(pNode,StringNode(m_buf,m_len,true));
 			return pNode;
@@ -246,12 +246,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(
 
 	if (!pOrig)
 		return pAdd->Own();
-	
+
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,pAdd->m_buf,pAdd->m_len));
-	
+
 	pOrig->Release();
-	
+
 	return pNode;
 }
 
@@ -364,7 +364,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const v
 	StringNode* s2 = 0;
 	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len,true));
 
-	for (wchar_t* p=s2->m_buf;size_t(p-s2->m_buf) < s2->m_len;++p)
+	for (wchar_t* p=s2->m_buf; size_t(p-s2->m_buf) < s2->m_len; ++p)
 		*p = towlower(*p);
 
 	return s2;
@@ -378,7 +378,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const v
 	StringNode* s2 = 0;
 	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len,true));
 
-	for (wchar_t* p=s2->m_buf;size_t(p-s2->m_buf) < s2->m_len;++p)
+	for (wchar_t* p=s2->m_buf; size_t(p-s2->m_buf) < s2->m_len; ++p)
 		*p = towupper(*p);
 
 	return s2;
@@ -396,12 +396,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,4,((in),const vo
 	if (bIgnoreCase)
 	{
 		wint_t ci = towlower(c);
-		for (;towlower(*p) != ci && size_t(p-st)<len;++p)
+		for (; towlower(*p) != ci && size_t(p-st)<len; ++p)
 			;
 	}
 	else
 	{
-		for (;*p != c && size_t(p-st)<len;++p)
+		for (; *p != c && size_t(p-st)<len; ++p)
 			;
 	}
 
@@ -423,12 +423,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,4,((in),const
 	if (bIgnoreCase)
 	{
 		wint_t ci = towlower(c);
-		for (;towlower(*p) == ci && size_t(p-st)<len;++p)
+		for (; towlower(*p) == ci && size_t(p-st)<len; ++p)
 			;
 	}
 	else
 	{
-		for (;*p == c && size_t(p-st)<len;++p)
+		for (; *p == c && size_t(p-st)<len; ++p)
 			;
 	}
 
@@ -467,7 +467,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,4,((in),con
 	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
 	const wchar_t* p = st + pos;
 
-	for (;OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) == string_t::npos && size_t(p-st)<len;++p)
+	for (; OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) == string_t::npos && size_t(p-st)<len; ++p)
 		;
 
 	if (size_t(p-st) == len)
@@ -485,7 +485,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_notof,4,((in),con
 	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
 	const wchar_t* p = st + pos;
 
-	for (;OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) != string_t::npos && size_t(p-st)<len;++p)
+	for (; OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) != string_t::npos && size_t(p-st)<len; ++p)
 		;
 
 	if (size_t(p-st) == len)
@@ -506,12 +506,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,4,((in),const vo
 	if (bIgnoreCase)
 	{
 		wint_t ci = towlower(c);
-		for (;towlower(*p) != ci && p>=st;--p)
+		for (; towlower(*p) != ci && p>=st; --p)
 			;
 	}
 	else
 	{
-		for (;*p != c && p>=st;--p)
+		for (; *p != c && p>=st; --p)
 			;
 	}
 
@@ -682,7 +682,7 @@ void StringNode::parse_format()
 	{
 		size_t count = 0;
 		bool bFound = false;
-		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=m_fs->m_listInserts.begin();i!=m_fs->m_listInserts.end();++i)
+		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=m_fs->m_listInserts.begin(); i!=m_fs->m_listInserts.end(); ++i)
 		{
 			if (i->index <= idx)
 				++count;
@@ -737,7 +737,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 		arg = s->m_fs->m_curr_arg-1;
 	}
 
-	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
+	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
 	{
 		if (i->index == arg)
 		{
@@ -748,7 +748,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 
 	// Now measure how much space we need
 	std::wstring str = s->m_fs->m_prefix;
-	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
+	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
 	{
 		str += i->format;
 		str += i->suffix;
@@ -768,7 +768,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	memcpy(s->m_buf,str.data(),str.size()*sizeof(wchar_t));
 	s->m_buf[str.size()] = L'\0';
 	s->m_len = str.size();
-	
+
 	return 0;
 }
 
@@ -776,7 +776,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1
 {
 	StringNode* s = static_cast<StringNode*>(s1);
 
-	for (std::list<StringNode::format_state_t::insert_t>::iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
+	for (std::list<StringNode::format_state_t::insert_t>::iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
 	{
 		if (i->index == s->m_fs->m_curr_arg-1)
 		{
@@ -955,11 +955,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Om
 	// void comparison
 	if (lhs.GetType() == TypeInfo::typeVoid || rhs.GetType() == TypeInfo::typeVoid)
 		return (lhs.GetType() == rhs.GetType());
-	
+
 	// guid_t comparison
 	if (lhs.GetType() == TypeInfo::typeGuid || rhs.GetType() == TypeInfo::typeGuid)
 		return any_compare<guid_t>(lhs,rhs);
-	
+
 	// string_t comparison
 	if (lhs.GetType() == TypeInfo::typeString || rhs.GetType() == TypeInfo::typeString)
 		return any_compare<string_t>(lhs,rhs);
@@ -970,7 +970,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Om
 
 	// floatX_t comparison
 	if (lhs.GetType() == TypeInfo::typeFloat8 || rhs.GetType() == TypeInfo::typeFloat8 ||
-		lhs.GetType() == TypeInfo::typeFloat4 || rhs.GetType() == TypeInfo::typeFloat4)
+			lhs.GetType() == TypeInfo::typeFloat4 || rhs.GetType() == TypeInfo::typeFloat4)
 	{
 		return any_compare<float8_t>(lhs,rhs);
 	}

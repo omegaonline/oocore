@@ -29,9 +29,9 @@ namespace User
 	class Manager;
 
 	class Channel :
-		public OTL::ObjectBase,
-		public Omega::Remoting::IChannel,
-		public Omega::Remoting::IMarshal
+			public OTL::ObjectBase,
+			public Omega::Remoting::IChannel,
+			public Omega::Remoting::IMarshal
 	{
 	public:
 		Channel();
@@ -52,7 +52,7 @@ namespace User
 	private:
 		OOBase::SpinLock                                  m_lock;
 		Manager*                                          m_pManager;
-		Omega::uint32_t	                                  m_channel_id;
+		Omega::uint32_t                                   m_channel_id;
 		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
 		Omega::guid_t                                     m_message_oid;
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
@@ -84,9 +84,9 @@ namespace User
 	extern "C" const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory,0,Omega::Activation::InProcess>,
-		public Omega::Remoting::IMarshalFactory
+			public OTL::ObjectBase,
+			public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory,0,Omega::Activation::InProcess>,
+			public Omega::Remoting::IMarshalFactory
 	{
 	public:
 		BEGIN_INTERFACE_MAP(ChannelMarshalFactory)

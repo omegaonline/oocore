@@ -32,9 +32,9 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_ProxyMarshalFactory;
 
 	class ProxyMarshalFactory :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<ProxyMarshalFactory,&OID_ProxyMarshalFactory,Omega::Activation::InProcess>,
-		public Omega::Remoting::IMarshalFactory
+			public OTL::ObjectBase,
+			public OTL::AutoObjectFactorySingleton<ProxyMarshalFactory,&OID_ProxyMarshalFactory,Omega::Activation::InProcess>,
+			public Omega::Remoting::IMarshalFactory
 	{
 	public:
 		BEGIN_INTERFACE_MAP(ProxyMarshalFactory)
@@ -47,9 +47,9 @@ namespace OOCore
 	};
 
 	class Proxy :
-		public OTL::ObjectBase,
-		public Omega::Remoting::IProxy,
-		public Omega::Remoting::IMarshal
+			public OTL::ObjectBase,
+			public Omega::Remoting::IProxy,
+			public Omega::Remoting::IMarshal
 	{
 	public:
 		Proxy();

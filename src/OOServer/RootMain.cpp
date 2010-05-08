@@ -21,13 +21,13 @@
 
 /////////////////////////////////////////////////////////////
 //
-//	***** THIS IS A SECURE MODULE *****
+//  ***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//  It will be run as Administrator/setuid root
 //
-//	Therefore it needs to be SAFE AS HOUSES!
+//  Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary
+//  Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -59,7 +59,7 @@ static int Help()
 	std::cout << "  --version (-v)   Display version information" << std::endl;
 	std::cout << std::endl;
 	std::cout << "  --conf-file (-f) <file_path> Use the specified configuration file" << std::endl;
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("conf-file",'f',true);
 	cmd_args.add_option("unsafe",0);
-	
+
 	// Parse command line
 	std::map<std::string,std::string> args;
 	if (!cmd_args.parse(argc,argv,args))

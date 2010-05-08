@@ -51,7 +51,7 @@ namespace OOSvrBase
 		public:
 			AsyncSocket(ProactorImpl* pProactor, HANDLE handle, IOHandler* handler);
 			int bind();
-					
+
 			int read(OOBase::Buffer* buffer, size_t len);
 			int write(OOBase::Buffer* buffer);
 			void close();

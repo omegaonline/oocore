@@ -177,7 +177,7 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 	}
 
 	OOBase::POSIX::LocalSocket* pSocket = 0;
-	OOBASE_NEW(pSocket,OOBase::POSIX::LocalSocket(fd));
+	OOBASE_NEW(pSocket,OOBase::POSIX::LocalSocket(fd,path));
 	if (!pSocket)
 	{
 		*perr = ENOMEM;

@@ -26,6 +26,18 @@
 #include "ProactorEv.h"
 #include "PosixSocket.h"
 
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+
+#if defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif /* HAVE_SYS_FCNTL_H */
+
+#if defined(HAVE_SYS_UN_H)
+#include <sys/un.h>
+#endif /* HAVE_SYS_UN_H */
+
 /////////////////////////////////////////////////////
 // NOTES:
 //
@@ -94,11 +106,12 @@ namespace OOSvrBase
 		class AcceptSocket : public OOBase::Socket
 		{
 		public:
-			AcceptSocket(ProactorImpl* pProactor) :
+			AcceptSocket(ProactorImpl* pProactor, const std::string& path) :
 				m_proactor(pProactor),
 				m_watcher(0),
 				m_handler(0),
-				m_closing(false)
+				m_closing(false),
+				m_path(path)
 			{}
 
 			int init(Acceptor* handler, int fd);
@@ -123,6 +136,7 @@ namespace OOSvrBase
 			Acceptor*                 m_handler;
 			OOBase::Condition         m_close_cond;
 			bool                      m_closing;
+			std::string               m_path;
 
 			static void on_accept(void* param);
 			void on_accept_i();
@@ -469,7 +483,7 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 	SocketType* pSocket = 0;
 	if (err == 0)
 	{
-		OOBASE_NEW(pSocket,SocketType(new_fd));
+		OOBASE_NEW(pSocket,SocketType(new_fd,m_path));
 		if (!pSocket)
 			err = ENOMEM;
 		else

@@ -97,22 +97,22 @@ namespace OOBase
 			public SocketTempl<OOBase::LocalSocket>
 		{
 		public:
-			LocalSocket(int fd, const std::string& strPath) :
+			LocalSocket(int fd, const std::string& path) :
 				SocketTempl<OOBase::LocalSocket>(fd),
-				m_strPath(strPath)
+				m_path(path)
 			{}
 
 			virtual ~LocalSocket()
 			{
 			#if defined(HAVE_UNISTD_H)
-				unlink(m_strPath.c_str());
+				unlink(m_path.c_str());
 			#endif
 			}
 
 			virtual OOBase::LocalSocket::uid_t get_uid();
 
 		private:
-			std::string m_strPath;
+			std::string m_path;
 		};
 	}
 }

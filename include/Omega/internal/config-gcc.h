@@ -67,9 +67,9 @@
 #ifdef __cplusplus
 	#include <new>
 	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		if (true) { POINTER = new (std::nothrow) CONSTRUCTOR; \
+		do { POINTER = new (std::nothrow) CONSTRUCTOR; \
 			if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
-		} else (void)0
+		} while (0)
 #endif
 
 #if defined(_WIN32)

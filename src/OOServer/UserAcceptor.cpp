@@ -157,7 +157,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 
 #elif defined(HAVE_UNISTD_H)
 
-	void* POSIX_TODO; // chown pipe_name
+	m_sa.mode = 0700;
 
 #else
 #error set security on pipe_name

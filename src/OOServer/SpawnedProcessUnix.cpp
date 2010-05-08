@@ -35,11 +35,20 @@
 #include "RootManager.h"
 #include "SpawnedProcess.h"
 
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+
+#if defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif /* HAVE_SYS_FCNTL_H */
+
 #if defined(HAVE_UNISTD_H)
 
 #include <stdio.h>
 #include <grp.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <dirent.h>
 
 // Will need this!
@@ -504,7 +513,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
 
 	// Wrap fd[0]
-	OOBase::POSIX::LocalSocket sock(fd[0]);
+	OOBase::POSIX::LocalSocket sock(fd[0],"");
 
 	// Add FD_CLOEXEC to fd[0]
 	int oldflags = fcntl(fd[0],F_GETFD);

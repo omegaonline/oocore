@@ -28,6 +28,14 @@
 #include <ev.h>
 #endif
 
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+
+#if defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif /* HAVE_SYS_FCNTL_H */
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -174,7 +182,7 @@ bool User::Manager::init(const std::string& strPipe)
 	}
 
 	OOBase::POSIX::LocalSocket* pLocal = 0;
-	OOBASE_NEW(pLocal,OOBase::POSIX::LocalSocket(fd));
+	OOBASE_NEW(pLocal,OOBase::POSIX::LocalSocket(fd,""));
 	if (!pLocal)
 	{
 		::close(fd);

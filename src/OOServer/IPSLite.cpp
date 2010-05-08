@@ -29,6 +29,10 @@
 #include "IPSLite.h"
 #include "RegistryHive.h"
 
+#if defined(HAVE_UNISTD_H)
+#include <sys/stat.h>
+#endif
+
 using namespace Omega;
 using namespace Omega::Registry;
 using namespace OTL;
@@ -148,7 +152,7 @@ namespace
 
 		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
 			OMEGA_THROW(string_t(("CreateDirectoryW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-		
+
 		std::string dir = OOBase::to_utf8(szBuf);
 		if (*dir.rbegin() != '\\')
 			dir += '\\';
@@ -173,9 +177,9 @@ namespace
 
 		int flags;
 		if (bSystem)
-			flags = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+			flags = 0755;
 		else
-			flags = S_IRWXU | S_IRGRP;
+			flags = 0750;
 
 		if (mkdir(dir.c_str(),flags) != 0)
 		{
@@ -561,7 +565,7 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 		// Set the type and strip the start...
 		if (strSubKey.Length() > 10)
 			strMirror = strSubKey.Mid(11);
-		
+
 		ObjectPtr<IKey> ptrMirror;
 		try
 		{

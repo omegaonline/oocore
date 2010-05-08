@@ -105,7 +105,8 @@ namespace OOBase
 			virtual ~LocalSocket()
 			{
 			#if defined(HAVE_UNISTD_H)
-				unlink(m_path.c_str());
+				if (!m_path.empty())
+					unlink(m_path.c_str());
 			#endif
 			}
 

@@ -68,7 +68,7 @@ std::string User::Acceptor::unique_name()
 	}
 #elif defined(HAVE_UNISTD_H)
 
-	ssPipe << "/tmp/omegaonline/oou" << getuid();
+	ssPipe << "/tmp/.oou-" << getuid();
 
 #else
 #error Fix me!

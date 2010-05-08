@@ -103,7 +103,7 @@ namespace
 			fputc(' ',stdout);
 
 			// Read first char of line
-			int c = tolower(fgetc(stdin));
+			int c = fgetc(stdin);
 			int answer = c;
 
 			// Discard rest of line
@@ -275,7 +275,7 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, int nUnsafe, uid_
 
 		if (nUnsafe != 2)
 		{
-			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
+			if (!y_or_n_p("\n\nDo you want to allow this? [Y/n]:"))
 				return false;
 
 			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
@@ -441,23 +441,35 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid)
 
 bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
 {
-	std::string strDir;
 	if (m_bSandbox)
-		strDir = "/var/lib/omegaonline";
+	{
+		strHive = strSysDir + "sandbox.regdb";
+	}
 	else
 	{
 		OOSvrBase::pw_info pw(m_uid);
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-		strDir = pw->pw_dir;
-		strDir += "/.omegaonline";
+		if (strUsersDir.empty())
+			strHive = strSysDir + "users/";
+		else
+		{
+			strHive = strUsersDir;
+
+			if (*strHive.rbegin() != '/')
+				strHive += '/';
+		}
+
+		strHive += pw->pw_name;
+		strHive += ".regdb";
 	}
 
-	if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
-		LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
+	std::cout << "strHive = " << strHive << std::endl;
 
-	strHive = strDir + "/user.regdb";
+
+	//if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
+	//	LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
 	void* TODO;

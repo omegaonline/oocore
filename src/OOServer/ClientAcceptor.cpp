@@ -53,9 +53,9 @@ Root::ClientAcceptor::~ClientAcceptor()
 bool Root::ClientAcceptor::start(Manager* pManager)
 {
 #if defined(_WIN32)
-	std::string pipe_name = "OOServer";
+	std::string pipe_name = "OmegaOnline";
 #elif defined(HAVE_UNISTD_H)
-	std::string pipe_name = "/tmp/omegaonline/ooserverd";
+	std::string pipe_name = "/tmp/omegaonline";
 #else
 #error Fix me!
 #endif

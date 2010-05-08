@@ -117,7 +117,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,ptrZeroApt));
-	
+
 	guard.release();
 
 	// Remove standalone support eventually...
@@ -163,9 +163,9 @@ void OOCore::UserSession::init_i(bool bStandalone)
 std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 {
 #if defined(_WIN32)
-	const char* name = "OOServer";
+	const char* name = "OmegaOnline";
 #elif defined(HAVE_UNISTD_H)
-	const char* name = "/tmp/omegaonline/ooserverd";
+	const char* name = "/tmp/omegaonline";
 #else
 #error Fix me!
 #endif
@@ -774,7 +774,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 		std::map<uint32_t,uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
 		if (i != pContext->m_mapChannelThreads.end())
 			dest_thread_id = i->second;
-		
+
 		src_thread_id = pContext->m_thread_id;
 		deadline = pContext->m_deadline;
 
@@ -978,7 +978,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 				apt_id = m_next_apartment = 1;
 
 		} while (m_mapApartments.find(apt_id) != m_mapApartments.end());
-		
+
 		// Create the new object
 		OMEGA_NEW(ptrApt,Apartment(this,apt_id));
 
@@ -994,7 +994,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pObject);
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
-	
+
 	pObject = 0;
 	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
 
@@ -1070,7 +1070,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 {
 	// Create a channel in the context of the current apartment
 	const ThreadContext* pContext = ThreadContext::instance();
-	
+
 	OOBase::SmartPtr<Apartment> ptrApt;
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -1094,5 +1094,5 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 
 	default:
 		return ptrApt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
-	} 
+	}
 }

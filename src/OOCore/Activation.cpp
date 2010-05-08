@@ -119,7 +119,7 @@ namespace
 
 		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
 		void unload_unused();
-		
+
 	private:
 		DLLManagerImpl(const DLLManagerImpl&);
 		DLLManagerImpl& operator = (const DLLManagerImpl&);
@@ -154,7 +154,7 @@ namespace
 		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
 		if (i != m_dll_map.end())
 			return i->second;
-		
+
 		// Try to unload any unused dlls
 		unload_unused();
 
@@ -168,14 +168,14 @@ namespace
 
 		// Add to the map
 		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
-		
+
 		return dll;
 	}
 
 	void DLLManagerImpl::unload_unused()
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
-			
+
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
@@ -232,7 +232,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<Activation::Flags_t>::safe_type::type flags, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
 	pfnGetLibraryObject pfn = 0;
 	OOBase::SmartPtr<OOBase::DLL> dll;
-	
+
 	try
 	{
 		dll = DLLManager::instance()->load_dll(dll_name);
@@ -252,7 +252,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 
 	if (GetLibraryObject_Exception)
 		System::Internal::throw_correct_exception(GetLibraryObject_Exception);
-	
+
 	return pObj;
 }
 
@@ -346,7 +346,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 			// Try RunningObjectTable first
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-			
+
 			// Change this to use monikers
 			void* TICKET_90;
 
@@ -383,7 +383,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObje
 	guid_t oid_guid;
 	if (oid.Coerce(oid_guid) == any_t::castValid)
 		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid_guid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
-	
+
 	string_t strObject = oid.cast<string_t>();
 	string_t strEndpoint;
 	size_t pos = strObject.Find(L'@');
@@ -391,11 +391,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObje
 	{
 		strEndpoint = strObject.Mid(pos+1).ToLower();
 		strObject = strObject.Left(pos);
-		
+
 		if (strEndpoint == L"local")
 			strEndpoint.Clear();
 	}
-	
+
 	if (strEndpoint.IsEmpty())
 	{
 		// Do a quick registry lookup
@@ -419,10 +419,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObje
 		// Get the remote instance
 		IObject* pOF = 0;
 		ptrOM->GetRemoteInstance(strObject,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pOF);
-		
+
 		if (!pOF)
 			OidNotFoundException::Throw(oid);
-			
+
 		return static_cast<Activation::IObjectFactory*>(pOF);
 	}
 }

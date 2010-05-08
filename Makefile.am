@@ -3,7 +3,12 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = libltdl include src data test
 
 gitbundle:
-	git bundle create omega.git master
+	git bundle create omega.git --all
+
+astyle:
+	astyle -A1 -T4 -K -N -w -U -c -n -R *.h
+	astyle -A1 -T4 -K -N -w -U -c -n -R *.inl
+	astyle -A1 -T4 -K -N -w -U -c -n -R *.cpp
 
 reallyclean: maintainer-clean
 	rm -f Makefile

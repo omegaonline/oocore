@@ -66,10 +66,6 @@
 #define assert(x) ((void)0)
 #endif
 
-#if defined(HAVE_UUID_UUID_H)
-#include <uuid/uuid.h>
-#endif
-
 #if defined(HAVE_WINDOWS_H)
 #if (HAVE_WINDOWS_H != 1)
 #error What are you doing?

@@ -21,6 +21,10 @@
 
 #include "OOCore_precomp.h"
 
+#if defined(HAVE_UUID_UUID_H)
+#include <uuid/uuid.h>
+#endif
+
 using namespace Omega;
 
 namespace
@@ -135,6 +139,16 @@ namespace
 			return str + std::wstring(width-str.size(),L' ');
 		else
 			return std::wstring(width-str.size(),L' ') + str;
+	}
+
+	template <typename T>
+	bool any_compare(const any_t& lhs, const any_t& rhs)
+	{
+		T v1,v2;
+		if (lhs.Coerce(v1) != any_t::castValid || rhs.Coerce(v2) != any_t::castValid)
+			return false;
+
+		return (v1 == v2);
 	}
 }
 
@@ -558,12 +572,12 @@ void StringNode::parse_arg(size_t& pos)
 {
 	size_t end = find_brace(pos,L'}');
 	if (end == string_t::npos)
-		throw Formatting::IFormattingException::Create(L"Missing matching } in format string",OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"Missing matching '}' in format string: {0}" % string_t(m_buf,m_len));
 
 	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
 	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
 	if (comma == pos || colon == pos)
-		throw Formatting::IFormattingException::Create(L"Missing index in format string",OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"Missing index in format string: {0}" % string_t(m_buf,m_len));
 
 	format_state_t::insert_t ins;
 	ins.alignment = 0;
@@ -634,7 +648,7 @@ void StringNode::parse_format()
 	// Prefix first
 	size_t pos = find_brace(0,L'{');
 	if (pos == string_t::npos)
-		throw Formatting::IFormattingException::Create(L"No inserts in format string",OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"No inserts in format string: {0}" % string_t(m_buf,m_len));
 
 	OMEGA_NEW(m_fs,format_state_t);
 	m_fs->m_curr_arg = (size_t)-1;
@@ -684,7 +698,7 @@ void StringNode::parse_format()
 		if (!bFound)
 		{
 			if (count < m_fs->m_listInserts.size())
-				throw Formatting::IFormattingException::Create(L"Index gap in format string",OMEGA_SOURCE_INFO);
+				throw Formatting::IFormattingException::Create(L"Index gap in format string: {0}" % string_t(m_buf,m_len));
 			break;
 		}
 	}
@@ -694,7 +708,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 {
 	StringNode* s = static_cast<StringNode*>(*s1);
 	if (!s)
-		throw Formatting::IFormattingException::Create(L"Empty format string",OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"Empty format string");
 
 	size_t arg;
 	if (!idx)
@@ -934,4 +948,37 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 	// Pull from /dev/random ?
 
 #endif
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs))
+{
+	// void comparison
+	if (lhs.GetType() == TypeInfo::typeVoid || rhs.GetType() == TypeInfo::typeVoid)
+		return (lhs.GetType() == rhs.GetType());
+	
+	// guid_t comparison
+	if (lhs.GetType() == TypeInfo::typeGuid || rhs.GetType() == TypeInfo::typeGuid)
+		return any_compare<guid_t>(lhs,rhs);
+	
+	// string_t comparison
+	if (lhs.GetType() == TypeInfo::typeString || rhs.GetType() == TypeInfo::typeString)
+		return any_compare<string_t>(lhs,rhs);
+
+	// bool_t comparison
+	if (lhs.GetType() == TypeInfo::typeBool || rhs.GetType() == TypeInfo::typeBool)
+		return any_compare<bool_t>(lhs,rhs);
+
+	// floatX_t comparison
+	if (lhs.GetType() == TypeInfo::typeFloat8 || rhs.GetType() == TypeInfo::typeFloat8 ||
+		lhs.GetType() == TypeInfo::typeFloat4 || rhs.GetType() == TypeInfo::typeFloat4)
+	{
+		return any_compare<float8_t>(lhs,rhs);
+	}
+
+	// uint64_t comparison - everything else fits in int64_t
+	if (lhs.GetType() == TypeInfo::typeUInt64 || rhs.GetType() == TypeInfo::typeUInt64)
+		return any_compare<uint64_t>(lhs,rhs);
+
+	// Try comparing as int64_t
+	return any_compare<int64_t>(lhs,rhs);
 }

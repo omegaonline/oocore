@@ -35,8 +35,11 @@ namespace
 
 		static Win32Thunk& instance()
 		{
-			static Win32Thunk s_instance;
-			return s_instance;
+			static INIT_ONCE key = {0};
+			if (!impl_InitOnceExecuteOnce(&key,&init,0,0))
+				OOBase_CallCriticalFailure(GetLastError());
+
+			return *s_instance;
 		}
 
 		typedef BOOL (__stdcall *pfn_InitOnceExecuteOnce)(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context);
@@ -85,7 +88,18 @@ namespace
 
 	private:
 		void init_low_frag_heap();
+
+		static Win32Thunk* s_instance;
+
+		static BOOL __stdcall init(INIT_ONCE*,void*,void**)
+		{
+			static Win32Thunk inst;
+			s_instance = &inst;
+			return TRUE;
+		}
 	};
+
+	Win32Thunk* Win32Thunk::s_instance = 0;
 	
 	Win32Thunk::Win32Thunk() :
 		m_hKernel32(0)
@@ -267,7 +281,7 @@ BOOL OOBase::Win32::InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitF
 void OOBase::Win32::InitializeSRWLock(SRWLOCK* SRWLock)
 {
 #if (WINVER >= 0x0600)
-	char static_check[sizeof(rwmutex_t*) >= sizeof(SRWLOCK) ? 1 : -1]; static_check;
+	static_assert(sizeof(rwmutex_t*) >= sizeof(SRWLOCK),"Refer to maintainters");
 #endif
 
 	(*Win32Thunk::instance().m_InitializeSRWLock)(SRWLock);
@@ -370,7 +384,7 @@ void OOBase::Win32::rwmutex_t::release_read()
 void OOBase::Win32::InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
 {
 #if (WINVER >= 0x0600)
-	char static_check[sizeof(condition_variable_t*) >= sizeof(CONDITION_VARIABLE) ? 1 : -1]; static_check;
+	static_assert(sizeof(condition_variable_t*) >= sizeof(CONDITION_VARIABLE),"Refer to maintainters");
 #endif
 
 	(*Win32Thunk::instance().m_InitializeConditionVariable)(ConditionVariable);

@@ -74,8 +74,8 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 
 	WriteStubInfo(pParamsOut,0);
 
-	pParamsOut->WriteGuid(L"iid",iid);
-	pParamsOut->WriteStructEnd(L"ipc_request");
+	pParamsOut->WriteValue(L"iid",iid);
+	pParamsOut->WriteStructEnd();
 
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
@@ -85,7 +85,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
-	bool bOk = ptrParamsIn->ReadBoolean(L"$retval");
+	bool bOk = ptrParamsIn->ReadValue(L"$retval").cast<bool_t>();
 	
 	guard.acquire();
 
@@ -101,7 +101,7 @@ IObject* OOCore::Proxy::QueryIObject()
 
 	WriteStubInfo(pParamsOut,1);
 
-	pParamsOut->WriteStructEnd(L"ipc_request");
+	pParamsOut->WriteStructEnd();
 
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
@@ -118,7 +118,7 @@ IObject* OOCore::Proxy::QueryIObject()
 
 IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 {
-	guid_t iid = pMessage->ReadGuid(L"iid");
+	guid_t iid = pMessage->ReadValue(L"iid").cast<guid_t>();
 
 	// Add to the cache map...
 	{
@@ -135,17 +135,17 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
 {
 	pMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
-	pMessage->WriteUInt32(L"$stub_id",m_proxy_id);
-	pMessage->WriteGuid(L"$iid",OMEGA_GUIDOF(IObject));
-	pMessage->WriteUInt32(L"$method_id",method_id);
+	pMessage->WriteValue(L"$stub_id",m_proxy_id);
+	pMessage->WriteValue(L"$iid",OMEGA_GUIDOF(IObject));
+	pMessage->WriteValue(L"$method_id",method_id);
 }
 
 void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 {
 	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-	pMessage->ReadUInt32(L"$stub_id");
-	pMessage->ReadGuid(L"$iid");
-	pMessage->ReadUInt32(L"$method_id");
+	pMessage->ReadValue(L"$stub_id");
+	pMessage->ReadValue(L"$iid");
+	pMessage->ReadValue(L"$method_id");
 }
 
 Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* pMarshaller, const guid_t& iid)
@@ -155,7 +155,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 
 	WriteStubInfo(pParamsOut,2);
 
-	pParamsOut->WriteGuid(L"iid",iid);
+	pParamsOut->WriteValue(L"iid",iid);
 
 	Remoting::IMessage* pParamsIn = 0;
 	
@@ -163,7 +163,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	{
 		m_pManager->DoMarshalChannel(pMarshaller,pParamsOut);
 
-		pParamsOut->WriteStructEnd(L"ipc_request");
+		pParamsOut->WriteStructEnd();
 
 		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 		if (pE)
@@ -173,7 +173,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	{
 		ReadStubInfo(pParamsOut);
 
-		pParamsOut->ReadGuid(L"iid");
+		pParamsOut->ReadValue(L"iid");
 
 		void* TODO; // Release marshal data for channel
 		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(Remoting::IMarshaller),pObjectManager);
@@ -196,7 +196,7 @@ void OOCore::Proxy::CallRemoteRelease()
 
 		WriteStubInfo(pParamsOut,uint32_t(-1));
 
-		pParamsOut->WriteStructEnd(L"ipc_request");
+		pParamsOut->WriteStructEnd();
 
 		Remoting::IMessage* pParamsIn = 0;
 		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);

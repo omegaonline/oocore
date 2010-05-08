@@ -30,45 +30,6 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_CDRMessageMarshalFactory;
 }
 
-// Some macros to help
-
-#define OOCORE_DEFINE_MESSAGE_READWRITE(name,r_type,w_type) \
-	r_type OMEGA_CONCAT(Read,name)(const Omega::string_t&) \
-	{ \
-		r_type retval; \
-		if (!m_stream.read(retval)) \
-			OMEGA_THROW(m_stream.last_error()); \
-		return retval; \
-	} \
-	void OMEGA_CONCAT(Read,OMEGA_CONCAT_R(name,s))(const Omega::string_t&, Omega::uint32_t count, r_type* arr) \
-	{ \
-		Omega::uint32_t actual = 0; \
-		if (!m_stream.read(actual)) \
-			OMEGA_THROW(m_stream.last_error()); \
-		if (actual > count) \
-			OMEGA_THROW(L"Over-read on memory message"); \
-		for (Omega::uint32_t i=0;i<actual;++i) \
-		{ \
-			if (!m_stream.read(arr[i])) \
-				OMEGA_THROW(m_stream.last_error()); \
-		} \
-	} \
-	void OMEGA_CONCAT(Write,name)(const Omega::string_t&, w_type val) \
-	{ \
-		if (!m_stream.write(val)) \
-			OMEGA_THROW(m_stream.last_error()); \
-	} \
-	void OMEGA_CONCAT(Write,OMEGA_CONCAT_R(name,s))(const Omega::string_t&, Omega::uint32_t count, const r_type* arr) \
-	{ \
-		if (!m_stream.write(count)) \
-			OMEGA_THROW(m_stream.last_error()); \
-		for (Omega::uint32_t i=0;i<count;++i) \
-		{ \
-			if (!m_stream.write(arr[i])) \
-				OMEGA_THROW(m_stream.last_error()); \
-		} \
-	}
-
 namespace OOCore
 {
 	class CDRMessage :
@@ -90,6 +51,22 @@ namespace OOCore
 	private:
 		OOBase::CDRStream m_stream;
 
+		template <typename T>
+		T read()
+		{
+			T retval;
+			if (!m_stream.read(retval))
+				OMEGA_THROW(m_stream.last_error());
+			return retval;
+		}
+
+		template <typename T>
+		void write(T val)
+		{
+			if (!m_stream.write(val))
+				OMEGA_THROW(m_stream.last_error());
+		}
+
 	public:
 		const OOBase::CDRStream* GetCDRStream() const
 		{
@@ -109,13 +86,13 @@ namespace OOCore
 				OMEGA_THROW(L"Message too long to marshal");
 
 			Omega::uint32_t len = static_cast<Omega::uint32_t>(m_stream.buffer()->length());
-			pMessage->WriteUInt32(L"length",len);
+			pMessage->WriteValue(L"length",len);
 			pMessage->WriteBytes(L"data",len,reinterpret_cast<const Omega::byte_t*>(m_stream.buffer()->rd_ptr()));
 		}
 
 		void ReleaseMarshalData(Omega::Remoting::IMarshaller*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			Omega::uint32_t len = pMessage->ReadUInt32(L"length");
+			Omega::uint32_t len = pMessage->ReadValue(L"length").cast<Omega::uint32_t>();
 			OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
 			OMEGA_NEW(szBuf,Omega::byte_t[len]);
 			pMessage->ReadBytes(L"data",len,szBuf);
@@ -123,60 +100,9 @@ namespace OOCore
 
 	// IMessage members
 	public:
-		OOCORE_DEFINE_MESSAGE_READWRITE(Boolean,Omega::bool_t,Omega::bool_t)
-		OOCORE_DEFINE_MESSAGE_READWRITE(Int16,Omega::int16_t,Omega::int16_t)
-		OOCORE_DEFINE_MESSAGE_READWRITE(UInt16,Omega::uint16_t,Omega::uint16_t)
-		OOCORE_DEFINE_MESSAGE_READWRITE(Int32,Omega::int32_t,Omega::int32_t)
-		OOCORE_DEFINE_MESSAGE_READWRITE(UInt32,Omega::uint32_t,Omega::uint32_t)
-		OOCORE_DEFINE_MESSAGE_READWRITE(Int64,Omega::int64_t,const Omega::int64_t&)
-		OOCORE_DEFINE_MESSAGE_READWRITE(UInt64,Omega::uint64_t,const Omega::uint64_t&)
-		OOCORE_DEFINE_MESSAGE_READWRITE(Float4,Omega::float4_t,Omega::float4_t)
-		OOCORE_DEFINE_MESSAGE_READWRITE(Float8,Omega::float8_t,const Omega::float8_t&)
-
-		Omega::string_t ReadString(const Omega::string_t&)
-		{
-			std::string val;
-			if (!m_stream.read(val))
-				OMEGA_THROW(m_stream.last_error());
-
-			return Omega::string_t(val.c_str(),true);
-		}
-
-		Omega::guid_t ReadGuid(const Omega::string_t&)
-		{
-			Omega::guid_t g;
-			g.Data1 = ReadUInt32(Omega::string_t());
-			g.Data2 = ReadUInt16(Omega::string_t());
-			g.Data3 = ReadUInt16(Omega::string_t());
-			ReadBytes(Omega::string_t(),8,g.Data4);
-			return g;
-		}
-
-		void WriteString(const Omega::string_t&, const Omega::string_t& val)
-		{
-			if (!m_stream.write(val.ToUTF8()))
-				OMEGA_THROW(m_stream.last_error());
-		}
-
-		void WriteGuid(const Omega::string_t&, const Omega::guid_t& val)
-		{
-			WriteUInt32(Omega::string_t(),val.Data1);
-			WriteUInt16(Omega::string_t(),val.Data2);
-			WriteUInt16(Omega::string_t(),val.Data3);
-			WriteBytes(Omega::string_t(),8,val.Data4);
-		}
-
-		Omega::byte_t ReadByte(const Omega::string_t&)
-		{
-			Omega::byte_t retval;
-			if (!m_stream.read(retval))
-				OMEGA_THROW(m_stream.last_error());
-			return retval;
-		}
-
 		void ReadBytes(const Omega::string_t&, Omega::uint32_t count, Omega::byte_t* val)
 		{
-			Omega::uint32_t actual = ReadUInt32(Omega::string_t());
+			Omega::uint32_t actual = read<Omega::uint32_t>();
 			if (actual > count)
 				OMEGA_THROW(L"Over-read on memory message");
 
@@ -185,62 +111,150 @@ namespace OOCore
 				OMEGA_THROW(L"Under-read on memory message");
 		}
 
-		void ReadStrings(const Omega::string_t&, Omega::uint32_t count, Omega::string_t* arr)
+		void WriteBytes(const Omega::string_t&, Omega::uint32_t count, const Omega::byte_t* val)
 		{
-			Omega::uint32_t actual = ReadUInt32(Omega::string_t());
-			if (actual > count)
-				OMEGA_THROW(L"Over-read on memory message");
-
-			for (Omega::uint32_t i=0;i<actual;++i)
-				arr[i] = ReadString(Omega::string_t());
+			if (!m_stream.write(count) ||
+				!m_stream.write_bytes(val,count))
+			{
+				OMEGA_THROW(m_stream.last_error());
+			}
 		}
 
-		void ReadGuids(const Omega::string_t&, Omega::uint32_t count, Omega::guid_t* arr)
+		Omega::any_t ReadValue(const Omega::string_t&)
 		{
-			Omega::uint32_t actual = ReadUInt32(Omega::string_t());
-			if (actual > count)
-				OMEGA_THROW(L"Over-read on memory message");
+			Omega::TypeInfo::Type_t type = read<Omega::TypeInfo::Type_t>();
+			switch (static_cast<Omega::TypeInfo::Type>(type))
+			{
+			case Omega::TypeInfo::typeBool:
+				return read<Omega::bool_t>();
+			case Omega::TypeInfo::typeByte:
+				return read<Omega::byte_t>();
+			case Omega::TypeInfo::typeInt16:
+				return read<Omega::int16_t>();
+			case Omega::TypeInfo::typeUInt16:
+				return read<Omega::uint16_t>();
+			case Omega::TypeInfo::typeInt32:
+				return read<Omega::int32_t>();
+			case Omega::TypeInfo::typeUInt32:
+				return read<Omega::uint32_t>();
+			case Omega::TypeInfo::typeInt64:
+				return read<Omega::int64_t>();
+			case Omega::TypeInfo::typeUInt64:
+				return read<Omega::uint64_t>();
+			case Omega::TypeInfo::typeFloat4:
+				return read<Omega::float4_t>();
+			case Omega::TypeInfo::typeFloat8:
+				return read<Omega::float8_t>();
+			case Omega::TypeInfo::typeString:
+				return Omega::string_t(read<std::string>().c_str(),true);
+				
+			case Omega::TypeInfo::typeGuid:
+				{
+					Omega::byte_t is_null = read<Omega::byte_t>();
+					if (is_null == 0)
+						return Omega::guid_t::Null();
+					else
+					{
+						Omega::guid_t g;
+						g.Data1 = read<Omega::uint32_t>();
+						g.Data2 = read<Omega::int16_t>();
+						g.Data3 = read<Omega::int16_t>();
+						if (m_stream.read_bytes(g.Data4,sizeof(g.Data4)) != sizeof(g.Data4))
+							OMEGA_THROW(m_stream.last_error());
+						return g;
+					}
+				}
+						
+			case Omega::TypeInfo::typeVoid:			
+				return Omega::any_t();
 
-			for (Omega::uint32_t i=0;i<actual;++i)
-				arr[i] = ReadGuid(Omega::string_t());
+			default:
+				OMEGA_THROW(L"Invalid any_t type");
+			}
+		}
+
+		void WriteValue(const Omega::string_t&, const Omega::any_t& value)
+		{
+			Omega::TypeInfo::Type_t type = static_cast<Omega::TypeInfo::Type_t>(value.GetType());
+			write(type);
+
+			switch (value.GetType())
+			{
+			case Omega::TypeInfo::typeBool:
+				return write(value.cast<Omega::bool_t>());
+			case Omega::TypeInfo::typeByte:
+				return write(value.cast<Omega::byte_t>());
+			case Omega::TypeInfo::typeInt16:
+				return write(value.cast<Omega::int16_t>());
+			case Omega::TypeInfo::typeUInt16:
+				return write(value.cast<Omega::uint16_t>());
+			case Omega::TypeInfo::typeInt32:
+				return write(value.cast<Omega::int32_t>());
+			case Omega::TypeInfo::typeUInt32:
+				return write(value.cast<Omega::uint32_t>());
+			case Omega::TypeInfo::typeInt64:
+				return write(value.cast<const Omega::int64_t&>());
+			case Omega::TypeInfo::typeUInt64:
+				return write(value.cast<const Omega::uint64_t&>());
+			case Omega::TypeInfo::typeFloat4:
+				return write(value.cast<Omega::float4_t>());
+			case Omega::TypeInfo::typeFloat8:
+				return write(value.cast<const Omega::float8_t&>());
+			case Omega::TypeInfo::typeString:
+				return write(value.cast<const Omega::string_t&>().ToUTF8());
+								
+			case Omega::TypeInfo::typeGuid:
+				{
+					const Omega::guid_t& g = value.cast<const Omega::guid_t&>();
+					if (g == Omega::guid_t::Null())
+						write(Omega::byte_t(0));
+					else
+					{
+						write(Omega::byte_t(1));
+
+						write(g.Data1);
+						write(g.Data2);
+						write(g.Data3);
+						if (!m_stream.write_bytes(g.Data4,sizeof(g.Data4)))
+							OMEGA_THROW(m_stream.last_error());
+					}
+				}
+				break;
+						
+			case Omega::TypeInfo::typeVoid:	
+				return;
+
+			default:
+				OMEGA_THROW(L"Invalid any_t type");
+			}
 		}
 
 		void ReadStructStart(const Omega::string_t&, const Omega::string_t&)
 			{ /* NOP */	}
 
-		void ReadStructEnd(const Omega::string_t&)
+		void ReadStructEnd()
 			{ /* NOP */	}
-
-		void WriteByte(const Omega::string_t&, Omega::byte_t val)
-		{
-			if (!m_stream.write(val))
-				OMEGA_THROW(m_stream.last_error());
-		}
-
-		void WriteBytes(const Omega::string_t&, Omega::uint32_t count, const Omega::byte_t* val)
-		{
-			WriteUInt32(Omega::string_t(),count);
-			m_stream.write_bytes(val,count);
-		}
-
-		void WriteStrings(const Omega::string_t&, Omega::uint32_t count, const Omega::string_t* arr)
-		{
-			WriteUInt32(Omega::string_t(),count);
-			for (Omega::uint32_t i=0;i<count;++i)
-				WriteString(Omega::string_t(),arr[i]);
-		}
-
-		void WriteGuids(const Omega::string_t&, Omega::uint32_t count, const Omega::guid_t* arr)
-		{
-			WriteUInt32(Omega::string_t(),count);
-			for (Omega::uint32_t i=0;i<count;++i)
-				WriteGuid(Omega::string_t(),arr[i]);
-		}
 
 		void WriteStructStart(const Omega::string_t&, const Omega::string_t&)
 			{ /* NOP */	}
 
-		void WriteStructEnd(const Omega::string_t&)
+		void WriteStructEnd()
+			{ /* NOP */	}
+
+		Omega::uint32_t ReadArrayStart(const Omega::string_t&)
+		{
+			return read<Omega::uint32_t>();
+		}
+
+		void ReadArrayEnd()
+			{ /* NOP */	}
+
+		void WriteArrayStart(const Omega::string_t&, Omega::uint32_t count)
+		{
+			write(count);
+		}
+
+		void WriteArrayEnd()
 			{ /* NOP */	}
 	};
 }

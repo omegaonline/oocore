@@ -71,4 +71,12 @@
 #include <objbase.h>
 #endif
 
+// These play havoc with stl
+#if defined(min)
+	#undef min
+#endif
+#if defined(max)
+	#undef max
+#endif
+
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_

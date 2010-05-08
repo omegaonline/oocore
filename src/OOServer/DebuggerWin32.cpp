@@ -108,7 +108,6 @@ static bool AttachVSDebugger(DWORD our_pid)
 
 	return bRet;
 }
-#endif
 
 static void PromptForDebugger(DWORD pid)
 {
@@ -117,14 +116,14 @@ static void PromptForDebugger(DWORD pid)
 	MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
+#endif
+
 void AttachDebugger(DWORD pid)
 {
 #if defined(_MSC_VER)
-	if (AttachVSDebugger(pid))
-		return;
+	if (!AttachVSDebugger(pid))
+		PromptForDebugger(pid);
 #endif
-
-	PromptForDebugger(pid);
 }
 
 #endif // OMEGA_DEBUG && _WIN32

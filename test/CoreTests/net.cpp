@@ -31,8 +31,8 @@ private:
 // IAsyncStreamNotify members
 public:
 	void OnOpened();
-	void OnRead(const Omega::uint64_t& cbBytes, const Omega::byte_t* pData);
-	void OnWritten(const Omega::uint64_t& cbBytes);
+	void OnRead(Omega::uint32_t cbBytes, const Omega::byte_t* pData);
+	void OnWritten(Omega::uint32_t cbBytes);
 	void OnError(Omega::IException* pE);
 };
 
@@ -58,7 +58,7 @@ void StreamNotify::OnOpened()
 	m_state = 1;
 }
 
-void StreamNotify::OnRead(const Omega::uint64_t& cbBytes, const Omega::byte_t* pData)
+void StreamNotify::OnRead(Omega::uint32_t cbBytes, const Omega::byte_t* pData)
 {
 	char szBuf[2048];
 	size_t len = 2047;
@@ -74,7 +74,7 @@ void StreamNotify::OnRead(const Omega::uint64_t& cbBytes, const Omega::byte_t* p
 	m_state = 2;
 }
 
-void StreamNotify::OnWritten(const Omega::uint64_t& /*cbBytes*/)
+void StreamNotify::OnWritten(Omega::uint32_t /*cbBytes*/)
 {
 	m_state = 3;
 }
@@ -98,7 +98,7 @@ static bool stream_tests()
 	
 	ptrStream->WriteBytes(strlen(szRequest),(Omega::byte_t*)szRequest);
 
-	Omega::uint64_t cbBytes = 2047;
+	Omega::uint32_t cbBytes = 2047;
 	ptrStream->ReadBytes(cbBytes,(Omega::byte_t*)szBuf);
 	szBuf[cbBytes] = '\0';
 

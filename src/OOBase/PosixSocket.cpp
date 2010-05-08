@@ -23,6 +23,18 @@
 
 #if !defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)
 
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+
+#if defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif /* HAVE_SYS_FCNTL_H */
+
+#if defined(HAVE_SYS_UN_H)
+#include <sys/un.h>
+#endif /* HAVE_SYS_UN_H */
+
 OOBase::LocalSocket::uid_t OOBase::POSIX::LocalSocket::get_uid()
 {
 #if defined(HAVE_GETPEEREID)

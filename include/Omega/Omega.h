@@ -73,6 +73,7 @@
 
 #include <limits>
 #include <string>
+#include <cmath>
 
 #include <vector>
 #include <deque>
@@ -94,6 +95,7 @@
 #include "internal/base.h"
 #include "internal/export.h"
 #include "internal/rtti.h"
+#include "internal/any.h"
 #include "internal/safe.h"
 #include "internal/safe_ps.h"
 #include "internal/wire.h"
@@ -105,12 +107,12 @@ namespace Omega
 	IException* Initialize(bool bStandalone = false);
 	void Uninitialize();
 
-	IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
-	IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	bool_t HandleRequest(uint32_t timeout = 0);
 }
 
 #include "internal/types.inl"
+#include "internal/any.inl"
 #include "internal/threading.inl"
 #include "internal/rtti.inl"
 #include "internal/safe.inl"
@@ -140,23 +142,10 @@ inline void Omega::Uninitialize()
 	OOCore_Omega_Uninitialize();
 }
 
-inline Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags));
+inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
-	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(static_cast<Activation::IObjectFactory*>(Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory))));
-	if (!ptrOF)
-		OMEGA_THROW(L"Failed to create object factory");
-	
-	IObject* pObject = 0;
-	ptrOF->CreateInstance(pOuter,iid,pObject);
-	return pObject;
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags));
-inline Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
-{
-	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(strURI,flags));
-	if (!ptrOF)
-		OMEGA_THROW(L"Failed to create object factory");
+	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(oid,flags));
 	
 	IObject* pObject = 0;
 	ptrOF->CreateInstance(pOuter,iid,pObject);

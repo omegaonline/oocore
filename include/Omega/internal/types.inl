@@ -183,6 +183,14 @@ inline Omega::string_t& Omega::string_t::operator += (wchar_t c)
 	return *this;
 }
 
+inline int Omega::string_t::Compare(const string_t& s) const
+{
+	if (&s == this)
+		return 0;
+
+	return Compare(s,0,string_t::npos,false);
+}
+
 OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,h1,(in),const void*,h2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
 inline int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool bIgnoreCase) const
 {
@@ -424,7 +432,7 @@ namespace Omega
 			template <typename T>
 			struct integer_formatter_t
 			{
-				static string_t ToString(T val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat = string_t())
 				{
 					return OOCore_to_string_int_t(val,strFormat,sizeof(T));
 				}
@@ -433,7 +441,7 @@ namespace Omega
 			template <typename T>
 			struct unsigned_integer_formatter_t
 			{
-				static string_t ToString(T val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat = string_t())
 				{
 					return OOCore_to_string_uint_t(val,strFormat,sizeof(T));
 				}
@@ -442,7 +450,7 @@ namespace Omega
 			template <typename T>
 			struct float_formatter_t
 			{
-				static string_t ToString(T val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat = string_t())
 				{
 					return OOCore_to_string_float_t(val,strFormat,sizeof(T));
 				}
@@ -451,8 +459,9 @@ namespace Omega
 			template <>
 			struct float_formatter_t<float4_t>
 			{
-				static string_t ToString(float4_t val, const string_t& strFormat)
+				static string_t ToString(float4_t val, const string_t& strFormat = string_t())
 				{
+					// NAN does not compare successfully to any other number including itself!
 					static const float4_t nan = std::numeric_limits<float4_t>::signaling_NaN();
 					if (*reinterpret_cast<const uint32_t*>(&val) == *reinterpret_cast<const uint32_t*>(&nan))
 						return OOCore_to_string_float_t(std::numeric_limits<float8_t>::signaling_NaN(),strFormat,sizeof(float4_t));
@@ -464,7 +473,7 @@ namespace Omega
 			template <typename T>
 			struct to_string_member_formatter_t
 			{
-				static string_t ToString(const T& val, const string_t& strFormat)
+				static string_t ToString(const T& val, const string_t& strFormat = string_t())
 				{
 					return val.ToString(strFormat);	
 				}
@@ -500,7 +509,6 @@ namespace Omega
 				typedef typename formatter_t<T*>::type type;
 			};
 
-			// Don't pass pointers
 			template <typename T> 
 			struct formatter_t<const T*>
 			{
@@ -519,7 +527,7 @@ namespace Omega
 inline Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
 {
 	if (!strFormat.IsEmpty())
-		throw Formatting::IFormattingException::Create(L"Invalid string_t format string {0}" % strFormat,OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"Invalid string_t format string: {0}" % strFormat);
 	
 	return val;
 }
@@ -596,12 +604,10 @@ inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 	return (OOCore_guid_t_from_string(str,guid) != 0);
 }
 
-inline Omega::guid_t Omega::guid_t::FromString(const string_t& str)
+inline Omega::guid_t::guid_t(const string_t& str)
 {
-	guid_t ret;
-	if (!FromString(str,ret))
-		throw Formatting::IFormattingException::Create(L"{0} is not a guid_t string representation" % str,OMEGA_SOURCE_INFO);
-	return ret;
+	if (!guid_t::FromString(str,*this))
+		throw Formatting::IFormattingException::Create(L"{0} is not an Omega::guid_t string representation" % str);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());

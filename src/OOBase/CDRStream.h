@@ -293,7 +293,7 @@ namespace OOBase
 			}
 
 			// Write the length first
-			if (write_bytes(len_buf,sizeof(len_buf)) != sizeof(len_buf))
+			if (!write_bytes(len_buf,sizeof(len_buf)))
 				return false;
 
 			// Then the bytes of the string
@@ -328,24 +328,24 @@ namespace OOBase
 			return true;
 		}
 
-		size_t write_bytes(const unsigned char* buffer, size_t count)
+		bool write_bytes(const unsigned char* buffer, size_t count)
 		{
 			if (m_last_error != 0)
-				return 0;
+				return false;
 
 			m_last_error = m_buffer->space(count);
 			if (m_last_error != 0)
-				return 0;
+				return false;
 
 			memcpy(m_buffer->wr_ptr(),buffer,count);
 			m_buffer->wr_ptr(count);
-			return count;
+			return true;
 		}
 
 		size_t write_buffer(const Buffer* buffer)
 		{
 			if (m_last_error != 0)
-				return m_last_error;
+				return 0;
 
 			size_t count = buffer->length();
 			m_last_error = m_buffer->space(count);

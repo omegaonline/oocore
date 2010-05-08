@@ -8,13 +8,18 @@
 
 #include "Test.h"
 
-typedef OOBase::Singleton<OOBase::BoundedQueue<std::string> > QUEUE;
+struct Module
+{
+	int unused;
+};
+
+typedef OOBase::Singleton<OOBase::BoundedQueue<std::string>,Module > QUEUE;
 
 static int producer_func(void* param)
 {
 	size_t id = (size_t)param;
 
-	for (;;)
+	for (int i=0;i<1000;++i)
 	{
 		// Sleep a bit
 		OOBase::sleep(OOBase::timeval_t(0,rand()));
@@ -32,7 +37,7 @@ static int consumer_func(void* param)
 {
 	size_t id = (size_t)param;
 
-	for (;;)
+	for (int i=0;i<1000;++i)
 	{
 		std::string val;
 		QUEUE::instance()->pop(val);
@@ -80,6 +85,9 @@ int main(int /*argc*/, char* /*argv*/[])
 /////////////////////////////////////////////////////////////
 // The following are the functions that actually do the tests
 
+/////////////////////////////////////////////////////////////
+// The following are the functions that actually do the tests
+
 #if defined(_WIN32)
 void output(const char* sz, ...)
 {
@@ -87,10 +95,13 @@ void output(const char* sz, ...)
 	va_start(argptr, sz);
 
 	char szBuf[4096] = {0};
-	vsnprintf_s(szBuf,sizeof(szBuf),sz,argptr);
+	vsnprintf(szBuf,sizeof(szBuf),sz,argptr);
 
-	printf(szBuf);
+	fputs(szBuf,stdout);
+
+#if defined(_MSC_VER)
 	OutputDebugStringA(szBuf);
+#endif
 
 	va_end(argptr);
 

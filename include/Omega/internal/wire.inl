@@ -66,8 +66,8 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 		ptrMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 		unpack = true;
 		m_ptrProxy->WriteKey(ptrMessage);
-		ptrMessage->WriteGuid(L"$iid",iid);
-		ptrMessage->WriteUInt32(L"$method_id",method_id);
+		ptrMessage->WriteValue(L"$iid",iid);
+		ptrMessage->WriteValue(L"$method_id",method_id);
 		return ptrMessage;
 	}
 	catch (...)
@@ -85,8 +85,8 @@ inline void Omega::System::Internal::Wire_Proxy_Base::UnpackHeader(Remoting::IMe
 {
 	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 	m_ptrProxy->UnpackKey(pMessage);
-	pMessage->ReadGuid(L"$iid");
-	pMessage->ReadUInt32(L"$method_id");
+	pMessage->ReadValue(L"$iid");
+	pMessage->ReadValue(L"$method_id");
 }
 
 inline Omega::IObject* Omega::System::Internal::Wire_Proxy_Base::QueryInterface(const guid_t& iid)

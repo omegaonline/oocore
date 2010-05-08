@@ -252,7 +252,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	Aggregator* pAgg = 0;
 	OMEGA_NEW(pAgg,Aggregator);
 
-	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -344,7 +344,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 		{
 			ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
 		}
-		catch (Omega::Registry::INotFoundException* pE)
+		catch (Omega::Activation::IOidNotFoundException* pE)
 		{
 			add_success();
 			pE->Release();
@@ -374,7 +374,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
 	}
-	catch (Omega::Registry::INotFoundException* pE)
+	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
 		add_success();
 		pE->Release();
@@ -387,7 +387,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Library");
 	}
-	catch (Omega::Registry::INotFoundException* pE)
+	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
 		add_success();
 		pE->Release();
@@ -441,7 +441,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	Aggregator* pAgg = 0;
 	OMEGA_NEW(pAgg,Aggregator);
 
-	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -508,7 +508,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
 	}
-	catch (Omega::Registry::INotFoundException* pE)
+	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
 		add_success();
 		pE->Release();

@@ -73,6 +73,7 @@ namespace Omega
 
 	namespace TypeInfo
 	{
+		// These are the types supported aby Omega::any_t
 		enum Type
 		{
 			typeVoid = 0,
@@ -87,24 +88,32 @@ namespace Omega
 			typeFloat4,
 			typeFloat8,
 			typeString,
-			typeGuid,
-			typeObject
+			typeGuid
 		};
-		enum Modifier
+
+		// These are base types supported by marshalling
+		enum ExType
 		{
-			modifierConst = 0x10,
-			modifierPointer,
-			modifierReference,
+			typeAny = 0x10,
+			typeObject,
 
 			// STL collection types
-			modifierSTLVector = 0x18,
-			modifierSTLDeque,
-			modifierSTLList,
-			modifierSTLSet,
-			modifierSTLMultiset,
-			modifierSTLMap = 0x20,
-			modifierSTLMultimap
+			typeSTLVector = 0x20,
+			typeSTLDeque,
+			typeSTLList,
+			typeSTLSet,
+			typeSTLMultiset,
+			typeSTLMap = 0x28,
+			typeSTLMultimap
 		};
+		
+		enum Modifier
+		{
+			modifierConst = 0x80,
+			modifierPointer,
+			modifierReference
+		};
+
 		typedef byte_t Type_t;
 
 		enum MethodAttributes
@@ -180,7 +189,7 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace Internal { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid)); return v; } }; \
+	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(OMEGA_WIDEN_STRING(guid)); return v; } }; \
 	} } }
 
 #endif
@@ -197,7 +206,7 @@ namespace Omega
 	extern "C" OMEGA_IMPORT const Omega::guid_t name;
 
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
-	extern "C" const Omega::guid_t n_space::name = Omega::guid_t::FromString(OMEGA_WIDEN_STRING(guid));
+	extern "C" const Omega::guid_t n_space::name(OMEGA_WIDEN_STRING(guid));
 
 #else // DOXYGEN
 

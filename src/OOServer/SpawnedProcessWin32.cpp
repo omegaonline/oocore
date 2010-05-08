@@ -57,7 +57,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(const std::wstring& strAppPath, int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
@@ -319,7 +319,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static DWORD OpenCorrectWindowStation(HANDLE hToken, std::wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	static bool OpenCorrectWindowStation(HANDLE hToken, std::wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
 	{
 		// Service window stations are created with the name "Service-0xZ1-Z2$",
 		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
@@ -329,18 +329,18 @@ namespace
 		OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
-			return dwRes;
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
 		wchar_t* pszSid = 0;
 		if (!ConvertSidToStringSidW(ptrSIDLogon,&pszSid))
-			return GetLastError();
+			LOG_ERROR_RETURN(("ConvertSidToStringSidW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 		strWindowStation = pszSid;
 		LocalFree(pszSid);
 
 		// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
 		if (wcsncmp(strWindowStation.c_str(),L"S-1-5-5-",8) != 0)
-			return ERROR_INVALID_SID;
+			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
 
 		// Crack out the last two parts - there is probably an easier way... but this works
 		strWindowStation = strWindowStation.substr(8);
@@ -349,11 +349,11 @@ namespace
 		DWORD dwParts[2];
 		dwParts[0] = wcstoul(p,&pEnd,10);
 		if (*pEnd != L'-')
-			return ERROR_INVALID_SID;
+			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
 
 		dwParts[1] = wcstoul(pEnd+1,&pEnd,10);
 		if (*pEnd != L'\0')
-			return ERROR_INVALID_SID;
+			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
 
 		wchar_t szBuf[128] = {0};
 		wsprintfW(szBuf,L"Service-0x%lu-%lu$",dwParts[0],dwParts[1]);
@@ -362,11 +362,11 @@ namespace
 		// Get the current processes user SID
 		OOBase::Win32::SmartHandle hProcessToken;
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-			return GetLastError();
+			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrProcessUser)
-			return GetLastError();
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 		// Open or create the new window station and desktop
 		// Now confirm the Window Station exists...
@@ -376,12 +376,12 @@ namespace
 			// See if just doesn't exist yet...
 			dwRes = GetLastError();
 			if (dwRes != ERROR_FILE_NOT_FOUND)
-				return dwRes;
+				LOG_ERROR_RETURN(("OpenWindowStationW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
 			OOSvrBase::Win32::sec_descript_t sd;
 			dwRes = CreateWindowStationSD(ptrProcessUser,ptrSIDLogon,sd);
 			if (dwRes != ERROR_SUCCESS)
-				return dwRes;
+				LOG_ERROR_RETURN(("CreateWindowStationSD failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
 			SECURITY_ATTRIBUTES sa;
 			sa.nLength = sizeof(sa);
@@ -390,7 +390,7 @@ namespace
 
 			hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,&sa);
 			if (!hWinsta)
-				return GetLastError();
+				LOG_ERROR_RETURN(("CreateWindowStationW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 		}
 
 		// Stash our old
@@ -399,7 +399,7 @@ namespace
 		{
 			dwRes = GetLastError();
 			CloseWindowStation(hWinsta);
-			return dwRes;
+			LOG_ERROR_RETURN(("GetProcessWindowStation failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 		}
 
 		// Swap our Window Station
@@ -407,7 +407,7 @@ namespace
 		{
 			dwRes = GetLastError();
 			CloseWindowStation(hWinsta);
-			return dwRes;
+			LOG_ERROR_RETURN(("SetProcessWindowStation failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 		}
 
 		// Try for the desktop
@@ -420,7 +420,7 @@ namespace
 			{
 				SetProcessWindowStation(hOldWinsta);
 				CloseWindowStation(hWinsta);
-				return dwRes;
+				LOG_ERROR_RETURN(("OpenDesktopW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 			}
 
 			OOSvrBase::Win32::sec_descript_t sd;
@@ -429,7 +429,7 @@ namespace
 			{
 				SetProcessWindowStation(hOldWinsta);
 				CloseWindowStation(hWinsta);
-				return dwRes;
+				LOG_ERROR_RETURN(("CreateDesktopSD failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 			}
 
 			SECURITY_ATTRIBUTES sa;
@@ -443,7 +443,7 @@ namespace
 				dwRes = GetLastError();
 				SetProcessWindowStation(hOldWinsta);
 				CloseWindowStation(hWinsta);
-				return dwRes;
+				LOG_ERROR_RETURN(("CreateDesktopW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 			}
 		}
 
@@ -452,7 +452,7 @@ namespace
 
 		strWindowStation += L"\\default";
 
-		return ERROR_SUCCESS;
+		return true;
 	}
 }
 
@@ -490,17 +490,22 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	{
 		// Get our module name
 		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
-			return GetLastError();
-
+		{
+			DWORD dwRes = GetLastError();
+			LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+		}
+			
 		// Strip off our name, and add OOSvrUser.exe
-		if (!PathRemoveFileSpecW(szPath))
-			return GetLastError();
-
+		PathRemoveFileSpecW(szPath);
+		
 		strCurDir = szPath;
 
 		if (!PathAppendW(szPath,L"OOSvrUser.exe"))
-			return GetLastError();
-		
+		{
+			DWORD dwRes = GetLastError();
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),dwRes);
+		}
+
 		strAppPath = szPath;
 	}
 	else
@@ -508,16 +513,19 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		if (strAppPath.size() > 4 && strAppPath.substr(strAppPath.size()-4) != L".exe")
 			strAppPath += L".exe";
 
-		memcpy(szPath,strAppPath.data(),strAppPath.size()*sizeof(wchar_t));
+		size_t len = (strAppPath.size()+1 > MAX_PATH ? MAX_PATH : strAppPath.size()+1);
+		memcpy(szPath,strAppPath.c_str(),len*sizeof(wchar_t));
+		szPath[len-1] = L'\0';
 
 		// Strip off our name
-		if (!PathRemoveFileSpecW(szPath))
-			return GetLastError();
+		PathRemoveFileSpecW(szPath);
 
 		strCurDir = szPath;
 
 		// Restore path contents
-		memcpy(szPath,strAppPath.data(),strAppPath.size()*sizeof(wchar_t));
+		len = len = (strAppPath.size()+1 > MAX_PATH ? MAX_PATH : strAppPath.size()+1);
+		memcpy(szPath,strAppPath.c_str(),len*sizeof(wchar_t));
+		szPath[len-1] = L'\0';
 
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPath.c_str());
 	}
@@ -530,9 +538,9 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	OOBase::SmartPtr<wchar_t> ptrCmdLine = 0;
 	OOBASE_NEW(ptrCmdLine,wchar_t[strCmdLine.size()+1]);
 	if (!ptrCmdLine)
-		return ERROR_OUTOFMEMORY;
+		LOG_ERROR_RETURN(("PathRemoveFileSpecW failed: %s",OOBase::Win32::FormatMessage(ERROR_OUTOFMEMORY).c_str()),ERROR_OUTOFMEMORY);
 
-	memcpy(ptrCmdLine,strCmdLine.data(),strCmdLine.size()*sizeof(wchar_t));
+	memcpy(ptrCmdLine,strCmdLine.c_str(),strCmdLine.size()*sizeof(wchar_t));
 	ptrCmdLine[strCmdLine.size()] = L'\0';
 
 	// Forward declare these because of goto's
@@ -548,19 +556,20 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
-	DWORD dwRes = 0;
 	if (!bSandbox)
 	{
-		dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
+		DWORD dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
 		if (dwRes != ERROR_SUCCESS)
-			return dwRes;
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
 	}
 
 	// Load the users environment vars
+	DWORD dwRes = ERROR_SUCCESS;
 	LPVOID lpEnv = NULL;
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
 		dwRes = GetLastError();
+		LOG_ERROR(("CreateEnvironmentBlock: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
 		goto Cleanup;
 	}
 
@@ -568,6 +577,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
 		dwRes = GetLastError();
+		LOG_ERROR(("DuplicateTokenEx: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
 		goto Cleanup;
 	}
 
@@ -606,8 +616,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 
 		if (bSandbox)
 		{
-			dwRes = OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
-			if (dwRes != ERROR_SUCCESS)
+			if (!OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop))
 				goto Cleanup;
 
 			startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
@@ -628,6 +637,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		dwRes = GetLastError();
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 			bPrivError = true;
+
+		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
 
 		if (hDebugEvent)
 			CloseHandle(hDebugEvent);
@@ -654,6 +665,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	{
 		// Process aborted very quickly... this can happen if we have security issues
 		dwRes = ERROR_INTERNAL_ERROR;
+
+		LOG_ERROR(("Process exited immediately."));
 
 		CloseHandle(process_info.hProcess);
 		CloseHandle(process_info.hThread);
@@ -697,14 +710,14 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
 	DWORD dwRes = SpawnFromToken(strAppPath,hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (nUnsafe || IsDebuggerPresent()))
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
 		{
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -729,29 +742,19 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, int nUnsafe, HAN
 
 			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
 
-			std::wstring strMsg2 = strMsg;
-			strMsg2 += L"\n\nDo you want to allow this?";
+			// Restrict the Token
+			dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
+			if (dwRes != ERROR_SUCCESS)
+				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-			if (nUnsafe != 2 && MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
-				dwRes = ERROR_PRIVILEGE_NOT_HELD;
-			else
-			{
-				if (nUnsafe != 2)
-					OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+			if (SpawnFromToken(strAppPath,hToken2,strPipe,bSandbox) != ERROR_SUCCESS)
+				return false;
+
+			// Stash our original token as the process token
+			CloseHandle(m_hToken);
 				
-				// Restrict the Token
-				dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
-				if (dwRes != ERROR_SUCCESS)
-					LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
-
-				dwRes = SpawnFromToken(strAppPath,hToken2,strPipe,bSandbox);
-			}
-		}
-
-		if (dwRes != ERROR_SUCCESS)
-		{
-			// We really need to bitch about this now...
-			LOG_ERROR(("SpawnFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
+			// Duplicate the impersonated token...
+			DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
 		}
 	}
 
@@ -909,14 +912,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
 
-	int nUnsafe = 0;
-	if (m_cmd_args.find("unsafe") != m_cmd_args.end())
-	{
-		if (m_cmd_args.find("batch") != m_cmd_args.end())
-			nUnsafe = 2;
-		else
-			nUnsafe = 1;
-	}
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
 		
 	OOBase::Win32::SmartHandle sandbox_uid;
 	if (bSandbox)
@@ -928,7 +924,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 		if (!LogonSandboxUser(OOBase::from_utf8(i->second.c_str()),uid))
 		{
-			if (!nUnsafe)
+			if (!bUnsafe)
 				return 0;
 
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
@@ -952,17 +948,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 			strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
 			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
-
-			if (nUnsafe != 2)
-			{
-				std::wstring strMsg2 = strMsg;
-				strMsg2 += L"\n\nDo you want to allow this?";
-
-				if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
-					return 0;
-
-				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
-			}
 
 			// Restrict the Token
 			dwRes = OOSvrBase::Win32::RestrictToken(uid);
@@ -994,7 +979,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	if (a != m_config_args.end())
 		strAppName = OOBase::from_utf8(a->second.c_str());
 
-	if (!pSpawn32->Spawn(strAppName,nUnsafe,uid,strRootPipe,bSandbox))
+	if (!pSpawn32->Spawn(strAppName,bUnsafe,uid,strRootPipe,bSandbox))
 		return 0;
 	
 	// Wait for the connect attempt

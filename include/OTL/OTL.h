@@ -157,16 +157,10 @@ namespace OTL
 				m_ptr->AddRef();
 		}
 
-		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
+		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateLocalInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
-		}
-
-		ObjectPtrBase(const Omega::string_t& strURI, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
-			m_ptr(0)
-		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(strURI,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
 		}
 
 		virtual ~ObjectPtrBase()

@@ -151,7 +151,7 @@
 	{ \
 		typedef iface_wire_type<n_space::name > impl; \
 	}; \
-	template <> struct type_kind<n_space::name*> \
+	template <> struct type_kind<n_space::name> \
 	{ \
 		static const type_holder* type() \
 		{ \
@@ -333,7 +333,7 @@
 // Add extra meta info types here
 #define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
+#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(ptrMarshaller__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_II(t,name)
@@ -638,7 +638,7 @@
 		try \
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-			pParamsOut__wire__->WriteStructEnd(L"ipc_request"); \
+			pParamsOut__wire__->WriteStructEnd(); \
 			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,timeout); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
@@ -661,7 +661,7 @@
 		try \
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-			pParamsOut__wire__->WriteStructEnd(L"ipc_request"); \
+			pParamsOut__wire__->WriteStructEnd(); \
 			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,timeout); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \

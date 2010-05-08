@@ -145,7 +145,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(TypeInfo::IInterfaceInfo*,GetInterfaceInfo,1,((in),const guid_t&,iid))
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega::Remoting, IChannelClosedException, Omega, IException, "{E0BB01D1-CF43-4da0-97E0-E40B66A2CFE7}",
 

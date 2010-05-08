@@ -16,6 +16,7 @@ coretests_LDADD = $(top_builddir)/src/OOCore/liboocore.la
 endif
 
 coretests_SOURCES = \
+	any.cpp \
 	apartment.cpp \
 	core.cpp \
 	interfaces.cpp \

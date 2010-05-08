@@ -408,7 +408,7 @@ namespace Omega
 						&MarshalStub_Wire		// 2
 					};
 					
-					uint32_t method_id = pParamsIn->ReadUInt32(L"$method_id") + 1;
+					uint32_t method_id = pParamsIn->ReadValue(L"$method_id").cast<uint32_t>() + 1;
 
 					if (method_id < 4)
 						return MethodTable[method_id](this,pParamsIn,pParamsOut);
@@ -423,7 +423,7 @@ namespace Omega
 
 				static void QueryInterface_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 				{
-					pParamsOut->WriteBoolean(L"$retval",pThis->m_pController->RemoteQueryInterface(pParamsIn->ReadGuid(L"iid")));
+					pParamsOut->WriteValue(L"$retval",pThis->m_pController->RemoteQueryInterface(pParamsIn->ReadValue(L"iid").cast<guid_t>()));
 				}
 
 				static void QueryIObject_Wire(Wire_Stub_Base* pThis, Remoting::IMessage*, Remoting::IMessage* pParamsOut)

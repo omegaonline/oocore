@@ -33,7 +33,7 @@ namespace
 		public ExceptionImpl<Activation::IDuplicateRegistrationException>
 	{
 	public:
-		static void Throw(const guid_t& oid, IException* pE = 0);
+		static void Throw(const guid_t& oid);
 
 		BEGIN_INTERFACE_MAP(DuplicateRegistrationException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IDuplicateRegistrationException>)
@@ -51,10 +51,9 @@ namespace
 	};
 }
 
-void DuplicateRegistrationException::Throw(const guid_t& oid, IException* pE)
+void DuplicateRegistrationException::Throw(const guid_t& oid)
 {
 	ObjectImpl<DuplicateRegistrationException>* pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
-	pRE->m_ptrCause = pE;
 	pRE->m_strDesc = L"Duplicate registration of oid {0} in running object table.";
 	pRE->m_strDesc %= oid;
 	pRE->m_oid = oid;

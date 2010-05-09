@@ -577,7 +577,7 @@ namespace OTL
 
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			return Internal_QueryInterface(iid,ROOT::getQIEntries());
+			return this->Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 	};
 

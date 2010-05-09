@@ -665,7 +665,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		// See if pObject is a SafeProxy wrapping a WireProxy...
 		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
 		if (ptrProxy)
-			ptrMarshal.Attach(ptrProxy.QueryInterface<Remoting::IMarshal>());
+			ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(ptrProxy->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
 
 		// See if pObject does custom marshalling...
 		if (!ptrMarshal)

@@ -524,7 +524,7 @@ namespace Omega
 	}
 }
 
-inline Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(const Omega::string_t& val, const Omega::string_t& strFormat)
 {
 	if (!strFormat.IsEmpty())
 		throw Formatting::IFormattingException::Create(L"Invalid string_t format string: {0}" % strFormat);
@@ -532,18 +532,18 @@ inline Omega::string_t Omega::Formatting::ToString(const string_t& val, const st
 	return val;
 }
 
-inline Omega::string_t Omega::Formatting::ToString(const wchar_t* val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(const wchar_t* val, const Omega::string_t& strFormat)
 {
 	return ToString(string_t(val,string_t::npos),strFormat);
 }
 
-inline Omega::string_t Omega::Formatting::ToString(bool_t val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(Omega::bool_t val, const Omega::string_t& strFormat)
 {
 	return OOCore_to_string_bool_t(val,strFormat);
 }
 
 template <typename T>
-inline Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(T val, const Omega::string_t& strFormat)
 {
 	return System::Internal::formatter_t<T>::type::ToString(val,strFormat);
 }

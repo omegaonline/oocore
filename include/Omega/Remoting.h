@@ -198,7 +198,7 @@ inline Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Remoting_IsAlive,1,((in),Omega::IObject*,pObject))
-inline Omega::bool_t Omega::Remoting::IsAlive(IObject* pObject)
+inline Omega::bool_t Omega::Remoting::IsAlive(Omega::IObject* pObject)
 {
 	return OOCore_Remoting_IsAlive(pObject);
 }

@@ -38,11 +38,14 @@
 #if defined(_MSC_VER)
 // MS Visual Studio
 #include "config-msvc.h"
-#elif defined (__GNUC__)
-#include "config-gcc.h"
+#elif defined (__clang__)
+#include "config-clang.h"
 #elif defined (__BORLANDC__)
 // Borland C++ Builder
 #include "config-borland.h"
+#elif defined (__GNUC__)
+// Keep this last, as a lot of compilers pretend...
+#include "config-gcc.h"
 #else
 #error Failed to guess your compiler.  Please contact the omegaonline developers.
 #endif

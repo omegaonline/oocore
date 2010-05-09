@@ -535,7 +535,7 @@ namespace OTL
 
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			return Internal_QueryInterface(iid,ROOT::getQIEntries());
+			return this->Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 	};
 
@@ -732,7 +732,7 @@ namespace OTL
 
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			return Internal_QueryInterface(iid,ROOT::getQIEntries());
+			return this->Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 
 	private:
@@ -753,7 +753,7 @@ namespace OTL
 		virtual void Release() { }
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			return Internal_QueryInterface(iid,ROOT::getQIEntries());
+			return this->Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 	};
 
@@ -814,7 +814,7 @@ namespace OTL
 		}
 	};
 
-	template <typename ROOT, const Omega::guid_t* pOID = &Omega::guid_t::Null(), const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactory
 	{
 	public:

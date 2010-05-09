@@ -126,7 +126,7 @@ inline Omega::IException* Omega::System::Internal::Wire_Proxy_Base::Throw(const 
 	return static_cast<IException*>(create_wire_proxy(m_ptrProxy,iid,OMEGA_GUIDOF(IException)));
 }
 
-inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
+inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Omega::Remoting::IProxy* pProxy, const Omega::guid_t& iid, const Omega::guid_t& fallback_iid)
 {
 	assert(iid != OMEGA_GUIDOF(ISafeProxy));
 	assert(pProxy);
@@ -167,7 +167,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_St
 	return create_safe_stub(ptrStub,OMEGA_GUIDOF(Remoting::IStub));
 }
 
-inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
+inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Omega::Remoting::IStubController* pController, Omega::Remoting::IMarshaller* pMarshaller, const Omega::guid_t& iid, Omega::IObject* pObj)
 {
 	Remoting::IStub* pStub = 0;
 	if (iid == OMEGA_GUIDOF(IObject))

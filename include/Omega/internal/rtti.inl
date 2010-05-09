@@ -22,7 +22,7 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
-inline bool Omega::System::PinObjectPointer(IObject* pObject)
+inline bool Omega::System::PinObjectPointer(Omega::IObject* pObject)
 {
 	if (pObject)
 	{
@@ -37,7 +37,7 @@ inline bool Omega::System::PinObjectPointer(IObject* pObject)
 	return false;
 }
 
-inline void Omega::System::UnpinObjectPointer(IObject* pObject)
+inline void Omega::System::UnpinObjectPointer(Omega::IObject* pObject)
 {
 	Omega::System::Internal::auto_iface_ptr<Omega::System::Internal::ISafeProxy> ptrProxy(static_cast<Omega::System::Internal::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::Internal::ISafeProxy))));
 	if (ptrProxy)
@@ -47,13 +47,13 @@ inline void Omega::System::UnpinObjectPointer(IObject* pObject)
 #if !defined(DOXYGEN)
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
-inline void Omega::System::Internal::register_typeinfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
+inline void Omega::System::Internal::register_typeinfo(const Omega::guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
 {
 	OOCore_Internal_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
-inline void Omega::System::Internal::unregister_typeinfo(const guid_t& iid, const typeinfo_rtti* type_info)
+inline void Omega::System::Internal::unregister_typeinfo(const Omega::guid_t& iid, const typeinfo_rtti* type_info)
 {
 	OOCore_Internal_UnregisterAutoTypeInfo(iid,(const void*)type_info);
 }

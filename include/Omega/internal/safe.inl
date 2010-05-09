@@ -116,7 +116,7 @@ inline Omega::IObject* Omega::System::Internal::Safe_Proxy_Base::QueryInterface(
 	return create_safe_proxy(retval,iid);
 }
 
-inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim* shim, const guid_t& iid)
+inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim* shim, const Omega::guid_t& iid)
 {
 	if (!shim)
 		return 0;
@@ -176,7 +176,7 @@ inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shi
 	create_safe_proxy<IException>(shim)->Throw();
 }
 
-inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(IObject* pObj, const guid_t& iid)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(Omega::IObject* pObj, const Omega::guid_t& iid)
 {
 	if (!pObj)
 		return 0;
@@ -219,7 +219,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 	return shim;
 }
 
-inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_safe_exception(IException* pE)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_safe_exception(Omega::IException* pE)
 {
 	auto_iface_ptr<IException> ptrE(pE);
 	return create_safe_stub(pE,pE->GetThrownIID());

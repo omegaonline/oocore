@@ -1059,7 +1059,7 @@ namespace Omega
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const Omega::any_t&,value,(in),Omega::any_t::CastResult_t,reason,(in),const Omega::System::Internal::type_holder*,typeDest));
 
-inline void Omega::System::Internal::throw_cast_exception(const any_t& value, any_t::CastResult_t reason, const type_holder* typeDest)
+inline void Omega::System::Internal::throw_cast_exception(const Omega::any_t& value, Omega::any_t::CastResult_t reason, const type_holder* typeDest)
 {
 	OOCore_ICastException_Throw(value,reason,typeDest);
 }

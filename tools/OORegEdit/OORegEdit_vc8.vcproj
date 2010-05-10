@@ -28,7 +28,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="msvc_conf_vc8.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm110"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\wxWidgets-2.8.10\include;C:\Work\wxWidgets-2.8.10\include\msvc;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
+				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;;C:\wxWidgets-2.9.0\include;C:\wxWidgets-2.9.0\include\msvc"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -66,7 +66,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
-				AdditionalLibraryDirectories="C:\Work\wxWidgets-2.8.10\lib\vc_lib;&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;C:\wxWidgets-2.9.0\lib\vc_lib"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -104,7 +104,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="msvc_conf_vc8.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -182,7 +182,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="msvc_conf_vc8.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -260,7 +260,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="msvc_conf_vc8.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"

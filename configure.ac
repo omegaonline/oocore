@@ -21,10 +21,13 @@ AC_CONFIG_FILES([
 	test/CoreTests/TestProcess/Makefile
 ])
 
-AM_INIT_AUTOMAKE([foreign 1.10 no-define color-tests])
+AM_INIT_AUTOMAKE([foreign 1.10 no-define])
 
 # Use the latest short output macro if available
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+## And color-tests as above
+m4_ifdef([AM_COLOR_TESTS], [AM_COLOR_TESTS([yes])])
 
 # I like maintainer mode
 AM_MAINTAINER_MODE
@@ -112,6 +115,7 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
 AS_IF([test "x$debug" = "xtrue"],[CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"],[CPPFLAGS="$CPPFLAGS -DNDEBUG"])
 
 # Set up libtool correctly
+m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])
 LT_PREREQ([2.2.6])
 LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([win32-dll disable-static dlopen])
@@ -120,7 +124,7 @@ LTDL_INIT
 
 # Find sqlite3
 OO_LIB_SQLITE3([3.5.0])
-AC_PATH_PROG([SQLITE3],[sqlite3])
+AC_PATH_PROG([SQLITE3],[sqlite3],[AC_MSG_ERROR([Need squlite3 command])])
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error

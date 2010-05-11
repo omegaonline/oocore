@@ -124,7 +124,12 @@ LTDL_INIT
 
 # Find sqlite3
 OO_LIB_SQLITE3([3.5.0])
-AC_PATH_PROG([SQLITE3],[sqlite3],[AC_MSG_ERROR([Need squlite3 command])])
+
+if test -z "$SQLITE3_CFLAGS"; then
+	AC_MSG_ERROR([Need a valid sqlite3 library or source, try --with-sqlite3])
+fi
+	
+AC_PATH_PROG([SQLITE3],[sqlite3],[AC_MSG_ERROR([Need sqlite3 command])])
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error

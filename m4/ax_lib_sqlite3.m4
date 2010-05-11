@@ -45,10 +45,10 @@
 AC_DEFUN([AX_LIB_SQLITE3],
 [
     AC_ARG_WITH([sqlite3],
-        AC_HELP_STRING(
+        [AC_HELP_STRING(
             [--with-sqlite3=@<:@ARG@:>@],
             [use SQLite3 library @<:@default=yes@:>@, optionally specify the prefix for sqlite3 library]
-        ),
+        )],
         [
         if test "$withval" = "no"; then
             WANT_SQLITE3="no"
@@ -177,11 +177,5 @@ AC_DEFUN([OO_LIB_SQLITE3],
 [
 	sqlite3_version_req=ifelse([$1], [], [3.0.0], [$1])
 
-	if test -n "$PKG_CONFIG"; then
-		PKG_CHECK_MODULES([SQLITE3],[sqlite3 >= $sqlite3_version_req])
-	fi
-
-	if test -z "$SQLITE3_CFLAGS"; then
-		AX_LIB_SQLITE3([$1])
-	fi
+	PKG_CHECK_MODULES([SQLITE3],[sqlite3 >= $sqlite3_version_req],,[AX_LIB_SQLITE3([$1])])
 ])

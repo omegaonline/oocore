@@ -23,10 +23,10 @@
 
 #if defined(_WIN32)
 #include "ProactorWin32.h"
-#endif
-
-#if defined(HAVE_EV_H)
+#elif defined(HAVE_EV_H)
 #include "ProactorEv.h"
+#else
+#error No libev installed
 #endif
 
 OOSvrBase::Proactor::Proactor() :
@@ -36,8 +36,6 @@ OOSvrBase::Proactor::Proactor() :
 	OOBASE_NEW(m_impl,Win32::ProactorImpl());
 #elif defined(HAVE_EV_H)
 	OOBASE_NEW(m_impl,Ev::ProactorImpl());
-#else
-#error Fix me!
 #endif
 
 	if (!m_impl)

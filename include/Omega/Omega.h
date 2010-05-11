@@ -55,10 +55,6 @@
 //////////////////////////////////////////////
 // Set up the correct private macros
 
-#if !defined(OMEGA_MODULE_PRIVATE_NAME)
-#define OMEGA_MODULE_PRIVATE_NAME hidden_
-#endif
-
 #define OMEGA_PRIVATE_TYPE(ty)      OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,ty)
 #define OMEGA_PRIVATE_FN_DECL(r,fn) r OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,fn)
 #define OMEGA_PRIVATE_FN_CALL(fn)   OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,fn)

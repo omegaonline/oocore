@@ -34,14 +34,10 @@
 #if defined(_MSC_VER) || defined(RC_INVOKED)
 	#define OOCORE_EXTERN __declspec(dllimport)
 #elif defined (__GNUC__)
-	#if defined(__ELF__)
-		#if (__GNUC__ == 4 && __GNUC_MINOR__ >= 2) || (__GNUC__ > 4)
-			#define OOCORE_EXTERN  __attribute__((visibility("default")))
-		#endif
-	#elif defined(_WIN32)
+	#if defined(_WIN32)
 		#define OOCORE_EXTERN  __attribute__((dllimport))
 	#else
-		#error No idea how to control symbol visibility for this compiler/linker/output format!
+		#define OOCORE_EXTERN
 	#endif
 #else
 #error Failed to guess your compiler.  Please contact the omegaonline developers.

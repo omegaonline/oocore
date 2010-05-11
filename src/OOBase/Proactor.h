@@ -74,12 +74,18 @@ namespace OOSvrBase
 		virtual void on_read(AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int /*err*/) {}
 		virtual void on_write(AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int /*err*/) {}
 		virtual void on_closed(AsyncSocket* /*pSocket*/) {}
+
+	protected:
+		virtual ~IOHandler() {}
 	};
 
 	class Acceptor
 	{
 	public:
 		virtual bool on_accept(OOBase::Socket* pSocket, int err) = 0;
+
+	protected:
+		virtual ~Acceptor() {}
 	};
 
 	namespace detail

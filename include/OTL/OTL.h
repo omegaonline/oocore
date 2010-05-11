@@ -476,6 +476,9 @@ namespace OTL
 	private:
 		Omega::Threading::Mutex          m_csMain;
 		Omega::Threading::AtomicRefCount m_lockCount;
+
+		ModuleBase(const ModuleBase&);
+		ModuleBase& operator = (const ModuleBase&);
 	};
 
 	namespace Module
@@ -851,6 +854,8 @@ namespace OTL
 
 	protected:
 		virtual void Init() {}
+
+		virtual ~AutoObjectFactorySingleton() {}
 	};
 
 	class LibraryModule : public ModuleBase

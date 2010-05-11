@@ -8,5 +8,10 @@
 #include "../OOBase/config-base.h"
 
 #ifdef HAVE_SQLITE3_AMALGAMATION
+
+#if defined(HAVE_PTHREAD) && !defined(PTHREAD_MUTEX_RECURSIVE)
+#define SQLITE_HOMEGROWN_RECURSIVE_MUTEX
+#endif
+
 #include <sqlite3.c>
 #endif

@@ -48,7 +48,7 @@
 #if defined(__ELF__)
 	#define OMEGA_IMPORT
 
-	#if (__GNUC__ == 4 && __GNUC_MINOR__ >= 2) || (__GNUC__ > 4)
+	#if (__GNUC__ >= 4)
 		#define OMEGA_EXPORT  __attribute__((visibility("default")))
 	#elif !defined(OMEGA_MODULE_PRIVATE_NAME)
 		#error You must define OMEGA_MODULE_PRIVATE_NAME to control symbol visibility

@@ -128,6 +128,9 @@ bool Root::Manager::load_config_file(const std::string& strFile)
 	try
 	{
 		std::ifstream fs(strFile.c_str());
+		if (!fs.is_open())
+			LOG_ERROR_RETURN(("Failed to open config file: %s",strFile.c_str()),false);
+
 		while (!fs.eof())
 		{
 			// Read line

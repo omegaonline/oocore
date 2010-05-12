@@ -4,7 +4,7 @@ SUBDIRS = libltdl include src data test
 
 EXTRA_DIST = \
 	gpl3_0.txt \
-	lgpl3_0.txt \
+	lgpl3_0.txt
 
 ####################################
 # Some helper targets

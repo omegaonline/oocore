@@ -255,7 +255,7 @@ void OOCore::UserSession::term_i()
 	m_mapApartments.clear();
 
 	// Close all singletons
-	close_singletons();
+	close_singletons_i();
 
 	// Unload the OOSvrLite dll if loaded
 	m_lite_dll.unload();

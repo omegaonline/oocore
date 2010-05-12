@@ -26,9 +26,6 @@ AM_INIT_AUTOMAKE([foreign 1.10 no-define])
 # Use the latest short output macro if available
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-## And color-tests as above
-m4_ifdef([AM_COLOR_TESTS], [AM_COLOR_TESTS([yes])])
-
 # I like maintainer mode
 AM_MAINTAINER_MODE
 

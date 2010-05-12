@@ -84,8 +84,9 @@
   <Project Name="TestLibrary">
     <Configuration Name="Debug">
       <Platform Name="Win32">
+        <!-- Don't add VLD to TestLibrary, it locks up non-MSVC built OORegister
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
+        <Library Name="vld.lib" Optional="true" /> -->
       </Platform>
     </Configuration>
   </Project>

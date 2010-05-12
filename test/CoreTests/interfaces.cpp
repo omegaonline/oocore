@@ -16,11 +16,74 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 
 #include "Test.h"
 
-#if defined(_WIN32)
-#define OOREGISTER L"ooregister -s -c"
+#define OOREGISTER_ARGS L" -c -s"
+
+#if defined(_MSC_VER)
+	#define OOREGISTER L"OORegister.exe"
+#elif defined(_WIN32)
+	#define OOREGISTER OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"\\..\\..\\src\\OORegister\\ooregister.exe"
 #else
-#define OOREGISTER L"./ooregister -s -c"
+	#define OOREGISTER OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../../src/OORegister/ooregister"
 #endif
+
+bool register_library(const wchar_t* pszLibName, bool& bSkipped)
+{
+// Register the library
+#if defined(_WIN32)
+	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+#endif
+
+	Omega::string_t strProg(OOREGISTER);
+
+#if defined(_WIN32)
+	for (;;)
+	{
+		size_t p=strProg.Find(L'/');
+		if (p == Omega::string_t::npos)
+			break;
+
+		strProg = strProg.Left(p) + L'\\' + strProg.Mid(p+1);
+	}
+#endif
+
+	strProg += OOREGISTER_ARGS L" -i ";
+	strProg += pszLibName;
+
+	bSkipped = false;
+	if (system(strProg.ToUTF8().c_str()) != 0)
+	{
+		add_failure(L"Registration failed\n");
+		return false;
+	}
+
+	return true;
+}
+
+bool unregister_library(const wchar_t* pszLibName)
+{
+	Omega::string_t strProg(OOREGISTER);
+
+#if defined(_WIN32)
+	for (;;)
+	{
+		size_t p=strProg.Find(L'/');
+		if (p == Omega::string_t::npos)
+			break;
+
+		strProg = strProg.Left(p) + L'\\' + strProg.Mid(p+1);
+	}
+#endif
+
+	strProg += OOREGISTER_ARGS L" -u ";
+	strProg += pszLibName;
+
+	return (system(strProg.ToUTF8().c_str()) == 0);
+}
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest)
 {
@@ -223,22 +286,10 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	output("  %-45ls ",pszLibName);
 
 	// Register the library
-#if defined(_WIN32)
-	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
-	{
-		output("[Missing]\n");
-		bSkipped = true;
+	TEST(register_library(pszLibName,bSkipped));
+	if (bSkipped)
 		return true;
-	}
-#endif
-
-	bSkipped = false;
-	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
-	{
-		add_failure(L"Registration failed\n");
-		return false;
-	}
-
+	
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
 	TEST(ptrSimpleTest);
@@ -383,7 +434,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	}
 
 	// Test unregistering
-	TEST(system((Omega::string_t(OOREGISTER L" -u ") + pszLibName).ToUTF8().c_str()) == 0);
+	TEST(unregister_library(pszLibName));
 
 	try
 	{
@@ -530,7 +581,7 @@ const wchar_t** get_dlls()
 	#else
 			L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
 	#endif
-#elif defined(__MINGW32__)
+#elif defined(_WIN32)
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestLibrary_msvc.dll",
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestLibrary_msvc.dll",
 		L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
@@ -570,7 +621,7 @@ const wchar_t** get_exes()
 	#else
 			L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
 	#endif
-#elif defined(__MINGW32__)
+#elif defined(_WIN32)
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestProcess_msvc.exe",
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestProcess_msvc.exe",
 		OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/TestProcess/testprocess.exe",
@@ -606,25 +657,15 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	output("  %-45ls ",pszLibName);
 
 	// Register the library
-#if defined(_WIN32)
-	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
-	{
-		output("[Missing]\n");
-		bSkipped = true;
+	TEST(register_library(pszLibName,bSkipped));
+	if (bSkipped)
 		return true;
-	}
-#endif
-
-	bSkipped = false;
-	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
-	{
-		add_failure(L"Registration failed\n");
-		return false;
-	}
-
+		
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
+
+	TEST(unregister_library(pszLibName));
 
 	return true;
 }
@@ -647,6 +688,9 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
+
+	// Test unregistering
+	TEST(system((Omega::string_t(pszModulePath,Omega::string_t::npos) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	return true;
 }

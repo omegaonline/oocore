@@ -10,6 +10,8 @@ localstate_DATA = \
 	default_user.regdb \
 	system.regdb
 	
+CLEANFILES = $(localstate_DATA)
+	
 EXTRA_DIST = \
 	common.sql \
 	sandbox.sql \

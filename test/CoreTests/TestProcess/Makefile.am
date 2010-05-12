@@ -17,5 +17,3 @@ testprocess_SOURCES = \
 	../SimpleTest.h \
 	TestProcess.cpp
 
-EXTRA_DIST = \
-	testprocess.sh

@@ -2,6 +2,13 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = libltdl include src data test
 
+EXTRA_DIST = \
+	gpl3_0.txt \
+	lgpl3_0.txt \
+
+####################################
+# Some helper targets
+
 gitbundle:
 	git bundle create omega.git --all
 
@@ -35,6 +42,8 @@ reallyclean: maintainer-clean
 	rm -f $(top_srcdir)/test/CoreTests/TestProcess/Makefile.in
 	rm -f $(top_srcdir)/test/Makefile.in
 
+####################################
+# Hook to make the ChangeLog
 dist-hook:
 	@if test -d "$(top_srcdir)/.git"; \
 	then \

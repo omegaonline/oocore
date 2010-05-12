@@ -815,11 +815,9 @@ bool SpawnedProcessWin32::Compare(HANDLE hToken)
 {
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
-	if (!pStats1)
-		return false;
-
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
-	if (!pStats2)
+	
+	if (!pStats1 || !pStats2)
 		return false;
 
 	return (pStats1->SidCount==pStats2->SidCount &&

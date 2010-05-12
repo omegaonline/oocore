@@ -100,6 +100,12 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		if (!m_stream)
 			OMEGA_THROW(err);
 
+		// Send version information
+		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+		err = m_stream->send(version);
+		if (err)
+			OMEGA_THROW(err);
+
 		// Read our channel id
 		err = m_stream->recv(m_channel_id);
 		if (err != 0)
@@ -197,9 +203,9 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	countdown.update();
 
-	// Send nothing, but we must send...
-	uint32_t duff = 0;
-	err = local_socket->send(duff);
+	// Send version information
+	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+	err = local_socket->send(version);
 	if (err)
 		OMEGA_THROW(err);
 

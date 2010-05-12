@@ -108,7 +108,83 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("User::Acceptor::on_accept received failure: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	// Read 4 bytes - This forces credential passing
+	Omega::uint32_t version = 0;
+	err = pSocket->recv(version);
+	if (err != 0)
+	{
+		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		pSocket->close();
+		return true;
+	}
+
+	// Check the versions are correct
+	if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	{
+		LOG_WARNING(("User::Acceptor::on_accept: version received too early: %u",version));
+		pSocket->close();
+		return true;
+	}
+
+	// Check to see if the connection came from a process with our uid
+	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	bool bOk = false;
+
+#if defined(_WIN32)
+
+	// Make sure the handle is closed
+	OOBase::Win32::SmartHandle hUidToken(uid);
+	
+	// Get our Logon SID
+	OOBase::Win32::SmartHandle hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+	{
+		err = GetLastError();
+		pSocket->close();
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
+	}
+
+	// Check the SIDs and priviledges are the same...
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(uid,TokenGroupsAndPrivileges));
+	if (!pStats1)
+	{
+		err = GetLastError();
+		pSocket->close();
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
+	}
+
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenGroupsAndPrivileges));
+	if (!pStats2)
+	{
+		err = GetLastError();
+		pSocket->close();
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
+	}
+	
+	// Compare...
+	bOk = (pStats1->SidCount==pStats2->SidCount &&
+			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
+			pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
+			OOSvrBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
+			OOSvrBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
+			OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
+
+#elif defined(HAVE_UNISTD_H)
+
+	bOk = (getuid() == uid);
+
+#else
+#error Fix me!
+#endif
+
+	if (!bOk)
+	{
+		LOG_WARNING(("User::Acceptor::on_accept: attempt to connect by invalid user"));
+		pSocket->close();
+		return true;
+	}
 
 	if (!m_pManager->on_accept(pSocket))
 		pSocket->close();

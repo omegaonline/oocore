@@ -36,12 +36,6 @@ BEGIN TRANSACTION;
 	);
 	INSERT INTO RegistryKeys ( Name,Description,Parent,Access) VALUES 
 	(
-		'Local User',
-		'',
-		0,6
-	);
-	INSERT INTO RegistryKeys ( Name,Description,Parent,Access) VALUES 
-	(
 		'Applications',
 		'Applications store their configuration beneath this key',
 		3,6

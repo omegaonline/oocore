@@ -324,9 +324,10 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 
 	// Test the private root keys
 	test_privates(pKey,L"System");
-	test_privates(pKey,L"All Users\\Applications");
+	test_privates(pKey,L"Sandbox");
 	test_privates(pKey,L"All Users\\Objects");
 	test_privates(pKey,L"All Users\\Objects\\OIDs");
+	test_privates(pKey,L"All Users\\Applications");
 	test_privates(pKey,L"Local User");
 
 	if (bCanWriteToRoot)

@@ -684,7 +684,12 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 std::set<Omega::string_t> RootKey::EnumSubKeys()
 {
-	return m_ptrSystemKey->EnumSubKeys();
+	std::set<Omega::string_t> ret = m_ptrSystemKey->EnumSubKeys();
+	
+	// Add the local user key, although it doesn't really exist...
+	ret.insert(L"Local User");
+
+	return ret;
 }
 
 std::set<Omega::string_t> RootKey::EnumValues()

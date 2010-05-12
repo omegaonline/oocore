@@ -106,8 +106,18 @@ bool Root::Manager::init_database()
 	if (i == m_config_args.end())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
+	std::string dir = i->second;
+
+#if defined(_WIN32)
+	if (*dir.rbegin() != '\\')
+		dir += '\\';
+#else
+	if (*dir.rbegin() != '/')
+		dir += '/';
+#endif
+
 	// Create a new system database
-	OOBASE_NEW(m_registry,Registry::Hive(this,i->second + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));
+	OOBASE_NEW(m_registry,Registry::Hive(this,dir + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -115,7 +125,7 @@ bool Root::Manager::init_database()
 		return false;
 
 	// Create a new System database
-	OOBASE_NEW(m_registry_sandbox,Registry::Hive(this,i->second + "sandbox.regdb",Registry::Hive::write_check));
+	OOBASE_NEW(m_registry_sandbox,Registry::Hive(this,dir + "sandbox.regdb",Registry::Hive::write_check));
 	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 

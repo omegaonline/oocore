@@ -147,11 +147,7 @@ bool Root::Manager::load_config()
 		if (!PathFileExistsW(szBuf))
 			LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
 
-		std::string dir = OOBase::to_utf8(szBuf).c_str();
-		if (*dir.rbegin() != '\\')
-			dir += '\\';
-
-		m_config_args["regdb_path"] = dir;
+		m_config_args["regdb_path"] = OOBase::to_utf8(szBuf).c_str();
 
 		std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("conf-file");
 		if (f != m_cmd_args.end())
@@ -226,15 +222,15 @@ bool Root::Manager::load_config()
 					if (dwType == REG_EXPAND_SZ)
 					{
 						char buf2[1024] = {0};
-						DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1023);
+						DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1022);
 						if (dwExpLen == 0)
 						{
 							DWORD dwErr = GetLastError();
 							LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
 							continue;
 						}
-						else if (dwExpLen <= 1023)
-							value.assign(buf2,dwExpLen);
+						else if (dwExpLen <= 1022)
+							value.assign(buf2,dwExpLen-1);
 						else
 						{
 							OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf3(static_cast<char*>(malloc(dwExpLen+1)));
@@ -244,18 +240,18 @@ bool Root::Manager::load_config()
 								continue;
 							}
 
-							if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen+1))
+							if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
 							{
 								DWORD dwErr = GetLastError();
 								LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
 								continue;
 							}
 
-							value.assign(buf3,dwExpLen);
+							value.assign(buf3,dwExpLen-1);
 						}
 					}
 					else
-						value.assign(buf,dwValLen);
+						value.assign(buf,dwValLen-1);
 				}
 				else
 				{

@@ -666,6 +666,12 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 			break;
 
 		sub_keys.insert(string_t(strName.c_str(),true));
+
+		if (m_key == 0 && m_type == 0)
+		{
+			// Add the local user key, although it doesn't really exist...
+			sub_keys.insert(L"Local User");
+		}
 	}
 
 	return sub_keys;

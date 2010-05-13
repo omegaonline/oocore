@@ -47,8 +47,8 @@ oosvrlite_la_SOURCES = \
 	MirrorKey.inl \
 	RegistryCmn.h \
 	IPSLite.h \
-	IPSLite.cpp \
-	OOSvrLite.cpp
+	OOSvrLite.cpp \
+	RegistryLite.cpp
 
 if WIN32
 oosvrlite_la_SOURCES += OOSvrLite_res.rc

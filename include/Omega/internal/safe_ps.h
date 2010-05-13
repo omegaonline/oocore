@@ -763,7 +763,7 @@ namespace Omega
 				void Throw()
 				{
 					guid_t iid = GetThrownIID();
-					if (IsDerived__proxy__(iid))
+					if (IsDerived__proxy__(iid) || !get_qi_rtti_info(iid))
 						throw static_cast<D*>(this);
 
 					// QI m_shim

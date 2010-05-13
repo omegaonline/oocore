@@ -867,7 +867,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 				LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::Win32::FormatMessage().c_str()),false);
 
 			strHive = OOBase::to_utf8(szBuf).c_str();
-			if (*strHive.rbegin() != '\\')
+			if (!strHive.empty() && *strHive.rbegin() != '\\')
 				strHive += '\\';
 
 			strHive += "user";

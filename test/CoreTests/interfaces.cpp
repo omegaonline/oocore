@@ -2,6 +2,8 @@
 #include <Omega/Remoting.h>
 #include "interfaces.h"
 
+void normalise_path(Omega::string_t& strPath);
+
 namespace Omega
 {
 	namespace TestSuite
@@ -19,9 +21,7 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 #define OOREGISTER_ARGS L" -c -s"
 
 #if defined(_MSC_VER)
-	#define OOREGISTER L"OORegister.exe"
-#elif defined(_WIN32)
-	#define OOREGISTER OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"\\..\\..\\src\\OORegister\\ooregister.exe"
+	#define OOREGISTER L"OORegister"
 #else
 	#define OOREGISTER OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../../src/OORegister/ooregister"
 #endif
@@ -41,15 +41,10 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 	Omega::string_t strProg(OOREGISTER);
 
 #if defined(_WIN32)
-	for (;;)
-	{
-		size_t p=strProg.Find(L'/');
-		if (p == Omega::string_t::npos)
-			break;
-
-		strProg = strProg.Left(p) + L'\\' + strProg.Mid(p+1);
-	}
+	strProg += L".exe";
 #endif
+
+	normalise_path(strProg);
 
 	strProg += OOREGISTER_ARGS L" -i ";
 	strProg += pszLibName;
@@ -69,15 +64,10 @@ bool unregister_library(const wchar_t* pszLibName)
 	Omega::string_t strProg(OOREGISTER);
 
 #if defined(_WIN32)
-	for (;;)
-	{
-		size_t p=strProg.Find(L'/');
-		if (p == Omega::string_t::npos)
-			break;
-
-		strProg = strProg.Left(p) + L'\\' + strProg.Mid(p+1);
-	}
+	strProg += L".exe";
 #endif
+
+	normalise_path(strProg);
 
 	strProg += OOREGISTER_ARGS L" -u ";
 	strProg += pszLibName;

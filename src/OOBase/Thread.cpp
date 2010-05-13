@@ -387,3 +387,47 @@ bool OOBase::Thread::is_running()
 {
 	return m_impl->is_running();
 }
+
+void OOBase::Thread::yield()
+{
+#if defined(_WIN32)
+	::Sleep(0);
+#elif defined(HAVE_PTHREAD)
+	for (;;)
+	{
+		if (!pthread_yield())
+			break;
+
+		if (errno != EINTR)
+			OOBase_CallCriticalFailure(errno);
+	}
+#else
+	// Just perform a tiny sleep
+	return Thread::sleep(timeval_t(0,1));
+#endif
+}
+
+void OOBase::Thread::sleep(const timeval_t& wait)
+{
+	if (wait == timeval_t::Zero)
+		return Thread::yield();
+
+#if defined(_WIN32)
+	::Sleep(wait.msec());
+#elif defined(HAVE_TIME_H)
+	timespec wt;
+	wt.tv_sec = wait.tv_sec();
+	wt.tv_nsec = wait.tv_usec() * 1000;
+
+	for (;;)
+	{
+		if (!nanosleep(&wt,&wt))
+			break;
+
+		if (errno != EINTR)
+			OOBase_CallCriticalFailure(errno);
+	}
+#else
+#error Fix me!
+#endif
+}

@@ -27,11 +27,18 @@ class InterProcessService :
 		public OOCore::IInterProcessService
 {
 public:
-	void Init(const Omega::init_arg_map_t& args) {}
+	void InitOnce() {}
+
+	void Load(const Omega::init_arg_map_t& args);
+	
+	Omega::string_t GetArg(const Omega::string_t& arg);
 
 	BEGIN_INTERFACE_MAP(InterProcessService)
 		INTERFACE_ENTRY(OOCore::IInterProcessService)
 	END_INTERFACE_MAP()
+
+private:
+	Omega::init_arg_map_t m_args;
 
 // OOCore::IInterProcessService members
 public:

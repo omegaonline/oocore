@@ -106,6 +106,12 @@ namespace Omega
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	bool_t HandleRequest(uint32_t timeout = 0);
 
+	/* InitStandalone takes a map of key value pairs of type string_t (std::map<string_t,string_t>)
+	 * Keys are:
+	 *    regdb_path -        (Required) The directory containing the system and sandbox registry files
+	 *    user_regdb -        (Required) The path to the current user's registry file, including filename
+	 *    standalone_always - (Optional) If value = "true", ignore any running OOServer and only run standalone
+	 */
 	typedef std::map<string_t,string_t> init_arg_map_t;
 	IException* InitStandalone(const init_arg_map_t& args) throw();
 }

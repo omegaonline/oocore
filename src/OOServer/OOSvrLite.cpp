@@ -47,13 +47,27 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw Omega::ISystemException::Create(string_t(msg,false),L"Critical Failure");
+		throw ISystemException::Create(string_t(msg,false),L"Critical Failure");
 	}
+}
+
+void InterProcessService::Load(const init_arg_map_t& args)
+{
+	m_args = args;
+}
+
+string_t InterProcessService::GetArg(const string_t& arg)
+{
+	const init_arg_map_t::const_iterator i = m_args.find(arg);
+	if (i == m_args.end())
+		return string_t();
+	
+	return i->second;
 }
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 {
-	throw Omega::Remoting::IChannelClosedException::Create();
+	throw Remoting::IChannelClosedException::Create();
 }
 
 void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*&)
@@ -73,12 +87,12 @@ Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)
 
 Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remoting::IChannelSink*)
 {
-	throw Omega::Remoting::IChannelClosedException::Create();
+	throw Remoting::IChannelClosedException::Create();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,1,((in),const Omega::init_arg_map_t&,args))
+OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,1,((in),const init_arg_map_t&,args))
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
-	ptrIPS->Init(args);
+	ptrIPS->Load(args);
 	return ptrIPS.AddRef();
 }

@@ -714,7 +714,9 @@ namespace OTL
 
 	protected:
 		SingletonObjectImpl() : ROOT()
-		{ }
+		{ 
+			ROOT::InitOnce();
+		}
 
 		virtual ~SingletonObjectImpl()
 		{ }
@@ -851,7 +853,7 @@ namespace OTL
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 	protected:
-		virtual void Init() {}
+		virtual void InitOnce() {}
 
 		virtual ~AutoObjectFactorySingleton() {}
 	};

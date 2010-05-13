@@ -1,9 +1,49 @@
 #include <Omega/Omega.h>
 #include "Test.h"
 
+void normalise_path(Omega::string_t& strPath)
+{
+#if defined(_WIN32)
+	wchar_t from = L'/';
+	wchar_t to = L'\\';
+#else
+	wchar_t from = L'\\';
+	wchar_t to = L'/';
+#endif
+
+	for (;;)
+	{
+		size_t p=strPath.Find(from);
+		if (p == Omega::string_t::npos)
+			break;
+
+		strPath = strPath.Left(p) + to + strPath.Mid(p+1);
+	}
+}
+
 bool init_standalone_tests()
 {
 	std::map<Omega::string_t,Omega::string_t> args;
+
+#if defined(_MSC_VER)
+	#if defined(_DEBUG)
+		Omega::string_t regdb_path = L"..\\..\\build\\data\\";
+	#else
+		Omega::string_t regdb_path = L"..\\build\\data\\";
+	#endif
+#else
+	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../../data/";
+#endif
+
+	Omega::string_t users_path = L".";
+
+	normalise_path(regdb_path);
+	normalise_path(users_path);
+
+	args[L"regdb_path"] = regdb_path;
+	args[L"user_regdb"] = regdb_path + L"default_user.regdb";
+	args[L"standalone_always"] = L"true";
+
 	Omega::IException* pE = Omega::InitStandalone(args);
 	if (pE)
 	{

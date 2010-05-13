@@ -975,7 +975,7 @@ void Root::MessageHandler::close_channels()
 
 		guard.release();
 
-		OOBase::sleep(OOBase::timeval_t(0,50000));
+		OOBase::Thread::yield();
 
 		countdown.update();
 	}

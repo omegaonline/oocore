@@ -796,7 +796,7 @@ void User::Manager::close_all_remotes()
 
 		guard.release();
 
-		OOBase::sleep(OOBase::timeval_t(0,50000));
+		OOBase::Thread::yield();
 
 		countdown.update();
 	}

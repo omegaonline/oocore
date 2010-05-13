@@ -77,7 +77,15 @@ IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,
 
 void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,string_t>& args)
 {
-	std::string strPipe = discover_server_port(bStandalone);
+	bool bStandaloneAlways = false;
+	std::map<string_t,string_t>::const_iterator i = args.find(L"standalone_always");
+	if (i != args.end() && i->second == L"true")
+		bStandaloneAlways = true;
+
+	std::string strPipe;
+	if (!bStandaloneAlways)
+		strPipe = discover_server_port(bStandalone);
+
 	if (!bStandalone)
 	{
 		// Connect up to the root process...
@@ -91,8 +99,6 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 				break;
 
 			// We ignore the error, and try again until we timeout
-			OOBase::sleep(OOBase::timeval_t(0,100000));
-
 			countdown.update();
 		}
 		while (wait != OOBase::timeval_t::Zero);
@@ -188,8 +194,6 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 			break;
 
 		// We ignore the error, and try again until we timeout
-		OOBase::sleep(OOBase::timeval_t(0,10000));
-
 		countdown.update();
 	}
 	if (!local_socket)
@@ -323,6 +327,27 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 int OOCore::UserSession::io_worker_fn(void* pParam)
 {
 	return static_cast<UserSession*>(pParam)->run_read_loop();
+}
+
+void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
+{
+	// Make this value configurable somehow...
+	OOBase::timeval_t wait(0,500000);
+	OOBase::Countdown countdown(&wait);
+	do
+	{
+		// The tinyest sleep
+		OOBase::Thread::yield();
+
+		countdown.update();
+	}
+	while (usage.value() == 0 && wait != OOBase::timeval_t::Zero);
+
+	if (usage.value() == 0)
+	{
+		// This incoming request may not be processed for some time...
+		void* TICKET_91;    // Alert!
+	}
 }
 
 int OOCore::UserSession::run_read_loop()
@@ -459,10 +484,7 @@ int OOCore::UserSession::run_read_loop()
 					if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 					{
 						if (waiting == 0)
-						{
-							// This incoming request may not be processed for some time...
-							void* TICKET_91;    // Alert!
-						}
+							wait_or_alert(i->second->m_usage_count);
 					}
 				}
 			}
@@ -482,10 +504,7 @@ int OOCore::UserSession::run_read_loop()
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 				{
 					if (waiting == 0)
-					{
-						// This incoming request may not be processed for some time...
-						void* TICKET_91;    // Alert!
-					}
+						wait_or_alert(m_usage_count);
 				}
 			}
 		}
@@ -509,7 +528,7 @@ int OOCore::UserSession::run_read_loop()
 	return err;
 }
 
-bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait)
+bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 {
 	// Check we still have a receiving stream
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -924,7 +943,7 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 {
 	OOBase::timeval_t wait(timeout/1000,(timeout % 1000) * 1000);
 
-	return USER_SESSION::instance()->pump_requests((timeout ? &wait : 0));
+	return USER_SESSION::instance()->pump_request((timeout ? &wait : 0));
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))

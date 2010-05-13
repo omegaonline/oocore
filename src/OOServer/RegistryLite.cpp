@@ -87,8 +87,8 @@ namespace
 			public ::Registry::Manager,
 			public IKey
 	{
-	public:
-		void Init();
+	protected:
+		void InitOnce();
 
 		BEGIN_INTERFACE_MAP(RootKey)
 			INTERFACE_ENTRY(IKey)
@@ -126,72 +126,19 @@ namespace
 		void DeleteValue(const string_t& strName);
 	};
 
-	static std::string get_db_dir(bool bSystem)
+	static std::string get_db_dir(InterProcessService* pIPS)
 	{
-		// This all needs reworking in light of the config file changes
-		void* TODO;
-
+		std::string dir = pIPS->GetArg(L"regdb_path").ToUTF8();
+		if (!dir.empty())
+		{
 #if defined(_WIN32)
-
-		wchar_t szBuf[MAX_PATH] = {0};
-		HRESULT hr;
-		if (bSystem)
-			hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-		else
-			hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-
-		if FAILED(hr)
-			OMEGA_THROW(string_t(("SHGetFolderPathW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-
-		if (!PathAppendW(szBuf,L"Omega Online"))
-			OMEGA_THROW(string_t(("PathAppendW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-
-		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
-			OMEGA_THROW(string_t(("CreateDirectoryW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-
-		std::string dir = OOBase::to_utf8(szBuf);
-		if (*dir.rbegin() != '\\')
-			dir += '\\';
-
-#elif defined(HAVE_UNISTD_H)
-
-		std::string dir;
-		if (bSystem)
-			dir = "/var/lib/omegaonline";
-		else
-		{
-			OOSvrBase::pw_info pw(getuid());
-			if (!pw)
-			{
-				int e = errno;
-				OMEGA_THROW(e);
-			}
-
-			dir = pw->pw_dir;
-			dir += "/.omegaonline";
-		}
-
-		int flags;
-		if (bSystem)
-			flags = 0755;
-		else
-			flags = 0750;
-
-		if (mkdir(dir.c_str(),flags) != 0)
-		{
-			if (errno != EEXIST)
-			{
-				int e = errno;
-				OMEGA_THROW(e);
-			}
-		}
-
-		dir += "/";
-
+			if (*dir.rbegin() != '\\')
+				dir += '\\';
 #else
-#error Fix me!
+			if (*dir.rbegin() != '/')
+				dir += '/';
 #endif
-
+		}
 		return dir;
 	}
 }
@@ -519,23 +466,19 @@ void HiveKey::DeleteValue(const string_t& strName)
 		OMEGA_THROW(err);
 }
 
-void RootKey::Init()
+void RootKey::InitOnce()
 {
-	OMEGA_NEW(m_system_hive,::Registry::Hive(this,get_db_dir(true) + "system.regdb",::Registry::Hive::write_check | ::Registry::Hive::read_check));
-	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,get_db_dir(false) + "user.regdb",0));
+	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
+
+	OMEGA_NEW(m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb",::Registry::Hive::write_check | ::Registry::Hive::read_check));
+	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8(),0));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
-	{
-		void* TODO; //  Generate a fake...
 		OMEGA_THROW(L"Failed to open system registry database file");
-	}
-
+	
 	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
-	{
-		void* TODO; //  Copy default_user...
 		OMEGA_THROW(L"Failed to open database files");
-	}
-
+	
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_system_hive,string_t(),0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
@@ -562,18 +505,8 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 		if (strSubKey.Length() > 10)
 			strMirror = strSubKey.Mid(11);
 
-		ObjectPtr<IKey> ptrMirror;
-		try
-		{
-			// All Users
-			ptrMirror = ObjectPtr<IKey>(L"\\All Users");
-		}
-		catch (Omega::Registry::INotFoundException* pE)
-		{
-			// We can ignore not found
-			pE ->Release();
-		}
-
+		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"\\All Users");
+		
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstancePtr();
 		ptrNew->Init(L"\\Local User",m_ptrLocalUserKey,ptrMirror);
 		ptrKey.Attach(ptrNew.AddRef());
@@ -715,7 +648,6 @@ IKey* InterProcessService::GetRegistry()
 {
 	// Return a pointer to the singleton
 	ObjectPtr<SingletonObjectImpl<RootKey> > ptrKey = SingletonObjectImpl<RootKey>::CreateInstancePtr();
-	ptrKey->Init();
 	return ptrKey.AddRef();
 }
 

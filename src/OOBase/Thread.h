@@ -58,6 +58,9 @@ namespace OOBase
 		void abort();
 		bool is_running();
 
+		static void sleep(const timeval_t& wait);
+		static void yield();
+
 	private:
 		Thread(const Thread&);
 		Thread& operator = (const Thread&);

@@ -107,14 +107,18 @@ bool Root::Manager::init_database()
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
 	std::string dir = i->second;
-
+	if (!dir.empty())
+	{
 #if defined(_WIN32)
-	if (*dir.rbegin() != '\\')
-		dir += '\\';
+		std::replace(dir.begin(),dir.end(),'/','\\');
+		if (*dir.rbegin() != '\\')
+			dir += '\\';
 #else
-	if (*dir.rbegin() != '/')
-		dir += '/';
+		std::replace(dir.begin(),dir.end(),'\\','/');
+		if (*dir.rbegin() != '/')
+			dir += '/';
 #endif
+	}
 
 	// Create a new system database
 	OOBASE_NEW(m_registry,Registry::Hive(this,dir + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));

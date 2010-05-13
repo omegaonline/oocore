@@ -219,9 +219,9 @@ namespace
 
 			ReportEventA(m_hLog,wType,0,0,psid,1,0,arrBufs,NULL);
 		}
-#endif
 
 		if (priority == OOSvrBase::Logger::Debug)
+#endif
 		{
 			OutputDebugStringA(msg.c_str());
 			OutputDebugStringA("\n");

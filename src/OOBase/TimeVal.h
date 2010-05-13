@@ -146,8 +146,7 @@ namespace OOBase
 	}
 
 	timeval_t gettimeofday();
-	void sleep(const timeval_t& wait);
-
+	
 	class Countdown
 	{
 	public:

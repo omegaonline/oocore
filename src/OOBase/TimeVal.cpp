@@ -61,28 +61,6 @@ OOBase::timeval_t OOBase::gettimeofday()
 #endif
 }
 
-void OOBase::sleep(const timeval_t& wait)
-{
-#if defined(_WIN32)
-	::Sleep(wait.msec());
-#elif defined(HAVE_TIME_H)
-	timespec wt;
-	wt.tv_sec = wait.tv_sec();
-	wt.tv_nsec = wait.tv_usec() * 1000;
-
-	for (;;)
-	{
-		if (!nanosleep(&wt,&wt))
-			break;
-
-		if (errno != EINTR)
-			OOBase_CallCriticalFailure(errno);
-	}
-#else
-#error Fix me!
-#endif
-}
-
 OOBase::timeval_t& OOBase::timeval_t::operator += (const timeval_t& rhs)
 {
 	if (m_tv_usec + rhs.m_tv_usec >= 1000000)

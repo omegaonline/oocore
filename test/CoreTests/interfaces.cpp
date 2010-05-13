@@ -1,4 +1,4 @@
-#include <OTL/OTL.h>
+#include <OTL/Registry.h>
 #include <Omega/Remoting.h>
 #include "interfaces.h"
 
@@ -18,17 +18,8 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 
 #include "Test.h"
 
-#define OOREGISTER_ARGS L" -c -s"
-
-#if defined(_MSC_VER)
-	#define OOREGISTER L"OORegister"
-#else
-	#define OOREGISTER OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../../src/OORegister/ooregister"
-#endif
-
 bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 {
-// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
 	{
@@ -38,41 +29,24 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 	}
 #endif
 
-	Omega::string_t strProg(OOREGISTER);
+	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
-#if defined(_WIN32)
-	strProg += L".exe";
-#endif
-
-	normalise_path(strProg);
-
-	strProg += OOREGISTER_ARGS L" -i ";
-	strProg += pszLibName;
-
-	bSkipped = false;
-	if (system(strProg.ToUTF8().c_str()) != 0)
-	{
-		add_failure(L"Registration failed\n");
-		return false;
-	}
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey->SetStringValue(L"OID",strOid);
+	ptrSubKey = ptrKey.OpenSubKey(L"OIDs\\" + strOid,Omega::Registry::IKey::OpenCreate);
+	ptrSubKey->SetStringValue(L"Library",Omega::string_t(pszLibName,Omega::string_t::npos));
 
 	return true;
 }
 
 bool unregister_library(const wchar_t* pszLibName)
 {
-	Omega::string_t strProg(OOREGISTER);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
+	ptrKey->DeleteKey(L"Test.Library");
+	ptrKey->DeleteKey(L"OIDs\\" + Omega::TestSuite::OID_TestLibrary.ToString());
 
-#if defined(_WIN32)
-	strProg += L".exe";
-#endif
-
-	normalise_path(strProg);
-
-	strProg += OOREGISTER_ARGS L" -u ";
-	strProg += pszLibName;
-
-	return (system(strProg.ToUTF8().c_str()) == 0);
+	return true;
 }
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest)
@@ -350,69 +324,16 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	interface_tests(ptrSimpleTest);
 
 	// Test redirecting the registration
-	Omega::string_t strXML(
-		L"<?xml version=\"1.0\" ?>"
-		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-			L"<key name=\"\\All Users\\Objects\">"
-				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
-					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
-				L"</key>"
-			L"</key>"
-		L"</root>");
-
-	Omega::string_t strSubsts(L"OBJECT=");
-	strSubsts += L"Test.Library";
-
-	bool bSkip = false;
-	try
-	{
-		Omega::Registry::AddXML(strXML,true,strSubsts);
-	}
-	catch (Omega::Registry::IAccessDeniedException* pE)
-	{
-		// We have insufficient permissions to write here
-		pE->Release();
-		bSkip = true;
-	}
-
-	if (!bSkip)
-	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
-		TEST(ptrSimpleTest);
-		interface_tests(ptrSimpleTest);
-
-		// Test it has gone
-		Omega::Registry::AddXML(strXML,false);
-		try
-		{
-			ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
-		}
-		catch (Omega::Activation::IOidNotFoundException* pE)
-		{
-			add_success();
-			pE->Release();
-		}
-	}
-
-	// Try overloading the local only
-	strXML = Omega::string_t(
-		L"<?xml version=\"1.0\" ?>"
-		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-			L"<key name=\"\\Local User\\Objects\">"
-				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
-					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
-				L"</key>"
-			L"</key>"
-		L"</root>");
-
-	Omega::Registry::AddXML(strXML,true,strSubsts);
-
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey->SetStringValue(L"CurrentVersion",L"Test.Library");
+	
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test it has gone
-	Omega::Registry::AddXML(strXML,false);
+	ptrKey->DeleteKey(L"MyLittleTest");
 	try
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");

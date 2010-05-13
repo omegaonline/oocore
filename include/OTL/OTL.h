@@ -714,9 +714,7 @@ namespace OTL
 
 	protected:
 		SingletonObjectImpl() : ROOT()
-		{
-			ROOT::Init();
-		}
+		{ }
 
 		virtual ~SingletonObjectImpl()
 		{ }

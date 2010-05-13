@@ -100,11 +100,14 @@
 
 namespace Omega
 {
-	IException* Initialize(bool bStandalone = false) throw();
+	IException* Initialize() throw();
 	void Uninitialize();
 
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	bool_t HandleRequest(uint32_t timeout = 0);
+
+	typedef std::map<string_t,string_t> init_arg_map_t;
+	IException* InitStandalone(const init_arg_map_t& args) throw();
 }
 
 #include "internal/types.inl"
@@ -120,8 +123,8 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
-inline Omega::IException* Omega::Initialize(bool bStandalone) throw()
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,0,())
+inline Omega::IException* Omega::Initialize() throw()
 {
 	try
 	{
@@ -132,7 +135,28 @@ inline Omega::IException* Omega::Initialize(bool bStandalone) throw()
 			return Omega::ISystemException::Create(L"This component requires a later version of OOCore",L"Omega::Initialize");
 #endif
 
-		return OOCore_Omega_Initialize(bStandalone);
+		return OOCore_Omega_Initialize();
+	}
+	catch (Omega::IException* pE)
+	{
+		// Just in case...
+		return pE;
+	}
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_InitStandalone,1,((in),const Omega::init_arg_map_t&,args))
+inline Omega::IException* Omega::InitStandalone(const std::map<Omega::string_t,Omega::string_t>& args) throw()
+{
+	try
+	{
+#if !defined(OOCORE_INTERNAL)
+		// Check the versions are correct
+		Omega::uint32_t version = (OOCore::GetMajorVersion() << 24) | (OOCore::GetMinorVersion() << 16) | OOCore::GetPatchVersion();
+		if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+			return Omega::ISystemException::Create(L"This component requires a later version of OOCore",L"Omega::Initialize");
+#endif
+
+		return OOCore_Omega_InitStandalone(args);
 	}
 	catch (Omega::IException* pE)
 	{

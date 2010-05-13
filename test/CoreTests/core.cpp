@@ -3,7 +3,8 @@
 
 bool init_standalone_tests()
 {
-	Omega::IException* pE = Omega::Initialize(true);
+	std::map<Omega::string_t,Omega::string_t> args;
+	Omega::IException* pE = Omega::InitStandalone(args);
 	if (pE)
 	{
 		output("[Omega::IException]\n");

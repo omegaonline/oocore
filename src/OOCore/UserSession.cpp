@@ -40,11 +40,11 @@ OOCore::UserSession::UserSession() :
 OOCore::UserSession::~UserSession()
 {
 	// Clear the thread id's of the ThreadContexts
-	for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		i->second->m_thread_id = 0;
 }
 
-IException* OOCore::UserSession::init(bool bStandalone)
+IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,string_t>& args)
 {
 	UserSession* pThis = USER_SESSION::instance();
 
@@ -64,7 +64,7 @@ IException* OOCore::UserSession::init(bool bStandalone)
 
 	try
 	{
-		pThis->init_i(bStandalone);
+		pThis->init_i(bStandalone,args);
 	}
 	catch (IException* pE)
 	{
@@ -75,7 +75,7 @@ IException* OOCore::UserSession::init(bool bStandalone)
 	return 0;
 }
 
-void OOCore::UserSession::init_i(bool bStandalone)
+void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,string_t>& args)
 {
 	std::string strPipe = discover_server_port(bStandalone);
 	if (!bStandalone)
@@ -149,16 +149,16 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		typedef const System::Internal::SafeShim*(OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(const Omega::System::Internal::SafeShim** retval);
-
+		typedef const System::Internal::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::type OOSvrLite_GetIPS_RetVal, System::Internal::marshal_info<const init_arg_map_t&>::safe_type::type args);
+		
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
 			OMEGA_THROW(L"Corrupt OOSvrLite");
 
 		IInterProcessService* pIPS = 0;
-		const Omega::System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS));
+		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS),System::Internal::marshal_info<const init_arg_map_t&>::safe_type::coerce(args));
 		if (pSE)
-			Omega::System::Internal::throw_correct_exception(pSE);
+			System::Internal::throw_correct_exception(pSE);
 
 		ptrIPS.Attach(pIPS);
 	}
@@ -197,7 +197,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		if (bStandalone)
 			return std::string();
 		else
-			throw Omega::ISystemException::Create(L"Failed to connect to network daemon",L"Omega::Initialize");
+			throw ISystemException::Create(L"Failed to connect to network daemon",L"Omega::Initialize");
 	}
 	bStandalone = false;
 
@@ -327,7 +327,7 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 
 int OOCore::UserSession::run_read_loop()
 {
-	static const size_t s_initial_read = sizeof(Omega::uint32_t) * 2;
+	static const size_t s_initial_read = sizeof(uint32_t) * 2;
 	OOBase::CDRStream header(s_initial_read);
 
 	int err = 0;
@@ -388,9 +388,9 @@ int OOCore::UserSession::run_read_loop()
 		msg->m_payload.read(msg->m_src_channel_id);
 
 		// Read the deadline
-		Omega::int64_t req_dline_secs;
+		int64_t req_dline_secs;
 		msg->m_payload.read(req_dline_secs);
-		Omega::int32_t req_dline_usecs;
+		int32_t req_dline_usecs;
 		msg->m_payload.read(req_dline_usecs);
 		msg->m_deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
 
@@ -1000,7 +1000,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 
 	// Now get the new apartment OM to create an IApartment
 	IObject* pObject = 0;
-	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pObject);
+	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
 

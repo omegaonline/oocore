@@ -29,10 +29,7 @@ using namespace Omega;
 using namespace Omega::Registry;
 using namespace OTL;
 
-namespace User
-{
-	#include "RegistryCmn.h"
-}
+#include "RegistryCmn.h"
 
 using namespace User;
 using namespace User::Registry;

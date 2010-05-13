@@ -27,7 +27,7 @@ class InterProcessService :
 		public OOCore::IInterProcessService
 {
 public:
-	void Init() {}
+	void Init(const Omega::init_arg_map_t& args) {}
 
 	BEGIN_INTERFACE_MAP(InterProcessService)
 		INTERFACE_ENTRY(OOCore::IInterProcessService)

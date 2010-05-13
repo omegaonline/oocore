@@ -64,9 +64,14 @@ extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
 	return OOCORE_PATCH_VERSION;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,0,())
 {
-	return OOCore::UserSession::init(bStandalone);
+	return OOCore::UserSession::init(false,std::map<Omega::string_t,Omega::string_t>());
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_InitStandalone,1,((in),const Omega::init_arg_map_t&,args))
+{
+	return OOCore::UserSession::init(true,args);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

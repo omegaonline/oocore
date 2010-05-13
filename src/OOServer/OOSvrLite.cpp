@@ -20,6 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_Lite.h"
+#include "IPSLite.h"
 
 #ifdef HAVE_VLD_H
 #include <vld.h>
@@ -46,6 +47,38 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw Omega::ISystemException::Create(string_t(msg,false),L"CRITICAL FAILURE");
+		throw Omega::ISystemException::Create(string_t(msg,false),L"Critical Failure");
 	}
+}
+
+Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
+{
+	throw Omega::Remoting::IChannelClosedException::Create();
+}
+
+void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*&)
+{
+	OMEGA_THROW(L"Invalid standalone function");
+}
+
+bool_t InterProcessService::HandleRequest(uint32_t)
+{
+	OMEGA_THROW(L"Invalid standalone function");
+}
+
+Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)
+{
+	OMEGA_THROW(L"Invalid standalone function");
+}
+
+Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remoting::IChannelSink*)
+{
+	throw Omega::Remoting::IChannelClosedException::Create();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,1,((in),const Omega::init_arg_map_t&,args))
+{
+	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
+	ptrIPS->Init(args);
+	return ptrIPS.AddRef();
 }

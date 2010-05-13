@@ -66,7 +66,7 @@ namespace OOCore
 	class UserSession
 	{
 	public:
-		static Omega::IException* init(bool bStandalone);
+		static Omega::IException* init(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
 		static void close_singletons();
@@ -137,7 +137,7 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void init_i(bool bStandalone);
+		void init_i(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		void term_i();
 		std::string discover_server_port(bool& bStandalone);
 

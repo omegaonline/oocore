@@ -20,14 +20,13 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_Lite.h"
+#include "IPSLite.h"
+#include "RegistryHive.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
 #include <shlobj.h>
 #endif
-
-#include "IPSLite.h"
-#include "RegistryHive.h"
 
 #if defined(HAVE_UNISTD_H)
 #include <sys/stat.h>
@@ -37,10 +36,7 @@ using namespace Omega;
 using namespace Omega::Registry;
 using namespace OTL;
 
-namespace User
-{
-	#include "RegistryCmn.h"
-}
+#include "RegistryCmn.h"
 
 namespace
 {
@@ -718,37 +714,9 @@ void RootKey::DeleteValue(const string_t& strName)
 IKey* InterProcessService::GetRegistry()
 {
 	// Return a pointer to the singleton
-	return SingletonObjectImpl<RootKey>::CreateInstance();
-}
-
-Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
-{
-	throw Omega::Remoting::IChannelClosedException::Create();
-}
-
-void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*&)
-{
-	OMEGA_THROW(L"Invalid standalone function");
-}
-
-bool_t InterProcessService::HandleRequest(uint32_t)
-{
-	OMEGA_THROW(L"Invalid standalone function");
-}
-
-Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)
-{
-	OMEGA_THROW(L"Invalid standalone function");
-}
-
-Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remoting::IChannelSink*)
-{
-	throw Omega::Remoting::IChannelClosedException::Create();
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,0,())
-{
-	return SingletonObjectImpl<InterProcessService>::CreateInstance();
+	ObjectPtr<SingletonObjectImpl<RootKey> > ptrKey = SingletonObjectImpl<RootKey>::CreateInstancePtr();
+	ptrKey->Init();
+	return ptrKey.AddRef();
 }
 
 #include "MirrorKey.inl"

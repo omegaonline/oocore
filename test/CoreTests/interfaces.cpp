@@ -20,6 +20,8 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 
 bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 {
+	bSkipped = false;
+
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
 	{
@@ -40,11 +42,51 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 	return true;
 }
 
-bool unregister_library(const wchar_t* pszLibName)
+bool unregister_library()
 {
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
 	ptrKey->DeleteKey(L"Test.Library");
 	ptrKey->DeleteKey(L"OIDs\\" + Omega::TestSuite::OID_TestLibrary.ToString());
+
+	return true;
+}
+
+bool register_process(const wchar_t* pszExeName, bool& bSkipped)
+{
+	bSkipped = false;
+
+#if defined(_WIN32)
+	if (access(Omega::string_t(pszExeName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+#endif
+
+	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
+
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Process",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey->SetStringValue(L"OID",strOid);
+	ptrSubKey = ptrKey.OpenSubKey(L"OIDs\\" + strOid,Omega::Registry::IKey::OpenCreate);
+	ptrSubKey->SetStringValue(L"Application",L"CoreTests.TestProcess");
+
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User\\Applications",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess\\Activation",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey->SetStringValue(L"Path",Omega::string_t(pszExeName,Omega::string_t::npos));
+
+	return true;
+}
+
+bool unregister_process()
+{
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
+	ptrKey->DeleteKey(L"Test.Process");
+	ptrKey->DeleteKey(L"OIDs\\" + Omega::TestSuite::OID_TestProcess.ToString());
+
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User\\Applications",Omega::Registry::IKey::OpenCreate);
+	ptrKey->DeleteKey(L"CoreTests.TestProcess");
 
 	return true;
 }
@@ -345,7 +387,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	}
 
 	// Test unregistering
-	TEST(unregister_library(pszLibName));
+	TEST(unregister_library());
 
 	try
 	{
@@ -374,21 +416,10 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 {
 	output("  %-45ls ",pszModulePath);
 
-#if defined(_WIN32)
-	if (access(Omega::string_t(pszModulePath,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
-	{
-		output("[Missing]\n");
-		bSkipped = true;
+	// Register the exe
+	TEST(register_process(pszModulePath,bSkipped));
+	if (bSkipped)
 		return true;
-	}
-#endif
-
-	bSkipped = false;
-	if (system((Omega::string_t(pszModulePath,Omega::string_t::npos) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) != 0)
-	{
-		add_failure(L"Registration failed\n");
-		return false;
-	}
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
@@ -465,8 +496,8 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	}
 
 	// Test unregistering
-	TEST(system((Omega::string_t(pszModulePath,Omega::string_t::npos) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
-
+	TEST(unregister_process());
+	
 	// Check its gone
 	try
 	{
@@ -576,7 +607,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	TEST(unregister_library(pszLibName));
+	TEST(unregister_library());
 
 	return true;
 }
@@ -585,23 +616,16 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 {
 	output("  %-45ls ",pszModulePath);
 
-#if defined(_WIN32)
-	if (access(Omega::string_t(pszModulePath,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
-	{
-		output("[Missing]\n");
-		bSkipped = true;
+	// Register the exe
+	TEST(register_process(pszModulePath,bSkipped));
+	if (bSkipped)
 		return true;
-	}
-#endif
-
-	system((Omega::string_t(pszModulePath,Omega::string_t::npos) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	// Test unregistering
-	TEST(system((Omega::string_t(pszModulePath,Omega::string_t::npos) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
+	TEST(unregister_process());
 
 	return true;
 }

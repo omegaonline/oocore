@@ -109,8 +109,8 @@ namespace OOCore
 
 		struct ThreadContext
 		{
-			Omega::uint16_t                             m_thread_id;
-			OOBase::BoundedQueue<Message*>              m_msg_queue;
+			Omega::uint16_t                                  m_thread_id;
+			OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_msg_queue;
 
 			// Transient data
 			OOBase::AtomicInt<size_t>                   m_usage_count;
@@ -128,9 +128,9 @@ namespace OOCore
 			~ThreadContext();
 		};
 
-		OOBase::AtomicInt<size_t>                m_usage_count;
-		std::map<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
-		OOBase::BoundedQueue<Message*>           m_default_msg_queue;
+		OOBase::AtomicInt<size_t>                        m_usage_count;
+		std::map<Omega::uint16_t,ThreadContext*>         m_mapThreadContexts;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
 		// Accessors for ThreadContext
 		Omega::uint16_t insert_thread_context(ThreadContext* pContext);
@@ -149,7 +149,7 @@ namespace OOCore
 
 		// Message pumping
 		int run_read_loop();
-		bool pump_requests(const OOBase::timeval_t* deadline = 0, bool bOnce = false);
+		bool pump_requests(const OOBase::timeval_t* deadline = 0);
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 		OOBase::CDRStream* wait_for_response(Omega::uint16_t apartment_id, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);

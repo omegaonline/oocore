@@ -610,6 +610,12 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 				{
 					// Set per channel thread id
 					pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
+
+					// Process the message...
+					process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+
+					// Clear the channel/threads map
+					pContext->m_mapChannelThreads.clear();
 				}
 				catch (std::exception& e)
 				{
@@ -618,12 +624,6 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 					pContext->m_deadline = old_deadline;
 					continue;
 				}
-
-				// Process the message...
-				process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-
-				// Clear the channel/threads map
-				pContext->m_mapChannelThreads.clear();
 			}
 
 			// Reset deadline

@@ -61,9 +61,9 @@ void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*
 	OMEGA_THROW(L"Invalid standalone function");
 }
 
-bool_t InterProcessService::HandleRequest(uint32_t)
+bool_t InterProcessService::HandleRequest(uint32_t timeout)
 {
-	OMEGA_THROW(L"Invalid standalone function");
+	return Omega::HandleRequest(timeout);
 }
 
 Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)

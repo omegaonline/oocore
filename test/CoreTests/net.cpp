@@ -15,7 +15,7 @@ public:
 
 	bool wait_for_state(int state)
 	{
-		while (!Omega::HandleRequest(15000) && m_state != state)
+		while (Omega::HandleRequest(15000) && m_state != state)
 		{}
 
 		return m_state != state;

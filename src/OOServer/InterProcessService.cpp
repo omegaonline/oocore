@@ -188,7 +188,7 @@ bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
 	if (ret == -1)
 		OMEGA_THROW(L"Request processing failed");
 	else
-		return (ret == 0 ? false : true);
+		return (ret == 1);
 }
 
 Remoting::IChannel* User::InterProcessService::OpenRemoteChannel(const string_t& strEndpoint)

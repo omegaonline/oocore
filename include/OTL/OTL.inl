@@ -190,7 +190,7 @@ inline void OTL::ProcessModule::Run()
 
 	try
 	{
-		while (!Omega::HandleRequest(30000) || HaveLocks())
+		while (Omega::HandleRequest(30000) || HaveLocks())
 		{}
 	}
 	catch (...)

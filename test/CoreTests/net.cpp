@@ -96,7 +96,7 @@ static bool stream_tests()
 	ptrStream.Attach(Omega::IO::OpenStream(L"http://www.google.com"));
 	TEST(ptrStream);
 
-	ptrStream->WriteBytes(strlen(szRequest),(Omega::byte_t*)szRequest);
+	ptrStream->WriteBytes(static_cast<Omega::uint32_t>(strlen(szRequest)),(Omega::byte_t*)szRequest);
 
 	Omega::uint32_t cbBytes = 2047;
 	ptrStream->ReadBytes(cbBytes,(Omega::byte_t*)szBuf);
@@ -111,7 +111,7 @@ static bool stream_tests()
 	// Wait for connect
 	ptrNotify->wait_for_state(1);
 
-	ptrStream->WriteBytes(strlen(szRequest),(Omega::byte_t*)szRequest);
+	ptrStream->WriteBytes(static_cast<Omega::uint32_t>(strlen(szRequest)),(Omega::byte_t*)szRequest);
 
 	ptrNotify->wait_for_state(3);
 

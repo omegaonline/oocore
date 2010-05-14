@@ -240,7 +240,7 @@ namespace Omega
 
 					// Stop overflow
 					if (count2 > count)
-						count2 = count;
+						count2 = static_cast<uint32_t>(count);
 
 					if (pVals)
 					{
@@ -269,7 +269,7 @@ namespace Omega
 
 					// Stop overflow
 					if (count2 > count)
-						count2 = count;
+						count2 = static_cast<uint32_t>(count);
 
 					for (uint32_t c=0; c<count2; ++c)
 						marshal_info<T>::wire_type::unpack(string_t(),pManager,pMessage,pVals[c]);
@@ -311,7 +311,7 @@ namespace Omega
 
 					// Stop overflow
 					if (count2 > val.m_alloc_count)
-						count2 = val.m_alloc_count;
+						count2 = static_cast<uint32_t>(val.m_alloc_count);
 
 					for (uint32_t c=0; c<count2; ++c)
 						marshal_info<T>::wire_type::unpack(string_t(),pManager,pMessage,val.m_pVals[c]);

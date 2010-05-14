@@ -88,7 +88,7 @@ int Db::Statement::bind_int64(int index, const sqlite3_int64& val)
 
 int Db::Statement::bind_string(int index, const std::string& val)
 {
-	return sqlite3_bind_text(m_pStmt,index,val.c_str(),val.length(),0);
+	return sqlite3_bind_text(m_pStmt,index,val.c_str(),static_cast<int>(val.length()),0);
 }
 
 sqlite3_stmt* Db::Statement::statement()

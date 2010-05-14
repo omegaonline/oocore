@@ -37,14 +37,6 @@
       </Platform>
     </Configuration>
   </Project>
-  <Project Name="OORegister">
-    <Configuration Name="Debug">
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
-    </Configuration>
-  </Project>
   <Project Name="OORegEdit">
     <Include Name="wx/wxprec.h" />
     <Include Name="msvc/wx/setup.h" Append="msvc"/>
@@ -70,9 +62,8 @@
   <Project Name="TestLibrary">
     <Configuration Name="Debug">
       <Platform Name="Win32">
-        <!-- Don't add VLD to TestLibrary, it locks up non-MSVC built OORegister
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" /> -->
+        <Library Name="vld.lib" Optional="true" />
       </Platform>
     </Configuration>
   </Project>

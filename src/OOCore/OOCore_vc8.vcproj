@@ -432,10 +432,6 @@
 				RelativePath=".\WireStub.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\Xml.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -496,10 +492,6 @@
 			</File>
 			<File
 				RelativePath=".\WireStub.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Xml.h"
 				>
 			</File>
 		</Filter>

@@ -46,7 +46,6 @@ int main(int /*argc*/, char* /*argv*/[])
 		output("\n\n");
 
 		RUN_TEST(registry_tests);
-		RUN_TEST(registry_tests_2);
 		RUN_TEST(interface_dll_tests);
 		RUN_TEST(apartment_dll_tests);
 

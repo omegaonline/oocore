@@ -30,9 +30,7 @@ common = \
 	WireProxy.h \
 	WireProxy.cpp \
 	WireStub.h \
-	WireStub.cpp \
-	Xml.h \
-	Xml.cpp
+	WireStub.cpp
 
 if WIN32
 

@@ -49,14 +49,11 @@ namespace OTL
 			{
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
-					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory,0)
-					{ 0,0,0,0,0,0 }
+					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory)
+					{ 0,0,0,0,0 }
 				};
 				return CreatorEntries;
 			}
-
-			virtual void InstallObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
-			{ /* NOP */ }
 		};
 
 		OMEGA_PRIVATE_FN_DECL(Module::OOSvrUser_ProcessModuleImpl*,GetModule())

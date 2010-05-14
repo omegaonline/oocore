@@ -80,18 +80,14 @@
 // For dynamic link libraries:
 //
 // BEGIN_LIBRARY_OBJECT_MAP()
-//    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory, Object name)
+//    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory)
 // END_LIBRARY_OBJECT_MAP()
 //
 // or, for Exe's
 //
-// BEGIN_PROCESS_OBJECT_MAP(L"app_name")
-//    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory, Object name)
+// BEGIN_PROCESS_OBJECT_MAP()
+//    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory)
 // END_PROCESS_OBJECT_MAP()
-//
-// If "Object name" is NULL, then the object will not be registered
-//
-// If "module_name" is NULL, then no objects will be registered
 //
 
 #define BEGIN_LIBRARY_OBJECT_MAP() \
@@ -101,11 +97,11 @@
 	{ \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
-#define OBJECT_MAP_ENTRY(obj,name) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, &Creator<obj::ObjectFactoryClass>::Create, 0 },
+#define OBJECT_MAP_ENTRY(obj) \
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
-#define END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
-		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
+#define END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
+		{ 0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
@@ -113,24 +109,20 @@
 	}
 
 #define END_LIBRARY_OBJECT_MAP() \
-	END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
+	END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
-	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid); } \
-	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,3,((in),Omega::bool_t,bInstall,(in),Omega::bool_t,bLocal,(in),const Omega::string_t&,strSubsts)) \
-	{ OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterLibrary(bInstall,bLocal,strSubsts); }
+	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid); }
 
-#define BEGIN_PROCESS_OBJECT_MAP(app_name) \
+#define BEGIN_PROCESS_OBJECT_MAP() \
 	namespace OTL { \
 	namespace Module { \
 	class OMEGA_PRIVATE_TYPE(ProcessModuleImpl) : public ProcessModule \
 	{ \
 	private: \
-		virtual void InstallObjects(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts) \
-			{ InstallObjectsImpl(bInstall,bLocal,app_name,strSubsts); } \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
@@ -466,7 +458,6 @@ namespace OTL
 			const Omega::guid_t* (*pfnOid)();
 			const Omega::Activation::Flags_t (*pfnActivationFlags)();
 			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
-			const wchar_t* pszName;
 			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
 			Omega::uint32_t cookie;
 		};
@@ -874,8 +865,7 @@ namespace OTL
 		};
 
 		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
-		void RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts);
-
+		
 	protected:
 		LibraryModule()
 		{}
@@ -903,8 +893,6 @@ namespace OTL
 
 		ProcessModule()
 		{}
-
-		virtual void InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
 	};
 
 	template <typename ROOT>

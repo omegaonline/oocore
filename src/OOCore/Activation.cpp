@@ -33,16 +33,16 @@
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(OOCore::StdObjectManager,0)
-	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl,0)
-END_LIBRARY_OBJECT_MAP_NO_REGISTRATION()
+	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
+	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl)
+	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
+	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
+	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
+	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
+END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
 
 #endif // DOXYGEN
 

@@ -40,8 +40,8 @@ void TestProcessImpl::Abort()
 	exit(EXIT_FAILURE);
 }
 
-BEGIN_PROCESS_OBJECT_MAP(L"TestProcess")
-	OBJECT_MAP_ENTRY(TestProcessImpl,L"Test.Process")
+BEGIN_PROCESS_OBJECT_MAP()
+	OBJECT_MAP_ENTRY(TestProcessImpl)
 END_PROCESS_OBJECT_MAP()
 
 static int install(int argc, char* argv[])

@@ -2,7 +2,7 @@
 #include <OONet/Http.h>
 #include "Test.h"
 
-BEGIN_PROCESS_OBJECT_MAP(L"")
+BEGIN_PROCESS_OBJECT_MAP()
 END_PROCESS_OBJECT_MAP()
 
 class StreamNotify :

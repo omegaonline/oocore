@@ -190,8 +190,6 @@ namespace Omega
 		{
 			virtual string_t GetKeyName() = 0;
 		};
-
-		void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = string_t());
 	}
 
 	namespace IO
@@ -487,12 +485,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_Activation_NameToOid,1,((in),const
 inline Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
 {
 	return OOCore_Activation_NameToOid(strObjectName);
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bAdd,(in),const Omega::string_t&,strSubstitutions));
-inline void Omega::Registry::AddXML(const Omega::string_t& strXML, Omega::bool_t bAdd, const Omega::string_t& strSubstitutions)
-{
-	OOCore_Registry_AddXML(strXML,bAdd,strSubstitutions);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IKey::OpenFlags_t,flags));

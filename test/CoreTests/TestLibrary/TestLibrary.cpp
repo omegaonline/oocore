@@ -38,5 +38,5 @@ void TestLibraryImpl::Abort()
 }
 
 BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(TestLibraryImpl,L"Test.Library")
+	OBJECT_MAP_ENTRY(TestLibraryImpl)
 END_LIBRARY_OBJECT_MAP()

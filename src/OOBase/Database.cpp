@@ -2,45 +2,35 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOServer, the Omega Online Server application.
+// This file is part of OOSvrBase, the Omega Online Base library.
 //
-// OOServer is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// OOSvrBase is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// OOServer is distributed in the hope that it will be useful,
+// OOSvrBase is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with OOServer.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with OOSvrBase.  If not, see <http://www.gnu.org/licenses/>.
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////
-//
-//  ***** THIS IS A SECURE MODULE *****
-//
-//  It will be run as Administrator/setuid root
-//
-//  Therefore it needs to be SAFE AS HOUSES!
-//
-//  Do not include anything unecessary
-//
-/////////////////////////////////////////////////////////////
-
-#include "OOServer_Root.h"
 #include "Database.h"
+#include "Logger.h"
 
-Db::Statement::~Statement()
+#if defined(HAVE_SQLITE3) || defined(HAVE_SQLITE3_AMALGAMATION)
+
+OOSvrBase::Db::Statement::~Statement()
 {
 	if (m_pStmt)
 		sqlite3_finalize(m_pStmt);
 }
 
-int Db::Statement::step()
+int OOSvrBase::Db::Statement::step()
 {
 	int err = sqlite3_step(m_pStmt);
 	if (err != SQLITE_ROW && err != SQLITE_DONE && err != SQLITE_READONLY)
@@ -48,7 +38,7 @@ int Db::Statement::step()
 	return err;
 }
 
-int Db::Statement::reset()
+int OOSvrBase::Db::Statement::reset()
 {
 	int err = sqlite3_reset(m_pStmt);
 	if (err != SQLITE_OK)
@@ -56,63 +46,63 @@ int Db::Statement::reset()
 	return err;
 }
 
-int Db::Statement::column_int(int iCol)
+int OOSvrBase::Db::Statement::column_int(int iCol)
 {
 	return sqlite3_column_int(m_pStmt,iCol);
 }
 
-const char* Db::Statement::column_text(int iCol)
+const char* OOSvrBase::Db::Statement::column_text(int iCol)
 {
 	return reinterpret_cast<const char*>(sqlite3_column_text(m_pStmt,iCol));
 }
 
-sqlite3_int64 Db::Statement::column_int64(int iCol)
+sqlite3_int64 OOSvrBase::Db::Statement::column_int64(int iCol)
 {
 	return sqlite3_column_int64(m_pStmt,iCol);
 }
 
-const void* Db::Statement::column_blob(int iCol)
+const void* OOSvrBase::Db::Statement::column_blob(int iCol)
 {
 	return sqlite3_column_blob(m_pStmt,iCol);
 }
 
-int Db::Statement::column_bytes(int iCol)
+int OOSvrBase::Db::Statement::column_bytes(int iCol)
 {
 	return sqlite3_column_bytes(m_pStmt,iCol);
 }
 
-int Db::Statement::bind_int64(int index, const sqlite3_int64& val)
+int OOSvrBase::Db::Statement::bind_int64(int index, const sqlite3_int64& val)
 {
 	return sqlite3_bind_int64(m_pStmt,index,val);
 }
 
-int Db::Statement::bind_string(int index, const std::string& val)
+int OOSvrBase::Db::Statement::bind_string(int index, const std::string& val)
 {
 	return sqlite3_bind_text(m_pStmt,index,val.c_str(),static_cast<int>(val.length()),0);
 }
 
-sqlite3_stmt* Db::Statement::statement()
+sqlite3_stmt* OOSvrBase::Db::Statement::statement()
 {
 	return m_pStmt;
 }
 
-Db::Statement::Statement(sqlite3_stmt* pStmt) :
+OOSvrBase::Db::Statement::Statement(sqlite3_stmt* pStmt) :
 		m_pStmt(pStmt)
 { }
 
 
-Db::Transaction::Transaction(sqlite3* db) :
+OOSvrBase::Db::Transaction::Transaction(sqlite3* db) :
 		m_db(db)
 {
 }
 
-Db::Database::Database() :
+OOSvrBase::Db::Database::Database() :
 		m_db(0)
 {
 	assert(sqlite3_threadsafe());
 }
 
-Db::Database::~Database()
+OOSvrBase::Db::Database::~Database()
 {
 	if (m_db)
 	{
@@ -127,7 +117,7 @@ Db::Database::~Database()
 	}
 }
 
-bool Db::Database::open(const char* pszDb, int flags)
+bool OOSvrBase::Db::Database::open(const char* pszDb, int flags)
 {
 	assert(!m_db);
 
@@ -150,7 +140,7 @@ bool Db::Database::open(const char* pszDb, int flags)
 	return true;
 }
 
-int Db::Database::exec(const char* szSQL)
+int OOSvrBase::Db::Database::exec(const char* szSQL)
 {
 	int err = sqlite3_exec(m_db,szSQL,NULL,0,NULL);
 	if (err != SQLITE_OK && err != SQLITE_READONLY)
@@ -158,12 +148,12 @@ int Db::Database::exec(const char* szSQL)
 	return err;
 }
 
-sqlite3* Db::Database::database()
+sqlite3* OOSvrBase::Db::Database::database()
 {
 	return m_db;
 }
 
-int Db::Database::begin_transaction(OOBase::SmartPtr<Transaction>& ptrTrans, const char* pszType)
+int OOSvrBase::Db::Database::begin_transaction(OOBase::SmartPtr<Transaction>& ptrTrans, const char* pszType)
 {
 	int err = 0;
 	if (pszType)
@@ -184,7 +174,7 @@ int Db::Database::begin_transaction(OOBase::SmartPtr<Transaction>& ptrTrans, con
 	return 0;
 }
 
-int Db::Database::prepare_statement(OOBase::SmartPtr<Db::Statement>& ptrStmt, const char* pszStatement, ...)
+int OOSvrBase::Db::Database::prepare_statement(OOBase::SmartPtr<OOSvrBase::Db::Statement>& ptrStmt, const char* pszStatement, ...)
 {
 	va_list ap;
 	va_start(ap,pszStatement);
@@ -211,13 +201,13 @@ int Db::Database::prepare_statement(OOBase::SmartPtr<Db::Statement>& ptrStmt, co
 	return 0;
 }
 
-Db::Transaction::~Transaction()
+OOSvrBase::Db::Transaction::~Transaction()
 {
 	if (m_db)
 		sqlite3_exec(m_db,"ROLLBACK;",NULL,0,NULL);
 }
 
-int Db::Transaction::commit()
+int OOSvrBase::Db::Transaction::commit()
 {
 	int err = sqlite3_exec(m_db,"COMMIT;",NULL,0,NULL);
 	if (err == SQLITE_OK)
@@ -226,7 +216,7 @@ int Db::Transaction::commit()
 	return err;
 }
 
-int Db::Transaction::rollback()
+int OOSvrBase::Db::Transaction::rollback()
 {
 	int err = sqlite3_exec(m_db,"ROLLBACK;",NULL,0,NULL);
 	if (err == SQLITE_OK)
@@ -234,3 +224,5 @@ int Db::Transaction::rollback()
 
 	return err;
 }
+
+#endif // defined(HAVE_SQLITE3) || defined(HAVE_SQLITE3_AMALGAMATION)

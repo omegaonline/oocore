@@ -32,6 +32,7 @@
 /////////////////////////////////////////////////////////////
 
 #include "OOServer_Root.h"
+
 #include "RootManager.h"
 
 #ifdef HAVE_VLD_H
@@ -95,7 +96,6 @@ int main(int argc, char* argv[])
 
 #include "../include/Omega/internal/config-guess.h"
 #include "../include/Omega/version.h"
-#include <sqlite3.h>
 
 static int Version()
 {

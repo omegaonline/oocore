@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <msvc_conf>
+  <Project Name="OOSvrBase">
+    <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
+  </Project>
   <Project Name="OOCore">
     <Configuration Name="Debug">
       <Platform Name="Win32">
@@ -34,23 +37,6 @@
       </Platform>
     </Configuration>
   </Project>
-  <!-- <Project Name="OORuby">
-    <Include Name="ruby.h" />
-    <Configuration Name="Debug">
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
-    </Configuration>
-  </Project>
-  <Project Name="OORpc">
-    <Configuration Name="Debug">
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
-    </Configuration>
-  </Project> -->
   <Project Name="OORegister">
     <Configuration Name="Debug">
       <Platform Name="Win32">

@@ -35,7 +35,6 @@
 #define OOSERVER_REGISTRY_HIVE_H_INCLUDED_
 
 #include "OOServer_Root.h"
-#include "Database.h"
 
 namespace Registry
 {
@@ -86,12 +85,13 @@ namespace Registry
 		Manager*                       m_pManager;
 		OOBase::Mutex                  m_lock;
 		std::string                    m_strdb;
-		OOBase::SmartPtr<Db::Database> m_db;
 		access_rights_t                m_default_permissions;
 
+		OOBase::SmartPtr<OOSvrBase::Db::Database> m_db;
+
 		// Stashed prepared statements...
-		OOBase::SmartPtr<Db::Statement> m_ptrCheckKey_Stmt;
-		OOBase::SmartPtr<Db::Statement> m_ptrGetKeyInfo_Stmt;
+		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrCheckKey_Stmt;
+		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrGetKeyInfo_Stmt;
 
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);

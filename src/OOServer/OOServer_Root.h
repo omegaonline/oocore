@@ -49,6 +49,7 @@
 #include "../OOBase/Logger.h"
 #include "../OOBase/CmdArgs.h"
 #include "../OOBase/utf8.h"
+#include "../OOBase/Database.h"
 
 //////////////////////////////////////////////
 

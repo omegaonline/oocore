@@ -45,8 +45,8 @@ liboobase_la_SOURCES = \
 	utf8.h
 
 liboosvrbase_la_CPPFLAGS = -I@top_srcdir@/include
-liboosvrbase_la_CFLAGS = $(PTHREAD_CFLAGS)
-liboosvrbase_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboosvrbase_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+liboosvrbase_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 liboosvrbase_la_LDFLAGS = $(PTHREAD_LIBS)
 
 if WIN32
@@ -56,6 +56,8 @@ endif
 liboosvrbase_la_SOURCES = \
 	CmdArgs.cpp \
 	CmdArgs.h \
+	Database.cpp \
+	Database.h \
 	Logger.cpp \
 	Logger.h \
 	PipeWin32.cpp \
@@ -68,4 +70,5 @@ liboosvrbase_la_SOURCES = \
 	pw_info.h \
 	pw_info.cpp \
 	SecurityWin32.cpp \
-	SecurityWin32.h
+	SecurityWin32.h \
+	SQLite3_comp.c

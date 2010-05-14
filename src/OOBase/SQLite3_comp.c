@@ -5,7 +5,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "../OOBase/config-base.h"
+#include "config-base.h"
 
 #ifdef HAVE_SQLITE3_AMALGAMATION
 
@@ -13,5 +13,16 @@
 #define SQLITE_HOMEGROWN_RECURSIVE_MUTEX
 #endif
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4127)
+#pragma warning(disable:4244)
+#endif
+
 #include <sqlite3.c>
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
 #endif

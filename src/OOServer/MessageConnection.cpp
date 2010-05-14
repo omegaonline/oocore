@@ -31,7 +31,28 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "OOServer_Root.h"
+//////////////////////////////////////////////
+
+#include "../OOBase/SmartPtr.h"
+#include "../OOBase/TLSSingleton.h"
+#include "../OOBase/CDRStream.h"
+#include "../OOBase/Queue.h"
+#include "../OOBase/Thread.h"
+
+//////////////////////////////////////////////
+
+#include "../OOBase/Proactor.h"
+#include "../OOBase/Logger.h"
+
+//////////////////////////////////////////////
+
+#include "../include/Omega/internal/base_types.h"
+
+//////////////////////////////////////////////
+
+#include <map>
+#include <list>
+
 #include "MessageConnection.h"
 
 Root::MessageConnection::MessageConnection(MessageHandler* pHandler) :

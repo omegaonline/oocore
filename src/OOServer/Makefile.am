@@ -3,8 +3,8 @@ include $(top_srcdir)/m4/ltrc.inc
 noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
 
 liboosvrcmn_la_CPPFLAGS = -I@top_srcdir@/include
-liboosvrcmn_la_CFLAGS = $(PTHREAD_CFLAGS)
-liboosvrcmn_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboosvrcmn_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+liboosvrcmn_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 liboosvrcmn_la_LDFLAGS = $(PTHREAD_LIBS)
 
 liboosvrcmn_la_SOURCES = \
@@ -19,11 +19,8 @@ liboosvrdb_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 liboosvrdb_la_LDFLAGS = $(PTHREAD_LIBS)
 
 liboosvrdb_la_SOURCES = \
-	Database.h \
-	Database.cpp \
 	RegistryHive.h \
-	RegistryHive.cpp \
-	SQLite3_comp.c
+	RegistryHive.cpp
 
 oolibexecdir = $(libexecdir)/omegaonline
 oolibexec_LTLIBRARIES = oosvrlite.la

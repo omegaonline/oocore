@@ -24,6 +24,7 @@
 
 #include "../OOBase/Mutex.h"
 #include "../OOBase/pw_info.h"
+#include "../OOBase/Database.h"
 
 // Ensure we have the local Omega.h instead of the installed one...
 #include "../include/Omega/Omega.h"

@@ -45,9 +45,15 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 bool unregister_library()
 {
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
-	ptrKey->DeleteKey(L"Test.Library");
-	ptrKey->DeleteKey(L"OIDs\\" + Omega::TestSuite::OID_TestLibrary.ToString());
 
+	if (ptrKey->IsSubKey(L"Test.Library"))
+		ptrKey->DeleteKey(L"Test.Library");
+
+	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
+
+	if (ptrKey->IsSubKey(L"OIDs\\" + strOid))
+		ptrKey->DeleteKey(L"OIDs\\" + strOid);
+	
 	return true;
 }
 
@@ -82,11 +88,18 @@ bool register_process(const wchar_t* pszExeName, bool& bSkipped)
 bool unregister_process()
 {
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
-	ptrKey->DeleteKey(L"Test.Process");
-	ptrKey->DeleteKey(L"OIDs\\" + Omega::TestSuite::OID_TestProcess.ToString());
+
+	if (ptrKey->IsSubKey(L"Test.Process"))
+		ptrKey->DeleteKey(L"Test.Process");
+
+	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
+
+	if (ptrKey->IsSubKey(L"OIDs\\" + strOid))
+		ptrKey->DeleteKey(L"OIDs\\" + strOid);
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User\\Applications",Omega::Registry::IKey::OpenCreate);
-	ptrKey->DeleteKey(L"CoreTests.TestProcess");
+	if (ptrKey->IsSubKey(L"CoreTests.TestProcess"))
+		ptrKey->DeleteKey(L"CoreTests.TestProcess");
 
 	return true;
 }
@@ -542,9 +555,11 @@ bool interface_dll_tests()
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		if (!do_local_library_test(*pszDlls,bSkipped))
-			return false;
-		if (!bSkipped)
+		bool res = do_local_library_test(*pszDlls,bSkipped);
+
+		unregister_library();
+
+		if (res && !bSkipped)
 			output("[Ok]\n");
 	}
 
@@ -582,9 +597,11 @@ bool interface_process_tests()
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		if (!do_local_process_test(*pszExes,bSkipped))
-			return false;
-		if (!bSkipped)
+		bool res = do_local_process_test(*pszExes,bSkipped);
+
+		unregister_process();
+
+		if (res && !bSkipped)
 			output("[Ok]\n");
 	}
 
@@ -637,9 +654,11 @@ static bool interface_tests_i(const wchar_t* pszHost)
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		if (!do_library_test(*pszDlls,pszHost,bSkipped))
-			return false;
-		if (!bSkipped)
+		bool res = do_library_test(*pszDlls,pszHost,bSkipped);
+
+		unregister_library();
+
+		if (res && !bSkipped)
 			output("[Ok]\n");
 	}
 
@@ -648,9 +667,11 @@ static bool interface_tests_i(const wchar_t* pszHost)
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		if (!do_process_test(*pszExes,pszHost,bSkipped))
-			return false;
-		if (!bSkipped)
+		bool res = do_process_test(*pszExes,pszHost,bSkipped);
+
+		unregister_process();
+
+		if (res && !bSkipped)
 			output("[Ok]\n");
 	}
 

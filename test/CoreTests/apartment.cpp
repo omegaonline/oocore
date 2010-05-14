@@ -51,9 +51,11 @@ bool apartment_dll_tests()
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		if (!do_apt_library_test(*pszDlls,bSkipped))
-			return false;
-		if (!bSkipped)
+		bool res = do_apt_library_test(*pszDlls,bSkipped);
+		
+		unregister_library();
+
+		if (res && !bSkipped)
 			output("[Ok]\n");
 	}
 
@@ -112,9 +114,11 @@ bool apartment_process_tests()
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		if (!do_apt_process_test(*pszExes,bSkipped))
-			return false;
-		if (!bSkipped)
+		bool res = do_apt_process_test(*pszExes,bSkipped);
+
+		unregister_process();
+
+		if (res && !bSkipped)
 			output("[Ok]\n");
 	}
 

@@ -60,8 +60,6 @@ namespace
 			throw static_cast<Registry::IBadNameException*>(pRE);
 		}
 	};
-
-	static const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))

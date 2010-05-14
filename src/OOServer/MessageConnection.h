@@ -34,7 +34,7 @@
 #ifndef OOSERVER_MSG_CONNECTION_H_INCLUDED_
 #define OOSERVER_MSG_CONNECTION_H_INCLUDED_
 
-namespace Root
+namespace OOServer
 {
 	class MessageHandler;
 

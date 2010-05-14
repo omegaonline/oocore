@@ -22,7 +22,7 @@
 #ifndef OOSERVER_PROTOCOL_H_INCLUDED_
 #define OOSERVER_PROTOCOL_H_INCLUDED_
 
-namespace Root
+namespace OOServer
 {
 	enum RootOpCode
 	{

@@ -223,8 +223,8 @@ bool User::Manager::init(const std::string& strPipe)
 	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
 
 	// Create a new MessageConnection
-	OOBase::SmartPtr<Root::MessageConnection> ptrMC;
-	OOBASE_NEW(ptrMC,Root::MessageConnection(this));
+	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
+	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -316,8 +316,8 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 bool User::Manager::on_accept(OOBase::Socket* sock)
 {
 	// Create a new MessageConnection
-	OOBase::SmartPtr<Root::MessageConnection> ptrMC;
-	OOBASE_NEW(ptrMC,Root::MessageConnection(this));
+	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
+	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -402,7 +402,7 @@ void User::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
-	Root::RootOpCode_t op_code;
+	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
 	{
 		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::format_error(request.last_error()).c_str()));
@@ -421,8 +421,8 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 
 	if (!(attribs & TypeInfo::Asynchronous) && response.last_error()==0)
 	{
-		Root::MessageHandler::io_result::type res = send_response(seq_no,m_root_channel,src_thread_id,response,deadline,attribs);
-		if (res == Root::MessageHandler::io_result::failed)
+		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_root_channel,src_thread_id,response,deadline,attribs);
+		if (res == OOServer::MessageHandler::io_result::failed)
 			LOG_ERROR(("Root response sending failed"));
 	}
 }
@@ -477,12 +477,12 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 			ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
-			Root::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
-			if (res != Root::MessageHandler::io_result::success)
+			OOServer::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
+			if (res != OOServer::MessageHandler::io_result::success)
 			{
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
-				if (res == Root::MessageHandler::io_result::failed)
+				if (res == OOServer::MessageHandler::io_result::failed)
 					LOG_ERROR(("Response sending failed"));
 			}
 		}
@@ -547,12 +547,12 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 	}
 
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-	Root::MessageHandler::io_result::type res = send_request(m_root_channel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
-	if (res != Root::MessageHandler::io_result::success)
+	OOServer::MessageHandler::io_result::type res = send_request(m_root_channel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
+	if (res != OOServer::MessageHandler::io_result::success)
 	{
-		if (res == Root::MessageHandler::io_result::timedout)
+		if (res == OOServer::MessageHandler::io_result::timedout)
 			throw Omega::ITimeoutException::Create();
-		else if (res == Root::MessageHandler::io_result::channel_closed)
+		else if (res == OOServer::MessageHandler::io_result::channel_closed)
 			throw Omega::Remoting::IChannelClosedException::Create();
 		else
 			OMEGA_THROW(L"Internal server exception");

@@ -61,7 +61,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	}
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::KeyExists));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::KeyExists));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
@@ -91,7 +91,7 @@ bool_t Key::IsValue(const string_t& strName)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::IsValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::ValueType));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueType));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -123,7 +123,7 @@ bool_t Key::IsValue(const string_t& strName)
 int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::ValueType));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueType));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -187,7 +187,7 @@ string_t Key::GetStringValue(const string_t& strName)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetStringValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::GetStringValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetStringValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -228,7 +228,7 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::GetIntegerValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetIntegerValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -269,7 +269,7 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::GetBinaryValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetBinaryValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -315,7 +315,7 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetStringValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::SetStringValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetStringValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -344,7 +344,7 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::SetIntegerValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetIntegerValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -373,7 +373,7 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::SetBinaryValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetBinaryValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -400,7 +400,7 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 string_t Key::GetDescription()
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::GetDescription));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetDescription));
 	request.write(m_key);
 	request.write(m_type);
 	if (request.last_error() != 0)
@@ -433,7 +433,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetValueDescription");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::GetValueDescription));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -465,7 +465,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 void Key::SetDescription(const Omega::string_t& strDesc)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::SetDescription));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetDescription));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strDesc.ToUTF8().c_str());
@@ -491,7 +491,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::string_t& strDesc)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::SetValueDescription));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strValue.ToUTF8().c_str());
@@ -549,7 +549,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 			strSubKey.Clear();
 
 		OOBase::CDRStream request;
-		request.write(static_cast<Root::RootOpCode_t>(Root::OpenMirrorKey));
+		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenMirrorKey));
 		if (request.last_error() != 0)
 			OMEGA_THROW(request.last_error());
 
@@ -592,7 +592,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::CreateKey));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::CreateKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
@@ -631,7 +631,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 std::set<Omega::string_t> Key::EnumSubKeys()
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::EnumSubKeys));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
 	request.write(m_key);
 	request.write(m_type);
 	if (request.last_error() != 0)
@@ -677,7 +677,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 std::set<Omega::string_t> Key::EnumValues()
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::EnumValues));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
 	request.write(m_key);
 	request.write(m_type);
 	if (request.last_error() != 0)
@@ -733,7 +733,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	}
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteKey));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
@@ -761,7 +761,7 @@ void Key::DeleteValue(const string_t& strName)
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::DeleteValue");
 
 	OOBase::CDRStream request;
-	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());

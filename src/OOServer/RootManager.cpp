@@ -250,7 +250,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
-	OOBase::SmartPtr<MessageConnection> ptrMC;
+	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
 	process.ptrSpawn = platform_spawn(uid,strPipe,channel_id,ptrMC);
@@ -318,7 +318,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 	return channel_id;
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<MessageConnection>& ptrMC, std::string& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe)
 {
 	int err = pSocket->send(m_sandbox_channel);
 	if (err != 0)
@@ -340,7 +340,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 
 	strPipe = buf;
 
-	OOBASE_NEW(ptrMC,MessageConnection(this));
+	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),0);
 
@@ -357,7 +357,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 
 void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
-	RootOpCode_t op_code;
+	OOServer::RootOpCode_t op_code;
 	request.read(op_code);
 
 	if (request.last_error() != 0)
@@ -369,75 +369,75 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case KeyExists:
+	case OOServer::KeyExists:
 		registry_key_exists(src_channel_id,request,response);
 		break;
 
-	case CreateKey:
+	case OOServer::CreateKey:
 		registry_create_key(src_channel_id,request,response);
 		break;
 
-	case DeleteKey:
+	case OOServer::DeleteKey:
 		registry_delete_key(src_channel_id,request,response);
 		break;
 
-	case EnumSubKeys:
+	case OOServer::EnumSubKeys:
 		registry_enum_subkeys(src_channel_id,request,response);
 		break;
 
-	case ValueType:
+	case OOServer::ValueType:
 		registry_value_type(src_channel_id,request,response);
 		break;
 
-	case GetStringValue:
+	case OOServer::GetStringValue:
 		registry_get_string_value(src_channel_id,request,response);
 		break;
 
-	case GetIntegerValue:
+	case OOServer::GetIntegerValue:
 		registry_get_int_value(src_channel_id,request,response);
 		break;
 
-	case GetBinaryValue:
+	case OOServer::GetBinaryValue:
 		registry_get_binary_value(src_channel_id,request,response);
 		break;
 
-	case SetStringValue:
+	case OOServer::SetStringValue:
 		registry_set_string_value(src_channel_id,request,response);
 		break;
 
-	case SetIntegerValue:
+	case OOServer::SetIntegerValue:
 		registry_set_int_value(src_channel_id,request,response);
 		break;
 
-	case SetBinaryValue:
+	case OOServer::SetBinaryValue:
 		registry_set_binary_value(src_channel_id,request,response);
 		break;
 
-	case GetDescription:
+	case OOServer::GetDescription:
 		registry_get_description(src_channel_id,request,response);
 		break;
 
-	case GetValueDescription:
+	case OOServer::GetValueDescription:
 		registry_get_value_description(src_channel_id,request,response);
 		break;
 
-	case SetDescription:
+	case OOServer::SetDescription:
 		registry_set_description(src_channel_id,request,response);
 		break;
 
-	case SetValueDescription:
+	case OOServer::SetValueDescription:
 		registry_set_value_description(src_channel_id,request,response);
 		break;
 
-	case EnumValues:
+	case OOServer::EnumValues:
 		registry_enum_values(src_channel_id,request,response);
 		break;
 
-	case DeleteValue:
+	case OOServer::DeleteValue:
 		registry_delete_value(src_channel_id,request,response);
 		break;
 
-	case OpenMirrorKey:
+	case OOServer::OpenMirrorKey:
 		registry_open_mirror_key(src_channel_id,request,response);
 		break;
 

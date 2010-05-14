@@ -124,19 +124,19 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 
 	// Custom handling of system messages
-	if (attribs & Root::Message_t::system_message)
+	if (attribs & OOServer::Message_t::system_message)
 	{
-		if (flags == Root::Message_t::Request)
+		if (flags == OOServer::Message_t::Request)
 		{
-			if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect ||
-				(attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+			if ((attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect ||
+				(attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
 			{
 				// Do nothing
 			}
 			else
 				OMEGA_THROW(L"Invalid system message");
 		}
-		else if (flags == Root::Message_t::Response)
+		else if (flags == OOServer::Message_t::Response)
 		{
 			// Create a new message of the right format...
 			if (m_message_oid == guid_t::Null())
@@ -144,7 +144,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 			else
 				ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 
-			if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
+			if ((attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect)
 			{
 				// Unpack the channel_id
 				OOBase::CDRStream input(msg);
@@ -156,7 +156,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 				// Write the channel id
 				ptrPayload->WriteValue(L"channel_id",channel_id);
 			}
-			else if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+			else if ((attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
 			{
 				// Write the pong
 				ptrPayload->WriteValue(L"pong",byte_t(1));
@@ -348,7 +348,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 		}
 
 		// Send it back...
-		send_away_i(ptrResult,0,src_channel_id,deadline,Root::Message_t::synchronous,src_thread_id,dest_thread_id,Root::Message_t::Response,seq_no);
+		send_away_i(ptrResult,0,src_channel_id,deadline,OOServer::Message_t::synchronous,src_thread_id,dest_thread_id,OOServer::Message_t::Response,seq_no);
 	}
 }
 
@@ -396,22 +396,22 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 	if (!dest_channel_id)
 	{
-		if (ex_attribs & Root::Message_t::system_message)
+		if (ex_attribs & OOServer::Message_t::system_message)
 		{
-			if (flags == Root::Message_t::Request)
+			if (flags == OOServer::Message_t::Request)
 			{
 				ObjectPtr<Remoting::IMessage> ptrResult;
 				uint32_t out_attribs = 0;
 
-				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_close)
+				if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_close)
 				{
 					uint32_t channel_id = ptrPayload->ReadValue(L"channel_id").cast<uint32_t>();
 
 					m_pManager->channel_closed(channel_id | m_channel_id,0);
 
-					out_attribs = Root::Message_t::asynchronous;
+					out_attribs = OOServer::Message_t::asynchronous;
 				}
-				else if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
+				else if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect)
 				{
 					// Create a new message of the right format...
 					if (m_message_oid == guid_t::Null())
@@ -422,9 +422,9 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					// Send back the src_channel_id
 					ptrResult->WriteValue(L"channel_id",src_channel_id | m_channel_id);
 
-					out_attribs = Root::Message_t::synchronous | Root::Message_t::channel_reflect;
+					out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect;
 				}
-				else if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+				else if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
 				{
 					// Create a new message of the right format...
 					if (m_message_oid == guid_t::Null())
@@ -435,7 +435,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					// Send back the pong
 					ptrResult->WriteValue(L"pong",byte_t(1));
 
-					out_attribs = Root::Message_t::synchronous | Root::Message_t::channel_ping;
+					out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping;
 				}
 				else
 					OMEGA_THROW(L"Invalid system message");
@@ -443,7 +443,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				if (!(out_attribs & TypeInfo::Asynchronous))
 				{
 					// Send it back...
-					send_away_i(ptrResult,dest_channel_id,src_channel_id,deadline,out_attribs,src_thread_id,dest_thread_id,Root::Message_t::Response,seq_no);
+					send_away_i(ptrResult,dest_channel_id,src_channel_id,deadline,out_attribs,src_thread_id,dest_thread_id,OOServer::Message_t::Response,seq_no);
 				}
 			}
 			else
@@ -490,22 +490,22 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	{
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 
-		if (ex_attribs & Root::Message_t::system_message)
+		if (ex_attribs & OOServer::Message_t::system_message)
 		{
 			// Filter the system messages
-			if (flags == Root::Message_t::Request)
+			if (flags == OOServer::Message_t::Request)
 			{
-				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect ||
-					(ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+				if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect ||
+					(ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
 				{
 					// Pass on.. there is no payload to filter
 				}
 				else
 					OMEGA_THROW(L"Invalid system message");
 			}
-			else if (flags == Root::Message_t::Response)
+			else if (flags == OOServer::Message_t::Response)
 			{
-				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
+				if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect)
 				{
 					// Unpack the channel_id
 					uint32_t ch = ptrPayload->ReadValue(L"channel_id").cast<uint32_t>();
@@ -513,7 +513,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					// Repack in the right format
 					ptrOutput->WriteValue(L"channel_id",ch);
 				}
-				else if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+				else if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
 				{
 					// Unpack the pong
 					byte_t p = ptrPayload->ReadValue(L"pong").cast<byte_t>();
@@ -566,15 +566,15 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 
 		// Forward through the network...
-		Root::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,*ptrOutput->GetCDRStream());
-		if (res != Root::MessageHandler::io_result::success)
+		OOServer::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,*ptrOutput->GetCDRStream());
+		if (res != OOServer::MessageHandler::io_result::success)
 		{
-			if (!(ex_attribs & Root::Message_t::system_message))
+			if (!(ex_attribs & OOServer::Message_t::system_message))
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
-			if (res == Root::MessageHandler::io_result::timedout)
+			if (res == OOServer::MessageHandler::io_result::timedout)
 				throw Omega::ITimeoutException::Create();
-			else if (res == Root::MessageHandler::io_result::channel_closed)
+			else if (res == OOServer::MessageHandler::io_result::channel_closed)
 				throw Omega::Remoting::IChannelClosedException::Create();
 			else
 				OMEGA_THROW(L"Internal server exception");
@@ -642,7 +642,7 @@ void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
 		guard.release();
 
 		// Send a sys message
-		send_away_i(ptrMsg,0,0,OOBase::timeval_t::MaxTime,Root::Message_t::asynchronous | Root::Message_t::channel_close,0,0,Root::Message_t::Request,0);
+		send_away_i(ptrMsg,0,0,OOBase::timeval_t::MaxTime,OOServer::Message_t::asynchronous | OOServer::Message_t::channel_close,0,0,OOServer::Message_t::Request,0);
 	}
 }
 
@@ -832,7 +832,7 @@ void User::Manager::close_all_remotes()
 	assert(m_mapRemoteChannelIds.empty());
 }
 
-Root::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
+OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
 {
 	try
 	{
@@ -850,23 +850,23 @@ Root::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream
 		// Send it on...
 		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
 
-		return Root::MessageHandler::io_result::success;
+		return OOServer::MessageHandler::io_result::success;
 	}
 	catch (ITimeoutException* pE)
 	{
 		pE->Release();
-		return Root::MessageHandler::io_result::timedout;
+		return OOServer::MessageHandler::io_result::timedout;
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
 		pE->Release();
-		return Root::MessageHandler::io_result::channel_closed;
+		return OOServer::MessageHandler::io_result::channel_closed;
 	}
 	catch (IException* pE)
 	{
 		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
-		return Root::MessageHandler::io_result::failed;
+		return OOServer::MessageHandler::io_result::failed;
 	}
 }
 

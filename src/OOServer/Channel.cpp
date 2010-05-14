@@ -108,12 +108,12 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		if (timeout > 0)
 			deadline = OOBase::timeval_t::deadline(timeout);
 
-		Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),response,timeout ? &deadline : 0,attribs);
-		if (res != Root::MessageHandler::io_result::success)
+		OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),response,timeout ? &deadline : 0,attribs);
+		if (res != OOServer::MessageHandler::io_result::success)
 		{
-			if (res == Root::MessageHandler::io_result::timedout)
+			if (res == OOServer::MessageHandler::io_result::timedout)
 				throw Omega::ITimeoutException::Create();
-			else if (res == Root::MessageHandler::io_result::channel_closed)
+			else if (res == OOServer::MessageHandler::io_result::channel_closed)
 			{
 				disconnect();
 				throw Omega::Remoting::IChannelClosedException::Create();
@@ -170,8 +170,8 @@ bool_t User::Channel::IsConnected()
 	bool connected = true;
 	
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-	Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_ping);
-	if (res != Root::MessageHandler::io_result::success)
+	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
+	if (res != OOServer::MessageHandler::io_result::success)
 		connected = false;
 
 	if (connected)
@@ -195,12 +195,12 @@ bool_t User::Channel::IsConnected()
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
 	OOBase::SmartPtr<OOBase::CDRStream> response;
-	Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect);
-	if (res != Root::MessageHandler::io_result::success)
+	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
+	if (res != OOServer::MessageHandler::io_result::success)
 	{
-		if (res == Root::MessageHandler::io_result::timedout)
+		if (res == OOServer::MessageHandler::io_result::timedout)
 			throw Omega::ITimeoutException::Create();
-		else if (res == Root::MessageHandler::io_result::channel_closed)
+		else if (res == OOServer::MessageHandler::io_result::channel_closed)
 		{
 			disconnect();
 			throw Omega::Remoting::IChannelClosedException::Create();

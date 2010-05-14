@@ -32,7 +32,7 @@ namespace User
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;
 
-	class Manager : public Root::MessageHandler
+	class Manager : public OOServer::MessageHandler
 	{
 	public:
 		static int run(const std::string& strPipe);
@@ -64,7 +64,7 @@ namespace User
 		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		virtual bool on_channel_open(Omega::uint32_t channel);
-		virtual Root::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
+		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 		virtual void on_channel_closed(Omega::uint32_t channel);
 
 		int run_i(const std::string& strPipe);

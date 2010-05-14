@@ -55,20 +55,20 @@
 
 #include "MessageConnection.h"
 
-Root::MessageConnection::MessageConnection(MessageHandler* pHandler) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler) :
 		m_pHandler(pHandler),
 		m_pSocket(0),
 		m_channel_id(0)
 {
 }
 
-Root::MessageConnection::~MessageConnection()
+OOServer::MessageConnection::~MessageConnection()
 {
 	if (m_pSocket)
 		m_pSocket->release();
 }
 
-void Root::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
+void OOServer::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -78,14 +78,14 @@ void Root::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
 	m_pSocket = pSocket;
 }
 
-void Root::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
+void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	m_channel_id = channel_id;
 }
 
-void Root::MessageConnection::close()
+void OOServer::MessageConnection::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -111,7 +111,7 @@ void Root::MessageConnection::close()
 		m_pHandler->channel_closed(prev_channel,0);
 }
 
-bool Root::MessageConnection::read()
+bool OOServer::MessageConnection::read()
 {
 	OOBase::Buffer* pBuffer = 0;
 	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
@@ -150,7 +150,7 @@ bool Root::MessageConnection::read()
 	return true;
 }
 
-void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
+void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
 {
 	if (err != 0)
 	{
@@ -297,7 +297,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::B
 		close();
 }
 
-bool Root::MessageConnection::send(OOBase::Buffer* pBuffer)
+bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 	if (!m_pSocket)
@@ -317,7 +317,7 @@ bool Root::MessageConnection::send(OOBase::Buffer* pBuffer)
 	return true;
 }
 
-void Root::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
+void OOServer::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err != 0)
 	{
@@ -326,12 +326,12 @@ void Root::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBa
 	}
 }
 
-void Root::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
+void OOServer::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
 {
 	close();
 }
 
-Root::MessageHandler::MessageHandler() :
+OOServer::MessageHandler::MessageHandler() :
 		m_uChannelId(0),
 		m_uChannelMask(0),
 		m_uChildMask(0),
@@ -342,7 +342,7 @@ Root::MessageHandler::MessageHandler() :
 {
 }
 
-Root::MessageHandler::~MessageHandler()
+OOServer::MessageHandler::~MessageHandler()
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -358,7 +358,7 @@ Root::MessageHandler::~MessageHandler()
 	{}
 }
 
-bool Root::MessageHandler::start_request_threads()
+bool OOServer::MessageHandler::start_request_threads()
 {
 	// Create 2 request threads
 	if (!start_thread())
@@ -372,7 +372,7 @@ bool Root::MessageHandler::start_request_threads()
 	return true;
 }
 
-bool Root::MessageHandler::start_thread()
+bool OOServer::MessageHandler::start_thread()
 {
 	OOBase::Thread* pThread = 0;
 	OOBASE_NEW(pThread,OOBase::Thread());
@@ -395,12 +395,12 @@ bool Root::MessageHandler::start_thread()
 	return true;
 }
 
-int Root::MessageHandler::request_worker_fn(void* pParam)
+int OOServer::MessageHandler::request_worker_fn(void* pParam)
 {
 	return static_cast<MessageHandler*>(pParam)->pump_requests();
 }
 
-bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_rd)
+bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_rd)
 {
 	// Read the destination
 	Omega::uint32_t dest_channel_id = 0;
@@ -520,7 +520,7 @@ bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_r
 	}
 }
 
-int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnce)
+int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnce)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -667,7 +667,7 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 	return 1;
 }
 
-void Root::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask, Omega::uint32_t child_mask, Omega::uint32_t upstream_id)
+void OOServer::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask, Omega::uint32_t child_mask, Omega::uint32_t upstream_id)
 {
 	assert(!(channel_id & ~mask));
 	assert(!(channel_id & child_mask));
@@ -685,7 +685,7 @@ void Root::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::uint32
 	}
 }
 
-Omega::uint32_t Root::MessageHandler::register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id)
+Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id)
 {
 	try
 	{
@@ -731,19 +731,19 @@ Omega::uint32_t Root::MessageHandler::register_channel(OOBase::SmartPtr<MessageC
 	return channel_id;
 }
 
-bool Root::MessageHandler::can_route(Omega::uint32_t, Omega::uint32_t)
+bool OOServer::MessageHandler::can_route(Omega::uint32_t, Omega::uint32_t)
 {
 	// Do nothing, used in derived classes
 	return true;
 }
 
-bool Root::MessageHandler::on_channel_open(Omega::uint32_t)
+bool OOServer::MessageHandler::on_channel_open(Omega::uint32_t)
 {
 	// Do nothing, used in derived classes
 	return true;
 }
 
-void Root::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
+void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
 {
 	MessageHandler* pThis = static_cast<MessageHandler*>(pParam);
 
@@ -805,13 +805,13 @@ void Root::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
 	}
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::timeval_t&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t, Omega::uint32_t)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::timeval_t&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t, Omega::uint32_t)
 {
 	// We have nowhere to route!
 	return io_result::channel_closed;
 }
 
-void Root::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id)
+void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id)
 {
 	// Inform derived classes that the channel has gone...
 	on_channel_closed(channel_id);
@@ -849,7 +849,7 @@ void Root::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uin
 	}
 }
 
-Omega::uint16_t Root::MessageHandler::classify_channel(Omega::uint32_t channel_id)
+Omega::uint16_t OOServer::MessageHandler::classify_channel(Omega::uint32_t channel_id)
 {
 	// The response codes must match Remoting::MarshalFlags values
 	if ((channel_id & m_uChannelMask) == m_uChannelId)
@@ -871,7 +871,7 @@ Omega::uint16_t Root::MessageHandler::classify_channel(Omega::uint32_t channel_i
 		return 4; // another_machine
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase::SmartPtr<Message>& msg)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_message(OOBase::SmartPtr<Message>& msg)
 {
 	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed;
 
@@ -911,7 +911,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase
 		return io_result::success;
 }
 
-Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instance(Root::MessageHandler* pHandler)
+OOServer::MessageHandler::ThreadContext* OOServer::MessageHandler::ThreadContext::instance(OOServer::MessageHandler* pHandler)
 {
 	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext,MessageHandler>::instance();
 	if (pThis->m_thread_id == 0)
@@ -926,7 +926,7 @@ Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instan
 		return pThis;
 }
 
-Root::MessageHandler::ThreadContext::ThreadContext() :
+OOServer::MessageHandler::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_pHandler(0),
 		m_deadline(OOBase::timeval_t::MaxTime),
@@ -934,14 +934,14 @@ Root::MessageHandler::ThreadContext::ThreadContext() :
 {
 }
 
-Root::MessageHandler::ThreadContext::~ThreadContext()
+OOServer::MessageHandler::ThreadContext::~ThreadContext()
 {
 	if (m_pHandler)
 		m_pHandler->remove_thread_context(this);
 }
 
 // Accessors for ThreadContext
-Omega::uint16_t Root::MessageHandler::insert_thread_context(Root::MessageHandler::ThreadContext* pContext)
+Omega::uint16_t OOServer::MessageHandler::insert_thread_context(OOServer::MessageHandler::ThreadContext* pContext)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -964,14 +964,14 @@ Omega::uint16_t Root::MessageHandler::insert_thread_context(Root::MessageHandler
 	}
 }
 
-void Root::MessageHandler::remove_thread_context(Root::MessageHandler::ThreadContext* pContext)
+void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::ThreadContext* pContext)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
-void Root::MessageHandler::close_channels()
+void OOServer::MessageHandler::close_channels()
 {
 	// Copy all the channels away and then close them
 	try
@@ -1012,7 +1012,7 @@ void Root::MessageHandler::close_channels()
 	assert(m_mapChannelIds.empty());
 }
 
-void Root::MessageHandler::stop_request_threads()
+void OOServer::MessageHandler::stop_request_threads()
 {
 	try
 	{
@@ -1060,7 +1060,7 @@ void Root::MessageHandler::stop_request_threads()
 	}
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1187,7 +1187,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 	return ret;
 }
 
-void Root::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)
+void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)
 {
 	Omega::uint32_t closed_channel_id;
 	msg->m_payload.read(closed_channel_id);
@@ -1219,7 +1219,7 @@ void Root::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)
 	}
 }
 
-void Root::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
+void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
 	void (*pfnCall)(void*,OOBase::CDRStream&);
 	msg->m_payload.read(pfnCall);
@@ -1252,7 +1252,7 @@ void Root::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg
 	}
 }
 
-void Root::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id)
+void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id)
 {
 	OOBase::CDRStream msg;
 	if (msg.write(closed_channel_id))
@@ -1262,7 +1262,7 @@ void Root::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_id, O
 	}
 }
 
-bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
+bool OOServer::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
 {
 	assert(pfnCall);
 	if (!pfnCall)
@@ -1305,7 +1305,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 	return (queue_message(msg) == io_result::success);
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, OOBase::timeval_t* deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, OOBase::timeval_t* deadline, Omega::uint32_t attribs)
 {
 	// Build a header
 	Message msg;
@@ -1375,7 +1375,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_request(Omega::
 	return wait_for_response(response,seq_no,msg.m_deadline != OOBase::timeval_t::MaxTime ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1411,7 +1411,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_response(Omega:
 	}
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, const OOBase::CDRStream& message)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, const OOBase::CDRStream& message)
 {
 	// Check the destination
 	bool bRoute = true;
@@ -1487,7 +1487,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omeg
 	}
 }
 
-Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg)
 {
 	// Write the header info
 	OOBase::CDRStream header;

@@ -1,4 +1,4 @@
-#include <Omega/Remoting.h>
+#include "../../include/Omega/Remoting.h"
 #include "Test.h"
 
 bool string_tests()

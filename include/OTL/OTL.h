@@ -924,6 +924,6 @@ namespace OTL
 	};
 }
 
-#include <OTL/OTL.inl>
+#include "OTL.inl"
 
 #endif // OTL_OTL_H_INCLUDED_

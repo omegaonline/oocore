@@ -1,5 +1,5 @@
-#include <OTL/OTL.h>
-#include <Omega/Apartment.h>
+#include "../../include/OTL/OTL.h"
+#include "../../include/Omega/Apartment.h"
 #include "interfaces.h"
 
 #include "Test.h"

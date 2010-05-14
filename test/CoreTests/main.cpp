@@ -1,4 +1,4 @@
-#include <Omega/Omega.h>
+#include "../../include/Omega/Omega.h"
 #include "Test.h"
 
 #ifdef HAVE_VLD_H

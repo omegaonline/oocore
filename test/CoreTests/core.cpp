@@ -1,4 +1,4 @@
-#include <Omega/Omega.h>
+#include "../../include/Omega/Omega.h"
 #include "Test.h"
 
 void normalise_path(Omega::string_t& strPath)
@@ -112,7 +112,7 @@ bool exception_tests()
 	return true;
 }
 
-#include <OTL/OTL.h>
+#include "../../include/OTL/OTL.h"
 
 bool otl_tests()
 {

@@ -1,5 +1,5 @@
-#include <OTL/OTL.h>
-#include <OONet/Http.h>
+#include "../../include/OTL/OTL.h"
+#include "../../include/OONet/Http.h"
 #include "Test.h"
 
 BEGIN_PROCESS_OBJECT_MAP()

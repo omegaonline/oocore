@@ -111,6 +111,11 @@ IObject* OOCore::LoopChannel::create(uint32_t channel_id, const guid_t& message_
 	return ptrChannel->QueryInterface(iid);
 }
 
+Omega::bool_t OOCore::LoopChannel::IsConnected()
+{
+	return false;
+}
+
 IException* OOCore::LoopChannel::SendAndReceive(TypeInfo::MethodAttributes_t, Remoting::IMessage*, Remoting::IMessage*&, uint32_t)
 {
 	throw Remoting::IChannelClosedException::Create();

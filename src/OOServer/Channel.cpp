@@ -119,7 +119,10 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 				throw Omega::Remoting::IChannelClosedException::Create();
 			}
 			else
+			{
+				disconnect();
 				OMEGA_THROW(L"Internal server exception");
+			}
 		}
 	}
 	catch (...)
@@ -157,16 +160,36 @@ uint32_t User::Channel::GetSource()
 	return m_channel_id;
 }
 
-bool_t User::Channel::IsConnected()
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	return (!m_ptrOM ? false : true);
-}
-
 guid_t User::Channel::GetReflectUnmarshalFactoryOID()
 {
 	return GetUnmarshalFactoryOID(guid_t::Null(),0);
+}
+
+bool_t User::Channel::IsConnected()
+{
+	bool connected = true;
+	
+	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+	Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_ping);
+	if (res != Root::MessageHandler::io_result::success)
+		connected = false;
+
+	if (connected)
+	{
+		byte_t pong = 0;
+		if (!response || !response->read(pong))
+			connected = false;
+		else if (pong != 1)
+			connected = false;
+	}
+
+	if (!connected)
+	{
+		// Disconnect ourselves
+		disconnect();
+	}
+
+	return connected;
 }
 
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
@@ -178,9 +201,15 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		if (res == Root::MessageHandler::io_result::timedout)
 			throw Omega::ITimeoutException::Create();
 		else if (res == Root::MessageHandler::io_result::channel_closed)
+		{
+			disconnect();
 			throw Omega::Remoting::IChannelClosedException::Create();
+		}
 		else
+		{
+			disconnect();
 			OMEGA_THROW(L"Internal server exception");
+		}
 	}
 
 	if (!response)

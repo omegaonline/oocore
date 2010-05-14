@@ -66,7 +66,6 @@ namespace OOCore
 		virtual Omega::Remoting::IMessage* CreateMessage();
 		virtual Omega::Remoting::MarshalFlags_t GetMarshalFlags();
 		virtual Omega::uint32_t GetSource();
-		virtual Omega::bool_t IsConnected();
 		virtual Omega::guid_t GetReflectUnmarshalFactoryOID();
 		virtual void GetManager(const Omega::guid_t& iid, Omega::IObject*& pObject);
 		virtual void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
@@ -98,6 +97,7 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::Remoting::IMarshaller> m_ptrMarshaller;
 
 	public:
+		Omega::bool_t IsConnected();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
 	};

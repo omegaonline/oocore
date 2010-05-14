@@ -46,6 +46,7 @@ namespace OOCore
 		OOBase::SmartPtr<Apartment> m_ptrApt;
 
 	public:
+		Omega::bool_t IsConnected();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};
 

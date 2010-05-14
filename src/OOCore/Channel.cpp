@@ -94,13 +94,6 @@ uint32_t OOCore::ChannelBase::GetSource()
 	return m_channel_id;
 }
 
-bool_t OOCore::ChannelBase::IsConnected()
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	return (!m_ptrOM ? false : true);
-}
-
 guid_t OOCore::ChannelBase::GetReflectUnmarshalFactoryOID()
 {
 	return OID_ChannelMarshalFactory;
@@ -214,6 +207,39 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	return 0;
 }
 
+bool_t OOCore::Channel::IsConnected()
+{
+	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+
+	bool connected = true;
+	try
+	{
+		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_ping);
+	}
+	catch (Remoting::IChannelClosedException* pE)
+	{
+		pE->Release();
+		connected = false;
+	}
+		
+	if (connected)
+	{
+		byte_t pong = 0;
+		if (!response || !response->read(pong))
+			connected = false;
+		else if (pong != 1)
+			connected = false;
+	}
+
+	if (!connected)
+	{
+		// Disconnect ourselves
+		disconnect();
+	}
+
+	return connected;
+}
+
 void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
@@ -230,7 +256,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	}
 
 	uint32_t other_end = 0;
-	if (response && !response->read(other_end))
+	if (!response || !response->read(other_end))
 		OMEGA_THROW(L"Unexpected end of message");
 
 	// Return in the same format as we marshal

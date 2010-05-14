@@ -601,6 +601,14 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 
 					send_response(seq_no,msg->m_src_channel_id,msg->m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_reflect);
 				}
+				else if ((msg->m_attribs & Message_t::system_message) == Message_t::channel_ping)
+				{
+					// Send back 1 byte
+					OOBase::CDRStream response;
+					response.write(Omega::byte_t(1));
+
+					send_response(seq_no,msg->m_src_channel_id,msg->m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_ping);
+				}
 				else
 					LOG_ERROR(("Unrecognised system message"));
 			}

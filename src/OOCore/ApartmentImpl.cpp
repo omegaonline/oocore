@@ -296,6 +296,11 @@ void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_
 	m_ptrApt = ptrApt;
 }
 
+Omega::bool_t OOCore::AptChannel::IsConnected()
+{
+	return true;
+}
+
 IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	return m_ptrApt->apartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);

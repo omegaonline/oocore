@@ -49,7 +49,8 @@ namespace OOCore
 			// Upper 16 bits can be used for system messages
 			system_message = 0xFFFF0000,
 			channel_close = 0x10000,
-			channel_reflect = 0x20000
+			channel_reflect = 0x20000,
+			channel_ping = 0x30000
 		};
 
 		Omega::uint32_t    m_src_channel_id;

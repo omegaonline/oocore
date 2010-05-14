@@ -40,6 +40,7 @@ namespace OOCore
 		LoopChannel() {}
 
 	public:
+		Omega::bool_t IsConnected();
 		void GetManager(const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};

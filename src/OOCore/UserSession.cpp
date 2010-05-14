@@ -465,6 +465,15 @@ int OOCore::UserSession::run_read_loop()
 				else
 					send_response(msg->m_apartment_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
 			}
+			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
+			{
+				// Send back 1 byte
+				OOBase::CDRStream response(sizeof(byte_t));
+				if (!response.write(byte_t(1)))
+					err = response.last_error();
+				else
+					send_response(msg->m_apartment_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
+			}
 		}
 		else if (msg->m_dest_thread_id != 0)
 		{

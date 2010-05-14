@@ -128,7 +128,8 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 	{
 		if (flags == Root::Message_t::Request)
 		{
-			if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
+			if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect ||
+				(attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
 			{
 				// Do nothing
 			}
@@ -137,6 +138,12 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 		}
 		else if (flags == Root::Message_t::Response)
 		{
+			// Create a new message of the right format...
+			if (m_message_oid == guid_t::Null())
+				ptrPayload.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
+			else
+				ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+
 			if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
 			{
 				// Unpack the channel_id
@@ -146,14 +153,13 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 				if (input.last_error() != 0)
 					OMEGA_THROW(input.last_error());
 
-				// Create a new message of the right format...
-				if (m_message_oid == guid_t::Null())
-					ptrPayload.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
-				else
-					ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
-
 				// Write the channel id
 				ptrPayload->WriteValue(L"channel_id",channel_id);
+			}
+			else if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+			{
+				// Write the pong
+				ptrPayload->WriteValue(L"pong",byte_t(1));
 			}
 			else
 				OMEGA_THROW(L"Invalid system message");
@@ -418,6 +424,19 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 					out_attribs = Root::Message_t::synchronous | Root::Message_t::channel_reflect;
 				}
+				else if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+				{
+					// Create a new message of the right format...
+					if (m_message_oid == guid_t::Null())
+						ptrResult.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
+					else
+						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+
+					// Send back the pong
+					ptrResult->WriteValue(L"pong",byte_t(1));
+
+					out_attribs = Root::Message_t::synchronous | Root::Message_t::channel_ping;
+				}
 				else
 					OMEGA_THROW(L"Invalid system message");
 
@@ -476,7 +495,8 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			// Filter the system messages
 			if (flags == Root::Message_t::Request)
 			{
-				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
+				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect ||
+					(ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
 				{
 					// Pass on.. there is no payload to filter
 				}
@@ -492,6 +512,14 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 					// Repack in the right format
 					ptrOutput->WriteValue(L"channel_id",ch);
+				}
+				else if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_ping)
+				{
+					// Unpack the pong
+					byte_t p = ptrPayload->ReadValue(L"pong").cast<byte_t>();
+
+					// Repack in the right format
+					ptrOutput->WriteValue(L"pong",p);
 				}
 				else
 					OMEGA_THROW(L"Invalid system message");

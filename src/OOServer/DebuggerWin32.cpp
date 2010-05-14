@@ -71,6 +71,62 @@
 
 #endif
 
+class MyMessageFilter : public IMessageFilter
+{
+public:
+	MyMessageFilter() : m_refcount(1)
+	{}
+
+	ULONG STDMETHODCALLTYPE AddRef()
+	{
+		return ++m_refcount;
+	}
+
+	ULONG STDMETHODCALLTYPE Release()
+	{
+		ULONG ret = --m_refcount;
+		if (!ret)
+			delete this;
+		return ret;
+	}
+
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject)
+	{
+		if (iid == IID_IUnknown ||
+				iid == IID_IMessageFilter)
+		{
+			*ppvObject = this;
+			return S_OK;
+		}
+
+		return E_NOINTERFACE;
+	}
+
+	DWORD STDMETHODCALLTYPE HandleInComingCall(DWORD /*dwCallType*/, HTASK /*threadIDCaller*/, DWORD /*dwTickCount*/, LPINTERFACEINFO /*lpInterfaceInfo*/)
+	{
+		return SERVERCALL_ISHANDLED;
+	}
+
+	DWORD STDMETHODCALLTYPE RetryRejectedCall(HTASK /*threadIDCallee*/, DWORD /*dwTickCount*/, DWORD dwRejectType)
+	{
+		if (dwRejectType == SERVERCALL_RETRYLATER)
+		{
+			// Retry the thread call immediately if return >=0 &
+			// <100.
+			return 99;
+		}
+		// Too busy; cancel call.
+		return (DWORD)-1;
+	}
+
+	DWORD STDMETHODCALLTYPE MessagePending(HTASK /*threadIDCallee*/, DWORD /*dwTickCount*/, DWORD /*dwPendingType*/)
+	{
+		return PENDINGMSG_WAITDEFPROCESS;
+	}
+
+private:
+	ULONG m_refcount;
+};
 
 static bool AttachVSDebugger(DWORD our_pid)
 {
@@ -81,6 +137,15 @@ static bool AttachVSDebugger(DWORD our_pid)
 
 	try
 	{
+		MyMessageFilter* pFilter = new MyMessageFilter();
+		IMessageFilter* pPrev = 0;
+		hr = CoRegisterMessageFilter(pFilter,&pPrev);
+		if FAILED(hr)
+			throw _com_error(hr);
+		pFilter->Release();
+		if (pPrev)
+			pPrev->Release();
+
 		IUnknownPtr ptrUnk;
 		ptrUnk.GetActiveObject("VisualStudio.DTE." DTE_VER);
 		if (ptrUnk != NULL)

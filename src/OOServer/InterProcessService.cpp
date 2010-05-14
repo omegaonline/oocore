@@ -95,7 +95,12 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	string_t strProcess = ptrServer->GetStringValue(L"Path");
 
 	// The timeout needs to be related to the request timeout...
+#if defined(OMEGA_DEBUG)
+	OOBase::timeval_t wait(60);
+#else
 	OOBase::timeval_t wait(15);
+#endif
+
 	ObjectPtr<Remoting::ICallContext> ptrCC;
 	ptrCC.Attach(Remoting::GetCallContext());
 	if (ptrCC)

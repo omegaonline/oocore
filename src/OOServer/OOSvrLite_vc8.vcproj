@@ -380,10 +380,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\IPSLite.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\OOSvrLite.cpp"
 				>
 				<FileConfiguration
@@ -458,6 +454,10 @@
 						PrecompiledHeaderThrough=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\RegistryLite.cpp"
+				>
 			</File>
 			<File
 				RelativePath=".\SQLite3_comp.c"

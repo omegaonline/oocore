@@ -497,6 +497,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MirrorKey.inl"
+				>
+			</File>
+			<File
 				RelativePath=".\OOServer_User.h"
 				>
 			</File>

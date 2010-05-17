@@ -50,7 +50,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf_vc71.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
+				CommandLine="msvcconf_vc71.exe &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -108,7 +108,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf_vc71.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
+				CommandLine="msvcconf_vc71.exe &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool

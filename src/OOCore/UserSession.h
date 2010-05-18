@@ -59,7 +59,7 @@ namespace OOCore
 		Omega::uint32_t    m_attribs;
 		Omega::uint32_t    m_seq_no;
 		Omega::uint16_t    m_type;
-		Omega::uint16_t    m_apartment_id;
+		Omega::uint16_t    m_dest_apt_id;
 		OOBase::timeval_t  m_deadline;
 		OOBase::CDRStream  m_payload;
 	};

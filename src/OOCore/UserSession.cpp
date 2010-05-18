@@ -443,7 +443,7 @@ int OOCore::UserSession::run_read_loop()
 			continue;
 
 		// Unpack the apartment...
-		msg->m_apartment_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
+		msg->m_dest_apt_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
 
 		if ((msg->m_attribs & Message::system_message) && msg->m_type == Message::Request)
 		{
@@ -463,7 +463,7 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(msg->m_src_channel_id))
 					err = response.last_error();
 				else
-					send_response(msg->m_apartment_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
+					send_response(msg->m_dest_apt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
 			}
 			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
 			{
@@ -472,7 +472,7 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(byte_t(1)))
 					err = response.last_error();
 				else
-					send_response(msg->m_apartment_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
+					send_response(msg->m_dest_apt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
 			}
 		}
 		else if (msg->m_dest_thread_id != 0)
@@ -928,7 +928,7 @@ void OOCore::UserSession::process_request(const Message* pMsg, const OOBase::tim
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::SmartPtr<Apartment> ptrApt;
-	std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pMsg->m_apartment_id);
+	std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pMsg->m_dest_apt_id);
 	if (i != m_mapApartments.end())
 		ptrApt = i->second;
 

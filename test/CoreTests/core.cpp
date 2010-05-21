@@ -56,7 +56,7 @@ bool init_standalone_tests()
 	return true;
 }
 
-bool init_server_tests(bool& bRun)
+bool init_server_tests()
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
@@ -65,13 +65,13 @@ bool init_server_tests(bool& bRun)
 		{
 			pE->Release();
 			output("[No server]\n");
-			bRun = false;
-			return true;
 		}
-
-		output("[Omega::IException]\n");
-		output_exception(pE);
-		pE->Release();
+		else
+		{
+			output("[Omega::IException]\n");
+			output_exception(pE);
+			pE->Release();
+		}
 		return false;
 	}
 

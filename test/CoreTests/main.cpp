@@ -10,7 +10,7 @@
 // cos I'm lazy ;)
 
 bool init_standalone_tests();
-bool init_server_tests(bool& bRun);
+bool init_server_tests();
 bool string_tests();
 bool string_tests_format();
 bool string_tests_utf8();
@@ -23,6 +23,7 @@ bool registry_tests_2();
 bool interface_process_tests();
 bool interface_dll_tests();
 bool apartment_dll_tests();
+bool apartment_process_tests();
 bool net_tests();
 bool interface_tests2();
 
@@ -53,12 +54,12 @@ int main(int /*argc*/, char* /*argv*/[])
 	}
 
 	output("\nRunning %-40s","server tests");
-	bool bRun = true;
-	if (init_server_tests(bRun) && bRun)
+	if (init_server_tests())
 	{
 		output("\n\n");
 
 		RUN_TEST(interface_process_tests);
+		RUN_TEST(apartment_process_tests);
 
 		//RUN_TEST(net_tests);
 		//RUN_TEST(interface_tests2);

@@ -478,7 +478,7 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
 {
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));

@@ -57,6 +57,7 @@
 
 //////////////////////////////////////////////
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <iostream>

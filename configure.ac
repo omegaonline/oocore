@@ -13,7 +13,6 @@ AC_CONFIG_FILES([
 	src/OOBase/Makefile
 	src/OOCore/Makefile
 	src/OOServer/Makefile
-	src/OORegister/Makefile
 	data/Makefile
 	test/Makefile
 	test/CoreTests/Makefile

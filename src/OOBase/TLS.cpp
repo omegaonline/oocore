@@ -121,10 +121,11 @@ namespace
 
 	TLSMap* TLSMap::instance(bool create)
 	{
+		TLSMap* inst = 0;
 #if defined(_WIN32)
-		TLSMap* inst = static_cast<TLSMap*>(TlsGetValue(TLS_GLOBAL::instance()->m_key));
+		inst = static_cast<TLSMap*>(TlsGetValue(TLS_GLOBAL::instance()->m_key));
 #elif defined(HAVE_PTHREAD)
-		TLSMap* inst = static_cast<TLSMap*>(pthread_getspecific(TLS_GLOBAL::instance()->m_key));
+		inst = static_cast<TLSMap*>(pthread_getspecific(TLS_GLOBAL::instance()->m_key));
 #else
 #error Fix me!
 #endif
@@ -140,7 +141,10 @@ namespace
 			if (!TlsSetValue(TLS_GLOBAL::instance()->m_key,inst))
 				OOBase_CallCriticalFailure(GetLastError());
 #elif defined(HAVE_PTHREAD)
-			int err = pthread_setspecific(TLS_GLOBAL::instance()->m_key,inst);
+			int err = pthread_key_create(&TLS_GLOBAL::instance()->m_key,0);
+			if (err == 0)
+				err = pthread_setspecific(TLS_GLOBAL::instance()->m_key,inst);
+
 			if (err != 0)
 				OOBase_CallCriticalFailure(err);
 #else

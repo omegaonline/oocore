@@ -51,33 +51,6 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-// Will need this!
-#include "posix_utils.h"
-/*
-    char szBuf[64];
-#if defined(OMEGA_DEBUG)
-    OOBase::timeval_t now = OOBase::gettimeofday();
-    snprintf(szBuf,63,"%lx-%lx",uid,now.tv_usec);
-#else
-    snprintf(szBuf,63,"%lx",uid);
-#endif
-
-    if (mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
-    {
-        int err = last_error();
-        if (err != EEXIST)
-            return "";
-    }
-
-    // Try to make it public
-    chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
-
-    // Attempt to remove anything already there
-    unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
-
-    return "/tmp/omegaonline/" + strPrefix + szBuf;
-*/
-
 namespace
 {
 	class SpawnedProcessUnix : public Root::SpawnedProcess
@@ -256,9 +229,11 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPathW, bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
 {
-	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPath.c_str());
+	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPathW.c_str());
+
+	std::string strAppPath = OOBase::to_utf8(strAppPathW.c_str());
 
 	m_bSandbox = bSandbox;
 
@@ -339,21 +314,20 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid
 			exit(errno);
 
 		// Exec the user process
-		const char* cmd_line[] =
-		{
-			"./oosvruser", //  argv[0] = Process name
-			0,             //  argv[1] = Pipe name
-			0
-		};
 		std::ostringstream os;
 		os.imbue(std::locale::classic());
 		os << pass_fd;
 
-		cmd_line[1] = os.str().c_str();
+		char* cmd_line[3] = { 0,0,0 };
+		cmd_line[0] = strdup(strAppPath.c_str());
+		cmd_line[1] = strdup(os.str().c_str());
 
-		int err = execv("./oosvruser",(char**)cmd_line);
+		int err = execv(strAppPath.c_str(),cmd_line);
 
 		LOG_DEBUG(("Child process exiting with code: %d",err));
+
+		free(cmd_line[0]);
+		free(cmd_line[1]);
 
 		exit(err);
 	}
@@ -465,12 +439,6 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 		strHive += pw->pw_name;
 		strHive += ".regdb";
 	}
-
-	std::cout << "strHive = " << strHive << std::endl;
-
-
-	//if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
-	//  LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
 	void* TODO;

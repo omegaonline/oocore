@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 
 static int Version()
 {
-	std::cout << "OOServer version information:" << std::endl;
+	std::cout << APPNAME " version information:" << std::endl;
 #if defined(OMEGA_DEBUG)
 	std::cout << "Version: " << OOCORE_VERSION << " (Debug build)" << std::endl;
 #else

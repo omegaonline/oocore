@@ -26,6 +26,36 @@
 #include <vld.h>
 #endif
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+#define APPNAME "OOSvrUser"
+#else
+#define APPNAME "oosvruser"
+#endif
+
+static int Help()
+{
+	std::cout << APPNAME " - The Omega Online user host process." << std::endl;
+	std::cout << std::endl;
+	std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl;
+	std::cout << std::endl;
+
+	return EXIT_SUCCESS;
+}
+
+static int Version()
+{
+	std::cout << APPNAME " version information:" << std::endl;
+#if defined(OMEGA_DEBUG)
+	std::cout << "Version: " << OOCORE_VERSION << " (Debug build)" << std::endl;
+#else
+	std::cout << "Version: " << OOCORE_VERSION << std::endl;
+#endif
+	std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
+	std::cout << std::endl;
+
+	return EXIT_SUCCESS;
+}
+
 int main(int argc, char* argv[])
 {
 	// Start the logger - use OOServer again...
@@ -33,12 +63,20 @@ int main(int argc, char* argv[])
 
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_option("version",'v');
 	cmd_args.add_argument("port",0);
 
 	// Parse command line
 	std::map<std::string,std::string> args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
+
+	if (args.find("help") != args.end())
+		return Help();
+
+	if (args.find("version") != args.end())
+		return Version();
 
 #if defined(_WIN32) && defined(OMEGA_DEBUG)
 	// If this event exists, then we are being debugged

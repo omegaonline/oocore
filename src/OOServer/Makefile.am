@@ -119,3 +119,7 @@ endif
 EXTRA_DIST = \
 	logo.ico \
 	OOServer_msgs.bin
+
+TESTS = \
+	$(srcdir)/test_ooserverd.sh \
+	$(srcdir)/test_oosvruser.sh

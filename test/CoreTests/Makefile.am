@@ -26,7 +26,7 @@ coretests_SOURCES = \
 	registry.cpp \
 	strings.cpp \
 	Test.h
-	
+
 EXTRA_DIST = \
 	test.conf \
 	coretests.sh \

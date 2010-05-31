@@ -115,7 +115,7 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 			{
 				if (arg >= argc-1)
 				{
-					OOBase_CallCriticalFailure((std::string("Missing argument for option ") + argv[arg]).c_str());
+					std::cout << "Missing argument for option " << argv[arg] << std::endl;
 					return false;
 				}
 				value = argv[++arg];
@@ -135,7 +135,7 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 		}
 	}
 
-	OOBase_CallCriticalFailure((std::string("Unrecognised option ") + argv[arg]).c_str());
+	std::cout << "Unrecognised option " << argv[arg] << std::endl;
 	return false;
 }
 
@@ -156,7 +156,7 @@ bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& 
 						// Next arg is the value
 						if (arg >= argc-1)
 						{
-							OOBase_CallCriticalFailure((std::string("Missing argument for option -") + c).c_str());
+							std::cout << "Missing argument for option -" << c << std::endl;
 							return false;
 						}
 						value = argv[++arg];
@@ -178,7 +178,7 @@ bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& 
 
 		if (i == m_map_opts.end())
 		{
-			OOBase_CallCriticalFailure((std::string("Unrecognised option -") + c).c_str());
+			std::cout << "Unrecognised option -" << c << std::endl;
 			return false;
 		}
 	}

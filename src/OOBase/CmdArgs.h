@@ -25,6 +25,7 @@
 #include "config-base.h"
 
 #include <map>
+#include <iostream>
 
 namespace OOSvrBase
 {

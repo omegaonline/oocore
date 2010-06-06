@@ -106,7 +106,6 @@ namespace OOBase
 	void CriticalFailure(const char* msg)
 	{
 		std::cerr << msg << std::endl << std::endl;
-		std::cerr << "Aborting!"  << std::endl;
 		abort();
 	}
 }

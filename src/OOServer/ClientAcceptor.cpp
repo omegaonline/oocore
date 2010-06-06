@@ -122,7 +122,7 @@ bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
 		if (pSocket->send(uLen) == 0)
 			pSocket->send(strPipe.c_str(),uLen);
 	}
-	
+
 	// Manually close the socket
 	pSocket->close();
 	return true;

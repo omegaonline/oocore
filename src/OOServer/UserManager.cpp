@@ -608,11 +608,19 @@ void User::Manager::quit()
 		SetEvent(s_hEvent);
 }
 
-#else
+#elif defined(HAVE_EV_H)
+
+namespace
+{
+	void on_sigint(struct ev_loop* pLoop, ev_signal*, int)
+	{
+		ev_unloop(pLoop,EVUNLOOP_ALL);
+	}
+}
 
 void User::Manager::wait_for_quit()
 {
-		// Use libev to wait on the default loop
+	// Use libev to wait on the default loop
 #if defined (EVFLAG_SIGNALFD)
 	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
 #else
@@ -625,18 +633,27 @@ void User::Manager::wait_for_quit()
 	}
 
 	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
-	void* POSIX_TODO;
+	ev_signal watcher;
+
+	ev_signal_init(&watcher,&on_sigint,SIGINT);
+	ev_signal_start(pLoop,&watcher);
 
 	// Let ev loop...
-	::ev_loop(pLoop,0);
+	ev_loop(pLoop,0);
 }
 
 void User::Manager::quit()
 {
-	// Is this the most sensible thing to do?
-	void* POSIX_TODO;
+	struct ev_loop* pLoop = ev_default_loop(0);
+	if (!pLoop)
+	{
+		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+		return;
+	}
 
-	raise(SIGTERM);
+	ev_unloop(pLoop,EVUNLOOP_ALL);
 }
 
+#else
+#error Fix me!
 #endif

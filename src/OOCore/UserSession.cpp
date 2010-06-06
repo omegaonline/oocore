@@ -156,7 +156,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 			OMEGA_THROW(err);
 
 		typedef const System::Internal::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::type OOSvrLite_GetIPS_RetVal, System::Internal::marshal_info<const init_arg_map_t&>::safe_type::type args);
-		
+
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
 			OMEGA_THROW(L"Corrupt OOSvrLite");
@@ -552,7 +552,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 	// Get the next message
 	OOBase::SmartPtr<Message> msg;
 	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
-	
+
 	// Decrement the consumers...
 	--m_usage_count;
 
@@ -561,7 +561,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		// We didn't process anything
 		return false;
 	}
-	
+
 	// Set deadline
 	// Dont confuse the wait deadline with the message processing deadline
 	ThreadContext* pContext = ThreadContext::instance();
@@ -583,7 +583,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 	{
 		// Reset the deadline
 		pContext->m_deadline = old_deadline;
-		
+
 		// Rethrow
 		throw;
 	}
@@ -665,7 +665,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.pop(msg,const_cast<OOBase::timeval_t*>(deadline));
-		
+
 		// Decrement the usage count
 		--pContext->m_usage_count;
 
@@ -711,7 +711,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::pulsed)
 			break;
 	}
-	
+
 	return response;
 }
 

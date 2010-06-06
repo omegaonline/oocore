@@ -71,6 +71,25 @@ bool Root::Manager::load_config()
 	return load_config_file(strFile);
 }
 
+namespace
+{
+#if defined(HAVE_EV_H)
+	void on_sigint(struct ev_loop* pLoop, ev_signal* w, int)
+	{
+		*static_cast<bool*>(w->data) = true;
+
+		ev_unloop(pLoop,EVUNLOOP_ALL);
+	}
+
+	void on_sighup(struct ev_loop* pLoop, ev_signal* w, int)
+	{
+		*static_cast<bool*>(w->data) = false;
+
+		ev_unloop(pLoop,EVUNLOOP_ALL);
+	}
+#endif
+}
+
 bool Root::Manager::wait_for_quit()
 {
 #if defined(HAVE_EV_H)
@@ -85,13 +104,26 @@ bool Root::Manager::wait_for_quit()
 	if (!pLoop)
 		LOG_ERROR_RETURN(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),true);
 
+	bool bReturn = false;
+
 	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
-	void* POSIX_TODO;
+	ev_signal watchers[2];
+
+	ev_signal_init(&watchers[0],&on_sigint,SIGINT);
+	ev_signal_init(&watchers[1],&on_sighup,SIGHUP);
+
+	for (size_t i=0;i<sizeof(watchers)/sizeof(watchers[0]);++i)
+	{
+		watchers[i].data = &bReturn;
+		ev_signal_start(pLoop,&watchers[i]);
+	}
 
 	// Let ev loop...
-	::ev_loop(pLoop,0);
+	ev_loop(pLoop,0);
 
-	return true;
+	LOG_DEBUG(("ooserverd exiting..."));
+
+	return bReturn;
 
 #else
 #error Some kind of signal mechanism?

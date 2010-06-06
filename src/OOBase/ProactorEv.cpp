@@ -247,7 +247,7 @@ int OOSvrBase::Ev::AsyncSocket::read_next()
 		try
 		{
 			if (m_async_reads.empty())
-				return 0;
+				break;
 
 			m_current_read = m_async_reads.front();
 			m_async_reads.pop_front();
@@ -265,8 +265,12 @@ int OOSvrBase::Ev::AsyncSocket::read_next()
 
 bool OOSvrBase::Ev::AsyncSocket::do_read(size_t to_read)
 {
+	bool inexact = false;
 	if (to_read == 0)
+	{
 		to_read = m_current_read.m_buffer->space();
+		inexact = true;
+	}
 
 	// Loop reading what we have...
 	bool closed = false;
@@ -282,9 +286,15 @@ bool OOSvrBase::Ev::AsyncSocket::do_read(size_t to_read)
 		else if (have_read < 0)
 		{
 			if (errno == EAGAIN)
-				return true;
-
-			err = errno;
+			{
+				if (!inexact || m_current_read.m_buffer->length() == 0)
+				{
+					m_async_reads.push_front(m_current_read);
+					return true;
+				}
+			}
+			else
+				err = errno;
 			break;
 		}
 
@@ -382,7 +392,10 @@ bool OOSvrBase::Ev::AsyncSocket::do_write()
 		if (have_sent <= 0)
 		{
 			if (errno == EAGAIN)
+			{
+				m_async_writes.push_front(m_current_write);
 				return true;
+			}
 
 			err = errno;
 			break;
@@ -470,15 +483,24 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 	socklen_t len = 0;
 	int new_fd = accept(m_watcher->fd,NULL,&len);
 	if (new_fd == -1)
-		err = errno;
-
-	// Add FD_CLOEXEC
-	int oldflags = fcntl(new_fd,F_GETFD);
-	if (oldflags == -1 ||
-			fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		err = errno;
-		::close(new_fd);
+		if (err == EAGAIN)
+		{
+			// libev can give spurious readiness...
+			return;
+		}
+	}
+	else
+	{
+		// Add FD_CLOEXEC
+		int oldflags = fcntl(new_fd,F_GETFD);
+		if (oldflags == -1 ||
+				fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+		{
+			err = errno;
+			::close(new_fd);
+		}
 	}
 
 	// Prepare socket if okay
@@ -487,9 +509,10 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 	{
 		OOBASE_NEW(pSocket,SocketType(new_fd,m_path));
 		if (!pSocket)
+		{
 			err = ENOMEM;
-		else
 			::close(new_fd);
+		}
 	}
 
 	// Call the acceptor if we are not closing...
@@ -889,7 +912,6 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 		close(new_fd);
 		return 0;
 	}
-
 
 	// Alloc a new async socket
 	AsyncSocket* pSock;

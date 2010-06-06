@@ -93,7 +93,7 @@ namespace
 
 	PthreadTLSGlobal::PthreadTLSGlobal()
 	{
-		int err = pthread_key_create(&m_key,&TLSMap::destroy);
+		int err = pthread_key_create(&m_key,0);
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
 	}
@@ -104,6 +104,7 @@ namespace
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
 	}
+
 #endif // HAVE_PTHREAD
 
 	/** \typedef TLS_GLOBAL
@@ -140,11 +141,10 @@ namespace
 
 			if (!TlsSetValue(TLS_GLOBAL::instance()->m_key,inst))
 				OOBase_CallCriticalFailure(GetLastError());
-#elif defined(HAVE_PTHREAD)
-			int err = pthread_key_create(&TLS_GLOBAL::instance()->m_key,0);
-			if (err == 0)
-				err = pthread_setspecific(TLS_GLOBAL::instance()->m_key,inst);
 
+#elif defined(HAVE_PTHREAD)
+
+			int err = pthread_setspecific(TLS_GLOBAL::instance()->m_key,inst);
 			if (err != 0)
 				OOBase_CallCriticalFailure(err);
 #else

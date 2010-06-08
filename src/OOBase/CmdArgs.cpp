@@ -67,6 +67,8 @@ bool OOSvrBase::CmdArgs::add_argument(const char* id, int position)
 
 bool OOSvrBase::CmdArgs::parse(int argc, char* argv[], std::map<std::string,std::string>& results, int skip) const
 {
+	m_name = argv[0];
+
 	bool bEndOfOpts = false;
 	int pos = 0;
 	for (int i=skip; i<argc; ++i)
@@ -115,7 +117,7 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 			{
 				if (arg >= argc-1)
 				{
-					std::cout << "Missing argument for option " << argv[arg] << std::endl;
+					std::cerr << m_name << " - Missing argument for option " << argv[arg] << std::endl;
 					return false;
 				}
 				value = argv[++arg];
@@ -135,7 +137,7 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 		}
 	}
 
-	std::cout << "Unrecognised option " << argv[arg] << std::endl;
+	std::cerr << m_name << " - Unrecognised option " << argv[arg] << std::endl;
 	return false;
 }
 
@@ -156,7 +158,7 @@ bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& 
 						// Next arg is the value
 						if (arg >= argc-1)
 						{
-							std::cout << "Missing argument for option -" << c << std::endl;
+							std::cerr << m_name << " - Missing argument for option -" << c << std::endl;
 							return false;
 						}
 						value = argv[++arg];
@@ -178,7 +180,7 @@ bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& 
 
 		if (i == m_map_opts.end())
 		{
-			std::cout << "Unrecognised option -" << c << std::endl;
+			std::cerr << m_name << " - Unrecognised option -" << c << std::endl;
 			return false;
 		}
 	}

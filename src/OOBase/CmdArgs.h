@@ -32,7 +32,7 @@ namespace OOSvrBase
 	class CmdArgs
 	{
 	public:
-		bool add_option(const char* id, char short_opt, bool has_value = false, const char* long_opt = 0);
+		bool add_option(const char* id, char short_opt = 0, bool has_value = false, const char* long_opt = 0);
 		bool add_argument(const char* id, int position);
 
 		bool parse(int argc, char* argv[], std::map<std::string,std::string>& results, int skip = 1) const;
@@ -45,6 +45,7 @@ namespace OOSvrBase
 			bool        m_has_value;
 		};
 
+		mutable std::string               m_name;
 		std::multimap<std::string,Option> m_map_opts;
 		std::map<std::string,int>         m_map_args;
 

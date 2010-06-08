@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("conf-file",'f',true);
-	cmd_args.add_option("unsafe",0);
+	cmd_args.add_option("unsafe");
 
 	// Parse command line
 	std::map<std::string,std::string> args;
@@ -100,11 +100,11 @@ int main(int argc, char* argv[])
 static int Version()
 {
 	std::cout << APPNAME " version information:" << std::endl;
+	std::cout << "Version: " << OOCORE_VERSION;
 #if defined(OMEGA_DEBUG)
-	std::cout << "Version: " << OOCORE_VERSION << " (Debug build)" << std::endl;
-#else
-	std::cout << "Version: " << OOCORE_VERSION << std::endl;
+	std::cout << " (Debug build)";
 #endif
+	std::cout << std::endl;
 	std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
 	std::cout << "SQLite library version: " << sqlite3_libversion() << ", built with " << sqlite3_version << " headers" << std::endl;
 	std::cout << std::endl;

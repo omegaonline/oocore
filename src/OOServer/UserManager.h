@@ -28,15 +28,18 @@
 #include "Channel.h"
 #include "UserNet.h"
 
+int main(int, char**);
+
 namespace User
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;
 
 	class Manager : public OOServer::MessageHandler
 	{
-	public:
-		static int run(const std::string& strPipe);
+		// main() has full access...
+		friend int ::main(int, char**);
 
+	public:
 		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
@@ -67,8 +70,9 @@ namespace User
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 		virtual void on_channel_closed(Omega::uint32_t channel);
 
-		int run_i(const std::string& strPipe);
-		bool init(const std::string& strPipe);
+		void run();
+		bool fork_slave(const std::string& strPipe);
+		bool session_launch(const std::string& strPipe);
 		static void wait_for_quit();
 		static void quit();
 

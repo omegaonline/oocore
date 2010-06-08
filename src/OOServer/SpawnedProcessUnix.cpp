@@ -59,7 +59,7 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
+		bool Spawn(std::string strAppPath, bool bUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
@@ -229,11 +229,12 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPathW, bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
 {
-	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPathW.c_str());
+	if (strAppPath.empty())
+		strAppPath = LIBEXEC_DIR "/oosvruser";
 
-	std::string strAppPath = OOBase::to_utf8(strAppPathW.c_str());
+	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %s",strAppPath.c_str());
 
 	m_bSandbox = bSandbox;
 
@@ -316,7 +317,7 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPathW, bool bUnsafe, ui
 		// Exec the user process
 		std::ostringstream os;
 		os.imbue(std::locale::classic());
-		os << pass_fd;
+		os << "--fork-slave=" << pass_fd;
 
 		char* cmd_line[3] = { 0,0,0 };
 		cmd_line[0] = strdup(strAppPath.c_str());
@@ -506,10 +507,10 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	// Spawn the process
 	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
 
-	std::wstring strAppName;
+	std::string strAppName;
 	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");
 	if (a != m_config_args.end())
-		strAppName = OOBase::from_utf8(a->second.c_str());
+		strAppName = a->second;
 
 	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,uid,fd[1],bSandbox))
 	{

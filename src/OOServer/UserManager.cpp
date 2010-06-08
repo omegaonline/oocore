@@ -83,55 +83,32 @@ User::Manager::~Manager()
 {
 }
 
-int User::Manager::run(const std::string& strPipe)
+void User::Manager::run()
 {
-	return USER_MANAGER::instance()->run_i(strPipe);
-}
+	// Wait for stop
+	wait_for_quit();
 
-int User::Manager::run_i(const std::string& strPipe)
-{
-	// Start the handler and init ourselves
-	if (!start_request_threads())
-		return EXIT_FAILURE;
+	// Stop accepting new clients
+	m_acceptor.stop();
 
-	int res = EXIT_FAILURE;
-	if (init(strPipe))
+	// Close all the sinks
+	close_all_remotes();
+
+	// Close the user pipes
+	close_channels();
+
+	// Unregister our object factories
+	GetModule()->UnregisterObjectFactories();
+
+	// Unregister InterProcessService
+	if (m_nIPSCookie)
 	{
-		res = EXIT_SUCCESS;
-
-		// Wait for stop
-		wait_for_quit();
-
-		// Stop accepting new clients
-		m_acceptor.stop();
-
-		// Close all the sinks
-		close_all_remotes();
-
-		// Close the user pipes
-		close_channels();
-
-		// Unregister our object factories
-		GetModule()->UnregisterObjectFactories();
-
-		// Unregister InterProcessService
-		if (m_nIPSCookie)
-		{
-			Activation::RevokeObject(m_nIPSCookie);
-			m_nIPSCookie = 0;
-		}
-
-		// Close the OOCore
-		Omega::Uninitialize();
+		Activation::RevokeObject(m_nIPSCookie);
+		m_nIPSCookie = 0;
 	}
 
-	// Close the proactor
-	//Proactor::close();
-
-	// Stop the MessageHandler
-	stop_request_threads();
-
-	return res;
+	// Close the OOCore
+	Omega::Uninitialize();
 }
 
 bool User::Manager::on_channel_open(Omega::uint32_t channel)
@@ -152,7 +129,7 @@ bool User::Manager::on_channel_open(Omega::uint32_t channel)
 	return true;
 }
 
-bool User::Manager::init(const std::string& strPipe)
+bool User::Manager::fork_slave(const std::string& strPipe)
 {
 	// Connect to the root
 	OOBase::timeval_t wait(20);
@@ -257,6 +234,42 @@ bool User::Manager::init(const std::string& strPipe)
 		return false;
 
 	return true;
+}
+
+bool User::Manager::session_launch(const std::string& strPipe)
+{
+	// Use the passed fd
+	int fd = atoi(strPipe.c_str());
+
+#if defined(_WIN32)
+	LOG_ERROR_RETURN(("Somehow got into session_launch!"),false);
+#else
+
+	pid_t pid = getpid();
+	if (write(fd,&pid,sizeof(pid)) != sizeof(pid))
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	// Invent a new pipe name...
+	std::string strNewPipe = Acceptor::unique_name();
+	if (strNewPipe.empty())
+		return false;
+
+	// Then send back our port name
+	size_t uLen = strNewPipe.length()+1;
+	if (write(fd,&uLen,sizeof(uLen)) != sizeof(uLen))
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	// Done with the port...
+	close(fd);
+
+	// More here obviously...
+	void* TODO;
+
+	return false;
+#endif
 }
 
 void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)

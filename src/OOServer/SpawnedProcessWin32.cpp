@@ -651,11 +651,9 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	if (hDebugEvent)
 	{
 		AttachDebugger(process_info.dwProcessId);
-		if (hDebugEvent)
-		{
-			SetEvent(hDebugEvent);
-			CloseHandle(hDebugEvent);
-		}
+
+		SetEvent(hDebugEvent);
+		CloseHandle(hDebugEvent);
 	}
 #endif
 
@@ -816,7 +814,7 @@ bool SpawnedProcessWin32::Compare(HANDLE hToken)
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
-	
+
 	if (!pStats1 || !pStats2)
 		return false;
 

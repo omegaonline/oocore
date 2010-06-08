@@ -51,9 +51,9 @@ if WIN32
 oosvrlite_la_SOURCES += OOSvrLite_res.rc
 endif
 
-bin_PROGRAMS = ooserverd oosvruser
+bin_PROGRAMS = ooserverd
 
-ooserverd_CPPFLAGS = -I$(top_srcdir)/include
+ooserverd_CPPFLAGS = -I$(top_srcdir)/include -DLIBEXEC_DIR=\"@libexecdir@\"
 ooserverd_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 ooserverd_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 ooserverd_LDFLAGS =  $(SQLITE3_LIBS) $(EV_LIBS) $(PTHREAD_LIBS)
@@ -76,6 +76,8 @@ ooserverd_SOURCES = \
 if WIN32
 ooserverd_SOURCES += OOServer.rc
 endif
+
+libexec_PROGRAMS = oosvruser
 
 oosvruser_CPPFLAGS = -I$(top_srcdir)/include
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
@@ -123,3 +125,17 @@ EXTRA_DIST = \
 TESTS = \
 	$(srcdir)/test_ooserverd.sh \
 	$(srcdir)/test_oosvruser.sh
+
+if !WIN32
+bin_PROGRAMS += oo-launch
+
+oo_launch_CPPFLAGS = -I$(top_srcdir)/include -DLIBEXEC_DIR=\"@libexecdir@\"
+oo_launch_CFLAGS = $(PTHREAD_CFLAGS)
+oo_launch_CXXFLAGS = $(PTHREAD_CFLAGS)
+oo_launch_LDFLAGS = $(PTHREAD_LIBS)
+oo_launch_LDADD = ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
+
+oo_launch_SOURCES = \
+	Launch.cpp
+
+endif

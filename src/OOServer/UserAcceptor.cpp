@@ -68,7 +68,7 @@ std::string User::Acceptor::unique_name()
 	}
 #elif defined(HAVE_UNISTD_H)
 
-	ssPipe << "/tmp/.oou-" << getuid();
+	ssPipe << "/tmp/oo-" << getuid() << "-" << getpid();
 
 #else
 #error Fix me!
@@ -136,7 +136,7 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 
 	// Make sure the handle is closed
 	OOBase::Win32::SmartHandle hUidToken(uid);
-	
+
 	// Get our Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
@@ -162,7 +162,7 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 		pSocket->close();
 		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
 	}
-	
+
 	// Compare...
 	bOk = (pStats1->SidCount==pStats2->SidCount &&
 			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&

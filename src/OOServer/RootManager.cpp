@@ -52,49 +52,57 @@ Root::Manager::~Manager()
 
 int Root::Manager::run()
 {
-	// Loop until we quit
-	for (bool bQuit=false; !bQuit;)
+	try
 	{
-		// Load the config
-		if (!load_config())
-			return EXIT_FAILURE;
-
-		// Open the root registry
-		if (!init_database())
-			return EXIT_FAILURE;
-
-		// Start the handler
-		if (!start_request_threads())
-			return EXIT_FAILURE;
-
-		// Just so we can exit cleanly...
-		bool bOk = false;
-
-		// Spawn the sandbox
-		std::string strPipe;
-		m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),0,strPipe);
-		if (m_sandbox_channel)
+		// Loop until we quit
+		for (bool bQuit=false; !bQuit;)
 		{
-			// Start listening for clients
-			if (m_client_acceptor.start(this))
-			{
-				bOk = true;
-				bQuit = wait_for_quit();
+			// Load the config
+			if (!load_config())
+				return EXIT_FAILURE;
 
-				// Stop accepting new clients
-				m_client_acceptor.stop();
+			// Open the root registry
+			if (!init_database())
+				return EXIT_FAILURE;
+
+			// Start the handler
+			if (!start_request_threads())
+				return EXIT_FAILURE;
+
+			// Just so we can exit cleanly...
+			bool bOk = false;
+
+			// Spawn the sandbox
+			std::string strPipe;
+			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),0,strPipe);
+			if (m_sandbox_channel)
+			{
+				// Start listening for clients
+				if (m_client_acceptor.start(this))
+				{
+					bOk = true;
+					bQuit = wait_for_quit();
+
+					// Stop accepting new clients
+					m_client_acceptor.stop();
+				}
+
+				// Close all channels
+				close_channels();
 			}
 
-			// Close all channels
-			close_channels();
+			// Stop the MessageHandler
+			stop_request_threads();
+
+			if (!bOk)
+				return EXIT_FAILURE;
 		}
-
-		// Stop the MessageHandler
-		stop_request_threads();
-
-		if (!bOk)
-			return EXIT_FAILURE;
 	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),EXIT_FAILURE);
+	}
+
 
 	return EXIT_SUCCESS;
 }
@@ -139,45 +147,38 @@ bool Root::Manager::init_database()
 bool Root::Manager::load_config_file(const std::string& strFile)
 {
 	// Load simple config file...
-	try
-	{
-		std::ifstream fs(strFile.c_str());
-		if (!fs.is_open())
-			LOG_ERROR_RETURN(("Failed to open config file: %s",strFile.c_str()),false);
+	std::ifstream fs(strFile.c_str());
+	if (!fs.is_open())
+		LOG_ERROR_RETURN(("Failed to open config file: %s",strFile.c_str()),false);
 
-		while (!fs.eof())
+	while (!fs.eof())
+	{
+		// Read line
+		std::string line;
+		std::getline(fs,line);
+
+		if (!line.empty() && line[0] != '#')
 		{
-			// Read line
-			std::string line;
-			std::getline(fs,line);
-
-			if (!line.empty() && line[0] != '#')
+			// Read line as key=value
+			std::string key,value;
+			size_t pos = line.find('=');
+			if (pos == std::string::npos)
 			{
-				// Read line as key=value
-				std::string key,value;
-				size_t pos = line.find('=');
-				if (pos == std::string::npos)
-				{
-					key = line;
-					value = "true";
-				}
-				else
-				{
-					key = line.substr(0,pos);
-					value = line.substr(pos+1);
-				}
-
-				// Insert into map
-				m_config_args[key] = value;
+				key = line;
+				value = "true";
 			}
-		}
+			else
+			{
+				key = line.substr(0,pos);
+				value = line.substr(pos+1);
+			}
 
-		return true;
+			// Insert into map
+			m_config_args[key] = value;
+		}
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
-	}
+
+	return true;
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
@@ -211,27 +212,22 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 	{
 		OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 
-		try
-		{
-			// See if we have a process already
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		// See if we have a process already
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		{
+			if (i->second.ptrSpawn->Compare(uid))
 			{
-				if (i->second.ptrSpawn->Compare(uid))
-				{
-					return i->second.strPipe;
-				}
-				else if (i->second.ptrSpawn->IsSameUser(uid))
-				{
-					ptrRegistry = i->second.ptrRegistry;
-				}
+				return i->second.strPipe;
+			}
+			else if (i->second.ptrSpawn->IsSameUser(uid))
+			{
+				ptrRegistry = i->second.ptrRegistry;
 			}
 		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),"");
-		}
+
+		guard.release();
 
 		// Spawn a new user process
 		std::string strPipe;

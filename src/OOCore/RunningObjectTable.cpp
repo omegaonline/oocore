@@ -71,7 +71,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 	catch (IException* pE2)
 	{
 		pE2->Release();
-		throw ISystemException::Create(L"Omega::Initialize not called");
+		throw IInternalException::Create(L"Omega::Initialize not called","OOCore");
 	}
 }
 

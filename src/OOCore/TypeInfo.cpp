@@ -425,7 +425,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 		return ptrTI.AddRef();
 	}
 
-	throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+	throw INoInterfaceException::Create(iid);
 }
 
 TypeInfo::IInterfaceInfo* OOCore::GetInterfaceInfo(const guid_t& iid)

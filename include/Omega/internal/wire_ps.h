@@ -532,7 +532,7 @@ namespace Omega
 				static const uint32_t MethodCount = Base::MethodCount + 5;
 
 			private:
-				void Throw()
+				void Rethrow()
 				{
 					guid_t iid = GetThrownIID();
 					if (IsDerived__proxy__(iid))
@@ -543,7 +543,7 @@ namespace Omega
 						throw static_cast<D*>(this);
 
 					this->Release();
-					pE->Throw();
+					pE->Rethrow();
 				}
 
 				OMEGA_DECLARE_WIRE_PROXY_METHODS
@@ -561,11 +561,10 @@ namespace Omega
 			(
 				Omega, IException,
 
-				OMEGA_METHOD_VOID(Throw,0,())
+				OMEGA_METHOD_VOID(Rethrow,0,())
 				OMEGA_METHOD(guid_t,GetThrownIID,0,())
 				OMEGA_METHOD(IException*,GetCause,0,())
 				OMEGA_METHOD(string_t,GetDescription,0,())
-				OMEGA_METHOD(string_t,GetSource,0,())
 			)
 
 			OMEGA_QI_MAGIC(Omega::Remoting,IMessage)

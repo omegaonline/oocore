@@ -723,11 +723,10 @@ namespace Omega
 			(
 				Omega, IException,
 
-				OMEGA_METHOD_VOID(Throw,0,())
+				OMEGA_METHOD_VOID(Rethrow,0,())
 				OMEGA_METHOD(guid_t,GetThrownIID,0,())
 				OMEGA_METHOD(IException*,GetCause,0,())
 				OMEGA_METHOD(string_t,GetDescription,0,())
-				OMEGA_METHOD(string_t,GetSource,0,())
 			)
 
 			template <typename D>
@@ -760,7 +759,7 @@ namespace Omega
 				}
 
 			public:
-				void Throw()
+				void Rethrow()
 				{
 					guid_t iid = GetThrownIID();
 					if (IsDerived__proxy__(iid) || !get_qi_rtti_info(iid))
@@ -779,7 +778,7 @@ namespace Omega
 						throw static_cast<D*>(this);
 
 					this->Release();
-					static_cast<IException*>(create_safe_proxy(retval,OMEGA_GUIDOF(IException)))->Throw();
+					static_cast<IException*>(create_safe_proxy(retval,OMEGA_GUIDOF(IException)))->Rethrow();
 				}
 
 				OMEGA_DECLARE_SAFE_PROXY_METHODS
@@ -787,7 +786,6 @@ namespace Omega
 					OMEGA_METHOD(guid_t,GetThrownIID,0,())
 					OMEGA_METHOD(IException*,GetCause,0,())
 					OMEGA_METHOD(string_t,GetDescription,0,())
-					OMEGA_METHOD(string_t,GetSource,0,())
 				)
 			};
 

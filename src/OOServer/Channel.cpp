@@ -53,7 +53,7 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM;
 	if (!m_ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Associate it with the channel
 	m_ptrOM->Connect(this);

@@ -766,7 +766,7 @@ namespace OTL
 			else
 				ret = ptr.AddRef();
 			if (!ret)
-				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				throw Omega::INoInterfaceException::Create(iid);
 			return ret;
 		}
 
@@ -774,7 +774,7 @@ namespace OTL
 		{
 			Omega::IObject* ret = T::CreateInstancePtr()->QueryInterface(iid);
 			if (!ret)
-				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				throw Omega::INoInterfaceException::Create(iid);
 			return ret;
 		}
 	};
@@ -861,7 +861,7 @@ namespace OTL
 			{
 				Omega::IObject* pObject = ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+					throw Omega::INoInterfaceException::Create(iid);
 				return pObject;
 			}
 		};
@@ -888,7 +888,7 @@ namespace OTL
 			{
 				Omega::IObject* pObject = NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+					throw Omega::INoInterfaceException::Create(iid);
 				return pObject;
 			}
 		};

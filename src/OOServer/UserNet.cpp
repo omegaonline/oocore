@@ -181,7 +181,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 			// QI for IMarshaller
 			ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 			if (!ptrMarshaller)
-				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 			ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrInput);
 		}
@@ -226,7 +226,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	ptrMarshaller->MarshalInterface(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 
@@ -276,7 +276,7 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 	catch (...)
@@ -320,7 +320,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrMsg);
@@ -387,7 +387,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",pMsg);
@@ -611,7 +611,7 @@ void User::RemoteChannel::do_channel_closed(void* pParam, OOBase::CDRStream& inp
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 	catch (...)
@@ -804,7 +804,7 @@ void User::Manager::close_all_remotes()
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 	catch (...)
@@ -864,7 +864,7 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 		return OOServer::MessageHandler::io_result::failed;
 	}

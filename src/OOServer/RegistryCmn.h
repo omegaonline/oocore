@@ -42,31 +42,30 @@ namespace User
 				return m_strName;
 			}
 
-			static void ValidateSubKey(const string_t& strSubKey, const string_t& strSource)
+			static void ValidateSubKey(const string_t& strSubKey)
 			{
 				if (strSubKey.IsEmpty() ||
 						strSubKey == L"\\" ||
 						strSubKey.Right(1) == L"\\" ||
 						strSubKey.Find(L"\\\\") != string_t::npos)
 				{
-					Throw(strSubKey,strSource);
+					Throw(strSubKey);
 				}
 			}
 
-			static void ValidateValue(const string_t& strName, const string_t& strSource)
+			static void ValidateValue(const string_t& strName)
 			{
 				if (strName.IsEmpty() ||
 						strName.Find(L'\\') != string_t::npos)
 				{
-					Throw(strName,strSource);
+					Throw(strName);
 				}
 			}
 
-			static void Throw(const string_t& name, const string_t& strSource)
+			static void Throw(const string_t& name)
 			{
 				ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strSource = strSource;
 				pRE->m_strDesc = L"Invalid name for registry key or value: '{0}'.";
 				pRE->m_strDesc %= name;
 				throw static_cast<IBadNameException*>(pRE);
@@ -95,13 +94,12 @@ namespace User
 				return m_strValue;
 			}
 
-			static void Throw(string_t strValue, ValueType_t actual_type, const string_t& strSource)
+			static void Throw(string_t strValue, ValueType_t actual_type)
 			{
 				ObjectImpl<WrongValueTypeException>* pRE = ObjectImpl<WrongValueTypeException>::CreateInstance();
 				pRE->m_type = actual_type;
 				pRE->m_strValue = strValue;
-				pRE->m_strSource = strSource;
-
+				
 				pRE->m_strDesc = L"Incorrect registry value type, actual value type is {0}.";
 				if (actual_type==String)
 					pRE->m_strDesc %= L"String";
@@ -132,11 +130,10 @@ namespace User
 				return m_strName;
 			}
 
-			static void Throw(const string_t& name, const string_t& strSource)
+			static void Throw(const string_t& name)
 			{
 				ObjectImpl<NotFoundException>* pRE = ObjectImpl<NotFoundException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strSource = strSource;
 				pRE->m_strDesc = L"'{0}' not found.";
 				pRE->m_strDesc %= name;
 				throw static_cast<INotFoundException*>(pRE);
@@ -159,11 +156,10 @@ namespace User
 				return m_strName;
 			}
 
-			static void Throw(const string_t& name, const string_t& strSource)
+			static void Throw(const string_t& name)
 			{
 				ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strSource = strSource;
 				pRE->m_strDesc = L"Key '{0}' already exists.";
 				pRE->m_strDesc %= name;
 				throw static_cast<IAlreadyExistsException*>(pRE);
@@ -186,11 +182,10 @@ namespace User
 				return m_strName;
 			}
 
-			static void Throw(const string_t& name, const string_t& strSource)
+			static void Throw(const string_t& name)
 			{
 				ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strSource = strSource;
 				pRE->m_strDesc = L"Write attempt illegal for '{0}'.";
 				pRE->m_strDesc %= name;
 				throw static_cast<IAccessDeniedException*>(pRE);

@@ -445,7 +445,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 	}
 
 	if (pERet)
-		pERet->Throw();
+		pERet->Rethrow();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -544,7 +544,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	}
 
 	if (pERet)
-		pERet->Throw();
+		pERet->Rethrow();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -750,7 +750,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		// QI for the desired interface
 		pObject = ptrObj->QueryInterface(iid);
 		if (!pObject)
-			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+			throw INoInterfaceException::Create(iid);
 	}
 	else if (flag == 2)
 	{
@@ -759,7 +759,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		// Create an instance of Oid
 		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
 		if (!ptrMarshalFactory)
-			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshalFactory),OMEGA_SOURCE_INFO);
+			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshalFactory));
 
 		ptrMarshalFactory->UnmarshalInterface(this,pMessage,iid,m_ptrChannel->GetMarshalFlags(),pObject);
 	}
@@ -817,7 +817,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 		ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
 
 		if (!ptrMarshal)
-			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
+			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
 
 		ptrMarshal->ReleaseMarshalData(this,pMessage,iid,m_ptrChannel->GetMarshalFlags());
 	}
@@ -844,7 +844,7 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 {
 	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
 	if (!ptrMarshal)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
 
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	pMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");

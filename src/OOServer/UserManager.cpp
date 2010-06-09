@@ -144,7 +144,7 @@ bool User::Manager::on_channel_open(Omega::uint32_t channel)
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 			pE->Release();
 			return false;
 		}
@@ -306,7 +306,7 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 
 		return false;

@@ -157,7 +157,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Get the channel's IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrChannel.GetManager<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Marshal the stub
 	ptrMarshaller->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);

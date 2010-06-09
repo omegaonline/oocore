@@ -201,7 +201,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		if (bStandalone)
 			return std::string();
 		else
-			throw ISystemException::Create(L"Failed to connect to network daemon",L"Omega::Initialize");
+			throw IInternalException::Create(L"Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
 

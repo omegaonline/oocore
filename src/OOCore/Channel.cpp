@@ -143,7 +143,7 @@ void OOCore::Channel::init(UserSession* pSession, uint16_t apt_id, uint32_t chan
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM;
 	if (!m_ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 }
 
 void OOCore::Channel::disconnect()
@@ -179,7 +179,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	{
 		ptrMarshaller->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		disconnect();
-		pE->Throw();
+		pE->Rethrow();
 	}
 	catch (...)
 	{

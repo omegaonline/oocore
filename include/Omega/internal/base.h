@@ -43,27 +43,33 @@ namespace Omega
 
 	interface IException : public IObject
 	{
-		virtual void Throw() = 0;
+		virtual void Rethrow() = 0;
 		virtual guid_t GetThrownIID() = 0;
 		virtual IException* GetCause() = 0;
 		virtual string_t GetDescription() = 0;
-		virtual string_t GetSource() = 0;
 	};
 
 	interface ISystemException : public IException
 	{
 		virtual uint32_t GetErrorCode() = 0;
 
-		static ISystemException* Create(uint32_t errno_val, const string_t& source = string_t());
-		static ISystemException* Create(const std::exception& e, const string_t& source = string_t());
-		static ISystemException* Create(const string_t& desc, const string_t& source = string_t());
+		static ISystemException* Create(uint32_t errno_val);
+	};
+
+	interface IInternalException : public IException
+	{
+		virtual string_t GetSource() = 0;
+
+		static IInternalException* Create(uint32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
+		static IInternalException* Create(const std::exception& e, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
+		static IInternalException* Create(const string_t& desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
 	};
 
 	interface INoInterfaceException : public IException
 	{
 		virtual guid_t GetUnsupportedIID() = 0;
 
-		static INoInterfaceException* Create(const guid_t& iid, const string_t& source = string_t());
+		static INoInterfaceException* Create(const guid_t& iid);
 	};
 
 	interface ITimeoutException : public IException
@@ -226,13 +232,11 @@ OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 
 #if defined(DOXYGEN)
 /// Return the current source filename and line as a string_t
-#define OMEGA_SOURCE_INFO
+#define OMEGA_THROW(e)       throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
 #elif !defined(OMEGA_FUNCNAME)
-#define OMEGA_SOURCE_INFO    (L"{0}({1})" % Omega::string_t(__FILE__,false) % __LINE__)
+#define OMEGA_THROW(e)       throw Omega::IInternalException::Create(e,__FILE__,__LINE__)
 #else
-#define OMEGA_SOURCE_INFO    (L"{0}({1}): {2}" % Omega::string_t(__FILE__,false) % __LINE__ % Omega::string_t(OMEGA_FUNCNAME,false))
+#define OMEGA_THROW(e)       throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
 #endif
-
-#define OMEGA_THROW(e)       throw Omega::ISystemException::Create(e,OMEGA_SOURCE_INFO)
 
 #endif // OOCORE_BASE_H_INCLUDED_

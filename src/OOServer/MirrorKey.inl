@@ -64,7 +64,7 @@ string_t User::Registry::MirrorKey::GetStringValue(const string_t& strName)
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
+	User::Registry::NotFoundException::Throw(strName);
 	return string_t();
 }
 
@@ -94,7 +94,7 @@ int64_t User::Registry::MirrorKey::GetIntegerValue(const string_t& strName)
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
+	User::Registry::NotFoundException::Throw(strName);
 	return 0;
 }
 
@@ -124,7 +124,7 @@ void User::Registry::MirrorKey::GetBinaryValue(const string_t& strName, uint32_t
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
+	User::Registry::NotFoundException::Throw(strName);
 }
 
 void User::Registry::MirrorKey::SetStringValue(const string_t& strName, const string_t& strValue)
@@ -177,7 +177,7 @@ string_t User::Registry::MirrorKey::GetDescription()
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetDescription");
+	User::Registry::NotFoundException::Throw(m_strKey);
 	return string_t();
 }
 
@@ -207,14 +207,14 @@ string_t User::Registry::MirrorKey::GetValueDescription(const string_t& strName)
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueDescription");
+	User::Registry::NotFoundException::Throw(strName);
 	return string_t();
 }
 
 void User::Registry::MirrorKey::SetDescription(const string_t& strValue)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 
 	try
 	{
@@ -223,14 +223,14 @@ void User::Registry::MirrorKey::SetDescription(const string_t& strValue)
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 	}
 }
 
 void User::Registry::MirrorKey::SetValueDescription(const string_t& strName, const string_t& strValue)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetValueDescription");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 
 	try
 	{
@@ -239,7 +239,7 @@ void User::Registry::MirrorKey::SetValueDescription(const string_t& strName, con
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetValueDescription");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 	}
 }
 
@@ -269,7 +269,7 @@ ValueType_t User::Registry::MirrorKey::GetValueType(const string_t& strName)
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueType");
+	User::Registry::NotFoundException::Throw(strName);
 	return 0;
 }
 
@@ -302,7 +302,7 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 	}
 
 	if (!ptrNewLocal && !ptrNewSystem)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
+		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
 
 	ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
 	ptrNew->Init(m_strKey + L"\\" + strSubKey,ptrNewLocal,ptrNewSystem);
@@ -342,7 +342,7 @@ std::set<string_t> User::Registry::MirrorKey::EnumValues()
 void User::Registry::MirrorKey::DeleteKey(const string_t& strSubKey)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteKey");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 
 	try
 	{
@@ -351,14 +351,14 @@ void User::Registry::MirrorKey::DeleteKey(const string_t& strSubKey)
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteKey");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 	}
 }
 
 void User::Registry::MirrorKey::DeleteValue(const string_t& strName)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteValue");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 
 	try
 	{
@@ -367,6 +367,6 @@ void User::Registry::MirrorKey::DeleteValue(const string_t& strName)
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteValue");
+		User::Registry::AccessDeniedException::Throw(m_strKey);
 	}
 }

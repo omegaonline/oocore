@@ -47,7 +47,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw ISystemException::Create(string_t(msg,false),L"Critical Failure");
+		throw IInternalException::Create(string_t(msg,false),"Critical Failure");
 	}
 }
 

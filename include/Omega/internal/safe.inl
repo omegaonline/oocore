@@ -173,7 +173,7 @@ inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shi
 	// Ensure shim is released
 	auto_safe_shim ss = shim;
 
-	create_safe_proxy<IException>(shim)->Throw();
+	create_safe_proxy<IException>(shim)->Rethrow();
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(Omega::IObject* pObj, const Omega::guid_t& iid)

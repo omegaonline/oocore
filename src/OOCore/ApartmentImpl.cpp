@@ -152,7 +152,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Wrap up the request
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;

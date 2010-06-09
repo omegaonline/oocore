@@ -32,6 +32,7 @@ namespace OOCore
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
+OMEGA_DEFINE_OID(OOCore,OID_InternalExceptionMarshalFactory, "{47E86F31-E9E9-4667-89CA-40EB048DA2B7}");
 OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
 OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
@@ -41,15 +42,14 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw OOCore_ISystemException_Create(string_t(msg,false),L"Critical Failure");
+		throw OOCore_IInternalException_Create(string_t(msg,false),"OOCore Critical Failure",size_t(-1),0);
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
+OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,1,((in),uint32_t,e))
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
-	pExcept->m_strSource = source;
-
+	
 #if defined(_WIN32)
 
 	pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
@@ -70,16 +70,42 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create,2,((in),const string_t&,desc,(in),const string_t&,source))
+namespace OOCore
 {
-	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
-	pExcept->m_strDesc = desc;
-	pExcept->m_strSource = source;
-	pExcept->m_errno = EINVAL;
-	return pExcept;
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const Omega::string_t& desc, const char* pszFile, size_t nLine, const char* pszFunc)
+	{
+		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstancePtr();
+		pExcept->m_strDesc = desc;
+		pExcept->m_errno = EINVAL;
+
+		if (nLine != size_t(-1))
+		{
+			if (pszFunc)
+				pExcept->m_strSource = (L"{0}({1}): {2}" % Omega::string_t(pszFile,false) % nLine % Omega::string_t(pszFunc,false));
+			else
+				pExcept->m_strSource = (L"{0}({1})" % Omega::string_t(pszFile,false) % nLine);
+		}
+		else
+			pExcept->m_strSource = (L"{0}" % Omega::string_t(pszFile,false));
+
+		return pExcept;
+	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const string_t&,source))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),uint32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+{
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException(L"Operating system error",pszFile,nLine,pszFunc);
+	ptrExcept->m_ptrCause.Attach(OOCore_ISystemException_Create_errno(e));
+
+	return ptrExcept.AddRef();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,4,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+{
+	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc).AddRef();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,1,((in),const guid_t&,iid))
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
@@ -91,7 +117,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 		strIID = ptrII->GetName();
 
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
-	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;
 	return pExcept;
 }

@@ -80,7 +80,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	if (pE)
-		pE->Throw();
+		pE->Rethrow();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -106,7 +106,7 @@ IObject* OOCore::Proxy::QueryIObject()
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	if (pE)
-		pE->Throw();
+		pE->Rethrow();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -167,7 +167,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 
 		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 		if (pE)
-			pE->Throw();
+			pE->Rethrow();
 	}
 	catch (...)
 	{
@@ -247,7 +247,7 @@ void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMar
 	// Get the IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller2 = ptrChannel.GetManager<Remoting::IMarshaller>();
 	if (!ptrMarshaller2)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal the new proxy on the new manager
 	ptrMarshaller2->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);

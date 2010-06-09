@@ -237,7 +237,7 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	if (m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager already connected to a Channel");
+		OMEGA_THROW("ObjectManager already connected to a Channel");
 
 	m_ptrChannel = pChannel;
 }
@@ -296,7 +296,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
 {
 	if (!pParamsIn)
-		OMEGA_THROW(L"Invoke called with no message");
+		OMEGA_THROW("Invoke called with no message");
 
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create();
@@ -347,7 +347,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 					InvokeGetInterfaceInfo(pParamsIn,ptrResponse);
 				}
 				else
-					OMEGA_THROW(L"Invalid static function call!");
+					OMEGA_THROW("Invalid static function call!");
 			}
 			else
 			{
@@ -361,7 +361,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 					std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
 					if (i==m_mapStubIds.end())
-						OMEGA_THROW(L"Bad stub id");
+						OMEGA_THROW("Bad stub id");
 
 					ptrStub = i->second->second;
 				}
@@ -497,7 +497,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 				// Unmarshal the exception
 				ObjectPtr<IException> ptrE = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(this)).UnmarshalInterface<IException>(L"exception",ptrRecv);
 				if (!ptrE)
-					OMEGA_THROW(L"Null exception returned");
+					OMEGA_THROW("Null exception returned");
 
 				return ptrE.AddRef();
 			}
@@ -764,7 +764,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		ptrMarshalFactory->UnmarshalInterface(this,pMessage,iid,m_ptrChannel->GetMarshalFlags(),pObject);
 	}
 	else
-		OMEGA_THROW(L"Invalid marshal flag");
+		OMEGA_THROW("Invalid marshal flag");
 
 	pMessage->ReadStructEnd();
 }
@@ -803,7 +803,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 
 		// If there is no stub... what are we unmarshalling?
 		if (!ptrStub)
-			OMEGA_THROW(L"No stub to unmarshal");
+			OMEGA_THROW("No stub to unmarshal");
 
 		// Read the data
 		ptrStub->ReleaseMarshalData(pMessage,iid);
@@ -823,7 +823,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 	}
 	else
 	{
-		OMEGA_THROW(L"Invalid marshal flag");
+		OMEGA_THROW("Invalid marshal flag");
 	}
 
 	pMessage->ReadStructEnd();
@@ -852,7 +852,7 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 
 	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_GUIDOF(Remoting::IChannel),flags);
 	if (oid == guid_t::Null())
-		OMEGA_THROW(L"Channels must support custom marshalling if they support reflection");
+		OMEGA_THROW("Channels must support custom marshalling if they support reflection");
 
 	pMessage->WriteValue(L"$oid",oid);
 

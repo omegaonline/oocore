@@ -83,7 +83,7 @@ namespace OOCore
 		void MarshalInterface(Omega::Remoting::IMarshaller*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			if (m_stream.buffer()->length() > (Omega::uint32_t)-1)
-				OMEGA_THROW(L"Message too long to marshal");
+				OMEGA_THROW("Message too long to marshal");
 
 			Omega::uint32_t len = static_cast<Omega::uint32_t>(m_stream.buffer()->length());
 			pMessage->WriteValue(L"length",len);
@@ -104,11 +104,11 @@ namespace OOCore
 		{
 			Omega::uint32_t actual = read<Omega::uint32_t>();
 			if (actual > count)
-				OMEGA_THROW(L"Over-read on memory message");
+				OMEGA_THROW("Over-read on memory message");
 
 			size_t read = m_stream.read_bytes(val,actual);
 			if (read != actual)
-				OMEGA_THROW(L"Under-read on memory message");
+				OMEGA_THROW("Under-read on memory message");
 		}
 
 		void WriteBytes(const Omega::string_t&, Omega::uint32_t count, const Omega::byte_t* val)
@@ -169,7 +169,7 @@ namespace OOCore
 				return Omega::any_t();
 
 			default:
-				OMEGA_THROW(L"Invalid any_t type");
+				OMEGA_THROW("Invalid any_t type");
 			}
 		}
 
@@ -225,7 +225,7 @@ namespace OOCore
 				return;
 
 			default:
-				OMEGA_THROW(L"Invalid any_t type");
+				OMEGA_THROW("Invalid any_t type");
 			}
 		}
 

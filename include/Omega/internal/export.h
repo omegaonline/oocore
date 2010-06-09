@@ -871,7 +871,7 @@
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create(L"Unhandled exception",OMEGA_STRINGIZE(name))); \
+			return Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create("Unhandled exception",OMEGA_STRINGIZE(name))); \
 		} \
 	} \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
@@ -895,7 +895,7 @@
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create(L"Unhandled exception",OMEGA_STRINGIZE(name))); \
+			return Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create("Unhandled exception",OMEGA_STRINGIZE(name))); \
 		} \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
@@ -919,7 +919,7 @@
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create(L"Unhandled exception",OMEGA_STRINGIZE(name))); \
+			return Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create("Unhandled exception",OMEGA_STRINGIZE(name))); \
 		} \
 	} \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
@@ -942,7 +942,7 @@
 		} \
 		catch (...) \
 		{ \
-			*OMEGA_CONCAT(name,_Exception) = Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create(L"Unhandled exception",OMEGA_STRINGIZE(name))); \
+			*OMEGA_CONCAT(name,_Exception) = Omega::System::Internal::return_safe_exception(Omega::IInternalException::Create("Unhandled exception",OMEGA_STRINGIZE(name))); \
 		} \
 		return Omega::System::Internal::default_value<ret_type>::value(); \
 	} \

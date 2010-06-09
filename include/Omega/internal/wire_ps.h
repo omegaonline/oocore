@@ -359,7 +359,7 @@ namespace Omega
 
 				virtual void Invoke(uint32_t /*method_id*/, Remoting::IMessage* /*pParamsIn*/, Remoting::IMessage* /*pParamsOut*/)
 				{
-					OMEGA_THROW(L"Invoke called with invalid method index");
+					OMEGA_THROW("Invoke called with invalid method index");
 				}
 
 				static const uint32_t MethodCount = 3;  // This must match the proxy

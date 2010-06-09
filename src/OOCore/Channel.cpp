@@ -257,7 +257,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 	uint32_t other_end = 0;
 	if (!response || !response->read(other_end))
-		OMEGA_THROW(L"Unexpected end of message");
+		OMEGA_THROW("Unexpected end of message");
 
 	// Return in the same format as we marshal
 	pMessage->WriteValue(L"m_channel_id",other_end);

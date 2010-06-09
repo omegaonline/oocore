@@ -191,7 +191,7 @@ bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
 
 	int ret = m_pManager->pump_requests((timeout ? &wait : 0),true);
 	if (ret == -1)
-		OMEGA_THROW(L"Request processing failed");
+		OMEGA_THROW("Request processing failed");
 	else
 		return (ret == 1);
 }

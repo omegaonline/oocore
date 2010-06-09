@@ -42,7 +42,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw OOCore_IInternalException_Create(string_t(msg,false),"OOCore Critical Failure",size_t(-1),0);
+		throw OOCore_IInternalException_Create(string_t(msg,false).ToUTF8().c_str(),"OOCore Critical Failure",size_t(-1),0);
 	}
 }
 
@@ -72,12 +72,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 
 namespace OOCore
 {
-	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const Omega::string_t& desc, const char* pszFile, size_t nLine, const char* pszFunc)
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc)
 	{
 		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstancePtr();
-		pExcept->m_strDesc = desc;
-		pExcept->m_errno = EINVAL;
 
+		void* TODO;
+		// Make this use gettext etc...
+		pExcept->m_strDesc = string_t(desc,false);
+		
 		if (nLine != size_t(-1))
 		{
 			if (pszFunc)
@@ -98,13 +100,13 @@ namespace OOCore
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),uint32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 {
-	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException(L"Operating system error",pszFile,nLine,pszFunc);
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc);
 	ptrExcept->m_ptrCause.Attach(OOCore_ISystemException_Create_errno(e));
 
 	return ptrExcept.AddRef();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,4,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,4,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 {
 	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc).AddRef();
 }

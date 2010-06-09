@@ -138,7 +138,7 @@ inline Omega::IException* Omega::Initialize() throw()
 		// Check the versions are correct
 		Omega::uint32_t version = (OOCore::GetMajorVersion() << 24) | (OOCore::GetMinorVersion() << 16) | OOCore::GetPatchVersion();
 		if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-			return Omega::IInternalException::Create(L"This component requires a later version of OOCore","Omega::Initialize");
+			return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
 #endif
 
 		return OOCore_Omega_Initialize();
@@ -159,7 +159,7 @@ inline Omega::IException* Omega::InitStandalone(const std::map<Omega::string_t,O
 		// Check the versions are correct
 		Omega::uint32_t version = (OOCore::GetMajorVersion() << 24) | (OOCore::GetMinorVersion() << 16) | OOCore::GetPatchVersion();
 		if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-			return Omega::IInternalException::Create(L"This component requires a later version of OOCore","Omega::Initialize");
+			return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
 #endif
 
 		return OOCore_Omega_InitStandalone(args);

@@ -58,7 +58,7 @@ namespace Omega
 				{
 					assert(val);
 					if (!val)
-						OMEGA_THROW(L"Null pointer passed for reference");
+						OMEGA_THROW("Null pointer passed for reference");
 
 					return *val;
 				}
@@ -270,7 +270,7 @@ namespace Omega
 				{
 					assert(val);
 					if (!val)
-						OMEGA_THROW(L"Null pointer passed for reference");
+						OMEGA_THROW("Null pointer passed for reference");
 
 					return ref_holder_lite(val);
 				}
@@ -279,7 +279,7 @@ namespace Omega
 				{
 					assert(val);
 					if (!val)
-						OMEGA_THROW(L"Null pointer passed for reference");
+						OMEGA_THROW("Null pointer passed for reference");
 
 					return ref_holder_full(val,piid);
 				}
@@ -314,7 +314,7 @@ namespace Omega
 				{
 					assert(val);
 					if (!val)
-						OMEGA_THROW(L"Null pointer passed for reference");
+						OMEGA_THROW("Null pointer passed for reference");
 
 					return typename impl::type_wrapper(*val);
 				}
@@ -872,7 +872,7 @@ namespace Omega
 						return guid_t(v.u.gVal);
 					default:
 						// Never going to happen ;)
-						OMEGA_THROW(L"Invalid any_t type!");
+						OMEGA_THROW("Invalid any_t type!");
 					}
 				}
 
@@ -923,7 +923,7 @@ namespace Omega
 
 					default:
 						// Never going to happen ;)
-						OMEGA_THROW(L"Invalid any_t type!");
+						OMEGA_THROW("Invalid any_t type!");
 					}
 					return ret;
 				}

@@ -161,7 +161,7 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 	}
 
 	if (!obj)
-		OMEGA_THROW(L"Failed to create proxy");
+		OMEGA_THROW("Failed to create proxy");
 
 	return obj;
 }
@@ -208,13 +208,13 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 		// Find the rtti info...
 		const qi_rtti* rtti = get_qi_rtti_info(iid);
 		if (!rtti)
-			OMEGA_THROW(L"Failed to create stub for interface - missing rtti");
+			OMEGA_THROW("Failed to create stub for interface - missing rtti");
 
 		shim = (*rtti->pfnCreateSafeStub)(pObj);
 	}
 
 	if (!shim)
-		OMEGA_THROW(L"Failed to create safe stub");
+		OMEGA_THROW("Failed to create safe stub");
 
 	return shim;
 }

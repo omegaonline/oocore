@@ -204,7 +204,7 @@ int HiveKey::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 		break;
 
 	default:
-		OMEGA_THROW(L"Registry value has invalid value type in the database");
+		OMEGA_THROW("Registry value has invalid value type in the database");
 	}
 
 	return 0;
@@ -474,10 +474,10 @@ void RootKey::InitOnce()
 	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8(),0));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
-		OMEGA_THROW(L"Failed to open system registry database file");
+		OMEGA_THROW("Failed to open system registry database file");
 	
 	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
-		OMEGA_THROW(L"Failed to open database files");
+		OMEGA_THROW("Failed to open database files");
 	
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_system_hive,string_t(),0);

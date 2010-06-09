@@ -78,8 +78,6 @@ namespace OOCore
 	{
 		typedef OTL::ExceptionAutoMarshalImpl<Omega::IInternalException, &OID_InternalExceptionMarshalFactory> baseClass;
 	public:
-		Omega::uint32_t m_errno;
-
 		BEGIN_INTERFACE_MAP(InternalException)
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()

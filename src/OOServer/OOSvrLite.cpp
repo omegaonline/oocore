@@ -47,7 +47,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw IInternalException::Create(string_t(msg,false),"Critical Failure");
+		throw IInternalException::Create(msg,"Critical Failure");
 	}
 }
 
@@ -72,7 +72,7 @@ Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 
 void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*&)
 {
-	OMEGA_THROW(L"Invalid standalone function");
+	OMEGA_THROW("Invalid standalone function");
 }
 
 bool_t InterProcessService::HandleRequest(uint32_t timeout)
@@ -82,7 +82,7 @@ bool_t InterProcessService::HandleRequest(uint32_t timeout)
 
 Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)
 {
-	OMEGA_THROW(L"Invalid standalone function");
+	OMEGA_THROW("Invalid standalone function");
 }
 
 Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remoting::IChannelSink*)

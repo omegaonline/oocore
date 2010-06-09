@@ -62,7 +62,7 @@ namespace Omega
 
 		static IInternalException* Create(uint32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
 		static IInternalException* Create(const std::exception& e, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
-		static IInternalException* Create(const string_t& desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
+		static IInternalException* Create(const char* desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
 	};
 
 	interface INoInterfaceException : public IException

@@ -112,7 +112,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
-		throw IInternalException::Create(L"No protocol specified","Omega::IO::OpenStream");
+		throw IInternalException::Create("No protocol specified","Omega::IO::OpenStream");
 
 	// Look up handler in registry
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
@@ -145,7 +145,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 	}
 
 	if (oid == guid_t::Null())
-		throw IInternalException::Create(L"No handler for protocol " + strProtocol,"Omega::IO::OpenStream");
+		throw IInternalException::Create("No handler for protocol","Omega::IO::OpenStream");
 
 	// Create the handler...
 	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);

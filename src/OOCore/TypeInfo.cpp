@@ -331,7 +331,7 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 		return m_ptrBase->GetMethodInfo(method_idx,strName,attribs,timeout,param_count,return_type);
 
 	if (method_idx >= GetMethodCount())
-		OMEGA_THROW(L"GetMethodInfo requesting invalid method index");
+		OMEGA_THROW("GetMethodInfo requesting invalid method index");
 
 	MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
 
@@ -348,12 +348,12 @@ void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t&
 		return m_ptrBase->GetParamInfo(method_idx,param_idx,strName,type,attribs);
 
 	if (method_idx >= GetMethodCount())
-		OMEGA_THROW(L"GetParamInfo requesting invalid method index");
+		OMEGA_THROW("GetParamInfo requesting invalid method index");
 
 	MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
 
 	if (param_idx >= mi.params.size())
-		OMEGA_THROW(L"GetParamInfo requesting invalid param index");
+		OMEGA_THROW("GetParamInfo requesting invalid param index");
 
 	ParamInfo& pi = mi.params.at(param_idx);
 
@@ -369,17 +369,17 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 		return m_ptrBase->GetAttributeRef(method_idx,param_idx,attrib);
 
 	if (method_idx >= GetMethodCount())
-		OMEGA_THROW(L"GetAttributeRef requesting invalid method index");
+		OMEGA_THROW("GetAttributeRef requesting invalid method index");
 
 	const MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
 
 	if (param_idx >= mi.params.size())
-		OMEGA_THROW(L"GetAttributeRef requesting invalid param index");
+		OMEGA_THROW("GetAttributeRef requesting invalid param index");
 
 	const ParamInfo& pi = mi.params.at(param_idx);
 
 	if (!(pi.attribs & attrib))
-		OMEGA_THROW(L"GetAttributeRef requesting non-ref param reference");
+		OMEGA_THROW("GetAttributeRef requesting non-ref param reference");
 
 	byte_t idx = 0;
 	for (std::vector<ParamInfo>::const_iterator i=mi.params.begin(); i!=mi.params.end(); ++i,++idx)
@@ -388,7 +388,7 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 			return idx;
 	}
 
-	OMEGA_THROW(L"GetAttributeRef failed to find reference parameter");
+	OMEGA_THROW("GetAttributeRef failed to find reference parameter");
 }
 
 void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
@@ -501,7 +501,7 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 		break;
 
 	default:
-		OMEGA_THROW(L"Invalid any_t");
+		OMEGA_THROW("Invalid any_t");
 	}
 
 	string_t strDest = BuildTypeString(typeDest);

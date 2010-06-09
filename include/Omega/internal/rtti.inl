@@ -70,13 +70,13 @@ inline Omega::IInternalException* Omega::IInternalException::Create(uint32_t err
 	return OOCore_IInternalException_Create_errno(errno_val,pszFile,nLine,pszFunc);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create,4,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create,4,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 inline Omega::IInternalException* Omega::IInternalException::Create(const std::exception& e, const char* pszFile, size_t nLine, const char* pszFunc)
 {
-	return OOCore_IInternalException_Create(L"STL exception: " + string_t(e.what(),false),pszFile,nLine,pszFunc);
+	return OOCore_IInternalException_Create((std::string("STL exception: ") + e.what()).c_str(),pszFile,nLine,pszFunc);
 }
 
-inline Omega::IInternalException* Omega::IInternalException::Create(const string_t& desc, const char* pszFile, size_t nLine, const char* pszFunc)
+inline Omega::IInternalException* Omega::IInternalException::Create(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc)
 {
 	return OOCore_IInternalException_Create(desc,pszFile,nLine,pszFunc);
 }

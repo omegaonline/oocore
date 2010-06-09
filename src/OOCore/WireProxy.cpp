@@ -237,12 +237,12 @@ void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMar
 	// Unmarshal the reflect package
 	ObjectPtr<Remoting::IMessage> ptrReflect = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"pReflect",pMessage);
 	if (!ptrReflect)
-		OMEGA_THROW(L"No package");
+		OMEGA_THROW("No package");
 
 	// Unmarshal the manager
 	ObjectPtr<Remoting::IChannel> ptrChannel = ptrMarshaller.UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",ptrReflect);
 	if (!ptrChannel)
-		OMEGA_THROW(L"No channel");
+		OMEGA_THROW("No channel");
 
 	// Get the IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller2 = ptrChannel.GetManager<Remoting::IMarshaller>();

@@ -555,7 +555,7 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 		else if (res == OOServer::MessageHandler::io_result::channel_closed)
 			throw Omega::Remoting::IChannelClosedException::Create();
 		else
-			OMEGA_THROW(L"Internal server exception");
+			OMEGA_THROW("Internal server exception");
 	}
 
 	return response;

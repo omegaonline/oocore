@@ -121,7 +121,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			else
 			{
 				disconnect();
-				OMEGA_THROW(L"Internal server exception");
+				OMEGA_THROW("Internal server exception");
 			}
 		}
 	}
@@ -208,12 +208,12 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		else
 		{
 			disconnect();
-			OMEGA_THROW(L"Internal server exception");
+			OMEGA_THROW("Internal server exception");
 		}
 	}
 
 	if (!response)
-		OMEGA_THROW(L"No response received");
+		OMEGA_THROW("No response received");
 
 	Omega::uint32_t other_end = 0;
 	if (!response->read(other_end))

@@ -159,7 +159,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
-			OMEGA_THROW(L"Corrupt OOSvrLite");
+			OMEGA_THROW("Corrupt OOSvrLite");
 
 		IInterProcessService* pIPS = 0;
 		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS),System::Internal::marshal_info<const init_arg_map_t&>::safe_type::coerce(args));
@@ -201,7 +201,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		if (bStandalone)
 			return std::string();
 		else
-			throw IInternalException::Create(L"Failed to connect to network daemon","Omega::Initialize");
+			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
 
@@ -892,7 +892,7 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 
 		// Check the size
 		if (msg->buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
-			OMEGA_THROW(L"Message too big");
+			OMEGA_THROW("Message too big");
 
 		// Write the request stream
 		header.write_buffer(msg->buffer());

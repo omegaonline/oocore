@@ -84,11 +84,11 @@ bool exception_tests()
 	const wchar_t szDesc[] = L"A test description";
 	try
 	{
-		throw Omega::IInternalException::Create(szDesc,__FILE__);
+		throw Omega::ISystemException::Create(2);
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::ISystemException* pE)
 	{
-		TEST(pE->GetDescription() == szDesc);
+		TEST(pE->GetErrorCode() == 2);
 		TEST(!pE->GetCause());
 		pE->Release();
 	}

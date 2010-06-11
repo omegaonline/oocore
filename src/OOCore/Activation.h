@@ -24,23 +24,26 @@
 
 namespace OOCore
 {
-	// The instance wide ServiceManager instance
-	class ServiceManager
-	{
-	public:
-		Omega::uint32_t RegisterObject(const Omega::guid_t& oid, Omega::IObject* pObject, Omega::Activation::Flags_t flags, Omega::Activation::RegisterFlags_t reg_flags);
-		Omega::IObject* GetObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
-		void RevokeObject(Omega::uint32_t cookie);
+	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
-		static Omega::IObject* LoadLibraryObject(const Omega::string_t& dll_name, const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+	// The instance wide ServiceManager instance
+	class ServiceManager : 
+		public OTL::ObjectBase,
+		public Omega::Activation::IRunningObjectTable
+	{
+	protected:
+		ServiceManager();
+		virtual ~ServiceManager();
+
+		void InitOnce() {}
 
 		void close();
 
-	private:
-		friend class Omega::Threading::Singleton<ServiceManager,Omega::Threading::InitialiseDestructor<OOCore::DLL> >;
+		BEGIN_INTERFACE_MAP(ServiceManager)
+			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
+		END_INTERFACE_MAP()
 
-		ServiceManager();
-		~ServiceManager();
+	private:
 		ServiceManager(const ServiceManager&);
 		ServiceManager& operator = (const ServiceManager&);
 
@@ -49,16 +52,20 @@ namespace OOCore
 
 		struct Info
 		{
-			Omega::guid_t                      m_oid;
+			Omega::string_t                    m_oid;
 			OTL::ObjectPtr<Omega::IObject>     m_ptrObject;
-			Omega::Activation::Flags_t         m_flags;
-			Omega::Activation::RegisterFlags_t m_reg_flags;
+			Omega::Activation::RegisterFlags_t m_flags;
 			Omega::uint32_t                    m_rot_cookie;
 		};
-		std::map<Omega::uint32_t,Info>                                        m_mapServicesByCookie;
-		std::multimap<Omega::guid_t,std::map<Omega::uint32_t,Info>::iterator> m_mapServicesByOid;
+		std::map<Omega::uint32_t,Info>                                          m_mapServicesByCookie;
+		std::multimap<Omega::string_t,std::map<Omega::uint32_t,Info>::iterator> m_mapServicesByOid;
+
+	// IRunningObjectTable members
+	public:
+		Omega::uint32_t RegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
+		void GetObject(const Omega::any_t& oid, Omega::Activation::RegisterFlags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		void RevokeObject(Omega::uint32_t cookie);
 	};
-	typedef Omega::Threading::Singleton<ServiceManager,Omega::Threading::InitialiseDestructor<OOCore::DLL> > SERVICE_MANAGER;
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

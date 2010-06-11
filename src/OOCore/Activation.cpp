@@ -22,7 +22,6 @@
 #include "OOCore_precomp.h"
 
 #include "StdObjectManager.h"
-#include "ApartmentImpl.h"
 #include "WireProxy.h"
 #include "Channel.h"
 #include "Exception.h"
@@ -34,7 +33,6 @@
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
-	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl)
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
@@ -61,7 +59,6 @@ namespace
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
 		END_INTERFACE_MAP()
 
-	private:
 		any_t m_oid;
 
 	// Activation::IOidNotFoundException members
@@ -76,7 +73,7 @@ namespace
 			public ExceptionImpl<Activation::INoAggregationException>
 	{
 	public:
-		guid_t  m_oid;
+		any_t  m_oid;
 
 		BEGIN_INTERFACE_MAP(NoAggregationException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
@@ -84,7 +81,7 @@ namespace
 
 	// Activation::INoAggregationException members
 	public:
-		guid_t GetFailingOid()
+		any_t GetFailingOid()
 		{
 			return m_oid;
 		}
@@ -225,108 +222,39 @@ namespace
 		pRE->m_dll_name = strName;
 		throw static_cast<ILibraryNotFoundException*>(pRE);
 	}
-}
 
-IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
-{
-	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<Activation::Flags_t>::safe_type::type flags, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
-	pfnGetLibraryObject pfn = 0;
-	OOBase::SmartPtr<OOBase::DLL> dll;
-
-	try
+	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
 	{
-		dll = DLLManager::instance()->load_dll(dll_name);
-		pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
-	}
-	catch (IException* pE)
-	{
-		LibraryNotFoundException::Throw(dll_name,pE);
-	}
+		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
+		pfnGetLibraryObject pfn = 0;
+		OOBase::SmartPtr<OOBase::DLL> dll;
 
-	IObject* pObj = 0;
-	const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
-				System::Internal::marshal_info<const guid_t&>::safe_type::coerce(oid)
-				,flags,
-				System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
-				System::Internal::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
-
-	if (GetLibraryObject_Exception)
-		System::Internal::throw_correct_exception(GetLibraryObject_Exception);
-
-	return pObj;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
-{
-	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = L"Object does not support aggregation.";
-	pNew->m_oid = oid;
-	return pNew;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
-{
-	if (!pObject)
-		OMEGA_THROW("Do not register NULL object pointers");
-
-	uint32_t ret = OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
-
-	// This forces the detection, so cleanup succeeds
-	OOCore::HostedByOOServer();
-
-	return ret;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega::uint32_t,cookie))
-{
-	OOCore::SERVICE_MANAGER::instance()->RevokeObject(cookie);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const string_t&,strObjectName))
-{
-	string_t strCurName = strObjectName;
-	for (;;)
-	{
 		try
 		{
-			ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
-			if (ptrOidKey->IsValue(L"CurrentVersion"))
-			{
-				strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
-				continue;
-			}
-
-			return guid_t(ptrOidKey->GetStringValue(L"OID"));
+			dll = DLLManager::instance()->load_dll(dll_name);
+			pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
 		}
 		catch (IException* pE)
 		{
-			OidNotFoundException::Throw(strCurName,pE);
+			LibraryNotFoundException::Throw(dll_name,pE);
 		}
+
+		IObject* pObj = 0;
+		const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
+					System::Internal::marshal_info<const guid_t&>::safe_type::coerce(oid),
+					System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
+					System::Internal::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
+
+		if (GetLibraryObject_Exception)
+			System::Internal::throw_correct_exception(GetLibraryObject_Exception);
+
+		return pObj;
 	}
-}
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
-{
-	pObject = 0;
-	try
+	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
-		// Try ourselves first... this prevents anyone overloading standard behaviours!
-		if (flags & Activation::InProcess)
-		{
-			void* TODO; // Allow injection of callback
-
-			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid);
-			if (pObject)
-				return;
-		}
-
-		// Try the Service Manager
-		pObject = OOCore::SERVICE_MANAGER::instance()->GetObject(oid,flags,iid);
-		if (pObject)
-			return;
-
 		// Try to load a library, if allowed
-		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
+		if (flags & Activation::InProcess)
 		{
 			// Use the registry
 			ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
@@ -334,55 +262,134 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 			{
 				void* TICKET_89; // Surrogates here?!?
 
-				pObject = OOCore::ServiceManager::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
+				IObject* pObject = LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,iid);
 				if (pObject)
-					return;
+					return pObject;
 			}
 		}
 
 		// Try out-of-process...
 		if (flags & Activation::OutOfProcess)
 		{
-			// Try RunningObjectTable first
+			// Ask the IPS to run it...
+			IObject* pObject = 0;
+			OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,pObject);
+			return pObject;
+		}
+		
+		return 0;
+	}
+
+	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	{
+		try
+		{
+			// Try ourselves first... this prevents anyone overloading standard behaviours!
+			if (flags & Activation::InProcess)
+			{
+				IObject* pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
+				if (pObject)
+					return pObject;
+			}
+
+			// Build RegisterFlags
+			Activation::RegisterFlags_t reg_mask = 0;
+			if (flags & Activation::InProcess)
+				reg_mask |= Activation::ProcessLocal;
+			
+			if (flags & Activation::OutOfProcess)
+				reg_mask |= Activation::UserLocal | Activation::MachineLocal;
+
+			// Surrogates must not be ProcessLocal
+			if (flags & (Activation::Surrogate | Activation::PrivateSurrogate))
+			{
+				reg_mask |= Activation::UserLocal;
+				reg_mask &= ~Activation::ProcessLocal;
+			}
+
+			// Sandbox must be not be UserLocal
+			if (flags & (Activation::Sandbox | Activation::VM))
+				reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
+			
+			// Remote activation
+			if (flags & Activation::RemoteActivation)
+				reg_mask |= Activation::Anywhere;
+
+			// See if we have it registered ion the ROT
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
-			// Change this to use monikers
-			void* TICKET_90;
+			IObject* pObject = 0;
+			ptrROT->GetObject(oid,reg_mask,iid,pObject);
+			if (pObject)
+				return pObject;
 
-			ObjectPtr<IObject> ptrObject;
-			ptrObject.Attach(ptrROT->GetObject(oid));
-			if (ptrObject)
-			{
-				pObject = ptrObject->QueryInterface(iid);
-				if (!pObject)
-					throw INoInterfaceException::Create(iid);
-				return;
-			}
+			void* TODO; // Allow injection of callback
 
+			// See if we are allowed to load...
 			if (!(flags & Activation::DontLaunch))
+				return LoadObject(oid,flags,iid);
+		}
+		catch (INoInterfaceException* pE)
+		{
+			pE->Rethrow();
+		}
+		catch (IException* pE)
+		{
+			OidNotFoundException::Throw(oid,pE);
+		}
+
+		OidNotFoundException::Throw(oid);
+		return 0;
+	}
+
+	guid_t NameToOid(const string_t& strObjectName)
+	{
+		string_t strCurName = strObjectName;
+		for (;;)
+		{
+			try
 			{
-				// Ask the IPS to run it...
-				OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,pObject);
-				if (pObject)
-					return;
+				ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
+				if (ptrOidKey->IsValue(L"CurrentVersion"))
+				{
+					strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
+					continue;
+				}
+
+				return guid_t(ptrOidKey->GetStringValue(L"OID"));
+			}
+			catch (IException* pE)
+			{
+				OidNotFoundException::Throw(strCurName,pE);
 			}
 		}
 	}
-	catch (IException* pE)
-	{
-		OidNotFoundException::Throw(oid,pE);
-	}
-
-	OidNotFoundException::Throw(oid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
+{
+	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
+	pNew->m_strDesc = L"Object does not support aggregation.";
+	pNew->m_oid = oid;
+	return pNew;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
+{
+	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
+	pNew->m_strDesc = L"The identified object could not be found: {0}";
+	pNew->m_strDesc %= oid;
+	pNew->m_oid = oid;
+	return pNew;
+}
+
+IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	// First try to determine the protocol...
 	guid_t oid_guid;
 	if (oid.Coerce(oid_guid) == any_t::castValid)
-		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid_guid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+		return GetLocalInstance(oid_guid,flags,iid);
 
 	string_t strObject = oid.cast<string_t>();
 	string_t strEndpoint;
@@ -400,34 +407,31 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObje
 	{
 		// Do a quick registry lookup
 		if (!guid_t::FromString(strObject,oid_guid))
-			oid_guid = Omega::Activation::NameToOid(strObject);
+			oid_guid = NameToOid(strObject);
 
-		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid_guid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+		return GetLocalInstance(oid_guid,flags,iid);
 	}
-	else
-	{
-		// Get IPS
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	
+	// Get IPS
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 
-		// Open a remote channel
-		ObjectPtr<Remoting::IChannel> ptrChannel;
-		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
+	// Open a remote channel
+	ObjectPtr<Remoting::IChannel> ptrChannel;
+	ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
 
-		// Get the ObjectManager
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
+	// Get the ObjectManager
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
 
-		// Get the remote instance
-		IObject* pOF = 0;
-		ptrOM->GetRemoteInstance(strObject,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pOF);
+	// Get the remote instance
+	IObject* pObject = 0;
+	ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
+	if (!pObject)
+		OidNotFoundException::Throw(oid);
 
-		if (!pOF)
-			OidNotFoundException::Throw(oid);
-
-		return static_cast<Activation::IObjectFactory*>(pOF);
-	}
+	return pObject;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags))
 {
-	return OOCore::GetInterProcessService()->GetRunningObjectTable();
+	return static_cast<Activation::IObjectFactory*>(OOCore::GetInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
 }

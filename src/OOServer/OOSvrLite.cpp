@@ -70,8 +70,9 @@ Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 	throw Remoting::IChannelClosedException::Create();
 }
 
-void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*&)
+void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*& pObject)
 {
+	pObject = 0;
 	OMEGA_THROW("Invalid standalone function");
 }
 

@@ -219,9 +219,9 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(ptrPOI);
 
 	// Try to get the first interface
-	std::list<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
+	std::set<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
 	TEST(!interfaces.empty());
-	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(*interfaces.begin() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII;
 	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(*interfaces.begin(),ptrSimpleTest));

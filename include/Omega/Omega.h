@@ -178,6 +178,11 @@ inline void Omega::Uninitialize()
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags));
+inline Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(const any_t& oid, Activation::Flags_t flags)
+{
+	return OOCore_GetObjectFactory(oid,flags);
+}
+
 inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(oid,flags));

@@ -137,18 +137,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 		}
 	}
 
-	guid_t oid = guid_t::Null();
-	if (!strHandler.IsEmpty())
-	{
-		if (!guid_t::FromString(strHandler,oid))
-			oid = Activation::NameToOid(strHandler);
-	}
-
-	if (oid == guid_t::Null())
-		throw IInternalException::Create("No handler for protocol","Omega::IO::OpenStream");
-
 	// Create the handler...
-	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
+	ObjectPtr<Net::IProtocolHandler> ptrHandler(strHandler);
 
 	// Open the stream...
 	return ptrHandler->OpenStream(strEndpoint,pNotify);

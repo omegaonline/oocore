@@ -231,11 +231,15 @@ namespace OOBase
 
 		T* operator ->()
 		{
+			assert(baseClass::value() != 0);
+
 			return baseClass::value();
 		}
 
 		const T* operator ->() const
 		{
+			assert(baseClass::value() != 0);
+
 			return baseClass::value();
 		}
 	};

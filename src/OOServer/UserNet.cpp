@@ -715,18 +715,8 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		}
 	}
 
-	guid_t oid = guid_t::Null();
-	if (!strHandler.IsEmpty())
-	{
-		if (!guid_t::FromString(strHandler,oid))
-			oid = Activation::NameToOid(strHandler);
-	}
-
-	if (oid == guid_t::Null())
-		OMEGA_THROW("No handler for protocol");
-
 	// Create the factory
-	ObjectPtr<Remoting::IEndpoint> ptrEndpoint(oid);
+	ObjectPtr<Remoting::IEndpoint> ptrEndpoint(strHandler);
 
 	// Check for duplicates
 	string_t strCanon = ptrEndpoint->Canonicalise(strEndpoint);

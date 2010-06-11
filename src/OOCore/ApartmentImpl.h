@@ -37,6 +37,7 @@ namespace OOCore
 	{
 	public:
 		void init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		void close_apartment();
 
 		BEGIN_INTERFACE_MAP(AptChannel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)
@@ -56,6 +57,7 @@ namespace OOCore
 		Apartment(UserSession* pSession, Omega::uint16_t id);
 
 		void close();
+		void close_apartment();
 
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
@@ -65,7 +67,6 @@ namespace OOCore
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 
 		OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > create_apartment(Omega::uint16_t apartment_id, const Omega::guid_t& message_oid);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(Omega::uint16_t apartment_id);
 		Omega::IException* apartment_message(Omega::uint16_t apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 
 	private:
@@ -75,30 +76,6 @@ namespace OOCore
 
 		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >    m_mapChannels;
 		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > > m_mapApartments;
-	};
-
-	// {6654B003-44F1-497a-B539-80B5FCED73BC}
-	OOCORE_DECLARE_OID(OID_StdApartment);
-
-	class ApartmentImpl :
-			public OTL::ObjectBase,
-			public OTL::AutoObjectFactoryNoAggregation<ApartmentImpl,&OOCore::OID_StdApartment,Omega::Activation::InProcess>,
-			public Omega::Apartment::IApartment
-	{
-	public:
-		ApartmentImpl();
-		virtual ~ApartmentImpl();
-
-		BEGIN_INTERFACE_MAP(ApartmentImpl)
-			INTERFACE_ENTRY(Omega::Apartment::IApartment)
-		END_INTERFACE_MAP()
-
-	private:
-		Omega::uint16_t m_id;
-
-	// IApartment members
-	public:
-		void CreateInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }
 

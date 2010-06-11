@@ -33,25 +33,25 @@ namespace
 			public ExceptionImpl<Activation::IDuplicateRegistrationException>
 	{
 	public:
-		static void Throw(const guid_t& oid);
+		static void Throw(const any_t& oid);
 
 		BEGIN_INTERFACE_MAP(DuplicateRegistrationException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IDuplicateRegistrationException>)
 		END_INTERFACE_MAP()
 
 	private:
-		guid_t m_oid;
+		any_t m_oid;
 
 	// Activation::IDuplicateRegistrationException members
 	public:
-		guid_t GetObject()
+		any_t GetOid()
 		{
 			return m_oid;
 		}
 	};
 }
 
-void DuplicateRegistrationException::Throw(const guid_t& oid)
+void DuplicateRegistrationException::Throw(const any_t& oid)
 {
 	ObjectImpl<DuplicateRegistrationException>* pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
 	pRE->m_strDesc = L"Duplicate registration of oid {0} in running object table.";
@@ -62,17 +62,17 @@ void DuplicateRegistrationException::Throw(const guid_t& oid)
 
 ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 {
-	try
-	{
-		ObjectPtr<IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<IInterProcessService*>(Activation::GetRegisteredObject(OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService))));
-		return ptrIPS;
-	}
-	catch (IException* pE2)
-	{
-		pE2->Release();
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+	IObject* pIPS = 0;
+	ptrROT->GetObject(OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(IInterProcessService),pIPS);
+	if (!pIPS)
 		throw IInternalException::Create("Omega::Initialize not called","OOCore");
-	}
+		
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
+	ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
+	return ptrIPS;
 }
 
 bool OOCore::HostedByOOServer()
@@ -145,42 +145,41 @@ void OOCore::ServiceManager::close()
 	assert(m_mapServicesByOid.empty());
 }
 
-uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags)
+uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	uint32_t rot_cookie = 0;
-	if (flags & Activation::OutOfProcess)
+
+	// Check for user registration
+	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
 	{
 		// Register in ROT
 		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 		if (ptrROT)
 		{
-			rot_cookie = ptrROT->Register(oid,pObject);
+			rot_cookie = ptrROT->RegisterObject(oid,pObject,flags & ~Activation::ProcessLocal);
 		}
 	}
-
+	
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		// Remove any flags we don't care about...
-		flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
-
 		// Check if we have someone registered already
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid); i!=m_mapServicesByOid.end() && i->first==oid; ++i)
+		string_t strOid = oid.cast<string_t>();
+		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid; ++i)
 		{
-			if (!(i->second->second.m_reg_flags & Activation::MultipleRegistration))
+			if (!(i->second->second.m_flags & Activation::MultipleRegistration))
 				DuplicateRegistrationException::Throw(oid);
 
-			if (i->second->second.m_reg_flags == reg_flags)
+			if (i->second->second.m_flags == flags)
 				DuplicateRegistrationException::Throw(oid);
 		}
 
 		// Create a new cookie
 		Info info;
-		info.m_oid = oid;
+		info.m_oid = strOid;
 		info.m_flags = flags;
-		info.m_reg_flags = reg_flags;
 		info.m_ptrObject = pObject;
 		info.m_rot_cookie = rot_cookie;
 		uint32_t nCookie = m_nNextCookie++;
@@ -192,48 +191,86 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 		assert(p.second);
 
-		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
+		m_mapServicesByOid.insert(std::multimap<string_t,std::map<uint32_t,Info>::iterator>::value_type(strOid,p.first));
+
+		guard.release();
+
+		// This forces the detection, so cleanup succeeds
+		OOCore::HostedByOOServer();
 
 		return nCookie;
 	}
 	catch (...)
 	{
 		if (rot_cookie && ptrROT)
-			ptrROT->Revoke(rot_cookie);
+			ptrROT->RevokeObject(rot_cookie);
 
 		throw;
 	}
 }
 
-IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
 {
-	// Remove any flags we don't care about...
-	flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
-
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid); i!=m_mapServicesByOid.end() && i->first==oid; ++i)
+	bool bDead = false;
+	string_t strOid = oid.cast<string_t>();
+	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid;++i)
 	{
-		if ((i->second->second.m_flags & flags) == i->second->second.m_flags)
-			return i->second->second.m_ptrObject->QueryInterface(iid);
+		if ((i->second->second.m_flags & flags))
+		{
+			// Check its still alive...
+			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
+			{
+				bDead = true;
+				break;
+			}
+			else
+			{
+				pObject = i->second->second.m_ptrObject->QueryInterface(iid);
+				if (!pObject)
+					throw INoInterfaceException::Create(iid);
+				return;
+			}
+		}
 	}
 
-	// No, didn't find it
-	return 0;
+	guard.release();
+
+	if (bDead)
+	{
+		OOBase::Guard<OOBase::RWMutex> guard2(m_lock);
+
+		std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid);
+		
+		// Remove it, its dead
+		m_mapServicesByCookie.erase(i->second);
+
+		while (i!=m_mapServicesByOid.end() && i->first==strOid)
+			m_mapServicesByOid.erase(i++);
+	}
+
+	FIX ME!!!
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+	if (ptrROT && (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere)))
+	{
+		// Route to global rot
+		ptrROT->GetObject(oid,flags,iid,pObject);
+	}
 }
 
 void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 {
-	uint32_t rot_cookie = 0;
-
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
 	if (i != m_mapServicesByCookie.end())
 	{
-		rot_cookie = i->second.m_rot_cookie;
+		uint32_t rot_cookie = i->second.m_rot_cookie;
 
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid); j!=m_mapServicesByOid.end() && j->first==i->second.m_oid; ++j)
+		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid); j!=m_mapServicesByOid.end() && j->first==i->second.m_oid; ++j)
 		{
 			if (j->second->first == cookie)
 			{
@@ -252,7 +289,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 			if (ptrROT)
-				ptrROT->Revoke(rot_cookie);
+				ptrROT->RevokeObject(rot_cookie);
 		}
 	}
 }

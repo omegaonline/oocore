@@ -101,7 +101,7 @@ namespace OOCore
 		void Connect(Omega::Remoting::IChannel* pChannel);
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Shutdown();
-		void GetRemoteInstance(const Omega::string_t& strOID, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		void GetRemoteInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
 	};
 }

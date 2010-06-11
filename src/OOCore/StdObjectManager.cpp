@@ -22,6 +22,7 @@
 #include "OOCore_precomp.h"
 
 #include "StdObjectManager.h"
+#include "Activation.h"
 #include "WireProxy.h"
 #include "WireStub.h"
 #include "IPS.h"
@@ -272,7 +273,7 @@ void OOCore::StdObjectManager::Shutdown()
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the oid, iid and flags
-	string_t strOID = pParamsIn->ReadValue(L"oid").cast<string_t>();
+	any_t oid = pParamsIn->ReadValue(L"oid");
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
 	Activation::Flags_t act_flags = pParamsIn->ReadValue(L"flags").cast<Activation::Flags_t>();
 
@@ -280,26 +281,23 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
 		act_flags |= Activation::RemoteActivation;
 
-	// Work out the oid
-	guid_t oid;
-	if (!guid_t::FromString(strOID,oid))
-		oid = Activation::NameToOid(strOID);
-
 	// Get the required object
+	IObject* pObject = OOCore::GetInstance(oid,act_flags,iid);
+
 	ObjectPtr<IObject> ptrObject;
-	ptrObject.Attach(Activation::GetRegisteredObject(oid,act_flags,iid));
+	ptrObject.Attach(pObject);
 
 	// Write it out and return
-	MarshalInterface(L"$retval",ptrResponse,iid,ptrObject);
+	MarshalInterface(L"$retval",ptrResponse,iid,pObject);
 }
 
 Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
 {
-	if (!pParamsIn)
-		OMEGA_THROW("Invoke called with no message");
-
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create();
+
+	if (!pParamsIn)
+		OMEGA_THROW("Invoke called with no message");
 
 	// Stash call context
 	CallContext* pCC = 0;
@@ -406,7 +404,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 	}
 }
 
-void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
 	pObject = 0;
 
@@ -417,7 +415,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 
 	ptrParamsOut->WriteValue(L"$stub_id",uint32_t(0));
 	ptrParamsOut->WriteValue(L"$method_id",uint32_t(0));
-	ptrParamsOut->WriteValue(L"oid",strOID);
+	ptrParamsOut->WriteValue(L"oid",oid);
 	ptrParamsOut->WriteValue(L"iid",iid);
 	ptrParamsOut->WriteValue(L"flags",flags);
 
@@ -589,6 +587,9 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 
 bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
+	if (!m_ptrChannel)
+		throw Remoting::IChannelClosedException::Create();
+
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
 	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
@@ -842,6 +843,9 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshall
 
 void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
+	if (!m_ptrChannel)
+		throw Remoting::IChannelClosedException::Create();
+
 	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
 	if (!ptrMarshal)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));

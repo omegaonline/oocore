@@ -144,7 +144,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 
 		ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	}
@@ -170,7 +170,10 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 	}
 
 	// Register locally...
-	m_nIPSCookie = Activation::RegisterObject(OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+	m_nIPSCookie = ptrROT->RegisterObject(OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 }
 
 std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
@@ -246,7 +249,10 @@ void OOCore::UserSession::term_i()
 	// Unregister InterProcessService
 	if (m_nIPSCookie)
 	{
-		Activation::RevokeObject(m_nIPSCookie);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+		
+		ptrROT->RevokeObject(m_nIPSCookie);
 		m_nIPSCookie = 0;
 	}
 
@@ -291,6 +297,11 @@ void OOCore::UserSession::close_singletons_i()
 	{
 		(*(i->first))(i->second);
 	}
+}
+
+Omega::uint32_t OOCore::UserSession::get_channel_id() const
+{
+	return m_channel_id;
 }
 
 void OOCore::UserSession::add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
@@ -968,12 +979,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_Op
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment()
+ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::UserSession::create_apartment()
 {
 	return USER_SESSION::instance()->create_apartment_i();
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment_i()
+ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::UserSession::create_apartment_i()
 {
 	// Create a new Apartment object
 	OOBase::SmartPtr<Apartment> ptrApt;
@@ -998,19 +1009,8 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(apt_id,ptrApt));
 	}
 
-	// Now a new OM for the new apartment connecting to the zero apt
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_apartment_om(0);
-
-	// Now get the new apartment OM to create an IApartment
-	IObject* pObject = 0;
-	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
-
-	pObject = 0;
-	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
-
-	return static_cast<Omega::Apartment::IApartment*>(pObject);
+	// Now a new AptChannel for the new apartment connecting to this apt
+	return ptrApt->create_apartment(ThreadContext::instance()->m_current_apt,guid_t::Null());
 }
 
 OOBase::SmartPtr<OOCore::Apartment> OOCore::UserSession::get_apartment(uint16_t id)
@@ -1024,25 +1024,18 @@ OOBase::SmartPtr<OOCore::Apartment> OOCore::UserSession::get_apartment(uint16_t 
 	return i->second;
 }
 
-uint16_t OOCore::UserSession::get_current_apartment()
-{
-	return ThreadContext::instance()->m_current_apt;
-}
-
 void OOCore::UserSession::remove_apartment(uint16_t id)
 {
-	UserSession* pThis = USER_SESSION::instance();
-
 	OOBase::SmartPtr<Apartment> ptrApt;
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(pThis->m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i = pThis->m_mapApartments.find(id);
-		if (i == pThis->m_mapApartments.end())
+		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i = m_mapApartments.find(id);
+		if (i == m_mapApartments.end())
 			return;
 
 		ptrApt = i->second;
-		pThis->m_mapApartments.erase(i);
+		m_mapApartments.erase(i);
 	}
 
 	ptrApt->close();
@@ -1107,4 +1100,33 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	default:
 		return ptrApt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
 	}
+}
+
+Activation::IRunningObjectTable* OOCore::UserSession::get_rot()
+{
+	return USER_SESSION::instance()->get_rot_i();
+}
+
+Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
+{
+	const ThreadContext* pContext = ThreadContext::instance();
+
+	if (pContext->m_current_apt != 0)
+	{
+		OOBase::SmartPtr<OOCore::Apartment> ptrApt = get_apartment(pContext->m_current_apt);
+
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_channel_om(m_channel_id & 0xFF000000);
+
+		if (!ptrOM)
+			throw Remoting::IChannelClosedException::Create();
+
+		//ptrOM->GetRemoteInstance(
+	}
+
+	return SingletonObjectImpl<ServiceManager>::CreateInstance();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
+{
+	return OOCore::UserSession::get_rot();
 }

@@ -68,6 +68,8 @@ namespace Omega
 
 				I* operator ->() const
 				{
+					assert(m_pI != 0);
+
 					return m_pI;
 				}
 
@@ -134,6 +136,8 @@ namespace Omega
 
 				const SafeShim* operator ->()
 				{
+					assert(m_pS != 0);
+
 					return m_pS;
 				}
 

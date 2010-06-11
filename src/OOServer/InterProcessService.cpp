@@ -35,7 +35,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOMSB->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ptrOMSB->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
 		m_ptrSBIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 	}
 
@@ -43,7 +43,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOMUser->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ptrOMUser->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
 		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 
@@ -84,6 +84,8 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 
 void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
+	pObject = 0;
+
 	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
 
@@ -146,18 +148,14 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		OOBase::Countdown timeout(&wait);
 		while (wait != OOBase::timeval_t::Zero)
 		{
-			ObjectPtr<IObject> ptrObject;
-			ptrObject.Attach(m_ptrROT->GetObject(oid));
-			if (ptrObject)
+			m_ptrROT->GetObject(oid,Activation::UserLocal | Activation::MachineLocal,iid,pObject);
+			if (pObject)
 			{
 				// The process has started - remove it from the starting list
 				guard.acquire();
 				m_mapInProgress.erase(strProcess);
 				guard.release();
 
-				pObject = ptrObject->QueryInterface(iid);
-				if (!pObject)
-					throw INoInterfaceException::Create(iid);
 				return;
 			}
 
@@ -182,7 +180,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 	while (!bStarted);
 
-	OMEGA_THROW(ENOENT);
+	throw Activation::IOidNotFoundException::Create(oid);
 }
 
 bool_t User::InterProcessService::HandleRequest(uint32_t timeout)

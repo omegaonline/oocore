@@ -27,12 +27,15 @@
 using namespace Omega;
 using namespace OTL;
 
-OMEGA_DEFINE_OID(OOCore,OID_StdApartment,"{6654B003-44F1-497a-B539-80B5FCED73BC}");
-
 OOCore::Apartment::Apartment(UserSession* pSession, uint16_t id) :
 		m_pSession(pSession),
 		m_id(id)
 {
+}
+
+void OOCore::Apartment::close_apartment()
+{
+	m_pSession->remove_apartment(m_id);
 }
 
 void OOCore::Apartment::close()
@@ -196,13 +199,6 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(uint16_t apartment_id)
-{
-	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = create_apartment(apartment_id,guid_t::Null());
-
-	return ptrChannel->GetObjectManager();
-}
-
 ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(uint16_t apartment_id, const guid_t& message_oid)
 {
 	// Lookup existing..
@@ -239,7 +235,8 @@ ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(u
 IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<Remoting::IObjectManager> ptrOM = get_apartment_om(apt_id);
+	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = create_apartment(apt_id,guid_t::Null());
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 
 	// Update session state and timeout
 	uint16_t old_id = 0;
@@ -261,39 +258,16 @@ IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::Meth
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0,())
-{
-	// Apartments are not supported in the OOSvrUser process!
-	assert(!OOCore::HostedByOOServer());
-
-	// Create a new apartment
-	return OOCore::UserSession::create_apartment();
-}
-
-OOCore::ApartmentImpl::ApartmentImpl() :
-		m_id(0)
-{
-	m_id = UserSession::get_current_apartment();
-}
-
-OOCore::ApartmentImpl::~ApartmentImpl()
-{
-	if (m_id)
-		UserSession::remove_apartment(m_id);
-}
-
-void OOCore::ApartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
-{
-	pObject = Omega::CreateInstance(oid,flags,pOuter,iid);
-}
-
 void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
 	ChannelBase::init(channel_id,Remoting::Apartment,pOM,message_oid);
 
 	m_ptrApt = ptrApt;
+}
+
+void OOCore::AptChannel::close_apartment()
+{
+	m_ptrApt->close_apartment();
 }
 
 Omega::bool_t OOCore::AptChannel::IsConnected()
@@ -304,4 +278,93 @@ Omega::bool_t OOCore::AptChannel::IsConnected()
 IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	return m_ptrApt->apartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);
+}
+
+namespace OOCore
+{
+	class ApartmentImpl :
+			public ObjectBase,
+			public Omega::Apartment::IApartment
+	{
+	public:
+		virtual ~ApartmentImpl();
+
+		void init(ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel);
+
+		BEGIN_INTERFACE_MAP(ApartmentImpl)
+			INTERFACE_ENTRY(Omega::Apartment::IApartment)
+		END_INTERFACE_MAP()
+
+	private:
+		OOBase::SpinLock                           m_lock;
+		ObjectPtr<ObjectImpl<OOCore::AptChannel> > m_ptrChannel;
+		
+	// IApartment members
+	public:
+		Remoting::IProxy* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	};
+}
+
+OOCore::ApartmentImpl::~ApartmentImpl()
+{
+	if (m_ptrChannel)
+		m_ptrChannel->close_apartment();
+}
+
+void OOCore::ApartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel)
+{
+	m_ptrChannel = ptrChannel;
+}
+
+Remoting::IProxy* OOCore::ApartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+{
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	ptrOM.Attach(m_ptrChannel->GetObjectManager());
+
+	// Get the remote instance IObjectFactory
+	IObject* pObject = 0;
+	ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
+
+	//if (!pObject)
+	//	OidNotFoundException::Throw(oid);
+
+	ObjectPtr<Activation::IObjectFactory> ptrOF;
+	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
+	pObject = 0;
+
+	// Call CreateInstance
+	ptrOF->CreateInstance(pOuter,iid,pObject);
+
+	ObjectPtr<IObject> ptrObj;
+	ptrObj.Attach(pObject);
+
+	ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(ptrObj);
+
+	System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
+	if (!shim || !static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+		return 0;
+
+	// Retrieve the underlying proxy
+	System::Internal::auto_safe_shim proxy;
+	const System::Internal::SafeShim* pE = static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
+	if (pE)
+		System::Internal::throw_correct_exception(pE);
+
+	// Control its lifetime
+	return System::Internal::create_safe_proxy<Remoting::IProxy>(proxy);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0,())
+{
+	// Apartments are not supported in the OOSvrUser process!
+	assert(!OOCore::HostedByOOServer());
+
+	// Create a new apartment and get the channel to it...
+	ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel = OOCore::UserSession::create_apartment();
+
+	// Create a ApartmentImpl
+	ObjectPtr<ObjectImpl<OOCore::ApartmentImpl> > ptrApt = ObjectImpl<OOCore::ApartmentImpl>::CreateInstancePtr();
+	ptrApt->init(ptrChannel);
+
+	return ptrApt.AddRef();
 }

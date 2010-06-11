@@ -50,7 +50,7 @@ namespace OTL
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory)
-					{ 0,0,0,0,0 }
+					{ 0,0,0,0 }
 				};
 				return CreatorEntries;
 			}
@@ -117,7 +117,10 @@ int User::Manager::run_i(const std::string& strPipe)
 		// Unregister InterProcessService
 		if (m_nIPSCookie)
 		{
-			Activation::RevokeObject(m_nIPSCookie);
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+			ptrROT->RevokeObject(m_nIPSCookie);
 			m_nIPSCookie = 0;
 		}
 
@@ -297,7 +300,10 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
 		// Register our interprocess service InProcess so we can react to activation requests
-		m_nIPSCookie = Activation::RegisterObject(OOCore::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+		m_nIPSCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();

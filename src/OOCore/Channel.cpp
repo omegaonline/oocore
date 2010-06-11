@@ -40,8 +40,8 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
-
+		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::InProcess));
+	
 	// Connect the OM to us
 	m_ptrOM = pOM;
 	if (m_ptrOM)
@@ -64,6 +64,9 @@ void OOCore::ChannelBase::disconnect()
 ObjectPtr<Remoting::IObjectManager> OOCore::ChannelBase::GetObjectManager()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	if (!m_ptrOM)
+		throw Remoting::IChannelClosedException::Create();
 
 	return m_ptrOM;
 }
@@ -104,9 +107,10 @@ void OOCore::ChannelBase::GetManager(const guid_t& iid, IObject*& pObject)
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	pObject = 0;
-	if (m_ptrOM)
-		pObject = m_ptrOM->QueryInterface(iid);
+	if (!m_ptrOM)
+		throw Remoting::IChannelClosedException::Create();
+
+	pObject = m_ptrOM->QueryInterface(iid);
 }
 
 guid_t OOCore::ChannelBase::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
@@ -133,8 +137,6 @@ void OOCore::ChannelBase::ReflectMarshal(Remoting::IMessage* pMessage)
 
 void OOCore::Channel::init(UserSession* pSession, uint16_t apt_id, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
 	ChannelBase::init(channel_id,pSession->classify_channel(channel_id),pOM,message_oid);
 
 	m_pSession = pSession;
@@ -161,10 +163,11 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
-	if (!m_ptrMarshaller)
-		throw Remoting::IChannelClosedException::Create();
-
+	
 	guard.release();
+
+	if (!ptrMarshaller)
+		throw Remoting::IChannelClosedException::Create();
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();

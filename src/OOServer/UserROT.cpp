@@ -27,6 +27,39 @@
 using namespace Omega;
 using namespace OTL;
 
+namespace User
+{
+	class DuplicateRegistrationException :
+			public ExceptionImpl<Activation::IDuplicateRegistrationException>
+	{
+	public:
+		static void Throw(const any_t& oid);
+
+		BEGIN_INTERFACE_MAP(DuplicateRegistrationException)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IDuplicateRegistrationException>)
+		END_INTERFACE_MAP()
+
+	private:
+		any_t m_oid;
+
+	// Activation::IDuplicateRegistrationException members
+	public:
+		any_t GetOid()
+		{
+			return m_oid;
+		}
+	};
+}
+
+void User::DuplicateRegistrationException::Throw(const any_t& oid)
+{
+	ObjectImpl<DuplicateRegistrationException>* pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
+	pRE->m_strDesc = L"Duplicate registration of oid {0} in running object table.";
+	pRE->m_strDesc %= oid;
+	pRE->m_oid = oid;
+	throw static_cast<IDuplicateRegistrationException*>(pRE);
+}
+
 User::RunningObjectTable::RunningObjectTable() : m_nNextCookie(1)
 {
 }
@@ -37,7 +70,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the global interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
 		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 
@@ -46,43 +79,116 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	}
 }
 
-uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
+uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
-	// Never allow registration in the global ROT!
-	// If we are a client of the sandbox we will register there (which is correct)
-	// But any other condition will result in a very easy way to achieve priviledge escalation
-	// You have been warned!
+	uint32_t rot_cookie = 0;
 
-	void* TICKET_99;
-
-	uint32_t src_id = 0;
-	ObjectPtr<Remoting::ICallContext> ptrCC;
-	ptrCC.Attach(Remoting::GetCallContext());
-	if (ptrCC != 0)
-		src_id = ptrCC->SourceId();
-
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	// Create a new cookie
-	Info info;
-	info.m_oid = oid;
-	info.m_ptrObject = pObject;
-	info.m_source = src_id;
-	uint32_t nCookie = m_nNextCookie++;
-	while (nCookie==0 && m_mapObjectsByCookie.find(nCookie) != m_mapObjectsByCookie.end())
+	// Check for public registration...
+	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Anywhere)))
 	{
-		nCookie = m_nNextCookie++;
+		// Register in sandbox ROT
+		rot_cookie = m_ptrROT->RegisterObject(oid,pObject,flags);
 	}
 
-	std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
-	assert(p.second);
+	try
+	{
+		uint32_t src_id = 0;
+		ObjectPtr<Remoting::ICallContext> ptrCC;
+		ptrCC.Attach(Remoting::GetCallContext());
+		if (ptrCC != 0)
+			src_id = ptrCC->SourceId();
 
-	m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	return nCookie;
+		// Check if we have someone registered already
+		string_t strOid = oid.cast<string_t>();
+		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid); i!=m_mapObjectsByOid.end() && i->first==strOid; ++i)
+		{
+			if (!(i->second->second.m_flags & Activation::MultipleRegistration))
+				DuplicateRegistrationException::Throw(oid);
+
+			if (i->second->second.m_flags == flags)
+				DuplicateRegistrationException::Throw(oid);
+		}
+
+		// Create a new cookie
+		Info info;
+		info.m_oid = strOid;
+		info.m_flags = flags;
+		info.m_ptrObject = pObject;
+		info.m_rot_cookie = rot_cookie;
+		info.m_source = src_id;
+		uint32_t nCookie = m_nNextCookie++;
+		while (nCookie==0 && m_mapObjectsByCookie.find(nCookie) != m_mapObjectsByCookie.end())
+		{
+			nCookie = m_nNextCookie++;
+		}
+
+		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
+		assert(p.second);
+
+		m_mapObjectsByOid.insert(std::multimap<string_t,std::map<uint32_t,Info>::iterator>::value_type(strOid,p.first));
+
+		return nCookie;
+	}
+	catch (...)
+	{
+		if (rot_cookie && m_ptrROT)
+			m_ptrROT->RevokeObject(rot_cookie);
+
+		throw;
+	}
 }
 
-void User::RunningObjectTable::Revoke(uint32_t cookie)
+void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
+{
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	bool bDead = false;
+	string_t strOid = oid.cast<string_t>();
+	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid); i!=m_mapObjectsByOid.end() && i->first==strOid;++i)
+	{
+		if ((i->second->second.m_flags & flags))
+		{
+			// Check its still alive...
+			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
+			{
+				bDead = true;
+				break;
+			}
+			else
+			{
+				pObject = i->second->second.m_ptrObject->QueryInterface(iid);
+				if (!pObject)
+					throw INoInterfaceException::Create(iid);
+				return;
+			}
+		}
+	}
+
+	guard.release();
+
+	if (bDead)
+	{
+		OOBase::Guard<OOBase::RWMutex> guard2(m_lock);
+
+		std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid);
+		
+		// Remove it, its dead
+		m_mapObjectsByCookie.erase(i->second);
+
+		while (i!=m_mapObjectsByOid.end() && i->first==strOid)
+			m_mapObjectsByOid.erase(i++);
+	}
+
+	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Anywhere)))
+	{
+		// Route to global rot
+		m_ptrROT->GetObject(oid,flags,iid,pObject);
+	}
+}
+
+void User::RunningObjectTable::RevokeObject(uint32_t cookie)
 {
 	uint32_t src_id = 0;
 	ObjectPtr<Remoting::ICallContext> ptrCC;
@@ -95,7 +201,9 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 	std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
 	if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
 	{
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid); j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid; ++j)
+		uint32_t rot_cookie = i->second.m_rot_cookie;
+
+		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid); j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid; ++j)
 		{
 			if (j->second->first == cookie)
 			{
@@ -105,53 +213,10 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 		}
 
 		m_mapObjectsByCookie.erase(i);
+
+		guard.release();
+
+		if (rot_cookie && m_ptrROT)
+			m_ptrROT->RevokeObject(rot_cookie);
 	}
-}
-
-IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
-{
-	ObjectPtr<IObject> ptrRet;
-	std::list<uint32_t> listDeadEntries;
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid); i!=m_mapObjectsByOid.end() && i->first==oid; ++i)
-		{
-			if (Remoting::IsAlive(i->second->second.m_ptrObject))
-				ptrRet = i->second->second.m_ptrObject;
-			else
-				listDeadEntries.push_back(i->second->first);
-		}
-	}
-
-	if (!listDeadEntries.empty())
-	{
-		// We found at least one dead proxy
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::list<uint32_t>::iterator i=listDeadEntries.begin(); i!=listDeadEntries.end(); ++i)
-		{
-			std::map<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*i);
-			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator k=m_mapObjectsByOid.find(j->second.m_oid); k!=m_mapObjectsByOid.end() && k->first==j->second.m_oid; ++k)
-			{
-				if (k->second->first == *i)
-				{
-					m_mapObjectsByOid.erase(k);
-					break;
-				}
-			}
-			m_mapObjectsByCookie.erase(j);
-		}
-	}
-
-	if (ptrRet != 0)
-		return ptrRet.AddRef();
-
-	if (m_ptrROT != 0)
-	{
-		// Route to global rot
-		return m_ptrROT->GetObject(oid);
-	}
-
-	return 0;
 }

@@ -63,6 +63,9 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
+	if (iid == OMEGA_GUIDOF(IObject))
+		return false;
+
 	std::map<Omega::guid_t,bool>::const_iterator i = m_iids.find(iid);
 	if (i != m_iids.end())
 		return i->second;

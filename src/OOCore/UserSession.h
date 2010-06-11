@@ -78,17 +78,15 @@ namespace OOCore
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
 		OOBase::CDRStream* send_request(Omega::uint16_t src_apartment_id, Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
 		void send_response(Omega::uint16_t apt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		Omega::uint32_t get_channel_id() const;
 
-		static Omega::Apartment::IApartment* create_apartment();
-		static Omega::uint16_t get_current_apartment();
-		static void remove_apartment(Omega::uint16_t id);
-
-		Omega::uint32_t get_channel_id() const
-		{
-			return m_channel_id;
-		}
+		static OTL::ObjectPtr<OTL::ObjectImpl<OOCore::AptChannel> > create_apartment();
 		OOBase::SmartPtr<Apartment> get_apartment(Omega::uint16_t id);
+		void remove_apartment(Omega::uint16_t id);
+
 		Omega::uint16_t update_state(Omega::uint16_t apartment_id, Omega::uint32_t* pTimeout);
+
+		static Omega::Activation::IRunningObjectTable* get_rot();
 
 	private:
 		friend class ThreadContext;
@@ -163,8 +161,10 @@ namespace OOCore
 		Omega::uint16_t                                        m_next_apartment;
 		std::map<Omega::uint16_t,OOBase::SmartPtr<Apartment> > m_mapApartments;
 
-		Omega::Apartment::IApartment* create_apartment_i();
+		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::AptChannel> > create_apartment_i();
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
+
+		Omega::Activation::IRunningObjectTable* get_rot_i();
 	};
 }
 

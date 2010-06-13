@@ -67,13 +67,13 @@ string_t InterProcessService::GetArg(const string_t& arg)
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 {
-	throw Remoting::IChannelClosedException::Create();
+	return 0;
 }
 
-void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*& pObject)
+void InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&, IObject*& pObject)
 {
 	pObject = 0;
-	OMEGA_THROW("Invalid standalone function");
+	throw Activation::IOidNotFoundException::Create(oid);
 }
 
 bool_t InterProcessService::HandleRequest(uint32_t timeout)
@@ -83,7 +83,7 @@ bool_t InterProcessService::HandleRequest(uint32_t timeout)
 
 Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)
 {
-	OMEGA_THROW("Invalid standalone function");
+	throw Remoting::IChannelClosedException::Create();
 }
 
 Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remoting::IChannelSink*)

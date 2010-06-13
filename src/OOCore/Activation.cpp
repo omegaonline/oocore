@@ -47,6 +47,8 @@ END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
 using namespace Omega;
 using namespace OTL;
 
+OMEGA_DEFINE_OID(OOCore,OID_ServiceManager,"{60B09DE7-609E-4b82-BA35-270A9544BE29}");
+
 namespace
 {
 	class OidNotFoundException :
@@ -282,12 +284,21 @@ namespace
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
+		IObject* pObject = 0;
 		try
 		{
 			// Try ourselves first... this prevents anyone overloading standard behaviours!
 			if (flags & Activation::InProcess)
 			{
-				IObject* pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
+				if (oid == OOCore::OID_ServiceManager)
+				{
+					pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
+					if (!pObject)
+						throw INoInterfaceException::Create(iid);
+					return pObject;
+				}
+			
+				pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 				if (pObject)
 					return pObject;
 			}
@@ -319,7 +330,6 @@ namespace
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
-			IObject* pObject = 0;
 			ptrROT->GetObject(oid,reg_mask,iid,pObject);
 			if (pObject)
 				return pObject;
@@ -329,6 +339,10 @@ namespace
 			// See if we are allowed to load...
 			if (!(flags & Activation::DontLaunch))
 				return LoadObject(oid,flags,iid);
+		}
+		catch (Activation::IOidNotFoundException* pE)
+		{
+			pE->Rethrow();
 		}
 		catch (INoInterfaceException* pE)
 		{

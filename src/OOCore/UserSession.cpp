@@ -1115,12 +1115,13 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 	{
 		OOBase::SmartPtr<OOCore::Apartment> ptrApt = get_apartment(pContext->m_current_apt);
 
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_channel_om(m_channel_id & 0xFF000000);
+		ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = ptrApt->create_apartment(static_cast<uint16_t>(m_channel_id & 0xFF000000),guid_t::Null());
 
-		if (!ptrOM)
-			throw Remoting::IChannelClosedException::Create();
-
-		//ptrOM->GetRemoteInstance(
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
+					
+		IObject* pObject = 0;
+		ptrOM->GetRemoteInstance(OID_ServiceManager,Activation::ProcessLocal,OMEGA_GUIDOF(Activation::IRunningObjectTable),pObject);
+		return static_cast<Activation::IRunningObjectTable*>(pObject);
 	}
 
 	return SingletonObjectImpl<ServiceManager>::CreateInstance();

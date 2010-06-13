@@ -147,6 +147,9 @@ void OOCore::ServiceManager::close()
 
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
+	if (oid == OID_ServiceManager)
+		DuplicateRegistrationException::Throw(oid);
+	
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	uint32_t rot_cookie = 0;
 
@@ -154,7 +157,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
 	{
 		// Register in ROT
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+		ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
 		if (ptrROT)
 		{
 			rot_cookie = ptrROT->RegisterObject(oid,pObject,flags & ~Activation::ProcessLocal);
@@ -211,6 +214,8 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 
 void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
 {
+	pObject = 0;
+
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	bool bDead = false;
@@ -250,14 +255,16 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 			m_mapServicesByOid.erase(i++);
 	}
 
-	FIX ME!!!
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-	if (ptrROT && (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere)))
+	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
 	{
-		// Route to global rot
-		ptrROT->GetObject(oid,flags,iid,pObject);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
+
+		if (ptrROT)
+		{
+			// Route to global rot
+			ptrROT->GetObject(oid,flags,iid,pObject);
+		}
 	}
 }
 
@@ -286,7 +293,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 		{
 			// Revoke from ROT
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+			ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
 
 			if (ptrROT)
 				ptrROT->RevokeObject(rot_cookie);

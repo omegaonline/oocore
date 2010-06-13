@@ -24,6 +24,9 @@
 
 namespace OOCore
 {
+	// {60B09DE7-609E-4b82-BA35-270A9544BE29}
+	extern "C" const Omega::guid_t OID_ServiceManager;
+
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
 	// The instance wide ServiceManager instance

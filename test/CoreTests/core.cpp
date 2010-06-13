@@ -81,7 +81,6 @@ bool init_server_tests()
 bool exception_tests()
 {
 	// Try a simple throw...
-	const wchar_t szDesc[] = L"A test description";
 	try
 	{
 		throw Omega::ISystemException::Create(2);

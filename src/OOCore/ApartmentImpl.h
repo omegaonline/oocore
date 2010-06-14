@@ -37,8 +37,7 @@ namespace OOCore
 	{
 	public:
 		void init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
-		void close_apartment();
-
+		
 		BEGIN_INTERFACE_MAP(AptChannel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)
 		END_INTERFACE_MAP()
@@ -57,8 +56,7 @@ namespace OOCore
 		Apartment(UserSession* pSession, Omega::uint16_t id);
 
 		void close();
-		void close_apartment();
-
+		
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
 

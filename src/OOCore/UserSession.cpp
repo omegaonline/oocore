@@ -1115,7 +1115,7 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 	{
 		OOBase::SmartPtr<OOCore::Apartment> ptrApt = get_apartment(pContext->m_current_apt);
 
-		ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = ptrApt->create_apartment(static_cast<uint16_t>(m_channel_id & 0xFF000000),guid_t::Null());
+		ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = ptrApt->create_apartment(0,guid_t::Null());
 
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 					

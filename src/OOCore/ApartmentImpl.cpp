@@ -33,11 +33,6 @@ OOCore::Apartment::Apartment(UserSession* pSession, uint16_t id) :
 {
 }
 
-void OOCore::Apartment::close_apartment()
-{
-	m_pSession->remove_apartment(m_id);
-}
-
 void OOCore::Apartment::close()
 {
 	// Close all open OM's
@@ -109,7 +104,10 @@ bool OOCore::Apartment::is_channel_open(uint32_t channel_id)
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(channel_id);
-	return (i != m_mapChannels.end());
+	if (i == m_mapChannels.end())
+		return false;
+
+	return i->second->IsConnected();
 }
 
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t src_channel_id)
@@ -265,11 +263,6 @@ void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_
 	m_ptrApt = ptrApt;
 }
 
-void OOCore::AptChannel::close_apartment()
-{
-	m_ptrApt->close_apartment();
-}
-
 Omega::bool_t OOCore::AptChannel::IsConnected()
 {
 	return true;
@@ -307,8 +300,8 @@ namespace OOCore
 
 OOCore::ApartmentImpl::~ApartmentImpl()
 {
-	if (m_ptrChannel)
-		m_ptrChannel->close_apartment();
+	// Propogate close message upstream and out to other apartments...
+	void* TODO;
 }
 
 void OOCore::ApartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel)
@@ -318,15 +311,11 @@ void OOCore::ApartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrC
 
 Remoting::IProxy* OOCore::ApartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(m_ptrChannel->GetObjectManager());
+	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
 	// Get the remote instance IObjectFactory
 	IObject* pObject = 0;
 	ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
-
-	//if (!pObject)
-	//	OidNotFoundException::Throw(oid);
 
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));

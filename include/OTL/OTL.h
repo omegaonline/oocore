@@ -42,37 +42,37 @@
 	public: static const OTL::ObjectBase::QIEntry* getQIEntries() {static const OTL::ObjectBase::QIEntry QIEntries[] = {
 
 #define INTERFACE_ENTRY(iface) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY_IID(iid,iface) \
-	{ &iid, &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
+	{ &iid, &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY2(iface,iface2) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY2_IID(iid,iface,iface2) \
-	{ &iid, &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &iid, &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY_CHAIN(baseClass) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIChain<baseClass,RootClass>, 0, 0 },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIChain<baseClass,RootClass>, 0, 0, baseClass::getQIEntries() },
 
 #define INTERFACE_ENTRY_AGGREGATE(iface,member_object) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object)+1, 0, 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object)+1, 0, 0 },
 
 #define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn) },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn), 0 },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn) },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn), 0 },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0, 0 },
 
 #define END_INTERFACE_MAP() \
-	{ 0,0,0,0 } }; return QIEntries; }
+	{ 0,0,0,0,0 } }; return QIEntries; }
 
 ///////////////////////////////////////////////////////////////////
 // Object map macros
@@ -351,6 +351,7 @@ namespace OTL
 			Omega::IObject* (*pfnQI)(const Omega::guid_t& iid, void* pThis, size_t offset, ObjectBase::PFNMEMQI pfnMemQI);
 			size_t offset;
 			PFNMEMQI pfnMemQI;
+			const QIEntry* baseEntries;
 		};
 
 #if !defined(__BORLANDC__)
@@ -365,7 +366,7 @@ namespace OTL
 						*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
 						iid == OMEGA_GUIDOF(Omega::IObject))
 				{
-					return pEntries[i].pfnQI(iid,this,pEntries[i].offset,pEntries[i].pfnMemQI);
+					return pEntries[i].pfnQI(iid,this,pEntries[i].offset-1,pEntries[i].pfnMemQI);
 				}
 			}
 
@@ -897,29 +898,51 @@ namespace OTL
 	class IProvideObjectInfoImpl :
 			public Omega::TypeInfo::IProvideObjectInfo
 	{
-		// IProvideObjectInfo members
-	public:
-		virtual std::set<Omega::guid_t> EnumInterfaces()
+	private:
+		std::set<Omega::guid_t> WalkEntries(const ObjectBase::QIEntry* pEntries)
 		{
 			std::set<Omega::guid_t> retval;
 
-			const ObjectBase::QIEntry* pEntries = ROOT::getQIEntries();
 			for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 			{
 				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
 				{
-					if (*(pEntries[i].pGuid) != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
+					if (!pEntries[i].pfnMemQI)
 						retval.insert(*(pEntries[i].pGuid));
+					else
+					{
+						ObjectPtr<Omega::IObject> ptrObj;
+						ptrObj.Attach(pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
+						if (ptrObj)
+							retval.insert(*(pEntries[i].pGuid));							
+					}
 				}
 				else if (pEntries[i].offset != 0)
 				{
-					void * TODO;
-					// Try the aggregates
-					//reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+offset)->QueryInterface(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo));
+					ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrAgg;
+					ptrAgg.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI)));
+					if (ptrAgg)
+					{
+						std::set<Omega::guid_t> agg = ptrAgg->EnumInterfaces();
+						retval.insert(agg.begin(),agg.end());
+					}
+				}
+				else if (pEntries[i].baseEntries)
+				{
+					std::set<Omega::guid_t> base = WalkEntries(pEntries[i].baseEntries);
+					retval.insert(base.begin(),base.end());
 				}
 			}
 
 			return retval;
+		}
+
+
+	// IProvideObjectInfo members
+	public:
+		virtual std::set<Omega::guid_t> EnumInterfaces()
+		{
+			return WalkEntries(ROOT::getQIEntries());
 		}
 	};
 }

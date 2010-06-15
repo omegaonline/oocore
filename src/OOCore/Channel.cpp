@@ -135,13 +135,12 @@ void OOCore::ChannelBase::ReflectMarshal(Remoting::IMessage* pMessage)
 	MarshalInterface(0,pMessage,guid_t::Null(),m_marshal_flags);
 }
 
-void OOCore::Channel::init(UserSession* pSession, uint16_t apt_id, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
 	ChannelBase::init(channel_id,pSession->classify_channel(channel_id),pOM,message_oid);
 
 	m_pSession = pSession;
-	m_src_apt_id = apt_id;
-
+	
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM;
 	if (!m_ptrMarshaller)
@@ -176,7 +175,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	try
 	{
-		response = m_pSession->send_request(m_src_apt_id,m_channel_id,ptrEnvelope->GetCDRStream(),timeout,attribs);
+		response = m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),timeout,attribs);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -217,7 +216,7 @@ bool_t OOCore::Channel::IsConnected()
 	bool connected = true;
 	try
 	{
-		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_ping);
+		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_ping);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -249,7 +248,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 	try
 	{
-		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
+		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
 	}
 	catch (Remoting::IChannelClosedException*)
 	{

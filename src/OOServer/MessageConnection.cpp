@@ -650,6 +650,8 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				{
 					// This shouldn't ever occur, but that means it will ;)
 					LOG_ERROR(("std::exception thrown %s",e.what()));
+					// Clear the channel/threads map
+					pContext->m_mapChannelThreads.clear();
 					pContext->m_deadline = old_deadline;
 					continue;
 				}
@@ -1133,10 +1135,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 					Omega::uint16_t old_thread_id = 0;
 
 					// Set per channel thread id
-					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-					if (i == pContext->m_mapChannelThreads.end())
-						i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
-
+					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
 					old_thread_id = i->second;
 					i->second = msg->m_src_thread_id;
 

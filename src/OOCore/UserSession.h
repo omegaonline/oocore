@@ -76,8 +76,8 @@ namespace OOCore
 
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
-		OOBase::CDRStream* send_request(Omega::uint16_t src_apartment_id, Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
-		void send_response(Omega::uint16_t apt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		OOBase::CDRStream* send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
+		void send_response(Omega::uint16_t src_apt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
 		Omega::uint32_t get_channel_id() const;
 
 		static OTL::ObjectPtr<OTL::ObjectImpl<OOCore::AptChannel> > create_apartment();
@@ -149,8 +149,8 @@ namespace OOCore
 		// Message pumping
 		int run_read_loop();
 		bool pump_request(const OOBase::timeval_t* deadline = 0);
-		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
-		OOBase::CDRStream* wait_for_response(Omega::uint16_t apartment_id, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		void process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline);
+		OOBase::CDRStream* wait_for_response(Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::AtomicInt<size_t>& usage);

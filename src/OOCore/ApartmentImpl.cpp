@@ -129,7 +129,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 
 	// Create a new channel
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-	ptrChannel->init(m_pSession,m_id,src_channel_id,ptrOM,message_oid);
+	ptrChannel->init(m_pSession,src_channel_id,ptrOM,message_oid);
 
 	// And add to the map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -143,6 +143,8 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 
 void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
 {
+	assert(pMsg->m_dest_apt_id == m_id);
+
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id);
 
@@ -159,7 +161,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	// Unpack the payload
 	ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
 
-	// Check timeout
+	// Check timeout - at the last possible moment...
 	uint32_t timeout = 0;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
@@ -183,7 +185,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(m_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
+			m_pSession->send_response(pMsg->m_dest_apt_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
 		}
 		catch (...)
 		{
@@ -233,8 +235,7 @@ IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::Meth
 	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 
 	// Update session state and timeout
-	uint16_t old_id = 0;
-	old_id = m_pSession->update_state(apt_id,&timeout);
+	uint16_t old_id = m_pSession->update_state(m_id,&timeout);
 
 	// Make the call
 	try

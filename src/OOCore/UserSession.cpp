@@ -478,9 +478,15 @@ int OOCore::UserSession::run_read_loop()
 			}
 			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
 			{
+				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
 				// Send back 1 byte
+				byte_t res = (m_mapApartments.find(msg->m_dest_apt_id) == m_mapApartments.end() ? 0 : 1);
+
+				guard.release();
+
 				OOBase::CDRStream response(sizeof(byte_t));
-				if (!response.write(byte_t(1)))
+				if (!response.write(res))
 					err = response.last_error();
 				else
 					send_response(msg->m_dest_apt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
@@ -550,60 +556,45 @@ int OOCore::UserSession::run_read_loop()
 
 bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 {
-	// Check we still have a receiving stream
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-	if (!m_stream)
-		throw Remoting::IChannelClosedException::Create();
-
-	guard.release();
-
-	// Increment the consumers...
-	++m_usage_count;
-
-	// Get the next message
-	OOBase::SmartPtr<Message> msg;
-	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
-
-	// Decrement the consumers...
-	--m_usage_count;
-
-	if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+	for (;;)
 	{
-		// We didn't process anything
-		return false;
+		// Check we still have a receiving stream
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		if (!m_stream)
+			throw Remoting::IChannelClosedException::Create();
+
+		guard.release();
+
+		// Increment the consumers...
+		++m_usage_count;
+
+		// Get the next message
+		OOBase::SmartPtr<Message> msg;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
+
+		// Decrement the consumers...
+		--m_usage_count;
+
+		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		{
+			// We didn't process anything
+			return false;
+		}
+
+		if (msg->m_type == Message::Request)
+		{
+			ThreadContext* pContext = ThreadContext::instance();
+
+			// Don't confuse the wait deadline with the message processing deadline
+			process_request(pContext,msg,0);
+
+			// Clear the channel/threads map
+			pContext->m_mapChannelThreads.clear();
+
+			// We processed something
+			return true;
+		}
 	}
-
-	// Set deadline
-	// Dont confuse the wait deadline with the message processing deadline
-	ThreadContext* pContext = ThreadContext::instance();
-	OOBase::timeval_t old_deadline = pContext->m_deadline;
-	pContext->m_deadline = msg->m_deadline;
-
-	try
-	{
-		// Set per channel thread id
-		pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
-
-		// Process the message...
-		process_request(msg,pContext->m_deadline);
-
-		// Clear the thread map
-		pContext->m_mapChannelThreads.clear();
-	}
-	catch (...)
-	{
-		// Reset the deadline
-		pContext->m_deadline = old_deadline;
-
-		// Rethrow
-		throw;
-	}
-
-	// Reset the deadline
-	pContext->m_deadline = old_deadline;
-
-	// We processed something
-	return true;
 }
 
 void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
@@ -636,11 +627,11 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	{}
 }
 
-OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id, uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
 {
-	OOBase::CDRStream* response = 0;
 	ThreadContext* pContext = ThreadContext::instance();
 
+	OOBase::CDRStream* response = 0;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
@@ -654,7 +645,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		}
 
 		OOBase::SmartPtr<Apartment> ptrApt;
-		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(apartment_id);
+		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pContext->m_current_apt);
 		if (i == m_mapApartments.end())
 		{
 			// Apartment has gone!
@@ -684,34 +675,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		{
 			if (msg->m_type == Message::Request)
 			{
-				// Update deadline
-				OOBase::timeval_t old_deadline = pContext->m_deadline;
-				pContext->m_deadline = msg->m_deadline;
-				if (deadline && *deadline < pContext->m_deadline)
-					pContext->m_deadline = *deadline;
-
-				try
-				{
-					// Set per channel thread id
-					std::map<uint32_t,uint16_t>::iterator i = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-					if (i == pContext->m_mapChannelThreads.end())
-						i = pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(msg->m_src_channel_id,0)).first;
-
-					uint16_t old_thread_id = i->second;
-					i->second = msg->m_src_thread_id;
-
-					// Process the message...
-					process_request(msg,pContext->m_deadline);
-
-					// Restore old context
-					pContext->m_deadline = old_deadline;
-					i->second = old_thread_id;
-				}
-				catch (...)
-				{
-					pContext->m_deadline = old_deadline;
-					throw;
-				}
+				process_request(pContext,msg,deadline);
 			}
 			else if (msg->m_type == Message::Response && msg->m_seq_no == seq_no)
 			{
@@ -781,8 +745,10 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
+OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
 {
+	ThreadContext* pContext = ThreadContext::instance();
+
 	uint16_t src_thread_id = 0;
 	uint16_t dest_thread_id = 0;
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
@@ -792,8 +758,6 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message::asynchronous))
 	{
-		ThreadContext* pContext = ThreadContext::instance();
-
 		// Determine dest_thread_id
 		std::map<uint32_t,uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
 		if (i != pContext->m_mapChannelThreads.end())
@@ -816,7 +780,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 	}
 
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | src_apartment_id,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
+	OOBase::CDRStream header = build_header(seq_no,m_channel_id | pContext->m_current_apt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
 
 	// Send to the handle
 	OOBase::timeval_t wait = deadline;
@@ -844,13 +808,15 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 		return 0;
 	else
 		// Wait for response...
-		return wait_for_response(src_apartment_id,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+		return wait_for_response(seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
 }
 
-void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response(Omega::uint16_t src_apt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
+	ThreadContext* pContext = ThreadContext::instance();
+
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | apartment_id,ThreadContext::instance()->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
+	OOBase::CDRStream header = build_header(seq_no,m_channel_id | src_apt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
 
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
@@ -934,7 +900,7 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 	return mflags;
 }
 
-void OOCore::UserSession::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
+void OOCore::UserSession::process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -948,15 +914,52 @@ void OOCore::UserSession::process_request(const Message* pMsg, const OOBase::tim
 
 	guard.release();
 
+	uint16_t old_id = pContext->m_current_apt;
+	pContext->m_current_apt = pMsg->m_dest_apt_id;
+
+	// Update deadline
+	OOBase::timeval_t old_deadline = pContext->m_deadline;
+	pContext->m_deadline = pMsg->m_deadline;
+	if (deadline && *deadline < pContext->m_deadline)
+		pContext->m_deadline = *deadline;
+
 	try
 	{
-		ptrApt->process_request(pMsg,deadline);
+		// Set per channel thread id
+		std::map<uint32_t,uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(pMsg->m_src_channel_id,0)).first;
+		
+		uint16_t old_thread_id = i->second;
+		i->second = pMsg->m_src_thread_id;
+
+		try
+		{
+			// Process the message...
+			ptrApt->process_request(pMsg,pContext->m_deadline);
+		}
+		catch (IException* pOuter)
+		{
+			// Just drop the exception, and let it pass...
+			pOuter->Release();
+		}
+		catch (...)
+		{
+			pContext->m_deadline = old_deadline;
+			i->second = old_thread_id;
+			throw;
+		}
+
+		// Restore old context
+		i->second = old_thread_id;
 	}
-	catch (IException* pOuter)
+	catch (...)
 	{
-		// Just drop the exception, and let it pass...
-		pOuter->Release();
-	}
+		pContext->m_deadline = old_deadline;
+		pContext->m_current_apt = old_id;
+		throw;
+	}	
+
+	pContext->m_deadline = old_deadline;
+	pContext->m_current_apt = old_id;
 }
 
 bool OOCore::UserSession::handle_request(uint32_t timeout)

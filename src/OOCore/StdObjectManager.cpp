@@ -374,7 +374,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		}
 		catch (IException* pE)
 		{
-			// Make sure the excpetion is released
+			// Make sure the exception is released
 			ObjectPtr<IException> ptrE;
 			ptrE.Attach(pE);
 
@@ -788,26 +788,29 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 		// Skip the stub id
 		pMessage->ReadValue(L"id");
 
-		IObject* pObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
-		ObjectPtr<IObject> ptrObj;
-		ptrObj.Attach(pObj);
+		if (pObject)
+		{
+			IObject* pObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
+			ObjectPtr<IObject> ptrObj;
+			ptrObj.Attach(pObj);
 
-		ObjectPtr<ObjectImpl<Stub> > ptrStub;
+			ObjectPtr<ObjectImpl<Stub> > ptrStub;
 
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::const_iterator i=m_mapStubObjs.find(ptrObj);
-		if (i != m_mapStubObjs.end())
-			ptrStub = i->second;
+			std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::const_iterator i=m_mapStubObjs.find(ptrObj);
+			if (i != m_mapStubObjs.end())
+				ptrStub = i->second;
 
-		guard.release();
+			guard.release();
 
-		// If there is no stub... what are we unmarshalling?
-		if (!ptrStub)
-			OMEGA_THROW("No stub to unmarshal");
+			// If there is no stub... what are we unmarshalling?
+			if (!ptrStub)
+				OMEGA_THROW("No stub to unmarshal");
 
-		// Read the data
-		ptrStub->ReleaseMarshalData(pMessage,iid);
+			// Read the data
+			ptrStub->ReleaseMarshalData(pMessage,iid);
+		}
 	}
 	else if (flag == 2)
 	{
@@ -841,6 +844,17 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshall
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 
+void OOCore::StdObjectManager::UndoMarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pParamsOut)
+{
+	// QI pObjectManager for a private interface - it will have it because pObjectManager is
+	// an instance of StdObjectManager 2 calls up the stack..
+	// Call a private method that marshals the channel...
+	ObjectPtr<IStdObjectManager> ptrOM(pMarshaller);
+	assert(ptrOM);
+
+	ptrOM->ReleaseMarshalChannelData(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
+}
+
 void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
 	if (!m_ptrChannel)
@@ -863,6 +877,25 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 	ptrMarshal->MarshalInterface(pMarshaller,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 
 	pMessage->WriteStructEnd();
+}
+
+void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
+{
+	if (!m_ptrChannel)
+		return;
+
+	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
+	if (!ptrMarshal)
+		return;
+
+	// The following format is the same as IObjectManager::UnmarshalInterface...
+	pMessage->ReadStructStart(L"m_ptrChannel",L"$iface_marshal");
+	pMessage->ReadValue(L"$marshal_type");
+	pMessage->ReadValue(L"$oid");
+
+	ptrMarshal->ReleaseMarshalData(pMarshaller,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
+
+	pMessage->ReadStructEnd();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())

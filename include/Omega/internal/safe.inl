@@ -133,33 +133,29 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		// Control its lifetime
 		auto_iface_ptr<Remoting::IProxy> ptrProxy = create_safe_proxy<Remoting::IProxy>(proxy);
 
-		assert(ptrProxy->RemoteQueryInterface(iid));
+		assert(iid == OMEGA_GUIDOF(IObject) || ptrProxy->RemoteQueryInterface(iid));
 
 		// Create a wire proxy
 		return create_wire_proxy(ptrProxy,iid);
 	}
-
-	IObject* obj = 0;
+	
 	if (guid_t(*shim->m_iid) == OMEGA_GUIDOF(IObject))
 	{
 		// Shims should always be 'complete'
 		assert(iid == OMEGA_GUIDOF(IObject));
-		obj = Safe_Proxy_IObject::bind(shim);
+		return Safe_Proxy_IObject::bind(shim);
 	}
-	else
-	{
-		// Find the rtti info...
-		const qi_rtti* rtti = get_qi_rtti_info(*shim->m_iid);
-		if (!rtti && guid_t(*shim->m_iid) != iid)
-			rtti = get_qi_rtti_info(iid);
+	
+	// Find the rtti info...
+	const qi_rtti* rtti = get_qi_rtti_info(*shim->m_iid);
+	if (!rtti && guid_t(*shim->m_iid) != iid)
+		rtti = get_qi_rtti_info(iid);
 
-		// Fall back to IObject for completely unknown interfaces
-		if (!rtti)
-			rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
+	// Fall back to IObject for completely unknown interfaces
+	if (!rtti)
+		rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
 
-		obj = (*rtti->pfnCreateSafeProxy)(shim);
-	}
-
+	IObject* obj = (*rtti->pfnCreateSafeProxy)(shim);
 	if (!obj)
 		OMEGA_THROW("Failed to create proxy");
 

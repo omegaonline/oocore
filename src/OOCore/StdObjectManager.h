@@ -32,6 +32,7 @@ namespace OOCore
 	interface IStdObjectManager : public Omega::Remoting::IObjectManager
 	{
 		virtual void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
+		virtual void ReleaseMarshalChannelData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 	};
 
 	Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
@@ -42,6 +43,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 	OOCore, IStdObjectManager, Omega::Remoting, IObjectManager, "{AC019AD3-1E57-4641-A584-772F9604E31D}",
 
 	OMEGA_METHOD_VOID(MarshalChannel,3,((in),Omega::Remoting::IMarshaller*,pMarshaller,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(ReleaseMarshalChannelData,3,((in),Omega::Remoting::IMarshaller*,pMarshaller,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
 )
 
 namespace OOCore
@@ -66,6 +68,7 @@ namespace OOCore
 		void RemoveStub(Omega::uint32_t stub_id);
 		bool IsAlive();
 		void DoMarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pParamsOut);
+		void UndoMarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pParamsOut);
 
 	private:
 		StdObjectManager(const StdObjectManager&);
@@ -95,6 +98,7 @@ namespace OOCore
 	// IStdObjectManager members
 	public:
 		void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalChannelData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
 
 	// IObjectManager members
 	public:

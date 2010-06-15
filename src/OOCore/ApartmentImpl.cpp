@@ -103,11 +103,7 @@ bool OOCore::Apartment::is_channel_open(uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(channel_id);
-	if (i == m_mapChannels.end())
-		return false;
-
-	return i->second->IsConnected();
+	return (m_mapChannels.find(channel_id) != m_mapChannels.end());
 }
 
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t src_channel_id)

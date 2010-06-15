@@ -162,27 +162,25 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 
 	Remoting::IMessage* pParamsIn = 0;
 
+	IException* pERet = 0;
 	try
 	{
 		m_pManager->DoMarshalChannel(pMarshaller,pParamsOut);
-
 		pParamsOut->WriteStructEnd();
 
-		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
-		if (pE)
-			pE->Rethrow();
+		pERet = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	}
 	catch (...)
 	{
 		ReadStubInfo(pParamsOut);
-
 		pParamsOut->ReadValue(L"iid");
-
-		void* TODO; // Release marshal data for channel
-		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(Remoting::IMarshaller),pObjectManager);
-
+		m_pManager->UndoMarshalChannel(pMarshaller,pParamsOut);
+		
 		throw;
 	}
+
+	if (pERet)
+		pERet->Rethrow();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -207,13 +205,13 @@ void OOCore::Proxy::CallRemoteRelease()
 		if (pParamsIn)
 			pParamsIn->Release();
 
-		// Absord all exceptions...
+		// Absorb all exceptions...
 		if (pE)
 			pE->Release();
 	}
 	catch (IException* pE)
 	{
-		// Absord all exceptions...
+		// Absorb all exceptions...
 		pE->Release();
 	}
 }
@@ -227,10 +225,15 @@ void OOCore::Proxy::MarshalInterface(Remoting::IMarshaller* pMarshaller, Remotin
 	return pMarshaller->MarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
-void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessage*, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags)
 {
-	// How do we undo this?
-	void* TODO;
+	// Undo the effects of CallRemoteStubMarshal() by reading the new proxy and releasing it...
+	ObjectPtr<Remoting::IMarshalFactory> ptrMF(OID_ProxyMarshalFactory);
+
+	IObject* pObject = 0;
+	ptrMF->UnmarshalInterface(pMarshaller,pMessage,iid,flags,pObject);
+	if (pObject)
+		pObject->Release();
 }
 
 void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)

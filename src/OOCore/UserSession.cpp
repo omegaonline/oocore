@@ -337,7 +337,15 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
 {
-	return static_cast<UserSession*>(pParam)->run_read_loop();
+	try
+	{
+		return static_cast<UserSession*>(pParam)->run_read_loop();
+	}
+	catch (std::exception& e)
+	{
+		OOBase_CallCriticalFailure(e.what());
+		return -1;
+	}
 }
 
 void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
@@ -497,26 +505,17 @@ int OOCore::UserSession::run_read_loop()
 			// Find the right queue to send it to...
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			try
+			std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+			if (i != m_mapThreadContexts.end())
 			{
-				std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
-				if (i == m_mapThreadContexts.end())
-					err = EACCES;
-				else
-				{
-					size_t waiting = i->second->m_usage_count.value();
+				size_t waiting = i->second->m_usage_count.value();
 
-					OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-					if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
-					{
-						if (waiting == 0)
-							wait_or_alert(i->second->m_usage_count);
-					}
+				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+				{
+					if (waiting == 0)
+						wait_or_alert(i->second->m_usage_count);
 				}
-			}
-			catch (std::exception& e)
-			{
-				OOBase_CallCriticalFailure(e.what());
 			}
 		}
 		else
@@ -729,11 +728,9 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 			}
 		}
 	}
-	catch (std::exception& e)
-	{
-		OOBase_CallCriticalFailure(e.what());
-	}
-
+	catch (std::exception&)
+	{}
+	
 	OOBase_CallCriticalFailure("Too many threads");
 	return 0;
 }

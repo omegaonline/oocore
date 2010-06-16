@@ -211,39 +211,34 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 	{
 		OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 
-		try
-		{
-			// See if we have a process already
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		// See if we have a process already
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		{
+			if (i->second.ptrSpawn->Compare(uid))
 			{
-				if (i->second.ptrSpawn->Compare(uid))
-				{
-					return i->second.strPipe;
-				}
-				else if (i->second.ptrSpawn->IsSameUser(uid))
-				{
-					ptrRegistry = i->second.ptrRegistry;
-				}
+				return i->second.strPipe;
+			}
+			else if (i->second.ptrSpawn->IsSameUser(uid))
+			{
+				ptrRegistry = i->second.ptrRegistry;
 			}
 		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),"");
-		}
 
+		guard.release();
+		
 		// Spawn a new user process
 		std::string strPipe;
-		if (!spawn_user(uid,ptrRegistry,strPipe))
-			return "";
-
-		return strPipe;
+		if (spawn_user(uid,ptrRegistry,strPipe))
+			return strPipe;
 	}
 	catch (std::exception& e)
 	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),"");
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
+
+	return std::string();
 }
 
 Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)

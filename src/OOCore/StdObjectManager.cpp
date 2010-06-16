@@ -353,20 +353,15 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				ObjectPtr<ObjectImpl<Stub> > ptrStub;
 
 				// Look up the stub
-				try
-				{
-					OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-					std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
-					if (i==m_mapStubIds.end())
-						OMEGA_THROW("Bad stub id");
+				std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
+				if (i==m_mapStubIds.end())
+					OMEGA_THROW("Bad stub id");
 
-					ptrStub = i->second->second;
-				}
-				catch (std::exception& e)
-				{
-					OMEGA_THROW(e);
-				}
+				ptrStub = i->second->second;
+				
+				guard.release();
 
 				// Ask the stub to make the call
 				ptrStub->Invoke(pParamsIn,ptrResponse);

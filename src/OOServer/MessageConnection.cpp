@@ -451,6 +451,8 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 
 		// Ignore the return
 		call_async_function_i(&do_route_off,this,&input);
+
+		return true;
 	}
 	else
 	{

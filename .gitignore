@@ -1,0 +1,59 @@
+# Stuff we don't want to track
+
+# automake stuff
+configure
+aclocal.m4
+Makefile.in
+autom4te.cache/
+build-aux/
+libltdl/
+*/libltdl/
+m4/argz.m4
+m4/libtool.m4
+m4/ltdl.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+autoheader_dummy.*
+Makefile
+config.log
+config.status
+libtool
+stamp-h*
+config-autoconf.h
+
+# general stuff
+*.regdb
+
+# build stuff
+*.Plo
+*.Po
+*.[oa]
+*.l[oa]
+*.lai
+lt-*.c
+*_ltshwrapper
+
+# Windows stuff
+OOServer_msgs.h
+OOServer_msgs.rc
+*.exe
+*.dll
+
+# msvc stuff
+*.obj
+*.[ip]db
+*.lib
+*.intermediate.manifest
+*.embed.manifest
+*.pch
+*.res
+*.exp
+*.ncb
+*.ilk
+*.vcproj.*.user
+*.suo
+BuildLog.htm
+mt.dep
+dte80a.*

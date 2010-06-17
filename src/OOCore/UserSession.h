@@ -70,6 +70,8 @@ namespace OOCore
 		static Omega::IException* init(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
+		static Omega::Activation::IRunningObjectTable* get_rot();
+
 		static void close_singletons();
 		static void add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		static void remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
@@ -83,10 +85,7 @@ namespace OOCore
 		static OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment();
 		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
 		void remove_compartment(Omega::uint16_t id);
-
 		Omega::uint16_t update_state(Omega::uint16_t compartment_id, Omega::uint32_t* pTimeout);
-
-		static Omega::Activation::IRunningObjectTable* get_rot();
 
 	private:
 		friend class ThreadContext;

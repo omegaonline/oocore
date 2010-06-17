@@ -66,8 +66,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((i
 	if (key.Left(1) != L"\\")
 		BadNameException::Throw(key);
 
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	if (!ptrIPS)
+		throw IInternalException::Create("Omega::Initialize not called","OOCore");
+
 	ObjectPtr<Registry::IKey> ptrKey;
-	ptrKey.Attach(static_cast<Registry::IKey*>(OOCore::GetInterProcessService()->GetRegistry()));
+	ptrKey.Attach(static_cast<Registry::IKey*>(ptrIPS->GetRegistry()));
 
 	if (key == L"\\")
 		return ptrKey.AddRef();

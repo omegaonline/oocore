@@ -67,9 +67,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 
 	IObject* pIPS = 0;
 	ptrROT->GetObject(OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(IInterProcessService),pIPS);
-	if (!pIPS)
-		throw IInternalException::Create("Omega::Initialize not called","OOCore");
-		
+			
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
 	ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	return ptrIPS;
@@ -84,7 +82,8 @@ bool OOCore::HostedByOOServer()
 	{
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
 		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-
+		assert(ptrIPS);
+			
 		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(ptrIPS);
 		if (ptrSProxy)
 		{
@@ -94,7 +93,7 @@ bool OOCore::HostedByOOServer()
 				bHosted = !ptrIPS->IsStandalone();
 			}
 		}
-
+		
 		bChecked = true;
 	}
 
@@ -157,10 +156,14 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
 	{
 		// Register in ROT
-		ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
-		if (ptrROT)
+		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (ptrIPS)
 		{
-			rot_cookie = ptrROT->RegisterObject(oid,pObject,flags & ~Activation::ProcessLocal);
+			ptrROT.Attach(ptrIPS->GetRunningObjectTable());
+			if (ptrROT)
+			{
+				rot_cookie = ptrROT->RegisterObject(oid,pObject,flags & ~Activation::ProcessLocal);
+			}
 		}
 	}
 	
@@ -257,13 +260,17 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 
 	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
-
-		if (ptrROT)
+		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (ptrIPS)
 		{
-			// Route to global rot
-			ptrROT->GetObject(oid,flags,iid,pObject);
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
+
+			if (ptrROT)
+			{
+				// Route to global rot
+				ptrROT->GetObject(oid,flags,iid,pObject);
+			}
 		}
 	}
 }
@@ -292,11 +299,15 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 		if (rot_cookie)
 		{
 			// Revoke from ROT
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(OOCore::GetInterProcessService()->GetRunningObjectTable());
+			ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+			if (ptrIPS)
+			{
+				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+				ptrROT.Attach(ptrIPS->GetRunningObjectTable());
 
-			if (ptrROT)
-				ptrROT->RevokeObject(rot_cookie);
+				if (ptrROT)
+					ptrROT->RevokeObject(rot_cookie);
+			}
 		}
 	}
 }

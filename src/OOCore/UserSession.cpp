@@ -969,14 +969,24 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))
 {
 	if (OOCore::HostedByOOServer())
-		return OOCore::GetInterProcessService()->HandleRequest(timeout);
+	{
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (!ptrIPS)
+			throw IInternalException::Create("Omega::Initialize not called","OOCore");
+
+		return ptrIPS->HandleRequest(timeout);
+	}
 	else
 		return OOCore::UserSession::handle_request(timeout);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
 {
-	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	if (!ptrIPS)
+		throw IInternalException::Create("Omega::Initialize not called","OOCore");
+
+	return ptrIPS->OpenServerSink(message_oid,pSink);
 }
 
 ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment()

@@ -274,9 +274,13 @@ namespace
 		if (flags & Activation::OutOfProcess)
 		{
 			// Ask the IPS to run it...
-			IObject* pObject = 0;
-			OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,pObject);
-			return pObject;
+			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+			if (ptrIPS)
+			{
+				IObject* pObject = 0;
+				ptrIPS->LaunchObjectApp(oid,iid,pObject);
+				return pObject;
+			}
 		}
 		
 		return 0;
@@ -425,9 +429,11 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 
 		return GetLocalInstance(oid_guid,flags,iid);
 	}
-	
+
 	// Get IPS
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	if (!ptrIPS)
+		OidNotFoundException::Throw(oid);
 
 	// Open a remote channel
 	ObjectPtr<Remoting::IChannel> ptrChannel;

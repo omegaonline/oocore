@@ -73,9 +73,9 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 				// Close if its an exact match
 				bErase = true;
 			}
-			else if ((i->first & 0xFFFFF000) == closed_channel_id)
+			else if (!(closed_channel_id & 0xFFF) && (i->first & 0xFFFFF000) == closed_channel_id)
 			{
-				// Close all apartments on the channel
+				// Close all apartments on the channel if 0 apt closes
 				bErase = true;
 			}
 

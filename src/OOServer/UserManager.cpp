@@ -367,9 +367,9 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 				// Close if its an exact match
 				bErase = true;
 			}
-			else if ((i->first & 0xFFFFF000) == channel)
+			else if (!(channel & 0xFFF) && (i->first & 0xFFFFF000) == channel)
 			{
-				// Close all subchannels
+				// Close all apartments if 0 apt dies
 				bErase = true;
 			}
 			else if (channel == m_root_channel && classify_channel(i->first) > 2)

@@ -27,13 +27,13 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::Apartment::Apartment(UserSession* pSession, uint16_t id) :
+OOCore::Compartment::Compartment(UserSession* pSession, uint16_t id) :
 		m_pSession(pSession),
 		m_id(id)
 {
 }
 
-void OOCore::Apartment::close()
+void OOCore::Compartment::close()
 {
 	// Close all open OM's
 	try
@@ -46,17 +46,17 @@ void OOCore::Apartment::close()
 		}
 		m_mapChannels.clear();
 
-		for (std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.begin(); i!=m_mapApartments.end(); ++i)
+		for (std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
 		{
 			i->second->disconnect();
 		}
-		m_mapApartments.clear();
+		m_mapCompartments.clear();
 	}
 	catch (...)
 	{}
 }
 
-void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
+void OOCore::Compartment::process_channel_close(uint32_t closed_channel_id)
 {
 	// Close the corresponding Object Manager
 	try
@@ -75,7 +75,7 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 			}
 			else if (!(closed_channel_id & 0xFFF) && (i->first & 0xFFFFF000) == closed_channel_id)
 			{
-				// Close all apartments on the channel if 0 apt closes
+				// Close all compartments on the channel if 0 cmpt closes
 				bErase = true;
 			}
 
@@ -99,21 +99,21 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 	{}
 }
 
-bool OOCore::Apartment::is_channel_open(uint32_t channel_id)
+bool OOCore::Compartment::is_channel_open(uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	return (m_mapChannels.find(channel_id) != m_mapChannels.end());
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t src_channel_id)
+ObjectPtr<Remoting::IObjectManager> OOCore::Compartment::get_channel_om(uint32_t src_channel_id)
 {
 	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,guid_t::Null());
 
 	return ptrChannel->GetObjectManager();
 }
 
-ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
+ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	// Lookup existing..
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
@@ -141,9 +141,9 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 	return ptrChannel;
 }
 
-void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
+void OOCore::Compartment::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
 {
-	assert(pMsg->m_dest_apt_id == m_id);
+	assert(pMsg->m_dest_cmpt_id == m_id);
 
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id);
@@ -185,7 +185,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(pMsg->m_dest_apt_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
+			m_pSession->send_response(pMsg->m_dest_cmpt_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
 		}
 		catch (...)
 		{
@@ -195,15 +195,15 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	}
 }
 
-ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(uint16_t apartment_id, const guid_t& message_oid)
+ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compartment(uint16_t compartment_id, const guid_t& message_oid)
 {
 	// Lookup existing..
-	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel;
 
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.find(apartment_id);
-	if (i != m_mapApartments.end())
+	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(compartment_id);
+	if (i != m_mapCompartments.end())
 		ptrChannel = i->second;
 
 	read_guard.release();
@@ -214,13 +214,13 @@ ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(u
 		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
 
 		// Create a new channel
-		ptrChannel = ObjectImpl<AptChannel>::CreateInstancePtr();
-		ptrChannel->init(m_pSession->get_apartment(apartment_id),m_id | m_pSession->get_channel_id(),ptrOM,message_oid);
+		ptrChannel = ObjectImpl<ComptChannel>::CreateInstancePtr();
+		ptrChannel->init(m_pSession->get_compartment(compartment_id),m_id | m_pSession->get_channel_id(),ptrOM,message_oid);
 
 		// And add to the map
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::pair<std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator,bool> p = m_mapApartments.insert(std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::value_type(apartment_id,ptrChannel));
+		std::pair<std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::iterator,bool> p = m_mapCompartments.insert(std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::value_type(compartment_id,ptrChannel));
 		if (!p.second)
 			ptrChannel = p.first->second;
 	}
@@ -228,10 +228,10 @@ ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(u
 	return ptrChannel;
 }
 
-IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::Compartment::compartment_message(uint16_t cmpt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = create_apartment(apt_id,guid_t::Null());
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment(cmpt_id,guid_t::Null());
 	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 
 	// Update session state and timeout
@@ -253,60 +253,60 @@ IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::Meth
 	return 0;
 }
 
-void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::ComptChannel::init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
-	ChannelBase::init(channel_id,Remoting::Apartment,pOM,message_oid);
+	ChannelBase::init(channel_id,Remoting::Compartment,pOM,message_oid);
 
-	m_ptrApt = ptrApt;
+	m_ptrCompt = ptrCompt;
 }
 
-Omega::bool_t OOCore::AptChannel::IsConnected()
+Omega::bool_t OOCore::ComptChannel::IsConnected()
 {
 	return true;
 }
 
-IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::ComptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
-	return m_ptrApt->apartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);
+	return m_ptrCompt->compartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);
 }
 
 namespace OOCore
 {
-	class ApartmentImpl :
+	class CompartmentImpl :
 			public ObjectBase,
-			public Omega::Apartment::IApartment
+			public Omega::Compartment::ICompartment
 	{
 	public:
-		virtual ~ApartmentImpl();
+		virtual ~CompartmentImpl();
 
-		void init(ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel);
+		void init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel);
 
-		BEGIN_INTERFACE_MAP(ApartmentImpl)
-			INTERFACE_ENTRY(Omega::Apartment::IApartment)
+		BEGIN_INTERFACE_MAP(CompartmentImpl)
+			INTERFACE_ENTRY(Omega::Compartment::ICompartment)
 		END_INTERFACE_MAP()
 
 	private:
 		OOBase::SpinLock                           m_lock;
-		ObjectPtr<ObjectImpl<OOCore::AptChannel> > m_ptrChannel;
+		ObjectPtr<ObjectImpl<OOCore::ComptChannel> > m_ptrChannel;
 		
-	// IApartment members
+	// ICompartment members
 	public:
 		Remoting::IProxy* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	};
 }
 
-OOCore::ApartmentImpl::~ApartmentImpl()
+OOCore::CompartmentImpl::~CompartmentImpl()
 {
-	// Propogate close message upstream and out to other apartments...
+	// Propogate close message upstream and out to other compartments...
 	void* TODO;
 }
 
-void OOCore::ApartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel)
+void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel)
 {
 	m_ptrChannel = ptrChannel;
 }
 
-Remoting::IProxy* OOCore::ApartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+Remoting::IProxy* OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
@@ -340,17 +340,17 @@ Remoting::IProxy* OOCore::ApartmentImpl::CreateInstance(const any_t& oid, Activa
 	return System::Internal::create_safe_proxy<Remoting::IProxy>(proxy);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Compartment::ICompartment*,OOCore_ICompartment_Create,0,())
 {
-	// Apartments are not supported in the OOSvrUser process!
+	// Compartments are not supported in the OOSvrUser process!
 	assert(!OOCore::HostedByOOServer());
 
-	// Create a new apartment and get the channel to it...
-	ObjectPtr<ObjectImpl<OOCore::AptChannel> > ptrChannel = OOCore::UserSession::create_apartment();
+	// Create a new compartment and get the channel to it...
+	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment();
 
-	// Create a ApartmentImpl
-	ObjectPtr<ObjectImpl<OOCore::ApartmentImpl> > ptrApt = ObjectImpl<OOCore::ApartmentImpl>::CreateInstancePtr();
-	ptrApt->init(ptrChannel);
+	// Create a CompartmentImpl
+	ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstancePtr();
+	ptrCompt->init(ptrChannel);
 
-	return ptrApt.AddRef();
+	return ptrCompt.AddRef();
 }

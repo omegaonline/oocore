@@ -369,7 +369,7 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 			}
 			else if (!(channel & 0xFFF) && (i->first & 0xFFFFF000) == channel)
 			{
-				// Close all apartments if 0 apt dies
+				// Close all compartments if 0 cmpt dies
 				bErase = true;
 			}
 			else if (channel == m_root_channel && classify_channel(i->first) > 2)

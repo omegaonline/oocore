@@ -26,13 +26,13 @@
 
 namespace Omega
 {
-	namespace Apartment
+	namespace Compartment
 	{
-		interface IApartment : public IObject
+		interface ICompartment : public IObject
 		{
 			virtual Remoting::IProxy* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid) = 0;
 
-			static IApartment* Create();
+			static ICompartment* Create();
 		};
 	}
 }
@@ -41,15 +41,15 @@ namespace Omega
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::Apartment, IApartment, "{9D92BFD7-631C-46dd-A123-E9CEB18A2285}",
+	Omega::Compartment, ICompartment, "{9D92BFD7-631C-46dd-A123-E9CEB18A2285}",
 
 	OMEGA_METHOD(Remoting::IProxy*,CreateInstance,4,((in),const any_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid))
 )
 
-OOCORE_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,OOCore_IApartment_Create,0,());
-inline Omega::Apartment::IApartment* Omega::Apartment::IApartment::Create()
+OOCORE_EXPORTED_FUNCTION(Omega::Compartment::ICompartment*,OOCore_ICompartment_Create,0,());
+inline Omega::Compartment::ICompartment* Omega::Compartment::ICompartment::Create()
 {
-	return OOCore_IApartment_Create();
+	return OOCore_ICompartment_Create();
 }
 
 #endif // !defined(DOXYGEN)

@@ -865,11 +865,11 @@ Omega::uint16_t OOServer::MessageHandler::classify_channel(Omega::uint32_t chann
 	{
 		if (!(channel_id & m_uChildMask))
 		{
-			Omega::uint16_t apartment_id = static_cast<Omega::uint16_t>(channel_id & ~(m_uChannelMask | m_uChildMask));
-			if (apartment_id == 0)
+			Omega::uint16_t compartment_id = static_cast<Omega::uint16_t>(channel_id & ~(m_uChannelMask | m_uChildMask));
+			if (compartment_id == 0)
 				return 0; // same
 			else
-				return 1; // apartment
+				return 1; // compartment
 		}
 		else
 			return 2; // inter_process;

@@ -17,7 +17,7 @@ endif
 
 coretests_SOURCES = \
 	any.cpp \
-	apartment.cpp \
+	compartment.cpp \
 	core.cpp \
 	interfaces.cpp \
 	interfaces.h \

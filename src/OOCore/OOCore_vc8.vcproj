@@ -341,7 +341,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ApartmentImpl.cpp"
+				RelativePath=".\Compartment.cpp"
 				>
 			</File>
 			<File
@@ -443,7 +443,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ApartmentImpl.h"
+				RelativePath=".\Compartment.h"
 				>
 			</File>
 			<File
@@ -541,7 +541,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\Omega\Apartment.h"
+				RelativePath="..\..\include\Omega\Compartment.h"
 				>
 			</File>
 			<File

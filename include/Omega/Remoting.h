@@ -31,7 +31,7 @@ namespace Omega
 		enum MarshalFlags
 		{
 			Same = 0,              ///< Objects are in the same context
-			Apartment = 1,         ///< Objects share address space, but not thread
+			Compartment = 1,         ///< Objects share address space, but not thread
 			InterProcess = 2,      ///< Objects share user id, but not address space
 			InterUser = 3,         ///< Objects share machine, but not user id or address space
 			RemoteMachine = 4      ///< Objects on separate machines and share nothing

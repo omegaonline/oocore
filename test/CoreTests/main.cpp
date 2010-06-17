@@ -22,8 +22,8 @@ bool registry_tests();
 bool registry_tests_2();
 bool interface_process_tests();
 bool interface_dll_tests();
-bool apartment_dll_tests();
-bool apartment_process_tests();
+bool compartment_dll_tests();
+bool compartment_process_tests();
 bool net_tests();
 bool interface_tests2();
 
@@ -48,7 +48,7 @@ int main(int /*argc*/, char* /*argv*/[])
 
 		RUN_TEST(registry_tests);
 		RUN_TEST(interface_dll_tests);
-		RUN_TEST(apartment_dll_tests);
+		RUN_TEST(compartment_dll_tests);
 
 		Omega::Uninitialize();
 	}
@@ -59,7 +59,7 @@ int main(int /*argc*/, char* /*argv*/[])
 		output("\n\n");
 
 		RUN_TEST(interface_process_tests);
-		RUN_TEST(apartment_process_tests);
+		RUN_TEST(compartment_process_tests);
 
 		//RUN_TEST(net_tests);
 		//RUN_TEST(interface_tests2);

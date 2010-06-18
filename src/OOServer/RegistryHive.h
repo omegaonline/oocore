@@ -86,6 +86,7 @@ namespace Registry
 		// Stashed prepared statements...
 		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrCheckKey_Stmt;
 		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrGetKeyInfo_Stmt;
+		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrGetValue_Stmt;
 
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
@@ -95,6 +96,7 @@ namespace Registry
 		int insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const std::string& strSubKey, access_rights_t access_mask);
 		int check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
 		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
+		int value_exists_i(const Omega::int64_t& uKey, const std::string& strValue);
 	};
 
 	class Manager

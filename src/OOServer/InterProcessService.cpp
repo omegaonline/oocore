@@ -89,12 +89,12 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
 
-	string_t strAppName = ptrOidKey->GetStringValue(L"Application");
+	string_t strAppName = ptrOidKey->GetValue(L"Application").cast<string_t>();
 
 	// Find the name of the executable to run...
 	ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User\\Applications\\" + strAppName + L"\\Activation");
 
-	string_t strProcess = ptrServer->GetStringValue(L"Path");
+	string_t strProcess = ptrServer->GetValue(L"Path").cast<string_t>();
 
 	// The timeout needs to be related to the request timeout...
 #if defined(OMEGA_DEBUG)

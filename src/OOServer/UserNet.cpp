@@ -701,7 +701,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 		if (ptrKey->IsValue(L"Endpoint"))
-			strHandler = ptrKey->GetStringValue(L"Endpoint");
+			strHandler = ptrKey->GetValue(L"Endpoint").cast<string_t>();
 	}
 
 	if (strHandler.IsEmpty())
@@ -711,7 +711,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 			if (ptrKey->IsValue(L"Endpoint"))
-				strHandler = ptrKey->GetStringValue(L"Endpoint");
+				strHandler = ptrKey->GetValue(L"Endpoint").cast<string_t>();
 		}
 	}
 

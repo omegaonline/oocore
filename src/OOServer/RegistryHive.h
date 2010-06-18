@@ -61,24 +61,18 @@ namespace Registry
 		int delete_key(const Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id);
 		int enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setSubKeys);
 		void enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
+		int value_exists(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id);
+		
+		int get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val);
+		int set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val);
+		
 		int enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setValues);
 		void enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
 		int delete_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id);
-
-		int get_value_type(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::byte_t& type);
-		int get_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val);
-		int get_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::int64_t& val);
-		void get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::uint32_t cbLen, OOBase::CDRStream& response);
-		int get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::uint32_t& cbLen, Omega::byte_t* buf);
-
-		int set_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val);
-		int set_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const Omega::int64_t& val);
-		int set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const OOBase::CDRStream& request);
-		int set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::uint32_t cbLen, const Omega::byte_t* buf);
-
-		int get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val);
+		int get_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val);
+		int set_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val);
+		
 		int get_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val);
-		int set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val);
 		int set_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const std::string& val);
 
 	private:

@@ -58,23 +58,16 @@ namespace
 		Omega::string_t   m_strKey;
 		Omega::int64_t    m_key;
 
-		int GetValueType_i(const string_t& strName, ValueType_t& vtype);
-
-	// IRegistry members
+	// IKey members
 	public:
 		bool_t IsSubKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
-		string_t GetStringValue(const string_t& strName);
-		int64_t GetIntegerValue(const string_t& strName);
-		void GetBinaryValue(const string_t& strName, uint32_t& cbLen, byte_t* pBuffer);
-		void SetStringValue(const string_t& strName, const string_t& strValue);
-		void SetIntegerValue(const string_t& strName, const int64_t& uValue);
-		void SetBinaryValue(const string_t& strName, uint32_t cbLen, const byte_t* val);
+		any_t GetValue(const string_t& strName);
+		void SetValue(const string_t& strName, const any_t& value);
 		string_t GetDescription();
 		string_t GetValueDescription(const string_t& strName);
 		void SetDescription(const string_t& strValue);
 		void SetValueDescription(const string_t& strName, const string_t& strValue);
-		ValueType_t GetValueType(const string_t& strName);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
@@ -104,21 +97,16 @@ namespace
 		string_t parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey);
 		int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, ::Registry::Hive::access_rights_t access_mask);
 
-	// IRegistry members
+	// IKey members
 	public:
 		bool_t IsSubKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
-		string_t GetStringValue(const string_t& strName);
-		int64_t GetIntegerValue(const string_t& strName);
-		void GetBinaryValue(const string_t& strName, uint32_t& cbLen, byte_t* pBuffer);
-		void SetStringValue(const string_t& strName, const string_t& strValue);
-		void SetIntegerValue(const string_t& strName, const int64_t& uValue);
-		void SetBinaryValue(const string_t& strName, uint32_t cbLen, const byte_t* val);
+		any_t GetValue(const string_t& strName);
+		void SetValue(const string_t& strName, const any_t& value);
 		string_t GetDescription();
 		string_t GetValueDescription(const string_t& strName);
 		void SetDescription(const string_t& strValue);
 		void SetValueDescription(const string_t& strName, const string_t& strValue);
-		ValueType_t GetValueType(const string_t& strName);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
@@ -170,8 +158,7 @@ bool_t HiveKey::IsValue(const string_t& strName)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	byte_t v = 0;
-	int err = m_pHive->get_value_type(m_key,OOBase::to_utf8(strName.c_str()),0,v);
+	int err = m_pHive->value_exists(m_key,OOBase::to_utf8(strName.c_str()),0);
 	if (err==ENOENT)
 		return false;
 	else if (err==EACCES)
@@ -182,65 +169,14 @@ bool_t HiveKey::IsValue(const string_t& strName)
 	return true;
 }
 
-int HiveKey::GetValueType_i(const string_t& strName, ValueType_t& vtype)
-{
-	byte_t value_type = 0;
-	int err = m_pHive->get_value_type(m_key,OOBase::to_utf8(strName.c_str()),0,value_type);
-	if (err != 0)
-		return err;
-
-	switch (value_type)
-	{
-	case 0:
-		vtype = String;
-		break;
-
-	case 1:
-		vtype = Integer;
-		break;
-
-	case 2:
-		vtype = Binary;
-		break;
-
-	default:
-		OMEGA_THROW("Registry value has invalid value type in the database");
-	}
-
-	return 0;
-}
-
-ValueType_t HiveKey::GetValueType(const string_t& strName)
-{
-	User::Registry::BadNameException::ValidateValue(strName);
-
-	ValueType_t vtype;
-	int err = GetValueType_i(strName,vtype);
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	return vtype;
-}
-
-string_t HiveKey::GetStringValue(const string_t& strName)
+any_t HiveKey::GetValue(const string_t& strName)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
 	std::string strValue;
-	int err = m_pHive->get_string_value(m_key,OOBase::to_utf8(strName.c_str()),0,strValue);
+	int err = m_pHive->get_value(m_key,OOBase::to_utf8(strName.c_str()),0,strValue);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
-	else if (err == EINVAL)
-	{
-		ValueType_t vtype;
-		err = GetValueType_i(strName,vtype);
-		if (err == 0)
-			User::Registry::WrongValueTypeException::Throw(strName,vtype);
-	}
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(m_strKey);
 	else if (err != 0)
@@ -249,80 +185,11 @@ string_t HiveKey::GetStringValue(const string_t& strName)
 	return string_t(strValue.c_str(),true);
 }
 
-int64_t HiveKey::GetIntegerValue(const string_t& strName)
+void HiveKey::SetValue(const string_t& strName, const any_t& value)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	int64_t uValue;
-	int err = m_pHive->get_integer_value(m_key,OOBase::to_utf8(strName.c_str()),0,uValue);
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strName);
-	else if (err == EINVAL)
-	{
-		ValueType_t vtype;
-		err = GetValueType_i(strName,vtype);
-		if (err == 0)
-			User::Registry::WrongValueTypeException::Throw(strName,vtype);
-	}
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	return uValue;
-}
-
-void HiveKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
-{
-	User::Registry::BadNameException::ValidateValue(strName);
-
-	int err = m_pHive->get_binary_value(m_key,OOBase::to_utf8(strName.c_str()),0,cbLen,pBuffer);
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strName);
-	else if (err == EINVAL)
-	{
-		ValueType_t vtype;
-		err = GetValueType_i(strName,vtype);
-		if (err == 0)
-			User::Registry::WrongValueTypeException::Throw(strName,vtype);
-	}
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void HiveKey::SetStringValue(const string_t& strName, const string_t& strValue)
-{
-	User::Registry::BadNameException::ValidateValue(strName);
-
-	int err = m_pHive->set_string_value(m_key,OOBase::to_utf8(strName.c_str()),0,OOBase::to_utf8(strValue.c_str()).c_str());
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void HiveKey::SetIntegerValue(const string_t& strName, const int64_t& value)
-{
-	User::Registry::BadNameException::ValidateValue(strName);
-
-	int err = m_pHive->set_integer_value(m_key,OOBase::to_utf8(strName.c_str()),0,value);
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void HiveKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
-{
-	User::Registry::BadNameException::ValidateValue(strName);
-
-	int err = m_pHive->set_binary_value(m_key,OOBase::to_utf8(strName.c_str()),0,cbLen,val);
+	int err = m_pHive->set_value(m_key,OOBase::to_utf8(strName.c_str()),0,OOBase::to_utf8(value.cast<string_t>().c_str()).c_str());
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
@@ -541,39 +408,14 @@ bool_t RootKey::IsValue(const string_t& strName)
 	return m_ptrSystemKey->IsValue(strName);
 }
 
-ValueType_t RootKey::GetValueType(const string_t& strName)
+any_t RootKey::GetValue(const string_t& strName)
 {
-	return m_ptrSystemKey->GetValueType(strName);
+	return m_ptrSystemKey->GetValue(strName);
 }
 
-string_t RootKey::GetStringValue(const string_t& strName)
+void RootKey::SetValue(const string_t& strName, const any_t& value)
 {
-	return m_ptrSystemKey->GetStringValue(strName);
-}
-
-int64_t RootKey::GetIntegerValue(const string_t& strName)
-{
-	return m_ptrSystemKey->GetIntegerValue(strName);
-}
-
-void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
-{
-	m_ptrSystemKey->GetBinaryValue(strName,cbLen,pBuffer);
-}
-
-void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
-{
-	m_ptrSystemKey->SetStringValue(strName,strValue);
-}
-
-void RootKey::SetIntegerValue(const string_t& strName, const int64_t& value)
-{
-	m_ptrSystemKey->SetIntegerValue(strName,value);
-}
-
-void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
-{
-	m_ptrSystemKey->SetBinaryValue(strName,cbLen,val);
+	m_ptrSystemKey->SetValue(strName,value);
 }
 
 string_t RootKey::GetDescription()

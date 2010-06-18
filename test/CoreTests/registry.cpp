@@ -17,7 +17,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 
 	try
 	{
-		pKey->SetStringValue(strTestValue,L"Yes");
+		pKey->SetValue(strTestValue,L"Yes");
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
@@ -26,68 +26,23 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		return true;
 	}
 
-	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
-	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::String);
+	TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
 	TEST(pKey->IsValue(strTestValue));
-	TEST(pKey->GetStringValue(strTestValue) ==  L"Yes");
-	TEST_VOID(pKey->SetStringValue(strTestValue,L"No"));
-	TEST(pKey->GetStringValue(strTestValue) ==  L"No");
+	TEST(pKey->GetValue(strTestValue) ==  L"Yes");
+	TEST_VOID(pKey->SetValue(strTestValue,L"No"));
+	TEST(pKey->GetValue(strTestValue) ==  L"No");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
-	TEST_VOID(pKey->SetIntegerValue(strTestValue,100));
-	TEST(pKey->IsValue(strTestValue));
-	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::Integer);
-	TEST(pKey->GetIntegerValue(strTestValue) == 100);
-	TEST_VOID(pKey->SetIntegerValue(strTestValue,200));
-	TEST(pKey->GetIntegerValue(strTestValue) == 200);
+
+	TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
 	TEST_VOID(pKey->SetValueDescription(strTestValue,L"A test description"));
 	TEST(pKey->GetValueDescription(strTestValue) == L"A test description");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 
-	const Omega::byte_t szBuf[] = "Welcome to the project site for Omega Online ¶"
-							"Omega Online is a massively-multiplayer online roleplaying game, based on the successful live-roleplaying system from Omega LRP. "
-							"The goals of the project are to produce a game that is: "
-							"Free to play -- No fees and no subscriptions "
-							"Cross-platform -- Initially targetting Windows, MacOSX, and Unix (including Linux and FreeBSD) "
-							"Peer-to-peer -- Using serverless distributed processing "
-							"Open Source -- All the source-code will be released under an applicable open source license "
-							"The project is very much in its infancy, despite having been in development for more than two years, but progress is being made! "
-							"Starting points ¶"
-							"GameBackground? -- The background of the game "
-							"GameDesign -- An overview of the design of the game "
-							"TechOverview -- An overview of the technologies behind the game "
-							"For a complete list of pages, see TitleIndex. "
-							"Download in other formats:"
-							"Plain Text"
-							"--------------------------------------------------------------------------------";
-
-	const Omega::uint32_t orig_size = sizeof(szBuf);
-	TEST_VOID(pKey->SetBinaryValue(strTestValue,orig_size,szBuf));
-	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::Binary);
-	TEST(pKey->IsValue(strTestValue));
-
-	const Omega::uint32_t new_size = orig_size * 3 / 2;
-	Omega::byte_t szBuf2[new_size] = {0};
-	Omega::uint32_t size = new_size;
-	TEST_VOID(pKey->GetBinaryValue(strTestValue,size,szBuf2));
-	TEST(size == orig_size);
-
-	const Omega::uint32_t new_size2 = orig_size / 2;
-	Omega::byte_t szBuf3[new_size2] = {0};
-	size = new_size2;
-	TEST_VOID(pKey->GetBinaryValue(strTestValue,size,szBuf3));
-	TEST(size == new_size2);
-
-	size = 0;
-	TEST_VOID(pKey->GetBinaryValue(strTestValue,size,NULL));
-	TEST(size == orig_size);
-	TEST_VOID(pKey->DeleteValue(strTestValue));
-	TEST(!pKey->IsValue(strTestValue));
-
 	try
 	{
-		pKey->GetStringValue(strTestValue);
+		pKey->GetValue(strTestValue);
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
@@ -96,25 +51,11 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		pE->Release();
 	}
 
-	TEST_VOID(pKey->SetIntegerValue(strTestValue,100));
-	try
-	{
-		pKey->GetStringValue(strTestValue);
-		TEST_FAIL("No exception thrown!");
-	}
-	catch (Omega::Registry::IWrongValueTypeException* pE)
-	{
-		TEST(pE->GetValueName() == strTestValue);
-		TEST(pE->GetValueType() == Omega::Registry::Integer);
-
-		pE->Release();
-	}
-
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 
 	try
 	{
-		pKey->SetStringValue(L"",L"Invalid name");
+		pKey->SetValue(L"",L"Invalid name");
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -124,7 +65,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	}
 	try
 	{
-		pKey->SetIntegerValue(L"\\",0);
+		pKey->SetValue(L"\\",0);
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -133,7 +74,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		pE->Release();
 	}
 
-	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
+	TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
 
 	std::set<Omega::string_t> values = pKey->EnumValues();
 
@@ -305,7 +246,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	bool bCanWriteToRoot = true;
 	try
 	{
-		TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
+		TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{

@@ -129,14 +129,6 @@ namespace Omega
 
 	namespace Registry
 	{
-		enum ValueType
-		{
-			String = 0,
-			Integer = 1,
-			Binary = 2
-		};
-		typedef byte_t ValueType_t;
-
 		interface IKey : public IObject
 		{
 			enum OpenFlags
@@ -149,17 +141,12 @@ namespace Omega
 
 			virtual bool_t IsSubKey(const string_t& key) = 0;
 			virtual bool_t IsValue(const string_t& name) = 0;
-			virtual string_t GetStringValue(const string_t& name) = 0;
-			virtual int64_t GetIntegerValue(const string_t& name) = 0;
-			virtual void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer) = 0;
-			virtual void SetStringValue(const string_t& name, const string_t& val) = 0;
-			virtual void SetIntegerValue(const string_t& name, const int64_t& val) = 0;
-			virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
+			virtual any_t GetValue(const string_t& name) = 0;
+			virtual void SetValue(const string_t& name, const any_t& val) = 0;
 			virtual string_t GetDescription() = 0;
 			virtual string_t GetValueDescription(const string_t& name) = 0;
 			virtual void SetDescription(const string_t& desc) = 0;
 			virtual void SetValueDescription(const string_t& name, const string_t& desc) = 0;
-			virtual ValueType_t GetValueType(const string_t& name) = 0;
 			virtual IKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 			virtual std::set<string_t> EnumSubKeys() = 0;
 			virtual std::set<string_t> EnumValues() = 0;
@@ -182,12 +169,6 @@ namespace Omega
 		interface IBadNameException : public IException
 		{
 			virtual string_t GetName() = 0;
-		};
-
-		interface IWrongValueTypeException : public IException
-		{
-			virtual string_t GetValueName() = 0;
-			virtual ValueType_t GetValueType() = 0;
 		};
 
 		interface IAccessDeniedException : public IException
@@ -356,17 +337,12 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(bool_t,IsSubKey,1,((in),const string_t&,key))
 	OMEGA_METHOD(bool_t,IsValue,1,((in),const string_t&,name))
-	OMEGA_METHOD(string_t,GetStringValue,1,((in),const string_t&,name))
-	OMEGA_METHOD(int64_t,GetIntegerValue,1,((in),const string_t&,name))
-	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const string_t&,name,(in_out),uint32_t&,cbLen,(out)(size_is(cbLen)),byte_t*,pBuffer))
-	OMEGA_METHOD_VOID(SetStringValue,2,((in),const string_t&,name,(in),const string_t&,val))
-	OMEGA_METHOD_VOID(SetIntegerValue,2,((in),const string_t&,name,(in),const int64_t&,val))
-	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const string_t&,name,(in),uint32_t,cbLen,(in)(size_is(cbLen)),const byte_t*,val))
+	OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))
+	OMEGA_METHOD_VOID(SetValue,2,((in),const string_t&,name,(in),const any_t&,val))
 	OMEGA_METHOD(string_t,GetDescription,0,())
 	OMEGA_METHOD(string_t,GetValueDescription,1,((in),const string_t&,name))
 	OMEGA_METHOD_VOID(SetDescription,1,((in),const string_t&,desc))
 	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const string_t&,name,(in),const string_t&,desc))
-	OMEGA_METHOD(Registry::ValueType_t,GetValueType,1,((in),const string_t&,name))
 	OMEGA_METHOD(Registry::IKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
 	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())
@@ -380,15 +356,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(string_t,GetName,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Registry, IWrongValueTypeException, Omega, IException, "{B7FF3FE7-11AF-4f62-9341-8470BCB8F0D7}",
-
-	// Methods
-	OMEGA_METHOD(Registry::ValueType_t,GetValueType,0,())
-	OMEGA_METHOD(string_t,GetValueName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

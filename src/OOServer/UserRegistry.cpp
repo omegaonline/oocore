@@ -91,7 +91,7 @@ bool_t Key::IsValue(const string_t& strName)
 	BadNameException::ValidateValue(strName);
 
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueType));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueExists));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -113,81 +113,15 @@ bool_t Key::IsValue(const string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::byte_t value_type;
-	if (!response->read(value_type))
-		OMEGA_THROW(response->last_error());
-
 	return true;
 }
 
-int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
-{
-	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueType));
-	request.write(m_key);
-	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
-	if (request.last_error() != 0)
-		OMEGA_THROW(request.last_error());
-
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
-	int err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
-
-	if (err != 0)
-		return err;
-
-	Omega::byte_t value_type = 0;
-	if (!response->read(value_type))
-		OMEGA_THROW(response->last_error());
-
-	switch (value_type)
-	{
-	case 0:
-		vtype = String;
-		break;
-
-	case 1:
-		vtype = Integer;
-		break;
-
-	case 2:
-		vtype = Binary;
-		break;
-
-	default:
-		OMEGA_THROW("Registry value has invalid value type in the database");
-	}
-
-	return 0;
-}
-
-ValueType_t Key::GetValueType(const string_t& strName)
-{
-	BadNameException::ValidateValue(strName);
-
-	ValueType_t vtype;
-	int err = GetValueType_i(strName,vtype);
-	if (err == ENOENT)
-		NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	return vtype;
-}
-
-string_t Key::GetStringValue(const string_t& strName)
+any_t Key::GetValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName);
 
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetStringValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
@@ -204,13 +138,6 @@ string_t Key::GetStringValue(const string_t& strName)
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
-	else if (err == EINVAL)
-	{
-		ValueType_t vtype;
-		err = GetValueType_i(strName,vtype);
-		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype);
-	}
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey);
 	else if (err != 0)
@@ -223,161 +150,16 @@ string_t Key::GetStringValue(const string_t& strName)
 	return string_t(strValue.c_str(),true);
 }
 
-int64_t Key::GetIntegerValue(const string_t& strName)
+void Key::SetValue(const string_t& strName, const any_t& value)
 {
 	BadNameException::ValidateValue(strName);
 
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetIntegerValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
-	if (request.last_error() != 0)
-		OMEGA_THROW(request.last_error());
-
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
-	int err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
-
-	if (err == ENOENT)
-		NotFoundException::Throw(strName);
-	else if (err == EINVAL)
-	{
-		ValueType_t vtype;
-		err = GetValueType_i(strName,vtype);
-		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype);
-	}
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	Omega::int64_t uValue = 0;
-	if (!response->read(uValue))
-		OMEGA_THROW(response->last_error());
-
-	return uValue;
-}
-
-void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
-{
-	BadNameException::ValidateValue(strName);
-
-	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetBinaryValue));
-	request.write(m_key);
-	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
-	request.write(cbLen);
-	bool bNoDataBack = (cbLen == 0);
-	if (request.last_error() != 0)
-		OMEGA_THROW(request.last_error());
-
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
-	int err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
-
-	if (err == ENOENT)
-		NotFoundException::Throw(strName);
-	else if (err == EINVAL)
-	{
-		ValueType_t vtype;
-		err = GetValueType_i(strName,vtype);
-		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype);
-	}
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	if (!response->read(cbLen))
-		OMEGA_THROW(response->last_error());
-
-	if (!bNoDataBack)
-	{
-		if (!response->read_bytes(pBuffer,cbLen))
-			OMEGA_THROW(response->last_error());
-	}
-}
-
-void Key::SetStringValue(const string_t& strName, const string_t& strValue)
-{
-	BadNameException::ValidateValue(strName);
-
-	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetStringValue));
-	request.write(m_key);
-	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
-	request.write(strValue.ToUTF8().c_str());
-	if (request.last_error() != 0)
-		OMEGA_THROW(request.last_error());
-
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
-	int err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
-
-	if (err == ENOENT)
-		NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
-{
-	BadNameException::ValidateValue(strName);
-
-	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetIntegerValue));
-	request.write(m_key);
-	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
-	request.write(value);
-	if (request.last_error() != 0)
-		OMEGA_THROW(request.last_error());
-
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
-	int err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
-
-	if (err == ENOENT)
-		NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
-{
-	BadNameException::ValidateValue(strName);
-
-	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetBinaryValue));
-	request.write(m_key);
-	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
-	request.write_bytes(val,cbLen);
+	request.write(value.cast<string_t>().ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 

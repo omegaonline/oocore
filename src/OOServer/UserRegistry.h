@@ -45,25 +45,19 @@ namespace User
 			Omega::int64_t  m_key;
 			Omega::byte_t   m_type;
 
-			int GetValueType_i(const Omega::string_t& strName, Omega::Registry::ValueType_t& vtype);
 			Omega::Registry::IKey* ParseSubKey(Omega::string_t& strSubKey);
 			OTL::ObjectPtr<OTL::ObjectImpl<Key> > OpenSubKey_i(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags);
 
-		// IRegistry members
+		// IKey members
 		public:
 			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);
 			Omega::bool_t IsValue(const Omega::string_t& strName);
-			Omega::string_t GetStringValue(const Omega::string_t& strName);
-			Omega::int64_t GetIntegerValue(const Omega::string_t& strName);
-			void GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer);
-			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
-			void SetIntegerValue(const Omega::string_t& strName, const Omega::int64_t& uValue);
-			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
+			Omega::any_t GetValue(const Omega::string_t& strName);
+			void SetValue(const Omega::string_t& strName, const Omega::any_t& value);
 			Omega::string_t GetDescription();
 			Omega::string_t GetValueDescription(const Omega::string_t& strName);
 			void SetDescription(const Omega::string_t& strValue);
 			void SetValueDescription(const Omega::string_t& strName, const Omega::string_t& strValue);
-			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
 			std::set<Omega::string_t> EnumSubKeys();
 			std::set<Omega::string_t> EnumValues();

@@ -38,13 +38,13 @@ bool_t User::Registry::MirrorKey::IsValue(const string_t& strName)
 			(m_ptrSystem && m_ptrSystem->IsValue(strName)));
 }
 
-string_t User::Registry::MirrorKey::GetStringValue(const string_t& strName)
+any_t User::Registry::MirrorKey::GetValue(const string_t& strName)
 {
 	if (m_ptrLocal)
 	{
 		try
 		{
-			return m_ptrLocal->GetStringValue(strName);
+			return m_ptrLocal->GetValue(strName);
 		}
 		catch (INotFoundException* pE)
 		{
@@ -56,7 +56,7 @@ string_t User::Registry::MirrorKey::GetStringValue(const string_t& strName)
 	{
 		try
 		{
-			return m_ptrSystem->GetStringValue(strName);
+			return m_ptrSystem->GetValue(strName);
 		}
 		catch (INotFoundException* pE)
 		{
@@ -65,90 +65,15 @@ string_t User::Registry::MirrorKey::GetStringValue(const string_t& strName)
 	}
 
 	User::Registry::NotFoundException::Throw(strName);
-	return string_t();
+	return any_t();
 }
 
-int64_t User::Registry::MirrorKey::GetIntegerValue(const string_t& strName)
-{
-	if (m_ptrLocal)
-	{
-		try
-		{
-			return m_ptrLocal->GetIntegerValue(strName);
-		}
-		catch (INotFoundException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	if (m_ptrSystem)
-	{
-		try
-		{
-			return m_ptrSystem->GetIntegerValue(strName);
-		}
-		catch (INotFoundException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	User::Registry::NotFoundException::Throw(strName);
-	return 0;
-}
-
-void User::Registry::MirrorKey::GetBinaryValue(const string_t& strName, uint32_t& cbLen, byte_t* pBuffer)
-{
-	if (m_ptrLocal)
-	{
-		try
-		{
-			return m_ptrLocal->GetBinaryValue(strName,cbLen,pBuffer);
-		}
-		catch (INotFoundException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	if (m_ptrSystem)
-	{
-		try
-		{
-			return m_ptrSystem->GetBinaryValue(strName,cbLen,pBuffer);
-		}
-		catch (INotFoundException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	User::Registry::NotFoundException::Throw(strName);
-}
-
-void User::Registry::MirrorKey::SetStringValue(const string_t& strName, const string_t& strValue)
+void User::Registry::MirrorKey::SetValue(const string_t& strName, const any_t& value)
 {
 	if (!m_ptrLocal)
 		m_ptrLocal = IKey::OpenKey(m_strKey,IKey::OpenCreate);
 
-	m_ptrLocal->SetStringValue(strName,strValue);
-}
-
-void User::Registry::MirrorKey::SetIntegerValue(const string_t& strName, const int64_t& uValue)
-{
-	if (!m_ptrLocal)
-		m_ptrLocal = IKey::OpenKey(m_strKey,IKey::OpenCreate);
-
-	m_ptrLocal->SetIntegerValue(strName,uValue);
-}
-
-void User::Registry::MirrorKey::SetBinaryValue(const string_t& strName, uint32_t cbLen, const byte_t* val)
-{
-	if (!m_ptrLocal)
-		m_ptrLocal = IKey::OpenKey(m_strKey,IKey::OpenCreate);
-
-	m_ptrLocal->SetBinaryValue(strName,cbLen,val);
+	m_ptrLocal->SetValue(strName,value);
 }
 
 string_t User::Registry::MirrorKey::GetDescription()
@@ -241,36 +166,6 @@ void User::Registry::MirrorKey::SetValueDescription(const string_t& strName, con
 		pE->Release();
 		User::Registry::AccessDeniedException::Throw(m_strKey);
 	}
-}
-
-ValueType_t User::Registry::MirrorKey::GetValueType(const string_t& strName)
-{
-	if (m_ptrLocal)
-	{
-		try
-		{
-			return m_ptrLocal->GetValueType(strName);
-		}
-		catch (INotFoundException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	if (m_ptrSystem)
-	{
-		try
-		{
-			return m_ptrSystem->GetValueType(strName);
-		}
-		catch (INotFoundException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	User::Registry::NotFoundException::Throw(strName);
-	return 0;
 }
 
 IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)

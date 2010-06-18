@@ -19,14 +19,13 @@ BEGIN TRANSACTION;
 		Name TEXT NOT NULL,
 		Description TEXT,
 		Parent INTEGER NOT NULL,
-		Type INTEGER NOT NULL,
 		Value,
 		UNIQUE(Name,Parent)
 	);
 	
 	CREATE INDEX idx_RegistryValues ON RegistryValues(Parent);
 	
-	CREATE INDEX idx_RegistryValues2 ON RegistryValues(Name,Parent,Type);
+	CREATE INDEX idx_RegistryValues2 ON RegistryValues(Name,Parent);
 	
 	CREATE TRIGGER trg_RegistryKeys AFTER DELETE ON RegistryKeys
 		BEGIN 

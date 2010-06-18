@@ -264,7 +264,7 @@ namespace
 			{
 				void* TICKET_89; // Surrogates here?!?
 
-				IObject* pObject = LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,iid);
+				IObject* pObject = LoadLibraryObject(ptrOidKey->GetValue(L"Library").cast<string_t>(),oid,iid);
 				if (pObject)
 					return pObject;
 			}
@@ -371,11 +371,11 @@ namespace
 				ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
 				if (ptrOidKey->IsValue(L"CurrentVersion"))
 				{
-					strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
+					strCurName = ptrOidKey->GetValue(L"CurrentVersion").cast<string_t>();
 					continue;
 				}
 
-				return guid_t(ptrOidKey->GetStringValue(L"OID"));
+				return ptrOidKey->GetValue(L"OID").cast<guid_t>();
 			}
 			catch (IException* pE)
 			{

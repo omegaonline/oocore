@@ -201,33 +201,33 @@ void MainFrame::CreateChildWindows(void)
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
 
 		wxPoint ptPos;
-		ptPos.x = (int)ptrKey->GetIntegerValue(L"Left");
-		ptPos.y = (int)ptrKey->GetIntegerValue(L"Top");
+		ptPos.x = ptrKey->GetValue(L"Left").cast<int>();
+		ptPos.y = ptrKey->GetValue(L"Top").cast<int>();
 		SetPosition(ptPos);
 
 		wxSize sz;
-		sz.x = (int)ptrKey->GetIntegerValue(L"Width");
-		sz.y = (int)ptrKey->GetIntegerValue(L"Height");
+		sz.x = ptrKey->GetValue(L"Width").cast<int>();
+		sz.y = ptrKey->GetValue(L"Height").cast<int>();
 		SetSize(sz);
 
-		split_width = (Omega::uint32_t)ptrKey->GetIntegerValue(L"SplitWidth");
-		split_width2 = (Omega::uint32_t)ptrKey->GetIntegerValue(L"SplitWidth2");
+		split_width = ptrKey->GetValue(L"SplitWidth").cast<Omega::uint32_t>();
+		split_width2 = ptrKey->GetValue(L"SplitWidth2").cast<Omega::uint32_t>();
 
-		col_width[0] = (Omega::uint32_t)ptrKey->GetIntegerValue(L"ColWidth0");
-		col_width[1] = (Omega::uint32_t)ptrKey->GetIntegerValue(L"ColWidth1");
-		col_width[2] = (Omega::uint32_t)ptrKey->GetIntegerValue(L"ColWidth2");
+		col_width[0] = ptrKey->GetValue(L"ColWidth0").cast<Omega::uint32_t>();
+		col_width[1] = ptrKey->GetValue(L"ColWidth1").cast<Omega::uint32_t>();
+		col_width[2] = ptrKey->GetValue(L"ColWidth2").cast<Omega::uint32_t>();
 
-		strSelection = ptrKey->GetStringValue(L"Selection");
+		strSelection = ptrKey->GetValue(L"Selection").cast<Omega::string_t>();
 
-		m_bKeys = ptrKey->GetIntegerValue(L"FindKeys")!=0;
-		m_bValues = ptrKey->GetIntegerValue(L"FindValues")!=0;
-		m_bData = ptrKey->GetIntegerValue(L"FindData")!=0;
-		m_bMatchAll = ptrKey->GetIntegerValue(L"MatchAll")!=0;
-		m_bIgnoreCase = ptrKey->GetIntegerValue(L"IgnoreCase")!=0;
+		m_bKeys = ptrKey->GetValue(L"FindKeys").cast<Omega::bool_t>();
+		m_bValues = ptrKey->GetValue(L"FindValues").cast<Omega::bool_t>();
+		m_bData = ptrKey->GetValue(L"FindData").cast<Omega::bool_t>();
+		m_bMatchAll = ptrKey->GetValue(L"MatchAll").cast<Omega::bool_t>();
+		m_bIgnoreCase = ptrKey->GetValue(L"IgnoreCase").cast<Omega::bool_t>();
 
-		for (int nFiles = (int)ptrKey->GetIntegerValue(L"Favourites")-1;nFiles>=0;--nFiles)
+		for (int nFiles = ptrKey->GetValue(L"Favourites").cast<int>()-1;nFiles>=0;--nFiles)
 		{
-			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t(L"Favourite{0}") % nFiles);
+			Omega::string_t val = ptrKey->GetValue(Omega::string_t(L"Favourite{0}") % nFiles).cast<Omega::string_t>();
 
 			size_t pos = val.ReverseFind(L'\\');
 			if (pos != Omega::string_t::npos)
@@ -449,30 +449,30 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::OpenCreate);
 
 		wxPoint pt = GetPosition();
-		ptrKey->SetIntegerValue(L"Top",pt.y);
-		ptrKey->SetIntegerValue(L"Left",pt.x);
+		ptrKey->SetValue(L"Top",pt.y);
+		ptrKey->SetValue(L"Left",pt.x);
 
 		wxSize sz = GetSize();
-		ptrKey->SetIntegerValue(L"Height",sz.y);
-		ptrKey->SetIntegerValue(L"Width",sz.x);
+		ptrKey->SetValue(L"Height",sz.y);
+		ptrKey->SetValue(L"Width",sz.x);
 
-		ptrKey->SetIntegerValue(L"SplitWidth",m_pSplitter->GetSashPosition());
-		ptrKey->SetIntegerValue(L"SplitWidth2",m_pSplitter2->GetSashPosition());
+		ptrKey->SetValue(L"SplitWidth",m_pSplitter->GetSashPosition());
+		ptrKey->SetValue(L"SplitWidth2",m_pSplitter2->GetSashPosition());
 
-		ptrKey->SetIntegerValue(L"ColWidth0",m_pList->GetColumnWidth(0));
-		ptrKey->SetIntegerValue(L"ColWidth1",m_pList->GetColumnWidth(1));
-		ptrKey->SetIntegerValue(L"ColWidth2",m_pList->GetColumnWidth(2));
+		ptrKey->SetValue(L"ColWidth0",m_pList->GetColumnWidth(0));
+		ptrKey->SetValue(L"ColWidth1",m_pList->GetColumnWidth(1));
+		ptrKey->SetValue(L"ColWidth2",m_pList->GetColumnWidth(2));
 
-		ptrKey->SetIntegerValue(L"FindKeys",m_bKeys ? 1 : 0);
-		ptrKey->SetIntegerValue(L"FindValues",m_bValues ? 1 : 0);
-		ptrKey->SetIntegerValue(L"FindData",m_bData ? 1 : 0);
-		ptrKey->SetIntegerValue(L"MatchAll",m_bMatchAll ? 1 : 0);
-		ptrKey->SetIntegerValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
+		ptrKey->SetValue(L"FindKeys",m_bKeys ? 1 : 0);
+		ptrKey->SetValue(L"FindValues",m_bValues ? 1 : 0);
+		ptrKey->SetValue(L"FindData",m_bData ? 1 : 0);
+		ptrKey->SetValue(L"MatchAll",m_bMatchAll ? 1 : 0);
+		ptrKey->SetValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
 
-		ptrKey->SetStringValue(L"Selection",Omega::string_t(m_strSelection.wc_str(),Omega::string_t::npos));
+		ptrKey->SetValue(L"Selection",Omega::string_t(m_strSelection.wc_str(),Omega::string_t::npos));
 
 		size_t nFiles = m_fileHistory.GetCount();
-		ptrKey->SetIntegerValue(L"Favourites",nFiles);
+		ptrKey->SetValue(L"Favourites",nFiles);
 
 		for (;nFiles>0;--nFiles)
 		{
@@ -480,7 +480,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 
 			Omega::string_t strVal = m_mapMRU[strName] + L"\\" + strName.wc_str();
 
-			ptrKey->SetStringValue(Omega::string_t(L"Favourite{0}") % (nFiles-1),strVal);
+			ptrKey->SetValue(Omega::string_t(L"Favourite{0}") % (nFiles-1),strVal);
 		}
 	}
 	catch (Omega::IException* pE)

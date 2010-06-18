@@ -123,7 +123,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 		if (ptrKey->IsValue(L"Handler"))
-			strHandler = ptrKey->GetStringValue(L"Handler");
+			strHandler = ptrKey->GetValue(L"Handler").cast<string_t>();
 	}
 
 	if (strHandler.IsEmpty())
@@ -133,7 +133,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 			if (ptrKey->IsValue(L"Handler"))
-				strHandler = ptrKey->GetStringValue(L"Handler");
+				strHandler = ptrKey->GetValue(L"Handler").cast<string_t>();
 		}
 	}
 

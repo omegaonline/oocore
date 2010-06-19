@@ -1,5 +1,5 @@
 #include "../../include/OTL/OTL.h"
-#include "../../include/Omega/Apartment.h"
+#include "../../include/Omega/Compartment.h"
 #include "interfaces.h"
 
 #include "Test.h"
@@ -10,7 +10,7 @@ bool unregister_library();
 bool register_process(const wchar_t* pszExeName, bool& bSkipped);
 bool unregister_process();
 
-static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
+static bool do_cmpt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 {
 	output("  %-45ls ",pszLibName);
 
@@ -19,22 +19,21 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	if (bSkipped)
 		return true;
 		
-	// Create an apartment
-	OTL::ObjectPtr<Omega::Apartment::IApartment> ptrApartment;
-	ptrApartment.Attach(Omega::Apartment::IApartment::Create());
-	TEST(ptrApartment);
+	// Create an compartment
+	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment;
+	ptrCompartment.Attach(Omega::Compartment::ICompartment::Create());
+	TEST(ptrCompartment);
 
-	// try to create the object asking for TypeInfo::IProvideObjectInfo
-	Omega::IObject* pObject = 0;
-	ptrApartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObject);
-	TEST(pObject);
+	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy;
+	ptrProxy.Attach(ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest)));
+	TEST(ptrProxy);
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
+	/*OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
 	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObject));
 
 	// Test the interface
 	TEST(ptrSimpleTest);
-	interface_tests(ptrSimpleTest);
+	interface_tests(ptrSimpleTest);*/
 
 	// Test unregistering
 	TEST(unregister_library());
@@ -44,14 +43,14 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 const wchar_t** get_dlls();
 
-bool apartment_dll_tests()
+bool compartment_dll_tests()
 {
 	output("\n");
 
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		bool res = do_apt_library_test(*pszDlls,bSkipped);
+		bool res = do_cmpt_library_test(*pszDlls,bSkipped);
 		
 		unregister_library();
 
@@ -63,7 +62,7 @@ bool apartment_dll_tests()
 	return true;
 }
 
-static bool do_apt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
+static bool do_cmpt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 {
 	output("  %-45ls ",pszModulePath);
 
@@ -72,17 +71,17 @@ static bool do_apt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	if (bSkipped)
 		return true;
 		
-	// Create an apartment
-	OTL::ObjectPtr<Omega::Apartment::IApartment> ptrApartment;
-	ptrApartment.Attach(Omega::Apartment::IApartment::Create());
-	TEST(ptrApartment);
+	// Create an compartment
+	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment;
+	ptrCompartment.Attach(Omega::Compartment::ICompartment::Create());
+	TEST(ptrCompartment);
 
-	// try to create the object asking for TypeInfo::IProvideObjectInfo
-	Omega::IObject* pObject = 0;
-	ptrApartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObject);
-	TEST(pObject);
+	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy;
+	ptrProxy.Attach(ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest)));
+	TEST(ptrProxy);
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
+
+	/*OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
 	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObject));
 
 	// Test the interface
@@ -97,7 +96,7 @@ static bool do_apt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}
+	}*/
 
 	// Test unregistering
 	TEST(unregister_process());
@@ -107,14 +106,14 @@ static bool do_apt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 
 const wchar_t** get_exes();
 
-bool apartment_process_tests()
+bool compartment_process_tests()
 {
 	output("\n");
 
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		bool res = do_apt_process_test(*pszExes,bSkipped);
+		bool res = do_cmpt_process_test(*pszExes,bSkipped);
 
 		unregister_process();
 

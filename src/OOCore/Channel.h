@@ -81,10 +81,10 @@ namespace OOCore
 			public ChannelBase
 	{
 	public:
-		Channel() : m_pSession(0), m_src_apt_id(0)
+		Channel() : m_pSession(0)
 		{}
 
-		void init(UserSession* pSession, Omega::uint16_t apt_id, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		void init(UserSession* pSession, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
@@ -93,7 +93,6 @@ namespace OOCore
 
 	private:
 		UserSession*                                 m_pSession;
-		Omega::uint16_t                              m_src_apt_id;
 		OTL::ObjectPtr<Omega::Remoting::IMarshaller> m_ptrMarshaller;
 
 	public:

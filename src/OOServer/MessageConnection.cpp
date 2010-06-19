@@ -451,6 +451,8 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 
 		// Ignore the return
 		call_async_function_i(&do_route_off,this,&input);
+
+		return true;
 	}
 	else
 	{
@@ -638,10 +640,19 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				try
 				{
 					// Set per channel thread id
-					pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
+					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id)).first;
+					i->second = msg->m_src_thread_id;
 
-					// Process the message...
-					process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					try
+					{
+						// Process the message...
+						process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					}
+					catch (...)
+					{
+						// This shouldn't ever occur, but that means it will ;)
+						LOG_ERROR(("Unexpected exception thrown"));
+					}
 
 					// Clear the channel/threads map
 					pContext->m_mapChannelThreads.clear();
@@ -650,9 +661,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				{
 					// This shouldn't ever occur, but that means it will ;)
 					LOG_ERROR(("std::exception thrown %s",e.what()));
-					pContext->m_deadline = old_deadline;
-					continue;
-				}
+				}				
 			}
 
 			// Reset deadline
@@ -856,11 +865,11 @@ Omega::uint16_t OOServer::MessageHandler::classify_channel(Omega::uint32_t chann
 	{
 		if (!(channel_id & m_uChildMask))
 		{
-			Omega::uint16_t apartment_id = static_cast<Omega::uint16_t>(channel_id & ~(m_uChannelMask | m_uChildMask));
-			if (apartment_id == 0)
+			Omega::uint16_t compartment_id = static_cast<Omega::uint16_t>(channel_id & ~(m_uChannelMask | m_uChildMask));
+			if (compartment_id == 0)
 				return 0; // same
 			else
-				return 1; // apartment
+				return 1; // compartment
 		}
 		else
 			return 2; // inter_process;
@@ -955,13 +964,14 @@ Omega::uint16_t OOServer::MessageHandler::insert_thread_context(OOServer::Messag
 				return i;
 			}
 		}
-
-		return 0;
 	}
 	catch (std::exception& e)
 	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),0);
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
+
+	OOBase_CallCriticalFailure("Too many threads");
+	return 0;
 }
 
 void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::ThreadContext* pContext)
@@ -1133,10 +1143,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 					Omega::uint16_t old_thread_id = 0;
 
 					// Set per channel thread id
-					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-					if (i == pContext->m_mapChannelThreads.end())
-						i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
-
+					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
 					old_thread_id = i->second;
 					i->second = msg->m_src_thread_id;
 
@@ -1147,22 +1154,18 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 					}
 					catch (...)
 					{
-						// Restore old per channel thread id
-						i->second = old_thread_id;
-						pContext->m_deadline = old_deadline;
-						throw;
+						LOG_ERROR(("Unexpected exception thrown"));
 					}
 
 					// Restore old per channel thread id
 					i->second = old_thread_id;
-					pContext->m_deadline = old_deadline;
 				}
 				catch (std::exception& e)
 				{
 					LOG_ERROR(("std::exception thrown %s",e.what()));
-					pContext->m_deadline = old_deadline;
-					break;
 				}
+				
+				pContext->m_deadline = old_deadline;
 			}
 			else if (type == Message_t::Response && recv_seq_no == seq_no)
 			{

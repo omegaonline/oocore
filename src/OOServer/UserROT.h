@@ -35,10 +35,6 @@ namespace User
 
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM);
 
-		Omega::uint32_t Register(const Omega::guid_t& oid, Omega::IObject* pObject);
-		void Revoke(Omega::uint32_t cookie);
-		Omega::IObject* GetObject(const Omega::guid_t& oid);
-
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
 		END_INTERFACE_MAP()
@@ -53,12 +49,20 @@ namespace User
 
 		struct Info
 		{
-			Omega::guid_t                      m_oid;
-			OTL::ObjectPtr<Omega::IObject>     m_ptrObject;
-			Omega::uint32_t                    m_source;
+			Omega::string_t                      m_oid;
+			OTL::ObjectPtr<Omega::IObject>       m_ptrObject;
+			Omega::uint32_t                      m_source;
+			Omega::Activation::RegisterFlags_t   m_flags;
+			Omega::uint32_t                      m_rot_cookie;
 		};
-		std::map<Omega::uint32_t,Info>                                        m_mapObjectsByCookie;
-		std::multimap<Omega::guid_t,std::map<Omega::uint32_t,Info>::iterator> m_mapObjectsByOid;
+		std::map<Omega::uint32_t,Info>                                          m_mapObjectsByCookie;
+		std::multimap<Omega::string_t,std::map<Omega::uint32_t,Info>::iterator> m_mapObjectsByOid;
+
+	// IRunningObjectTable
+	public:
+		Omega::uint32_t RegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t reg_flags);
+		void RevokeObject(Omega::uint32_t cookie);
+		void GetObject(const Omega::any_t& oid, Omega::Activation::RegisterFlags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }
 

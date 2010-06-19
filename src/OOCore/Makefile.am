@@ -5,8 +5,8 @@ common = \
 	md5.c \
 	Activation.h \
 	Activation.cpp \
-	ApartmentImpl.h \
-	ApartmentImpl.cpp \
+	Compartment.h \
+	Compartment.cpp \
 	CDRMessage.h \
 	Channel.h \
 	Channel.cpp \

@@ -151,7 +151,7 @@ inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Omega::Remotin
 	}
 
 	if (!obj)
-		OMEGA_THROW(L"Failed to create proxy");
+		OMEGA_THROW("Failed to create proxy");
 
 	return obj;
 }
@@ -184,13 +184,13 @@ inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Omega::
 		// Wrap it in a proxy and add it...
 		const wire_rtti* rtti = get_wire_rtti_info(iid);
 		if (!rtti)
-			OMEGA_THROW(L"Failed to create wire stub for interface - missing rtti");
+			OMEGA_THROW("Failed to create wire stub for interface - missing rtti");
 
 		pStub = (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
 	}
 
 	if (!pStub)
-		OMEGA_THROW(L"Failed to create wire stub for interface");
+		OMEGA_THROW("Failed to create wire stub for interface");
 
 	return pStub;
 }

@@ -37,15 +37,13 @@ User::Channel::Channel() :
 
 void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
 	m_pManager = pManager;
 	m_channel_id = channel_id;
 	m_marshal_flags = marshal_flags;
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
+		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::InProcess));
 
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess | Activation::DontLaunch);
@@ -53,7 +51,7 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM;
 	if (!m_ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Associate it with the channel
 	m_ptrOM->Connect(this);
@@ -121,7 +119,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			else
 			{
 				disconnect();
-				OMEGA_THROW(L"Internal server exception");
+				OMEGA_THROW("Internal server exception");
 			}
 		}
 	}
@@ -208,12 +206,12 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		else
 		{
 			disconnect();
-			OMEGA_THROW(L"Internal server exception");
+			OMEGA_THROW("Internal server exception");
 		}
 	}
 
 	if (!response)
-		OMEGA_THROW(L"No response received");
+		OMEGA_THROW("No response received");
 
 	Omega::uint32_t other_end = 0;
 	if (!response->read(other_end))
@@ -228,6 +226,9 @@ void User::Channel::GetManager(const guid_t& iid, IObject*& pObject)
 {
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	if (!m_ptrOM)
+		throw Remoting::IChannelClosedException::Create();
 
 	pObject = m_ptrOM->QueryInterface(iid);
 }

@@ -22,7 +22,7 @@
 #ifndef OOCORE_APARTMENT_IMPL_H_INCLUDED_
 #define OOCORE_APARTMENT_IMPL_H_INCLUDED_
 
-#include "../include/Omega/Apartment.h"
+#include "../include/Omega/Compartment.h"
 
 #include "Channel.h"
 
@@ -30,33 +30,33 @@ namespace OOCore
 {
 	struct Message;
 	class UserSession;
-	class Apartment;
+	class Compartment;
 
-	class AptChannel :
+	class ComptChannel :
 			public ChannelBase
 	{
 	public:
-		void init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
-
-		BEGIN_INTERFACE_MAP(AptChannel)
+		void init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		
+		BEGIN_INTERFACE_MAP(ComptChannel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SmartPtr<Apartment> m_ptrApt;
+		OOBase::SmartPtr<Compartment> m_ptrCompt;
 
 	public:
 		Omega::bool_t IsConnected();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};
 
-	class Apartment
+	class Compartment
 	{
 	public:
-		Apartment(UserSession* pSession, Omega::uint16_t id);
+		Compartment(UserSession* pSession, Omega::uint16_t id);
 
 		void close();
-
+		
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
 
@@ -64,9 +64,8 @@ namespace OOCore
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 
-		OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > create_apartment(Omega::uint16_t apartment_id, const Omega::guid_t& message_oid);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(Omega::uint16_t apartment_id);
-		Omega::IException* apartment_message(Omega::uint16_t apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > create_compartment(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);
+		Omega::IException* compartment_message(Omega::uint16_t cmpt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 
 	private:
 		OOBase::RWMutex m_lock;
@@ -74,31 +73,7 @@ namespace OOCore
 		Omega::uint16_t m_id;
 
 		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >    m_mapChannels;
-		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > > m_mapApartments;
-	};
-
-	// {6654B003-44F1-497a-B539-80B5FCED73BC}
-	OOCORE_DECLARE_OID(OID_StdApartment);
-
-	class ApartmentImpl :
-			public OTL::ObjectBase,
-			public OTL::AutoObjectFactoryNoAggregation<ApartmentImpl,&OOCore::OID_StdApartment,Omega::Activation::InProcess>,
-			public Omega::Apartment::IApartment
-	{
-	public:
-		ApartmentImpl();
-		virtual ~ApartmentImpl();
-
-		BEGIN_INTERFACE_MAP(ApartmentImpl)
-			INTERFACE_ENTRY(Omega::Apartment::IApartment)
-		END_INTERFACE_MAP()
-
-	private:
-		Omega::uint16_t m_id;
-
-	// IApartment members
-	public:
-		void CreateInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > > m_mapCompartments;
 	};
 }
 

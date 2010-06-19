@@ -41,7 +41,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::client_init(Manager* 
 	// Open the remote endpoint and attach ourselves as the sink...
 	m_ptrUpstream.Attach(pEndpoint->Open(strEndpoint,this));
 	if (!m_ptrUpstream)
-		OMEGA_THROW(L"IEndpoint::Open returned null sink");
+		OMEGA_THROW("IEndpoint::Open returned null sink");
 
 	m_message_oid = pEndpoint->MessageOid();
 
@@ -134,7 +134,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 				// Do nothing
 			}
 			else
-				OMEGA_THROW(L"Invalid system message");
+				OMEGA_THROW("Invalid system message");
 		}
 		else if (flags == OOServer::Message_t::Response)
 		{
@@ -162,10 +162,10 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 				ptrPayload->WriteValue(L"pong",byte_t(1));
 			}
 			else
-				OMEGA_THROW(L"Invalid system message");
+				OMEGA_THROW("Invalid system message");
 		}
 		else
-			OMEGA_THROW(L"Invalid system message");
+			OMEGA_THROW("Invalid system message");
 	}
 	else
 	{
@@ -181,7 +181,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 			// QI for IMarshaller
 			ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 			if (!ptrMarshaller)
-				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 			ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrInput);
 		}
@@ -226,7 +226,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	ptrMarshaller->MarshalInterface(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 
@@ -276,7 +276,7 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 	catch (...)
@@ -320,7 +320,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrMsg);
@@ -387,7 +387,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",pMsg);
@@ -438,7 +438,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping;
 				}
 				else
-					OMEGA_THROW(L"Invalid system message");
+					OMEGA_THROW("Invalid system message");
 
 				if (!(out_attribs & TypeInfo::Asynchronous))
 				{
@@ -447,7 +447,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				}
 			}
 			else
-				OMEGA_THROW(L"Invalid system message");
+				OMEGA_THROW("Invalid system message");
 		}
 		else
 		{
@@ -482,7 +482,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				Release();
 
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
-				OMEGA_THROW(L"Failed to queue message");
+				OMEGA_THROW("Failed to queue message");
 			}
 		}
 	}
@@ -501,7 +501,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					// Pass on.. there is no payload to filter
 				}
 				else
-					OMEGA_THROW(L"Invalid system message");
+					OMEGA_THROW("Invalid system message");
 			}
 			else if (flags == OOServer::Message_t::Response)
 			{
@@ -522,10 +522,10 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					ptrOutput->WriteValue(L"pong",p);
 				}
 				else
-					OMEGA_THROW(L"Invalid system message");
+					OMEGA_THROW("Invalid system message");
 			}
 			else
-				OMEGA_THROW(L"Invalid system message");
+				OMEGA_THROW("Invalid system message");
 		}
 		else
 		{
@@ -577,7 +577,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			else if (res == OOServer::MessageHandler::io_result::channel_closed)
 				throw Omega::Remoting::IChannelClosedException::Create();
 			else
-				OMEGA_THROW(L"Internal server exception");
+				OMEGA_THROW("Internal server exception");
 		}
 	}
 }
@@ -611,7 +611,7 @@ void User::RemoteChannel::do_channel_closed(void* pParam, OOBase::CDRStream& inp
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 	catch (...)
@@ -690,7 +690,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
-		OMEGA_THROW(L"No protocol specified");
+		OMEGA_THROW("No protocol specified");
 
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
 
@@ -701,7 +701,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 		if (ptrKey->IsValue(L"Endpoint"))
-			strHandler = ptrKey->GetStringValue(L"Endpoint");
+			strHandler = ptrKey->GetValue(L"Endpoint").cast<string_t>();
 	}
 
 	if (strHandler.IsEmpty())
@@ -711,22 +711,12 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 			if (ptrKey->IsValue(L"Endpoint"))
-				strHandler = ptrKey->GetStringValue(L"Endpoint");
+				strHandler = ptrKey->GetValue(L"Endpoint").cast<string_t>();
 		}
 	}
 
-	guid_t oid = guid_t::Null();
-	if (!strHandler.IsEmpty())
-	{
-		if (!guid_t::FromString(strHandler,oid))
-			oid = Activation::NameToOid(strHandler);
-	}
-
-	if (oid == guid_t::Null())
-		OMEGA_THROW(L"No handler for protocol " + strProtocol);
-
 	// Create the factory
-	ObjectPtr<Remoting::IEndpoint> ptrEndpoint(oid);
+	ObjectPtr<Remoting::IEndpoint> ptrEndpoint(strHandler);
 
 	// Check for duplicates
 	string_t strCanon = ptrEndpoint->Canonicalise(strEndpoint);
@@ -804,7 +794,7 @@ void User::Manager::close_all_remotes()
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 	catch (...)
@@ -864,7 +854,7 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 		return OOServer::MessageHandler::io_result::failed;
 	}

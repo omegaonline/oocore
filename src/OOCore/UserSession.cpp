@@ -33,7 +33,7 @@ using namespace OTL;
 OOCore::UserSession::UserSession() :
 		m_channel_id(0),
 		m_nIPSCookie(0),
-		m_next_apartment(0)
+		m_next_compartment(0)
 {
 }
 
@@ -123,13 +123,13 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 		m_worker_thread.run(io_worker_fn,this);
 	}
 
-	// Create the zero apartment
-	OOBase::SmartPtr<Apartment> ptrZeroApt;
-	OMEGA_NEW(ptrZeroApt,Apartment(this,0));
+	// Create the zero compartment
+	OOBase::SmartPtr<Compartment> ptrZeroCompt;
+	OMEGA_NEW(ptrZeroCompt,Compartment(this,0));
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,ptrZeroApt));
+	m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(0,ptrZeroCompt));
 
 	guard.release();
 
@@ -139,12 +139,12 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 	ObjectPtr<IInterProcessService> ptrIPS;
 	if (!bStandalone)
 	{
-		// Create a new object manager for the user channel on the zero apartment
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000);
+		// Create a new object manager for the user channel on the zero compartment
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 
 		ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	}
@@ -159,7 +159,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
-			OMEGA_THROW(L"Corrupt OOSvrLite");
+			OMEGA_THROW("Corrupt OOSvrLite");
 
 		IInterProcessService* pIPS = 0;
 		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS),System::Internal::marshal_info<const init_arg_map_t&>::safe_type::coerce(args));
@@ -170,7 +170,10 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 	}
 
 	// Register locally...
-	m_nIPSCookie = Activation::RegisterObject(OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+	m_nIPSCookie = ptrROT->RegisterObject(OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 }
 
 std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
@@ -201,7 +204,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		if (bStandalone)
 			return std::string();
 		else
-			throw ISystemException::Create(L"Failed to connect to network daemon",L"Omega::Initialize");
+			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
 
@@ -246,7 +249,10 @@ void OOCore::UserSession::term_i()
 	// Unregister InterProcessService
 	if (m_nIPSCookie)
 	{
-		Activation::RevokeObject(m_nIPSCookie);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+		
+		ptrROT->RevokeObject(m_nIPSCookie);
 		m_nIPSCookie = 0;
 	}
 
@@ -257,12 +263,12 @@ void OOCore::UserSession::term_i()
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();
 
-	// Close all apartments
-	for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin(); j!=m_mapApartments.end(); ++j)
+	// Close all compartments
+	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
 		j->second->close();
 	}
-	m_mapApartments.clear();
+	m_mapCompartments.clear();
 
 	// Close all singletons
 	close_singletons_i();
@@ -291,6 +297,11 @@ void OOCore::UserSession::close_singletons_i()
 	{
 		(*(i->first))(i->second);
 	}
+}
+
+Omega::uint32_t OOCore::UserSession::get_channel_id() const
+{
+	return m_channel_id;
 }
 
 void OOCore::UserSession::add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
@@ -326,7 +337,15 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
 {
-	return static_cast<UserSession*>(pParam)->run_read_loop();
+	try
+	{
+		return static_cast<UserSession*>(pParam)->run_read_loop();
+	}
+	catch (std::exception& e)
+	{
+		OOBase_CallCriticalFailure(e.what());
+		return -1;
+	}
 }
 
 void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
@@ -442,8 +461,8 @@ int OOCore::UserSession::run_read_loop()
 		if ((dest_channel_id & 0xFFFFF000) != m_channel_id)
 			continue;
 
-		// Unpack the apartment...
-		msg->m_dest_apt_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
+		// Unpack the compartment...
+		msg->m_dest_cmpt_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
 
 		if ((msg->m_attribs & Message::system_message) && msg->m_type == Message::Request)
 		{
@@ -463,16 +482,22 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(msg->m_src_channel_id))
 					err = response.last_error();
 				else
-					send_response(msg->m_dest_apt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
+					send_response(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
 			}
 			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
 			{
+				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
 				// Send back 1 byte
+				byte_t res = (m_mapCompartments.find(msg->m_dest_cmpt_id) == m_mapCompartments.end() ? 0 : 1);
+
+				guard.release();
+
 				OOBase::CDRStream response(sizeof(byte_t));
-				if (!response.write(byte_t(1)))
+				if (!response.write(res))
 					err = response.last_error();
 				else
-					send_response(msg->m_dest_apt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
+					send_response(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
 			}
 		}
 		else if (msg->m_dest_thread_id != 0)
@@ -480,26 +505,17 @@ int OOCore::UserSession::run_read_loop()
 			// Find the right queue to send it to...
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			try
+			std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+			if (i != m_mapThreadContexts.end())
 			{
-				std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
-				if (i == m_mapThreadContexts.end())
-					err = EACCES;
-				else
-				{
-					size_t waiting = i->second->m_usage_count.value();
+				size_t waiting = i->second->m_usage_count.value();
 
-					OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-					if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
-					{
-						if (waiting == 0)
-							wait_or_alert(i->second->m_usage_count);
-					}
+				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+				{
+					if (waiting == 0)
+						wait_or_alert(i->second->m_usage_count);
 				}
-			}
-			catch (std::exception& e)
-			{
-				OOBase_CallCriticalFailure(e.what());
 			}
 		}
 		else
@@ -539,70 +555,55 @@ int OOCore::UserSession::run_read_loop()
 
 bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 {
-	// Check we still have a receiving stream
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-	if (!m_stream)
-		throw Remoting::IChannelClosedException::Create();
-
-	guard.release();
-
-	// Increment the consumers...
-	++m_usage_count;
-
-	// Get the next message
-	OOBase::SmartPtr<Message> msg;
-	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
-
-	// Decrement the consumers...
-	--m_usage_count;
-
-	if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+	for (;;)
 	{
-		// We didn't process anything
-		return false;
+		// Check we still have a receiving stream
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		if (!m_stream)
+			throw Remoting::IChannelClosedException::Create();
+
+		guard.release();
+
+		// Increment the consumers...
+		++m_usage_count;
+
+		// Get the next message
+		OOBase::SmartPtr<Message> msg;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
+
+		// Decrement the consumers...
+		--m_usage_count;
+
+		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		{
+			// We didn't process anything
+			return false;
+		}
+
+		if (msg->m_type == Message::Request)
+		{
+			ThreadContext* pContext = ThreadContext::instance();
+
+			// Don't confuse the wait deadline with the message processing deadline
+			process_request(pContext,msg,0);
+
+			// Clear the channel/threads map
+			pContext->m_mapChannelThreads.clear();
+
+			// We processed something
+			return true;
+		}
 	}
-
-	// Set deadline
-	// Dont confuse the wait deadline with the message processing deadline
-	ThreadContext* pContext = ThreadContext::instance();
-	OOBase::timeval_t old_deadline = pContext->m_deadline;
-	pContext->m_deadline = msg->m_deadline;
-
-	try
-	{
-		// Set per channel thread id
-		pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
-
-		// Process the message...
-		process_request(msg,pContext->m_deadline);
-
-		// Clear the thread map
-		pContext->m_mapChannelThreads.clear();
-	}
-	catch (...)
-	{
-		// Reset the deadline
-		pContext->m_deadline = old_deadline;
-
-		// Rethrow
-		throw;
-	}
-
-	// Reset the deadline
-	pContext->m_deadline = old_deadline;
-
-	// We processed something
-	return true;
 }
 
 void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 {
-	// Pass on the message to the apartments
+	// Pass on the message to the compartments
 	try
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin(); j!=m_mapApartments.end(); ++j)
+		for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 		{
 			j->second->process_channel_close(closed_channel_id);
 		}
@@ -625,11 +626,11 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	{}
 }
 
-OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id, uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
 {
-	OOBase::CDRStream* response = 0;
 	ThreadContext* pContext = ThreadContext::instance();
 
+	OOBase::CDRStream* response = 0;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
@@ -638,22 +639,22 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		// Check we still have a receiving stream
 		if (!m_stream)
 		{
-			// Apartment has gone!
+			// Compartment has gone!
 			throw Remoting::IChannelClosedException::Create();
 		}
 
-		OOBase::SmartPtr<Apartment> ptrApt;
-		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(apartment_id);
-		if (i == m_mapApartments.end())
+		OOBase::SmartPtr<Compartment> ptrCompt;
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		if (i == m_mapCompartments.end())
 		{
-			// Apartment has gone!
+			// Compartment has gone!
 			throw Remoting::IChannelClosedException::Create();
 		}
-		ptrApt = i->second;
+		ptrCompt = i->second;
 
 		guard.release();
 
-		if (!ptrApt->is_channel_open(from_channel_id))
+		if (!ptrCompt->is_channel_open(from_channel_id))
 		{
 			// Channel has gone!
 			throw Remoting::IChannelClosedException::Create();
@@ -673,34 +674,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		{
 			if (msg->m_type == Message::Request)
 			{
-				// Update deadline
-				OOBase::timeval_t old_deadline = pContext->m_deadline;
-				pContext->m_deadline = msg->m_deadline;
-				if (deadline && *deadline < pContext->m_deadline)
-					pContext->m_deadline = *deadline;
-
-				try
-				{
-					// Set per channel thread id
-					std::map<uint32_t,uint16_t>::iterator i = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-					if (i == pContext->m_mapChannelThreads.end())
-						i = pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(msg->m_src_channel_id,0)).first;
-
-					uint16_t old_thread_id = i->second;
-					i->second = msg->m_src_thread_id;
-
-					// Process the message...
-					process_request(msg,pContext->m_deadline);
-
-					// Restore old context
-					pContext->m_deadline = old_deadline;
-					i->second = old_thread_id;
-				}
-				catch (...)
-				{
-					pContext->m_deadline = old_deadline;
-					throw;
-				}
+				process_request(pContext,msg,deadline);
 			}
 			else if (msg->m_type == Message::Response && msg->m_seq_no == seq_no)
 			{
@@ -728,7 +702,7 @@ OOCore::UserSession::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_deadline(OOBase::timeval_t::MaxTime),
 		m_seq_no(0),
-		m_current_apt(0)
+		m_current_cmpt(0)
 {
 }
 
@@ -754,11 +728,9 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 			}
 		}
 	}
-	catch (std::exception& e)
-	{
-		OOBase_CallCriticalFailure(e.what());
-	}
-
+	catch (std::exception&)
+	{}
+	
 	OOBase_CallCriticalFailure("Too many threads");
 	return 0;
 }
@@ -770,8 +742,10 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
+OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
 {
+	ThreadContext* pContext = ThreadContext::instance();
+
 	uint16_t src_thread_id = 0;
 	uint16_t dest_thread_id = 0;
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
@@ -781,8 +755,6 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message::asynchronous))
 	{
-		ThreadContext* pContext = ThreadContext::instance();
-
 		// Determine dest_thread_id
 		std::map<uint32_t,uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
 		if (i != pContext->m_mapChannelThreads.end())
@@ -805,7 +777,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 	}
 
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | src_apartment_id,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
+	OOBase::CDRStream header = build_header(seq_no,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
 
 	// Send to the handle
 	OOBase::timeval_t wait = deadline;
@@ -833,13 +805,15 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 		return 0;
 	else
 		// Wait for response...
-		return wait_for_response(src_apartment_id,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+		return wait_for_response(seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
 }
 
-void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
+	ThreadContext* pContext = ThreadContext::instance();
+
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | apartment_id,ThreadContext::instance()->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
+	OOBase::CDRStream header = build_header(seq_no,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
 
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
@@ -892,7 +866,7 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 
 		// Check the size
 		if (msg->buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
-			OMEGA_THROW(L"Message too big");
+			OMEGA_THROW("Message too big");
 
 		// Write the request stream
 		header.write_buffer(msg->buffer());
@@ -912,7 +886,7 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 	if (channel == m_channel_id)
 		mflags = Remoting::Same;
 	else if ((channel & 0xFFFFF000) == (m_channel_id & 0xFFFFF000))
-		mflags = Remoting::Apartment;
+		mflags = Remoting::Compartment;
 	else if ((channel & 0xFF000000) == (m_channel_id & 0xFF000000))
 		mflags = Remoting::InterProcess;
 	else if ((channel & 0x80000000) == (m_channel_id & 0x80000000))
@@ -923,29 +897,66 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 	return mflags;
 }
 
-void OOCore::UserSession::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
+void OOCore::UserSession::process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::SmartPtr<Apartment> ptrApt;
-	std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pMsg->m_dest_apt_id);
-	if (i != m_mapApartments.end())
-		ptrApt = i->second;
+	OOBase::SmartPtr<Compartment> ptrCompt;
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
+	if (i != m_mapCompartments.end())
+		ptrCompt = i->second;
 
-	if (!ptrApt)
+	if (!ptrCompt)
 		return;
 
 	guard.release();
 
+	uint16_t old_id = pContext->m_current_cmpt;
+	pContext->m_current_cmpt = pMsg->m_dest_cmpt_id;
+
+	// Update deadline
+	OOBase::timeval_t old_deadline = pContext->m_deadline;
+	pContext->m_deadline = pMsg->m_deadline;
+	if (deadline && *deadline < pContext->m_deadline)
+		pContext->m_deadline = *deadline;
+
 	try
 	{
-		ptrApt->process_request(pMsg,deadline);
+		// Set per channel thread id
+		std::map<uint32_t,uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(pMsg->m_src_channel_id,0)).first;
+		
+		uint16_t old_thread_id = i->second;
+		i->second = pMsg->m_src_thread_id;
+
+		try
+		{
+			// Process the message...
+			ptrCompt->process_request(pMsg,pContext->m_deadline);
+		}
+		catch (IException* pOuter)
+		{
+			// Just drop the exception, and let it pass...
+			pOuter->Release();
+		}
+		catch (...)
+		{
+			pContext->m_deadline = old_deadline;
+			i->second = old_thread_id;
+			throw;
+		}
+
+		// Restore old context
+		i->second = old_thread_id;
 	}
-	catch (IException* pOuter)
+	catch (...)
 	{
-		// Just drop the exception, and let it pass...
-		pOuter->Release();
-	}
+		pContext->m_deadline = old_deadline;
+		pContext->m_current_cmpt = old_id;
+		throw;
+	}	
+
+	pContext->m_deadline = old_deadline;
+	pContext->m_current_cmpt = old_id;
 }
 
 bool OOCore::UserSession::handle_request(uint32_t timeout)
@@ -958,102 +969,94 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))
 {
 	if (OOCore::HostedByOOServer())
-		return OOCore::GetInterProcessService()->HandleRequest(timeout);
+	{
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (!ptrIPS)
+			throw IInternalException::Create("Omega::Initialize not called","OOCore");
+
+		return ptrIPS->HandleRequest(timeout);
+	}
 	else
 		return OOCore::UserSession::handle_request(timeout);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
 {
-	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	if (!ptrIPS)
+		throw IInternalException::Create("Omega::Initialize not called","OOCore");
+
+	return ptrIPS->OpenServerSink(message_oid,pSink);
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment()
+ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment()
 {
-	return USER_SESSION::instance()->create_apartment_i();
+	return USER_SESSION::instance()->create_compartment_i();
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment_i()
+ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment_i()
 {
-	// Create a new Apartment object
-	OOBase::SmartPtr<Apartment> ptrApt;
+	// Create a new Compartment object
+	OOBase::SmartPtr<Compartment> ptrCompt;
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		// Select a new apartment id
-		uint16_t apt_id;
+		// Select a new compartment id
+		uint16_t cmpt_id;
 		do
 		{
-			apt_id = ++m_next_apartment;
-			if (apt_id > 0xFFF)
-				apt_id = m_next_apartment = 1;
+			cmpt_id = ++m_next_compartment;
+			if (cmpt_id > 0xFFF)
+				cmpt_id = m_next_compartment = 1;
 
 		}
-		while (m_mapApartments.find(apt_id) != m_mapApartments.end());
+		while (m_mapCompartments.find(cmpt_id) != m_mapCompartments.end());
 
 		// Create the new object
-		OMEGA_NEW(ptrApt,Apartment(this,apt_id));
+		OMEGA_NEW(ptrCompt,Compartment(this,cmpt_id));
 
 		// Add it to the map
-		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(apt_id,ptrApt));
+		m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(cmpt_id,ptrCompt));
 	}
 
-	// Now a new OM for the new apartment connecting to the zero apt
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_apartment_om(0);
-
-	// Now get the new apartment OM to create an IApartment
-	IObject* pObject = 0;
-	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
-
-	pObject = 0;
-	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
-
-	return static_cast<Omega::Apartment::IApartment*>(pObject);
+	// Now a new ComptChannel for the new compartment connecting to this cmpt
+	return ptrCompt->create_compartment(ThreadContext::instance()->m_current_cmpt,guid_t::Null());
 }
 
-OOBase::SmartPtr<OOCore::Apartment> OOCore::UserSession::get_apartment(uint16_t id)
+OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i = m_mapApartments.find(id);
-	if (i == m_mapApartments.end())
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
+	if (i == m_mapCompartments.end())
 		throw Remoting::IChannelClosedException::Create();
 
 	return i->second;
 }
 
-uint16_t OOCore::UserSession::get_current_apartment()
+void OOCore::UserSession::remove_compartment(uint16_t id)
 {
-	return ThreadContext::instance()->m_current_apt;
-}
-
-void OOCore::UserSession::remove_apartment(uint16_t id)
-{
-	UserSession* pThis = USER_SESSION::instance();
-
-	OOBase::SmartPtr<Apartment> ptrApt;
+	OOBase::SmartPtr<Compartment> ptrCompt;
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(pThis->m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i = pThis->m_mapApartments.find(id);
-		if (i == pThis->m_mapApartments.end())
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
+		if (i == m_mapCompartments.end())
 			return;
 
-		ptrApt = i->second;
-		pThis->m_mapApartments.erase(i);
+		ptrCompt = i->second;
+		m_mapCompartments.erase(i);
 	}
 
-	ptrApt->close();
+	ptrCompt->close();
 }
 
-uint16_t OOCore::UserSession::update_state(uint16_t apartment_id, uint32_t* pTimeout)
+uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pTimeout)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
-	uint16_t old_id = pContext->m_current_apt;
-	pContext->m_current_apt = apartment_id;
+	uint16_t old_id = pContext->m_current_cmpt;
+	pContext->m_current_cmpt = compartment_id;
 
 	if (pTimeout)
 	{
@@ -1080,20 +1083,20 @@ IObject* OOCore::UserSession::create_channel(uint32_t src_channel_id, const guid
 
 IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
 {
-	// Create a channel in the context of the current apartment
+	// Create a channel in the context of the current compartment
 	const ThreadContext* pContext = ThreadContext::instance();
 
-	OOBase::SmartPtr<Apartment> ptrApt;
+	OOBase::SmartPtr<Compartment> ptrCompt;
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pContext->m_current_apt);
-		if (i == m_mapApartments.end())
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		if (i == m_mapCompartments.end())
 		{
-			// Apartment has gone!
+			// Compartment has gone!
 			throw Remoting::IChannelClosedException::Create();
 		}
-		ptrApt = i->second;
+		ptrCompt = i->second;
 	}
 
 	switch (classify_channel(src_channel_id))
@@ -1101,10 +1104,40 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	case Remoting::Same:
 		return LoopChannel::create(src_channel_id,message_oid,iid);
 
-	case Remoting::Apartment:
-		return ptrApt->create_apartment(static_cast<uint16_t>(src_channel_id & 0xFFF),message_oid)->QueryInterface(iid);
+	case Remoting::Compartment:
+		return ptrCompt->create_compartment(static_cast<uint16_t>(src_channel_id & 0xFFF),message_oid)->QueryInterface(iid);
 
 	default:
-		return ptrApt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
+		return ptrCompt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
 	}
+}
+
+Activation::IRunningObjectTable* OOCore::UserSession::get_rot()
+{
+	return USER_SESSION::instance()->get_rot_i();
+}
+
+Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
+{
+	const ThreadContext* pContext = ThreadContext::instance();
+
+	if (pContext->m_current_cmpt != 0)
+	{
+		OOBase::SmartPtr<OOCore::Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
+
+		ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = ptrCompt->create_compartment(0,guid_t::Null());
+
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
+					
+		IObject* pObject = 0;
+		ptrOM->GetRemoteInstance(OID_ServiceManager,Activation::ProcessLocal,OMEGA_GUIDOF(Activation::IRunningObjectTable),pObject);
+		return static_cast<Activation::IRunningObjectTable*>(pObject);
+	}
+
+	return SingletonObjectImpl<ServiceManager>::CreateInstance();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
+{
+	return OOCore::UserSession::get_rot();
 }

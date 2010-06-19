@@ -230,10 +230,8 @@ void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CD
 	ptrHive->enum_subkeys(uKey,channel_id,response);
 }
 
-void Root::Manager::registry_value_type(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	Omega::byte_t type = 0;
-
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
@@ -243,15 +241,13 @@ void Root::Manager::registry_value_type(Omega::uint32_t channel_id, OOBase::CDRS
 		if (!request.read(strValue))
 			err = EIO;
 		else
-			err = ptrHive->get_value_type(uKey,strValue,channel_id,type);
+			err = ptrHive->value_exists(uKey,strValue,channel_id);
 	}
 
 	response.write(err);
-	if (err == 0 && response.last_error() == 0)
-		response.write(type);
 }
 
-void Root::Manager::registry_get_string_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	std::string val;
 
@@ -264,7 +260,7 @@ void Root::Manager::registry_get_string_value(Omega::uint32_t channel_id, OOBase
 		if (!request.read(strValue))
 			err = EIO;
 		else
-			err = ptrHive->get_string_value(uKey,strValue,channel_id,val);
+			err = ptrHive->get_value(uKey,strValue,channel_id,val);
 	}
 
 	response.write(err);
@@ -272,52 +268,7 @@ void Root::Manager::registry_get_string_value(Omega::uint32_t channel_id, OOBase
 		response.write(val);
 }
 
-void Root::Manager::registry_get_int_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	Omega::int64_t val = 0;
-
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
-	Omega::int64_t uKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
-	if (err == 0)
-	{
-		std::string strValue;
-		if (!request.read(strValue))
-			err = EIO;
-		else
-			err = ptrHive->get_integer_value(uKey,strValue,channel_id,val);
-	}
-
-	response.write(err);
-	if (err == 0 && response.last_error() == 0)
-		response.write(val);
-}
-
-void Root::Manager::registry_get_binary_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
-	Omega::int64_t uKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
-	if (err == 0)
-	{
-		std::string strValue;
-		if (!request.read(strValue))
-			err = EIO;
-		else
-		{
-			Omega::uint32_t cbLen = 0;
-			if (!request.read(cbLen))
-				err = EIO;
-			else
-				ptrHive->get_binary_value(uKey,strValue,channel_id,cbLen,response);
-		}
-	}
-
-	if (err != 0)
-		response.write(err);
-}
-
-void Root::Manager::registry_set_string_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
@@ -333,48 +284,8 @@ void Root::Manager::registry_set_string_value(Omega::uint32_t channel_id, OOBase
 			if (!request.read(val))
 				err = EIO;
 			else
-				err = ptrHive->set_string_value(uKey,strValue,channel_id,val.c_str());
+				err = ptrHive->set_value(uKey,strValue,channel_id,val.c_str());
 		}
-	}
-
-	response.write(err);
-}
-
-void Root::Manager::registry_set_int_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
-	Omega::int64_t uKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
-	if (err == 0)
-	{
-		std::string strValue;
-		if (!request.read(strValue))
-			err = EIO;
-		else
-		{
-			Omega::int64_t val;
-			if (!request.read(val))
-				err = EIO;
-			else
-				err = ptrHive->set_integer_value(uKey,strValue,channel_id,val);
-		}
-	}
-
-	response.write(err);
-}
-
-void Root::Manager::registry_set_binary_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
-	Omega::int64_t uKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
-	if (err == 0)
-	{
-		std::string strValue;
-		if (!request.read(strValue))
-			err = EIO;
-		else
-			err = ptrHive->set_binary_value(uKey,strValue,channel_id,request);
 	}
 
 	response.write(err);

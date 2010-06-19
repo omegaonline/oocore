@@ -112,7 +112,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
-		throw ISystemException::Create(L"No protocol specified",L"Omega::IO::OpenStream");
+		throw IInternalException::Create("No protocol specified","Omega::IO::OpenStream");
 
 	// Look up handler in registry
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
@@ -123,7 +123,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 		if (ptrKey->IsValue(L"Handler"))
-			strHandler = ptrKey->GetStringValue(L"Handler");
+			strHandler = ptrKey->GetValue(L"Handler").cast<string_t>();
 	}
 
 	if (strHandler.IsEmpty())
@@ -133,22 +133,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 			if (ptrKey->IsValue(L"Handler"))
-				strHandler = ptrKey->GetStringValue(L"Handler");
+				strHandler = ptrKey->GetValue(L"Handler").cast<string_t>();
 		}
 	}
 
-	guid_t oid = guid_t::Null();
-	if (!strHandler.IsEmpty())
-	{
-		if (!guid_t::FromString(strHandler,oid))
-			oid = Activation::NameToOid(strHandler);
-	}
-
-	if (oid == guid_t::Null())
-		throw ISystemException::Create(L"No handler for protocol " + strProtocol,L"Omega::IO::OpenStream");
-
 	// Create the handler...
-	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
+	ObjectPtr<Net::IProtocolHandler> ptrHandler(strHandler);
 
 	// Open the stream...
 	return ptrHandler->OpenStream(strEndpoint,pNotify);

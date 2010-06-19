@@ -42,37 +42,37 @@
 	public: static const OTL::ObjectBase::QIEntry* getQIEntries() {static const OTL::ObjectBase::QIEntry QIEntries[] = {
 
 #define INTERFACE_ENTRY(iface) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY_IID(iid,iface) \
-	{ &iid, &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
+	{ &iid, &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY2(iface,iface2) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY2_IID(iid,iface,iface2) \
-	{ &iid, &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &iid, &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0, 0 },
 
 #define INTERFACE_ENTRY_CHAIN(baseClass) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIChain<baseClass,RootClass>, 0, 0 },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIChain<baseClass,RootClass>, 0, 0, baseClass::getQIEntries() },
 
 #define INTERFACE_ENTRY_AGGREGATE(iface,member_object) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object)+1, 0, 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object)+1, 0, 0 },
 
 #define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn) },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn), 0 },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn) },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn), 0 },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0, 0 },
 
 #define END_INTERFACE_MAP() \
-	{ 0,0,0,0 } }; return QIEntries; }
+	{ 0,0,0,0,0 } }; return QIEntries; }
 
 ///////////////////////////////////////////////////////////////////
 // Object map macros
@@ -100,10 +100,10 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, &Creator<obj::ObjectFactoryClass>::Create, 0 },
+		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
 #define END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
-		{ 0,0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
@@ -112,8 +112,8 @@
 
 #define END_LIBRARY_OBJECT_MAP() \
 	END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
-	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
-	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid); }
+	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
+	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid); }
 
 #define BEGIN_PROCESS_OBJECT_MAP() \
 	namespace OTL { \
@@ -124,7 +124,7 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
@@ -213,6 +213,8 @@ namespace OTL
 
 		OBJECT* operator ->() const
 		{
+			assert(m_ptr != 0);
+
 			return m_ptr;
 		}
 
@@ -349,6 +351,7 @@ namespace OTL
 			Omega::IObject* (*pfnQI)(const Omega::guid_t& iid, void* pThis, size_t offset, ObjectBase::PFNMEMQI pfnMemQI);
 			size_t offset;
 			PFNMEMQI pfnMemQI;
+			const QIEntry* baseEntries;
 		};
 
 #if !defined(__BORLANDC__)
@@ -363,7 +366,7 @@ namespace OTL
 						*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
 						iid == OMEGA_GUIDOF(Omega::IObject))
 				{
-					return pEntries[i].pfnQI(iid,this,pEntries[i].offset,pEntries[i].pfnMemQI);
+					return pEntries[i].pfnQI(iid,this,pEntries[i].offset-1,pEntries[i].pfnMemQI);
 				}
 			}
 
@@ -458,9 +461,8 @@ namespace OTL
 		struct CreatorEntry
 		{
 			const Omega::guid_t* (*pfnOid)();
-			const Omega::Activation::Flags_t (*pfnActivationFlags)();
 			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
-			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
+			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid);
 			Omega::uint32_t cookie;
 		};
 
@@ -766,7 +768,7 @@ namespace OTL
 			else
 				ret = ptr.AddRef();
 			if (!ret)
-				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				throw Omega::INoInterfaceException::Create(iid);
 			return ret;
 		}
 
@@ -774,7 +776,7 @@ namespace OTL
 		{
 			Omega::IObject* ret = T::CreateInstancePtr()->QueryInterface(iid);
 			if (!ret)
-				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				throw Omega::INoInterfaceException::Create(iid);
 			return ret;
 		}
 	};
@@ -810,7 +812,7 @@ namespace OTL
 		}
 	};
 
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
 	class AutoObjectFactory
 	{
 	public:
@@ -821,26 +823,21 @@ namespace OTL
 			return pOID;
 		}
 
-		static const Omega::Activation::Flags_t GetActivationFlags()
+		static const Omega::Activation::RegisterFlags_t GetRegistrationFlags()
 		{
 			return flags;
 		}
-
-		static const Omega::Activation::RegisterFlags_t GetRegistrationFlags()
-		{
-			return reg_flags;
-		}
 	};
 
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
-	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
+	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
-	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
+	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
@@ -857,16 +854,16 @@ namespace OTL
 		template <typename T>
 		struct Creator
 		{
-			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
+			static Omega::IObject* Create(const Omega::guid_t& iid)
 			{
 				Omega::IObject* pObject = ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+					throw Omega::INoInterfaceException::Create(iid);
 				return pObject;
 			}
 		};
 
-		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
 		
 	protected:
 		LibraryModule()
@@ -884,11 +881,11 @@ namespace OTL
 		template <typename T>
 		struct Creator
 		{
-			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
+			static Omega::IObject* Create(const Omega::guid_t& iid)
 			{
 				Omega::IObject* pObject = NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+					throw Omega::INoInterfaceException::Create(iid);
 				return pObject;
 			}
 		};
@@ -901,27 +898,51 @@ namespace OTL
 	class IProvideObjectInfoImpl :
 			public Omega::TypeInfo::IProvideObjectInfo
 	{
-		// IProvideObjectInfo members
-	public:
-		virtual std::list<Omega::guid_t> EnumInterfaces()
+	private:
+		std::set<Omega::guid_t> WalkEntries(const ObjectBase::QIEntry* pEntries)
 		{
-			std::list<Omega::guid_t> retval;
+			std::set<Omega::guid_t> retval;
 
-			const ObjectBase::QIEntry* pEntries = ROOT::getQIEntries();
 			for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 			{
 				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
 				{
-					if (*(pEntries[i].pGuid) != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
-						retval.push_back(*(pEntries[i].pGuid));
+					if (!pEntries[i].pfnMemQI)
+						retval.insert(*(pEntries[i].pGuid));
+					else
+					{
+						ObjectPtr<Omega::IObject> ptrObj;
+						ptrObj.Attach(pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
+						if (ptrObj)
+							retval.insert(*(pEntries[i].pGuid));							
+					}
 				}
-				else
+				else if (pEntries[i].offset != 0)
 				{
-					void* TODO; // Walk up the chain...
+					ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrAgg;
+					ptrAgg.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI)));
+					if (ptrAgg)
+					{
+						std::set<Omega::guid_t> agg = ptrAgg->EnumInterfaces();
+						retval.insert(agg.begin(),agg.end());
+					}
+				}
+				else if (pEntries[i].baseEntries)
+				{
+					std::set<Omega::guid_t> base = WalkEntries(pEntries[i].baseEntries);
+					retval.insert(base.begin(),base.end());
 				}
 			}
 
 			return retval;
+		}
+
+
+	// IProvideObjectInfo members
+	public:
+		virtual std::set<Omega::guid_t> EnumInterfaces()
+		{
+			return WalkEntries(ROOT::getQIEntries());
 		}
 	};
 }

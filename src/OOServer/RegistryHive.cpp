@@ -60,10 +60,9 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 	}
 
 	// Create or reset the prepared statement
-	int err = SQLITE_OK;
 	if (!m_ptrCheckKey_Stmt)
 	{
-		err = m_db->prepare_statement(m_ptrCheckKey_Stmt,"SELECT Access FROM RegistryKeys WHERE Id = ?1;");
+		int err = m_db->prepare_statement(m_ptrCheckKey_Stmt,"SELECT Access, Description FROM RegistryKeys WHERE Id = ?1;");
 		if (err != SQLITE_OK)
 			return err;
 	}
@@ -71,7 +70,7 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 	OOSvrBase::Db::Resetter resetter(*m_ptrCheckKey_Stmt);
 
 	// Bind the key value
-	err = m_ptrCheckKey_Stmt->bind_int64(1,uKey);
+	int err = m_ptrCheckKey_Stmt->bind_int64(1,uKey);
 	if (err != SQLITE_OK)
 		return err;
 
@@ -658,7 +657,7 @@ int Registry::Hive::delete_value(const Omega::int64_t& uKey, const std::string& 
 	return 0;
 }
 
-int Registry::Hive::get_value_type(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::byte_t& type)
+int Registry::Hive::value_exists(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -678,24 +677,39 @@ int Registry::Hive::get_value_type(const Omega::int64_t& uKey, const std::string
 			return acc;
 	}
 
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
+	return value_exists_i(uKey,strValue);
+}
 
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
+int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const std::string& strValue)
+{
+	if (!m_ptrGetValue_Stmt)
 	{
-		type = static_cast<Omega::byte_t>(ptrStmt->column_int(0));
-		return 0;
+		int err = m_db->prepare_statement(m_ptrGetValue_Stmt,"SELECT Value,Description FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;");
+		if (err != SQLITE_OK)
+			return EIO;
 	}
+
+	OOSvrBase::Db::Resetter resetter(*m_ptrGetValue_Stmt);
+
+	// Bind the values
+	int err = m_ptrGetValue_Stmt->bind_string(1,strValue);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetValue_Stmt->bind_int64(2,uKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetValue_Stmt->step();
+	if (err == SQLITE_ROW)
+		return 0;
 	else if (err == SQLITE_DONE)
 		return ENOENT;
 	else
 		return EIO;
 }
 
-int Registry::Hive::get_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -715,19 +729,28 @@ int Registry::Hive::get_string_value(const Omega::int64_t& uKey, const std::stri
 			return acc;
 	}
 
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
+	if (!m_ptrGetValue_Stmt)
+	{
+		err = m_db->prepare_statement(m_ptrGetValue_Stmt,"SELECT Value,Description FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;");
+		if (err != SQLITE_OK)
+			return EIO;
+	}
 
-	err = ptrStmt->step();
+	OOSvrBase::Db::Resetter resetter(*m_ptrGetValue_Stmt);
+
+	// Bind the values
+	err = m_ptrGetValue_Stmt->bind_string(1,strValue);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetValue_Stmt->bind_int64(2,uKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetValue_Stmt->step();
 	if (err == SQLITE_ROW)
 	{
-		int type = ptrStmt->column_int(0);
-		if (type != 0)
-			return EINVAL;
-
-		const char* v = ptrStmt->column_text(1);
+		const char* v = m_ptrGetValue_Stmt->column_text(0);
 		if (v)
 			val = v;
 
@@ -739,194 +762,7 @@ int Registry::Hive::get_string_value(const Omega::int64_t& uKey, const std::stri
 		return EIO;
 }
 
-int Registry::Hive::get_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::int64_t& val)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::read_check)
-	{
-		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
-	{
-		int type = ptrStmt->column_int(0);
-		if (type != 1)
-			return EINVAL;
-
-		val = ptrStmt->column_int64(1);
-		return 0;
-	}
-	else if (err == SQLITE_DONE)
-		return ENOENT;
-	else
-		return EIO;
-}
-
-void Registry::Hive::get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::uint32_t cbLen, OOBase::CDRStream& response)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-	{
-		response.write((int)ENOENT);
-		return;
-	}
-	else if (err != SQLITE_ROW)
-	{
-		response.write((int)EIO);
-		return;
-	}
-
-	if (access_mask & Hive::read_check)
-	{
-		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-		if (acc != 0)
-		{
-			response.write(acc);
-			return;
-		}
-	}
-
-	// Write out success first
-	response.write((int)0);
-	if (response.last_error() != 0)
-		return;
-
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-	{
-		response.write((int)EIO);
-		return;
-	}
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
-	{
-		int type = ptrStmt->column_int(0);
-		if (type != 2)
-		{
-			response.reset();
-			response.write((int)EINVAL);
-		}
-		else
-		{
-			const void* pData = ptrStmt->column_blob(1);
-			int len = ptrStmt->column_bytes(1);
-
-			bool bData = false;
-			if (cbLen)
-			{
-				bData = true;
-				if (static_cast<Omega::uint32_t>(len) < cbLen)
-					cbLen = static_cast<Omega::uint32_t>(len);
-			}
-			else
-				cbLen = static_cast<Omega::uint32_t>(len);
-
-			if (!response.write(cbLen))
-			{
-				response.reset();
-				response.write((int)EIO);
-			}
-			else if (bData)
-			{
-				if (!response.write_bytes(static_cast<const Omega::byte_t*>(pData),cbLen))
-				{
-					response.reset();
-					response.write((int)EIO);
-				}
-			}
-		}
-
-		return;
-	}
-
-	if (err == SQLITE_DONE)
-		err = ENOENT;
-	else
-		err = EIO;
-
-	response.reset();
-	response.write(err);
-}
-
-int Registry::Hive::get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::uint32_t& cbLen, Omega::byte_t* buf)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::read_check)
-	{
-		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
-	{
-		int type = ptrStmt->column_int(0);
-		if (type != 2)
-			return EINVAL;
-
-		const void* pData = ptrStmt->column_blob(1);
-		int len = ptrStmt->column_bytes(1);
-
-		if (cbLen)
-		{
-			if (static_cast<Omega::uint32_t>(len) < cbLen)
-				cbLen = static_cast<Omega::uint32_t>(len);
-
-			memcpy(buf,static_cast<const Omega::byte_t*>(pData),cbLen);
-		}
-		else
-			cbLen = static_cast<Omega::uint32_t>(len);
-
-		return 0;
-	}
-	else if (err == SQLITE_DONE)
-		return ENOENT;
-	else
-		return EIO;
-}
-
-int Registry::Hive::set_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val)
+int Registry::Hive::set_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -947,224 +783,29 @@ int Registry::Hive::set_string_value(const Omega::int64_t& uKey, const std::stri
 	}
 
 	// See if we have a value already
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
+	err = value_exists_i(uKey,strValue);
+	if (err == 0)
 	{
-		int type = ptrStmt->column_int(0);
-		if (type != 0)
-			return EINVAL;
-
 		// We have an entry already
+		OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
 		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = %Q WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
 		if (err != SQLITE_OK)
 			return EIO;
 
 		err = ptrStmt->step();
 	}
-	else if (err == SQLITE_DONE)
+	else if (err == ENOENT)
 	{
 		// Insert the new value
-		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
+		OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
+		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Value) VALUES (%Q,%lld,%Q);",strValue.c_str(),uKey,val);
 		if (err != SQLITE_OK)
 			return EIO;
 
 		err = ptrStmt->step();
 	}
-
-	if (err == SQLITE_READONLY)
-		return EACCES;
-	else if (err != SQLITE_DONE)
-		return EIO;
-
-	return 0;
-}
-
-int Registry::Hive::set_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const Omega::int64_t& val)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::write_check)
-	{
-		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	// See if we have a value already
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
-	{
-		int type = ptrStmt->column_int(0);
-		if (type != 1)
-			return EINVAL;
-
-		// We have an entry already
-		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = %lld WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = ptrStmt->step();
-	}
-	else if (err == SQLITE_DONE)
-	{
-		// Insert the new value
-		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = ptrStmt->step();
-	}
-
-	if (err == SQLITE_READONLY)
-		return EACCES;
-	else if (err != SQLITE_DONE)
-		return EIO;
-
-	return 0;
-}
-
-int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const OOBase::CDRStream& request)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::write_check)
-	{
-		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	// See if we have a value already
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
-	{
-		int type = ptrStmt->column_int(0);
-		if (type != 2)
-			return EINVAL;
-
-		// We have an entry already
-		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.buffer()->rd_ptr(),static_cast<int>(request.buffer()->length()),SQLITE_STATIC);
-		if (err != SQLITE_OK)
-			LOG_ERROR(("sqlite3_bind_blob failed: %s",sqlite3_errmsg(m_db->database())));
-		else
-			err = ptrStmt->step();
-	}
-	else if (err == SQLITE_DONE)
-	{
-		// Insert the new value
-		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.buffer()->rd_ptr(),static_cast<int>(request.buffer()->length()),SQLITE_STATIC);
-		if (err != SQLITE_OK)
-			LOG_ERROR(("sqlite3_bind_blob failed: %s",sqlite3_errmsg(m_db->database())));
-		else
-			err = ptrStmt->step();
-	}
-
-	if (err == SQLITE_READONLY)
-		return EACCES;
-	else if (err != SQLITE_DONE)
-		return EIO;
-
-	return 0;
-}
-
-int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::uint32_t cbLen, const Omega::byte_t* buf)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::write_check)
-	{
-		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	// See if we have a value already
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = ptrStmt->step();
-	if (err == SQLITE_ROW)
-	{
-		int type = ptrStmt->column_int(0);
-		if (type != 2)
-			return EINVAL;
-
-		// We have an entry already
-		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = sqlite3_bind_blob(ptrStmt->statement(),1,buf,static_cast<int>(cbLen),SQLITE_STATIC);
-		if (err != SQLITE_OK)
-			LOG_ERROR(("sqlite3_bind_blob failed: %s",sqlite3_errmsg(m_db->database())));
-		else
-			err = ptrStmt->step();
-	}
-	else if (err == SQLITE_DONE)
-	{
-		// Insert the new value
-		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = sqlite3_bind_blob(ptrStmt->statement(),1,buf,static_cast<int>(cbLen),SQLITE_STATIC);
-		if (err != SQLITE_OK)
-			LOG_ERROR(("sqlite3_bind_blob failed: %s",sqlite3_errmsg(m_db->database())));
-		else
-			err = ptrStmt->step();
-	}
+	else
+		return err;
 
 	if (err == SQLITE_READONLY)
 		return EACCES;
@@ -1194,15 +835,25 @@ int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t 
 			return acc;
 	}
 
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Description FROM RegistryKeys WHERE Id = %lld;",uKey);
-	if (err != SQLITE_OK)
-		return EIO;
+	// Create or reset the prepared statement
+	if (!m_ptrCheckKey_Stmt)
+	{
+		err = m_db->prepare_statement(m_ptrCheckKey_Stmt,"SELECT Access, Description FROM RegistryKeys WHERE Id = ?1;");
+		if (err != SQLITE_OK)
+			return err;
+	}
 
-	err = ptrStmt->step();
+	OOSvrBase::Db::Resetter resetter(*m_ptrCheckKey_Stmt);
+
+	// Bind the key value
+	err = m_ptrCheckKey_Stmt->bind_int64(1,uKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrCheckKey_Stmt->step();
 	if (err == SQLITE_ROW)
 	{
-		const char* v = ptrStmt->column_text(0);
+		const char* v = m_ptrCheckKey_Stmt->column_text(1);
 		if (v)
 			val = v;
 
@@ -1234,15 +885,28 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std:
 			return acc;
 	}
 
-	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Description FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-	if (err != SQLITE_OK)
-		return EIO;
+	if (!m_ptrGetValue_Stmt)
+	{
+		err = m_db->prepare_statement(m_ptrGetValue_Stmt,"SELECT Value,Description FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;");
+		if (err != SQLITE_OK)
+			return EIO;
+	}
 
-	err = ptrStmt->step();
+	OOSvrBase::Db::Resetter resetter(*m_ptrGetValue_Stmt);
+
+	// Bind the values
+	err = m_ptrGetValue_Stmt->bind_string(1,strValue);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetValue_Stmt->bind_int64(2,uKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetValue_Stmt->step();
 	if (err == SQLITE_ROW)
 	{
-		const char* v = ptrStmt->column_text(0);
+		const char* v = m_ptrGetValue_Stmt->column_text(1);
 		if (v)
 			val = v;
 
@@ -1251,17 +915,7 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std:
 	else if (err == SQLITE_DONE)
 	{
 		// See if the value exists at all...
-		err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
-		if (err != SQLITE_OK)
-			return EIO;
-
-		err = ptrStmt->step();
-		if (err == SQLITE_ROW)
-			return 0;
-		else if (err == SQLITE_DONE)
-			return ENOENT;
-		else
-			return EIO;
+		return value_exists_i(uKey,strValue);
 	}
 	else
 		return EIO;
@@ -1322,6 +976,11 @@ int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const std:
 			return acc;
 	}
 
+	// Check the value exists...
+	err = value_exists_i(uKey,strValue);
+	if (err != 0)
+		return err;
+
 	// Insert the new value
 	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
 	err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Description = %Q WHERE Name = %Q AND Parent = %lld;",val.c_str(),strValue.c_str(),uKey);
@@ -1333,6 +992,6 @@ int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const std:
 		return EACCES;
 	else if (err != SQLITE_DONE)
 		return EIO;
-
+	
 	return 0;
 }

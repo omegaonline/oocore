@@ -35,9 +35,9 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetStringValue(L"OID",strOid);
+	ptrSubKey->SetValue(L"OID",strOid);
 	ptrSubKey = ptrKey.OpenSubKey(L"OIDs\\" + strOid,Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetStringValue(L"Library",Omega::string_t(pszLibName,Omega::string_t::npos));
+	ptrSubKey->SetValue(L"Library",Omega::string_t(pszLibName,Omega::string_t::npos));
 
 	return true;
 }
@@ -74,13 +74,13 @@ bool register_process(const wchar_t* pszExeName, bool& bSkipped)
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Process",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetStringValue(L"OID",strOid);
+	ptrSubKey->SetValue(L"OID",strOid);
 	ptrSubKey = ptrKey.OpenSubKey(L"OIDs\\" + strOid,Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetStringValue(L"Application",L"CoreTests.TestProcess");
+	ptrSubKey->SetValue(L"Application",L"CoreTests.TestProcess");
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User\\Applications",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess\\Activation",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetStringValue(L"Path",Omega::string_t(pszExeName,Omega::string_t::npos));
+	ptrSubKey->SetValue(L"Path",Omega::string_t(pszExeName,Omega::string_t::npos));
 
 	return true;
 }
@@ -219,9 +219,9 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(ptrPOI);
 
 	// Try to get the first interface
-	std::list<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
+	std::set<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
 	TEST(!interfaces.empty());
-	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(*interfaces.begin() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII;
 	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(*interfaces.begin(),ptrSimpleTest));
@@ -381,7 +381,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	// Test redirecting the registration
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetStringValue(L"CurrentVersion",L"Test.Library");
+	ptrSubKey->SetValue(L"CurrentVersion",L"Test.Library");
 	
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
 	TEST(ptrSimpleTest);

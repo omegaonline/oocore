@@ -47,7 +47,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw ISystemException::Create(string_t(msg,false),L"Critical Failure");
+		throw IInternalException::Create(msg,"Critical Failure");
 	}
 }
 
@@ -67,12 +67,13 @@ string_t InterProcessService::GetArg(const string_t& arg)
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 {
-	throw Remoting::IChannelClosedException::Create();
+	return 0;
 }
 
-void InterProcessService::LaunchObjectApp(const guid_t&, const guid_t&, IObject*&)
+void InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&, IObject*& pObject)
 {
-	OMEGA_THROW(L"Invalid standalone function");
+	pObject = 0;
+	throw Activation::IOidNotFoundException::Create(oid);
 }
 
 bool_t InterProcessService::HandleRequest(uint32_t timeout)
@@ -82,7 +83,7 @@ bool_t InterProcessService::HandleRequest(uint32_t timeout)
 
 Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)
 {
-	OMEGA_THROW(L"Invalid standalone function");
+	throw Remoting::IChannelClosedException::Create();
 }
 
 Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remoting::IChannelSink*)

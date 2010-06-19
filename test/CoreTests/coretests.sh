@@ -2,6 +2,12 @@
 
 cd ../src/OOCore
 echo Starting OOServer...
+
+# This forces libtool to link the correct dlls...
+../OOServer/ooserverd --version
+../OOServer/oosvruser --version
+
+
 ../OOServer/ooserverd --unsafe -f ../$srcdir/CoreTests/test.conf &
 child=$!
 sleep 3s

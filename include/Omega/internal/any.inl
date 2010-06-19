@@ -75,7 +75,7 @@ inline void Omega::any_t::swap(const any_t& rhs)
 		break;
 
 	default:
-		OMEGA_THROW(L"Invalid any_t type!");
+		OMEGA_THROW("Invalid any_t type!");
 	}
 }
 

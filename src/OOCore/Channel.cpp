@@ -40,8 +40,8 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
-
+		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::InProcess));
+	
 	// Connect the OM to us
 	m_ptrOM = pOM;
 	if (m_ptrOM)
@@ -64,6 +64,9 @@ void OOCore::ChannelBase::disconnect()
 ObjectPtr<Remoting::IObjectManager> OOCore::ChannelBase::GetObjectManager()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	if (!m_ptrOM)
+		throw Remoting::IChannelClosedException::Create();
 
 	return m_ptrOM;
 }
@@ -104,9 +107,10 @@ void OOCore::ChannelBase::GetManager(const guid_t& iid, IObject*& pObject)
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	pObject = 0;
-	if (m_ptrOM)
-		pObject = m_ptrOM->QueryInterface(iid);
+	if (!m_ptrOM)
+		throw Remoting::IChannelClosedException::Create();
+
+	pObject = m_ptrOM->QueryInterface(iid);
 }
 
 guid_t OOCore::ChannelBase::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
@@ -131,19 +135,16 @@ void OOCore::ChannelBase::ReflectMarshal(Remoting::IMessage* pMessage)
 	MarshalInterface(0,pMessage,guid_t::Null(),m_marshal_flags);
 }
 
-void OOCore::Channel::init(UserSession* pSession, uint16_t apt_id, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
 	ChannelBase::init(channel_id,pSession->classify_channel(channel_id),pOM,message_oid);
 
 	m_pSession = pSession;
-	m_src_apt_id = apt_id;
-
+	
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM;
 	if (!m_ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 }
 
 void OOCore::Channel::disconnect()
@@ -161,10 +162,11 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
-	if (!m_ptrMarshaller)
-		throw Remoting::IChannelClosedException::Create();
-
+	
 	guard.release();
+
+	if (!ptrMarshaller)
+		throw Remoting::IChannelClosedException::Create();
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
@@ -173,13 +175,13 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	try
 	{
-		response = m_pSession->send_request(m_src_apt_id,m_channel_id,ptrEnvelope->GetCDRStream(),timeout,attribs);
+		response = m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),timeout,attribs);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
 		ptrMarshaller->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		disconnect();
-		pE->Throw();
+		pE->Rethrow();
 	}
 	catch (...)
 	{
@@ -214,7 +216,7 @@ bool_t OOCore::Channel::IsConnected()
 	bool connected = true;
 	try
 	{
-		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_ping);
+		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_ping);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -246,7 +248,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 	try
 	{
-		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
+		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
 	}
 	catch (Remoting::IChannelClosedException*)
 	{
@@ -257,7 +259,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 	uint32_t other_end = 0;
 	if (!response || !response->read(other_end))
-		OMEGA_THROW(L"Unexpected end of message");
+		OMEGA_THROW("Unexpected end of message");
 
 	// Return in the same format as we marshal
 	pMessage->WriteValue(L"m_channel_id",other_end);

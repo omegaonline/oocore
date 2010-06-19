@@ -847,7 +847,12 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 {
 	if (m_bSandbox)
 	{
-		strHive = strSysDir + "sandbox.regdb";
+		strHive = strSysDir;
+		
+		if (!strHive.empty() && *strHive.rbegin() != '\\')
+			strHive += '\\';
+
+		strHive += "sandbox.regdb";
 	}
 	else
 	{

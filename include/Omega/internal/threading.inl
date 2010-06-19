@@ -230,7 +230,7 @@ inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Li
 	}
 	catch (...)
 	{
-		return System::Internal::return_safe_exception(ISystemException::Create(L"Unhandled exception",L"Omega::Threading::Singleton::constructor()"));
+		return System::Internal::return_safe_exception(IInternalException::Create("Unhandled exception","Omega::Threading::Singleton::constructor()"));
 	}
 }
 

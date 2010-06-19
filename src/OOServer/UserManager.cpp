@@ -50,7 +50,7 @@ namespace OTL
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory)
-					{ 0,0,0,0,0 }
+					{ 0,0,0,0 }
 				};
 				return CreatorEntries;
 			}
@@ -103,7 +103,10 @@ void User::Manager::run()
 	// Unregister InterProcessService
 	if (m_nIPSCookie)
 	{
-		Activation::RevokeObject(m_nIPSCookie);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+		ptrROT->RevokeObject(m_nIPSCookie);
 		m_nIPSCookie = 0;
 	}
 
@@ -121,7 +124,7 @@ bool User::Manager::on_channel_open(Omega::uint32_t channel)
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 			pE->Release();
 			return false;
 		}
@@ -310,7 +313,10 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
 		// Register our interprocess service InProcess so we can react to activation requests
-		m_nIPSCookie = Activation::RegisterObject(OOCore::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+		m_nIPSCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();
@@ -319,7 +325,7 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 
 		return false;
@@ -374,9 +380,9 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 				// Close if its an exact match
 				bErase = true;
 			}
-			else if ((i->first & 0xFFFFF000) == channel)
+			else if (!(channel & 0xFFF) && (i->first & 0xFFFFF000) == channel)
 			{
-				// Close all subchannels
+				// Close all compartments if 0 cmpt dies
 				bErase = true;
 			}
 			else if (channel == m_root_channel && classify_channel(i->first) > 2)
@@ -568,7 +574,7 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 		else if (res == OOServer::MessageHandler::io_result::channel_closed)
 			throw Omega::Remoting::IChannelClosedException::Create();
 		else
-			OMEGA_THROW(L"Internal server exception");
+			OMEGA_THROW("Internal server exception");
 	}
 
 	return response;

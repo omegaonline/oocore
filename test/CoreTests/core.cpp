@@ -81,31 +81,27 @@ bool init_server_tests()
 bool exception_tests()
 {
 	// Try a simple throw...
-	const wchar_t szDesc[] = L"A test description";
-	const wchar_t szFile[] = OMEGA_WIDEN_STRING(__FILE__);
 	try
 	{
-		throw Omega::ISystemException::Create(szDesc,szFile);
+		throw Omega::ISystemException::Create(2);
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::ISystemException* pE)
 	{
-		TEST(pE->GetDescription() == szDesc);
+		TEST(pE->GetErrorCode() == 2);
 		TEST(!pE->GetCause());
-		TEST(pE->GetSource() == szFile);
 		pE->Release();
 	}
 
 	// Try another simple throw
 	try
 	{
-		throw Omega::INoInterfaceException::Create(OMEGA_GUIDOF(Omega::IObject),szFile);
+		throw Omega::INoInterfaceException::Create(OMEGA_GUIDOF(Omega::IObject));
 	}
 	catch (Omega::INoInterfaceException* pE)
 	{
 		TEST(pE->GetThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
 		TEST(pE->GetUnsupportedIID() == OMEGA_GUIDOF(Omega::IObject));
 		TEST(!pE->GetCause());
-		TEST(pE->GetSource() == szFile);
 		pE->Release();
 	}
 

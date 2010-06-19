@@ -27,11 +27,12 @@ class InterProcessService :
 		public OOCore::IInterProcessService
 {
 public:
-	void InitOnce() {}
-
 	void Load(const Omega::init_arg_map_t& args);
 	
 	Omega::string_t GetArg(const Omega::string_t& arg);
+
+protected:
+	void InitOnce() {}
 
 	BEGIN_INTERFACE_MAP(InterProcessService)
 		INTERFACE_ENTRY(OOCore::IInterProcessService)

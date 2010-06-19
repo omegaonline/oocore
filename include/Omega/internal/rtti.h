@@ -264,15 +264,15 @@ namespace Omega
 			{
 				struct ParamInfo
 				{
-					const wchar_t*              pszName;
+					const char*                 pszName;
 					const type_holder*          type;
 					TypeInfo::ParamAttributes_t attribs;
-					const wchar_t*              attrib_ref;
+					const char*                 attrib_ref;
 				};
 
 				struct MethodInfo
 				{
-					const wchar_t*               pszName;
+					const char*                  pszName;
 					TypeInfo::MethodAttributes_t attribs;
 					uint32_t                     timeout;
 					byte_t                       param_count;
@@ -305,7 +305,7 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ 0, 0, 0, L"" }
+						{ 0, 0, 0, "" }
 					};
 					return pi;
 				}
@@ -313,7 +313,7 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ 0, 0, 0, L"" }
+						{ 0, 0, 0, "" }
 					};
 					return pi;
 				}
@@ -321,8 +321,8 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ L"iid", type_kind<const guid_t&>::type(), TypeInfo::attrIn, L"" },
-						{ 0, 0, 0, L"" }
+						{ "iid", type_kind<const guid_t&>::type(), TypeInfo::attrIn, "" },
+						{ 0, 0, 0, "" }
 					};
 					return pi;
 				}
@@ -330,9 +330,9 @@ namespace Omega
 				{
 					static const typeinfo_rtti::MethodInfo methods[] =
 					{
-						{ L"AddRef", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &AddRef_params },
-						{ L"Release", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &Release_params },
-						{ L"QueryInterface", TypeInfo::Synchronous, 0, 1, type_kind<IObject*>::type(), &QueryInterface_params },
+						{ "AddRef", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &AddRef_params },
+						{ "Release", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &Release_params },
+						{ "QueryInterface", TypeInfo::Synchronous, 0, 1, type_kind<IObject*>::type(), &QueryInterface_params },
 						{ 0, 0, 0, 0, 0 }
 					};
 					return methods;

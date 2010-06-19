@@ -104,7 +104,7 @@ public:
 
 	void Throw(Omega::uint32_t err)
 	{
-		throw Omega::ISystemException::Create(err,L"TestLibraryImpl");
+		throw Omega::ISystemException::Create(err);
 	}
 
 	Omega::string_t WhereAmI()

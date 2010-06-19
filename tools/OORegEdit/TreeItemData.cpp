@@ -45,22 +45,22 @@ void TreeItemData::InitList(wxListCtrl* pList)
 	int i = 0;
 	for (std::set<Omega::string_t>::const_iterator it=values.begin();it!=values.end();++i,++it)
 	{
-		Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(*it);
+		Omega::any_t val = m_ptrKey->GetValue(*it);
 
-		long item = pList->InsertItem(i,wxString(it->c_str()),type==Omega::Registry::String ? 4 : 5);
-
-		if (type==Omega::Registry::String)
+		wxLongLong_t iv;
+		if (val.Coerce(iv) != Omega::any_t::castUnrelated)
 		{
-			pList->SetItem(item,1,_("String"));
-			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(*it).c_str()));
-		}
-		else if (type==Omega::Registry::Integer)
-		{
-			Omega::int64_t val = m_ptrKey->GetIntegerValue(*it);
+			long item = pList->InsertItem(i,wxString(it->c_str()),5);
 			pList->SetItem(item,1,_("Integer"));
-			pList->SetItem(item,2,wxString::Format(wxT("%lld"),val));
+			pList->SetItem(item,2,wxString::Format(wxT("%lld"),iv));
 		}
 		else
+		{
+			long item = pList->InsertItem(i,wxString(it->c_str()),4);
+			pList->SetItem(item,1,_("String"));
+			pList->SetItem(item,2,wxString(val.cast<Omega::string_t>().c_str()));
+		}
+		/*else
 		{
 			Omega::byte_t szBuf[128];
 			Omega::uint32_t cbLen = sizeof(szBuf);
@@ -80,7 +80,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 
 			pList->SetItem(item,1,_("Binary"));
 			pList->SetItem(item,2,val);
-		}
+		}*/
 	};
 
 	if (i)
@@ -106,44 +106,14 @@ void TreeItemData::DeleteValue(const Omega::string_t& strVal)
 
 bool TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo)
 {
-	Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strFrom);
-
 	if (m_ptrKey->IsValue(strTo))
 		return false;
 
-	if (type==Omega::Registry::String)
-	{
-		Omega::string_t val = m_ptrKey->GetStringValue(strFrom);
-		m_ptrKey->SetStringValue(strTo,val);
-		m_ptrKey->DeleteValue(strFrom);
-	}
-	else if (type==Omega::Registry::Integer)
-	{
-		Omega::uint64_t val = m_ptrKey->GetIntegerValue(strFrom);
-		m_ptrKey->SetIntegerValue(strTo,val);
-		m_ptrKey->DeleteValue(strFrom);
-	}
-	else
-	{
-		Omega::uint32_t cbLen = 0;
-		m_ptrKey->GetBinaryValue(strFrom,cbLen,NULL);
+	Omega::any_t val = m_ptrKey->GetValue(strFrom);
 
-		Omega::byte_t* pBuffer = (Omega::byte_t*)malloc(cbLen);
-		try
-		{
-			m_ptrKey->GetBinaryValue(strFrom,cbLen,pBuffer);
-			m_ptrKey->SetBinaryValue(strTo,cbLen,pBuffer);
-		}
-		catch (...)
-		{
-			free(pBuffer);
-			throw;
-		}
-		free(pBuffer);
-
-		m_ptrKey->DeleteValue(strFrom);
-	}
-
+	m_ptrKey->SetValue(strTo,val);
+	m_ptrKey->DeleteValue(strFrom);
+	
 	return true;
 }
 
@@ -163,36 +133,7 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL
 	std::set<Omega::string_t> values = ptrOldKey->EnumValues();
 	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
 	{
-		Omega::Registry::ValueType_t type = ptrOldKey->GetValueType(*i);
-
-		if (type==Omega::Registry::String)
-		{
-			Omega::string_t val = ptrOldKey->GetStringValue(*i);
-			ptrNewKey->SetStringValue(*i,val);
-		}
-		else if (type==Omega::Registry::Integer)
-		{
-			Omega::uint64_t val = ptrOldKey->GetIntegerValue(*i);
-			ptrNewKey->SetIntegerValue(*i,val);
-		}
-		else
-		{
-			Omega::uint32_t cbLen = 0;
-			ptrNewKey->GetBinaryValue(*i,cbLen,NULL);
-
-			Omega::byte_t* pBuffer = (Omega::byte_t*)malloc(cbLen);
-			try
-			{
-				ptrOldKey->GetBinaryValue(*i,cbLen,pBuffer);
-				ptrNewKey->SetBinaryValue(*i,cbLen,pBuffer);
-			}
-			catch (...)
-			{
-				free(pBuffer);
-				throw;
-			}
-			free(pBuffer);
-		}
+		ptrNewKey->SetValue(*i,ptrOldKey->GetValue(*i));
 	}
 
 	values = ptrOldKey->EnumSubKeys();
@@ -257,7 +198,7 @@ void TreeItemData::NewString(wxListCtrl* pList)
 			break;
 	}
 
-	m_ptrKey->SetStringValue(strName,Omega::string_t());
+	m_ptrKey->SetValue(strName,Omega::string_t());
 
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),4);
 	pList->SetItem(item,1,_("String"));
@@ -279,7 +220,7 @@ void TreeItemData::NewUInt(wxListCtrl* pList)
 			break;
 	}
 
-	m_ptrKey->SetIntegerValue(strName,0);
+	m_ptrKey->SetValue(strName,0);
 
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
 	pList->SetItem(item,1,_("Integer"));
@@ -302,7 +243,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 			break;
 	}
 
-	m_ptrKey->SetBinaryValue(strName,0,0);
+	m_ptrKey->SetValue(strName,0);
 
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
 	pList->SetItem(item,1,_("Binary"));
@@ -316,37 +257,39 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 {
 	Omega::string_t strName(pList->GetItemText(item_id).wc_str(),Omega::string_t::npos,true);
-	Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
+	
+	Omega::any_t val = m_ptrKey->GetValue(strName);
 
-	if (type == Omega::Registry::String)
-	{
-		EditStringDlg dialog(NULL,-1,wxT(""));
-
-		dialog.m_strName = wxString(strName.c_str());
-		dialog.m_strValue = wxString(m_ptrKey->GetStringValue(strName).c_str());
-
-		if (dialog.ShowModal() == wxID_OK)
-		{
-			m_ptrKey->SetStringValue(strName,Omega::string_t(dialog.m_strValue.wc_str(),Omega::string_t::npos));
-
-			pList->SetItem(item_id,2,dialog.m_strValue);
-		}
-	}
-	else if (type == Omega::Registry::Integer)
+	wxLongLong_t iv;
+	if (val.Coerce(iv) != Omega::any_t::castUnrelated)
 	{
 		EditUIntDlg dialog(NULL,-1,wxT(""));
 
 		dialog.m_nBase = 0;
 		dialog.m_strName = wxString(strName.c_str());
-		dialog.m_strValue = wxString::Format(wxT("%lld"),m_ptrKey->GetIntegerValue(strName));
+		dialog.m_strValue = wxString::Format(wxT("%lld"),iv);
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
 			wxLongLong_t lVal;
 			dialog.m_strValue.ToLongLong(&lVal,dialog.m_nBase==0 ? 16 : 10);
-			m_ptrKey->SetIntegerValue(strName,lVal);
+			m_ptrKey->SetValue(strName,lVal);
 
 			pList->SetItem(item_id,2,wxString::Format(wxT("%lld"),lVal));
+		}
+	}
+	else
+	{
+		EditStringDlg dialog(NULL,-1,wxT(""));
+
+		dialog.m_strName = wxString(strName.c_str());
+		dialog.m_strValue = wxString(m_ptrKey->GetValue(strName).cast<Omega::string_t>().c_str());
+
+		if (dialog.ShowModal() == wxID_OK)
+		{
+			m_ptrKey->SetValue(strName,Omega::string_t(dialog.m_strValue.wc_str(),Omega::string_t::npos));
+
+			pList->SetItem(item_id,2,dialog.m_strValue);
 		}
 	}
 }
@@ -536,16 +479,21 @@ bool TreeItemData::MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Ome
 			return true;
 	}
 
-	if (bData && ptrKey->GetValueType(strName)==Omega::Registry::String)
+	if (bData)
 	{
-		Omega::string_t strValue = ptrKey->GetStringValue(strName);
-		if (bMatchAll)
+		Omega::any_t value = ptrKey->GetValue(strName);
+
+		Omega::string_t strValue;
+		if (value.Coerce(strValue) != Omega::any_t::castUnrelated)
 		{
-			if (strValue.Compare(strFind,0,Omega::string_t::npos,bIgnoreCase) == 0)
+			if (bMatchAll)
+			{
+				if (strValue.Compare(strFind,0,Omega::string_t::npos,bIgnoreCase) == 0)
+					return true;
+			}
+			else if (strValue.Find(strFind,0,bIgnoreCase) != Omega::string_t::npos)
 				return true;
 		}
-		else if (strValue.Find(strFind,0,bIgnoreCase) != Omega::string_t::npos)
-			return true;
 	}
 
 	return false;

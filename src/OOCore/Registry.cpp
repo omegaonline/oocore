@@ -50,11 +50,10 @@ namespace
 			return m_strName;
 		}
 
-		static void Throw(const string_t& name, const string_t& strSource)
+		static void Throw(const string_t& name)
 		{
 			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
-			pRE->m_strSource = strSource;
 			pRE->m_strDesc = L"Invalid name for registry key or value: '{0}'.";
 			pRE->m_strDesc %= name;
 			throw static_cast<Registry::IBadNameException*>(pRE);
@@ -65,10 +64,14 @@ namespace
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 {
 	if (key.Left(1) != L"\\")
-		BadNameException::Throw(key,L"Omega::Registry::OpenKey");
+		BadNameException::Throw(key);
+
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	if (!ptrIPS)
+		throw IInternalException::Create("Omega::Initialize not called","OOCore");
 
 	ObjectPtr<Registry::IKey> ptrKey;
-	ptrKey.Attach(static_cast<Registry::IKey*>(OOCore::GetInterProcessService()->GetRegistry()));
+	ptrKey.Attach(static_cast<Registry::IKey*>(ptrIPS->GetRegistry()));
 
 	if (key == L"\\")
 		return ptrKey.AddRef();

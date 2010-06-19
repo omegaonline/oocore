@@ -70,6 +70,52 @@ namespace OOCore
 	{
 	};
 
+	// {47E86F31-E9E9-4667-89CA-40EB048DA2B7}
+	extern "C" const Omega::guid_t OID_InternalExceptionMarshalFactory;
+
+	class InternalException :
+			public OTL::ExceptionAutoMarshalImpl<Omega::IInternalException, &OID_InternalExceptionMarshalFactory>
+	{
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::IInternalException, &OID_InternalExceptionMarshalFactory> baseClass;
+	public:
+		BEGIN_INTERFACE_MAP(InternalException)
+			INTERFACE_ENTRY_CHAIN(baseClass)
+		END_INTERFACE_MAP()
+
+		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
+		{
+			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
+			m_strSource = pMessage->ReadValue(L"m_strSource").cast<Omega::string_t>();
+		}
+
+		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		{
+			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
+			pMessage->WriteValue(L"m_strSource",m_strSource);
+		}
+
+		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		{
+			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
+			pMessage->ReadValue(L"m_strSource");
+		}
+
+		Omega::string_t m_strSource;
+
+	// IInternalException memebers
+	public:
+		virtual Omega::string_t GetSource()
+		{
+			return m_strSource;
+		}
+	};
+
+	class InternalExceptionMarshalFactoryImpl :
+			public OTL::AutoObjectFactorySingleton<InternalExceptionMarshalFactoryImpl,&OOCore::OID_InternalExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::ExceptionMarshalFactoryImpl<InternalException>
+	{
+	};
+
 	// {1E127359-1542-4329-8E30-FED8FF810960}
 	extern "C" const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
 

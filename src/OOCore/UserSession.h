@@ -23,7 +23,7 @@
 #define OOCORE_USER_SESSION_H_INCLUDED_
 
 #include "Channel.h"
-#include "ApartmentImpl.h"
+#include "Compartment.h"
 
 namespace OOCore
 {
@@ -59,7 +59,7 @@ namespace OOCore
 		Omega::uint32_t    m_attribs;
 		Omega::uint32_t    m_seq_no;
 		Omega::uint16_t    m_type;
-		Omega::uint16_t    m_dest_apt_id;
+		Omega::uint16_t    m_dest_cmpt_id;
 		OOBase::timeval_t  m_deadline;
 		OOBase::CDRStream  m_payload;
 	};
@@ -70,25 +70,22 @@ namespace OOCore
 		static Omega::IException* init(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
+		static Omega::Activation::IRunningObjectTable* get_rot();
+
 		static void close_singletons();
 		static void add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		static void remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
-		OOBase::CDRStream* send_request(Omega::uint16_t src_apartment_id, Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
-		void send_response(Omega::uint16_t apt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		OOBase::CDRStream* send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
+		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		Omega::uint32_t get_channel_id() const;
 
-		static Omega::Apartment::IApartment* create_apartment();
-		static Omega::uint16_t get_current_apartment();
-		static void remove_apartment(Omega::uint16_t id);
-
-		Omega::uint32_t get_channel_id() const
-		{
-			return m_channel_id;
-		}
-		OOBase::SmartPtr<Apartment> get_apartment(Omega::uint16_t id);
-		Omega::uint16_t update_state(Omega::uint16_t apartment_id, Omega::uint32_t* pTimeout);
+		static OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment();
+		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
+		void remove_compartment(Omega::uint16_t id);
+		Omega::uint16_t update_state(Omega::uint16_t compartment_id, Omega::uint32_t* pTimeout);
 
 	private:
 		friend class ThreadContext;
@@ -118,7 +115,7 @@ namespace OOCore
 			std::map<Omega::uint32_t,Omega::uint16_t>   m_mapChannelThreads;
 			OOBase::timeval_t                           m_deadline;
 			Omega::uint32_t                             m_seq_no;
-			Omega::uint16_t                             m_current_apt;
+			Omega::uint16_t                             m_current_cmpt;
 
 			static ThreadContext* instance();
 
@@ -151,20 +148,22 @@ namespace OOCore
 		// Message pumping
 		int run_read_loop();
 		bool pump_request(const OOBase::timeval_t* deadline = 0);
-		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
-		OOBase::CDRStream* wait_for_response(Omega::uint16_t apartment_id, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		void process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline);
+		OOBase::CDRStream* wait_for_response(Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::AtomicInt<size_t>& usage);
 
 		static int io_worker_fn(void* pParam);
 
-		// Apartment members
-		Omega::uint16_t                                        m_next_apartment;
-		std::map<Omega::uint16_t,OOBase::SmartPtr<Apartment> > m_mapApartments;
+		// Compartment members
+		Omega::uint16_t                                        m_next_compartment;
+		std::map<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
 
-		Omega::Apartment::IApartment* create_apartment_i();
+		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment_i();
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
+
+		Omega::Activation::IRunningObjectTable* get_rot_i();
 	};
 }
 

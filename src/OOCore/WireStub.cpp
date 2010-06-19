@@ -63,7 +63,7 @@ void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pPa
 {
 	ObjectPtr<Remoting::IStub> ptrStub = FindStub(pParamsIn->ReadValue(L"$iid").cast<guid_t>());
 	if (!ptrStub)
-		OMEGA_THROW(L"Invoke on unsupported interface");
+		OMEGA_THROW("Invoke on unsupported interface");
 
 	ptrStub->Invoke(pParamsIn,pParamsOut);
 }
@@ -138,7 +138,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Unmarshal the channel
 	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(m_pManager)).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",pParamsIn);
 	if (!ptrChannel)
-		OMEGA_THROW(L"No channel");
+		OMEGA_THROW("No channel");
 
 	// Create a new message
 	ObjectPtr<Remoting::IMessage> ptrMessage;
@@ -157,7 +157,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Get the channel's IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrChannel.GetManager<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Marshal the stub
 	ptrMarshaller->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);

@@ -332,11 +332,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ApartmentImpl.cpp"
+				RelativePath=".\Channel.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Channel.cpp"
+				RelativePath=".\Compartment.cpp"
 				>
 			</File>
 			<File
@@ -434,15 +434,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ApartmentImpl.h"
-				>
-			</File>
-			<File
 				RelativePath=".\CDRMessage.h"
 				>
 			</File>
 			<File
 				RelativePath=".\Channel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Compartment.h"
 				>
 			</File>
 			<File
@@ -532,15 +532,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\Omega\Apartment.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\include\Omega\internal\base.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\include\Omega\internal\base_types.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\Omega\Compartment.h"
 				>
 			</File>
 			<File

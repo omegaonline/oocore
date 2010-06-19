@@ -85,7 +85,7 @@ namespace User
 
 	class ChannelMarshalFactory :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory,0,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::ProcessLocal>,
 			public Omega::Remoting::IMarshalFactory
 	{
 	public:

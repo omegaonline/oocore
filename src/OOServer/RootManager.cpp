@@ -231,15 +231,15 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 
 		// Spawn a new user process
 		std::string strPipe;
-		if (!spawn_user(uid,ptrRegistry,strPipe))
-			return "";
-
-		return strPipe;
+		if (spawn_user(uid,ptrRegistry,strPipe))
+			return strPipe;
 	}
 	catch (std::exception& e)
 	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),"");
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
+
+	return std::string();
 }
 
 Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
@@ -381,32 +381,16 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		registry_enum_subkeys(src_channel_id,request,response);
 		break;
 
-	case OOServer::ValueType:
-		registry_value_type(src_channel_id,request,response);
+	case OOServer::ValueExists:
+		registry_value_exists(src_channel_id,request,response);
 		break;
 
-	case OOServer::GetStringValue:
-		registry_get_string_value(src_channel_id,request,response);
+	case OOServer::GetValue:
+		registry_get_value(src_channel_id,request,response);
 		break;
 
-	case OOServer::GetIntegerValue:
-		registry_get_int_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::GetBinaryValue:
-		registry_get_binary_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::SetStringValue:
-		registry_set_string_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::SetIntegerValue:
-		registry_set_int_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::SetBinaryValue:
-		registry_set_binary_value(src_channel_id,request,response);
+	case OOServer::SetValue:
+		registry_set_value(src_channel_id,request,response);
 		break;
 
 	case OOServer::GetDescription:

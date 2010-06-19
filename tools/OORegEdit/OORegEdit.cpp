@@ -14,7 +14,7 @@ bool OORegEditApp::OnInit()
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		wxString strText = wxString::Format(_("Exception: %ls\nAt: %ls."),pE->GetDescription().c_str(),pE->GetSource().c_str());
+		wxString strText = wxString::Format(_("Exception: %ls."),pE->GetDescription().c_str());
 
 		wxMessageDialog dlg(NULL,strText,_("Critical Error!"),wxOK | wxICON_EXCLAMATION);
 		dlg.ShowModal();

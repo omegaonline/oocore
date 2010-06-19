@@ -22,8 +22,8 @@ bool registry_tests();
 bool registry_tests_2();
 bool interface_process_tests();
 bool interface_dll_tests();
-bool apartment_dll_tests();
-bool apartment_process_tests();
+bool compartment_dll_tests();
+bool compartment_process_tests();
 bool net_tests();
 bool interface_tests2();
 
@@ -48,7 +48,7 @@ int main(int /*argc*/, char* /*argv*/[])
 
 		RUN_TEST(registry_tests);
 		RUN_TEST(interface_dll_tests);
-		RUN_TEST(apartment_dll_tests);
+		RUN_TEST(compartment_dll_tests);
 
 		Omega::Uninitialize();
 	}
@@ -59,7 +59,7 @@ int main(int /*argc*/, char* /*argv*/[])
 		output("\n\n");
 
 		RUN_TEST(interface_process_tests);
-		RUN_TEST(apartment_process_tests);
+		RUN_TEST(compartment_process_tests);
 
 		//RUN_TEST(net_tests);
 		//RUN_TEST(interface_tests2);
@@ -146,7 +146,7 @@ static void recurse_output_exception(Omega::IException* pE)
 	Omega::IException* pCause = pE->GetCause();
 	if (pCause)
 	{
-		output("Cause:\t%ls\nSource:\t%ls\n",pCause->GetDescription().c_str(),pCause->GetSource().c_str());
+		output("Cause:\t%ls\n",pCause->GetDescription().c_str());
 		recurse_output_exception(pCause);
 		pCause->Release();
 	}
@@ -154,7 +154,7 @@ static void recurse_output_exception(Omega::IException* pE)
 
 void output_exception(Omega::IException* pE)
 {
-	output("Desc:\t%ls\nSource:\t%ls\n",pE->GetDescription().c_str(),pE->GetSource().c_str());
+	output("Desc:\t%ls\n",pE->GetDescription().c_str());
 	recurse_output_exception(pE);
 }
 

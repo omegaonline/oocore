@@ -42,18 +42,14 @@ inline Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
 	return m_csMain;
 }
 
-inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
+inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid)
 {
-	// We ignore any registered flags, and only enforce InProcess creation, because we are a library!
-	if (!(flags & Omega::Activation::InProcess))
-		return 0;
-
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
 		if (*(g[i].pfnOid)() == oid)
 		{
-			return g[i].pfnCreate(iid,flags);
+			return g[i].pfnCreate(iid);
 		}
 	}
 	return 0;
@@ -61,22 +57,28 @@ inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t&
 
 inline void OTL::ProcessModule::RegisterObjectFactories()
 {
+	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Omega::Activation::IRunningObjectTable::GetRunningObjectTable());
+
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
 		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF;
-		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory),Omega::Activation::InProcess)));
+		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory))));
 
-		g[i].cookie = Omega::Activation::RegisterObject(*(g[i].pfnOid)(),ptrOF,(g[i].pfnActivationFlags)(),(g[i].pfnRegistrationFlags)());
+		g[i].cookie = ptrROT->RegisterObject(*(g[i].pfnOid)(),ptrOF,(*g[i].pfnRegistrationFlags)());
 	}
 }
 
 inline void OTL::ProcessModule::UnregisterObjectFactories()
 {
+	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Omega::Activation::IRunningObjectTable::GetRunningObjectTable());
+
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
-		Omega::Activation::RevokeObject(g[i].cookie);
+		ptrROT->RevokeObject(g[i].cookie);
 		g[i].cookie = 0;
 	}
 }

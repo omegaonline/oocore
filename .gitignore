@@ -57,3 +57,13 @@ OOServer_msgs.rc
 BuildLog.htm
 mt.dep
 dte80a.*
+
+# Unix stuff
+*.so
+ooserverd
+oosvruser
+lt-oosvruser
+oo-launch
+coretests
+lt-coretests
+testprocess

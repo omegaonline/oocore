@@ -74,7 +74,7 @@ int Root::Manager::run()
 
 			// Spawn the sandbox
 			std::string strPipe;
-			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),0,strPipe);
+			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),m_registry_sandbox,strPipe);
 			if (m_sandbox_channel)
 			{
 				// Start listening for clients
@@ -102,7 +102,6 @@ int Root::Manager::run()
 	{
 		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),EXIT_FAILURE);
 	}
-
 
 	return EXIT_SUCCESS;
 }

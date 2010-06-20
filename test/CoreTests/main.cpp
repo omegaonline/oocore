@@ -58,6 +58,7 @@ int main(int /*argc*/, char* /*argv*/[])
 	{
 		output("\n\n");
 
+		RUN_TEST(registry_tests);
 		RUN_TEST(interface_process_tests);
 		RUN_TEST(compartment_process_tests);
 

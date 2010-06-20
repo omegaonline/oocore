@@ -74,10 +74,6 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 	}
 	else if (nType == 1)
 	{
-		ptrHive = m_registry_sandbox;
-	}
-	else if (nType == 2)
-	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Find the process info
@@ -118,15 +114,15 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 		if (channel_id == m_sandbox_channel)
 		{
 			// Sandbox hive
-			local_type = 1;
 			strName = "Sandbox";
 		}
 		else
 		{
 			// Get the registry hive
-			local_type = 2;
 			strName = "All Users";
 		}
+
+		local_type = 1;
 
 		err = m_registry->open_key(0,uKey,strName,channel_id);
 	}

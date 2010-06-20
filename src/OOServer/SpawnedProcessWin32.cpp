@@ -845,64 +845,54 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
 
 bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
 {
-	if (m_bSandbox)
+	assert(!m_bSandbox);
+
+	if (strUsersDir.empty())
 	{
-		strHive = strSysDir;
-		
+		wchar_t szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+		if (!PathAppendW(szBuf,L"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
+			LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+
+		strHive = OOBase::to_utf8(szBuf).c_str();
 		if (!strHive.empty() && *strHive.rbegin() != '\\')
 			strHive += '\\';
 
-		strHive += "sandbox.regdb";
+		strHive += "user";
 	}
 	else
 	{
-		if (strUsersDir.empty())
-		{
-			wchar_t szBuf[MAX_PATH] = {0};
-			HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
-			if FAILED(hr)
-				LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		// Get the names associated with the user SID
+		std::wstring strUserName;
+		std::wstring strDomainName;
 
-			if (!PathAppendW(szBuf,L"Omega Online"))
-				LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
+		if (dwErr != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
-			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
-				LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+		strHive = strUsersDir + OOBase::to_utf8(strUserName.c_str());
+		if (!strDomainName.empty())
+			strHive += "." + OOBase::to_utf8(strDomainName.c_str());
+	}
 
-			strHive = OOBase::to_utf8(szBuf).c_str();
-			if (!strHive.empty() && *strHive.rbegin() != '\\')
-				strHive += '\\';
+	strHive += ".regdb";
 
-			strHive += "user";
-		}
-		else
-		{
-			// Get the names associated with the user SID
-			std::wstring strUserName;
-			std::wstring strDomainName;
+	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
+	if (!PathFileExistsW(OOBase::from_utf8(strHive.c_str()).c_str()))
+	{
+		if (!CopyFileW(OOBase::from_utf8((strSysDir + "default_user.regdb").c_str()).c_str(),OOBase::from_utf8(strHive.c_str()).c_str(),TRUE))
+			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::Win32::FormatMessage().c_str()),false);
 
-			DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
-			if (dwErr != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+		::SetFileAttributesW(OOBase::from_utf8(strHive.c_str()).c_str(),FILE_ATTRIBUTE_NORMAL);
 
-			strHive = strUsersDir + OOBase::to_utf8(strUserName.c_str());
-			if (!strDomainName.empty())
-				strHive += "." + OOBase::to_utf8(strDomainName.c_str());
-		}
-
-		strHive += ".regdb";
-
-		// Now confirm the file exists, and if it doesn't, copy default_user.regdb
-		if (!PathFileExistsW(OOBase::from_utf8(strHive.c_str()).c_str()))
-		{
-			if (!CopyFileW(OOBase::from_utf8((strSysDir + "default_user.regdb").c_str()).c_str(),OOBase::from_utf8(strHive.c_str()).c_str(),TRUE))
-				LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::Win32::FormatMessage().c_str()),false);
-
-			::SetFileAttributesW(OOBase::from_utf8(strHive.c_str()).c_str(),FILE_ATTRIBUTE_NORMAL);
-
-			// Secure the file if (strUsersDir.empty())
-			void* TODO;
-		}
+		// Secure the file if (strUsersDir.empty())
+		void* TODO;
 	}
 
 	return true;

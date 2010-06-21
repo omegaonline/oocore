@@ -45,54 +45,6 @@ namespace OOSvrBase
 			virtual OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa);
 			virtual AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
 		};
-
-		class AsyncSocket : public OOSvrBase::AsyncSocket
-		{
-		public:
-			AsyncSocket(ProactorImpl* pProactor, HANDLE handle, IOHandler* handler);
-			int bind();
-
-			int read(OOBase::Buffer* buffer, size_t len);
-			int write(OOBase::Buffer* buffer);
-			void close();
-
-		private:
-			virtual ~AsyncSocket();
-
-			bool do_read(DWORD dwToRead);
-			int read_next();
-			void handle_read(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered);
-
-			bool do_write();
-			int write_next();
-			void handle_write(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered);
-
-			static VOID CALLBACK completion_fn(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped);
-
-			struct Completion
-			{
-				OVERLAPPED      m_ov;
-				OOBase::Buffer* m_buffer;
-				bool            m_is_reading;
-				size_t          m_to_read;
-				AsyncSocket*    m_this_ptr;
-			};
-
-			struct AsyncRead
-			{
-				OOBase::Buffer* m_buffer;
-				size_t          m_to_read;
-			};
-
-			OOBase::Mutex               m_lock;
-			ProactorImpl*               m_pProactor;
-			OOBase::Win32::SmartHandle  m_handle;
-			IOHandler*                  m_handler;
-			Completion                  m_read_complete;
-			Completion                  m_write_complete;
-			std::deque<AsyncRead>       m_async_reads;
-			std::deque<OOBase::Buffer*> m_async_writes;
-		};
 	}
 }
 

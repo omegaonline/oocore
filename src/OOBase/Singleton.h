@@ -22,9 +22,7 @@
 #ifndef OOBASE_SINGLETON_H_INCLUDED_
 #define OOBASE_SINGLETON_H_INCLUDED_
 
-#include "Mutex.h"
 #include "Destructor.h"
-#include "Once.h"
 
 namespace OOBase
 {

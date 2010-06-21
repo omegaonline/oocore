@@ -21,7 +21,7 @@
 
 #include "PosixSocket.h"
 
-#if !defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)
+#if (!defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)) || defined(DOXYGEN)
 
 #if defined(HAVE_FCNTL_H)
 #include <fcntl.h>

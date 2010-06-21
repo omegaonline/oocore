@@ -24,7 +24,7 @@
 
 #include "Socket.h"
 
-#if !defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)
+#if (!defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)) || defined(DOXYGEN)
 
 #include <sys/socket.h>
 

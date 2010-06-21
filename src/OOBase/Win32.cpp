@@ -19,9 +19,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "Win32.h"
-#include "Mutex.h"
-#include "TimeVal.h"
 #include "SmartPtr.h"
 
 #if defined(_WIN32)
@@ -394,9 +391,9 @@ void OOBase::Win32::InitializeConditionVariable(CONDITION_VARIABLE* ConditionVar
 BOOL OOBase::Win32::SleepConditionVariable(CONDITION_VARIABLE* ConditionVariable, condition_mutex_t* Mutex, DWORD dwMilliseconds)
 {
 	if (Win32Thunk::instance().m_SleepConditionVariableCS == 0)
-		return (*reinterpret_cast<condition_variable_t**>(ConditionVariable))->wait(Mutex->m_mutex,dwMilliseconds) ? TRUE : FALSE;
+		return (*reinterpret_cast<condition_variable_t**>(ConditionVariable))->wait(Mutex->u.m_mutex,dwMilliseconds) ? TRUE : FALSE;
 	else
-		return (*Win32Thunk::instance().m_SleepConditionVariableCS)(ConditionVariable,&Mutex->m_cs,dwMilliseconds);
+		return (*Win32Thunk::instance().m_SleepConditionVariableCS)(ConditionVariable,&Mutex->u.m_cs,dwMilliseconds);
 }
 
 void OOBase::Win32::WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
@@ -424,27 +421,27 @@ OOBase::Win32::condition_mutex_t::condition_mutex_t()
 {
 	if (Win32Thunk::instance().m_InitializeConditionVariable == Win32Thunk::impl_InitializeConditionVariable)
 	{
-		m_mutex = CreateMutexW(NULL,FALSE,NULL);
-		if (!m_mutex)
+		u.m_mutex = CreateMutexW(NULL,FALSE,NULL);
+		if (!u.m_mutex)
 			OOBase_CallCriticalFailure(GetLastError());
 	}
 	else
 	{
-		InitializeCriticalSection(&m_cs);
+		InitializeCriticalSection(&u.m_cs);
 	}
 }
 
 OOBase::Win32::condition_mutex_t::~condition_mutex_t()
 {
 	if (Win32Thunk::instance().m_InitializeConditionVariable != Win32Thunk::impl_InitializeConditionVariable)
-		DeleteCriticalSection(&m_cs);
+		DeleteCriticalSection(&u.m_cs);
 }
 
 bool OOBase::Win32::condition_mutex_t::tryacquire()
 {
 	if (Win32Thunk::instance().m_InitializeConditionVariable == Win32Thunk::impl_InitializeConditionVariable)
 	{
-		DWORD dwWait = WaitForSingleObject(m_mutex,0);
+		DWORD dwWait = WaitForSingleObject(u.m_mutex,0);
 		if (dwWait == WAIT_OBJECT_0)
 			return true;
 		else if (dwWait != WAIT_TIMEOUT)
@@ -453,30 +450,30 @@ bool OOBase::Win32::condition_mutex_t::tryacquire()
 		return false;
 	}
 	else
-		return (TryEnterCriticalSection(&m_cs) ? true : false);
+		return (TryEnterCriticalSection(&u.m_cs) ? true : false);
 }
 
 void OOBase::Win32::condition_mutex_t::acquire()
 {
 	if (Win32Thunk::instance().m_InitializeConditionVariable == Win32Thunk::impl_InitializeConditionVariable)
 	{
-		DWORD dwWait = WaitForSingleObject(m_mutex,INFINITE);
+		DWORD dwWait = WaitForSingleObject(u.m_mutex,INFINITE);
 		if (dwWait != WAIT_OBJECT_0)
 			OOBase_CallCriticalFailure(GetLastError());
 	}
 	else
-		EnterCriticalSection(&m_cs);
+		EnterCriticalSection(&u.m_cs);
 }
 
 void OOBase::Win32::condition_mutex_t::release()
 {
 	if (Win32Thunk::instance().m_InitializeConditionVariable == Win32Thunk::impl_InitializeConditionVariable)
 	{
-		if (!ReleaseMutex(m_mutex))
+		if (!ReleaseMutex(u.m_mutex))
 			OOBase_CallCriticalFailure(GetLastError());
 	}
 	else
-		LeaveCriticalSection(&m_cs);
+		LeaveCriticalSection(&u.m_cs);
 }
 
 OOBase::Win32::condition_variable_t::condition_variable_t() :

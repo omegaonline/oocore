@@ -22,7 +22,6 @@
 #ifndef OOBASE_SOCKET_H_INCLUDED_
 #define OOBASE_SOCKET_H_INCLUDED_
 
-#include "TimeVal.h"
 #include "Buffer.h"
 
 namespace OOBase

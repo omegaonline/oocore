@@ -22,8 +22,6 @@
 #ifndef OOSVRBASE_PROACTOR_H_INCLUDED_
 #define OOSVRBASE_PROACTOR_H_INCLUDED_
 
-#include "TimeVal.h"
-#include "Buffer.h"
 #include "Socket.h"
 
 #if !defined(_WIN32)

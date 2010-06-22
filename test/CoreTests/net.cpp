@@ -1,3 +1,4 @@
+#include "../../include/Omega/Omega.h"
 #include "../../include/OTL/OTL.h"
 #include "../../include/OONet/Http.h"
 #include "Test.h"

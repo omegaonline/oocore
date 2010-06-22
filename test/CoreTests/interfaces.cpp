@@ -1,5 +1,5 @@
-#include "../../include/OTL/Registry.h"
 #include "../../include/Omega/Remoting.h"
+#include "../../include/OTL/Registry.h"
 #include "interfaces.h"
 
 void normalise_path(Omega::string_t& strPath);

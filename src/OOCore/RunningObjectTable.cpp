@@ -114,36 +114,6 @@ OOCore::ServiceManager::~ServiceManager()
 	}
 }
 
-void OOCore::ServiceManager::close()
-{
-	try
-	{
-		std::list<uint32_t> listCookies;
-
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin(); i!=m_mapServicesByCookie.end(); ++i)
-		{
-			listCookies.push_back(i->first);
-		}
-
-		guard.release();
-
-		for (std::list<uint32_t>::iterator i=listCookies.begin(); i!=listCookies.end(); ++i)
-		{
-			RevokeObject(*i);
-		}
-	}
-	catch (...)
-	{
-	}
-
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	assert(m_mapServicesByCookie.empty());
-	assert(m_mapServicesByOid.empty());
-}
-
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
 	if (oid == OID_ServiceManager)
@@ -172,6 +142,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check if we have someone registered already
+		std::vector<uint32_t> revoke_list;
 		string_t strOid = oid.cast<string_t>();
 		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid; ++i)
 		{
@@ -180,6 +151,10 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 
 			if (i->second->second.m_flags == flags)
 				DuplicateRegistrationException::Throw(oid);
+			
+			// Check its still alive...
+			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
+				revoke_list.push_back(i->second->first);
 		}
 
 		// Create a new cookie
@@ -201,6 +176,12 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 
 		guard.release();
 
+		// Revoke the revoke_list
+		for (std::vector<uint32_t>::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
+		{
+			RevokeObject(*i);
+		}
+
 		// This forces the detection, so cleanup succeeds
 		OOCore::HostedByOOServer();
 
@@ -217,45 +198,50 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 
 void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
 {
-	pObject = 0;
+	ObjectPtr<IObject> ptrObject;
+
+	// Strip off the option flags
+	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	bool bDead = false;
+	std::vector<uint32_t> revoke_list;
 	string_t strOid = oid.cast<string_t>();
 	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid;++i)
 	{
-		if ((i->second->second.m_flags & flags))
+		if (i->second->second.m_flags & search_flags)
 		{
 			// Check its still alive...
 			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
-			{
-				bDead = true;
-				break;
-			}
+				revoke_list.push_back(i->second->first);
 			else
 			{
-				pObject = i->second->second.m_ptrObject->QueryInterface(iid);
-				if (!pObject)
+				ptrObject.Attach(i->second->second.m_ptrObject->QueryInterface(iid));
+				if (!ptrObject)
 					throw INoInterfaceException::Create(iid);
-				return;
+
+				// Remove the entry if Activation::SingleUse
+				if (i->second->second.m_flags & Activation::SingleUse)
+					revoke_list.push_back(i->second->first);
+				
+				break;
 			}
 		}
 	}
 
 	guard.release();
 
-	if (bDead)
+	// Revoke the revoke_list
+	for (std::vector<uint32_t>::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
 	{
-		OOBase::Guard<OOBase::RWMutex> guard2(m_lock);
+		RevokeObject(*i);
+	}
 
-		std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid);
-		
-		// Remove it, its dead
-		m_mapServicesByCookie.erase(i->second);
-
-		while (i!=m_mapServicesByOid.end() && i->first==strOid)
-			m_mapServicesByOid.erase(i++);
+	// If we have an object, get out now
+	if (ptrObject)
+	{
+		pObject = ptrObject.AddRef();
+		return;
 	}
 
 	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))

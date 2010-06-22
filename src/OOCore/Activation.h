@@ -40,8 +40,6 @@ namespace OOCore
 
 		void InitOnce() {}
 
-		void close();
-
 		BEGIN_INTERFACE_MAP(ServiceManager)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
 		END_INTERFACE_MAP()

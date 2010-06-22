@@ -101,6 +101,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check if we have someone registered already
+		std::vector<uint32_t> revoke_list;
 		string_t strOid = oid.cast<string_t>();
 		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid); i!=m_mapObjectsByOid.end() && i->first==strOid; ++i)
 		{
@@ -109,6 +110,10 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 
 			if (i->second->second.m_flags == flags)
 				DuplicateRegistrationException::Throw(oid);
+
+			// Check its still alive...
+			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
+				revoke_list.push_back(i->second->first);
 		}
 
 		// Create a new cookie
@@ -129,6 +134,14 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 
 		m_mapObjectsByOid.insert(std::multimap<string_t,std::map<uint32_t,Info>::iterator>::value_type(strOid,p.first));
 
+		guard.release();
+
+		// Revoke the revoke_list
+		for (std::vector<uint32_t>::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
+		{
+			RevokeObject_i(*i,0);
+		}
+
 		return nCookie;
 	}
 	catch (...)
@@ -142,43 +155,50 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 
 void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
 {
+	ObjectPtr<IObject> ptrObject;
+
+	// Strip off the option flags
+	Activation::RegisterFlags_t search_flags = flags & 0xF;
+
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	bool bDead = false;
+	std::vector<uint32_t> revoke_list;
 	string_t strOid = oid.cast<string_t>();
 	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid); i!=m_mapObjectsByOid.end() && i->first==strOid;++i)
 	{
-		if ((i->second->second.m_flags & flags))
+		if (i->second->second.m_flags & search_flags)
 		{
 			// Check its still alive...
 			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
-			{
-				bDead = true;
-				break;
-			}
+				revoke_list.push_back(i->second->first);
 			else
 			{
-				pObject = i->second->second.m_ptrObject->QueryInterface(iid);
-				if (!pObject)
+				ptrObject.Attach(i->second->second.m_ptrObject->QueryInterface(iid));
+				if (!ptrObject)
 					throw INoInterfaceException::Create(iid);
-				return;
+
+				// Remove the entry if Activation::SingleUse
+				if (i->second->second.m_flags & Activation::SingleUse)
+					revoke_list.push_back(i->second->first);
+				
+				break;
 			}
 		}
 	}
 
 	guard.release();
 
-	if (bDead)
+	// Revoke the revoke_list
+	for (std::vector<uint32_t>::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
 	{
-		OOBase::Guard<OOBase::RWMutex> guard2(m_lock);
+		RevokeObject_i(*i,0);
+	}
 
-		std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid);
-		
-		// Remove it, its dead
-		m_mapObjectsByCookie.erase(i->second);
-
-		while (i!=m_mapObjectsByOid.end() && i->first==strOid)
-			m_mapObjectsByOid.erase(i++);
+	// If we have an object, get out now
+	if (ptrObject)
+	{
+		pObject = ptrObject.AddRef();
+		return;
 	}
 
 	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Anywhere)))
@@ -188,18 +208,12 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	}
 }
 
-void User::RunningObjectTable::RevokeObject(uint32_t cookie)
+void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 {
-	uint32_t src_id = 0;
-	ObjectPtr<Remoting::ICallContext> ptrCC;
-	ptrCC.Attach(Remoting::GetCallContext());
-	if (ptrCC != 0)
-		src_id = ptrCC->SourceId();
-
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
-	if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
+	if (i != m_mapObjectsByCookie.end() && (!src_id || i->second.m_source == src_id))
 	{
 		uint32_t rot_cookie = i->second.m_rot_cookie;
 
@@ -219,4 +233,16 @@ void User::RunningObjectTable::RevokeObject(uint32_t cookie)
 		if (rot_cookie && m_ptrROT)
 			m_ptrROT->RevokeObject(rot_cookie);
 	}
+}
+
+
+void User::RunningObjectTable::RevokeObject(uint32_t cookie)
+{
+	uint32_t src_id = 0;
+	ObjectPtr<Remoting::ICallContext> ptrCC;
+	ptrCC.Attach(Remoting::GetCallContext());
+	if (ptrCC != 0)
+		src_id = ptrCC->SourceId();
+
+	RevokeObject_i(cookie,src_id);
 }

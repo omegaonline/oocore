@@ -193,7 +193,7 @@ namespace Omega
 
 			~ModuleDestructor();
 
-			Mutex                                                   m_lock;
+			Mutex                                                  m_lock;
 			std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_list;
 
 			static ModuleDestructor& instance()

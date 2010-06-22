@@ -23,7 +23,7 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
+	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToNative().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -62,7 +62,7 @@ bool register_process(const wchar_t* pszExeName, bool& bSkipped)
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszExeName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
+	if (access(Omega::string_t(pszExeName,Omega::string_t::npos).ToNative().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;

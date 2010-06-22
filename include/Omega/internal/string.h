@@ -65,6 +65,9 @@ namespace Omega
 		size_t ToUTF8(char* sz, size_t size) const;
 		std::string ToUTF8() const;
 
+		size_t ToNative(char* sz, size_t size) const;
+		std::string ToNative() const;
+
 		template <typename T> bool operator == (T v) const
 		{
 			return Compare(v) == 0;

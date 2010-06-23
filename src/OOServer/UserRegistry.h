@@ -50,6 +50,7 @@ namespace User
 
 		// IKey members
 		public:
+			Omega::string_t GetName();
 			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);
 			Omega::bool_t IsValue(const Omega::string_t& strName);
 			Omega::any_t GetValue(const Omega::string_t& strName);

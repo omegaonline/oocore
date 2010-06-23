@@ -42,6 +42,11 @@ void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::in
 	m_type = type;
 }
 
+string_t Key::GetName()
+{
+	return (m_strKey.IsEmpty() ? L"/" : m_strKey);
+}
+
 bool_t Key::IsSubKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey);
@@ -79,7 +84,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (err == ENOENT)
 		return false;
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -109,7 +114,7 @@ bool_t Key::IsValue(const string_t& strName)
 	if (err==ENOENT)
 		return false;
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -139,7 +144,7 @@ any_t Key::GetValue(const string_t& strName)
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -174,7 +179,7 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -197,9 +202,9 @@ string_t Key::GetDescription()
 		OMEGA_THROW(response->last_error());
 
 	if (err==ENOENT)
-		NotFoundException::Throw(m_strKey);
+		NotFoundException::Throw(GetName());
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -233,7 +238,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -263,9 +268,9 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
-		NotFoundException::Throw(m_strKey);
+		NotFoundException::Throw(GetName());
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -292,7 +297,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	if (err == ENOENT)
 		NotFoundException::Throw(strValue);
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -391,7 +396,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 		OMEGA_THROW(response->last_error());
 
 	if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err==EEXIST)
 		AlreadyExistsException::Throw(m_strKey + L"/" + strSubKey);
 	else if (err==ENOENT)
@@ -428,9 +433,9 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 		OMEGA_THROW(response->last_error());
 
 	if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
-		NotFoundException::Throw(m_strKey);
+		NotFoundException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -474,9 +479,9 @@ std::set<Omega::string_t> Key::EnumValues()
 		OMEGA_THROW(response->last_error());
 
 	if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
-		NotFoundException::Throw(m_strKey);
+		NotFoundException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -561,7 +566,7 @@ void Key::DeleteValue(const string_t& strName)
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey);
+		AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }

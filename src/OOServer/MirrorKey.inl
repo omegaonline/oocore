@@ -26,6 +26,11 @@ void User::Registry::MirrorKey::Init(const string_t& strKey, IKey* pLocal, IKey*
 	m_ptrSystem = pSystem;
 }
 
+string_t User::Registry::MirrorKey::GetName()
+{
+	return m_strKey;
+}
+
 bool_t User::Registry::MirrorKey::IsSubKey(const string_t& strSubKey)
 {
 	return ((m_ptrLocal && m_ptrLocal->IsSubKey(strSubKey)) ||

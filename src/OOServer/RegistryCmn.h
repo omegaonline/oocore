@@ -168,6 +168,7 @@ namespace User
 
 		// IKey members
 		public:
+			string_t GetName();
 			bool_t IsSubKey(const string_t& strSubKey);
 			bool_t IsValue(const string_t& strName);
 			any_t GetValue(const string_t& strName);

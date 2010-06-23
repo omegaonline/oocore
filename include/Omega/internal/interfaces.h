@@ -139,6 +139,7 @@ namespace Omega
 			};
 			typedef uint16_t OpenFlags_t;
 
+			virtual string_t GetName() = 0;
 			virtual bool_t IsSubKey(const string_t& key) = 0;
 			virtual bool_t IsValue(const string_t& name) = 0;
 			virtual any_t GetValue(const string_t& name) = 0;
@@ -335,6 +336,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Registry, IKey, "{F33E828A-BF5E-4c26-A541-BDB2CA736DBD}",
 
 	// Methods
+	OMEGA_METHOD(string_t,GetName,0,())
 	OMEGA_METHOD(bool_t,IsSubKey,1,((in),const string_t&,key))
 	OMEGA_METHOD(bool_t,IsValue,1,((in),const string_t&,name))
 	OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))

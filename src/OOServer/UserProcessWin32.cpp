@@ -30,6 +30,10 @@
 void AttachDebugger(DWORD pid);
 #endif
 
+#if defined(_MSC_VER)
+#define wcsicmp _wcsicmp
+#endif
+
 namespace
 {
 	class UserProcessWin32 : public User::Process

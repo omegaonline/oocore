@@ -198,7 +198,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Applications/OORegEdit/Layout");
 
 		wxPoint ptPos;
 		ptPos.x = ptrKey->GetValue(L"Left").cast<int>();
@@ -229,7 +229,7 @@ void MainFrame::CreateChildWindows(void)
 		{
 			Omega::string_t val = ptrKey->GetValue(Omega::string_t(L"Favourite{0}") % nFiles).cast<Omega::string_t>();
 
-			size_t pos = val.ReverseFind(L'\\');
+			size_t pos = val.ReverseFind(L'/');
 			if (pos != Omega::string_t::npos)
 			{
 				wxString strName(val.Mid(pos+1).c_str());
@@ -300,7 +300,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// Open the registry root
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/");
 
 		// Init the tree
 		TreeItemData* pItem = new TreeItemData(ptrKey,5);
@@ -321,14 +321,14 @@ void MainFrame::SelectItem(Omega::string_t strSelection)
 {
 	SetCursor(*wxHOURGLASS_CURSOR);
 
-	if (strSelection.Left(1) == L"\\")
+	if (strSelection.Left(1) == L"/")
 		strSelection = strSelection.Mid(1);
 
 	// Expand the tree to strSelection
 	wxTreeItemId tree_id = m_pTree->GetRootItem();
 	for (;;)
 	{
-		size_t pos = strSelection.Find(L'\\');
+		size_t pos = strSelection.Find(L'/');
 		wxString strSubKey;
 		if (pos != Omega::string_t::npos)
 		{
@@ -446,7 +446,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	// Set some defaults...
 	try
 	{
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::OpenCreate);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Applications/OORegEdit/Layout",Omega::Registry::IKey::OpenCreate);
 
 		wxPoint pt = GetPosition();
 		ptrKey->SetValue(L"Top",pt.y);
@@ -478,7 +478,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		{
 			wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
 
-			Omega::string_t strVal = m_mapMRU[strName] + L"\\" + strName.wc_str();
+			Omega::string_t strVal = m_mapMRU[strName] + L"/" + strName.wc_str();
 
 			ptrKey->SetValue(Omega::string_t(L"Favourite{0}") % (nFiles-1),strVal);
 		}
@@ -1099,12 +1099,12 @@ void MainFrame::OnTreeSelChanged(wxTreeEvent& evt)
 	while (item_id)
 	{
 		if (item_id != m_pTree->GetRootItem())
-			strText = wxT("\\") + m_pTree->GetItemText(item_id) + strText;
+			strText = wxT("/") + m_pTree->GetItemText(item_id) + strText;
 
 		item_id = m_pTree->GetItemParent(item_id);
 	}
 	if (strText.IsEmpty())
-		strText = wxT("\\");
+		strText = wxT("/");
 
 	m_strSelection = strText;
 
@@ -1126,7 +1126,7 @@ void MainFrame::SetKeyDescription(const wxTreeItemId& id)
 		wxString strDesc = pItem->GetDesc();
 		if (!strDesc.IsEmpty())
 			strHTML += strDesc + wxT(" <i><a href=\"edit_key\">edit...</a></i>");
-		else if (m_strSelection != wxT("\\"))
+		else if (m_strSelection != wxT("/"))
 			strHTML += wxT("<i><a href=\"edit_key\">Add...</a></i>");
 	}
 

@@ -259,15 +259,15 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(m_strKey);
 	else if (err==EEXIST)
-		User::Registry::AlreadyExistsException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::AlreadyExistsException::Throw(m_strKey + L"/" + strSubKey);
 	else if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(m_strKey + L"/" + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrNew->Init(m_pHive,m_strKey + L"\\" + strSubKey,key);
+	ptrNew->Init(m_pHive,m_strKey + L"/" + strSubKey,key);
 	return ptrNew.AddRef();
 }
 
@@ -313,9 +313,9 @@ void HiveKey::DeleteKey(const string_t& strSubKey)
 
 	int err = m_pHive->delete_key(m_key,OOBase::to_utf8(strSubKey.c_str()),0);
 	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(m_strKey + L"/" + strSubKey);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::AccessDeniedException::Throw(m_strKey + L"/" + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -351,7 +351,7 @@ void RootKey::InitOnce()
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_localuser_hive,L"\\Local User",0);
+	ptrKey->Init(m_localuser_hive,L"/Local User",0);
 	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
 }
 
@@ -364,7 +364,7 @@ int RootKey::registry_access_check(const std::string& /*strdb*/, Omega::uint32_t
 string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey)
 {
 	// Parse strKey
-	if (strSubKey == L"Local User" || strSubKey.Mid(0,11) == L"Local User\\")
+	if (strSubKey == L"Local User" || strSubKey.Mid(0,11) == L"Local User/")
 	{
 		string_t strMirror;
 
@@ -372,10 +372,10 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 		if (strSubKey.Length() > 10)
 			strMirror = strSubKey.Mid(11);
 
-		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"\\All Users");
+		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"/All Users");
 		
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstancePtr();
-		ptrNew->Init(L"\\Local User",m_ptrLocalUserKey,ptrMirror);
+		ptrNew->Init(L"/Local User",m_ptrLocalUserKey,ptrMirror);
 		ptrKey.Attach(ptrNew.AddRef());
 
 		return strMirror;
@@ -398,7 +398,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 		return true;
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(L"/" + strSubKey);
 
 	return ptrKey->IsSubKey(strSubKey2);
 }
@@ -448,7 +448,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		return ptrKey.AddRef();
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(L"/" + strSubKey);
 
 	return ptrKey->OpenSubKey(strSubKey2,flags);
 }
@@ -473,10 +473,10 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	ObjectPtr<IKey> ptrKey;
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
 	if (strSubKey2.IsEmpty())
-		User::Registry::AccessDeniedException::Throw(L"\\" + strSubKey);
+		User::Registry::AccessDeniedException::Throw(L"/" + strSubKey);
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(L"/" + strSubKey);
 
 	return ptrKey->DeleteKey(strSubKey2);
 }

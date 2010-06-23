@@ -197,10 +197,10 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 	}
 
 	if (!ptrNewLocal && !ptrNewSystem)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(m_strKey + L"/" + strSubKey);
 
 	ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
-	ptrNew->Init(m_strKey + L"\\" + strSubKey,ptrNewLocal,ptrNewSystem);
+	ptrNew->Init(m_strKey + L"/" + strSubKey,ptrNewLocal,ptrNewSystem);
 	return ptrNew.AddRef();
 }
 

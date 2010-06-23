@@ -333,7 +333,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 		wxString strSubKey;
 		for (;;)
 		{
-			size_t pos = strFoundPos.Find('\\');
+			size_t pos = strFoundPos.Find('/');
 			if (pos != Omega::string_t::npos)
 			{
 				strSubKey = strFoundPos.Left(pos).c_str();
@@ -451,7 +451,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKe
 			{
 				// Found it!
 				bKey = false;
-				return *i + L"\\" + *j;
+				return *i + L"/" + *j;
 			}
 		}
 
@@ -459,7 +459,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKe
 		Omega::string_t strNext = Find3(ptrSubKey,strFind,bKeys,bValues,bData,bMatchAll,bIgnoreCase,bKey);
 		if (!strNext.IsEmpty())
 		{
-			return *i + L"\\" + strNext;
+			return *i + L"/" + strNext;
 		}
 	}
 

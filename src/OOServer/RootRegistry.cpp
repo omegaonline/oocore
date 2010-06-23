@@ -136,7 +136,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 	{
 		response.write(local_type);
 		response.write(uKey);
-		response.write("\\" + strName);
+		response.write("/" + strName);
 	}
 }
 

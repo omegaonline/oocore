@@ -45,9 +45,9 @@ namespace User
 			static void ValidateSubKey(const string_t& strSubKey)
 			{
 				if (strSubKey.IsEmpty() ||
-						strSubKey == L"\\" ||
-						strSubKey.Right(1) == L"\\" ||
-						strSubKey.Find(L"\\\\") != string_t::npos)
+						strSubKey == L"/" ||
+						strSubKey.Right(1) == L"/" ||
+						strSubKey.Find(L"//") != string_t::npos)
 				{
 					Throw(strSubKey);
 				}
@@ -56,7 +56,7 @@ namespace User
 			static void ValidateValue(const string_t& strName)
 			{
 				if (strName.IsEmpty() ||
-						strName.Find(L'\\') != string_t::npos)
+						strName.Find(L'/') != string_t::npos)
 				{
 					Throw(strName);
 				}

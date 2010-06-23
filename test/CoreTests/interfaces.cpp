@@ -33,10 +33,10 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
-	ptrSubKey = ptrKey.OpenSubKey(L"OIDs\\" + strOid,Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Library",Omega::string_t(pszLibName,Omega::string_t::npos));
 
 	return true;
@@ -44,15 +44,15 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 
 bool unregister_library()
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects");
 
 	if (ptrKey->IsSubKey(L"Test.Library"))
 		ptrKey->DeleteKey(L"Test.Library");
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
-	if (ptrKey->IsSubKey(L"OIDs\\" + strOid))
-		ptrKey->DeleteKey(L"OIDs\\" + strOid);
+	if (ptrKey->IsSubKey(L"OIDs/" + strOid))
+		ptrKey->DeleteKey(L"OIDs/" + strOid);
 	
 	return true;
 }
@@ -72,14 +72,14 @@ bool register_process(const wchar_t* pszExeName, bool& bSkipped)
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Process",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
-	ptrSubKey = ptrKey.OpenSubKey(L"OIDs\\" + strOid,Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Application",L"CoreTests.TestProcess");
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User\\Applications",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess\\Activation",Omega::Registry::IKey::OpenCreate);
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"/Local User/Applications",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess/Activation",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Path",Omega::string_t(pszExeName,Omega::string_t::npos));
 
 	return true;
@@ -87,17 +87,17 @@ bool register_process(const wchar_t* pszExeName, bool& bSkipped)
 
 bool unregister_process()
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects");
 
 	if (ptrKey->IsSubKey(L"Test.Process"))
 		ptrKey->DeleteKey(L"Test.Process");
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
 
-	if (ptrKey->IsSubKey(L"OIDs\\" + strOid))
-		ptrKey->DeleteKey(L"OIDs\\" + strOid);
+	if (ptrKey->IsSubKey(L"OIDs/" + strOid))
+		ptrKey->DeleteKey(L"OIDs/" + strOid);
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User\\Applications",Omega::Registry::IKey::OpenCreate);
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"/Local User/Applications",Omega::Registry::IKey::OpenCreate);
 	if (ptrKey->IsSubKey(L"CoreTests.TestProcess"))
 		ptrKey->DeleteKey(L"CoreTests.TestProcess");
 
@@ -379,7 +379,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	interface_tests(ptrSimpleTest);
 
 	// Test redirecting the registration
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"CurrentVersion",L"Test.Library");
 	

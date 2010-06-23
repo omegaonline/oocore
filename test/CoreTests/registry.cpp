@@ -65,12 +65,12 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	}
 	try
 	{
-		pKey->SetValue(L"\\",0);
+		pKey->SetValue(L"/",0);
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"\\");
+		TEST(pE->GetName() == L"/");
 		pE->Release();
 	}
 
@@ -141,13 +141,13 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::OpenCreate);
+		pSubKey = pKey->OpenSubKey(L"/",Omega::Registry::IKey::OpenCreate);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"\\");
+		TEST(pE->GetName() == L"/");
 		pE->Release();
 	}
 
@@ -162,8 +162,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
-		if (strKey != L"\\")
-			TEST(pE->GetKeyName() == strKey + L"\\" + strTestKey);
+		if (strKey != L"/")
+			TEST(pE->GetKeyName() == strKey + L"/" + strTestKey);
 		else
 			TEST(pE->GetKeyName() == strKey + strTestKey);
 		pE->Release();
@@ -179,8 +179,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		if (strKey != L"\\")
-			TEST(pE->GetName() == strKey + L"\\" + strTestKey);
+		if (strKey != L"/")
+			TEST(pE->GetName() == strKey + L"/" + strTestKey);
 		else
 			TEST(pE->GetName() == strKey + strTestKey);
 		pE->Release();
@@ -223,7 +223,7 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetKeyName() == L"\\" + strSubKey);
+		TEST(pE->GetKeyName() == L"/" + strSubKey);
 		pE->Release();
 	}
 
@@ -259,16 +259,16 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	{
 		TEST_VOID(pKey->DeleteValue(strTestValue));
 
-		if (!test_key2(pKey,L"\\"))
+		if (!test_key2(pKey,L"/"))
 			return false;
 	}
 
 	// Test the private root keys
 	test_privates(pKey,L"System");
 	test_privates(pKey,L"Sandbox");
-	test_privates(pKey,L"All Users\\Objects");
-	test_privates(pKey,L"All Users\\Objects\\OIDs");
-	test_privates(pKey,L"All Users\\Applications");
+	test_privates(pKey,L"All Users/Objects");
+	test_privates(pKey,L"All Users/Objects/OIDs");
+	test_privates(pKey,L"All Users/Applications");
 	test_privates(pKey,L"Local User");
 
 	if (bCanWriteToRoot)
@@ -279,7 +279,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 
 bool registry_tests()
 {
-	Omega::Registry::IKey* pRootKey = Omega::Registry::IKey::OpenKey(L"\\");
+	Omega::Registry::IKey* pRootKey = Omega::Registry::IKey::OpenKey(L"/");
 	TEST(pRootKey);
 
 	bool bTest;
@@ -296,10 +296,10 @@ bool registry_tests()
 	if (!bTest)
 		return false;
 
-	if (!test_key(L"\\System"))
+	if (!test_key(L"/System"))
 		return false;
 
-	if (!test_key(L"\\Local User"))
+	if (!test_key(L"/Local User"))
 		return false;
 
 	return true;

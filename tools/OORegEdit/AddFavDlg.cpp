@@ -18,7 +18,7 @@ AddFavDlg::AddFavDlg(wxWindow* parent, int id, const wxString& title, const wxPo
 
 	wxTextValidator tv(wxFILTER_EXCLUDE_CHAR_LIST,&m_strName);
 	wxArrayString excludes;
-	excludes.Add(wxT('\\'));
+	excludes.Add(wxT('/'));
 	tv.SetExcludes(excludes);
 
 	m_txtName->SetValidator(tv);

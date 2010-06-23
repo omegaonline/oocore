@@ -46,7 +46,11 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 extern "C" OMEGA_EXPORT const char* OOCore_GetVersion()
 {
+#if defined(OMEGA_DEBUG)
+	return OOCORE_VERSION " (Debug build)";
+#else
 	return OOCORE_VERSION;
+#endif
 }
 
 extern "C" OMEGA_EXPORT unsigned int OOCore_GetMajorVersion()

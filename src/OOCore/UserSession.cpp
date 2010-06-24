@@ -186,19 +186,9 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 #error Fix me!
 #endif
 
-	OOBase::SmartPtr<OOBase::LocalSocket> local_socket;
 	OOBase::timeval_t wait(5);
-	OOBase::Countdown countdown(&wait);
 	int err = 0;
-	while (wait != OOBase::timeval_t::Zero)
-	{
-		local_socket = OOBase::LocalSocket::connect_local(name,&err,&wait);
-		if (local_socket || bStandalone)
-			break;
-
-		// We ignore the error, and try again until we timeout
-		countdown.update();
-	}
+	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(name,&err,&wait);
 	if (!local_socket)
 	{
 		if (bStandalone)
@@ -207,8 +197,6 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
-
-	countdown.update();
 
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
@@ -225,8 +213,6 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	// Read the string
 	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
 	OMEGA_NEW(buf,char[uLen]);
-
-	countdown.update();
 
 	local_socket->recv(buf,uLen,&err);
 	if (err)

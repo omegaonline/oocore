@@ -397,7 +397,7 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 
 string_t RootKey::GetName()
 {
-	return L"/";
+	return string_t(L"/");
 }
 
 bool_t RootKey::IsSubKey(const string_t& strSubKey)

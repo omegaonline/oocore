@@ -142,7 +142,7 @@ void HiveKey::Init(::Registry::Hive* pHive, const Omega::string_t& strKey, const
 
 string_t HiveKey::GetName()
 {
-	return (m_strKey.IsEmpty() ? L"/" : m_strKey);
+	return m_strKey + L"/";
 }
 
 bool_t HiveKey::IsSubKey(const string_t& strSubKey)
@@ -266,15 +266,15 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==EEXIST)
-		User::Registry::AlreadyExistsException::Throw(m_strKey + L"/" + strSubKey);
+		User::Registry::AlreadyExistsException::Throw(GetName() + strSubKey);
 	else if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey + L"/" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrNew->Init(m_pHive,m_strKey + L"/" + strSubKey,key);
+	ptrNew->Init(m_pHive,GetName() + strSubKey,key);
 	return ptrNew.AddRef();
 }
 
@@ -320,9 +320,9 @@ void HiveKey::DeleteKey(const string_t& strSubKey)
 
 	int err = m_pHive->delete_key(m_key,OOBase::to_utf8(strSubKey.c_str()),0);
 	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey + L"/" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey + L"/" + strSubKey);
+		User::Registry::AccessDeniedException::Throw(GetName() + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -410,7 +410,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 		return true;
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"/" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	return ptrKey->IsSubKey(strSubKey2);
 }
@@ -460,7 +460,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		return ptrKey.AddRef();
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"/" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	return ptrKey->OpenSubKey(strSubKey2,flags);
 }
@@ -485,10 +485,10 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	ObjectPtr<IKey> ptrKey;
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
 	if (strSubKey2.IsEmpty())
-		User::Registry::AccessDeniedException::Throw(L"/" + strSubKey);
+		User::Registry::AccessDeniedException::Throw(GetName() + strSubKey);
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"/" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	return ptrKey->DeleteKey(strSubKey2);
 }

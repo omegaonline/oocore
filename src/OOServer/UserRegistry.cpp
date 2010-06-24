@@ -44,7 +44,7 @@ void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::in
 
 string_t Key::GetName()
 {
-	return (m_strKey.IsEmpty() ? L"/" : m_strKey);
+	return m_strKey + L"/";
 }
 
 bool_t Key::IsSubKey(const string_t& strSubKey)
@@ -398,9 +398,9 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
 	else if (err==EEXIST)
-		AlreadyExistsException::Throw(m_strKey + L"/" + strSubKey);
+		AlreadyExistsException::Throw(GetName() + strSubKey);
 	else if (err==ENOENT)
-		NotFoundException::Throw(m_strKey + L"/" + strSubKey);
+		NotFoundException::Throw(GetName() + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -411,7 +411,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
-	ptrNew->Init(m_pManager,m_strKey + L"/" + strSubKey,key,type);
+	ptrNew->Init(m_pManager,GetName() + strSubKey,key,type);
 	return ptrNew;
 }
 
@@ -513,7 +513,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 		if (ptrKey)
 		{
 			if (strSub.IsEmpty())
-				AccessDeniedException::Throw(m_strKey + L"/" + strSubKey);
+				AccessDeniedException::Throw(GetName() + strSubKey);
 
 			return ptrKey->DeleteKey(strSub);
 		}
@@ -536,9 +536,9 @@ void Key::DeleteKey(const string_t& strSubKey)
 		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
-		NotFoundException::Throw(m_strKey + L"/" + strSubKey);
+		NotFoundException::Throw(GetName() + strSubKey);
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey + L"/" + strSubKey);
+		AccessDeniedException::Throw(GetName() + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 }

@@ -417,29 +417,24 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid)
 
 bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
 {
-	if (m_bSandbox)
-	{
-		strHive = strSysDir + "sandbox.regdb";
-	}
+	assert(!m_bSandbox);
+
+	OOSvrBase::pw_info pw(m_uid);
+	if (!pw)
+		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	if (strUsersDir.empty())
+		strHive = strSysDir + "users/";
 	else
 	{
-		OOSvrBase::pw_info pw(m_uid);
-		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		strHive = strUsersDir;
 
-		if (strUsersDir.empty())
-			strHive = strSysDir + "users/";
-		else
-		{
-			strHive = strUsersDir;
-
-			if (*strHive.rbegin() != '/')
-				strHive += '/';
-		}
-
-		strHive += pw->pw_name;
-		strHive += ".regdb";
+		if (*strHive.rbegin() != '/')
+			strHive += '/';
 	}
+
+	strHive += pw->pw_name;
+	strHive += ".regdb";
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
 	void* TODO;

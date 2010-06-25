@@ -33,9 +33,6 @@
 	#error This is the MSVC build!
 #elif (_MSC_VER < 1310)
 	#error Omega Online will not compile with a pre Visual C++ .NET 2003 compiler
-#elif (_MSC_VER >= 1400)
-// VS-2005 and later
-#define _CRT_NONSTDC_NO_WARNINGS
 #endif
 
 #if defined(__cplusplus) && !defined(_CPPUNWIND)

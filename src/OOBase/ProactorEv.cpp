@@ -38,516 +38,501 @@
 #include <sys/un.h>
 #endif /* HAVE_SYS_UN_H */
 
-/////////////////////////////////////////////////////
-// NOTES:
-//
-// I have typed this whole thing blind... it needs a
-// load of checking (it might not even compile)
-//
-// Need to check for try/catch blocks around the stl operations
-//
-// Not sure we are handling EV_ERROR correctly...
-//
-/////////////////////////////////////////////////////
-
-namespace OOSvrBase
+namespace
 {
-	namespace Ev
+	class AsyncSocket : public OOSvrBase::AsyncSocket
 	{
-		class AsyncSocket : public OOSvrBase::AsyncSocket
+	public:
+		AsyncSocket(OOSvrBase::Ev::ProactorImpl* pProactor) :
+				m_proactor(pProactor),
+				m_read_watcher(0),
+				m_write_watcher(0),
+				m_handler(0),
+				m_current_write(0)
 		{
-		public:
-			AsyncSocket(ProactorImpl* pProactor) :
-					m_proactor(pProactor),
-					m_read_watcher(0),
-					m_write_watcher(0),
-					m_handler(0),
-					m_current_write(0)
-			{
-				m_current_read.m_buffer = 0;
-			}
+			m_current_read.m_buffer = 0;
+		}
 
-			int bind(IOHandler* handler, int fd);
+		int bind(OOSvrBase::IOHandler* handler, int fd);
 
-			int read(OOBase::Buffer* buffer, size_t len = 0);
-			int write(OOBase::Buffer* buffer);
-			void close();
+		int read(OOBase::Buffer* buffer, size_t len = 0);
+		int write(OOBase::Buffer* buffer);
+		void close();
 
-		private:
-			virtual ~AsyncSocket();
+	private:
+		virtual ~AsyncSocket();
 
-			struct AsyncRead
-			{
-				OOBase::Buffer* m_buffer;
-				size_t          m_to_read;
-			};
-
-			OOBase::Mutex               m_lock;
-			ProactorImpl*               m_proactor;
-			ProactorImpl::io_watcher*   m_read_watcher;
-			ProactorImpl::io_watcher*   m_write_watcher;
-			IOHandler*                  m_handler;
-			std::deque<AsyncRead>       m_async_reads;
-			std::deque<OOBase::Buffer*> m_async_writes;
-			AsyncRead                   m_current_read;
-			OOBase::Buffer*             m_current_write;
-
-			static void on_read(void* param);
-			static void on_write(void* param);
-
-			bool do_read(size_t to_read);
-			int read_next();
-
-			bool do_write();
-			int write_next();
+		struct AsyncRead
+		{
+			OOBase::Buffer* m_buffer;
+			size_t          m_to_read;
 		};
 
-		template <typename SocketType>
-		class AcceptSocket : public OOBase::Socket
+		OOBase::Mutex                            m_lock;
+		OOSvrBase::Ev::ProactorImpl*             m_proactor;
+		OOSvrBase::Ev::ProactorImpl::io_watcher* m_read_watcher;
+		OOSvrBase::Ev::ProactorImpl::io_watcher* m_write_watcher;
+		OOSvrBase::IOHandler*                    m_handler;
+		std::deque<AsyncRead>                    m_async_reads;
+		std::deque<OOBase::Buffer*>              m_async_writes;
+		AsyncRead                                m_current_read;
+		OOBase::Buffer*                          m_current_write;
+
+		static void on_read(void* param);
+		static void on_write(void* param);
+
+		bool do_read(size_t to_read);
+		int read_next();
+
+		bool do_write();
+		int write_next();
+	};
+
+	template <typename SocketType>
+	class AcceptSocket : public OOBase::Socket
+	{
+	public:
+		AcceptSocket(OOSvrBase::Ev::ProactorImpl* pProactor, const std::string& path) :
+				m_proactor(pProactor),
+				m_watcher(0),
+				m_handler(0),
+				m_closing(false),
+				m_path(path)
+		{}
+
+		int init(OOSvrBase::Acceptor* handler, int fd);
+
+		int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
 		{
-		public:
-			AcceptSocket(ProactorImpl* pProactor, const std::string& path) :
-					m_proactor(pProactor),
-					m_watcher(0),
-					m_handler(0),
-					m_closing(false),
-					m_path(path)
-			{}
+			return EINVAL;
+		}
 
-			int init(Acceptor* handler, int fd);
+		size_t recv(void* /*buf*/, size_t /*len*/, int* perr, const OOBase::timeval_t* /*timeout*/ = 0)
+		{
+			*perr = EINVAL;
+			return 0;
+		}
 
-			int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
-			{
-				return EINVAL;
-			}
+		void close();
 
-			size_t recv(void* /*buf*/, size_t /*len*/, int* perr, const OOBase::timeval_t* /*timeout*/ = 0)
-			{
-				*perr = EINVAL;
-				return 0;
-			}
+	private:
+		OOBase::Condition::Mutex                 m_lock;
+		OOSvrBase::Ev::ProactorImpl*             m_proactor;
+		OOSvrBase::Ev::ProactorImpl::io_watcher* m_watcher;
+		OOSvrBase::Acceptor*                     m_handler;
+		OOBase::Condition                        m_close_cond;
+		bool                                     m_closing;
+		std::string                              m_path;
 
-			void close();
-
-		private:
-			OOBase::Condition::Mutex  m_lock;
-			ProactorImpl*             m_proactor;
-			ProactorImpl::io_watcher* m_watcher;
-			Acceptor*                 m_handler;
-			OOBase::Condition         m_close_cond;
-			bool                      m_closing;
-			std::string               m_path;
-
-			static void on_accept(void* param);
-			void on_accept_i();
-		};
-	}
-}
-
-OOSvrBase::Ev::AsyncSocket::~AsyncSocket()
-{
-	try
+		static void on_accept(void* param);
+		void on_accept_i();
+	};
+	
+	AsyncSocket::~AsyncSocket()
 	{
-		close();
-	}
-	catch (...)
-	{}
-}
-
-int OOSvrBase::Ev::AsyncSocket::bind(IOHandler* handler, int fd)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// Add our watcher
-	int err = m_proactor->add_watcher(m_read_watcher,fd,EV_READ,this,&on_read);
-	if (err != 0)
-		return err;
-
-	err = m_proactor->add_watcher(m_write_watcher,fd,EV_WRITE,this,&on_write);
-	if (err != 0)
-	{
-		m_proactor->remove_watcher(m_read_watcher);
-		return err;
+		try
+		{
+			close();
+		}
+		catch (...)
+		{}
 	}
 
-	m_handler = handler;
-
-	return 0;
-}
-
-void OOSvrBase::Ev::AsyncSocket::close()
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	if (m_handler)
+	int AsyncSocket::bind(OOSvrBase::IOHandler* handler, int fd)
 	{
-		m_handler = 0;
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		// Empty the queues
-		for (std::deque<AsyncRead>::iterator i=m_async_reads.begin(); i!=m_async_reads.end(); ++i)
-			i->m_buffer->release();
-
-		m_async_reads.clear();
-
-		for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin(); i!=m_async_writes.end(); ++i)
-			(*i)->release();
-
-		m_async_writes.clear();
-
-		::close(m_read_watcher->fd);
-
-		m_proactor->remove_watcher(m_read_watcher);
-		m_read_watcher = 0;
-		m_proactor->remove_watcher(m_write_watcher);
-		m_write_watcher = 0;
-	}
-}
-
-int OOSvrBase::Ev::AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
-{
-	assert(buffer);
-
-	if (len > 0)
-	{
-		int err = buffer->space(len);
+		// Add our watcher
+		int err = m_proactor->add_watcher(m_read_watcher,fd,EV_READ,this,&on_read);
 		if (err != 0)
 			return err;
-	}
 
-	AsyncRead read = { buffer->duplicate(), len };
+		err = m_proactor->add_watcher(m_write_watcher,fd,EV_WRITE,this,&on_write);
+		if (err != 0)
+		{
+			m_proactor->remove_watcher(m_read_watcher);
+			return err;
+		}
 
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+		m_handler = handler;
 
-	if (!m_read_watcher)
-	{
-		read.m_buffer->release();
-		return ENOENT;
-	}
-
-	try
-	{
-		m_async_reads.push_back(read);
-	}
-	catch (std::exception&)
-	{
-		read.m_buffer->release();
-		return ENOMEM;
-	}
-
-	if (m_current_read.m_buffer)
 		return 0;
+	}
 
-	return read_next();
-}
-
-int OOSvrBase::Ev::AsyncSocket::read_next()
-{
-	do
+	void AsyncSocket::close()
 	{
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+		if (m_handler)
+		{
+			m_handler = 0;
+
+			// Empty the queues
+			for (std::deque<AsyncRead>::iterator i=m_async_reads.begin(); i!=m_async_reads.end(); ++i)
+				i->m_buffer->release();
+
+			m_async_reads.clear();
+
+			for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin(); i!=m_async_writes.end(); ++i)
+				(*i)->release();
+
+			m_async_writes.clear();
+
+			::close(m_read_watcher->fd);
+
+			m_proactor->remove_watcher(m_read_watcher);
+			m_read_watcher = 0;
+			m_proactor->remove_watcher(m_write_watcher);
+			m_write_watcher = 0;
+		}
+	}
+
+	int AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
+	{
+		assert(buffer);
+
+		if (len > 0)
+		{
+			int err = buffer->space(len);
+			if (err != 0)
+				return err;
+		}
+
+		AsyncRead read = { buffer->duplicate(), len };
+
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+		if (!m_read_watcher)
+		{
+			read.m_buffer->release();
+			return ENOENT;
+		}
+
 		try
 		{
-			if (m_async_reads.empty())
-				break;
-
-			m_current_read = m_async_reads.front();
-			m_async_reads.pop_front();
+			m_async_reads.push_back(read);
 		}
 		catch (std::exception&)
 		{
+			read.m_buffer->release();
 			return ENOMEM;
 		}
 
-	}
-	while (!do_read(m_current_read.m_to_read));
+		if (m_current_read.m_buffer)
+			return 0;
 
-	return m_proactor->start_watcher(m_read_watcher);
-}
-
-bool OOSvrBase::Ev::AsyncSocket::do_read(size_t to_read)
-{
-	bool inexact = false;
-	if (to_read == 0)
-	{
-		to_read = m_current_read.m_buffer->space();
-		inexact = true;
+		return read_next();
 	}
 
-	// Loop reading what we have...
-	bool closed = false;
-	int err = 0;
-	while (to_read > 0)
+	int AsyncSocket::read_next()
 	{
-		ssize_t have_read = recv(m_read_watcher->fd,m_current_read.m_buffer->wr_ptr(),to_read,0);
-		if (have_read == 0)
+		do
+		{
+			try
+			{
+				if (m_async_reads.empty())
+					break;
+
+				m_current_read = m_async_reads.front();
+				m_async_reads.pop_front();
+			}
+			catch (std::exception&)
+			{
+				return ENOMEM;
+			}
+
+		}
+		while (!do_read(m_current_read.m_to_read));
+
+		return m_proactor->start_watcher(m_read_watcher);
+	}
+
+	bool AsyncSocket::do_read(size_t to_read)
+	{
+		bool inexact = false;
+		if (to_read == 0)
+		{
+			to_read = m_current_read.m_buffer->space();
+			inexact = true;
+		}
+
+		// Loop reading what we have...
+		bool closed = false;
+		int err = 0;
+		while (to_read > 0)
+		{
+			ssize_t have_read = recv(m_read_watcher->fd,m_current_read.m_buffer->wr_ptr(),to_read,0);
+			if (have_read == 0)
+			{
+				closed = true;
+				break;
+			}
+			else if (have_read < 0)
+			{
+				if (errno == EAGAIN)
+				{
+					if (!inexact || m_current_read.m_buffer->length() == 0)
+					{
+						m_async_reads.push_front(m_current_read);
+						return true;
+					}
+				}
+				else
+					err = errno;
+				break;
+			}
+
+			// Update wr_ptr
+			m_current_read.m_buffer->wr_ptr(static_cast<size_t>(have_read));
+
+			if (m_current_read.m_to_read)
+				m_current_read.m_to_read -= static_cast<size_t>(have_read);
+
+			to_read -= static_cast<size_t>(have_read);
+		}
+
+		// Work out if we are a close or an 'actual' error
+		if (err == EPIPE)
 		{
 			closed = true;
-			break;
-		}
-		else if (have_read < 0)
-		{
-			if (errno == EAGAIN)
-			{
-				if (!inexact || m_current_read.m_buffer->length() == 0)
-				{
-					m_async_reads.push_front(m_current_read);
-					return true;
-				}
-			}
-			else
-				err = errno;
-			break;
+			err = 0;
 		}
 
-		// Update wr_ptr
-		m_current_read.m_buffer->wr_ptr(static_cast<size_t>(have_read));
+		// Call handlers
+		if (m_handler && (m_current_read.m_buffer->length() || err != 0))
+			m_handler->on_read(this,m_current_read.m_buffer,err);
 
-		if (m_current_read.m_to_read)
-			m_current_read.m_to_read -= static_cast<size_t>(have_read);
+		if (m_handler && closed)
+			m_handler->on_closed(this);
 
-		to_read -= static_cast<size_t>(have_read);
+		// Release the completed buffer
+		m_current_read.m_buffer->release();
+		m_current_read.m_buffer = 0;
+
+		return false;
 	}
 
-	// Work out if we are a close or an 'actual' error
-	if (err == EPIPE)
+	int AsyncSocket::write(OOBase::Buffer* buffer)
 	{
-		closed = true;
-		err = 0;
-	}
+		assert(buffer);
 
-	// Call handlers
-	if (m_handler && (m_current_read.m_buffer->length() || err != 0))
-		m_handler->on_read(this,m_current_read.m_buffer,err);
+		if (buffer->length() == 0)
+			return 0;
 
-	if (m_handler && closed)
-		m_handler->on_closed(this);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-	// Release the completed buffer
-	m_current_read.m_buffer->release();
-	m_current_read.m_buffer = 0;
+		if (!m_write_watcher)
+			return ENOENT;
 
-	return false;
-}
-
-int OOSvrBase::Ev::AsyncSocket::write(OOBase::Buffer* buffer)
-{
-	assert(buffer);
-
-	if (buffer->length() == 0)
-		return 0;
-
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	if (!m_write_watcher)
-		return ENOENT;
-
-	try
-	{
-		m_async_writes.push_back(buffer->duplicate());
-	}
-	catch (std::exception&)
-	{
-		buffer->release();
-		return ENOMEM;
-	}
-
-	if (m_current_write)
-		return 0;
-
-	return write_next();
-}
-
-int OOSvrBase::Ev::AsyncSocket::write_next()
-{
-	do
-	{
 		try
 		{
-			if (m_async_writes.empty())
-				return 0;
-
-			m_current_write = m_async_writes.front();
-			m_async_writes.pop_front();
+			m_async_writes.push_back(buffer->duplicate());
 		}
 		catch (std::exception&)
 		{
+			buffer->release();
 			return ENOMEM;
 		}
 
+		if (m_current_write)
+			return 0;
+
+		return write_next();
 	}
-	while (!do_write());
 
-	return m_proactor->start_watcher(m_write_watcher);
-}
-
-bool OOSvrBase::Ev::AsyncSocket::do_write()
-{
-	// Loop writing what we can...
-	size_t to_write = m_current_write->length();
-
-	bool bSent = false;
-	int err = 0;
-	while (to_write > 0)
+	int AsyncSocket::write_next()
 	{
-		ssize_t have_sent = send(m_write_watcher->fd,m_current_write->rd_ptr(),to_write,MSG_NOSIGNAL);
-		if (have_sent <= 0)
+		do
 		{
-			if (errno == EAGAIN)
+			try
 			{
-				m_async_writes.push_front(m_current_write);
-				return true;
+				if (m_async_writes.empty())
+					return 0;
+
+				m_current_write = m_async_writes.front();
+				m_async_writes.pop_front();
+			}
+			catch (std::exception&)
+			{
+				return ENOMEM;
 			}
 
+		}
+		while (!do_write());
+
+		return m_proactor->start_watcher(m_write_watcher);
+	}
+
+	bool AsyncSocket::do_write()
+	{
+		// Loop writing what we can...
+		size_t to_write = m_current_write->length();
+
+		bool bSent = false;
+		int err = 0;
+		while (to_write > 0)
+		{
+			ssize_t have_sent = send(m_write_watcher->fd,m_current_write->rd_ptr(),to_write,MSG_NOSIGNAL);
+			if (have_sent <= 0)
+			{
+				if (errno == EAGAIN)
+				{
+					m_async_writes.push_front(m_current_write);
+					return true;
+				}
+
+				err = errno;
+				break;
+			}
+
+			// Update rd_ptr
+			m_current_write->rd_ptr(have_sent);
+
+			to_write -= static_cast<size_t>(have_sent);
+
+			bSent = true;
+		}
+
+		// Work out if we are a close or an 'actual' error
+		bool closed = false;
+		if (err == EPIPE)
+		{
+			closed = true;
+			err = 0;
+		}
+
+		// Call handlers
+		if (m_handler && (bSent || err != 0))
+			m_handler->on_write(this,m_current_write,err);
+
+		if (m_handler && closed)
+			m_handler->on_closed(this);
+
+		// Release the completed buffer
+		m_current_write->release();
+		m_current_write = 0;
+
+		return false;
+	}
+
+	void AsyncSocket::on_read(void* param)
+	{
+		static_cast<AsyncSocket*>(param)->read_next();
+	}
+
+	void AsyncSocket::on_write(void* param)
+	{
+		static_cast<AsyncSocket*>(param)->write_next();
+	}
+
+	template <typename SocketType>
+	int AcceptSocket<SocketType>::init(Acceptor* handler, int fd)
+	{
+		OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
+
+		// Add our watcher
+		int err = m_proactor->add_watcher(m_watcher,fd,EV_READ,this,&on_accept);
+		if (err != 0)
+			return err;
+
+		err = m_proactor->start_watcher(m_watcher);
+		if (err != 0)
+		{
+			m_proactor->remove_watcher(m_watcher);
+			return err;
+		}
+
+		m_handler = handler;
+
+		return 0;
+	}
+
+	template <typename SocketType>
+	void AcceptSocket<SocketType>::on_accept(void* param)
+	{
+		return static_cast<AcceptSocket*>(param)->on_accept_i();
+	}
+
+	template <typename SocketType>
+	void AcceptSocket<SocketType>::on_accept_i()
+	{
+		OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
+
+		// http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod#The_special_problem_of_accept_ing_wh
+		// Problem with accept...
+		void* EV_TODO;
+
+		// Call accept on the fd...
+		int err = 0;
+		socklen_t len = 0;
+		int new_fd = accept(m_watcher->fd,NULL,&len);
+		if (new_fd == -1)
+		{
 			err = errno;
-			break;
+			if (err == EAGAIN)
+			{
+				// libev can give spurious readiness...
+				return;
+			}
 		}
-
-		// Update rd_ptr
-		m_current_write->rd_ptr(have_sent);
-
-		to_write -= static_cast<size_t>(have_sent);
-
-		bSent = true;
-	}
-
-	// Work out if we are a close or an 'actual' error
-	bool closed = false;
-	if (err == EPIPE)
-	{
-		closed = true;
-		err = 0;
-	}
-
-	// Call handlers
-	if (m_handler && (bSent || err != 0))
-		m_handler->on_write(this,m_current_write,err);
-
-	if (m_handler && closed)
-		m_handler->on_closed(this);
-
-	// Release the completed buffer
-	m_current_write->release();
-	m_current_write = 0;
-
-	return false;
-}
-
-void OOSvrBase::Ev::AsyncSocket::on_read(void* param)
-{
-	static_cast<AsyncSocket*>(param)->read_next();
-}
-
-void OOSvrBase::Ev::AsyncSocket::on_write(void* param)
-{
-	static_cast<AsyncSocket*>(param)->write_next();
-}
-
-template <typename SocketType>
-int OOSvrBase::Ev::AcceptSocket<SocketType>::init(Acceptor* handler, int fd)
-{
-	OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
-
-	// Add our watcher
-	int err = m_proactor->add_watcher(m_watcher,fd,EV_READ,this,&on_accept);
-	if (err != 0)
-		return err;
-
-	err = m_proactor->start_watcher(m_watcher);
-	if (err != 0)
-	{
-		m_proactor->remove_watcher(m_watcher);
-		return err;
-	}
-
-	m_handler = handler;
-
-	return 0;
-}
-
-template <typename SocketType>
-void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept(void* param)
-{
-	return static_cast<AcceptSocket*>(param)->on_accept_i();
-}
-
-template <typename SocketType>
-void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
-{
-	OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
-
-	// http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod#The_special_problem_of_accept_ing_wh
-	// Problem with accept...
-	void* EV_TODO;
-
-	// Call accept on the fd...
-	int err = 0;
-	socklen_t len = 0;
-	int new_fd = accept(m_watcher->fd,NULL,&len);
-	if (new_fd == -1)
-	{
-		err = errno;
-		if (err == EAGAIN)
+		else
 		{
-			// libev can give spurious readiness...
-			return;
+			// Add FD_CLOEXEC
+			int oldflags = fcntl(new_fd,F_GETFD);
+			if (oldflags == -1 ||
+					fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+			{
+				err = errno;
+				::close(new_fd);
+			}
 		}
-	}
-	else
-	{
-		// Add FD_CLOEXEC
-		int oldflags = fcntl(new_fd,F_GETFD);
-		if (oldflags == -1 ||
-				fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+
+		// Prepare socket if okay
+		SocketType* pSocket = 0;
+		if (err == 0)
 		{
-			err = errno;
-			::close(new_fd);
+			OOBASE_NEW(pSocket,SocketType(new_fd,m_path));
+			if (!pSocket)
+			{
+				err = ENOMEM;
+				::close(new_fd);
+			}
 		}
-	}
 
-	// Prepare socket if okay
-	SocketType* pSocket = 0;
-	if (err == 0)
-	{
-		OOBASE_NEW(pSocket,SocketType(new_fd,m_path));
-		if (!pSocket)
+		// Call the acceptor if we are not closing...
+		bool again = false;
+		if (err != 0 || !m_closing)
+			again = m_handler->on_accept(pSocket,err) && (err == 0);
+
+		if (!again)
 		{
-			err = ENOMEM;
-			::close(new_fd);
+			// close socket - close the watcher...
+			::close(m_watcher->fd);
+			m_proactor->remove_watcher(m_watcher);
+			m_watcher = 0;
 		}
+
+		// If we are closing
+		if (m_closing)
+			m_close_cond.signal();
 	}
 
-	// Call the acceptor if we are not closing...
-	bool again = false;
-	if (err != 0 || !m_closing)
-		again = m_handler->on_accept(pSocket,err) && (err == 0);
-
-	if (!again)
+	template <typename SocketType>
+	void AcceptSocket<SocketType>::close()
 	{
-		// close socket - close the watcher...
-		::close(m_watcher->fd);
-		m_proactor->remove_watcher(m_watcher);
-		m_watcher = 0;
-	}
+		OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
 
-	// If we are closing
-	if (m_closing)
-		m_close_cond.signal();
-}
+		if (!m_closing)
+		{
+			m_closing = true;
 
-template <typename SocketType>
-void OOSvrBase::Ev::AcceptSocket<SocketType>::close()
-{
-	OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
+			if (m_watcher)
+				shutdown(m_watcher->fd,SHUT_RDWR);
 
-	if (!m_closing)
-	{
-		m_closing = true;
-
-		if (m_watcher)
-			shutdown(m_watcher->fd,SHUT_RDWR);
-
-		// Wait for the watcher to be killed
-		while (m_watcher)
-			m_close_cond.wait(m_lock);
+			// Wait for the watcher to be killed
+			while (m_watcher)
+				m_close_cond.wait(m_lock);
+		}
 	}
 }
 
@@ -861,8 +846,8 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	}
 
 	// Wrap up in a controlling socket class
-	OOBase::SmartPtr<Ev::AcceptSocket<OOBase::POSIX::LocalSocket> > pAccept = 0;
-	OOBASE_NEW(pAccept,Ev::AcceptSocket<OOBase::POSIX::LocalSocket>(this,path));
+	OOBase::SmartPtr<AcceptSocket<OOBase::POSIX::LocalSocket> > pAccept = 0;
+	OOBASE_NEW(pAccept,AcceptSocket<OOBase::POSIX::LocalSocket>(this,path));
 	if (!pAccept)
 		*perr = ENOMEM;
 	else
@@ -914,8 +899,8 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 	}
 
 	// Alloc a new async socket
-	AsyncSocket* pSock;
-	OOBASE_NEW(pSock,AsyncSocket(this));
+	::AsyncSocket* pSock;
+	OOBASE_NEW(pSock,::AsyncSocket(this));
 	if (!pSock)
 	{
 		close(new_fd);

@@ -23,8 +23,6 @@
 #define OOBASE_CONDITION_H_INCLUDED_
 
 #include "Mutex.h"
-#include "TimeVal.h"
-#include "Win32.h"
 
 namespace OOBase
 {

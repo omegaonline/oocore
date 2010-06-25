@@ -201,6 +201,6 @@ void OOSvrBase::CmdArgs::parse_arg(std::map<std::string,std::string>& results, c
 
 	std::ostringstream ss;
 	ss.imbue(std::locale::classic());
-	ss << "arg" << position;
+	ss << "$" << position;
 	results[ss.str()] = arg;
 }

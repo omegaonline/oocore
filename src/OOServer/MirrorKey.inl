@@ -26,6 +26,11 @@ void User::Registry::MirrorKey::Init(const string_t& strKey, IKey* pLocal, IKey*
 	m_ptrSystem = pSystem;
 }
 
+string_t User::Registry::MirrorKey::GetName()
+{
+	return m_strKey + L"/";
+}
+
 bool_t User::Registry::MirrorKey::IsSubKey(const string_t& strSubKey)
 {
 	return ((m_ptrLocal && m_ptrLocal->IsSubKey(strSubKey)) ||
@@ -102,7 +107,7 @@ string_t User::Registry::MirrorKey::GetDescription()
 		}
 	}
 
-	User::Registry::NotFoundException::Throw(m_strKey);
+	User::Registry::NotFoundException::Throw(GetName());
 	return string_t();
 }
 
@@ -139,7 +144,7 @@ string_t User::Registry::MirrorKey::GetValueDescription(const string_t& strName)
 void User::Registry::MirrorKey::SetDescription(const string_t& strValue)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 
 	try
 	{
@@ -148,14 +153,14 @@ void User::Registry::MirrorKey::SetDescription(const string_t& strValue)
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	}
 }
 
 void User::Registry::MirrorKey::SetValueDescription(const string_t& strName, const string_t& strValue)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 
 	try
 	{
@@ -164,7 +169,7 @@ void User::Registry::MirrorKey::SetValueDescription(const string_t& strName, con
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	}
 }
 
@@ -197,10 +202,10 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 	}
 
 	if (!ptrNewLocal && !ptrNewSystem)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
-	ptrNew->Init(m_strKey + L"\\" + strSubKey,ptrNewLocal,ptrNewSystem);
+	ptrNew->Init(GetName() + strSubKey,ptrNewLocal,ptrNewSystem);
 	return ptrNew.AddRef();
 }
 
@@ -237,7 +242,7 @@ std::set<string_t> User::Registry::MirrorKey::EnumValues()
 void User::Registry::MirrorKey::DeleteKey(const string_t& strSubKey)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 
 	try
 	{
@@ -246,14 +251,14 @@ void User::Registry::MirrorKey::DeleteKey(const string_t& strSubKey)
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	}
 }
 
 void User::Registry::MirrorKey::DeleteValue(const string_t& strName)
 {
 	if (!m_ptrLocal)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 
 	try
 	{
@@ -262,6 +267,6 @@ void User::Registry::MirrorKey::DeleteValue(const string_t& strName)
 	catch (INotFoundException* pE)
 	{
 		pE->Release();
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	}
 }

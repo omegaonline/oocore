@@ -63,7 +63,7 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 {
-	if (key.Left(1) != L"\\")
+	if (key.Left(1) != L"/")
 		BadNameException::Throw(key);
 
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
@@ -73,7 +73,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((i
 	ObjectPtr<Registry::IKey> ptrKey;
 	ptrKey.Attach(static_cast<Registry::IKey*>(ptrIPS->GetRegistry()));
 
-	if (key == L"\\")
+	if (key == L"/")
 		return ptrKey.AddRef();
 	else
 		return ptrKey->OpenSubKey(key.Mid(1),flags);

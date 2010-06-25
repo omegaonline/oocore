@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libltdl include src data test
+SUBDIRS = libltdl include src data tools test
 
 EXTRA_DIST = \
 	gpl3_0.txt \

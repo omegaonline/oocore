@@ -46,7 +46,11 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 extern "C" OMEGA_EXPORT const char* OOCore_GetVersion()
 {
+#if defined(OMEGA_DEBUG)
+	return OOCORE_VERSION " (Debug build)";
+#else
 	return OOCORE_VERSION;
+#endif
 }
 
 extern "C" OMEGA_EXPORT unsigned int OOCore_GetMajorVersion()
@@ -118,20 +122,20 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
 
 	string_t strHandler;
-	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
-	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+	ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User");
+	if (ptrKey->IsSubKey(L"Networking/Protocols/" + strProtocol))
 	{
-		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+		ptrKey = ptrKey.OpenSubKey(L"Networking/Protocols/" + strProtocol);
 		if (ptrKey->IsValue(L"Handler"))
 			strHandler = ptrKey->GetValue(L"Handler").cast<string_t>();
 	}
 
 	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\System");
-		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"/System");
+		if (ptrKey->IsSubKey(L"Networking/Protocols/" + strProtocol))
 		{
-			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+			ptrKey = ptrKey.OpenSubKey(L"Networking/Protocols/" + strProtocol);
 			if (ptrKey->IsValue(L"Handler"))
 				strHandler = ptrKey->GetValue(L"Handler").cast<string_t>();
 		}

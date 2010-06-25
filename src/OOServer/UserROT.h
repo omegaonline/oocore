@@ -58,6 +58,8 @@ namespace User
 		std::map<Omega::uint32_t,Info>                                          m_mapObjectsByCookie;
 		std::multimap<Omega::string_t,std::map<Omega::uint32_t,Info>::iterator> m_mapObjectsByOid;
 
+		void RevokeObject_i(Omega::uint32_t cookie, Omega::uint32_t src_id);
+
 	// IRunningObjectTable
 	public:
 		Omega::uint32_t RegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t reg_flags);

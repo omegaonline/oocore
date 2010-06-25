@@ -259,7 +259,7 @@ namespace
 		if (flags & Activation::InProcess)
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
+			ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/OIDs/" + oid.ToString());
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				void* TICKET_89; // Surrogates here?!?
@@ -368,7 +368,7 @@ namespace
 		{
 			try
 			{
-				ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
+				ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/" + strCurName);
 				if (ptrOidKey->IsValue(L"CurrentVersion"))
 				{
 					strCurName = ptrOidKey->GetValue(L"CurrentVersion").cast<string_t>();

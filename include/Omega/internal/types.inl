@@ -159,6 +159,39 @@ inline std::string Omega::string_t::ToUTF8() const
 	return str;
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_tonative,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
+inline size_t Omega::string_t::ToNative(char* sz, size_t size) const
+{
+	return OOCore_string_t_tonative(m_handle,sz,size);
+}
+
+inline std::string Omega::string_t::ToNative() const
+{
+	std::string str;
+	char szBuf[128];
+	size_t len = ToNative(szBuf,128);
+	if (len > 128)
+	{
+		char* pszBuf = 0;
+		OMEGA_NEW(pszBuf,char[len]);
+		try
+		{
+			ToNative(pszBuf,len);
+		}
+		catch (...)
+		{
+			delete [] pszBuf;
+			throw;
+		}
+		str.assign(pszBuf,len-1);
+		delete [] pszBuf;
+	}
+	else
+		str.assign(szBuf,len-1);
+
+	return str;
+}
+
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,h,(in),const void*,h2));
 inline Omega::string_t& Omega::string_t::operator += (const string_t& s)
 {

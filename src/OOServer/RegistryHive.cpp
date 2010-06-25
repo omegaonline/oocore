@@ -149,7 +149,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	Omega::int64_t uSubKey = uParent;
 	for (;;)
 	{
-		size_t pos = strSubKey.find('\\');
+		size_t pos = strSubKey.find('/');
 		if (pos == std::string::npos)
 			err = get_key_info(uSubKey,uKey,strSubKey,access_mask);
 		else
@@ -246,7 +246,7 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 	Omega::int64_t uSubKey = uKey;
 	for (;;)
 	{
-		size_t pos = strSubKey.find('\\');
+		size_t pos = strSubKey.find('/');
 		if (pos == std::string::npos)
 			err = insert_key(uSubKey,uKey,strSubKey,access);
 		else

@@ -239,6 +239,18 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const v
 	return 1 + OOBase::to_utf8(sz,size,static_cast<const StringNode*>(h)->m_buf,static_cast<const StringNode*>(h)->m_len);
 }
 
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_tonative,3,((in),const void*,h,(in),char*,sz,(in),size_t,size))
+{
+	if (!h)
+	{
+		if (sz && size)
+			*sz = '\0';
+		return 1;
+	}
+
+	return 1 + OOBase::to_native(sz,size,static_cast<const StringNode*>(h)->m_buf,static_cast<const StringNode*>(h)->m_len);
+}
+
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(in),const void*,s2))
 {
 	StringNode* pOrig = static_cast<StringNode*>(s1);

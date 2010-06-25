@@ -190,11 +190,11 @@ namespace OOBase
 			void release();
 
 		private:
-			union
+			union U
 			{
 				CRITICAL_SECTION m_cs;
 				HANDLE           m_mutex;
-			};
+			} u;
 		};
 	}
 }

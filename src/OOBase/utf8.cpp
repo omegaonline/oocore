@@ -83,6 +83,26 @@ std::string OOBase::to_utf8(const wchar_t* wsz, size_t len)
 	return std::string(ptrBuf,actual_len);
 }
 
+std::string OOBase::to_native(const wchar_t* wsz, size_t len)
+{
+	if (!wsz)
+		return std::string();
+
+	size_t actual_len = measure_native(wsz,len);
+
+	SmartPtr<char,ArrayDestructor<char> > ptrBuf;
+	OOBASE_NEW(ptrBuf,char[actual_len]);
+	if (!ptrBuf)
+		OOBase_OutOfMemory();
+
+	to_native(ptrBuf,actual_len,wsz,len);
+
+	if (len == size_t(-1))
+		--actual_len;
+
+	return std::string(ptrBuf,actual_len);
+}
+
 #if defined(_WIN32)
 
 size_t OOBase::measure_utf8(const char* sz, size_t len)
@@ -168,6 +188,40 @@ size_t OOBase::to_utf8(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
 		DWORD err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER)
 			return measure_utf8(wsz,wlen);
+
+		OOBase_CallCriticalFailure(err);
+	}
+
+	return static_cast<size_t>(actual_len);
+}
+
+size_t OOBase::measure_native(const wchar_t* wsz, size_t len)
+{
+	if (!wsz)
+		return (len == size_t(-1) ? 1 : 0);
+
+	int actual_len = WideCharToMultiByte(CP_THREAD_ACP,0,wsz,static_cast<int>(len),NULL,0,NULL,NULL);
+	if (actual_len < 1)
+		OOBase_CallCriticalFailure(GetLastError());
+
+	return static_cast<size_t>(actual_len);
+}
+
+size_t OOBase::to_native(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
+{
+	if (!wsz)
+	{
+		if (len)
+			*sz = '\0';
+		return (wlen == size_t(-1) ? 1 : 0);
+	}
+
+	int actual_len = WideCharToMultiByte(CP_THREAD_ACP,0,wsz,static_cast<int>(wlen),sz,static_cast<int>(len),NULL,NULL);
+	if (actual_len < 1)
+	{
+		DWORD err = GetLastError();
+		if (err == ERROR_INSUFFICIENT_BUFFER)
+			return measure_native(wsz,wlen);
 
 		OOBase_CallCriticalFailure(err);
 	}
@@ -570,6 +624,61 @@ size_t OOBase::from_native(wchar_t* wsz, size_t wlen, const char* sz, size_t len
 		}
 		else if (count == (size_t)-2)
 			p += c;
+		else
+			break;
+	}
+
+	return required_len;
+}
+
+size_t OOBase::measure_native(const wchar_t* wsz, size_t len)
+{
+	if (!wsz)
+		return (len == size_t(-1) ? 1 : 0);
+
+	char c[MB_CUR_MAX];
+	mbstate_t state = {0};
+	size_t required_len = 0;
+	for (const wchar_t* wp=wsz; size_t(wp-wsz)<len;)
+	{
+		size_t count = wcrtomb(c,*wp++,&state);
+		if (count > 0)
+			required_len += count;
+		else
+			break;
+	}
+
+	return required_len;
+}
+
+size_t OOBase::to_native(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
+{
+	if (!wsz)
+	{
+		if (len)
+			*sz = '\0';
+		return (wlen == size_t(-1) ? 1 : 0);
+	}
+
+	char c[MB_CUR_MAX];
+	char* p = sz;
+	mbstate_t state = {0};
+	size_t required_len = 0;
+	for (const wchar_t* wp=wsz; size_t(wp-wsz)<wlen;)
+	{
+		size_t count = wcrtomb(c,*wp++,&state);
+		if (count > 0)
+		{
+			required_len += count;
+			if (count > size_t(p-sz))
+				count = size_t(p-sz);
+
+			if (count)
+			{
+				memcpy(p,c,count);
+				p += count;
+			}
+		}
 		else
 			break;
 	}

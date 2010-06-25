@@ -58,8 +58,8 @@ static int Help()
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help (-h)      Display this help text" << std::endl;
 	std::cout << "  --version (-v)   Display version information" << std::endl;
-	std::cout << std::endl;
 	std::cout << "  --conf-file (-f) <file_path> Use the specified configuration file" << std::endl;
+	std::cout << std::endl;
 
 	return EXIT_SUCCESS;
 }

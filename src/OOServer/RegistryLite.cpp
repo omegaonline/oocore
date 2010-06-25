@@ -60,6 +60,7 @@ namespace
 
 	// IKey members
 	public:
+		string_t GetName();
 		bool_t IsSubKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
@@ -99,6 +100,7 @@ namespace
 
 	// IKey members
 	public:
+		string_t GetName();
 		bool_t IsSubKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
@@ -138,6 +140,11 @@ void HiveKey::Init(::Registry::Hive* pHive, const Omega::string_t& strKey, const
 	m_key = key;
 }
 
+string_t HiveKey::GetName()
+{
+	return m_strKey + L"/";
+}
+
 bool_t HiveKey::IsSubKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
@@ -147,7 +154,7 @@ bool_t HiveKey::IsSubKey(const string_t& strSubKey)
 	if (err == ENOENT)
 		return false;
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -162,7 +169,7 @@ bool_t HiveKey::IsValue(const string_t& strName)
 	if (err==ENOENT)
 		return false;
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -178,7 +185,7 @@ any_t HiveKey::GetValue(const string_t& strName)
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -193,7 +200,7 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -203,9 +210,9 @@ string_t HiveKey::GetDescription()
 	std::string strValue;
 	int err = m_pHive->get_description(m_key,0,strValue);
 	if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey);
+		User::Registry::NotFoundException::Throw(GetName());
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -221,7 +228,7 @@ string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -232,9 +239,9 @@ void HiveKey::SetDescription(const Omega::string_t& strDesc)
 {
 	int err = m_pHive->set_description(m_key,0,OOBase::to_utf8(strDesc.c_str()));
 	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey);
+		User::Registry::NotFoundException::Throw(GetName());
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -245,7 +252,7 @@ void HiveKey::SetValueDescription(const Omega::string_t& strValue, const Omega::
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strValue);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -257,17 +264,17 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	int64_t key;
 	int err = m_pHive->create_key(m_key,key,OOBase::to_utf8(strSubKey.c_str()),flags,::Registry::Hive::inherit_checks,0);
 	if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==EEXIST)
-		User::Registry::AlreadyExistsException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::AlreadyExistsException::Throw(GetName() + strSubKey);
 	else if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrNew->Init(m_pHive,m_strKey + L"\\" + strSubKey,key);
+	ptrNew->Init(m_pHive,GetName() + strSubKey,key);
 	return ptrNew.AddRef();
 }
 
@@ -276,9 +283,9 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 	std::set<std::string> setSubKeys;
 	int err = m_pHive->enum_subkeys(m_key,0,setSubKeys);
 	if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey);
+		User::Registry::NotFoundException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -294,9 +301,9 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 	std::set<std::string> setValues;
 	int err = m_pHive->enum_values(m_key,0,setValues);
 	if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey);
+		User::Registry::NotFoundException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -313,9 +320,9 @@ void HiveKey::DeleteKey(const string_t& strSubKey)
 
 	int err = m_pHive->delete_key(m_key,OOBase::to_utf8(strSubKey.c_str()),0);
 	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey);
+		User::Registry::AccessDeniedException::Throw(GetName() + strSubKey);
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -328,7 +335,7 @@ void HiveKey::DeleteValue(const string_t& strName)
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(m_strKey);
+		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -351,7 +358,7 @@ void RootKey::InitOnce()
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_localuser_hive,L"\\Local User",0);
+	ptrKey->Init(m_localuser_hive,L"/Local User",0);
 	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
 }
 
@@ -364,7 +371,7 @@ int RootKey::registry_access_check(const std::string& /*strdb*/, Omega::uint32_t
 string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey)
 {
 	// Parse strKey
-	if (strSubKey == L"Local User" || strSubKey.Mid(0,11) == L"Local User\\")
+	if (strSubKey == L"Local User" || strSubKey.Mid(0,11) == L"Local User/")
 	{
 		string_t strMirror;
 
@@ -372,10 +379,10 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 		if (strSubKey.Length() > 10)
 			strMirror = strSubKey.Mid(11);
 
-		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"\\All Users");
+		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"/All Users");
 		
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstancePtr();
-		ptrNew->Init(L"\\Local User",m_ptrLocalUserKey,ptrMirror);
+		ptrNew->Init(L"/Local User",m_ptrLocalUserKey,ptrMirror);
 		ptrKey.Attach(ptrNew.AddRef());
 
 		return strMirror;
@@ -388,6 +395,11 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 	}
 }
 
+string_t RootKey::GetName()
+{
+	return string_t(L"/");
+}
+
 bool_t RootKey::IsSubKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
@@ -398,7 +410,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 		return true;
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	return ptrKey->IsSubKey(strSubKey2);
 }
@@ -448,7 +460,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		return ptrKey.AddRef();
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	return ptrKey->OpenSubKey(strSubKey2,flags);
 }
@@ -473,10 +485,10 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	ObjectPtr<IKey> ptrKey;
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
 	if (strSubKey2.IsEmpty())
-		User::Registry::AccessDeniedException::Throw(L"\\" + strSubKey);
+		User::Registry::AccessDeniedException::Throw(GetName() + strSubKey);
 
 	if (!ptrKey)
-		User::Registry::NotFoundException::Throw(L"\\" + strSubKey);
+		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 
 	return ptrKey->DeleteKey(strSubKey2);
 }

@@ -127,7 +127,7 @@ namespace
 		static void on_accept(void* param);
 		void on_accept_i();
 	};
-	
+
 	AsyncSocket::~AsyncSocket()
 	{
 		try
@@ -426,7 +426,7 @@ namespace
 	}
 
 	template <typename SocketType>
-	int AcceptSocket<SocketType>::init(Acceptor* handler, int fd)
+	int AcceptSocket<SocketType>::init(OOSvrBase::Acceptor* handler, int fd)
 	{
 		OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
 

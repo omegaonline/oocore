@@ -135,17 +135,15 @@ bool User::Manager::on_channel_open(Omega::uint32_t channel)
 bool User::Manager::fork_slave(const std::string& strPipe)
 {
 	// Connect to the root
-	OOBase::timeval_t wait(20);
-	OOBase::Countdown countdown(&wait);
 
-	int err = 0;
 #if defined(_WIN32)
 	// Use a named pipe
+	int err = 0;
+	OOBase::timeval_t wait(20);
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
-	countdown.update();
 #else
 	// Use the passed fd
 	int fd = atoi(strPipe.c_str());
@@ -168,27 +166,77 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket(pLocal);
 #endif
 
-	// Read the sandbox channel
-	Omega::uint32_t sandbox_channel = 0;
-	err = local_socket->recv(sandbox_channel,&wait);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+	// Invent a new pipe name...
+	std::string strNewPipe = Acceptor::unique_name();
+	if (strNewPipe.empty())
+		return false;
 
-	// Set the sandbox flag
-	m_bIsSandbox = (sandbox_channel == 0);
+	return handshake_root(local_socket,strNewPipe);
+}
+
+bool User::Manager::session_launch(const std::string& strPipe)
+{
+	// Use the passed fd
+	int fd = atoi(strPipe.c_str());
+
+#if defined(_WIN32)
+	LOG_ERROR_RETURN(("Somehow got into session_launch!"),false);
+#else
 
 	// Invent a new pipe name...
 	std::string strNewPipe = Acceptor::unique_name();
 	if (strNewPipe.empty())
 		return false;
 
-	countdown.update();
+	pid_t pid = getpid();
+	if (write(fd,&pid,sizeof(pid)) != sizeof(pid))
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
-	err = local_socket->send(uLen,&wait);
+	if (write(fd,&uLen,sizeof(uLen)) != sizeof(uLen))
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	// Done with the port...
+	close(fd);
+
+	// Now connect to ooserverd
+	int err = 0;
+	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local("/tmp/omegaonline",&err);
+	if (!local_socket)
+		LOG_ERROR_RETURN(("Failed to connect to ooserverd: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	// Send version information
+	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+	err = local_socket->send(version);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to communicate with ooserverd: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	// Connect up
+	return handshake_root(local_socket,strNewPipe);
+
+#endif
+}
+
+bool User::Manager::handshake_root(OOBase::SmartPtr<OOBase::LocalSocket>& local_socket, const std::string& strPipe)
+{
+	// Read the sandbox channel
+	Omega::uint32_t sandbox_channel = 0;
+	int err = local_socket->recv(sandbox_channel);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	// Set the sandbox flag
+	m_bIsSandbox = (sandbox_channel == 0);
+
+	// Then send back our port name
+	size_t uLen = strPipe.length()+1;
+	err = local_socket->send(uLen);
 	if (err == 0)
-		err = local_socket->send(strNewPipe.c_str(),uLen);
+		err = local_socket->send(strPipe.c_str(),uLen);
 
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
@@ -212,8 +260,6 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	if (register_channel(ptrMC,m_root_channel) == 0)
 		return false;
 
-	countdown.update();
-
 	// Open the root connection
 	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,local_socket));
 	if (err != 0)
@@ -229,7 +275,7 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	// Now bootstrap
 	OOBase::CDRStream bs;
 	bs.write(sandbox_channel);
-	bs.write(strNewPipe);
+	bs.write(strPipe);
 	if (bs.last_error() != 0)
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOSvrBase::Logger::format_error(bs.last_error()).c_str()),false);
 
@@ -239,48 +285,12 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	return true;
 }
 
-bool User::Manager::session_launch(const std::string& strPipe)
-{
-	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
-
-#if defined(_WIN32)
-	LOG_ERROR_RETURN(("Somehow got into session_launch!"),false);
-#else
-
-	pid_t pid = getpid();
-	if (write(fd,&pid,sizeof(pid)) != sizeof(pid))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
-
-	// Invent a new pipe name...
-	std::string strNewPipe = Acceptor::unique_name();
-	if (strNewPipe.empty())
-		return false;
-
-	// Then send back our port name
-	size_t uLen = strNewPipe.length()+1;
-	if (write(fd,&uLen,sizeof(uLen)) != sizeof(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
-
-	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
-
-	// Done with the port...
-	close(fd);
-
-	// More here obviously...
-	void* TODO;
-
-	return false;
-#endif
-}
-
 void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 {
 	Omega::uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
-	std::string strNewPipe;
-	input.read(strNewPipe);
+	std::string strPipe;
+	input.read(strPipe);
 	if (input.last_error() != 0)
 	{
 		LOG_ERROR(("Failed to read bootstrap data: %s",OOSvrBase::Logger::format_error(input.last_error()).c_str()));
@@ -291,7 +301,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 		Manager* pThis = static_cast<Manager*>(pParams);
 
 		if (!pThis->bootstrap(sandbox_channel) ||
-				!pThis->m_acceptor.start(pThis,strNewPipe))
+				!pThis->m_acceptor.start(pThis,strPipe))
 		{
 			quit();
 		}
@@ -639,6 +649,9 @@ namespace
 
 void User::Manager::wait_for_quit()
 {
+	// Ignore SIG_PIPE
+	signal(SIGPIPE,SIG_IGN);
+
 	// Use libev to wait on the default loop
 #if defined (EVFLAG_SIGNALFD)
 	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);

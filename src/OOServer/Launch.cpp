@@ -19,6 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -80,13 +81,12 @@ static void do_exec(const char* path, int fd)
 	};
 
 	execv(path,env);
-	std::cerr << "Failed to exec " << path << " " << os.str() << ": " << strerror(errno) << std::endl;
 
 	for (size_t i=0;i<sizeof(env)/sizeof(env[0]);++i)
 		free(env[i]);
 }
 
-static pid_t run_oosvruser()
+static int run_oosvruser()
 {
 	int pipes[2] = { -1, -1 };
 
@@ -122,6 +122,26 @@ static pid_t run_oosvruser()
 			exit(EXIT_SUCCESS);
 		}
 
+		// Set stdin/out/err to /dev/null
+		int fd = open("/dev/null",O_RDWR);
+		if (fd == -1)
+		{
+			std::cerr << "open(/dev/null) failed in run_oosvruser: " << errno << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
+		dup2(STDIN_FILENO,fd);
+		dup2(STDOUT_FILENO,fd);
+		dup2(STDERR_FILENO,fd);
+		close(fd);
+
+		// Close out connection to the users terminal
+		if (setsid() == -1)
+		{
+			std::cerr << "setsid() failed in run_oosvruser: " << errno << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
 		const char* run = getenv("OMEGA_USER_BINARY");
 		if (run)
 			do_exec(run,pipes[WRITE_END]);
@@ -144,12 +164,7 @@ static pid_t run_oosvruser()
 	// Immediately reap the 'parent'
 	do_waitpid(parent_id);
 
-	// Read the pid
-	pid_t pid = -1;
-	if (read(pipes[READ_END],&pid,sizeof(pid)) != sizeof(pid))
-		return -1;
-
-	return pid;
+	return pipes[READ_END];
 }
 
 int main(int argc, char* argv[])
@@ -195,12 +210,71 @@ int main(int argc, char* argv[])
 	bool bExit = (args.find("exit-with-session") != args.end());
 
 	// Now do the fork and exec dance...
-	pid_t pid = run_oosvruser();
-	if (pid == -1)
+	int p = run_oosvruser();
+	if (p == -1)
 		return EXIT_FAILURE;
+
+	// Read the pid
+	pid_t pid = -1;
+	size_t r = read(p,&pid,sizeof(pid));
+	if (r == 0)
+	{
+		std::cerr << "Failed to lauch oosvruser process" << std::endl;
+		return EXIT_FAILURE;
+	}
+	else if (r != sizeof(pid))
+	{
+		std::cerr << "Failed to read from child (1): " << strerror(errno) << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	// Read new string
+	size_t uLen = 0;
+	if (read(p,&uLen,sizeof(uLen)) != sizeof(uLen))
+	{
+		std::cerr << "Failed to read from child (2): " << strerror(errno) << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	std::string strPipe;
+	if (uLen)
+	{
+		char* buf = new char[uLen];
+		if (!buf)
+		{
+			std::cerr << "Out of memory" << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		if (read(p,buf,uLen) != static_cast<ssize_t>(uLen))
+		{
+			std::cerr << "Failed to read from child (3): " << strerror(errno) << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		strPipe = buf;
+		delete [] buf;
+	}
+
+	if (bCsh)
+	{
+		std::cout << "setenv OMEGA_SESSION_ADDRESS '" << strPipe << "';" << std::endl;
+		std::cout << "set OMEGA_SESSION_PID=" << pid << ";" << std::endl;
+		std::cout.flush();
+	}
+	else
+	{
+		std::cout << "OMEGA_SESSION_ADDRESS='" << strPipe << "';" << std::endl;
+		std::cout << "export OMEGA_SESSION_ADDRESS;" << std::endl;
+		std::cout << "OMEGA_SESSION_PID=" << pid << ";" << std::endl;
+		std::cout.flush();
+	}
 
 	if (bExit)
 	{
+		// Launch a watcher process...
+
+		void* TODO;
 
 	}
 

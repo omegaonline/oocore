@@ -54,7 +54,7 @@ namespace Root
 
 		int run();
 
-		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
+		void accept_client(OOBase::Socket* pSocket);
 
 	private:
 		Manager(const Manager&);
@@ -84,9 +84,10 @@ namespace Root
 		};
 		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
 
-		Omega::uint32_t spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe);
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC);
 		Omega::uint32_t bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe);
+		Omega::uint32_t spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry);
+		bool get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess& user_process);
 
 		// Message handling members
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);

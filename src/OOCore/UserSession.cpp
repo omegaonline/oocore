@@ -180,11 +180,6 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 {
 #if defined(_WIN32)
 	const char* name = "OmegaOnline";
-#elif defined(HAVE_UNISTD_H)
-	const char* name = "/tmp/omegaonline";
-#else
-#error Fix me!
-#endif
 
 	OOBase::timeval_t wait(5);
 	int err = 0;
@@ -219,6 +214,14 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		OMEGA_THROW(err);
 
 	return std::string(buf);
+
+#elif defined(HAVE_UNISTD_H)
+
+	return std::string(getenv("OMEGA_SESSION_ADDRESS"));
+
+#else
+#error Fix me!
+#endif
 }
 
 void OOCore::UserSession::term()
@@ -237,7 +240,7 @@ void OOCore::UserSession::term_i()
 	{
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-		
+
 		ptrROT->RevokeObject(m_nIPSCookie);
 		m_nIPSCookie = 0;
 	}
@@ -716,7 +719,7 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 	}
 	catch (std::exception&)
 	{}
-	
+
 	OOBase_CallCriticalFailure("Too many threads");
 	return 0;
 }
@@ -910,7 +913,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	{
 		// Set per channel thread id
 		std::map<uint32_t,uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<uint32_t,uint16_t>::value_type(pMsg->m_src_channel_id,0)).first;
-		
+
 		uint16_t old_thread_id = i->second;
 		i->second = pMsg->m_src_thread_id;
 
@@ -939,7 +942,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 		pContext->m_deadline = old_deadline;
 		pContext->m_current_cmpt = old_id;
 		throw;
-	}	
+	}
 
 	pContext->m_deadline = old_deadline;
 	pContext->m_current_cmpt = old_id;
@@ -1114,7 +1117,7 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 		ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = ptrCompt->create_compartment(0,guid_t::Null());
 
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
-					
+
 		IObject* pObject = 0;
 		ptrOM->GetRemoteInstance(OID_ServiceManager,Activation::ProcessLocal,OMEGA_GUIDOF(Activation::IRunningObjectTable),pObject);
 		return static_cast<Activation::IRunningObjectTable*>(pObject);

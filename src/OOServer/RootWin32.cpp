@@ -279,6 +279,24 @@ bool Root::Manager::load_config()
 	}
 }
 
+void Root::Manager::accept_client(OOBase::Socket* pSocket)
+{
+	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+
+	// Make sure the handle is closed
+	OOBase::Win32::SmartHandle hUidToken(uid);
+
+	UserProcess user_process;
+	if (get_user_process(uid,user_process))
+	{
+		Omega::uint32_t uLen = static_cast<Omega::uint32_t>(user_process.strPipe.length()+1);
+		if (pSocket->send(uLen) == 0)
+			pSocket->send(user_process.strPipe.c_str(),uLen);
+	}
+
+	// Socket will close when it drops out of scope
+}
+
 namespace
 {
 	static HANDLE s_hEvent;

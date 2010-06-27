@@ -92,6 +92,9 @@ namespace
 
 bool Root::Manager::wait_for_quit()
 {
+	// Ignore SIG_PIPE
+	signal(SIGPIPE,SIG_IGN);
+
 #if defined(HAVE_EV_H)
 
 	// Use libev to wait on the default loop

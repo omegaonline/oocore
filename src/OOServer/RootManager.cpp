@@ -73,8 +73,7 @@ int Root::Manager::run()
 			bool bOk = false;
 
 			// Spawn the sandbox
-			std::string strPipe;
-			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),m_registry_sandbox,strPipe);
+			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),m_registry_sandbox);
 			if (m_sandbox_channel)
 			{
 				// Start listening for clients
@@ -205,55 +204,49 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	}
 }
 
-std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
+bool Root::Manager::get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess& user_process)
 {
+	OOBase::SmartPtr<Registry::Hive> ptrRegistry;
+
 	try
 	{
-		OOBase::SmartPtr<Registry::Hive> ptrRegistry;
-
 		// See if we have a process already
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		for (std::map<Omega::uint32_t,UserProcess>::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 		{
 			if (i->second.ptrSpawn->Compare(uid))
 			{
-				return i->second.strPipe;
+				user_process = i->second;
+				return true;
 			}
 			else if (i->second.ptrSpawn->IsSameUser(uid))
 			{
 				ptrRegistry = i->second.ptrRegistry;
 			}
 		}
-
-		guard.release();
-
-		// Spawn a new user process
-		std::string strPipe;
-		if (spawn_user(uid,ptrRegistry,strPipe))
-			return strPipe;
 	}
 	catch (std::exception& e)
 	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
 	}
 
-	return std::string();
+	// Spawn a new user process
+	return spawn_user(uid,ptrRegistry);
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
+Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
-	process.ptrSpawn = platform_spawn(uid,strPipe,channel_id,ptrMC);
+	process.ptrSpawn = platform_spawn(uid,process.strPipe,channel_id,ptrMC);
 	if (!process.ptrSpawn)
 		return 0;
 
 	process.ptrRegistry = ptrRegistry;
-	process.strPipe = strPipe;
 
 	// Init the registry, if necessary
 	bool bOk = true;
@@ -290,7 +283,6 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 			if (i->second.ptrSpawn->Compare(uid))
 			{
 				ptrMC->close();
-				strPipe = i->second.strPipe;
 				return i->first;
 			}
 		}

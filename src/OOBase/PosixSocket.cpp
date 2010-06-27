@@ -154,6 +154,17 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 		return 0;
 	}
 
+#if 0
+	// Stop SIG_PIPE
+	int on = 1;
+	if (setsockopt(fd,SOL_SOCKET,SO_NOSIGPIPE &on, sizeof(on)) != 0)
+	{
+		*perr = errno;
+		::close(fd);
+		return 0;
+	}
+#endif
+
 	// Add FD_CLOEXEC
 	int oldflags = fcntl(fd,F_GETFD);
 	if (oldflags == -1 ||

@@ -103,28 +103,13 @@ bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
 	// Check the versions are correct
 	if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 	{
-		LOG_WARNING(("Root::ClientAcceptor::on_accept: version received too early: %u",version));
+		LOG_WARNING(("Root::ClientAcceptor::on_accept: unsupported version received: %u",version));
 		pSocket->close();
 		return true;
 	}
 
-	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	m_pManager->accept_client(pSocket);
 
-#if defined(_WIN32)
-	// Make sure the handle is closed
-	OOBase::Win32::SmartHandle hUidToken(uid);
-#endif
-
-	std::string strPipe = m_pManager->get_user_pipe(uid);
-	if (!strPipe.empty())
-	{
-		Omega::uint32_t uLen = static_cast<Omega::uint32_t>(strPipe.length()+1);
-		if (pSocket->send(uLen) == 0)
-			pSocket->send(strPipe.c_str(),uLen);
-	}
-
-	// Manually close the socket
-	pSocket->close();
 	return true;
 }
 

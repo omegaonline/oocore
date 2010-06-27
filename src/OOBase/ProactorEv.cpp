@@ -21,6 +21,8 @@
 
 #include "Proactor.h"
 
+#include <algorithm>
+
 #if defined(HAVE_EV_H)
 
 #include "ProactorEv.h"
@@ -640,13 +642,9 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 						if (i->op == 2)
 						{
 							// Remove from the pending queue...
-							for (std::deque<io_watcher*>::iterator j=io_queue.begin(); j!=io_queue.end();)
-							{
-								if (i->watcher == *j)
-									io_queue.erase(j++);
-								else
-									++j;
-							}
+							std::deque<io_watcher*>::iterator j = std::remove_if(io_queue.begin(),io_queue.end(),std::bind2nd(std::equal_to<io_watcher*>(),i->watcher));
+							io_queue.erase(j,io_queue.end());
+
 							delete i->watcher;
 						}
 					}

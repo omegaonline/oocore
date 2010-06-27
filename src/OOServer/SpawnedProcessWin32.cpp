@@ -58,9 +58,9 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
-		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
-		bool Compare(OOBase::LocalSocket::uid_t uid);
-		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
+		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
+		bool Compare(OOBase::LocalSocket::uid_t uid) const;
+		bool IsSameUser(OOBase::LocalSocket::uid_t uid) const;
 		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
 	private:
@@ -759,7 +759,7 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HA
 	return (dwRes == ERROR_SUCCESS);
 }
 
-bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
+bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
 	std::wstring strFName = OOBase::from_utf8(pszFName);
@@ -809,7 +809,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	return true;
 }
 
-bool SpawnedProcessWin32::Compare(HANDLE hToken)
+bool SpawnedProcessWin32::Compare(HANDLE hToken) const
 {
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
@@ -826,7 +826,7 @@ bool SpawnedProcessWin32::Compare(HANDLE hToken)
 			OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
-bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
+bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)

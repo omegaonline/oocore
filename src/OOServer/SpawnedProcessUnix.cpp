@@ -56,14 +56,14 @@ namespace
 	class SpawnedProcessUnix : public Root::SpawnedProcess
 	{
 	public:
-		SpawnedProcessUnix();
+		SpawnedProcessUnix(OOBase::LocalSocket::uid_t id, bool bSandbox);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(std::string strAppPath, bool bUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
+		bool Spawn(std::string strAppPath, bool bUnsafe, int pass_fd);
 
-		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
-		bool Compare(OOBase::LocalSocket::uid_t uid);
-		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
+		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
+		bool Compare(OOBase::LocalSocket::uid_t uid) const;
+		bool IsSameUser(OOBase::LocalSocket::uid_t uid) const;
 		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
 	private:
@@ -102,7 +102,9 @@ namespace
 	}
 }
 
-SpawnedProcessUnix::SpawnedProcessUnix() :
+SpawnedProcessUnix::SpawnedProcessUnix(OOBase::LocalSocket::uid_t id, bool bSandbox) :
+		m_bSandbox(bSandbox),
+		m_uid(id),
 		m_pid(-1)
 {
 }
@@ -229,14 +231,12 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd)
 {
 	if (strAppPath.empty())
 		strAppPath = LIBEXEC_DIR "/oosvruser";
 
 	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %s",strAppPath.c_str());
-
-	m_bSandbox = bSandbox;
 
 	// Check our uid
 	bool bUnsafeStart = false;
@@ -278,7 +278,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, uid_t uid, 
 		if (!bUnsafeStart)
 		{
 			// get our pw_info
-			OOSvrBase::pw_info pw(uid);
+			OOSvrBase::pw_info pw(m_uid);
 			if (!pw)
 			{
 				LOG_ERROR(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
@@ -300,7 +300,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, uid_t uid, 
 			}
 
 			// Stop being priviledged!
-			if (setuid(uid) != 0)
+			if (setuid(m_uid) != 0)
 			{
 				LOG_ERROR(("setuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
 				exit(errno);
@@ -335,16 +335,15 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, uid_t uid, 
 	else
 	{
 		// We are the parent...
-		m_uid = uid;
 		m_pid = child_id;
 
-		LOG_DEBUG(("Starting new oosvruser process as uid:%u pid:%u",uid,child_id));
+		LOG_DEBUG(("Starting new oosvruser process as uid:%u pid:%u",m_uid,child_id));
 	}
 
 	return true;
 }
 
-bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
+bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
 
@@ -401,12 +400,12 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	return true;
 }
 
-bool SpawnedProcessUnix::Compare(uid_t uid)
+bool SpawnedProcessUnix::Compare(uid_t uid) const
 {
-	return (m_uid == uid);
+	return (m_uid == uid && m_pid != pid_t(-1));
 }
 
-bool SpawnedProcessUnix::IsSameUser(uid_t uid)
+bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)
@@ -491,7 +490,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 	// Alloc a new SpawnedProcess
 	SpawnedProcessUnix* pSpawnUnix = 0;
-	OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix);
+	OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,bSandbox));
 	if (!pSpawnUnix)
 	{
 		::close(fd[1]);
@@ -507,7 +506,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	if (a != m_config_args.end())
 		strAppName = a->second;
 
-	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,uid,fd[1],bSandbox))
+	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,fd[1]))
 	{
 		::close(fd[1]);
 		return 0;
@@ -531,6 +530,66 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	ptrMC->attach(pAsync);
 
 	return pSpawn;
+}
+
+void Root::Manager::accept_client(OOBase::Socket* pSocket)
+{
+	// Socket will close when it drops out of scope
+
+	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+
+	// Make sure we have a user process
+	UserProcess user_process;
+	if (get_user_process(uid,user_process))
+	{
+		// Alloc a new SpawnedProcess
+		SpawnedProcessUnix* pSpawnUnix = 0;
+		OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,false));
+		if (!pSpawnUnix)
+		{
+			LOG_ERROR(("Out of memory"));
+			return;
+		}
+
+		UserProcess new_process;
+		new_process.ptrRegistry = user_process.ptrRegistry;
+		new_process.ptrSpawn = pSpawnUnix;
+
+		// Bootstrap the user process...
+		OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
+		Omega::uint32_t channel_id = bootstrap_user(pSocket,ptrMC,new_process.strPipe);
+		if (channel_id)
+		{
+			// Create an async socket wrapper
+			int err = 0;
+			OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,pSocket);
+			if (err != 0)
+			{
+				LOG_ERROR(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()));
+				return;
+			}
+
+			// Attach the async socket to the message connection
+			ptrMC->attach(pAsync);
+
+			// Insert the data into the process map...
+			try
+			{
+				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+				m_mapUserProcesses.insert(std::map<Omega::uint32_t,UserProcess>::value_type(channel_id,new_process));
+			}
+			catch (std::exception& e)
+			{
+				ptrMC->close();
+				LOG_ERROR(("std::exception thrown %s",e.what()));
+			}
+
+			// Now start the read cycle from ptrMC
+			if (!ptrMC->read())
+				ptrMC->close();
+		}
+	}
 }
 
 #endif // !HAVE_UNISTD_H

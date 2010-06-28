@@ -117,8 +117,6 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		countdown.update();
-
 		// Spawn off the io worker thread
 		m_worker_thread.run(io_worker_fn,this);
 	}
@@ -181,9 +179,8 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 #if defined(_WIN32)
 	const char* name = "OmegaOnline";
 
-	OOBase::timeval_t wait(5);
 	int err = 0;
-	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(name,&err,&wait);
+	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(name,&err);
 	if (!local_socket)
 	{
 		if (bStandalone)

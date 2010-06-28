@@ -54,15 +54,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 
 	pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
 
-#elif defined(HAVE_TR_24731)
-
-	char szBuf[1024] = {0};
-	strerror_s(szBuf,sizeof(szBuf),e);
-	pExcept->m_strDesc = string_t(szBuf,false);
-
 #else
 
-	pExcept->m_strDesc = string_t(strerror(e),false);
+	pExcept->m_strDesc = string_t(OOBase::strerror(e),false);
 
 #endif
 

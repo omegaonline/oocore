@@ -73,7 +73,8 @@ int Root::Manager::run()
 			bool bOk = false;
 
 			// Spawn the sandbox
-			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),m_registry_sandbox);
+			std::string strPipe;
+			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),m_registry_sandbox,strPipe);
 			if (m_sandbox_channel)
 			{
 				// Start listening for clients
@@ -206,8 +207,6 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 
 bool Root::Manager::get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess& user_process)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrRegistry;
-
 	try
 	{
 		// See if we have a process already
@@ -222,7 +221,7 @@ bool Root::Manager::get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess
 			}
 			else if (i->second.ptrSpawn->IsSameUser(uid))
 			{
-				ptrRegistry = i->second.ptrRegistry;
+				user_process.ptrRegistry = i->second.ptrRegistry;
 			}
 		}
 	}
@@ -232,21 +231,22 @@ bool Root::Manager::get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess
 	}
 
 	// Spawn a new user process
-	return spawn_user(uid,ptrRegistry);
+	return (spawn_user(uid,user_process.ptrRegistry,user_process.strPipe) != 0);
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry)
+Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
-	process.ptrSpawn = platform_spawn(uid,process.strPipe,channel_id,ptrMC);
+	process.ptrSpawn = platform_spawn(uid,strPipe,channel_id,ptrMC);
 	if (!process.ptrSpawn)
 		return 0;
 
 	process.ptrRegistry = ptrRegistry;
+	process.strPipe = strPipe;
 
 	// Init the registry, if necessary
 	bool bOk = true;

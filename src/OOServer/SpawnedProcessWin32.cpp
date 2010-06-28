@@ -533,7 +533,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	PathQuoteSpacesW(szPath);
 
 	std::wstring strCmdLine = szPath;
-	strCmdLine += L" " + OOBase::from_native(strPipe.c_str());
+	strCmdLine += L" --fork-slave=" + OOBase::from_native(strPipe.c_str());
 
 	OOBase::SmartPtr<wchar_t> ptrCmdLine = 0;
 	OOBASE_NEW(ptrCmdLine,wchar_t[strCmdLine.size()+1]);

@@ -24,10 +24,6 @@
 #include "InterProcessService.h"
 #include "Channel.h"
 
-#if defined(HAVE_EV_H)
-#include <ev.h>
-#endif
-
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -584,102 +580,83 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 	return response;
 }
 
-#if defined(_WIN32)
-
 namespace
 {
-	static HANDLE s_hEvent = NULL;
-
-	static BOOL WINAPI control_c(DWORD)
+	struct cond_pair_t
 	{
-		// Just stop!
-		if (s_hEvent)
-			SetEvent(s_hEvent);
+		OOBase::Condition::Mutex m_lock;
+		OOBase::Condition        m_condition;
+	};
+	static OOBase::SmartPtr<cond_pair_t> s_ptrQuit;
+
+#if defined(_WIN32)
+
+	BOOL WINAPI control_c(DWORD)
+	{
+		if (s_ptrQuit)
+			s_ptrQuit->m_condition.signal();
 
 		return TRUE;
 	}
+
+	bool init_sig_handler()
+	{
+		if (!SetConsoleCtrlHandler(control_c,TRUE))
+			LOG_ERROR_RETURN(("SetConsoleCtrlHandler failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+		return true;
+	}
+
+#else
+
+	void on_sigterm(int)
+	{
+		if (s_ptrQuit)
+			s_ptrQuit->m_condition.signal();
+	}
+
+	bool init_sig_handler()
+	{
+		// Catch SIGTERM
+		if (signal(SIGTERM,&on_sigterm) == SIG_ERR)
+			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+
+		// Ignore SIGPIPE
+		if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
+			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+
+		return true;
+	}
+
+#endif
 }
 
 void User::Manager::wait_for_quit()
 {
-	// Create the wait event
-	s_hEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
-	if (!s_hEvent)
+	if (!init_sig_handler())
+		return;
+	
+	OOBASE_NEW(s_ptrQuit,cond_pair_t());
+	if (!s_ptrQuit)
 	{
-		LOG_ERROR(("CreateEventW failed: %s",OOBase::Win32::FormatMessage().c_str()));
+		LOG_ERROR(("Out of memory"));
 		return;
 	}
 
-	if (!SetConsoleCtrlHandler(control_c,TRUE))
-		LOG_ERROR(("SetConsoleCtrlHandler failed: %s",OOBase::Win32::FormatMessage().c_str()));
-	else
-	{
-		// Wait for the event to be signalled
-		DWORD dwWait = WaitForSingleObject(s_hEvent,INFINITE);
-		if (dwWait != WAIT_OBJECT_0)
-			LOG_ERROR(("WaitForSingleObject failed: %s",OOBase::Win32::FormatMessage().c_str()));
-	}
+	// Wait for the event to be signalled
+	OOBase::Guard<OOBase::Condition::Mutex> guard(s_ptrQuit->m_lock);
 
-	CloseHandle(s_hEvent);
-	s_hEvent = NULL;
+	s_ptrQuit->m_condition.wait(s_ptrQuit->m_lock);
+	cond_pair_t* c = s_ptrQuit.detach();
+
+	guard.release();
+
+	delete c;
 }
 
 void User::Manager::quit()
 {
 	// Just stop!
-	if (s_hEvent)
-		SetEvent(s_hEvent);
+	if (s_ptrQuit)
+		s_ptrQuit->m_condition.signal();
 }
-
-#elif defined(HAVE_EV_H)
-
-namespace
-{
-	void on_sigint(struct ev_loop* pLoop, ev_signal*, int)
-	{
-		ev_unloop(pLoop,EVUNLOOP_ALL);
-	}
-}
-
-void User::Manager::wait_for_quit()
-{
-	// Ignore SIG_PIPE
-	signal(SIGPIPE,SIG_IGN);
-
-	// Use libev to wait on the default loop
-#if defined (EVFLAG_SIGNALFD)
-	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
-#else
-	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV);
-#endif
-	if (!pLoop)
-	{
-		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
-		return;
-	}
-
-	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
-	ev_signal watcher;
-
-	ev_signal_init(&watcher,&on_sigint,SIGINT);
-	ev_signal_start(pLoop,&watcher);
-
-	// Let ev loop...
-	ev_loop(pLoop,0);
-}
-
-void User::Manager::quit()
-{
-	struct ev_loop* pLoop = ev_default_loop(0);
-	if (!pLoop)
-	{
-		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
-		return;
-	}
-
-	ev_unloop(pLoop,EVUNLOOP_ALL);
-}
-
-#else
-#error Fix me!
-#endif

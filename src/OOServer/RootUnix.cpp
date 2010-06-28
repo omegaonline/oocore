@@ -36,10 +36,6 @@
 
 #if defined(HAVE_UNISTD_H)
 
-#if defined(HAVE_EV_H)
-#include <ev.h>
-#endif
-
 /*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
     // Make sure the file is owned by root (0)
@@ -73,64 +69,67 @@ bool Root::Manager::load_config()
 
 namespace
 {
-#if defined(HAVE_EV_H)
-	void on_sigint(struct ev_loop* pLoop, ev_signal* w, int)
+	struct cond_pair_t
 	{
-		*static_cast<bool*>(w->data) = true;
+		OOBase::Condition::Mutex m_lock;
+		OOBase::Condition        m_condition;
+		bool                     m_quit;
+	};
+	static OOBase::SmartPtr<cond_pair_t> s_ptrQuit;
 
-		ev_unloop(pLoop,EVUNLOOP_ALL);
+	void on_sigterm(int)
+	{
+		if (s_ptrQuit)
+		{
+			s_ptrQuit->m_quit = true;
+			s_ptrQuit->m_condition.signal();
+		}
 	}
 
-	void on_sighup(struct ev_loop* pLoop, ev_signal* w, int)
+	void on_sighup(int)
 	{
-		*static_cast<bool*>(w->data) = false;
-
-		ev_unloop(pLoop,EVUNLOOP_ALL);
+		if (s_ptrQuit)
+			s_ptrQuit->m_condition.signal();
 	}
-#endif
 }
 
 bool Root::Manager::wait_for_quit()
 {
-	// Ignore SIG_PIPE
-	signal(SIGPIPE,SIG_IGN);
+	// Catch SIGTERM
+	if (signal(SIGTERM,&on_sigterm) == SIG_ERR)
+		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
 
-#if defined(HAVE_EV_H)
+	// Catch SIGHUP
+	if (signal(SIGHUP,&on_sighup) == SIG_ERR)
+		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
 
-	// Use libev to wait on the default loop
-#if defined (EVFLAG_SIGNALFD)
-	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
-#else
-	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV);
-#endif
+	// Ignore SIGPIPE
+	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
+		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
 
-	if (!pLoop)
-		LOG_ERROR_RETURN(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),true);
-
-	bool bReturn = false;
-
-	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
-	ev_signal watchers[2];
-
-	ev_signal_init(&watchers[0],&on_sigint,SIGINT);
-	ev_signal_init(&watchers[1],&on_sighup,SIGHUP);
-
-	for (size_t i=0;i<sizeof(watchers)/sizeof(watchers[0]);++i)
+	OOBASE_NEW(s_ptrQuit,cond_pair_t());
+	if (!s_ptrQuit)
 	{
-		watchers[i].data = &bReturn;
-		ev_signal_start(pLoop,&watchers[i]);
+		LOG_ERROR(("Out of memory"));
+		return;
 	}
 
-	// Let ev loop...
-	ev_loop(pLoop,0);
+	s_ptrQuit->m_quit = false;
+
+	// Wait for the event to be signalled
+	OOBase::Guard<OOBase::Condition::Mutex> guard(s_ptrQuit->m_lock);
+
+	s_ptrQuit->m_condition.wait(s_ptrQuit->m_lock);
+	bool bReturn = s_ptrQuit->m_quit;
+	cond_pair_t* c = s_ptrQuit.detach();
+
+	guard.release();
+	
+	delete c;
 
 	LOG_DEBUG(("ooserverd exiting..."));
 
 	return bReturn;
-
-#else
-#error Some kind of signal mechanism?
-#endif
 }
 
 namespace OOBase
@@ -144,4 +143,5 @@ namespace OOBase
 		abort();
 	}
 }
+
 #endif

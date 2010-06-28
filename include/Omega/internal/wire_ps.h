@@ -529,7 +529,7 @@ namespace Omega
 					return Base::IsDerived__proxy__(iid);
 				}
 
-				static const uint32_t MethodCount = Base::MethodCount + 5;
+				static const uint32_t MethodCount = Base::MethodCount + 4;
 
 			private:
 				void Rethrow()
@@ -552,7 +552,6 @@ namespace Omega
 					OMEGA_METHOD(guid_t,GetThrownIID,0,())
 					OMEGA_METHOD(IException*,GetCause,0,())
 					OMEGA_METHOD(string_t,GetDescription,0,())
-					OMEGA_METHOD(string_t,GetSource,0,())
 				)
 			};
 

@@ -212,12 +212,12 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	return std::string(buf);
 
-#elif defined(HAVE_UNISTD_H)
+#else
+
+	void* TODO; // Some error checking here maybe?
 
 	return std::string(getenv("OMEGA_SESSION_ADDRESS"));
 
-#else
-#error Fix me!
 #endif
 }
 

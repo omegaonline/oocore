@@ -28,14 +28,6 @@
 #include "ProactorEv.h"
 #include "PosixSocket.h"
 
-#if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-
-#if defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
-#endif /* HAVE_SYS_FCNTL_H */
-
 #if defined(HAVE_SYS_UN_H)
 #include <sys/un.h>
 #endif /* HAVE_SYS_UN_H */
@@ -480,13 +472,9 @@ namespace
 		else
 		{
 			// Add FD_CLOEXEC
-			int oldflags = fcntl(new_fd,F_GETFD);
-			if (oldflags == -1 ||
-					fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
-			{
-				err = errno;
+			err = OOBase::POSIX::fcntl_addfd(new_fd,FD_CLOEXEC);
+			if (err != 0)
 				::close(new_fd);
-			}
 		}
 
 		// Prepare socket if okay
@@ -787,21 +775,17 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	}
 
 	// Set non-blocking
-	int oldflags = fcntl(fd,F_GETFL);
-	if (oldflags == -1 ||
-			fcntl(fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
+	*perr = OOBase::POSIX::fcntl_addfl(O_NONBLOCK);
+	if (*perr != 0)
 	{
-		*perr = errno;
 		close(fd);
 		return 0;
 	}
 
 	// Add FD_CLOEXEC
-	oldflags = fcntl(fd,F_GETFD);
-	if (oldflags == -1 ||
-			fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	*perr = OOBase::POSIX::fcntl_addfd(fd,FD_CLOEXEC);
+	if (*perr != 0)
 	{
-		*perr = errno;
 		close(fd);
 		return 0;
 	}
@@ -877,21 +861,17 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 	}
 
 	// Set non-blocking
-	int oldflags = fcntl(new_fd,F_GETFL);
-	if (oldflags == -1 ||
-			fcntl(new_fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
+	*perr = OOBase::POSIX::fcntl_addfl(new_fd,O_NONBLOCK);
+	if (*perr != 0)
 	{
-		*perr = errno;
 		close(new_fd);
 		return 0;
 	}
 
 	// Add FD_CLOEXEC
-	oldflags = fcntl(new_fd,F_GETFD);
-	if (oldflags == -1 ||
-			fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	*perr = OOBase::POSIX::fcntl_addfd(new_fd,FD_CLOEXEC);
+	if (*perr != 0)
 	{
-		*perr = errno;
 		close(new_fd);
 		return 0;
 	}

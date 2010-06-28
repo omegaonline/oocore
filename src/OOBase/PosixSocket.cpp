@@ -35,6 +35,30 @@
 #include <sys/un.h>
 #endif /* HAVE_SYS_UN_H */
 
+int OOBase::POSIX::fcntl_addfd(int fd, int flags)
+{
+	int oldflags = fcntl(fd,F_GETFD);
+	if (oldflags == -1 ||
+			fcntl(fd,F_SETFD,oldflags | flags) == -1)
+	{
+		return errno;
+	}
+
+	return 0;
+}
+
+int OOBase::POSIX::fcntl_addfl(int fd, int flags)
+{
+	int oldflags = fcntl(fd,F_GETFL);
+	if (oldflags == -1 ||
+			fcntl(fd,F_SETFL,oldflags | flags) == -1)
+	{
+		return errno;
+	}
+
+	return 0;
+}
+
 OOBase::LocalSocket::uid_t OOBase::POSIX::LocalSocket::get_uid()
 {
 #if defined(HAVE_GETPEEREID)
@@ -166,11 +190,9 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 #endif
 
 	// Add FD_CLOEXEC
-	int oldflags = fcntl(fd,F_GETFD);
-	if (oldflags == -1 ||
-			fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	*perr = POSIX::fcntl_addfd(fd,FD_CLOEXEC);
+	if (*perr != 0)
 	{
-		*perr = errno;
 		::close(fd);
 		return 0;
 	}

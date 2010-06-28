@@ -32,6 +32,9 @@ namespace OOBase
 {
 	namespace POSIX
 	{
+		int fcntl_addfd(int fd, int flags);
+		int fcntl_addfl(int fd, int flags);
+
 		class SocketImpl
 		{
 		public:

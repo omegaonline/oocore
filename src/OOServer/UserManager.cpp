@@ -28,14 +28,6 @@
 #include <ev.h>
 #endif
 
-#if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-
-#if defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
-#endif /* HAVE_SYS_FCNTL_H */
-
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -149,11 +141,11 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	int fd = atoi(strPipe.c_str());
 
 	// Add FD_CLOEXEC to fd
-	int oldflags = fcntl(fd,F_GETFD);
-	if (oldflags == -1 ||
-			fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	int err = OOBase::POSIX::fcntl_addfd(fd,FD_CLOEXEC);
+	if (err != 0)
 	{
-		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		::close(fd);
+		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	}
 
 	OOBase::POSIX::LocalSocket* pLocal = 0;
@@ -176,12 +168,14 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 
 bool User::Manager::session_launch(const std::string& strPipe)
 {
-	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
-
 #if defined(_WIN32)
+	OMEGA_UNUSED_ARG(strPipe);
+
 	LOG_ERROR_RETURN(("Somehow got into session_launch!"),false);
 #else
+
+	// Use the passed fd
+	int fd = atoi(strPipe.c_str());
 
 	// Invent a new pipe name...
 	std::string strNewPipe = Acceptor::unique_name();

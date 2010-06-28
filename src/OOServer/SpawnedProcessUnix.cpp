@@ -35,14 +35,6 @@
 #include "RootManager.h"
 #include "SpawnedProcess.h"
 
-#if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-
-#if defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
-#endif /* HAVE_SYS_FCNTL_H */
-
 #if defined(HAVE_UNISTD_H)
 
 #include <stdio.h>
@@ -479,11 +471,9 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::POSIX::LocalSocket sock(fd[0],"");
 
 	// Add FD_CLOEXEC to fd[0]
-	int oldflags = fcntl(fd[0],F_GETFD);
-	if (oldflags == -1 ||
-			fcntl(fd[0],F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	int err = OOBase::POSIX::fcntl_addfd(fd[0],FD_CLOEXEC);
+	if (err != 0)
 	{
-		int err = errno;
 		::close(fd[1]);
 		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 	}
@@ -521,7 +511,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		return 0;
 
 	// Create an async socket wrapper
-	int err = 0;
 	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,&sock);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);

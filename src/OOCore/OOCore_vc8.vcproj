@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
+				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;;C:\OOBase\include"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -64,8 +64,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;C:\OOBase\src\Win32\Debug"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;C:\OOBase\include"
 				PreprocessorDefinitions=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -140,8 +140,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				AdditionalLibraryDirectories=""
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
+				AdditionalLibraryDirectories="C:\OOBase\src\x64\Debug"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -199,7 +199,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;C:\OOBase\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -219,8 +219,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				AdditionalLibraryDirectories=""
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
+				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -278,7 +278,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;C:\OOBase\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -298,8 +298,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				AdditionalLibraryDirectories=""
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
+				AdditionalLibraryDirectories="C:\OOBase\src\x64\Release"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -341,11 +341,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Compartment.cpp"
+				RelativePath=".\Channel.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Channel.cpp"
+				RelativePath=".\Compartment.cpp"
 				>
 			</File>
 			<File
@@ -443,15 +443,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Compartment.h"
-				>
-			</File>
-			<File
 				RelativePath=".\CDRMessage.h"
 				>
 			</File>
 			<File
 				RelativePath=".\Channel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Compartment.h"
 				>
 			</File>
 			<File
@@ -541,15 +541,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\Omega\Compartment.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\include\Omega\internal\base.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\include\Omega\internal\base_types.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\Omega\Compartment.h"
 				>
 			</File>
 			<File

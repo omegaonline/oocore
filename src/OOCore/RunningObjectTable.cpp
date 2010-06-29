@@ -132,7 +132,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 			ptrROT.Attach(ptrIPS->GetRunningObjectTable());
 			if (ptrROT)
 			{
-				rot_cookie = ptrROT->RegisterObject(oid,pObject,flags & ~Activation::ProcessLocal);
+				rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessLocal));
 			}
 		}
 	}

@@ -22,9 +22,9 @@
 #ifndef OOSERVER_LITE_H_INCLUDED_
 #define OOSERVER_LITE_H_INCLUDED_
 
-#include "../OOBase/Mutex.h"
-#include "../OOBase/pw_info.h"
-#include "../OOBase/Database.h"
+#include <oobase/Mutex.h>
+#include <oobase/pw_info.h>
+#include <oobase/Database.h>
 
 // Ensure we have the local Omega.h instead of the installed one...
 #include "../include/Omega/Omega.h"

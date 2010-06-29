@@ -36,8 +36,6 @@
 
 #if defined(_WIN32)
 
-#include "../OOBase/SecurityWin32.h"
-
 #include <ntsecapi.h>
 #include <shlwapi.h>
 #include <shlobj.h>

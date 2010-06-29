@@ -37,11 +37,6 @@
 
 #if defined(_WIN32)
 
-#include "../OOBase/SecurityWin32.h"
-#include "../OOBase/Win32Socket.h"
-#include "../OOBase/SmartPtr.h"
-#include "../OOBase/utf8.h"
-
 #include <sddl.h>
 #include <shlwapi.h>
 #include <shlobj.h>
@@ -586,7 +581,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
 
-#if defined(OMEGA_DEBUG)
+#if defined(_DEBUG)
 	if (IsDebuggerPresent())
 	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
@@ -647,7 +642,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	}
 
 	// Attach a debugger if we are debugging
-#if defined(OMEGA_DEBUG)
+#if defined(_DEBUG)
 	if (hDebugEvent)
 	{
 		AttachDebugger(process_info.dwProcessId);

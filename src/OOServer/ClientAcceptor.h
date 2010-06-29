@@ -36,8 +36,6 @@
 
 #include "OOServer_Root.h"
 
-#include "../OOBase/SecurityWin32.h"
-
 namespace Root
 {
 	class Manager;

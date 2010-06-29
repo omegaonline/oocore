@@ -19,7 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "../../src/OOBase/CmdArgs.h"
+#include <oobase/CmdArgs.h>
 
 #include "../../include/Omega/Omega.h"
 #include "../../include/Omega/version.h"

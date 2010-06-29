@@ -308,6 +308,7 @@ namespace Omega
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
 					assert(count == count2);
+					OMEGA_UNUSED_ARG(count);
 
 					// Stop overflow
 					if (count2 > val.m_alloc_count)

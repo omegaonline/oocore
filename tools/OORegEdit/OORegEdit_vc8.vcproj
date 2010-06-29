@@ -123,7 +123,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm110"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;D:\wxWidgets-2.8.10\include;D:\wxWidgets-2.8.10\include\msvc"
+				AdditionalIncludeDirectories="..\..\include;C:\wxWidgets-2.9.0\include;C:\wxWidgets-2.9.0\include\msvc"
 				PreprocessorDefinitions=""
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -143,7 +143,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
-				AdditionalLibraryDirectories="D:\wxWidgets-2.8.10\lib\vc_lib"
+				AdditionalLibraryDirectories="C:\wxWidgets-2.9.0\lib\vc_lib"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -202,7 +202,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\include;D:\wxWidgets-2.8.10\include;D:\wxWidgets-2.8.10\include\msvc"
+				AdditionalIncludeDirectories="..\..\include;C:\wxWidgets-2.9.0\include;C:\wxWidgets-2.9.0\include\msvc"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -222,7 +222,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
-				AdditionalLibraryDirectories="D:\wxWidgets-2.8.10\lib\vc_lib"
+				AdditionalLibraryDirectories="C:\wxWidgets-2.9.0\lib\vc_lib"
 				LinkTimeCodeGeneration="1"
 			/>
 			<Tool
@@ -281,7 +281,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\include;D:\wxWidgets-2.8.10\include;D:\wxWidgets-2.8.10\include\msvc"
+				AdditionalIncludeDirectories="..\..\include;C:\wxWidgets-2.9.0\include;C:\wxWidgets-2.9.0\include\msvc"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -301,7 +301,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
-				AdditionalLibraryDirectories="D:\wxWidgets-2.8.10\lib\vc_lib"
+				AdditionalLibraryDirectories="C:\wxWidgets-2.9.0\lib\vc_lib"
 				LinkTimeCodeGeneration="1"
 				TargetMachine="17"
 			/>

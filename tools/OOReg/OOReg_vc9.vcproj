@@ -25,6 +25,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="msvcconf_vc9.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -41,7 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="_DEBUG;_CRT_NONSTDC_NO_WARNINGS"
+				AdditionalIncludeDirectories="C:\OOBase\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
+				PreprocessorDefinitions="HAVE_VLD_H;_CRT_NONSTDC_NO_WARNINGS"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -59,7 +62,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="OOBased.lib OOSvrBased.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Debug_Svr;&quot;C:\Program Files\Visual Leak Detector\lib&quot;;C:\OOBase\src\Win32\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -96,6 +101,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="msvcconf_vc9.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -113,6 +120,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="C:\OOBase\include"
 				PreprocessorDefinitions="NDEBUG;_CRT_NONSTDC_NO_WARNINGS"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
@@ -130,6 +138,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="OOBase.lib OOSvrBase.lib"
+				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release;C:\OOBase\src\Win32\Release_Svr"
 				SubSystem="1"
 				TargetMachine="1"
 			/>

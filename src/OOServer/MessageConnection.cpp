@@ -33,16 +33,13 @@
 
 //////////////////////////////////////////////
 
-#include "../OOBase/SmartPtr.h"
-#include "../OOBase/TLSSingleton.h"
-#include "../OOBase/CDRStream.h"
-#include "../OOBase/Queue.h"
-#include "../OOBase/Thread.h"
-
-//////////////////////////////////////////////
-
-#include "../OOBase/Proactor.h"
-#include "../OOBase/Logger.h"
+#include <oobase/SmartPtr.h>
+#include <oobase/TLSSingleton.h>
+#include <oobase/CDRStream.h>
+#include <oobase/Queue.h>
+#include <oobase/Thread.h>
+#include <oobase/Proactor.h>
+#include <oobase/Logger.h>
 
 //////////////////////////////////////////////
 

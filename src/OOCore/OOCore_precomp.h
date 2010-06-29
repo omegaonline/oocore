@@ -22,18 +22,18 @@
 #ifndef OOCORE_LOCAL_MACROS_H_INCLUDED_
 #define OOCORE_LOCAL_MACROS_H_INCLUDED_
 
-#include "../OOBase/Singleton.h"
-#include "../OOBase/TLSSingleton.h"
-#include "../OOBase/SmartPtr.h"
-#include "../OOBase/CDRStream.h"
-#include "../OOBase/TimeVal.h"
-#include "../OOBase/Thread.h"
-#include "../OOBase/Socket.h"
-#include "../OOBase/Queue.h"
-#include "../OOBase/DLL.h"
-#include "../OOBase/Win32.h"
-#include "../OOBase/utf8.h"
-#include "../OOBase/tr24731.h"
+#include <oobase/Singleton.h>
+#include <oobase/TLSSingleton.h>
+#include <oobase/SmartPtr.h>
+#include <oobase/CDRStream.h>
+#include <oobase/TimeVal.h>
+#include <oobase/Thread.h>
+#include <oobase/Socket.h>
+#include <oobase/Queue.h>
+#include <oobase/DLL.h>
+#include <oobase/Win32.h>
+#include <oobase/utf8.h>
+#include <oobase/tr24731.h>
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE

@@ -24,8 +24,6 @@
 
 #include "OOServer_User.h"
 
-#include "../OOBase/SecurityWin32.h"
-
 namespace User
 {
 	class Manager;

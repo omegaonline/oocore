@@ -31,7 +31,7 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "../OOBase/config-base.h"
+#include <oobase/config-base.h>
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
@@ -39,7 +39,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(OMEGA_DEBUG) && defined(_WIN32)
+#if defined(_DEBUG) && defined(_WIN32)
 
 #if defined(_MSC_VER)
 
@@ -191,4 +191,4 @@ void AttachDebugger(DWORD pid)
 #endif
 }
 
-#endif // OMEGA_DEBUG && _WIN32
+#endif // _DEBUG && _WIN32

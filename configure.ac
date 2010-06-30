@@ -2,15 +2,16 @@ AC_PREREQ(2.61)
 
 AC_INIT(omegaonline,0.5.0)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
-AC_CONFIG_HEADER([src/OOBase/autoheader_dummy.h src/OOBase/config-autoconf.h])
+AC_CONFIG_HEADER([include/autoheader_dummy.h include/autoconf.h])
 
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_SUBDIRS([OOBase])
+
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
 	Makefile
 	include/Makefile
 	src/Makefile
-	src/OOBase/Makefile
 	src/OOCore/Makefile
 	src/OOServer/Makefile
 	data/Makefile
@@ -45,30 +46,11 @@ PKG_PROG_PKG_CONFIG
 # Check the multi-threading flags
 OO_MULTI_THREAD
 
-# Check for the builtin intrinsics functions we use
-OO_C_BUILTINS
-
-# Check for C++ new functionality
-OO_NEW_NOTHROW
-
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h wchar.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h ev.h fcntl.h sys/fcntl.h sys/un.h ])
+AC_CHECK_HEADERS([unistd.h])
 
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
-AC_CHECK_LIB([ev],[ev_loop_new],AC_SUBST([EV_LIBS],["-lev"]))
-
-# Check for socket options
-OO_CHECK_SOCKOPT([SO_PEERCRED LOCAL_CREDS])
-
-# Check for password functions
-AC_CHECK_FUNCS([getpwuid_r])
-
-# Check for specifics of Unix cred passing
-AC_CHECK_FUNCS([getpeereid getpeerucred])
-AC_CHECK_TYPES([struct cmsgcred])
-AC_CHECK_TYPES([struct fcred])
-AC_CHECK_TYPES([struct sockcred])
 
 # Check for wcstoull and friends
 AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
@@ -115,10 +97,8 @@ AS_IF([test "x$debug" = "xtrue"],[CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"],[CPPFLAGS=
 # Set up libtool correctly
 m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])
 LT_PREREQ([2.2.6])
-LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([win32-dll disable-static dlopen])
 LT_LANG([Windows Resource])
-LTDL_INIT
 
 # Find sqlite3
 OO_LIB_SQLITE3([3.5.0])

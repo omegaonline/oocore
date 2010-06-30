@@ -1,0 +1,25 @@
+/* src/OOBase/config-autoconf.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if you have the SQLite3 library */
+#undef HAVE_SQLITE3
+
+/* Define to 1 if you have the SQLite3 amalgamated sources */
+#undef HAVE_SQLITE3_AMALGAMATION
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the `wcstoll' function. */
+#undef HAVE_WCSTOLL
+
+/* Define to 1 if you have the `wcstoull' function. */
+#undef HAVE_WCSTOULL
+
+/* Define to 1 if you have the `_wcstoi64' function. */
+#undef HAVE__WCSTOI64
+
+/* Define to 1 if you have the `_wcstoui64' function. */
+#undef HAVE__WCSTOUI64
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H

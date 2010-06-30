@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <MsvcConf>
   <Project Name="OOCore">
-    <Include Name="oobase/config-msvc.h" />
+    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
       <Platform Name="Win32">
@@ -16,7 +16,7 @@
   
   <Project Name="OOServer">
     <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
-    <Include Name="oobase/config-msvc.h" />
+    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
       <Library Name="OOSvrBased.lib" />
@@ -33,7 +33,7 @@
   
   <Project Name="OOSvrLite">
     <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
-    <Include Name="oobase/config-msvc.h" />
+    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
       <Library Name="OOSvrBased.lib" />
@@ -49,7 +49,7 @@
   </Project>
   
   <Project Name="OOSvrUser">
-    <Include Name="oobase/config-msvc.h" />
+    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
       <Library Name="OOSvrBased.lib" />
@@ -65,7 +65,7 @@
   </Project>
 
   <Project Name="OOReg">
-    <Include Name="oobase/config-msvc.h" />
+    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOSvrBased.lib" />
       <Platform Name="Win32">

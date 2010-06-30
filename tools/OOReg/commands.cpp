@@ -19,7 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include <oobase/CmdArgs.h>
+#include <OOSvrBase/CmdArgs.h>
 
 #include "../../include/Omega/Omega.h"
 #include "../../include/OTL/Registry.h"

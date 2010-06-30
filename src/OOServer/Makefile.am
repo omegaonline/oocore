@@ -1,11 +1,11 @@
 include $(top_srcdir)/m4/ltrc.inc
 
-noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
+AM_CPPFLAGS = -I@top_srcdir@/include -I@top_srcdir@/OOBase/include -I@top_builddir@/OOBase/include
+AM_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+AM_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+AM_LDFLAGS = $(PTHREAD_LIBS) $(SQLITE3_LIBS) 
 
-liboosvrcmn_la_CPPFLAGS = -I@top_srcdir@/include
-liboosvrcmn_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-liboosvrcmn_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-liboosvrcmn_la_LDFLAGS = $(PTHREAD_LIBS)
+noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
 
 liboosvrcmn_la_SOURCES = \
 	DebuggerWin32.cpp \
@@ -13,23 +13,15 @@ liboosvrcmn_la_SOURCES = \
 	MessageConnection.cpp \
 	Protocol.h
 
-liboosvrdb_la_CPPFLAGS = -I@top_srcdir@/include
-liboosvrdb_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-liboosvrdb_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-liboosvrdb_la_LDFLAGS = $(PTHREAD_LIBS)
-
 liboosvrdb_la_SOURCES = \
 	RegistryHive.h \
 	RegistryHive.cpp
 
-oolibexecdir = $(libexecdir)/omegaonline
+oolibexecdir = @libexecdir@/omegaonline
 oolibexec_LTLIBRARIES = oosvrlite.la
 
-oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include
-oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-oosvrlite_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-oosvrlite_la_LDFLAGS = $(SQLITE3_LIBS) $(PTHREAD_LIBS) -module -no-undefined
-oosvrlite_la_LIBADD = liboosvrdb.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
+oosvrlite_la_LDFLAGS = -module -no-undefined
+oosvrlite_la_LIBADD = liboosvrdb.la @top_builddir@/OOBase/liboosvrbase.la @top_builddir@/OOBase/liboobase.la
 
 if WIN32
 oosvrlite_la_LIBADD += ../OOCore/OOCore.la
@@ -53,11 +45,9 @@ endif
 
 bin_PROGRAMS = ooserverd
 
-ooserverd_CPPFLAGS = -I$(top_srcdir)/include -DLIBEXEC_DIR=\"@libexecdir@\"
-ooserverd_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-ooserverd_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-ooserverd_LDFLAGS =  $(SQLITE3_LIBS) $(EV_LIBS) $(PTHREAD_LIBS)
-ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
+ooserverd_CPPFLAGS = $(AM_CPPFLAGS) -DLIBEXEC_DIR=\"@libexecdir@/omegaonline\"
+ooserverd_LDFLAGS = $(EV_LIBS)
+ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la @top_builddir@/OOBase/liboosvrbase.la @top_builddir@/OOBase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \
@@ -79,11 +69,8 @@ endif
 
 libexec_PROGRAMS = oosvruser
 
-oosvruser_CPPFLAGS = -I$(top_srcdir)/include
-oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_LDFLAGS =  $(EV_LIBS) $(PTHREAD_LIBS)
-oosvruser_LDADD = liboosvrcmn.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
+oosvruser_LDFLAGS =  $(EV_LIBS)
+oosvruser_LDADD = liboosvrcmn.la @top_builddir@/OOBase/liboosvrbase.la @top_builddir@/OOBase/liboobase.la
 
 if WIN32
 oosvruser_LDADD += ../OOCore/OOCore.la
@@ -125,11 +112,8 @@ EXTRA_DIST = \
 if !WIN32
 bin_PROGRAMS += oo-launch
 
-oo_launch_CPPFLAGS = -I$(top_srcdir)/include -DLIBEXEC_DIR=\"@libexecdir@\"
-oo_launch_CFLAGS = $(PTHREAD_CFLAGS)
-oo_launch_CXXFLAGS = $(PTHREAD_CFLAGS)
-oo_launch_LDFLAGS = $(PTHREAD_LIBS)
-oo_launch_LDADD = ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
+oo_launch_CPPFLAGS = $(AM_CPPFLAGS) -DLIBEXEC_DIR=\"@libexecdir@/omegaonline\"
+oo_launch_LDADD = @top_builddir@/OOBase/liboosvrbase.la @top_builddir@/OOBase/liboobase.la
 
 oo_launch_SOURCES = \
 	Launch.cpp

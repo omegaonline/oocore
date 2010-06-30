@@ -21,6 +21,10 @@
 
 #include "OOCore_precomp.h"
 
+#if defined(HAVE_CONFIG_H)
+#include <autoconf.h>
+#endif
+
 #include <limits.h>
 
 using namespace Omega;

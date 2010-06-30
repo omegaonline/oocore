@@ -15,15 +15,17 @@
  * will fill a supplied 16-byte array with the digest.
  */
 
-#include "../OOBase/config-base.h"
+#if defined(HAVE_CONFIG_H)
+#include <autoconf.h>
+#endif
 
 #include <string.h>
 
-#if defined(_MSC_VER)
+#if defined(HAVE_STDINT_H)
+#include <stdint.h>
+#elif defined(_MSC_VER)
 // MS Visual Studio
 typedef unsigned __int32 uint32_t;
-#elif defined(HAVE_STDINT_H)
-#include <stdint.h>
 #else
 #error Failed to guess your compiler.  Please contact the omegaonline developers.
 #endif

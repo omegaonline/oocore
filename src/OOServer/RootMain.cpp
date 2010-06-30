@@ -101,7 +101,7 @@ static int Version()
 {
 	std::cout << APPNAME " version information:" << std::endl;
 	std::cout << "Version: " << OOCORE_VERSION;
-#if defined(_DEBUG)
+#if defined(OMEGA_DEBUG)
 	std::cout << " (Debug build)";
 #endif
 	std::cout << std::endl;

@@ -1,4 +1,9 @@
-include $(top_srcdir)/m4/ltrc.inc
+include @top_srcdir@/m4/ltrc.inc
+
+AM_CPPFLAGS =  -I@top_srcdir@/include -I@top_srcdir@/OOBase/include -I@top_builddir@/OOBase/include
+AM_CFLAGS = $(PTHREAD_CFLAGS)
+AM_CXXFLAGS = $(PTHREAD_CFLAGS)
+AM_LDFLAGS = $(PTHREAD_LIBS)
 
 common = \
 	OOCore_precomp.h \
@@ -36,11 +41,8 @@ if WIN32
 
 lib_LTLIBRARIES = OOCore.la
 
-OOCore_la_CPPFLAGS =  -I$(top_srcdir)/include
-OOCore_la_CFLAGS = $(PTHREAD_CFLAGS)
-OOCore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
-OOCore_la_LIBADD = ../OOBase/liboobase.la
-OOCore_la_LDFLAGS = $(PTHREAD_LIBS) -module -avoid-version -no-undefined -lrpcrt4
+OOCore_la_LIBADD = @top_builddir@/OOBase/liboobase.la
+OOCore_la_LDFLAGS = -module -avoid-version -no-undefined -lrpcrt4
 
 OOCore_la_SOURCES = \
 	$(common) \
@@ -50,11 +52,8 @@ else
 
 lib_LTLIBRARIES = liboocore.la
 
-liboocore_la_CPPFLAGS =  -I$(top_srcdir)/include
-liboocore_la_CFLAGS = $(PTHREAD_CFLAGS)
-liboocore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
-liboocore_la_LIBADD = ../OOBase/liboobase.la
-liboocore_la_LDFLAGS = $(PTHREAD_LIBS) $(UUID_LIBS) $(LIBLTDL) -release $(VERSION) -no-undefined
+liboocore_la_LIBADD = @top_builddir@/OOBase/liboobase.la
+liboocore_la_LDFLAGS = $(UUID_LIBS) $(LIBLTDL) -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \
 	$(common)

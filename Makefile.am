@@ -1,6 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libltdl include src data tools test
+# Make sure you have a link to the OOBase src at ./OOBase
+SUBDIRS = OOBase include src data tools test
 
 EXTRA_DIST = \
 	gpl3_0.txt \
@@ -10,37 +11,35 @@ EXTRA_DIST = \
 # Some helper targets
 
 gitbundle:
-	git bundle create omega.git --all
+	git bundle create oocore.git --all
 
 astyle:
-	astyle -A1 -T4 -K -N -w -U -c -n -R $(srcdir)/*.h
-	astyle -A1 -T4 -K -N -w -U -c -n -R $(srcdir)/*.inl
-	astyle -A1 -T4 -K -N -w -U -c -n -R $(srcdir)/*.cpp
+	astyle -A1 -T4 -K -N -w -U -c -n -R @srcdir@/*.h
+	astyle -A1 -T4 -K -N -w -U -c -n -R @srcdir@/*.inl
+	astyle -A1 -T4 -K -N -w -U -c -n -R @srcdir@/*.cpp
 
 reallyclean: maintainer-clean
-	rm -f $(top_srcdir)/Makefile.in
-	rm -f $(top_srcdir)/aclocal.m4
-	rm -f $(top_srcdir)/configure
-	rm -f $(top_srcdir)/data/Makefile.in
-	rm -f $(top_srcdir)/include/Makefile.in
-	rm -f $(top_srcdir)/m4/argz.m4
-	rm -f $(top_srcdir)/m4/libtool.m4
-	rm -f $(top_srcdir)/m4/ltdl.m4
-	rm -f $(top_srcdir)/m4/ltoptions.m4
-	rm -f $(top_srcdir)/m4/ltsugar.m4
-	rm -f $(top_srcdir)/m4/ltversion.m4
-	rm -f $(top_srcdir)/m4/lt~obsolete.m4
-	rm -f $(top_srcdir)/src/Makefile.in
-	rm -f $(top_srcdir)/src/OOBase/Makefile.in
-	rm -f $(top_srcdir)/src/OOBase/autoheader_dummy.h.in
-	rm -f $(top_srcdir)/src/OOBase/autoheader_dummy.h.in~
-	rm -f $(top_srcdir)/src/OOCore/Makefile.in
-	rm -f $(top_srcdir)/src/OORegister/Makefile.in
-	rm -f $(top_srcdir)/src/OOServer/Makefile.in
-	rm -f $(top_srcdir)/test/CoreTests/Makefile.in
-	rm -f $(top_srcdir)/test/CoreTests/TestLibrary/Makefile.in
-	rm -f $(top_srcdir)/test/CoreTests/TestProcess/Makefile.in
-	rm -f $(top_srcdir)/test/Makefile.in
+	rm -f @srcdir@/Makefile.in
+	rm -f @srcdir@/aclocal.m4
+	rm -f @srcdir@/configure
+	rm -f @srcdir@/data/Makefile.in
+	rm -f @srcdir@/include/Makefile.in
+	rm -f @srcdir@/m4/argz.m4
+	rm -f @srcdir@/m4/libtool.m4
+	rm -f @srcdir@/m4/ltoptions.m4
+	rm -f @srcdir@/m4/ltsugar.m4
+	rm -f @srcdir@/m4/ltversion.m4
+	rm -f @srcdir@/m4/lt~obsolete.m4
+	rm -f @srcdir@/src/Makefile.in
+	rm -f @srcdir@/src/OOCore/autoheader_dummy.h.in
+	rm -f @srcdir@/src/OOCore/autoheader_dummy.h.in~
+	rm -f @srcdir@/src/OOCore/Makefile.in
+	rm -f @srcdir@/src/OORegister/Makefile.in
+	rm -f @srcdir@/src/OOServer/Makefile.in
+	rm -f @srcdir@/test/CoreTests/Makefile.in
+	rm -f @srcdir@/test/CoreTests/TestLibrary/Makefile.in
+	rm -f @srcdir@/test/CoreTests/TestProcess/Makefile.in
+	rm -f @srcdir@/test/Makefile.in
 
 ####################################
 # Hook to make the ChangeLog

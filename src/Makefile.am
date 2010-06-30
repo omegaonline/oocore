@@ -1,1 +1,1 @@
-SUBDIRS = OOBase OOCore OOServer
+SUBDIRS = OOCore OOServer

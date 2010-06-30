@@ -1,12 +1,13 @@
 include $(top_srcdir)/m4/ltrc.inc
 
+AM_CPPFLAGS = -I@top_srcdir@/include -I@top_srcdir@/OOBase/include -I@top_builddir@/OOBase/include
+AM_CFLAGS = $(PTHREAD_CFLAGS)
+AM_CXXFLAGS = $(PTHREAD_CFLAGS)
+AM_LDFLAGS = $(PTHREAD_LIBS)
+
 bin_PROGRAMS = ooreg
 
-ooreg_CPPFLAGS = -I$(top_srcdir)/include
-ooreg_CFLAGS = $(PTHREAD_CFLAGS)
-ooreg_CXXFLAGS = $(PTHREAD_CFLAGS)
-ooreg_LDFLAGS =  $(PTHREAD_LIBS)
-ooreg_LDADD = ../../src/OOBase/liboosvrbase.la ../../src/OOBase/liboobase.la
+ooreg_LDADD = @top_builddir@/OOBase/liboosvrbase.la @top_builddir@/OOBase/liboobase.la
 
 if WIN32
 ooreg_LDADD += ../../src/OOCore/OOCore.la

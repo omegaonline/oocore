@@ -18,9 +18,8 @@ AC_CONFIG_FILES([
 	tools/Makefile
 	tools/OOReg/Makefile
 	test/Makefile
-	test/CoreTests/Makefile
-	test/CoreTests/TestLibrary/Makefile
-	test/CoreTests/TestProcess/Makefile
+	test/TestLibrary/Makefile
+	test/TestProcess/Makefile
 ])
 
 AM_INIT_AUTOMAKE([foreign 1.10 no-define])

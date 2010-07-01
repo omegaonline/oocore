@@ -1,4 +1,4 @@
-#include "../../include/Omega/Remoting.h"
+#include "../include/Omega/Remoting.h"
 #include "Test.h"
 
 bool string_tests()
@@ -251,12 +251,12 @@ bool string_tests_utf8()
 {
 #if defined(_MSC_VER)
 	#if defined(_DEBUG)
-		FILE* pInUTF8 = fopen("../../test/CoreTests/UTF-8-test.txt","rb");
+		FILE* pInUTF8 = fopen("../../test/UTF-8-test.txt","rb");
 	#else
-		FILE* pInUTF8 = fopen("../test/CoreTests/UTF-8-test.txt","rb");
+		FILE* pInUTF8 = fopen("../test/UTF-8-test.txt","rb");
 	#endif
 #else
-	FILE* pInUTF8 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/CoreTests/UTF-8-test.txt","rb");
+	FILE* pInUTF8 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/UTF-8-test.txt","rb");
 #endif
 
 	if (!pInUTF8)
@@ -280,12 +280,12 @@ bool string_tests_utf8()
 
 #if defined(_MSC_VER)
 	#if defined(_DEBUG)
-		FILE* pInUTF16 = fopen("../../test/CoreTests/UTF-16-test.txt","rb");
+		FILE* pInUTF16 = fopen("../../test/UTF-16-test.txt","rb");
 	#else
-		FILE* pInUTF16 = fopen("../test/CoreTests/UTF-16-test.txt","rb");
+		FILE* pInUTF16 = fopen("../test/UTF-16-test.txt","rb");
 	#endif
 #else
-	FILE* pInUTF16 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/CoreTests/UTF-16-test.txt","rb");
+	FILE* pInUTF16 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/UTF-16-test.txt","rb");
 #endif
 
 	if (!pInUTF16)

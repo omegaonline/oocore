@@ -1,4 +1,4 @@
-#include "../../include/Omega/Omega.h"
+#include "../include/Omega/Omega.h"
 #include "Test.h"
 
 #if !defined(_WIN32)

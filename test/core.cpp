@@ -1,4 +1,4 @@
-#include "../../include/Omega/Omega.h"
+#include "../include/Omega/Omega.h"
 #include "Test.h"
 
 void normalise_path(Omega::string_t& strPath)
@@ -32,7 +32,7 @@ bool init_standalone_tests()
 		Omega::string_t regdb_path = L"..\\build\\data\\";
 	#endif
 #else
-	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../../data/";
+	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../data/";
 #endif
 
 	Omega::string_t users_path = L".";
@@ -108,7 +108,7 @@ bool exception_tests()
 	return true;
 }
 
-#include "../../include/OTL/OTL.h"
+#include "../include/OTL/OTL.h"
 
 bool otl_tests()
 {

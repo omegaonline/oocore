@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="TestLibrary"
-	ProjectGUID="{E1E124DB-9220-4148-9336-9F44912D6E41}"
-	RootNamespace="TestLibrary"
+	Name="TestProcess"
+	ProjectGUID="{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}"
+	RootNamespace="TestProcess"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -21,9 +21,9 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\..\bin\$(ConfigurationName)"
+			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="0"
 			>
 			<Tool
@@ -48,6 +48,8 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;C:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_VLD_H"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -64,12 +66,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
 				GenerateDebugInformation="true"
+				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="1"
-				ImportLibrary="$(IntDir)\$(TargetName).lib"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -95,9 +98,9 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="0"
 			>
 			<Tool
@@ -123,6 +126,8 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\include"
 				PreprocessorDefinitions=""
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -139,10 +144,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
-				AdditionalLibraryDirectories=""
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
 				GenerateDebugInformation="true"
-				ImportLibrary="$(IntDir)\$(TargetName).lib"
+				SubSystem="1"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -169,9 +173,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\..\..\bin"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="0"
 			>
 			<Tool
@@ -199,7 +203,6 @@
 				AdditionalIncludeDirectories="..\..\..\include"
 				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
-				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 			/>
@@ -214,12 +217,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
-				AdditionalLibraryDirectories=""
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				LinkTimeCodeGeneration="1"
-				ImportLibrary="$(IntDir)\$(TargetName).lib"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -245,9 +248,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="0"
 			>
 			<Tool
@@ -276,7 +279,6 @@
 				AdditionalIncludeDirectories="..\..\..\include"
 				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
-				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 			/>
@@ -291,12 +293,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
-				AdditionalLibraryDirectories=""
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				LinkTimeCodeGeneration="1"
-				ImportLibrary="$(IntDir)\$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -331,7 +332,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\testlibrary.cpp"
+				RelativePath=".\testprocess.cpp"
 				>
 			</File>
 		</Filter>

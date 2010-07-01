@@ -1,5 +1,5 @@
-#include "../../include/Omega/Remoting.h"
-#include "../../include/OTL/Registry.h"
+#include "../include/Omega/Remoting.h"
+#include "../include/OTL/Registry.h"
 #include "interfaces.h"
 
 void normalise_path(Omega::string_t& strPath);
@@ -532,16 +532,16 @@ const wchar_t** get_dlls()
 #if defined(_MSC_VER)
 		L"TestLibrary_msvc.dll",
 	#if defined(_DEBUG)
-			L"..\\..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
+			L"..\\..\\build\\test\\TestLibrary\\.libs\\TestLibrary.dll",
 	#else
-			L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
+			L"..\\build\\test\\TestLibrary\\.libs\\TestLibrary.dll",
 	#endif
 #elif defined(_WIN32)
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestLibrary_msvc.dll",
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestLibrary_msvc.dll",
-		L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
+		L"TestLibrary/.libs/TestLibrary.dll",
 #else
-		L"CoreTests/TestLibrary/testlibrary",
+		L"TestLibrary/testlibrary",
 #endif
 		0
 	};
@@ -574,9 +574,9 @@ const wchar_t** get_exes()
 #if defined(_MSC_VER)
 		L"TestProcess_msvc.exe",
 	#if defined(_DEBUG)
-			L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
+			L"..\\..\\build\\test\\TestProcess\\testprocess.exe",
 	#else
-			L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
+			L"..\\build\\test\\TestProcess\\testprocess.exe",
 	#endif
 #elif defined(_WIN32)
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestProcess_msvc.exe",

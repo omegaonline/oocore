@@ -1,3 +1,5 @@
+#if 0
+
 #include "../include/Omega/Omega.h"
 #include "../include/OTL/OTL.h"
 #include "../include/OONet/Http.h"
@@ -250,3 +252,5 @@ bool net_tests()
 
 	return true;
 }
+
+#endif

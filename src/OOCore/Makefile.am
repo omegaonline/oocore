@@ -6,36 +6,37 @@ AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
 common = \
-	OOCore_precomp.h \
 	md5.c \
-	Activation.h \
 	Activation.cpp \
-	Compartment.h \
-	Compartment.cpp \
+	Activation.h \
 	CDRMessage.h \
-	Channel.h \
 	Channel.cpp \
-	Exception.h \
+	Channel.h \
+	Compartment.cpp \
+	Compartment.h \
 	Exception.cpp \
-	Formatting.h \
+	Exception.h \
 	Formatting.cpp \
+	Formatting.h \
 	IPS.h \
-	LoopChannel.h \
 	LoopChannel.cpp \
+	LoopChannel.h \
 	OOCore.cpp \
+	OOCore_precomp.h \
 	Registry.cpp \
 	RunningObjectTable.cpp \
-	StdObjectManager.h \
+	Server.h \
 	StdObjectManager.cpp \
+	StdObjectManager.h \
 	Threading.cpp \
 	TypeInfo.cpp \
 	Types.cpp \
-	UserSession.h \
 	UserSession.cpp \
-	WireProxy.h \
+	UserSession.h \
 	WireProxy.cpp \
-	WireStub.h \
-	WireStub.cpp
+	WireProxy.h \
+	WireStub.cpp \
+	WireStub.h
 
 if WIN32
 

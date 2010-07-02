@@ -199,6 +199,10 @@ bool User::Manager::session_launch(const std::string& strPipe)
 	if (!local_socket)
 		LOG_ERROR_RETURN(("Failed to connect to ooserverd: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
+	err = local_socket->close_on_exec();
+	if (err)
+		LOG_ERROR_RETURN(("close_on_exec failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 	err = local_socket->send(version);

@@ -106,9 +106,17 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 {
 	// Make sure we delete any socket passed to us
 	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
-
+	
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	err = pSocket->close_on_exec();
+	if (err != 0)
+	{
+		LOG_WARNING(("User::Acceptor::on_accept: close_on_exec failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		pSocket->close();
+		return true;
+	}
 
 	// Read 4 bytes - This forces credential passing
 	Omega::uint32_t version = 0;

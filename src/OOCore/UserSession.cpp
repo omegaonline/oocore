@@ -106,6 +106,10 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 		if (!m_stream)
 			OMEGA_THROW(err);
 
+		err = m_stream->close_on_exec();
+		if (err)
+			OMEGA_THROW(err);
+
 		// Send version information
 		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 		err = m_stream->send(version);
@@ -189,6 +193,10 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
+
+	err = local_socket->close_on_exec();
+	if (err)
+		OMEGA_THROW(err);
 
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;

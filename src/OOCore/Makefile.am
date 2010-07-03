@@ -1,6 +1,6 @@
 include @top_srcdir@/m4/ltrc.inc
 
-AM_CPPFLAGS =  -I@top_srcdir@/include -I@top_srcdir@/OOBase/include -I@top_builddir@/OOBase/include
+AM_CPPFLAGS =  -I@top_srcdir@/include -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
 AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
@@ -42,7 +42,7 @@ if WIN32
 
 lib_LTLIBRARIES = OOCore.la
 
-OOCore_la_LIBADD = @top_builddir@/OOBase/liboobase.la
+OOCore_la_LIBADD = @top_builddir@/oobase/liboobase.la
 OOCore_la_LDFLAGS = -module -avoid-version -no-undefined -lrpcrt4
 
 OOCore_la_SOURCES = \
@@ -53,7 +53,7 @@ else
 
 lib_LTLIBRARIES = liboocore.la
 
-liboocore_la_LIBADD = @top_builddir@/OOBase/liboobase.la
+liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la
 liboocore_la_LDFLAGS = $(UUID_LIBS) $(LIBLTDL) -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \

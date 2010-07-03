@@ -5,7 +5,7 @@ AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
 AC_CONFIG_HEADER([include/autoheader_dummy.h include/autoconf.h])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_SUBDIRS([OOBase])
+AC_CONFIG_SUBDIRS([oobase])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([

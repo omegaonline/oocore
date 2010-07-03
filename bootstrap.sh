@@ -1,7 +1,7 @@
 #! /bin/sh
 echo Running autotools...
 
-if test ! -d "./OOBase"; then
+if test ! -d "./oobase"; then
 	echo You need a link to OOBase
 fi
 
@@ -12,4 +12,6 @@ automake --foreign --add-missing --copy && \
 autoconf
 
 echo Bootstrapping OOBase...
-./OOBase/bootstrap.sh
+cd oobase
+./bootstrap.sh
+cd ..

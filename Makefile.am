@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
-# Make sure you have a link to the OOBase src at ./OOBase
-SUBDIRS = OOBase include src data tools test
+# Make sure you have a link to the OOBase src at ./oobase
+SUBDIRS = oobase include src data tools test
 
 EXTRA_DIST = \
 	gpl3_0.txt \

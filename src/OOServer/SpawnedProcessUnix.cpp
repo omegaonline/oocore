@@ -40,8 +40,11 @@
 #include <stdio.h>
 #include <grp.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
 #include <dirent.h>
+
+#if defined(HAVE_SYS_STAT_H)
+#include <sys/stat.h>
+#endif
 
 namespace
 {

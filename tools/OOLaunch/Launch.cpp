@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "../OOBase/CmdArgs.h"
+#include <OOSvrBase/CmdArgs.h>
 
 #include "../include/Omega/version.h"
 

@@ -28,7 +28,7 @@
 #include <shlobj.h>
 #endif
 
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_SYS_STAT_H)
 #include <sys/stat.h>
 #endif
 
@@ -349,10 +349,10 @@ void RootKey::InitOnce()
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");
-	
+
 	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
 		OMEGA_THROW("Failed to open database files");
-	
+
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_system_hive,string_t(),0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
@@ -380,7 +380,7 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 			strMirror = strSubKey.Mid(11);
 
 		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"/All Users");
-		
+
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstancePtr();
 		ptrNew->Init(L"/Local User",m_ptrLocalUserKey,ptrMirror);
 		ptrKey.Attach(ptrNew.AddRef());
@@ -468,7 +468,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 std::set<Omega::string_t> RootKey::EnumSubKeys()
 {
 	std::set<Omega::string_t> ret = m_ptrSystemKey->EnumSubKeys();
-	
+
 	// Add the local user key, although it doesn't really exist...
 	ret.insert(L"Local User");
 

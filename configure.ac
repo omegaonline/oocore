@@ -17,6 +17,7 @@ AC_CONFIG_FILES([
 	data/Makefile
 	tools/Makefile
 	tools/OOReg/Makefile
+	tools/OOLaunch/Makefile
 	test/Makefile
 	test/TestLibrary/Makefile
 	test/TestProcess/Makefile
@@ -46,7 +47,7 @@ PKG_PROG_PKG_CONFIG
 OO_MULTI_THREAD
 
 # Check for the headers we use
-AC_CHECK_HEADERS([unistd.h])
+AC_CHECK_HEADERS([signal.h unistd.h uuid/uuid.h])
 
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
@@ -105,7 +106,7 @@ OO_LIB_SQLITE3([3.5.0])
 if test -z "$SQLITE3_CFLAGS"; then
 	AC_MSG_ERROR([Need a valid sqlite3 library or source, try --with-sqlite3])
 fi
-	
+
 AC_PATH_PROG([SQLITE3],[sqlite3],[AC_MSG_ERROR([Need sqlite3 command])])
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW

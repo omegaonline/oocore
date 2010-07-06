@@ -49,14 +49,14 @@ namespace OOBase
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,1,((in),uint32_t,e))
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
-	
+
 #if defined(_WIN32)
 
 	pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
 
 #else
 
-	pExcept->m_strDesc = string_t(OOBase::strerror(e),false);
+	pExcept->m_strDesc = string_t(OOBase::strerror(e).c_str(),false);
 
 #endif
 
@@ -73,7 +73,7 @@ namespace OOCore
 		void* TODO;
 		// Make this use gettext etc...
 		pExcept->m_strDesc = string_t(desc,false);
-		
+
 		if (nLine != size_t(-1))
 		{
 			if (pszFunc)

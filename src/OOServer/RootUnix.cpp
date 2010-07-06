@@ -36,6 +36,10 @@
 
 #if defined(HAVE_UNISTD_H)
 
+#if defined(HAVE_SIGNAL_H)
+#include <signal.h>
+#endif
+
 /*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
     // Make sure the file is owned by root (0)
@@ -77,6 +81,8 @@ namespace
 	};
 	static OOBase::SmartPtr<cond_pair_t> s_ptrQuit;
 
+#if defined(HAVE_SIGNAL_H)
+
 	void on_sigterm(int)
 	{
 		if (s_ptrQuit)
@@ -91,28 +97,33 @@ namespace
 		if (s_ptrQuit)
 			s_ptrQuit->m_condition.signal();
 	}
+
+#endif
+
 }
 
 bool Root::Manager::wait_for_quit()
 {
+#if defined(HAVE_SIGNAL_H)
 	// Catch SIGTERM
 	if (signal(SIGTERM,&on_sigterm) == SIG_ERR)
-		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
 
 	// Catch SIGHUP
 	if (signal(SIGHUP,&on_sighup) == SIG_ERR)
-		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
 
 	// Ignore SIGPIPE
 	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+		LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
+
+#else
+#error Fix me!
+#endif
 
 	OOBASE_NEW(s_ptrQuit,cond_pair_t());
 	if (!s_ptrQuit)
-	{
-		LOG_ERROR(("Out of memory"));
-		return;
-	}
+		LOG_ERROR_RETURN(("Out of memory"),false);
 
 	s_ptrQuit->m_quit = false;
 
@@ -124,7 +135,7 @@ bool Root::Manager::wait_for_quit()
 	cond_pair_t* c = s_ptrQuit.detach();
 
 	guard.release();
-	
+
 	delete c;
 
 	LOG_DEBUG(("ooserverd exiting..."));

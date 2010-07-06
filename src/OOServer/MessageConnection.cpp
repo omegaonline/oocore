@@ -44,6 +44,12 @@
 
 //////////////////////////////////////////////
 
+#if defined(HAVE_CONFIG_H)
+#include <autoconf.h>
+#endif
+
+//////////////////////////////////////////////
+
 #include "../include/Omega/internal/base_types.h"
 
 //////////////////////////////////////////////
@@ -659,7 +665,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				{
 					// This shouldn't ever occur, but that means it will ;)
 					LOG_ERROR(("std::exception thrown %s",e.what()));
-				}				
+				}
 			}
 
 			// Reset deadline
@@ -1162,7 +1168,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 				{
 					LOG_ERROR(("std::exception thrown %s",e.what()));
 				}
-				
+
 				pContext->m_deadline = old_deadline;
 			}
 			else if (type == Message_t::Response && recv_seq_no == seq_no)

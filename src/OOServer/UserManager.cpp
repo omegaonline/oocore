@@ -24,6 +24,10 @@
 #include "InterProcessService.h"
 #include "Channel.h"
 
+#if defined(HAVE_SIGNAL_H)
+#include <signal.h>
+#endif
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -611,7 +615,7 @@ namespace
 		return true;
 	}
 
-#else
+#elif defined(HAVE_SIGNAL_H)
 
 	void on_sigterm(int)
 	{
@@ -623,14 +627,18 @@ namespace
 	{
 		// Catch SIGTERM
 		if (signal(SIGTERM,&on_sigterm) == SIG_ERR)
-			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
 
 		// Ignore SIGPIPE
 		if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror().c_str()),false);
+			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
 
 		return true;
 	}
+
+#else
+
+#error Fix me!
 
 #endif
 }
@@ -639,7 +647,7 @@ void User::Manager::wait_for_quit()
 {
 	if (!init_sig_handler())
 		return;
-	
+
 	OOBASE_NEW(s_ptrQuit,cond_pair_t());
 	if (!s_ptrQuit)
 	{

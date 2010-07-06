@@ -1,10 +1,16 @@
-/* src/OOBase/config-autoconf.h.in.  Generated from configure.ac by autoheader.  */
+/* src/OOBase/autoconf.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if you have the <signal.h> header file. */
+#undef HAVE_SIGNAL_H
 
 /* Define to 1 if you have the SQLite3 library */
 #undef HAVE_SQLITE3
 
 /* Define to 1 if you have the SQLite3 amalgamated sources */
 #undef HAVE_SQLITE3_AMALGAMATION
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -23,3 +29,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <uuid/uuid.h> header file. */
+#undef HAVE_UUID_UUID_H

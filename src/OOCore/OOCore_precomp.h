@@ -35,6 +35,10 @@
 #include <OOBase/utf8.h>
 #include <OOBase/tr24731.h>
 
+#if defined(HAVE_CONFIG_H)
+#include <autoconf.h>
+#endif
+
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
 

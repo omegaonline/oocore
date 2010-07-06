@@ -54,7 +54,7 @@ else
 lib_LTLIBRARIES = liboocore.la
 
 liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la
-liboocore_la_LDFLAGS = $(UUID_LIBS) $(LIBLTDL) -release $(VERSION) -no-undefined
+liboocore_la_LDFLAGS = $(UUID_LIBS) -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \
 	$(common)

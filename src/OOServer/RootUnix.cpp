@@ -34,7 +34,7 @@
 #include "OOServer_Root.h"
 #include "RootManager.h"
 
-#if defined(HAVE_UNISTD_H)
+#if !defined(_WIN32)
 
 #if defined(HAVE_SIGNAL_H)
 #include <signal.h>

@@ -63,10 +63,10 @@
 // Include Omega/OTL components
 
 // Ensure we have the local Omega.h instead of the installed one...
-#include "../include/Omega/Omega.h"
-#include "../include/OTL/OTL.h"
-#include "../include/OTL/Exception.h"
-#include "../include/OTL/Registry.h"
+#include "../../include/Omega/Omega.h"
+#include "../../include/OTL/OTL.h"
+#include "../../include/OTL/Exception.h"
+#include "../../include/OTL/Registry.h"
 
 // End of Omega/OTL includes
 /////////////////////////////////////////////////

@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last because we includes a lot of headers, which might be dangerous!
 
-#include "../include/Omega/internal/config-guess.h"
-#include "../include/Omega/version.h"
+#include "../../include/Omega/internal/config-guess.h"
+#include "../../include/Omega/version.h"
 
 static int Version()
 {

@@ -22,7 +22,7 @@
 #include "OOServer_User.h"
 #include "UserProcess.h"
 
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
 
 namespace
 {

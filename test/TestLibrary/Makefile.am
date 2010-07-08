@@ -2,7 +2,6 @@ include $(top_srcdir)/m4/ltrc.inc
 
 check_LTLIBRARIES = testlibrary.la
 
-testlibrary_la_CPPFLAGS = -I$(top_srcdir)/include
 testlibrary_la_CFLAGS = $(PTHREAD_CFLAGS)
 testlibrary_la_CXXFLAGS = $(PTHREAD_CFLAGS)
 testlibrary_la_LDFLAGS =  -no-undefined -module $(PTHREAD_LIBS) -rpath /nowhere

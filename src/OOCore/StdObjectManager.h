@@ -22,7 +22,7 @@
 #ifndef OOCORE_OBJECT_MANAGER_H_INCLUDED_
 #define OOCORE_OBJECT_MANAGER_H_INCLUDED_
 
-#include "../include/Omega/Remoting.h"
+#include "../../include/Omega/Remoting.h"
 
 #include "WireProxy.h"
 #include "WireStub.h"

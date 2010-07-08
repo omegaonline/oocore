@@ -22,7 +22,7 @@
 #ifndef OOCORE_APARTMENT_IMPL_H_INCLUDED_
 #define OOCORE_APARTMENT_IMPL_H_INCLUDED_
 
-#include "../include/Omega/Compartment.h"
+#include "../../include/Omega/Compartment.h"
 
 #include "Channel.h"
 

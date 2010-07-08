@@ -1,6 +1,6 @@
 include @top_srcdir@/m4/ltrc.inc
 
-AM_CPPFLAGS =  -I@top_srcdir@/include -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
+AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
 AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)

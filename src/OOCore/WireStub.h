@@ -22,7 +22,7 @@
 #ifndef OOCORE_WIRESTUB_H_INCLUDED_
 #define OOCORE_WIRESTUB_H_INCLUDED_
 
-#include "../include/Omega/Remoting.h"
+#include "../../include/Omega/Remoting.h"
 
 namespace OOCore
 {

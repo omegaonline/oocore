@@ -35,7 +35,7 @@
 #include "RootManager.h"
 #include "SpawnedProcess.h"
 
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
 
 #include <stdio.h>
 #include <grp.h>

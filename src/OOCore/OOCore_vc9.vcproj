@@ -462,6 +462,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\oocore-msvc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\OOCore_precomp.h"
 				>
 			</File>

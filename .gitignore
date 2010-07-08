@@ -21,8 +21,7 @@ config.log
 config.status
 libtool
 stamp-h*
-config-autoconf.h
-autoconf.h
+*-autoconf.h
 
 # general stuff
 *.regdb

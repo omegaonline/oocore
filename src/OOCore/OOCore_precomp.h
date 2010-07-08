@@ -36,7 +36,9 @@
 #include <OOBase/tr24731.h>
 
 #if defined(HAVE_CONFIG_H)
-#include <autoconf.h>
+#include <oocore-autoconf.h>
+#elif defined(_MSC_VER)
+#include "../oocore-msvc.h"
 #endif
 
 //////////////////////////////////////////////

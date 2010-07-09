@@ -46,7 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\sqlite3;..\..\..\OOBase\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
+				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;;..\..\..\OOBase\include;C:\Work\sqlite"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H;OMEGA_DEBUG"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -66,7 +66,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug;..\..\..\OOBase\src\Win32\Debug_Svr"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\Win32\Debug_Svr"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="1"
@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="..\..\include;C:\sqlite3;C:\OOBase\include"
 				PreprocessorDefinitions="OMEGA_DEBUG;HAVE_SQLITE3_AMALGAMATION"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -272,7 +272,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="..\..\include;C:\sqlite3"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"

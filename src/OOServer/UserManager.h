@@ -34,7 +34,9 @@ namespace User
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;
 
-	class Manager : public OOServer::MessageHandler
+	class Manager : 
+			public OOServer::MessageHandler,
+			public OOSvrBase::Server
 	{
 		// main() has full access...
 		friend int ::main(int, char**);
@@ -73,9 +75,7 @@ namespace User
 		void run();
 		bool fork_slave(const std::string& strPipe);
 		bool session_launch(const std::string& strPipe);
-		static void wait_for_quit();
-		static void quit();
-
+		
 		bool handshake_root(OOBase::SmartPtr<OOBase::LocalSocket>& local_socket, const std::string& strPipe);
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
 		bool bootstrap(Omega::uint32_t sandbox_channel);

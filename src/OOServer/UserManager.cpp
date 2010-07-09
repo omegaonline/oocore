@@ -24,10 +24,6 @@
 #include "InterProcessService.h"
 #include "Channel.h"
 
-#if defined(HAVE_SIGNAL_H)
-#include <signal.h>
-#endif
-
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -285,6 +281,8 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOBase::LocalSocket>& local_
 
 void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 {
+	Manager* pThis = static_cast<Manager*>(pParams);
+
 	Omega::uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
 	std::string strPipe;
@@ -292,16 +290,14 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	if (input.last_error() != 0)
 	{
 		LOG_ERROR(("Failed to read bootstrap data: %s",OOSvrBase::Logger::format_error(input.last_error()).c_str()));
-		quit();
+		pThis->quit();
 	}
 	else
 	{
-		Manager* pThis = static_cast<Manager*>(pParams);
-
 		if (!pThis->bootstrap(sandbox_channel) ||
 				!pThis->m_acceptor.start(pThis,strPipe))
 		{
-			quit();
+			pThis->quit();
 		}
 	}
 }
@@ -586,89 +582,4 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 	}
 
 	return response;
-}
-
-namespace
-{
-	struct cond_pair_t
-	{
-		OOBase::Condition::Mutex m_lock;
-		OOBase::Condition        m_condition;
-	};
-	static OOBase::SmartPtr<cond_pair_t> s_ptrQuit;
-
-#if defined(_WIN32)
-
-	BOOL WINAPI control_c(DWORD)
-	{
-		if (s_ptrQuit)
-			s_ptrQuit->m_condition.signal();
-
-		return TRUE;
-	}
-
-	bool init_sig_handler()
-	{
-		if (!SetConsoleCtrlHandler(control_c,TRUE))
-			LOG_ERROR_RETURN(("SetConsoleCtrlHandler failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-		return true;
-	}
-
-#elif defined(HAVE_SIGNAL_H)
-
-	void on_sigterm(int)
-	{
-		if (s_ptrQuit)
-			s_ptrQuit->m_condition.signal();
-	}
-
-	bool init_sig_handler()
-	{
-		// Catch SIGTERM
-		if (signal(SIGTERM,&on_sigterm) == SIG_ERR)
-			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
-
-		// Ignore SIGPIPE
-		if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-			LOG_ERROR_RETURN(("signal() failed: %s",OOBase::strerror(errno).c_str()),false);
-
-		return true;
-	}
-
-#else
-
-#error Fix me!
-
-#endif
-}
-
-void User::Manager::wait_for_quit()
-{
-	if (!init_sig_handler())
-		return;
-
-	OOBASE_NEW(s_ptrQuit,cond_pair_t());
-	if (!s_ptrQuit)
-	{
-		LOG_ERROR(("Out of memory"));
-		return;
-	}
-
-	// Wait for the event to be signalled
-	OOBase::Guard<OOBase::Condition::Mutex> guard(s_ptrQuit->m_lock);
-
-	s_ptrQuit->m_condition.wait(s_ptrQuit->m_lock);
-	cond_pair_t* c = s_ptrQuit.detach();
-
-	guard.release();
-
-	delete c;
-}
-
-void User::Manager::quit()
-{
-	// Just stop!
-	if (s_ptrQuit)
-		s_ptrQuit->m_condition.signal();
 }

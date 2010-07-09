@@ -50,6 +50,7 @@
 #include <OOSvrBase/CmdArgs.h>
 #include <OOSvrBase/Database.h>
 #include <OOSvrBase/SecurityWin32.h>
+#include <OOSvrBase/Service.h>
 
 //////////////////////////////////////////////
 

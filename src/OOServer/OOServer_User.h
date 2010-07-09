@@ -36,6 +36,7 @@
 #include <OOSvrBase/Logger.h>
 #include <OOSvrBase/CmdArgs.h>
 #include <OOSvrBase/SecurityWin32.h>
+#include <OOSvrBase/Service.h>
 
 //////////////////////////////////////////////
 

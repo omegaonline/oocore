@@ -51,14 +51,14 @@ namespace
 	class SpawnedProcessUnix : public Root::SpawnedProcess
 	{
 	public:
-		SpawnedProcessUnix(OOBase::LocalSocket::uid_t id, bool bSandbox);
+		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox);
 		virtual ~SpawnedProcessUnix();
 
 		bool Spawn(std::string strAppPath, bool bUnsafe, int pass_fd);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool Compare(OOBase::LocalSocket::uid_t uid) const;
-		bool IsSameUser(OOBase::LocalSocket::uid_t uid) const;
+		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
 	private:
@@ -97,7 +97,7 @@ namespace
 	}
 }
 
-SpawnedProcessUnix::SpawnedProcessUnix(OOBase::LocalSocket::uid_t id, bool bSandbox) :
+SpawnedProcessUnix::SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox) :
 		m_bSandbox(bSandbox),
 		m_uid(id),
 		m_pid(-1)
@@ -436,10 +436,10 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
 {
 	// Stash the sandbox flag because we adjust uid...
-	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
+	bool bSandbox = (uid == OOSvrBase::AsyncLocalSocket::uid_t(-1));
 	if (bSandbox)
 	{
 		// Get username from config
@@ -528,7 +528,7 @@ void Root::Manager::accept_client(OOBase::Socket* pSocket)
 {
 	// Socket will close when it drops out of scope
 
-	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	OOSvrBase::AsyncLocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
 
 	// Make sure we have a user process
 	UserProcess user_process;

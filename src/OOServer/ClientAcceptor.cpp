@@ -160,7 +160,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	}
-	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSID);
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSID);
 
 	// Set read/write access
 	ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;

@@ -38,7 +38,7 @@ namespace OOServer
 {
 	class MessageHandler;
 
-	class MessageConnection : public OOSvrBase::IOHandler
+	class MessageConnection : public OOSvrBase::IOHandler<OOSvrBase::AsyncLocalSocket>
 	{
 	public:
 		MessageConnection(MessageHandler* pHandler);
@@ -62,9 +62,9 @@ namespace OOServer
 
 		static const size_t     m_default_buffer_size = 8000;
 
-		virtual void on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
-		virtual void on_write(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
-		virtual void on_closed(OOSvrBase::AsyncSocket* pSocket);
+		virtual void on_recv(OOSvrBase::AsyncLocalSocket* pSocket, OOBase::Buffer* buffer, int err);
+		virtual void on_sent(OOSvrBase::AsyncLocalSocket* pSocket, OOBase::Buffer* buffer, int err);
+		virtual void on_closed(OOSvrBase::AsyncLocalSocket* pSocket);
 	};
 
 	struct Message_t

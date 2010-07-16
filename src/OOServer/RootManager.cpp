@@ -84,7 +84,7 @@ int Root::Manager::run()
 
 			// Spawn the sandbox
 			std::string strPipe;
-			m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),m_registry_sandbox,strPipe);
+			m_sandbox_channel = spawn_user(OOSvrBase::AsyncLocalSocket::uid_t(-1),m_registry_sandbox,strPipe);
 			if (m_sandbox_channel)
 			{
 				// Start listening for clients
@@ -223,7 +223,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	}
 }
 
-bool Root::Manager::get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess& user_process)
+bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t uid, UserProcess& user_process)
 {
 	try
 	{
@@ -252,7 +252,7 @@ bool Root::Manager::get_user_process(OOBase::LocalSocket::uid_t uid, UserProcess
 	return (spawn_user(uid,user_process.ptrRegistry,user_process.strPipe) != 0);
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;

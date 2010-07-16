@@ -40,9 +40,9 @@
 #include <OOBase/CDRStream.h>
 #include <OOBase/Queue.h>
 #include <OOBase/Thread.h>
-#include <OOBase/PosixSocket.h>
+#include <OOBase/Socket.h>
 #include <OOBase/utf8.h>
-#include <OOBase/Win32Socket.h>
+#include <OOBase/Socket.h>
 
 #include <OOSvrBase/pw_info.h>
 #include <OOSvrBase/Proactor.h>

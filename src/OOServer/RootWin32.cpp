@@ -59,7 +59,7 @@
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
     }
-    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
+    OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
 
     // Create a SID for the BUILTIN\Administrators group.
     if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
@@ -70,7 +70,7 @@
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
     }
-    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
+    OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
     const int NUM_ACES  = 2;
     EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
@@ -277,22 +277,29 @@ bool Root::Manager::load_config()
 	}
 }
 
-void Root::Manager::accept_client(OOBase::Socket* pSocket)
+void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket)
 {
-	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
-
-	// Make sure the handle is closed
-	OOBase::Win32::SmartHandle hUidToken(uid);
-
-	UserProcess user_process;
-	if (get_user_process(uid,user_process))
+	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	int err = pSocket->get_uid(uid);
+	if (err != 0)
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::Win32::FormatMessage(err)));
+	else
 	{
-		Omega::uint32_t uLen = static_cast<Omega::uint32_t>(user_process.strPipe.length()+1);
-		if (pSocket->send(uLen) == 0)
-			pSocket->send(user_process.strPipe.c_str(),uLen);
-	}
+		// Make sure the handle is closed
+		OOBase::Win32::SmartHandle hUidToken(uid);
 
-	// Socket will close when it drops out of scope
+		UserProcess user_process;
+		if (get_user_process(uid,user_process))
+		{
+			void* TODO; // This can be async...
+
+			Omega::uint32_t uLen = static_cast<Omega::uint32_t>(user_process.strPipe.length()+1);
+			if (pSocket->send(uLen) == 0)
+				pSocket->send(user_process.strPipe.c_str(),uLen);
+		}
+
+		// Socket will be closed when it drops out of scope
+	}
 }
 
 namespace OOBase

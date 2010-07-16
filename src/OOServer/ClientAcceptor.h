@@ -40,7 +40,7 @@ namespace Root
 {
 	class Manager;
 
-	class ClientAcceptor : public OOSvrBase::Acceptor
+	class ClientAcceptor : public OOSvrBase::Acceptor<OOSvrBase::AsyncLocalSocket>
 	{
 	public:
 		ClientAcceptor();
@@ -49,7 +49,7 @@ namespace Root
 		bool start(Manager* pManager);
 		void stop();
 
-		bool on_accept(OOBase::Socket* pSocket, int err);
+		bool on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err);
 
 	private:
 		ClientAcceptor(const ClientAcceptor&);

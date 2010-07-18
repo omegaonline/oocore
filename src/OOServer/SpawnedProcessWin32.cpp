@@ -54,8 +54,8 @@ namespace
 
 		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool Compare(OOBase::LocalSocket::uid_t uid) const;
-		bool IsSameUser(OOBase::LocalSocket::uid_t uid) const;
+		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
 	private:
@@ -893,10 +893,10 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
 {
 	// Stash the sandbox flag because we adjust uid...
-	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
+	bool bSandbox = (uid == OOSvrBase::AsyncLocalSocket::uid_t(-1));
 
 	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
 

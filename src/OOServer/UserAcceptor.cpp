@@ -137,7 +137,7 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	}
 
 	// Check to see if the connection came from a process with our uid
-	OOBase::LocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	OOSvrBase::AsyncLocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
 	bool bOk = false;
 
 #if defined(_WIN32)

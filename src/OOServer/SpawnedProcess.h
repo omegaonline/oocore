@@ -42,8 +42,8 @@ namespace Root
 		virtual ~SpawnedProcess() {}
 
 		virtual bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
-		virtual bool Compare(OOBase::LocalSocket::uid_t uid) const = 0;
-		virtual bool IsSameUser(OOBase::LocalSocket::uid_t uid) const = 0;
+		virtual bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
+		virtual bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
 		virtual bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive) = 0;
 
 	protected:

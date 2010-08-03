@@ -33,6 +33,10 @@
 		if (POINTER == 0) { OMEGA_THROW("Out of memory."); } \
 	} while (0)
 
+// Change this one day
+#define OMEGA_NEW_STACK(POINTER,CONSTRUCTOR) OMEGA_NEW(POINTER,CONSTRUCTOR)
+#define OMEGA_NEW_THREAD(POINTER,CONSTRUCTOR) OMEGA_NEW(POINTER,CONSTRUCTOR)
+
 #define OMEGA_IMPORT __declspec(dllimport)
 #define OMEGA_EXPORT __declspec(dllexport)
 

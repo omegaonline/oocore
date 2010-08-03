@@ -78,10 +78,14 @@
 #ifdef __cplusplus
 	#include <new>
 	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		if ((void)0,true) { \
+		do { \
 			POINTER = new (std::nothrow) CONSTRUCTOR; \
 			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
-		} else (void)0
+		} while ((void)0,false)
+
+	// Change this one day
+	#define OMEGA_NEW_STACK(POINTER,CONSTRUCTOR) OMEGA_NEW(POINTER,CONSTRUCTOR)
+	#define OMEGA_NEW_THREAD(POINTER,CONSTRUCTOR) OMEGA_NEW(POINTER,CONSTRUCTOR)
 #endif
 
 #if defined(_WIN32_WCE)

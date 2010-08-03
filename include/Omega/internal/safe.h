@@ -345,7 +345,7 @@ namespace Omega
 								m_val = marshal_info<T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW(m_pVals,T[cbSize]);
+								OMEGA_NEW_THREAD(m_pVals,T[cbSize]);
 								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
 							}
@@ -401,7 +401,7 @@ namespace Omega
 								m_val = marshal_info<T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW(m_pVals,arr_type[cbSize]);
+								OMEGA_NEW_THREAD(m_pVals,arr_type[cbSize]);
 								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
 							}
@@ -460,7 +460,7 @@ namespace Omega
 								m_val = marshal_info<const T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW(m_pVals,T[cbSize]);
+								OMEGA_NEW_THREAD(m_pVals,T[cbSize]);
 								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
 							}
@@ -504,7 +504,7 @@ namespace Omega
 								m_val = marshal_info<const T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW(m_pVals,arr_type[cbSize]);
+								OMEGA_NEW_THREAD(m_pVals,arr_type[cbSize]);
 								for (size_t i=0; i<cbSize; ++i)
 									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
 							}

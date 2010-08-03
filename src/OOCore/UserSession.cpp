@@ -204,7 +204,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	// Read the string
 	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
-	OMEGA_NEW(buf,char[uLen]);
+	OMEGA_NEW_STACK(buf,char[uLen]);
 
 	local_socket->recv(buf,uLen,&err);
 	if (err)

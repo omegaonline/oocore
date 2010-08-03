@@ -119,6 +119,7 @@ void OOServer::MessageConnection::close()
 
 bool OOServer::MessageConnection::read()
 {
+	// This buffer is reused...
 	OOBase::Buffer* pBuffer = 0;
 	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
 	if (!pBuffer)

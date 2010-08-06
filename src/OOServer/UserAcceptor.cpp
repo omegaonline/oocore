@@ -218,16 +218,35 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-	const int NUM_ACES = 1;
+	PSID pSID;
+	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
+								  SECURITY_CREATOR_OWNER_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	}
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+
+	const int NUM_ACES = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
 
-	// Set full control for the Logon SID
-	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+	// Set full control for the creating process SID
+	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
 	ea[0].grfAccessMode = SET_ACCESS;
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
+
+	// Set full control for the Logon SID
+	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
@@ -235,7 +254,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
 	// Create a new security descriptor
-	m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	m_sa.nLength = sizeof(m_sa);
 	m_sa.bInheritHandle = FALSE;
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
 

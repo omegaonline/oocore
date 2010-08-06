@@ -125,37 +125,35 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 {
 #if defined(_WIN32)
 
-	void* TODO; // Remove network service access from the pipe
-
 	assert(!pipe_name.empty());
-
-	// Get the current process' user SID
-	OOBase::Win32::SmartHandle hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrSIDProcess = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
-	if (!ptrSIDProcess)
-		LOG_ERROR_RETURN(("GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	const int NUM_ACES  = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
 
-	// Set full control for the calling process SID
-	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
-	ea[0].grfAccessMode = GRANT_ACCESS;
+	PSID pSID;
+	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
+								  SECURITY_CREATOR_OWNER_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	}
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+
+	// Set full control for the creating process SID
+	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
+	ea[0].grfAccessMode = SET_ACCESS;
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDProcess->User.Sid;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
 
-	// Create a SID for the BUILTIN\Users group.
-	PSID pSID;
-	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
-	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
-								  SECURITY_BUILTIN_DOMAIN_RID,
-								  DOMAIN_ALIAS_RID_USERS,
-								  0, 0, 0, 0, 0, 0,
+	// Create a SID for the Local users group.
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_LOCAL_SID_AUTHORITY;
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
+								  SECURITY_LOCAL_RID,
+								  0, 0, 0, 0, 0, 0, 0,
 								  &pSID))
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
@@ -163,8 +161,8 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSID);
 
 	// Set read/write access
-	ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
-	ea[1].grfAccessMode = GRANT_ACCESS;
+	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	ea[1].grfAccessMode = SET_ACCESS;
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
@@ -176,7 +174,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
 	// Create a new security descriptor
-	m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	m_sa.nLength = sizeof(m_sa);
 	m_sa.bInheritHandle = FALSE;
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
 

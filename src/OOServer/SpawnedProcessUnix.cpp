@@ -210,7 +210,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 
 		if (!(pdir = opendir(str)))
 		{
-			LOG_ERROR(("opendir failed for %s %s",str,OOSvrBase::Logger::format_error(errno).c_str()));
+			LOG_ERROR(("opendir failed for %s %s",str,OOBase::system_error_text(errno).c_str()));
 			return;
 		}
 
@@ -243,7 +243,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 
 		OOSvrBase::pw_info pw(our_uid);
 		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()),false);
 
 		// Prompt for continue...
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
@@ -259,7 +259,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 	if (child_id == -1)
 	{
 		// Error
-		LOG_ERROR_RETURN(("fork() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text(errno).c_str()),false);
 	}
 	else if (child_id == 0)
 	{
@@ -276,28 +276,28 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 			OOSvrBase::pw_info pw(m_uid);
 			if (!pw)
 			{
-				LOG_ERROR(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+				LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()));
 				exit(errno);
 			}
 
 			// Set our gid...
 			if (setgid(pw->pw_gid) != 0)
 			{
-				LOG_ERROR(("setgid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+				LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text(errno).c_str()));
 				exit(errno);
 			}
 
 			// Init our groups...
 			if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 			{
-				LOG_ERROR(("initgroups() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+				LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text(errno).c_str()));
 				exit(errno);
 			}
 
 			// Stop being priviledged!
 			if (setuid(m_uid) != 0)
 			{
-				LOG_ERROR(("setuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+				LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text(errno).c_str()));
 				exit(errno);
 			}
 		}
@@ -345,7 +345,7 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	// Get file info
 	struct stat sb;
 	if (stat(pszFName,&sb) != 0)
-		LOG_ERROR_RETURN(("stat() failed!",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("stat() failed!",OOBase::system_error_text(errno).c_str()),false);
 
 	int mode = -1;
 	if (bRead && !bWrite)
@@ -378,7 +378,7 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 		// Get the suppied user's group see if that is the same as the file's group
 		OOSvrBase::pw_info pw(m_uid);
 		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed!",OOSvrBase::Logger::format_error(errno).c_str()),false);
+			LOG_ERROR_RETURN(("getpwuid() failed!",OOBase::system_error_text(errno).c_str()),false);
 
 		// Is the file's gid the same as the specified user's
 		if (pw->pw_gid == sb.st_gid)
@@ -415,7 +415,7 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 
 	OOSvrBase::pw_info pw(m_uid);
 	if (!pw)
-		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()),false);
 
 	if (strUsersDir.empty())
 		strHive = strSysDir + "users/";
@@ -456,7 +456,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 			if (!pw)
 			{
 				if (errno)
-					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
+					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
 				else
 					LOG_ERROR_RETURN(("There is no account for the user '%s'",i->second.c_str()),(SpawnedProcess*)0);
 			}
@@ -468,7 +468,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
 
 	// Wrap fd[0]
 	OOBase::POSIX::LocalSocket sock(fd[0],"");
@@ -478,7 +478,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (err != 0)
 	{
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("fcntl() failed: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 	}
 
 	// Alloc a new SpawnedProcess
@@ -516,7 +516,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Create an async socket wrapper
 	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,&sock);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 
 	// Attach the async socket to the message connection
 	ptrMC->attach(pAsync);
@@ -557,7 +557,7 @@ void Root::Manager::accept_client(OOBase::Socket* pSocket)
 			OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,pSocket);
 			if (err != 0)
 			{
-				LOG_ERROR(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()));
+				LOG_ERROR(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()));
 				return;
 			}
 

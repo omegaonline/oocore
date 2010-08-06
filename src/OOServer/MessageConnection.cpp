@@ -130,7 +130,7 @@ bool OOServer::MessageConnection::read()
 	if (err != 0)
 	{
 		pBuffer->release();
-		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOBase::system_error_text(err).c_str()),false);
 	}
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
@@ -152,7 +152,7 @@ bool OOServer::MessageConnection::read()
 	pSocket->release();
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
@@ -161,7 +161,7 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
 		close();
 		return;
 	}
@@ -215,7 +215,7 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 		err = header.last_error();
 		if (err != 0)
 		{
-			LOG_ERROR(("Corrupt header: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Corrupt header: %s",OOBase::system_error_text(err).c_str()));
 			break;
 		}
 
@@ -284,7 +284,7 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 		if (err != 0)
 		{
 			bSuccess = false;
-			LOG_ERROR(("Out of buffer space: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Out of buffer space: %s",OOBase::system_error_text(err).c_str()));
 		}
 		else
 		{
@@ -292,7 +292,7 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 			if (err != 0)
 			{
 				bSuccess = false;
-				LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+				LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
 			}
 
 			if (bRelease)
@@ -317,7 +317,7 @@ bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 
 	int err = pSocket->write(pBuffer);
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	pSocket->release();
 
@@ -328,7 +328,7 @@ void OOServer::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, 
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()));
 		close();
 	}
 }
@@ -427,7 +427,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Check the destination
 	bool bRoute = true;
@@ -488,7 +488,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 		// Did everything make sense?
 		err = input.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+			LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err).c_str()),false);
 
 		// Attach input
 		msg->m_payload = input;
@@ -610,7 +610,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		// Did everything make sense?
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Corrupt message: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Corrupt message: %s",OOBase::system_error_text(err).c_str()));
 		else if (type == Message_t::Request)
 		{
 			// Set deadline
@@ -811,7 +811,7 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("Corrupt input: %s",OOBase::system_error_text(err).c_str()));
 	else
 	{
 		if (input.buffer()->length() > 0)
@@ -1134,7 +1134,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
 		else
 		{
 			if (type == Message_t::Request)
@@ -1205,7 +1205,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
 		return;
 	}
 
@@ -1243,7 +1243,7 @@ void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>&
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
 		return;
 	}
 
@@ -1310,7 +1310,7 @@ bool OOServer::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBas
 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	return (queue_message(msg) == io_result::success);
 }
@@ -1477,7 +1477,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
+			LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
 
 		// Route it correctly...
 		return queue_message(msg);
@@ -1534,7 +1534,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 
 	int err = header.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
 
 	// Update the total length
 	header.replace(header.buffer()->length(),msg_len_point);

@@ -71,7 +71,7 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 	int err = 0;
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
@@ -88,7 +88,7 @@ bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
 	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
 	
 	if (err != 0)
-		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
 	err = pSocket->close_on_exec();
 	if (err != 0)
@@ -103,7 +103,7 @@ bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
 	err = pSocket->recv(version);
 	if (err != 0)
 	{
-		LOG_WARNING(("Root::ClientAcceptor::on_accept: receive failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_WARNING(("Root::ClientAcceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
 		pSocket->close();
 		return true;
 	}

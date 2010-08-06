@@ -341,7 +341,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 
 	pSocket->recv(buf,uLen,&err);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
 
 	strPipe = buf;
 
@@ -355,7 +355,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 
 	err = pSocket->send(channel_id);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);
 
 	return channel_id;
 }
@@ -367,7 +367,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 	if (request.last_error() != 0)
 	{
-		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::format_error(request.last_error()).c_str()));
+		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error()).c_str()));
 		return;
 	}
 

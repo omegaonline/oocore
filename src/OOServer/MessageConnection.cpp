@@ -445,7 +445,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(dest_channel_id);
+			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(dest_channel_id);
 			if (i == m_mapChannelIds.end())
 				return true;
 
@@ -774,7 +774,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 		{
 			// Always route upstream, and/or follow routing rules
 			if (i->first != channel_id && i->first != src_channel_id &&
@@ -972,7 +972,7 @@ void OOServer::MessageHandler::stop_request_threads()
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
 			if (i->second->m_usage_count > 0)
 				i->second->m_msg_queue.pulse();
@@ -1029,7 +1029,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(from_channel_id);
+			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(from_channel_id);
 			if (i == m_mapChannelIds.end())
 			{
 				// Channel has gone!
@@ -1154,7 +1154,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 		// Unblock all waiting threads
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
 			if (i->second->m_usage_count > 0)
 				i->second->m_msg_queue.pulse();
@@ -1481,7 +1481,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
+		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(actual_dest_channel_id);
 		if (i == m_mapChannelIds.end())
 			return io_result::channel_closed;
 

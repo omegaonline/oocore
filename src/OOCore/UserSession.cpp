@@ -530,7 +530,7 @@ int OOCore::UserSession::run_read_loop()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Tell all worker threads that we are done with them...
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
 		i->second->m_msg_queue.close();
 	}
@@ -592,7 +592,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 		j->second->process_channel_close(closed_channel_id);
 	}
 		
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
 		if (i->second->m_usage_count > 0)
 			i->second->m_msg_queue.pulse();
@@ -610,7 +610,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		OOBase::SmartPtr<Compartment> ptrCompt;
-		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i != m_mapCompartments.end())
 			ptrCompt = i->second;
 
@@ -870,7 +870,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::SmartPtr<Compartment> ptrCompt;
-	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->second;
 
@@ -995,7 +995,7 @@ OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint1
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i = m_mapCompartments.find(id);
 	if (i == m_mapCompartments.end())
 		throw Remoting::IChannelClosedException::Create();
 
@@ -1058,7 +1058,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!

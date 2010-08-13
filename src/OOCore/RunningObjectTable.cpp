@@ -207,7 +207,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 
 	std::vector<uint32_t> revoke_list;
 	string_t strOid = oid.cast<string_t>();
-	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid;++i)
+	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::const_iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid;++i)
 	{
 		if (i->second->second.m_flags & search_flags)
 		{

@@ -474,7 +474,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::POSIX::LocalSocket sock(fd[0],"");
 
 	// Add FD_CLOEXEC to fd[0]
-	int err = OOBase::POSIX::fcntl_addfd(fd[0],FD_CLOEXEC);
+	int err = OOBase::BSD::set_close_on_exec(fd[0],true);
 	if (err != 0)
 	{
 		::close(fd[1]);

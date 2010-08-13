@@ -137,7 +137,7 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	int fd = atoi(strPipe.c_str());
 
 	// Add FD_CLOEXEC to fd
-	int err = OOBase::POSIX::fcntl_addfd(fd,FD_CLOEXEC);
+	int err = OOBase::BSD::set_close_on_exec(fd,true);
 	if (err != 0)
 	{
 		::close(fd);

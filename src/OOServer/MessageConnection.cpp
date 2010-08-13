@@ -519,7 +519,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
 		}
 
-		if (deadline <= OOBase::gettimeofday())
+		if (deadline <= OOBase::timeval_t::gettimeofday())
 			return true;
 
 		// Reset the buffer all the way to the start
@@ -909,7 +909,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 	}
 	else
 	{
-		size_t waiting = m_waiting_threads.value();
+		size_t waiting = m_waiting_threads;
 
 		res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 
@@ -1037,7 +1037,7 @@ void OOServer::MessageHandler::stop_request_threads()
 
 		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
-			if (i->second->m_usage_count.value() > 0)
+			if (i->second->m_usage_count > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}
@@ -1219,7 +1219,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
-			if (i->second->m_usage_count.value() > 0)
+			if (i->second->m_usage_count > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}
@@ -1556,7 +1556,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	}
 
 	// Check the timeout
-	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::gettimeofday())
+	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
 		return io_result::timedout;
 
 	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);

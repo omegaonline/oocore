@@ -165,7 +165,7 @@ void OOCore::Compartment::process_request(const Message* pMsg, const OOBase::tim
 	uint32_t timeout = 0;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		if (deadline <= now)
 			return;
 

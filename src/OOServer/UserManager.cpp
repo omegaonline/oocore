@@ -476,7 +476,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)
 		{
-			OOBase::timeval_t now = OOBase::gettimeofday();
+			OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 			if (deadline <= now)
 				return;
 
@@ -491,7 +491,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		{
 			if (deadline != OOBase::timeval_t::MaxTime)
 			{
-				if (deadline <= OOBase::gettimeofday())
+				if (deadline <= OOBase::timeval_t::gettimeofday())
 					return;
 			}
 

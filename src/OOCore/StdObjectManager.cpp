@@ -199,7 +199,7 @@ namespace
 
 uint32_t StdCallContext::Timeout()
 {
-	OOBase::timeval_t now = OOBase::gettimeofday();
+	OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 	if (m_cc.m_deadline <= now)
 		return 0;
 
@@ -211,7 +211,7 @@ uint32_t StdCallContext::Timeout()
 
 bool_t StdCallContext::HasTimedOut()
 {
-	return (m_cc.m_deadline <= OOBase::gettimeofday());
+	return (m_cc.m_deadline <= OOBase::timeval_t::gettimeofday());
 }
 
 uint32_t StdCallContext::SourceId()

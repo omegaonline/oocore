@@ -346,9 +346,9 @@ void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
 
 		countdown.update();
 	}
-	while (usage.value() == 0 && wait != OOBase::timeval_t::Zero);
+	while (usage == 0 && wait != OOBase::timeval_t::Zero);
 
-	if (usage.value() == 0)
+	if (usage == 0)
 	{
 		// This incoming request may not be processed for some time...
 		void* TICKET_91;    // Alert!
@@ -494,7 +494,7 @@ int OOCore::UserSession::run_read_loop()
 			std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
 			if (i != m_mapThreadContexts.end())
 			{
-				size_t waiting = i->second->m_usage_count.value();
+				size_t waiting = i->second->m_usage_count;
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
@@ -509,7 +509,7 @@ int OOCore::UserSession::run_read_loop()
 			// Cannot have a response to 0 thread!
 			if (msg->m_type == Message::Request)
 			{
-				size_t waiting = m_usage_count.value();
+				size_t waiting = m_usage_count;
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
@@ -769,7 +769,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, c
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
 
@@ -804,7 +804,7 @@ void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t se
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
 
@@ -1046,7 +1046,7 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pT
 
 	if (pTimeout)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		OOBase::timeval_t deadline = pContext->m_deadline;
 		if (*pTimeout > 0)
 		{

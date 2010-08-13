@@ -91,7 +91,7 @@ namespace
 			LocalFree(pszSid);
 		}
 
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		ssPipe << "-" << now.tv_usec();
 		strPipe = ssPipe.str();
 

@@ -61,27 +61,14 @@
 
 #include "MessageConnection.h"
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket) :
 		m_pHandler(pHandler),
-		m_pSocket(0),
+		m_ptrSocket(ptrSocket),
 		m_channel_id(0)
 {
-}
+	assert(m_ptrSocket);
 
-OOServer::MessageConnection::~MessageConnection()
-{
-	if (m_pSocket)
-		m_pSocket->release();
-}
-
-void OOServer::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	if (m_pSocket)
-		m_pSocket->release();
-
-	m_pSocket = pSocket;
+	m_ptrSocket->bind_handler(this);
 }
 
 void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
@@ -95,23 +82,12 @@ void OOServer::MessageConnection::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	OOSvrBase::AsyncSocket* pSocket = 0;
-	if (m_pSocket)
-	{
-		pSocket = m_pSocket;
-		m_pSocket = 0;
-	}
-
+	m_ptrSocket->shutdown(true,true);
+	
 	Omega::uint32_t prev_channel = m_channel_id;
 	m_channel_id = 0;
 
 	guard.release();
-
-	if (pSocket)
-	{
-		pSocket->close();
-		pSocket->release();
-	}
 
 	if (prev_channel)
 		m_pHandler->channel_closed(prev_channel,0);
@@ -121,43 +97,20 @@ bool OOServer::MessageConnection::read()
 {
 	// This buffer is reused...
 	OOBase::Buffer* pBuffer = 0;
-	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
+	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	// Swap out the buffer
-	int err = pBuffer->reset(OOBase::CDRStream::MaxAlignment);
-	if (err != 0)
-	{
-		pBuffer->release();
-		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOBase::system_error_text(err).c_str()),false);
-	}
-
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	if (!m_pSocket)
-	{
-		pBuffer->release();
-		return false;
-	}
-
-	OOSvrBase::AsyncSocket* pSocket = m_pSocket;
-	pSocket->addref();
-
-	guard.release();
-
-	err = pSocket->read(pBuffer);
-
+	int err = m_ptrSocket->async_recv(pBuffer);
 	pBuffer->release();
-	pSocket->release();
-
+	
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
 
-void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
+void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
 {
 	if (err != 0)
 	{
@@ -166,10 +119,7 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 		return;
 	}
 
-	// Mark the read point
-	size_t mark_rd = buffer->mark_rd_ptr();
-	const char* mark_rd_ptr = buffer->rd_ptr();
-
+	const size_t header_len = 2 * sizeof(Omega::uint32_t);
 	size_t read_more = 0;
 	bool bSuccess = false;
 	bool bRelease = false;
@@ -178,13 +128,16 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 	for (;;)
 	{
 		// See if we have enough to work out the header...
-		if (buffer->length() < 2 * sizeof(Omega::uint32_t))
+		if (buffer->length() < header_len)
 		{
 			read_more = buffer->space();
 			bSuccess = true;
 			break;
 		}
 
+		// Mark the read point
+		size_t mark_rd = buffer->mark_rd_ptr();
+		
 		OOBase::CDRStream header(buffer);
 
 		// Read the payload specific data
@@ -211,6 +164,7 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 		// If we add anything extra here to the header,
 		// it must be padded to 8 bytes.
+		// And update header_len above!
 
 		err = header.last_error();
 		if (err != 0)
@@ -218,9 +172,6 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 			LOG_ERROR(("Corrupt header: %s",OOBase::system_error_text(err).c_str()));
 			break;
 		}
-
-		// Subtract what we have already read
-		size_t header_len = (buffer->mark_rd_ptr() - mark_rd);
 
 		// Try to work out if we need to read more...
 		if (buffer->length() < (read_len - header_len))
@@ -237,38 +188,35 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 		// Create new stream and copy the contents
 		OOBase::CDRStream input(read_len);
-		memcpy(input.buffer()->wr_ptr(),mark_rd_ptr,read_len);
+
+		// Skip back to start
+		buffer->mark_rd_ptr(mark_rd);
+
+		memcpy(input.buffer()->wr_ptr(),buffer->rd_ptr(),read_len);
 		input.buffer()->wr_ptr(read_len);
 		input.buffer()->rd_ptr(header_len);
 		input.big_endian(header.big_endian());
 
 		// Give the handler a chance to process the message
-		if (!m_pHandler->parse_message(input,mark_rd))
+		if (!m_pHandler->parse_message(input))
 			break;
 
 		// Move the current rd_ptr
-		buffer->rd_ptr(read_len - header_len);
+		buffer->rd_ptr(read_len);
 
 		// Shuffle the rest of the buffer up to the top
-		if (buffer->length() > 0)
+		buffer->compact(OOBase::CDRStream::MaxAlignment);
+		if (buffer->length() == 0)
 		{
-			size_t len = buffer->length();
-			memmove(const_cast<char*>(mark_rd_ptr),buffer->rd_ptr(),len);
-			buffer->mark_rd_ptr(mark_rd);
-			buffer->mark_wr_ptr(mark_rd + len);
-		}
-		else
-		{
-			buffer->reset(OOBase::CDRStream::MaxAlignment);
-
 			// Don't keep oversize buffers alive
-			if (buffer->space() > m_default_buffer_size)
+			if (buffer->space() > m_default_buffer_size * 4)
 			{
 				OOBase::Buffer* new_buffer = 0;
-				OOBASE_NEW(new_buffer,OOBase::Buffer(m_default_buffer_size));
+				OOBASE_NEW(new_buffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
 				if (new_buffer)
 				{
-					new_buffer->reset(OOBase::CDRStream::MaxAlignment);
+					if (bRelease)
+						buffer->release();
 
 					// Just replace the buffer...
 					buffer = new_buffer;
@@ -288,17 +236,17 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 		}
 		else
 		{
-			err = pSocket->read(buffer);
+			err = pSocket->async_recv(buffer);
 			if (err != 0)
 			{
 				bSuccess = false;
 				LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
 			}
-
-			if (bRelease)
-				buffer->release();
 		}
 	}
+
+	if (bRelease)
+		buffer->release();
 
 	if (!bSuccess)
 		close();
@@ -306,25 +254,14 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	if (!m_pSocket)
-		return false;
-
-	OOSvrBase::AsyncSocket* pSocket = m_pSocket;
-	pSocket->addref();
-
-	guard.release();
-
-	int err = pSocket->write(pBuffer);
+	int err = m_ptrSocket->async_send(pBuffer);
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()),false);
-
-	pSocket->release();
 
 	return true;
 }
 
-void OOServer::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
+void OOServer::MessageConnection::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err != 0)
 	{
@@ -407,7 +344,7 @@ int OOServer::MessageHandler::request_worker_fn(void* pParam)
 	return static_cast<MessageHandler*>(pParam)->pump_requests();
 }
 
-bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_rd)
+bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 {
 	// Read the destination
 	Omega::uint32_t dest_channel_id = 0;
@@ -454,7 +391,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Reset the rd_ptr to the start...
-		input.buffer()->mark_rd_ptr(mark_rd);
+		input.buffer()->mark_rd_ptr(0);
 
 		// Ignore the return
 		call_async_function_i(&do_route_off,this,&input);
@@ -523,7 +460,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 			return true;
 
 		// Reset the buffer all the way to the start
-		input.buffer()->mark_rd_ptr(mark_rd);
+		input.buffer()->mark_rd_ptr(0);
 
 		return ptrMC->send(input.buffer());
 	}

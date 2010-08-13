@@ -29,14 +29,8 @@
 #endif
 
 User::Acceptor::Acceptor() :
-		m_pManager(0),
-		m_pSocket(0)
+		m_pManager(0)
 {
-}
-
-User::Acceptor::~Acceptor()
-{
-	delete m_pSocket;
 }
 
 std::string User::Acceptor::unique_name()
@@ -98,46 +92,43 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 
 void User::Acceptor::stop()
 {
-	if (m_pSocket)
-		m_pSocket->close();
+	m_pSocket = 0;
 }
 
-bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
+bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
 	// Make sure we delete any socket passed to us
-	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
+	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = pSocket;
 	
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
-	err = pSocket->close_on_exec();
-	if (err != 0)
-	{
-		LOG_WARNING(("User::Acceptor::on_accept: close_on_exec failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
-		pSocket->close();
-		return true;
-	}
-
 	// Read 4 bytes - This forces credential passing
-	Omega::uint32_t version = 0;
-	err = pSocket->recv(version);
+	OOBase::CDRStream stream;
+	err = pSocket->recv(stream.buffer(),4);
 	if (err != 0)
 	{
-		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
-		pSocket->close();
+		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
 		return true;
 	}
 
 	// Check the versions are correct
-	if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: version received too early: %u",version));
-		pSocket->close();
 		return true;
 	}
 
 	// Check to see if the connection came from a process with our uid
-	OOSvrBase::AsyncLocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	err = pSocket->get_uid(uid);
+	if (err != 0)
+	{
+		LOG_WARNING(("User::Acceptor::on_accept: get_uid failure: %s",OOBase::system_error_text(err).c_str()));
+		return true;
+	}
+
 	bool bOk = false;
 
 #if defined(_WIN32)
@@ -148,29 +139,17 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	// Get our Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-	{
-		err = GetLastError();
-		pSocket->close();
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
-	}
-
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
+	
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(uid,TokenGroupsAndPrivileges));
 	if (!pStats1)
-	{
-		err = GetLastError();
-		pSocket->close();
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
-	}
-
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
+	
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenGroupsAndPrivileges));
 	if (!pStats2)
-	{
-		err = GetLastError();
-		pSocket->close();
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
-	}
-
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
+	
 	// Compare...
 	bOk = (pStats1->SidCount==pStats2->SidCount &&
 			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
@@ -190,13 +169,11 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	if (!bOk)
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: attempt to connect by invalid user"));
-		pSocket->close();
 		return true;
 	}
 
-	if (!m_pManager->on_accept(pSocket))
-		pSocket->close();
-
+	m_pManager->on_accept(ptrSocket);
+		
 	// Keep accepting, whatever...
 	return true;
 }

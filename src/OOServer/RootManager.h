@@ -55,7 +55,7 @@ namespace Root
 
 		int run();
 
-		void accept_client(OOSvrBase::AsyncLocalSocket* pSocket);
+		void accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
 
 	private:
 		Manager(const Manager&);
@@ -85,7 +85,7 @@ namespace Root
 		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC);
-		Omega::uint32_t bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe);
+		Omega::uint32_t bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe);
 		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t uid, UserProcess& user_process);
 

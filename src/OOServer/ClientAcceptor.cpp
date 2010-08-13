@@ -42,14 +42,8 @@
 #endif
 
 Root::ClientAcceptor::ClientAcceptor() :
-		m_pManager(0),
-		m_pSocket(0)
+		m_pManager(0)
 {
-}
-
-Root::ClientAcceptor::~ClientAcceptor()
-{
-	delete m_pSocket;
 }
 
 bool Root::ClientAcceptor::start(Manager* pManager)
@@ -78,45 +72,36 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 
 void Root::ClientAcceptor::stop()
 {
-	if (m_pSocket)
-		m_pSocket->close();
+	m_pSocket = 0;
 }
 
-bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
+bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
 	// Make sure we delete any socket passed to us
-	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
 	
 	if (err != 0)
 		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
-	err = pSocket->close_on_exec();
-	if (err != 0)
-	{
-		LOG_WARNING(("Root::ClientAcceptor::on_accept: close_on_exec failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
-		pSocket->close();
-		return true;
-	}
-
 	// Read 4 bytes - This forces credential passing
-	Omega::uint32_t version = 0;
-	err = pSocket->recv(version);
+	OOBase::CDRStream stream;
+
+	err = ptrSocket->recv(stream.buffer(),4);
 	if (err != 0)
 	{
 		LOG_WARNING(("Root::ClientAcceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
-		pSocket->close();
 		return true;
 	}
 
 	// Check the versions are correct
-	if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 	{
 		LOG_WARNING(("Root::ClientAcceptor::on_accept: unsupported version received: %u",version));
-		pSocket->close();
 		return true;
 	}
 
-	m_pManager->accept_client(pSocket);
+	m_pManager->accept_client(ptrSocket);
 
 	return true;
 }

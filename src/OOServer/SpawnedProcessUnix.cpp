@@ -514,7 +514,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 		return 0;
 
 	// Create an async socket wrapper
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,&sock);
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_local_socket(ptrMC,&err,&sock);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 
@@ -554,7 +554,7 @@ void Root::Manager::accept_client(OOBase::Socket* pSocket)
 		{
 			// Create an async socket wrapper
 			int err = 0;
-			OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,pSocket);
+			OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_local_socket(ptrMC,&err,pSocket);
 			if (err != 0)
 			{
 				LOG_ERROR(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()));

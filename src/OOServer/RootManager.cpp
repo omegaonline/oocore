@@ -323,37 +323,45 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	return channel_id;
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe)
 {
-	int err = pSocket->send(m_sandbox_channel);
+	OOBase::CDRStream stream;
+	if (!stream.write(m_sandbox_channel))
+		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+
+	int err = ptrSocket->send(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);
+		
+	stream.reset();
 
-	size_t uLen = 0;
-	err = pSocket->recv(uLen);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
-
-	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
-	OOBASE_NEW(buf,char[uLen]);
-	if (!buf)
-		LOG_ERROR_RETURN(("Out of memory"),0);
-
-	pSocket->recv(buf,uLen,&err);
+	err = ptrSocket->recv(stream.buffer());
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
 
-	strPipe = buf;
+	if (!stream.read(strPipe))
+		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
 
-	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this));
+	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this,ptrSocket));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),0);
 
 	Omega::uint32_t channel_id = register_channel(ptrMC,0);
 	if (!channel_id)
+	{
+		ptrMC->close();
 		return 0;
+	}
 
-	err = pSocket->send(channel_id);
+	stream.reset();
+
+	if (!stream.write(channel_id))
+	{
+		ptrMC->close();
+		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+	}
+	
+	err = ptrSocket->async_send(stream.buffer());
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);
 

@@ -974,20 +974,18 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (!WaitForConnect(hPipe))
 		return 0;
 
-	// Bootstrap the user process...
-	OOBase::Win32::LocalSocket sock(hPipe.detach());
-	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
-	if (!channel_id)
-		return 0;
-
-	// Create an async socket wrapper
+	// Connect up
 	int err = 0;
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,&sock);
+	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = Proactor::instance()->attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 
-	// Attach the async socket to the message connection
-	ptrMC->attach(pAsync);
+	hPipe.detach();
+
+	// Bootstrap the user process...
+	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
+	if (!channel_id)
+		return 0;
 
 	return pSpawn;
 }

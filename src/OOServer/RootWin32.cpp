@@ -277,12 +277,12 @@ bool Root::Manager::load_config()
 	}
 }
 
-void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket)
+void Root::Manager::accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket)
 {
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	int err = pSocket->get_uid(uid);
+	int err = ptrSocket->get_uid(uid);
 	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::Win32::FormatMessage(err)));
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::Win32::FormatMessage(err).c_str()));
 	else
 	{
 		// Make sure the handle is closed
@@ -291,11 +291,11 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket)
 		UserProcess user_process;
 		if (get_user_process(uid,user_process))
 		{
-			void* TODO; // This can be async...
-
-			Omega::uint32_t uLen = static_cast<Omega::uint32_t>(user_process.strPipe.length()+1);
-			if (pSocket->send(uLen) == 0)
-				pSocket->send(user_process.strPipe.c_str(),uLen);
+			OOBase::CDRStream stream;
+			if (!stream.write(user_process.strPipe))
+				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::Win32::FormatMessage(stream.last_error()).c_str()));
+			else
+				ptrSocket->send(stream.buffer());
 		}
 
 		// Socket will be closed when it drops out of scope

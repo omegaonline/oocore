@@ -29,14 +29,8 @@
 #endif
 
 User::Acceptor::Acceptor() :
-		m_pManager(0),
-		m_pSocket(0)
+		m_pManager(0)
 {
-}
-
-User::Acceptor::~Acceptor()
-{
-	delete m_pSocket;
 }
 
 std::string User::Acceptor::unique_name()
@@ -75,7 +69,7 @@ std::string User::Acceptor::unique_name()
 #endif
 
 	// Add the current time...
-	ssPipe << "-" << OOBase::gettimeofday().tv_usec();
+	ssPipe << "-" << OOBase::timeval_t::gettimeofday().tv_usec();
 
 	return ssPipe.str();
 }
@@ -91,53 +85,50 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 	int err = 0;
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
 
 void User::Acceptor::stop()
 {
-	if (m_pSocket)
-		m_pSocket->close();
+	m_pSocket = 0;
 }
 
-bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
+bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
 	// Make sure we delete any socket passed to us
-	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
+	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = pSocket;
 	
 	if (err != 0)
-		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-
-	err = pSocket->close_on_exec();
-	if (err != 0)
-	{
-		LOG_WARNING(("User::Acceptor::on_accept: close_on_exec failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
-		pSocket->close();
-		return true;
-	}
+		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Read 4 bytes - This forces credential passing
-	Omega::uint32_t version = 0;
-	err = pSocket->recv(version);
+	OOBase::CDRStream stream;
+	err = pSocket->recv(stream.buffer(),4);
 	if (err != 0)
 	{
-		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOSvrBase::Logger::format_error(err).c_str()));
-		pSocket->close();
+		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
 		return true;
 	}
 
 	// Check the versions are correct
-	if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: version received too early: %u",version));
-		pSocket->close();
 		return true;
 	}
 
 	// Check to see if the connection came from a process with our uid
-	OOSvrBase::AsyncLocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	err = pSocket->get_uid(uid);
+	if (err != 0)
+	{
+		LOG_WARNING(("User::Acceptor::on_accept: get_uid failure: %s",OOBase::system_error_text(err).c_str()));
+		return true;
+	}
+
 	bool bOk = false;
 
 #if defined(_WIN32)
@@ -148,29 +139,17 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	// Get our Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-	{
-		err = GetLastError();
-		pSocket->close();
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
-	}
-
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
+	
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(uid,TokenGroupsAndPrivileges));
 	if (!pStats1)
-	{
-		err = GetLastError();
-		pSocket->close();
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
-	}
-
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
+	
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenGroupsAndPrivileges));
 	if (!pStats2)
-	{
-		err = GetLastError();
-		pSocket->close();
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage(err).c_str()),true);
-	}
-
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
+	
 	// Compare...
 	bOk = (pStats1->SidCount==pStats2->SidCount &&
 			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
@@ -190,13 +169,11 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	if (!bOk)
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: attempt to connect by invalid user"));
-		pSocket->close();
 		return true;
 	}
 
-	if (!m_pManager->on_accept(pSocket))
-		pSocket->close();
-
+	m_pManager->on_accept(ptrSocket);
+		
 	// Keep accepting, whatever...
 	return true;
 }
@@ -218,16 +195,35 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-	const int NUM_ACES = 1;
+	PSID pSID;
+	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
+								  SECURITY_CREATOR_OWNER_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	}
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+
+	const int NUM_ACES = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
 
-	// Set full control for the Logon SID
-	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+	// Set full control for the creating process SID
+	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
 	ea[0].grfAccessMode = SET_ACCESS;
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
+
+	// Set full control for the Logon SID
+	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
@@ -235,7 +231,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
 	// Create a new security descriptor
-	m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	m_sa.nLength = sizeof(m_sa);
 	m_sa.bInheritHandle = FALSE;
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
 

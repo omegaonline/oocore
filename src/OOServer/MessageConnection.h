@@ -38,13 +38,12 @@ namespace OOServer
 {
 	class MessageHandler;
 
-	class MessageConnection : public OOSvrBase::IOHandler<OOSvrBase::AsyncLocalSocket>
+	class MessageConnection : public OOSvrBase::IOHandler
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler);
-		virtual ~MessageConnection();
-
-		void attach(OOSvrBase::AsyncSocket* pSocket);
+		MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket);
+		virtual ~MessageConnection() {}
+		
 		void set_channel_id(Omega::uint32_t channel_id);
 
 		void close();
@@ -55,16 +54,16 @@ namespace OOServer
 		MessageConnection(const MessageConnection&);
 		MessageConnection& operator = (const MessageConnection&);
 
-		OOBase::SpinLock        m_lock;
-		MessageHandler*         m_pHandler;
-		OOSvrBase::AsyncSocket* m_pSocket;
-		Omega::uint32_t         m_channel_id;
+		OOBase::SpinLock                         m_lock;
+		MessageHandler*                          m_pHandler;
+		OOBase::SmartPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
+		Omega::uint32_t                          m_channel_id;
 
-		static const size_t     m_default_buffer_size = 8000;
+		static const size_t     m_default_buffer_size = 1024;
 
-		virtual void on_recv(OOSvrBase::AsyncLocalSocket* pSocket, OOBase::Buffer* buffer, int err);
-		virtual void on_sent(OOSvrBase::AsyncLocalSocket* pSocket, OOBase::Buffer* buffer, int err);
-		virtual void on_closed(OOSvrBase::AsyncLocalSocket* pSocket);
+		virtual void on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
+		virtual void on_sent(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
+		virtual void on_closed(OOSvrBase::AsyncSocket* pSocket);
 	};
 
 	struct Message_t
@@ -102,7 +101,7 @@ namespace OOServer
 
 	public:
 		int pump_requests(const OOBase::timeval_t* wait = 0, bool bOnce = false);
-		bool parse_message(OOBase::CDRStream& input, size_t mark_rd);
+		bool parse_message(OOBase::CDRStream& input);
 		bool call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream);
 
 		struct io_result

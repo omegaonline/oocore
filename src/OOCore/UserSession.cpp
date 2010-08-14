@@ -46,6 +46,8 @@ OOCore::UserSession::~UserSession()
 
 IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,string_t>& args)
 {
+	void* TODO; // Use the lock
+
 	UserSession* pThis = USER_SESSION::instance();
 
 	// Don't double init...
@@ -95,7 +97,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 		do
 		{
 			m_stream = OOBase::Socket::connect_local(strPipe,&err,&wait);
-			if (m_stream)
+			if (!err)
 				break;
 
 			// We ignore the error, and try again until we timeout
@@ -103,7 +105,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 		}
 		while (wait != OOBase::timeval_t::Zero);
 
-		if (!m_stream)
+		if (err)
 			OMEGA_THROW(err);
 
 		// Send version information
@@ -125,11 +127,16 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 	OOBase::SmartPtr<Compartment> ptrZeroCompt;
 	OMEGA_NEW(ptrZeroCompt,Compartment(this,0));
 
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(0,ptrZeroCompt));
-
-	guard.release();
+		m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(0,ptrZeroCompt));
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 
 	// Remove standalone support eventually...
 	void* TODO;
@@ -190,6 +197,8 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	}
 	bStandalone = false;
 
+	OOBase::CDRStream ostream;
+
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 	err = local_socket->send(version);
@@ -204,13 +213,13 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	// Read the string
 	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
-	OMEGA_NEW(buf,char[uLen]);
+	OMEGA_NEW_STACK(buf,char[uLen]);
 
 	local_socket->recv(buf,uLen,&err);
 	if (err)
 		OMEGA_THROW(err);
 
-	return std::string(buf);
+	return std::string(buf,uLen);
 
 #else
 
@@ -223,6 +232,8 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 void OOCore::UserSession::term()
 {
+	void* TODO; // Use the lock
+
 	UserSession* pThis = USER_SESSION::instance();
 	if (pThis->m_initcount != 0 && --pThis->m_initcount == 0)
 	{
@@ -242,12 +253,8 @@ void OOCore::UserSession::term_i()
 		m_nIPSCookie = 0;
 	}
 
-	// Shut down the socket...
-	if (m_stream)
-		m_stream->close();
-
-	// Wait for the io worker thread to finish
-	m_worker_thread.join();
+	// Close all singletons
+	close_singletons_i();
 
 	// Close all compartments
 	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
@@ -256,8 +263,15 @@ void OOCore::UserSession::term_i()
 	}
 	m_mapCompartments.clear();
 
-	// Close all singletons
-	close_singletons_i();
+	// Shutdown the socket...
+	if (m_stream)
+		m_stream->shutdown(true,true);
+	
+	// Wait for the io worker thread to finish
+	m_worker_thread.join();
+
+	// And clear the socket...
+	m_stream = 0;
 
 	// Unload the OOSvrLite dll if loaded
 	m_lite_dll.unload();
@@ -323,15 +337,7 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
 {
-	try
-	{
-		return static_cast<UserSession*>(pParam)->run_read_loop();
-	}
-	catch (std::exception& e)
-	{
-		OOBase_CallCriticalFailure(e.what());
-		return -1;
-	}
+	return static_cast<UserSession*>(pParam)->run_read_loop();
 }
 
 void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
@@ -346,9 +352,9 @@ void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
 
 		countdown.update();
 	}
-	while (usage.value() == 0 && wait != OOBase::timeval_t::Zero);
+	while (usage == 0 && wait != OOBase::timeval_t::Zero);
 
-	if (usage.value() == 0)
+	if (usage == 0)
 	{
 		// This incoming request may not be processed for some time...
 		void* TICKET_91;    // Alert!
@@ -365,7 +371,7 @@ int OOCore::UserSession::run_read_loop()
 	{
 		// Read the header
 		header.reset();
-		err = m_stream->recv_buffer(header.buffer(),s_initial_read);
+		err = m_stream->recv(header.buffer(),s_initial_read);
 		if (err != 0)
 			break;
 
@@ -405,7 +411,7 @@ int OOCore::UserSession::run_read_loop()
 			OOBase_OutOfMemory();
 
 		// Issue another read for the rest of the data
-		err = m_stream->recv_buffer(msg->m_payload.buffer(),nReadLen);
+		err = m_stream->recv(msg->m_payload.buffer(),nReadLen);
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
 
@@ -494,7 +500,7 @@ int OOCore::UserSession::run_read_loop()
 			std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
 			if (i != m_mapThreadContexts.end())
 			{
-				size_t waiting = i->second->m_usage_count.value();
+				size_t waiting = i->second->m_usage_count;
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
@@ -509,7 +515,7 @@ int OOCore::UserSession::run_read_loop()
 			// Cannot have a response to 0 thread!
 			if (msg->m_type == Message::Request)
 			{
-				size_t waiting = m_usage_count.value();
+				size_t waiting = m_usage_count;
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
@@ -521,19 +527,17 @@ int OOCore::UserSession::run_read_loop()
 		}
 	}
 
-	m_stream->close();
-
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	m_stream = 0;
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Tell all worker threads that we are done with them...
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
-		i->second->m_msg_queue.pulse();
+		i->second->m_msg_queue.close();
 	}
 
-	// Stop the message queue
+	guard.release();
+
+	// Stop the default message queue
 	m_default_msg_queue.close();
 
 	return err;
@@ -543,13 +547,6 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 {
 	for (;;)
 	{
-		// Check we still have a receiving stream
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-		if (!m_stream)
-			throw Remoting::IChannelClosedException::Create();
-
-		guard.release();
-
 		// Increment the consumers...
 		++m_usage_count;
 
@@ -560,10 +557,13 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		// Decrement the consumers...
 		--m_usage_count;
 
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+			return false;
+
 		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
-			// We didn't process anything
-			return false;
+			// Its gone... user process has terminated
+			throw Remoting::IChannelClosedException::Create();
 		}
 
 		if (msg->m_type == Message::Request)
@@ -585,31 +585,18 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 {
 	// Pass on the message to the compartments
-	try
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
-		{
-			j->second->process_channel_close(closed_channel_id);
-		}
+		j->second->process_channel_close(closed_channel_id);
 	}
-	catch (std::exception&)
-	{}
-
-	try
+		
+	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
-		// Unblock all waiting threads
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-		{
-			if (i->second->m_usage_count.value() > 0)
-				i->second->m_msg_queue.pulse();
-		}
+		if (i->second->m_usage_count > 0)
+			i->second->m_msg_queue.pulse();
 	}
-	catch (std::exception&)
-	{}
 }
 
 OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
@@ -622,27 +609,16 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const
 		// Check if the channel we are waiting on is still valid...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		// Check we still have a receiving stream
-		if (!m_stream)
-		{
-			// Compartment has gone!
-			throw Remoting::IChannelClosedException::Create();
-		}
-
 		OOBase::SmartPtr<Compartment> ptrCompt;
-		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
-		if (i == m_mapCompartments.end())
-		{
-			// Compartment has gone!
-			throw Remoting::IChannelClosedException::Create();
-		}
-		ptrCompt = i->second;
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		if (i != m_mapCompartments.end())
+			ptrCompt = i->second;
 
 		guard.release();
 
-		if (!ptrCompt->is_channel_open(from_channel_id))
+		if (!ptrCompt || !ptrCompt->is_channel_open(from_channel_id))
 		{
-			// Channel has gone!
+			// Channel has closed
 			throw Remoting::IChannelClosedException::Create();
 		}
 
@@ -668,7 +644,12 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const
 				break;
 			}
 		}
-		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::pulsed)
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+		{
+			// I/O socket has closed
+			throw Remoting::IChannelClosedException::Create();
+		}
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
 			break;
 	}
 
@@ -769,23 +750,29 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, c
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
 
 		wait = deadline - now;
 	}
 
-	// Check we still have a receiving stream
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-	if (!m_stream)
-		throw Remoting::IChannelClosedException::Create();
-
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
 	if (err != 0)
-		OMEGA_THROW(err);
-
-	guard.release();
+	{
+		switch (err)
+		{
+#if defined(_WIN32)
+		case ERROR_NO_DATA:
+#else
+		case ENOTCONN:
+#endif
+			throw Remoting::IChannelClosedException::Create();
+		
+		default:
+			OMEGA_THROW(err);
+		}
+	}
 
 	if (attribs & TypeInfo::Asynchronous)
 		return 0;
@@ -804,17 +791,12 @@ void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t se
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
 
 		wait = deadline - now;
 	}
-
-	// Check we still have a receiving stream
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-	if (!m_stream)
-		throw Remoting::IChannelClosedException::Create();
 
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
 	if (err != 0)
@@ -888,7 +870,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::SmartPtr<Compartment> ptrCompt;
-	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->second;
 
@@ -1013,7 +995,7 @@ OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint1
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i = m_mapCompartments.find(id);
 	if (i == m_mapCompartments.end())
 		throw Remoting::IChannelClosedException::Create();
 
@@ -1046,7 +1028,7 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pT
 
 	if (pTimeout)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		OOBase::timeval_t deadline = pContext->m_deadline;
 		if (*pTimeout > 0)
 		{
@@ -1076,7 +1058,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!

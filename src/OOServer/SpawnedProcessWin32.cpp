@@ -91,33 +91,35 @@ namespace
 			LocalFree(pszSid);
 		}
 
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		ssPipe << "-" << now.tv_usec();
 		strPipe = ssPipe.str();
-
-		// Get the current processes user SID
-		OOBase::Win32::SmartHandle hProcessToken;
-		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
-
-		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrSIDProcess = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
-		if (!ptrSIDProcess)
-			LOG_ERROR_RETURN(("GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
 
 		// Create security descriptor
 		static const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
 
-		// Set full control for the calling process SID
-		ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+		PSID pSID;
+		SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+		if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
+									  SECURITY_CREATOR_OWNER_RID,
+									  0, 0, 0, 0, 0, 0, 0,
+									  &pSID))
+		{
+			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
+		}
+		OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+
+		// Set full control for the creating process SID
+		ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
 		ea[0].grfAccessMode = SET_ACCESS;
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDProcess->User.Sid;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
 
-		// Set full control for Specific user.
-		ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+		// Set read/write control for Specific logon.
+		ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
 		ea[1].grfAccessMode = SET_ACCESS;
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
@@ -131,7 +133,7 @@ namespace
 
 		// Create security attribute
 		SECURITY_ATTRIBUTES sa;
-		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		sa.nLength = sizeof(sa);
 		sa.bInheritHandle = FALSE;
 		sa.lpSecurityDescriptor = sd.descriptor();
 
@@ -530,7 +532,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	std::wstring strCmdLine = szPath;
 	strCmdLine += L" --fork-slave=" + OOBase::from_native(strPipe.c_str());
 
-	OOBase::SmartPtr<wchar_t> ptrCmdLine = 0;
+	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > ptrCmdLine = 0;
 	OOBASE_NEW(ptrCmdLine,wchar_t[strCmdLine.size()+1]);
 	if (!ptrCmdLine)
 		LOG_ERROR_RETURN(("PathRemoveFileSpecW failed: %s",OOBase::Win32::FormatMessage(ERROR_OUTOFMEMORY).c_str()),ERROR_OUTOFMEMORY);
@@ -972,20 +974,18 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (!WaitForConnect(hPipe))
 		return 0;
 
+	// Connect up
+	int err = 0;
+	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = Proactor::instance()->attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
+
+	hPipe.detach();
+
 	// Bootstrap the user process...
-	OOBase::Win32::LocalSocket sock(hPipe.detach());
-	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
+	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
 		return 0;
-
-	// Create an async socket wrapper
-	int err = 0;
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,&sock);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
-
-	// Attach the async socket to the message connection
-	ptrMC->attach(pAsync);
 
 	return pSpawn;
 }

@@ -199,7 +199,7 @@ namespace
 
 uint32_t StdCallContext::Timeout()
 {
-	OOBase::timeval_t now = OOBase::gettimeofday();
+	OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 	if (m_cc.m_deadline <= now)
 		return 0;
 
@@ -211,7 +211,7 @@ uint32_t StdCallContext::Timeout()
 
 bool_t StdCallContext::HasTimedOut()
 {
-	return (m_cc.m_deadline <= OOBase::gettimeofday());
+	return (m_cc.m_deadline <= OOBase::timeval_t::gettimeofday());
 }
 
 uint32_t StdCallContext::SourceId()
@@ -355,7 +355,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				// Look up the stub
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-				std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
+				std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::const_iterator i=m_mapStubIds.find(stub_id);
 				if (i==m_mapStubIds.end())
 					OMEGA_THROW("Bad stub id");
 
@@ -722,7 +722,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<uint32_t,ObjectImpl<Proxy>*>::iterator i=m_mapProxyIds.find(proxy_id);
+			std::map<uint32_t,ObjectImpl<Proxy>*>::const_iterator i=m_mapProxyIds.find(proxy_id);
 			if (i != m_mapProxyIds.end())
 				ptrProxy = i->second;
 		}

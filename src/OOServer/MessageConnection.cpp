@@ -61,27 +61,14 @@
 
 #include "MessageConnection.h"
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket) :
 		m_pHandler(pHandler),
-		m_pSocket(0),
+		m_ptrSocket(ptrSocket),
 		m_channel_id(0)
 {
-}
+	assert(m_ptrSocket);
 
-OOServer::MessageConnection::~MessageConnection()
-{
-	if (m_pSocket)
-		m_pSocket->release();
-}
-
-void OOServer::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	if (m_pSocket)
-		m_pSocket->release();
-
-	m_pSocket = pSocket;
+	m_ptrSocket->bind_handler(this);
 }
 
 void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
@@ -95,23 +82,12 @@ void OOServer::MessageConnection::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	OOSvrBase::AsyncSocket* pSocket = 0;
-	if (m_pSocket)
-	{
-		pSocket = m_pSocket;
-		m_pSocket = 0;
-	}
-
+	m_ptrSocket->shutdown(true,true);
+	
 	Omega::uint32_t prev_channel = m_channel_id;
 	m_channel_id = 0;
 
 	guard.release();
-
-	if (pSocket)
-	{
-		pSocket->close();
-		pSocket->release();
-	}
 
 	if (prev_channel)
 		m_pHandler->channel_closed(prev_channel,0);
@@ -119,56 +95,31 @@ void OOServer::MessageConnection::close()
 
 bool OOServer::MessageConnection::read()
 {
+	// This buffer is reused...
 	OOBase::Buffer* pBuffer = 0;
-	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
+	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	// Swap out the buffer
-	int err = pBuffer->reset(OOBase::CDRStream::MaxAlignment);
-	if (err != 0)
-	{
-		pBuffer->release();
-		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-	}
-
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	if (!m_pSocket)
-	{
-		pBuffer->release();
-		return false;
-	}
-
-	OOSvrBase::AsyncSocket* pSocket = m_pSocket;
-	pSocket->addref();
-
-	guard.release();
-
-	err = pSocket->read(pBuffer);
-
+	int err = m_ptrSocket->async_recv(pBuffer);
 	pBuffer->release();
-	pSocket->release();
-
+	
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
 
-void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
+void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
 		close();
 		return;
 	}
 
-	// Mark the read point
-	size_t mark_rd = buffer->mark_rd_ptr();
-	const char* mark_rd_ptr = buffer->rd_ptr();
-
+	const size_t header_len = 2 * sizeof(Omega::uint32_t);
 	size_t read_more = 0;
 	bool bSuccess = false;
 	bool bRelease = false;
@@ -177,13 +128,16 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 	for (;;)
 	{
 		// See if we have enough to work out the header...
-		if (buffer->length() < 2 * sizeof(Omega::uint32_t))
+		if (buffer->length() < header_len)
 		{
 			read_more = buffer->space();
 			bSuccess = true;
 			break;
 		}
 
+		// Mark the read point
+		size_t mark_rd = buffer->mark_rd_ptr();
+		
 		OOBase::CDRStream header(buffer);
 
 		// Read the payload specific data
@@ -210,16 +164,14 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 		// If we add anything extra here to the header,
 		// it must be padded to 8 bytes.
+		// And update header_len above!
 
 		err = header.last_error();
 		if (err != 0)
 		{
-			LOG_ERROR(("Corrupt header: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Corrupt header: %s",OOBase::system_error_text(err).c_str()));
 			break;
 		}
-
-		// Subtract what we have already read
-		size_t header_len = (buffer->mark_rd_ptr() - mark_rd);
 
 		// Try to work out if we need to read more...
 		if (buffer->length() < (read_len - header_len))
@@ -236,38 +188,35 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 		// Create new stream and copy the contents
 		OOBase::CDRStream input(read_len);
-		memcpy(input.buffer()->wr_ptr(),mark_rd_ptr,read_len);
+
+		// Skip back to start
+		buffer->mark_rd_ptr(mark_rd);
+
+		memcpy(input.buffer()->wr_ptr(),buffer->rd_ptr(),read_len);
 		input.buffer()->wr_ptr(read_len);
 		input.buffer()->rd_ptr(header_len);
 		input.big_endian(header.big_endian());
 
 		// Give the handler a chance to process the message
-		if (!m_pHandler->parse_message(input,mark_rd))
+		if (!m_pHandler->parse_message(input))
 			break;
 
 		// Move the current rd_ptr
-		buffer->rd_ptr(read_len - header_len);
+		buffer->rd_ptr(read_len);
 
 		// Shuffle the rest of the buffer up to the top
-		if (buffer->length() > 0)
+		buffer->compact(OOBase::CDRStream::MaxAlignment);
+		if (buffer->length() == 0)
 		{
-			size_t len = buffer->length();
-			memmove(const_cast<char*>(mark_rd_ptr),buffer->rd_ptr(),len);
-			buffer->mark_rd_ptr(mark_rd);
-			buffer->mark_wr_ptr(mark_rd + len);
-		}
-		else
-		{
-			buffer->reset(OOBase::CDRStream::MaxAlignment);
-
 			// Don't keep oversize buffers alive
-			if (buffer->space() > m_default_buffer_size)
+			if (buffer->space() > m_default_buffer_size * 4)
 			{
 				OOBase::Buffer* new_buffer = 0;
-				OOBASE_NEW(new_buffer,OOBase::Buffer(m_default_buffer_size));
+				OOBASE_NEW(new_buffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
 				if (new_buffer)
 				{
-					new_buffer->reset(OOBase::CDRStream::MaxAlignment);
+					if (bRelease)
+						buffer->release();
 
 					// Just replace the buffer...
 					buffer = new_buffer;
@@ -283,21 +232,21 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 		if (err != 0)
 		{
 			bSuccess = false;
-			LOG_ERROR(("Out of buffer space: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Out of buffer space: %s",OOBase::system_error_text(err).c_str()));
 		}
 		else
 		{
-			err = pSocket->read(buffer);
+			err = pSocket->async_recv(buffer);
 			if (err != 0)
 			{
 				bSuccess = false;
-				LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+				LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
 			}
-
-			if (bRelease)
-				buffer->release();
 		}
 	}
+
+	if (bRelease)
+		buffer->release();
 
 	if (!bSuccess)
 		close();
@@ -305,29 +254,18 @@ void OOServer::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	if (!m_pSocket)
-		return false;
-
-	OOSvrBase::AsyncSocket* pSocket = m_pSocket;
-	pSocket->addref();
-
-	guard.release();
-
-	int err = pSocket->write(pBuffer);
+	int err = m_ptrSocket->async_send(pBuffer);
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-
-	pSocket->release();
+		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
 
-void OOServer::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
+void OOServer::MessageConnection::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()));
 		close();
 	}
 }
@@ -406,7 +344,7 @@ int OOServer::MessageHandler::request_worker_fn(void* pParam)
 	return static_cast<MessageHandler*>(pParam)->pump_requests();
 }
 
-bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_rd)
+bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 {
 	// Read the destination
 	Omega::uint32_t dest_channel_id = 0;
@@ -426,7 +364,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Check the destination
 	bool bRoute = true;
@@ -453,7 +391,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Reset the rd_ptr to the start...
-		input.buffer()->mark_rd_ptr(mark_rd);
+		input.buffer()->mark_rd_ptr(0);
 
 		// Ignore the return
 		call_async_function_i(&do_route_off,this,&input);
@@ -487,7 +425,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 		// Did everything make sense?
 		err = input.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+			LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err).c_str()),false);
 
 		// Attach input
 		msg->m_payload = input;
@@ -507,7 +445,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(dest_channel_id);
+			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(dest_channel_id);
 			if (i == m_mapChannelIds.end())
 				return true;
 
@@ -518,11 +456,11 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input, size_t ma
 			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
 		}
 
-		if (deadline <= OOBase::gettimeofday())
+		if (deadline <= OOBase::timeval_t::gettimeofday())
 			return true;
 
 		// Reset the buffer all the way to the start
-		input.buffer()->mark_rd_ptr(mark_rd);
+		input.buffer()->mark_rd_ptr(0);
 
 		return ptrMC->send(input.buffer());
 	}
@@ -609,7 +547,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		// Did everything make sense?
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Corrupt message: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Corrupt message: %s",OOBase::system_error_text(err).c_str()));
 		else if (type == Message_t::Request)
 		{
 			// Set deadline
@@ -810,7 +748,7 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("Corrupt input: %s",OOBase::system_error_text(err).c_str()));
 	else
 	{
 		if (input.buffer()->length() > 0)
@@ -836,7 +774,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 		{
 			// Always route upstream, and/or follow routing rules
 			if (i->first != channel_id && i->first != src_channel_id &&
@@ -908,7 +846,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 	}
 	else
 	{
-		size_t waiting = m_waiting_threads.value();
+		size_t waiting = m_waiting_threads;
 
 		res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 
@@ -1034,9 +972,9 @@ void OOServer::MessageHandler::stop_request_threads()
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
-			if (i->second->m_usage_count.value() > 0)
+			if (i->second->m_usage_count > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}
@@ -1091,7 +1029,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(from_channel_id);
+			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(from_channel_id);
 			if (i == m_mapChannelIds.end())
 			{
 				// Channel has gone!
@@ -1133,7 +1071,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+			LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
 		else
 		{
 			if (type == Message_t::Request)
@@ -1204,7 +1142,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
 		return;
 	}
 
@@ -1216,9 +1154,9 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 		// Unblock all waiting threads
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{
-			if (i->second->m_usage_count.value() > 0)
+			if (i->second->m_usage_count > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}
@@ -1242,7 +1180,7 @@ void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>&
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
 		return;
 	}
 
@@ -1309,7 +1247,7 @@ bool OOServer::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBas
 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	return (queue_message(msg) == io_result::success);
 }
@@ -1476,7 +1414,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
+			LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
 
 		// Route it correctly...
 		return queue_message(msg);
@@ -1533,7 +1471,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 
 	int err = header.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
 
 	// Update the total length
 	header.replace(header.buffer()->length(),msg_len_point);
@@ -1543,7 +1481,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
+		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(actual_dest_channel_id);
 		if (i == m_mapChannelIds.end())
 			return io_result::channel_closed;
 
@@ -1555,7 +1493,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	}
 
 	// Check the timeout
-	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::gettimeofday())
+	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
 		return io_result::timedout;
 
 	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);

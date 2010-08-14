@@ -44,8 +44,8 @@ namespace Root
 	{
 	public:
 		ClientAcceptor();
-		virtual ~ClientAcceptor();
-
+		virtual ~ClientAcceptor() {}
+		
 		bool start(Manager* pManager);
 		void stop();
 
@@ -55,10 +55,9 @@ namespace Root
 		ClientAcceptor(const ClientAcceptor&);
 		ClientAcceptor& operator = (const ClientAcceptor&);
 
-		Manager*        m_pManager;
-		OOBase::Socket* m_pSocket;
-		std::string     m_pipe_name;
-
+		Manager*                         m_pManager;
+		OOBase::SmartPtr<OOBase::Socket> m_pSocket;
+		
 		bool init_security(const std::string& pipe_name);
 
 		SECURITY_ATTRIBUTES              m_sa;

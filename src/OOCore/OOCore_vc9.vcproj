@@ -65,8 +65,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\oobase\src\Win32\Debug"
+				AdditionalDependencies="ws2_32.lib shlwapi.lib rpcrt4.lib OOBased.lib"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="1"
@@ -216,7 +216,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
+				AdditionalDependencies="ws2_32.lib shlwapi.lib rpcrt4.lib OOBase.lib"
 				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release"
 			/>
 			<Tool

@@ -140,7 +140,7 @@ inline std::string Omega::string_t::ToUTF8() const
 	if (len > 128)
 	{
 		char* pszBuf = 0;
-		OMEGA_NEW(pszBuf,char[len]);
+		OMEGA_NEW_STACK(pszBuf,char[len]);
 		try
 		{
 			ToUTF8(pszBuf,len);
@@ -173,7 +173,7 @@ inline std::string Omega::string_t::ToNative() const
 	if (len > 128)
 	{
 		char* pszBuf = 0;
-		OMEGA_NEW(pszBuf,char[len]);
+		OMEGA_NEW_STACK(pszBuf,char[len]);
 		try
 		{
 			ToNative(pszBuf,len);

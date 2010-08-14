@@ -94,7 +94,7 @@ namespace OOCore
 		{
 			Omega::uint32_t len = pMessage->ReadValue(L"length").cast<Omega::uint32_t>();
 			OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
-			OMEGA_NEW(szBuf,Omega::byte_t[len]);
+			OMEGA_NEW_STACK(szBuf,Omega::byte_t[len]);
 			pMessage->ReadBytes(L"data",len,szBuf);
 		}
 

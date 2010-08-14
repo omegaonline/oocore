@@ -417,7 +417,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid);
+	std::multimap<guid_t,ti_t>::const_iterator i=m_ti_map.find(iid);
 	if (i != m_ti_map.end())
 	{
 		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstancePtr();

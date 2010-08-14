@@ -128,20 +128,20 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
+	OOBase::SmartPtr<OOSvrBase::AsyncSocket> local_socket = Proactor::instance()->connect_local_socket(strPipe,&err,&wait);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
 #else
 	// Use the passed fd
 	int fd = atoi(strPipe.c_str());
 
 	// Add FD_CLOEXEC to fd
-	int err = OOBase::POSIX::fcntl_addfd(fd,FD_CLOEXEC);
+	int err = OOBase::BSD::set_close_on_exec(fd,true);
 	if (err != 0)
 	{
 		::close(fd);
-		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("fcntl() failed: %s",OOBase::system_error_text(err).c_str()),false);
 	}
 
 	OOBase::POSIX::LocalSocket* pLocal = 0;
@@ -180,15 +180,15 @@ bool User::Manager::session_launch(const std::string& strPipe)
 
 	pid_t pid = getpid();
 	if (write(fd,&pid,sizeof(pid)) != sizeof(pid))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
 	if (write(fd,&uLen,sizeof(uLen)) != sizeof(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
 
 	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
 
 	// Done with the port...
 	close(fd);
@@ -197,17 +197,17 @@ bool User::Manager::session_launch(const std::string& strPipe)
 	int err = 0;
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local("/tmp/omegaonline",&err);
 	if (!local_socket)
-		LOG_ERROR_RETURN(("Failed to connect to ooserverd: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to connect to ooserverd: %s",OOBase::system_error_text(err).c_str()),false);
 
 	err = local_socket->close_on_exec();
 	if (err)
-		LOG_ERROR_RETURN(("close_on_exec failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("close_on_exec failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 	err = local_socket->send(version);
 	if (err)
-		LOG_ERROR_RETURN(("Failed to communicate with ooserverd: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to communicate with ooserverd: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Connect up
 	return handshake_root(local_socket,strNewPipe);
@@ -215,50 +215,54 @@ bool User::Manager::session_launch(const std::string& strPipe)
 #endif
 }
 
-bool User::Manager::handshake_root(OOBase::SmartPtr<OOBase::LocalSocket>& local_socket, const std::string& strPipe)
+bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& local_socket, const std::string& strPipe)
 {
+	OOBase::CDRStream stream;
+
 	// Read the sandbox channel
-	Omega::uint32_t sandbox_channel = 0;
-	int err = local_socket->recv(sandbox_channel);
+	int err = local_socket->recv(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+
+	Omega::uint32_t sandbox_channel = 0;
+	if (!stream.read(sandbox_channel))
+		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
 	// Set the sandbox flag
 	m_bIsSandbox = (sandbox_channel == 0);
 
 	// Then send back our port name
-	size_t uLen = strPipe.length()+1;
-	err = local_socket->send(uLen);
-	if (err == 0)
-		err = local_socket->send(strPipe.c_str(),uLen);
+	stream.reset();
+	if (!stream.write(strPipe))
+		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
+	err = local_socket->send(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Read our channel id
-	Omega::uint32_t our_channel = 0;
-	err = local_socket->recv(our_channel);
+	stream.reset();
+	err = local_socket->recv(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+
+	Omega::uint32_t our_channel = 0;
+	if (!stream.read(our_channel))
+		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
 	// Init our channel id
 	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
 
 	// Create a new MessageConnection
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this));
+	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this,local_socket));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
 	// Attach it to ourselves
 	if (register_channel(ptrMC,m_root_channel) == 0)
 		return false;
-
-	// Open the root connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,local_socket));
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-
+	
 	// Start I/O with root
 	if (!ptrMC->read())
 	{
@@ -267,13 +271,11 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOBase::LocalSocket>& local_
 	}
 
 	// Now bootstrap
-	OOBase::CDRStream bs;
-	bs.write(sandbox_channel);
-	bs.write(strPipe);
-	if (bs.last_error() != 0)
-		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOSvrBase::Logger::format_error(bs.last_error()).c_str()),false);
+	stream.reset();
+	if (!stream.write(sandbox_channel) || !stream.write(strPipe))
+		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
-	if (!call_async_function_i(&do_bootstrap,this,&bs))
+	if (!call_async_function_i(&do_bootstrap,this,&stream))
 		return false;
 
 	return true;
@@ -289,7 +291,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	input.read(strPipe);
 	if (input.last_error() != 0)
 	{
-		LOG_ERROR(("Failed to read bootstrap data: %s",OOSvrBase::Logger::format_error(input.last_error()).c_str()));
+		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error()).c_str()));
 		pThis->quit();
 	}
 	else
@@ -336,11 +338,11 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 	}
 }
 
-bool User::Manager::on_accept(OOBase::Socket* sock)
+bool User::Manager::on_accept(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket)
 {
 	// Create a new MessageConnection
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this));
+	OOBASE_NEW(ptrMC,OOServer::MessageConnection(this,ptrSocket));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -350,23 +352,16 @@ bool User::Manager::on_accept(OOBase::Socket* sock)
 		return false;
 
 	// Send the channel id...
-	int err = sock->send(channel_id);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+	OOBase::CDRStream stream;
+	if (!stream.write(channel_id))
+		LOG_ERROR_RETURN(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
-	// Attach the connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,static_cast<OOBase::LocalSocket*>(sock)));
+	int err = ptrSocket->async_send(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Start I/O
-	if (!ptrMC->read())
-	{
-		ptrMC->close();
-		return false;
-	}
-
-	return true;
+	return ptrMC->read();
 }
 
 void User::Manager::on_channel_closed(Omega::uint32_t channel)
@@ -428,7 +423,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
 	{
-		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::format_error(request.last_error()).c_str()));
+		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error()).c_str()));
 		return;
 	}
 
@@ -476,7 +471,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)
 		{
-			OOBase::timeval_t now = OOBase::gettimeofday();
+			OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 			if (deadline <= now)
 				return;
 
@@ -491,7 +486,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		{
 			if (deadline != OOBase::timeval_t::MaxTime)
 			{
-				if (deadline <= OOBase::gettimeofday())
+				if (deadline <= OOBase::timeval_t::gettimeofday())
 					return;
 			}
 

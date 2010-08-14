@@ -30,7 +30,6 @@
 #include <OOBase/CDRStream.h>
 #include <OOBase/Queue.h>
 #include <OOBase/Thread.h>
-#include <OOBase/PosixSocket.h>
 
 #include <OOSvrBase/Proactor.h>
 #include <OOSvrBase/Logger.h>

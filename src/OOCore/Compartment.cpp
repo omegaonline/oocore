@@ -118,7 +118,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint
 	// Lookup existing..
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::const_iterator i=m_mapChannels.find(src_channel_id);
 	if (i != m_mapChannels.end())
 		return i->second;
 
@@ -165,7 +165,7 @@ void OOCore::Compartment::process_request(const Message* pMsg, const OOBase::tim
 	uint32_t timeout = 0;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
 		if (deadline <= now)
 			return;
 
@@ -202,7 +202,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(compartment_id);
+	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::const_iterator i=m_mapCompartments.find(compartment_id);
 	if (i != m_mapCompartments.end())
 		ptrChannel = i->second;
 

@@ -28,16 +28,16 @@ namespace User
 {
 	class Manager;
 
-	class Acceptor : public OOSvrBase::Acceptor
+	class Acceptor : public OOSvrBase::Acceptor<OOSvrBase::AsyncLocalSocket>
 	{
 	public:
 		Acceptor();
-		virtual ~Acceptor();
-
+		virtual ~Acceptor() {}
+		
 		bool start(Manager* pManager, const std::string& pipe_name);
 		void stop();
 
-		bool on_accept(OOBase::Socket* pSocket, int err);
+		bool on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err);
 
 		static std::string unique_name();
 
@@ -45,8 +45,8 @@ namespace User
 		Acceptor(const Acceptor&);
 		Acceptor& operator = (const Acceptor&);
 
-		Manager*        m_pManager;
-		OOBase::Socket* m_pSocket;
+		Manager*                         m_pManager;
+		OOBase::SmartPtr<OOBase::Socket> m_pSocket;
 
 		bool init_security(const std::string& pipe_name);
 

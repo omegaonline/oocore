@@ -120,6 +120,8 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 		return true;
 	}
 
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
+
 	// Check to see if the connection came from a process with our uid
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
 	err = pSocket->get_uid(uid);
@@ -129,48 +131,13 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 		return true;
 	}
 
-	bool bOk = false;
-
-#if defined(_WIN32)
-
-	// Make sure the handle is closed
-	OOBase::Win32::SmartHandle hUidToken(uid);
-
-	// Get our Logon SID
-	OOBase::Win32::SmartHandle hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
-	
-	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(uid,TokenGroupsAndPrivileges));
-	if (!pStats1)
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
-	
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenGroupsAndPrivileges));
-	if (!pStats2)
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),true);
-	
-	// Compare...
-	bOk = (pStats1->SidCount==pStats2->SidCount &&
-			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
-			pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
-			OOSvrBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
-			OOSvrBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
-			OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
-
-#elif defined(HAVE_UNISTD_H)
-
-	bOk = (getuid() == uid);
-
-#else
-#error Fix me!
-#endif
-
-	if (!bOk)
+	if (getuid() != uid)
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: attempt to connect by invalid user"));
 		return true;
 	}
+
+#endif
 
 	m_pManager->on_accept(ptrSocket);
 		

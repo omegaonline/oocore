@@ -42,7 +42,7 @@ namespace OOServer
 	{
 	public:
 		MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket);
-		virtual ~MessageConnection() {}
+		virtual ~MessageConnection();
 		
 		void set_channel_id(Omega::uint32_t channel_id);
 

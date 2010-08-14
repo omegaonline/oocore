@@ -71,6 +71,11 @@ OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const O
 	m_ptrSocket->bind_handler(this);
 }
 
+OOServer::MessageConnection::~MessageConnection()
+{
+	m_ptrSocket->shutdown(true,true);
+}
+
 void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);

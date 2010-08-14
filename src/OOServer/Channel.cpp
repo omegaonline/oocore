@@ -90,7 +90,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
-	if (!m_ptrMarshaller)
+	if (!ptrMarshaller)
 		throw Remoting::IChannelClosedException::Create();
 
 	guard.release();

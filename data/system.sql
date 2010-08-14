@@ -12,7 +12,7 @@ BEGIN TRANSACTION;
 		2,
 		'Sandbox',
 		'A key for the sandbox user',
-		0,6
+		1,6
 	);
 	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(

@@ -114,7 +114,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 		if (channel_id == m_sandbox_channel)
 		{
 			// Sandbox hive
-			strName = "Sandbox";
+			strName = "System/Sandbox";
 		}
 		else
 		{

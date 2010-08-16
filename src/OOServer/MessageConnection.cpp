@@ -432,10 +432,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 
 		// Route it correctly...
 		io_result::type res = queue_message(msg);
-		if (res == io_result::success || res == io_result::timedout)
-			return true;
-		else
-			return false;
+		return (res == io_result::success || res == io_result::timedout);
 	}
 	else
 	{
@@ -858,8 +855,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 		return io_result::timedout;
 	else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
 		return io_result::channel_closed;
-	else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
-		return io_result::failed;
 	else
 		return io_result::success;
 }
@@ -1054,8 +1049,11 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			ret = io_result::timedout;
 			break;
 		}
-		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+		{
+			ret = io_result::channel_closed;
 			break;
+		}
 
 		Omega::uint32_t recv_seq_no = 0;
 		msg->m_payload.read(recv_seq_no);

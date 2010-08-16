@@ -497,12 +497,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 			// Send it back...
 			OOServer::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
-			{
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
-
-				if (res == OOServer::MessageHandler::io_result::failed)
-					LOG_ERROR(("Response sending failed"));
-			}
 		}
 	}
 	catch (IException* pOuter)

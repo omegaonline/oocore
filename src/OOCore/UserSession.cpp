@@ -822,8 +822,8 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 	header.write(byte_t(1));     // version
 
 	// Write out the header length and remember where we wrote it
+	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
 	header.write(uint32_t(0));
-	size_t msg_len_point = header.buffer()->mark_wr_ptr() - sizeof(uint32_t);
 
 	header.write(dest_channel_id);
 	header.write(src_channel_id);
@@ -855,7 +855,7 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 	}
 
 	// Update the total length
-	header.replace(header.buffer()->length(),msg_len_point);
+	header.replace(header.buffer()->length(),msg_len_mark);
 
 	return header;
 }

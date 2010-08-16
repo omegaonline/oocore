@@ -1440,8 +1440,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.write(Omega::byte_t(1));  // version
 
 	// Write out the header length and remember where we wrote it
+	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
 	header.write(Omega::uint32_t(0));
-	size_t msg_len_point = header.buffer()->mark_wr_ptr() - sizeof(Omega::uint32_t);
+	
 
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
@@ -1472,7 +1473,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
 
 	// Update the total length
-	header.replace(header.buffer()->length(),msg_len_point);
+	header.replace(header.buffer()->length(),msg_len_mark);
 
 	OOBase::SmartPtr<MessageConnection> ptrMC;
 	try

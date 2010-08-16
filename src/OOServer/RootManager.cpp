@@ -335,10 +335,22 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncS
 		
 	stream.reset();
 
-	err = ptrSocket->recv(stream.buffer());
+	// We know a CDRStream writes strings as a 4 byte length followed by the character data
+	size_t mark = stream.buffer()->mark_rd_ptr();
+	err = ptrSocket->recv(stream.buffer(),4);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
 
+	Omega::uint32_t len = 0;
+	if (!stream.read(len))
+		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+
+	err = ptrSocket->recv(stream.buffer(),len);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
+
+	// Now reset rd_ptr and read the string
+	stream.buffer()->mark_rd_ptr(mark);
 	if (!stream.read(strPipe))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
 

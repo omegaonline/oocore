@@ -220,7 +220,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 	OOBase::CDRStream stream;
 
 	// Read the sandbox channel
-	int err = local_socket->recv(stream.buffer());
+	int err = local_socket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -242,7 +242,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 
 	// Read our channel id
 	stream.reset();
-	err = local_socket->recv(stream.buffer());
+	err = local_socket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 

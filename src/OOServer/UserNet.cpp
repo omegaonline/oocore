@@ -721,8 +721,6 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	// Check for duplicates
 	string_t strCanon = ptrEndpoint->Canonicalise(strEndpoint);
 	{
-		void* TICKET_100;
-
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
 		std::map<string_t,ObjectPtr<Remoting::IChannel> >::iterator i=m_mapRemoteChannels.find(strCanon);

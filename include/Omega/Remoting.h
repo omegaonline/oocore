@@ -172,7 +172,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IChannelSink, "{C395066A-05D1-45f2-95C5-272319CF1394}",
 
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,Send,3,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pMsg,(in),uint32_t,timeout))
+	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,0,Send,3,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pMsg,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Close,0,())
 )
 

@@ -59,8 +59,8 @@ namespace Omega
 		};
 
 		ICallContext* GetCallContext();
-
 		bool_t IsAlive(IObject* pObject);
+		uint32_t GetSource(IObject* pObject);
 
 		interface IObjectManager : public IObject
 		{
@@ -201,6 +201,12 @@ OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Remoting_IsAlive,1,((in),Omega::IO
 inline Omega::bool_t Omega::Remoting::IsAlive(Omega::IObject* pObject)
 {
 	return OOCore_Remoting_IsAlive(pObject);
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Remoting_GetSource,1,((in),Omega::IObject*,pObject))
+inline Omega::uint32_t Omega::Remoting::GetSource(Omega::IObject* pObject)
+{
+	return OOCore_Remoting_GetSource(pObject);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))

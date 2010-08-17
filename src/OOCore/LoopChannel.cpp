@@ -52,6 +52,7 @@ namespace
 		void UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
 		Remoting::IMessage* CreateMessage();
 		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0);
+		uint32_t GetSource();
 	};
 }
 
@@ -102,6 +103,11 @@ IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs,
 	return m_pChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 }
 
+uint32_t LoopMarshaller::GetSource()
+{
+	return m_pChannel->GetSource();
+}
+
 IObject* OOCore::LoopChannel::create(uint32_t channel_id, const guid_t& message_oid, const guid_t& iid)
 {
 	ObjectPtr<ObjectImpl<LoopChannel> > ptrChannel = ObjectImpl<LoopChannel>::CreateInstancePtr();
@@ -127,4 +133,9 @@ void OOCore::LoopChannel::GetManager(const guid_t& iid, IObject*& pObject)
 	ptrMarshaller->init(this);
 
 	pObject = ptrMarshaller->QueryInterface(iid);
+}
+
+uint32_t OOCore::LoopChannel::GetSource()
+{
+	return m_channel_id;
 }

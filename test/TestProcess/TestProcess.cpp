@@ -45,46 +45,7 @@ BEGIN_PROCESS_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(TestProcessImpl)
 END_PROCESS_OBJECT_MAP()
 
-static int install(int argc, char* argv[])
-{
-	try
-	{
-		Omega::string_t strSubsts;
-		if (argc == 3)
-			strSubsts = Omega::string_t(argv[2],false);
-		else
-			strSubsts = L"MODULE_PATH=" + Omega::string_t(argv[0],false);
-
-		if (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--install") == 0)
-		{
-#if !defined(_WIN32)
-			if (argc != 3) return -1;
-#endif
-
-			OTL::GetModule()->InstallObjects(true,true,strSubsts);
-			return EXIT_SUCCESS;
-		}
-		else if (strcmp(argv[1],"-u") == 0 || strcmp(argv[1],"--uninstall") == 0)
-		{
-			OTL::GetModule()->InstallObjects(false,true,strSubsts);
-			return EXIT_SUCCESS;
-		}
-		else
-		{
-			// Invalid argument
-			fprintf(stderr,"Invalid argument -%s\n",argv[1]);
-			return EXIT_FAILURE;
-		}
-	}
-	catch (Omega::IException* pE)
-	{
-		fprintf(stderr,"%ls\n",pE->GetDescription().c_str());
-		pE->Release();
-		return EXIT_FAILURE;
-	}
-}
-
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
@@ -96,14 +57,7 @@ int main(int argc, char* argv[])
 	int ret = EXIT_SUCCESS;
 	try
 	{
-		if (argc > 1)
-		{
-			ret = install(argc,argv);
-		}
-		else
-		{
-			OTL::GetModule()->Run();
-		}
+		OTL::GetModule()->Run();
 	}
 	catch (Omega::IException* pE)
 	{

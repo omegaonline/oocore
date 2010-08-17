@@ -448,12 +448,6 @@ namespace OTL
 			assert(false);
 		}
 
-		virtual void InstallObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
-		{
-			// Override this in a derived class, or do not call
-			assert(false);
-		}
-
 	protected:
 		ModuleBase() {}
 		virtual ~ModuleBase() {}

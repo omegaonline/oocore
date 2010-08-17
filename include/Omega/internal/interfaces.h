@@ -178,40 +178,6 @@ namespace Omega
 		};
 	}
 
-	namespace IO
-	{
-		interface IStream : public IObject
-		{
-			virtual void ReadBytes(uint32_t& cbBytes, byte_t* val) = 0;
-			virtual void WriteBytes(const uint32_t& cbBytes, const byte_t* val) = 0;
-		};
-
-		interface IAsyncStreamNotify : public IObject
-		{
-			virtual void OnOpened() = 0;
-			virtual void OnRead(uint32_t cbBytes, const byte_t* pData) = 0;
-			virtual void OnWritten(uint32_t cbBytes) = 0;
-			virtual void OnError(IException* pE) = 0;
-		};
-
-		IStream* OpenStream(const string_t& strEndpoint, IAsyncStreamNotify* pNotify = 0);
-	}
-
-	namespace Net
-	{
-		interface IConnectedStream : public IO::IStream
-		{
-			virtual string_t GetRemoteEndpoint() = 0;
-			virtual string_t GetLocalEndpoint() = 0;
-		};
-
-		// This may well change!!  You have been warned
-		interface IProtocolHandler : public IObject
-		{
-			virtual IConnectedStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
-		};
-	}
-
 	namespace TypeInfo
 	{
 		interface IProvideObjectInfo : public IObject
@@ -386,43 +352,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::IO, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}",
-
-	// Methods
-	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
-	OMEGA_METHOD_VOID(WriteBytes,2,((in),const uint32_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
-)
-
-OMEGA_DEFINE_INTERFACE
-(
-	Omega::IO, IAsyncStreamNotify, "{1E587515-AE98-45ef-9E74-497784169F38}",
-
-	// Methods
-	OMEGA_METHOD_VOID(OnOpened,0,())
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnWritten,1,((in),uint32_t,cbBytes))
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnError,1,((in),IException*,pE))
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Net, IConnectedStream, Omega::IO, IStream, "{C5C3AB92-9127-4bb5-9AA8-AA0953843E5A}",
-
-	// Methods
-	OMEGA_METHOD(string_t,GetRemoteEndpoint,0,())
-	OMEGA_METHOD(string_t,GetLocalEndpoint,0,())
-)
-
-OMEGA_DEFINE_INTERFACE
-(
-	Omega::Net, IProtocolHandler, "{76416648-0AFE-4474-BD8F-FEB033F17EAF}",
-
-	// Methods
-	OMEGA_METHOD(Net::IConnectedStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
-)
-
-OMEGA_DEFINE_INTERFACE
-(
 	Omega::TypeInfo, IProvideObjectInfo, "{F66A857D-C474-4c9e-B08B-68135AC8459E}",
 
 	// Methods
@@ -451,12 +380,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((
 inline Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
 {
 	return OOCore_IRegistryKey_OpenKey(key,flags);
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify));
-inline Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify)
-{
-	return OOCore_IO_OpenStream(strEndpoint,pNotify);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInterfaceInfo,2,((in),const Omega::guid_t&,iid,(in),Omega::IObject*,pObject));

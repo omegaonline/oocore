@@ -483,9 +483,10 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 
 		// Dec usage count
 		--m_waiting_threads;
-
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		
+		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
+			// Close any ended threads
 			try
 			{
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -511,22 +512,14 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				LOG_ERROR(("std::exception thrown %s",e.what()));
 			}
 
-			// If we were waiting, exit
-			if (wait)
+			// If we were waiting or closed, exit
+			if (wait || res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
 				return 0;
 
 			// Wait again...
 			continue;
 		}
-		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
-		{
-			return 0;
-		}
-		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
-		{
-			LOG_ERROR_RETURN(("Bounded queue popped unusually"),-1);
-		}
-
+		
 		// Read remaining message members
 		Omega::uint32_t seq_no = 0;
 		msg->m_payload.read(seq_no);

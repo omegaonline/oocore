@@ -1443,7 +1443,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
 	header.write(Omega::uint32_t(0));
 	
-
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
 

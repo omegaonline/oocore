@@ -154,10 +154,7 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
-		{
-			Omega::int64_t uSubKey;
-			err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
-		}
+			err = ptrHive->open_key(uKey,uKey,strSubKey,channel_id);
 	}
 
 	response.write(err);

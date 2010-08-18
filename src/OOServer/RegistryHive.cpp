@@ -193,7 +193,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 	return err;
 }
 
-int Registry::Hive::open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
+int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -202,7 +202,7 @@ int Registry::Hive::open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	return find_key(uParent,uKey,strSubKey,access_mask,channel_id);
 }
 
-int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
+int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 

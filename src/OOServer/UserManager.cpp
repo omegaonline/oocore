@@ -437,7 +437,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	{
 	case 0:
 	default:
-		response.write((int)EINVAL);
+		response.write(Omega::int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
 		break;
 	}

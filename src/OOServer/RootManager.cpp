@@ -451,7 +451,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		break;
 
 	default:
-		response.write(EINVAL);
+		response.write(Omega::int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %d",op_code));
 		break;
 	}

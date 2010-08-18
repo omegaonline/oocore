@@ -77,7 +77,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -107,7 +107,7 @@ bool_t Key::IsValue(const string_t& strName)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -137,7 +137,7 @@ any_t Key::GetValue(const string_t& strName)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -172,7 +172,7 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -197,7 +197,7 @@ string_t Key::GetDescription()
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -231,7 +231,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -263,7 +263,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -290,7 +290,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -344,7 +344,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 		if (!response)
 			OMEGA_THROW("No response from root");
 
-		int err = 0;
+		Omega::int32_t err = 0;
 		if (!response->read(err))
 			OMEGA_THROW(response->last_error());
 
@@ -391,7 +391,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -428,7 +428,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -474,7 +474,7 @@ std::set<Omega::string_t> Key::EnumValues()
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -531,7 +531,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -559,7 +559,7 @@ void Key::DeleteValue(const string_t& strName)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	int err = 0;
+	Omega::int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 

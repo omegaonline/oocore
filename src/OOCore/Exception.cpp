@@ -92,9 +92,11 @@ namespace OOCore
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),uint32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 {
-	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc);
+	std::string err = "Operating system error: " + OOBase::system_error_text(e);
+
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException(err.c_str(),pszFile,nLine,pszFunc);
 	ptrExcept->m_ptrCause.Attach(OOCore_ISystemException_Create_errno(e));
 
 	return ptrExcept.AddRef();

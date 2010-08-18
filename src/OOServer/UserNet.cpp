@@ -682,7 +682,7 @@ void User::RemoteChannel::Close()
 
 Remoting::IChannel* User::Manager::open_remote_channel(const string_t& strEndpoint)
 {
-	return USER_MANAGER::instance()->open_remote_channel_i(strEndpoint);
+	return s_instance->open_remote_channel_i(strEndpoint);
 }
 
 Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndpoint)
@@ -860,7 +860,7 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 
 Remoting::IChannelSink* User::Manager::open_server_sink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
 {
-	return USER_MANAGER::instance()->open_server_sink_i(message_oid,pSink);
+	return s_instance->open_server_sink_i(message_oid,pSink);
 }
 
 Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_oid, Remoting::IChannelSink* pSink)

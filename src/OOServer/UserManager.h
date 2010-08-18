@@ -51,9 +51,7 @@ namespace User
 		bool on_accept(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket);
 
 	private:
-		friend class OOBase::Singleton<Manager,User::Module>;
-		typedef OOBase::Singleton<Manager,User::Module> USER_MANAGER;
-
+		static Manager* s_instance; //  This is a poor-mans singleton
 		static const Omega::uint32_t m_root_channel = 0x80000000;
 
 		Manager();

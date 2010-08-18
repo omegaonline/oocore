@@ -60,15 +60,20 @@ using namespace Omega;
 using namespace OTL;
 
 // UserManager
+
+User::Manager* User::Manager::s_instance = 0;
+
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
 		m_nNextRemoteChannel(0)
 {
+	s_instance = this;
 }
 
 User::Manager::~Manager()
 {
+	s_instance = 0;
 }
 
 void User::Manager::run()
@@ -516,7 +521,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(Omega::
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
-	return USER_MANAGER::instance()->create_channel_i(src_channel_id,message_oid);
+	return s_instance->create_channel_i(src_channel_id,message_oid);
 }
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uint32_t src_channel_id, const guid_t& message_oid)

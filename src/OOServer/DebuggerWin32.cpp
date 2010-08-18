@@ -75,114 +75,117 @@
 
 #endif
 
-class MyMessageFilter : public IMessageFilter
+namespace
 {
-public:
-	MyMessageFilter() : m_refcount(1)
-	{}
-
-	ULONG STDMETHODCALLTYPE AddRef()
+	class MyMessageFilter : public IMessageFilter
 	{
-		return ++m_refcount;
-	}
+	public:
+		MyMessageFilter() : m_refcount(1)
+		{}
 
-	ULONG STDMETHODCALLTYPE Release()
-	{
-		ULONG ret = --m_refcount;
-		if (!ret)
-			delete this;
-		return ret;
-	}
-
-	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject)
-	{
-		if (iid == IID_IUnknown ||
-				iid == IID_IMessageFilter)
+		ULONG STDMETHODCALLTYPE AddRef()
 		{
-			*ppvObject = this;
-			return S_OK;
+			return ++m_refcount;
 		}
 
-		return E_NOINTERFACE;
-	}
-
-	DWORD STDMETHODCALLTYPE HandleInComingCall(DWORD /*dwCallType*/, HTASK /*threadIDCaller*/, DWORD /*dwTickCount*/, LPINTERFACEINFO /*lpInterfaceInfo*/)
-	{
-		return SERVERCALL_ISHANDLED;
-	}
-
-	DWORD STDMETHODCALLTYPE RetryRejectedCall(HTASK /*threadIDCallee*/, DWORD /*dwTickCount*/, DWORD dwRejectType)
-	{
-		if (dwRejectType == SERVERCALL_RETRYLATER)
+		ULONG STDMETHODCALLTYPE Release()
 		{
-			// Retry the thread call immediately if return >=0 &
-			// <100.
-			return 99;
+			ULONG ret = --m_refcount;
+			if (!ret)
+				delete this;
+			return ret;
 		}
-		// Too busy; cancel call.
-		return (DWORD)-1;
-	}
 
-	DWORD STDMETHODCALLTYPE MessagePending(HTASK /*threadIDCallee*/, DWORD /*dwTickCount*/, DWORD /*dwPendingType*/)
-	{
-		return PENDINGMSG_WAITDEFPROCESS;
-	}
-
-private:
-	ULONG m_refcount;
-};
-
-static bool AttachVSDebugger(DWORD our_pid)
-{
-	bool bRet = false;
-	HRESULT hr = CoInitialize(NULL);
-	if FAILED(hr)
-		return false;
-
-	try
-	{
-		MyMessageFilter* pFilter = new MyMessageFilter();
-		IMessageFilter* pPrev = 0;
-		hr = CoRegisterMessageFilter(pFilter,&pPrev);
-		if FAILED(hr)
-			throw _com_error(hr);
-		pFilter->Release();
-		if (pPrev)
-			pPrev->Release();
-
-		IUnknownPtr ptrUnk;
-		ptrUnk.GetActiveObject("VisualStudio.DTE." DTE_VER);
-		if (ptrUnk != NULL)
+		HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject)
 		{
-			EnvDTE::_DTEPtr ptrDTE = ptrUnk;
-
-			EnvDTE::ProcessesPtr ptrProcesses = ptrDTE->Debugger->LocalProcesses;
-			for (long i = 1; i <= ptrProcesses->Count; ++i)
+			if (iid == IID_IUnknown ||
+					iid == IID_IMessageFilter)
 			{
-				EnvDTE::ProcessPtr ptrProcess = ptrProcesses->Item(i);
-				if (ptrProcess->ProcessID == static_cast<long>(our_pid))
+				*ppvObject = this;
+				return S_OK;
+			}
+
+			return E_NOINTERFACE;
+		}
+
+		DWORD STDMETHODCALLTYPE HandleInComingCall(DWORD /*dwCallType*/, HTASK /*threadIDCaller*/, DWORD /*dwTickCount*/, LPINTERFACEINFO /*lpInterfaceInfo*/)
+		{
+			return SERVERCALL_ISHANDLED;
+		}
+
+		DWORD STDMETHODCALLTYPE RetryRejectedCall(HTASK /*threadIDCallee*/, DWORD /*dwTickCount*/, DWORD dwRejectType)
+		{
+			if (dwRejectType == SERVERCALL_RETRYLATER)
+			{
+				// Retry the thread call immediately if return >=0 &
+				// <100.
+				return 99;
+			}
+			// Too busy; cancel call.
+			return (DWORD)-1;
+		}
+
+		DWORD STDMETHODCALLTYPE MessagePending(HTASK /*threadIDCallee*/, DWORD /*dwTickCount*/, DWORD /*dwPendingType*/)
+		{
+			return PENDINGMSG_WAITDEFPROCESS;
+		}
+
+	private:
+		ULONG m_refcount;
+	};
+
+	bool AttachVSDebugger(DWORD our_pid)
+	{
+		bool bRet = false;
+		HRESULT hr = CoInitialize(NULL);
+		if FAILED(hr)
+			return false;
+
+		try
+		{
+			MyMessageFilter* pFilter = new MyMessageFilter();
+			IMessageFilter* pPrev = 0;
+			hr = CoRegisterMessageFilter(pFilter,&pPrev);
+			if FAILED(hr)
+				throw _com_error(hr);
+			pFilter->Release();
+			if (pPrev)
+				pPrev->Release();
+
+			IUnknownPtr ptrUnk;
+			ptrUnk.GetActiveObject("VisualStudio.DTE." DTE_VER);
+			if (ptrUnk != NULL)
+			{
+				EnvDTE::_DTEPtr ptrDTE = ptrUnk;
+
+				EnvDTE::ProcessesPtr ptrProcesses = ptrDTE->Debugger->LocalProcesses;
+				for (long i = 1; i <= ptrProcesses->Count; ++i)
 				{
-					ptrProcess->Attach();
-					bRet = true;
-					break;
+					EnvDTE::ProcessPtr ptrProcess = ptrProcesses->Item(i);
+					if (ptrProcess->ProcessID == static_cast<long>(our_pid))
+					{
+						ptrProcess->Attach();
+						bRet = true;
+						break;
+					}
 				}
 			}
 		}
+		catch (_com_error&)
+		{
+		}
+
+		CoUninitialize();
+
+		return bRet;
 	}
-	catch (_com_error&)
+
+	void PromptForDebugger(DWORD pid)
 	{
+		std::ostringstream out;
+		out << "Attach the debugger to process id " << pid << " now if you want!";
+		MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 	}
-
-	CoUninitialize();
-
-	return bRet;
-}
-
-static void PromptForDebugger(DWORD pid)
-{
-	std::ostringstream out;
-	out << "Attach the debugger to process id " << pid << " now if you want!";
-	MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
 #endif

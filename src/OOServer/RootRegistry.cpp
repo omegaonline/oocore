@@ -65,7 +65,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
-		return EIO;
+		return request.last_error();
 
 	if (nType == 0)
 	{
@@ -152,7 +152,7 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 	{
 		std::string strSubKey;
 		if (!request.read(strSubKey))
-			err = EIO;
+			err = request.last_error();
 		else
 		{
 			Omega::int64_t uSubKey;
@@ -174,12 +174,12 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 	{
 		std::string strSubKey;
 		if (!request.read(strSubKey))
-			err = EIO;
+			err = request.last_error();
 		else
 		{
 			Omega::uint16_t flags = 0;
 			if (!request.read(flags))
-				err = EIO;
+				err = request.last_error();
 			else
 				err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,Registry::Hive::inherit_checks,channel_id);
 		}
@@ -203,7 +203,7 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	{
 		std::string strSubKey;
 		if (!request.read(strSubKey))
-			err = EIO;
+			err = request.last_error();
 		else
 			err = ptrHive->delete_key(uKey,strSubKey,channel_id);
 	}
@@ -235,7 +235,7 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 	{
 		std::string strValue;
 		if (!request.read(strValue))
-			err = EIO;
+			err = request.last_error();
 		else
 			err = ptrHive->value_exists(uKey,strValue,channel_id);
 	}
@@ -254,7 +254,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	{
 		std::string strValue;
 		if (!request.read(strValue))
-			err = EIO;
+			err = request.last_error();
 		else
 			err = ptrHive->get_value(uKey,strValue,channel_id,val);
 	}
@@ -273,12 +273,12 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	{
 		std::string strValue;
 		if (!request.read(strValue))
-			err = EIO;
+			err = request.last_error();
 		else
 		{
 			std::string val;
 			if (!request.read(val))
-				err = EIO;
+				err = request.last_error();
 			else
 				err = ptrHive->set_value(uKey,strValue,channel_id,val.c_str());
 		}
@@ -296,7 +296,7 @@ void Root::Manager::registry_set_description(Omega::uint32_t channel_id, OOBase:
 	{
 		std::string strDesc;
 		if (!request.read(strDesc))
-			err = EIO;
+			err = request.last_error();
 		else
 			err = ptrHive->set_description(uKey,channel_id,strDesc);
 	}
@@ -313,12 +313,12 @@ void Root::Manager::registry_set_value_description(Omega::uint32_t channel_id, O
 	{
 		std::string strValue;
 		if (!request.read(strValue))
-			err = EIO;
+			err = request.last_error();
 		else
 		{
 			std::string strDesc;
 			if (!request.read(strDesc))
-				err = EIO;
+				err = request.last_error();
 			else
 				err = ptrHive->set_value_description(uKey,strValue,channel_id,strDesc);
 		}
@@ -353,7 +353,7 @@ void Root::Manager::registry_get_value_description(Omega::uint32_t channel_id, O
 	{
 		std::string strValue;
 		if (!request.read(strValue))
-			err = EIO;
+			err = request.last_error();
 		else
 			err = ptrHive->get_value_description(uKey,strValue,channel_id,val);
 	}
@@ -384,7 +384,7 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 	{
 		std::string strValue;
 		if (!request.read(strValue))
-			err = EIO;
+			err = request.last_error();
 		else
 			err = ptrHive->delete_value(uKey,strValue,channel_id);
 	}

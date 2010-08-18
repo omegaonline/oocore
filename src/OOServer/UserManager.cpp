@@ -87,9 +87,6 @@ void User::Manager::run()
 	// Close all the sinks
 	close_all_remotes();
 
-	// Close the user pipes
-	close_channels();
-
 	// Unregister our object factories
 	GetModule()->UnregisterObjectFactories();
 
@@ -105,6 +102,9 @@ void User::Manager::run()
 
 	// Close the OOCore
 	Omega::Uninitialize();
+
+	// Close the user pipes
+	close_channels();
 }
 
 bool User::Manager::on_channel_open(Omega::uint32_t channel)

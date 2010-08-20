@@ -219,7 +219,7 @@ namespace Omega
 						// Use pManager to detect who is doing what...
 
 						m_alloc_count = count;
-						OMEGA_NEW_THREAD(m_pVals,typename remove_const<T>::type[m_alloc_count]);
+						OMEGA_NEW_THREAD_LOCAL(m_pVals,typename remove_const<T>::type[m_alloc_count]);
 					}
 
 					operator T*()

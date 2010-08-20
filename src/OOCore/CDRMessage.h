@@ -93,9 +93,17 @@ namespace OOCore
 		void ReleaseMarshalData(Omega::Remoting::IMarshaller*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			Omega::uint32_t len = pMessage->ReadValue(L"length").cast<Omega::uint32_t>();
-			OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
-			OMEGA_NEW_STACK(szBuf,Omega::byte_t[len]);
-			pMessage->ReadBytes(L"data",len,szBuf);
+			if (len <= 256)
+			{
+				Omega::byte_t szBuf[256];
+				pMessage->ReadBytes(L"data",len,szBuf);
+			}
+			else
+			{
+				OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
+				OMEGA_NEW_THREAD_LOCAL(szBuf,Omega::byte_t[len]);
+				pMessage->ReadBytes(L"data",len,szBuf);
+			}
 		}
 
 	// IMessage members

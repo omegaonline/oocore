@@ -66,7 +66,8 @@ User::Manager* User::Manager::s_instance = 0;
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
-		m_nNextRemoteChannel(0)
+		m_nNextRemoteChannel(0),
+		m_nNextService(0)
 {
 	s_instance = this;
 }
@@ -86,6 +87,9 @@ void User::Manager::run()
 
 	// Close all the sinks
 	close_all_remotes();
+
+	// Stop services
+	stop_services();
 
 	// Close the user pipes
 	close_channels();
@@ -290,6 +294,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 {
 	Manager* pThis = static_cast<Manager*>(pParams);
 
+	bool bQuit = false;
 	Omega::uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
 	std::string strPipe;
@@ -297,16 +302,16 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	if (input.last_error() != 0)
 	{
 		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error()).c_str()));
+		bQuit = true;
+	}
+
+	bQuit = bQuit ||
+			!pThis->bootstrap(sandbox_channel) ||
+			!pThis->m_acceptor.start(pThis,strPipe) ||
+			!pThis->start_services();
+		
+	if (bQuit)
 		pThis->quit();
-	}
-	else
-	{
-		if (!pThis->bootstrap(sandbox_channel) ||
-				!pThis->m_acceptor.start(pThis,strPipe))
-		{
-			pThis->quit();
-		}
-	}
 }
 
 bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
@@ -435,14 +440,24 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case 0:
+	case OOServer::OnSocketAccept:
+		on_socket_accept(request,response);
+		break;
+
+	case OOServer::OnSocketRecv:
+		on_socket_recv(request);
+		break;
+
+	case OOServer::OnSocketSent:
+	case OOServer::OnSocketClose:
+
 	default:
 		response.write(Omega::int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
 		break;
 	}
 
-	if (!(attribs & TypeInfo::Asynchronous) && response.last_error()==0)
+	if (response.last_error() == 0 && !(attribs & TypeInfo::Asynchronous))
 	{
 		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_root_channel,src_thread_id,response,deadline,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)

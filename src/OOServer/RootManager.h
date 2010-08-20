@@ -57,6 +57,23 @@ namespace Root
 
 		void accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
 
+		struct ControlledObject
+		{
+			virtual ~ControlledObject() {}
+		};
+
+		struct Socket : public ControlledObject
+		{
+			virtual int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll) = 0;
+		};
+
+		Omega::uint32_t add_socket(Omega::uint32_t acceptor_id, Socket* pSocket);
+		void remove_socket(Omega::uint32_t id);
+
+		void remove_listener(Omega::uint32_t id);
+
+		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
+
 	private:
 		Manager(const Manager&);
 		Manager& operator = (const Manager&);
@@ -116,6 +133,18 @@ namespace Root
 		void registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+
+		// Services members
+		std::map<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > m_mapListeners;
+		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> > m_mapSockets;
+		Omega::uint32_t m_uNextSocketId;
+
+		void stop_services();
+		int create_service_listener(Omega::uint32_t id, const std::string& strProtocol, const std::string& strAddress, const std::string& strPort);
+		void services_start(Omega::uint32_t channel_id, OOBase::CDRStream& response);
+		void get_service_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 	};
 }
 

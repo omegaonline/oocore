@@ -49,6 +49,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestProcess", "test\TestPro
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOHttpd", "src\OOHttp\OOHttpd_vc9.vcproj", "{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -139,6 +144,12 @@ Global
 		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release|Win32.Build.0 = Release|Win32
 		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release|x64.ActiveCfg = Release|x64
 		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release|x64.Build.0 = Release|x64
+		{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}.Debug|Win32.Build.0 = Debug|Win32
+		{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}.Debug|x64.ActiveCfg = Debug|Win32
+		{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}.Release|Win32.ActiveCfg = Release|Win32
+		{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}.Release|Win32.Build.0 = Release|Win32
+		{DC5F0B27-AF9D-4A2D-BD6E-8533CE2B1949}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

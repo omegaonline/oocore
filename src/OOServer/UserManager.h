@@ -49,6 +49,7 @@ namespace User
 		OOBase::SmartPtr<OOBase::CDRStream> sendrecv_root(const OOBase::CDRStream& request, Omega::TypeInfo::MethodAttributes_t attribs);
 
 		bool on_accept(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket);
+		void close_socket(Omega::uint32_t id);
 
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
@@ -99,6 +100,21 @@ namespace User
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
 		void local_channel_closed(Omega::uint32_t channel_id);
+
+		// Service handling
+		OOBase::RWMutex m_service_lock;
+		Omega::uint32_t m_nNextService;
+		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::IService> > m_mapServices;
+		std::map<Omega::uint32_t,OOSvrBase::IOHandler*>                    m_mapSockets;
+		
+		bool start_services();
+		void start_service(const std::string& strKey, const std::string& strOid);
+		OTL::ObjectPtr<Omega::Registry::IKey> get_service_key(const std::string& strKey);
+		void listen_service_socket(const std::string& strKey, Omega::uint32_t nServiceId, OTL::ObjectPtr<Omega::System::INetworkService> ptrNetService);
+		void stop_services();
+
+		void on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void on_socket_recv(OOBase::CDRStream& request);
 	};
 }
 

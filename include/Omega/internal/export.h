@@ -791,10 +791,10 @@
 	(DECLARED_NO_METHODS())
 
 #define OMEGA_METHOD_EX_VOID(attribs,timeout,name,param_count,params) \
-	(DECLARED_METHOD_VOID(TypeInfo::attribs,timeout,name,param_count,params))
+	(DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params))
 
 #define OMEGA_METHOD_EX(attribs,timeout,ret_type,name,param_count,params) \
-	(DECLARED_METHOD(TypeInfo::attribs,timeout,ret_type,name,param_count,params))
+	(DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params))
 
 #define OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params) \
 	extern "C" OMEGA_IMPORT const Omega::System::Internal::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \

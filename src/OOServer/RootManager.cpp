@@ -44,7 +44,8 @@
 
 Root::Manager::Manager(const std::map<std::string,std::string>& args) :
 		m_cmd_args(args),
-		m_sandbox_channel(0)
+		m_sandbox_channel(0),
+		m_uNextSocketId(0)
 {
 	// Root channel is fixed
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
@@ -104,6 +105,9 @@ int Root::Manager::run()
 					// Stop accepting new clients
 					m_client_acceptor.stop();
 				}
+
+				// Stop services
+				stop_services();
 
 				// Close all channels
 				close_channels();
@@ -335,10 +339,22 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncS
 		
 	stream.reset();
 
-	err = ptrSocket->recv(stream.buffer());
+	// We know a CDRStream writes strings as a 4 byte length followed by the character data
+	size_t mark = stream.buffer()->mark_rd_ptr();
+	err = ptrSocket->recv(stream.buffer(),4);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
 
+	Omega::uint32_t len = 0;
+	if (!stream.read(len))
+		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+
+	err = ptrSocket->recv(stream.buffer(),len);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
+
+	// Now reset rd_ptr and read the string
+	stream.buffer()->mark_rd_ptr(mark);
 	if (!stream.read(strPipe))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
 
@@ -438,12 +454,35 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		registry_open_mirror_key(src_channel_id,request,response);
 		break;
 
+	case OOServer::ServicesStart:
+		services_start(src_channel_id,response);
+		break;
+
+	case OOServer::GetServiceKey:
+		get_service_key(src_channel_id,request,response);
+		break;
+
+	case OOServer::ListenSocket:
+		listen_socket(src_channel_id,request,response);
+		break;
+
+	case OOServer::SocketRecv:
+		socket_recv(src_channel_id,request,response);
+		break;
+
+	case OOServer::SocketSend:
+
 	default:
-		response.write(EINVAL);
+		response.write(Omega::int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %d",op_code));
 		break;
 	}
 
-	if ((response.last_error() == 0) && !(attribs & 1))
+	if (response.last_error() == 0 && !(attribs & 1))
 		send_response(seq_no,src_channel_id,src_thread_id,response,deadline,attribs);
+}
+
+OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs)
+{
+	return send_request(m_sandbox_channel,&request,response,deadline,attribs);
 }

@@ -115,7 +115,7 @@ namespace Omega
 		const guid_t& GetGuidValue() const;
 		const string_t& GetStringValue() const;
 
-		string_t ToString(const any_t& val, const string_t& strFormat = string_t()) const;
+		string_t ToString(const string_t& strFormat = string_t()) const;
 
 	private:
 		friend struct Omega::System::Internal::any_t_safe_type;

@@ -497,6 +497,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RootServices.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RootWin32.cpp"
 				>
 			</File>

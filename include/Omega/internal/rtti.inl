@@ -64,8 +64,8 @@ inline Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_v
 	return OOCore_ISystemException_Create_errno(errno_val);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create_errno,4,((in),Omega::uint32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
-inline Omega::IInternalException* Omega::IInternalException::Create(uint32_t errno_val, const char* pszFile, size_t nLine, const char* pszFunc)
+OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create_errno,4,((in),Omega::int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+inline Omega::IInternalException* Omega::IInternalException::Create(int32_t errno_val, const char* pszFile, size_t nLine, const char* pszFunc)
 {
 	return OOCore_IInternalException_Create_errno(errno_val,pszFile,nLine,pszFunc);
 }

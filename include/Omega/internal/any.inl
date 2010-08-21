@@ -647,12 +647,12 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 	return any_t::castValid;
 }
 
-inline Omega::string_t Omega::any_t::ToString(const any_t& val, const string_t& strFormat) const
+inline Omega::string_t Omega::any_t::ToString(const string_t& strFormat) const
 {
 	string_t v;
-	any_t::CastResult_t r = val.Coerce(v,strFormat);
+	any_t::CastResult_t r = Coerce(v,strFormat);
 	if (r != any_t::castValid)
-		System::Internal::throw_cast_exception(val,r,System::Internal::type_kind<string_t>::type());
+		System::Internal::throw_cast_exception(*this,r,System::Internal::type_kind<string_t>::type());
 
 	return v;
 }

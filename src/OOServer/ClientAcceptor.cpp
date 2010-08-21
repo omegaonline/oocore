@@ -85,8 +85,7 @@ bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int e
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
-
-	err = ptrSocket->recv(stream.buffer(),4);
+	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
 		LOG_WARNING(("Root::ClientAcceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));

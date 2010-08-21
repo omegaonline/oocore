@@ -131,26 +131,25 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// Get the manager instance
-	User::Manager* pManager = User::Manager::USER_MANAGER::instance();
+	User::Manager manager;
 
 	// Start the handler
-	if (!pManager->start_request_threads())
+	if (!manager.start_request_threads())
 		return EXIT_FAILURE;
 
 	// Do the correct init
 	bool bRun = false;
 	if (bForkSlave)
-		bRun = pManager->fork_slave(strPipe);
+		bRun = manager.fork_slave(strPipe);
 	else
-		bRun = pManager->session_launch(strPipe);
+		bRun = manager.session_launch(strPipe);
 
 	// Now run...
 	if (bRun)
-		pManager->run();
+		manager.run();
 
 	// Stop the MessageHandler
-	pManager->stop_request_threads();
+	manager.stop_request_threads();
 
 	return (bRun ? EXIT_SUCCESS : EXIT_FAILURE);
 }

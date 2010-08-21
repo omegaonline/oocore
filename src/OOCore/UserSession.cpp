@@ -197,29 +197,41 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	}
 	bStandalone = false;
 
-	OOBase::CDRStream ostream;
-
+	OOBase::CDRStream stream;
+	
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-	err = local_socket->send(version);
+	if (!stream.write(version))
+		OMEGA_THROW(stream.last_error());
+
+	err = local_socket->send(stream.buffer());
 	if (err)
 		OMEGA_THROW(err);
 
-	// Read the string length
-	uint32_t uLen = 0;
-	err = local_socket->recv(uLen);
-	if (err)
+	stream.reset();
+
+	// We know a CDRStream writes strings as a 4 byte length followed by the character data
+	size_t mark = stream.buffer()->mark_rd_ptr();
+	err = local_socket->recv(stream.buffer(),4);
+	if (err != 0)
 		OMEGA_THROW(err);
 
-	// Read the string
-	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
-	OMEGA_NEW_STACK(buf,char[uLen]);
+	Omega::uint32_t len = 0;
+	if (!stream.read(len))
+		OMEGA_THROW(stream.last_error());
 
-	local_socket->recv(buf,uLen,&err);
-	if (err)
+	err = local_socket->recv(stream.buffer(),len);
+	if (err != 0)
 		OMEGA_THROW(err);
 
-	return std::string(buf,uLen);
+	// Now reset rd_ptr and read the string
+	stream.buffer()->mark_rd_ptr(mark);
+
+	std::string strPipe;
+	if (!stream.read(strPipe))
+		OMEGA_THROW(stream.last_error());
+
+	return strPipe;
 
 #else
 
@@ -810,8 +822,8 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 	header.write(byte_t(1));     // version
 
 	// Write out the header length and remember where we wrote it
+	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
 	header.write(uint32_t(0));
-	size_t msg_len_point = header.buffer()->mark_wr_ptr() - sizeof(uint32_t);
 
 	header.write(dest_channel_id);
 	header.write(src_channel_id);
@@ -843,7 +855,7 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 	}
 
 	// Update the total length
-	header.replace(header.buffer()->length(),msg_len_point);
+	header.replace(header.buffer()->length(),msg_len_mark);
 
 	return header;
 }

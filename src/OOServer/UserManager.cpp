@@ -60,15 +60,21 @@ using namespace Omega;
 using namespace OTL;
 
 // UserManager
+
+User::Manager* User::Manager::s_instance = 0;
+
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
-		m_nNextRemoteChannel(0)
+		m_nNextRemoteChannel(0),
+		m_nNextService(0)
 {
+	s_instance = this;
 }
 
 User::Manager::~Manager()
 {
+	s_instance = 0;
 }
 
 void User::Manager::run()
@@ -81,6 +87,9 @@ void User::Manager::run()
 
 	// Close all the sinks
 	close_all_remotes();
+
+	// Stop services
+	stop_services();
 
 	// Close the user pipes
 	close_channels();
@@ -220,7 +229,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 	OOBase::CDRStream stream;
 
 	// Read the sandbox channel
-	int err = local_socket->recv(stream.buffer());
+	int err = local_socket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -242,7 +251,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 
 	// Read our channel id
 	stream.reset();
-	err = local_socket->recv(stream.buffer());
+	err = local_socket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -285,6 +294,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 {
 	Manager* pThis = static_cast<Manager*>(pParams);
 
+	bool bQuit = false;
 	Omega::uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
 	std::string strPipe;
@@ -292,16 +302,16 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	if (input.last_error() != 0)
 	{
 		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error()).c_str()));
+		bQuit = true;
+	}
+
+	bQuit = bQuit ||
+			!pThis->bootstrap(sandbox_channel) ||
+			!pThis->m_acceptor.start(pThis,strPipe) ||
+			!pThis->start_services();
+		
+	if (bQuit)
 		pThis->quit();
-	}
-	else
-	{
-		if (!pThis->bootstrap(sandbox_channel) ||
-				!pThis->m_acceptor.start(pThis,strPipe))
-		{
-			pThis->quit();
-		}
-	}
 }
 
 bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
@@ -430,14 +440,24 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case 0:
+	case OOServer::OnSocketAccept:
+		on_socket_accept(request,response);
+		break;
+
+	case OOServer::OnSocketRecv:
+		on_socket_recv(request);
+		break;
+
+	case OOServer::OnSocketSent:
+	case OOServer::OnSocketClose:
+
 	default:
-		response.write((int)EINVAL);
+		response.write(Omega::int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
 		break;
 	}
 
-	if (!(attribs & TypeInfo::Asynchronous) && response.last_error()==0)
+	if (response.last_error() == 0 && !(attribs & TypeInfo::Asynchronous))
 	{
 		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_root_channel,src_thread_id,response,deadline,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)
@@ -497,12 +517,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 			// Send it back...
 			OOServer::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
-			{
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
-
-				if (res == OOServer::MessageHandler::io_result::failed)
-					LOG_ERROR(("Response sending failed"));
-			}
 		}
 	}
 	catch (IException* pOuter)
@@ -521,7 +536,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(Omega::
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
-	return USER_MANAGER::instance()->create_channel_i(src_channel_id,message_oid);
+	return s_instance->create_channel_i(src_channel_id,message_oid);
 }
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uint32_t src_channel_id, const guid_t& message_oid)

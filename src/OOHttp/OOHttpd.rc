@@ -1,0 +1,72 @@
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2010 Rick Taylor
+//
+// This file is part of OOHttpd, the Omega Online HTTP Server application.
+//
+// OOHttpd is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// OOHttpd is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with OOHttpd.  If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+// Hand generated resource script!
+//
+
+#include "winnt.h"
+#include "winver.h"
+#include "../../include/Omega/version.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+1 ICON logo.ico
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
+ PRODUCTVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080004b0"
+        BEGIN
+            VALUE "CompanyName", "www.omegaonline.org.uk"
+            VALUE "FileDescription", "Omega Online HTTP server"
+            VALUE "FileVersion", OOCORE_VERSION
+			VALUE "LegalCopyright", "GNU General Public License"
+            VALUE "InternalName", "OOHttpd"
+            VALUE "OriginalFilename", "OOHttpd.exe"
+            VALUE "ProductName", "Omega Online Core"
+            VALUE "ProductVersion", OOCORE_VERSION
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x800, 1200
+    END
+END

@@ -193,7 +193,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 	return err;
 }
 
-int Registry::Hive::open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
+int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -202,7 +202,7 @@ int Registry::Hive::open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	return find_key(uParent,uKey,strSubKey,access_mask,channel_id);
 }
 
-int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
+int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -433,17 +433,17 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
-		response.write((int)ENOENT);
+		response.write(Omega::int32_t(ENOENT));
 		return;
 	}
 	else if (err != SQLITE_ROW)
 	{
-		response.write((int)EIO);
+		response.write(Omega::int32_t(EIO));
 		return;
 	}
 
 	// Do the access check up front...
-	int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
+	Omega::int32_t acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 
 	if (access_mask & Hive::read_check)
 	{
@@ -459,12 +459,12 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 	{
-		response.write((int)EIO);
+		response.write(Omega::int32_t(EIO));
 		return;
 	}
 
 	// Write out success first
-	response.write((int)0);
+	response.write(Omega::int32_t(0));
 	if (response.last_error() != 0)
 		return;
 
@@ -489,7 +489,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 			if (!strSubKey.empty() && !response.write(strSubKey))
 			{
 				response.reset();
-				response.write((int)EIO);
+				response.write(Omega::int32_t(EIO));
 				return;
 			}
 		}
@@ -504,7 +504,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	else
 	{
 		response.reset();
-		response.write((int)EIO);
+		response.write(Omega::int32_t(EIO));
 	}
 }
 
@@ -558,19 +558,19 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
-		response.write((int)ENOENT);
+		response.write(Omega::int32_t(ENOENT));
 		return;
 	}
 	else if (err != SQLITE_ROW)
 	{
-		response.write((int)EIO);
+		response.write(Omega::int32_t(EIO));
 		return;
 	}
 
 	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
+		Omega::int32_t acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 		{
 			response.write(acc);
@@ -582,12 +582,12 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 	{
-		response.write((int)EIO);
+		response.write(Omega::int32_t(EIO));
 		return;
 	}
 
 	// Write out success first
-	response.write((int)0);
+	response.write(Omega::int32_t(0));
 	if (response.last_error() != 0)
 		return;
 
@@ -604,7 +604,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 			if (!response.write(str))
 			{
 				response.reset();
-				response.write((int)EIO);
+				response.write(Omega::int32_t(EIO));
 				return;
 			}
 		}
@@ -619,7 +619,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	else
 	{
 		response.reset();
-		response.write((int)EIO);
+		response.write(Omega::int32_t(EIO));
 	}
 }
 

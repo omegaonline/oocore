@@ -56,6 +56,7 @@ namespace Omega
 			virtual void ReleaseMarshalData(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual IMessage* CreateMessage() = 0;
 			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
+			virtual uint32_t GetSource() = 0;
 		};
 
 		interface IStub : public IObject
@@ -164,6 +165,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
+				OMEGA_METHOD(uint32_t,GetSource,0,())
 			)
 
 			template <typename T>
@@ -217,7 +219,7 @@ namespace Omega
 						// Use pManager to detect who is doing what...
 
 						m_alloc_count = count;
-						OMEGA_NEW_THREAD(m_pVals,typename remove_const<T>::type[m_alloc_count]);
+						OMEGA_NEW_THREAD_LOCAL(m_pVals,typename remove_const<T>::type[m_alloc_count]);
 					}
 
 					operator T*()

@@ -150,7 +150,7 @@ namespace
 		{
 		}
 
-		OOBase::timeval_t           m_deadline;
+		OOBase::timeval_t        m_deadline;
 		uint32_t                 m_src_id;
 		Remoting::MarshalFlags_t m_flags;
 	};
@@ -503,6 +503,11 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	{
 		return pE;
 	}
+}
+
+uint32_t OOCore::StdObjectManager::GetSource()
+{
+	return m_ptrChannel->GetSource();
 }
 
 TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_t& iid)
@@ -912,6 +917,24 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Remoting_IsAlive,1,((in),IObject*,p
 		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
 		if (ptrProxy)
 			ret = ptrProxy->IsAlive();
+	}
+
+	return ret;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_Remoting_GetSource,1,((in),IObject*,pObject))
+{
+	uint32_t ret = 0;
+	if (pObject)
+	{
+		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		if (ptrProxy)
+		{
+			ObjectPtr<Remoting::IMarshaller> ptrMarshaller;
+			ptrMarshaller.Attach(ptrProxy->GetMarshaller());
+			
+			ret = ptrMarshaller->GetSource();
+		}
 	}
 
 	return ret;

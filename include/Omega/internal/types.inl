@@ -135,12 +135,12 @@ inline size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
 inline std::string Omega::string_t::ToUTF8() const
 {
 	std::string str;
-	char szBuf[128];
-	size_t len = ToUTF8(szBuf,128);
-	if (len > 128)
+	char szBuf[256];
+	size_t len = ToUTF8(szBuf,sizeof(szBuf));
+	if (len > sizeof(szBuf))
 	{
 		char* pszBuf = 0;
-		OMEGA_NEW_STACK(pszBuf,char[len]);
+		OMEGA_NEW(pszBuf,char[len]);
 		try
 		{
 			ToUTF8(pszBuf,len);
@@ -168,12 +168,12 @@ inline size_t Omega::string_t::ToNative(char* sz, size_t size) const
 inline std::string Omega::string_t::ToNative() const
 {
 	std::string str;
-	char szBuf[128];
-	size_t len = ToNative(szBuf,128);
-	if (len > 128)
+	char szBuf[256];
+	size_t len = ToNative(szBuf,sizeof(szBuf));
+	if (len > sizeof(szBuf))
 	{
 		char* pszBuf = 0;
-		OMEGA_NEW_STACK(pszBuf,char[len]);
+		OMEGA_NEW(pszBuf,char[len]);
 		try
 		{
 			ToNative(pszBuf,len);

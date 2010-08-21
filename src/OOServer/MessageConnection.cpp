@@ -437,10 +437,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 
 		// Route it correctly...
 		io_result::type res = queue_message(msg);
-		if (res == io_result::success || res == io_result::timedout)
-			return true;
-		else
-			return false;
+		return (res == io_result::success || res == io_result::timedout);
 	}
 	else
 	{
@@ -491,9 +488,10 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 
 		// Dec usage count
 		--m_waiting_threads;
-
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		
+		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
+			// Close any ended threads
 			try
 			{
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -519,22 +517,14 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				LOG_ERROR(("std::exception thrown %s",e.what()));
 			}
 
-			// If we were waiting, exit
-			if (wait)
+			// If we were waiting or closed, exit
+			if (wait || res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
 				return 0;
 
 			// Wait again...
 			continue;
 		}
-		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
-		{
-			return 0;
-		}
-		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
-		{
-			LOG_ERROR_RETURN(("Bounded queue popped unusually"),-1);
-		}
-
+		
 		// Read remaining message members
 		Omega::uint32_t seq_no = 0;
 		msg->m_payload.read(seq_no);
@@ -863,8 +853,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 		return io_result::timedout;
 	else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
 		return io_result::channel_closed;
-	else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
-		return io_result::failed;
 	else
 		return io_result::success;
 }
@@ -1059,8 +1047,11 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			ret = io_result::timedout;
 			break;
 		}
-		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+		{
+			ret = io_result::channel_closed;
 			break;
+		}
 
 		Omega::uint32_t recv_seq_no = 0;
 		msg->m_payload.read(recv_seq_no);
@@ -1257,7 +1248,7 @@ bool OOServer::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBas
 	return (queue_message(msg) == io_result::success);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, OOBase::timeval_t* deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs)
 {
 	// Build a header
 	Message msg;
@@ -1447,9 +1438,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.write(Omega::byte_t(1));  // version
 
 	// Write out the header length and remember where we wrote it
+	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
 	header.write(Omega::uint32_t(0));
-	size_t msg_len_point = header.buffer()->mark_wr_ptr() - sizeof(Omega::uint32_t);
-
+	
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
 
@@ -1479,7 +1470,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
 
 	// Update the total length
-	header.replace(header.buffer()->length(),msg_len_point);
+	header.replace(header.buffer()->length(),msg_len_mark);
 
 	OOBase::SmartPtr<MessageConnection> ptrMC;
 	try

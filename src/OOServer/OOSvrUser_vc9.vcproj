@@ -472,6 +472,10 @@
 				RelativePath=".\UserROT.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\UserServices.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

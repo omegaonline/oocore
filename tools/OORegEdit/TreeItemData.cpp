@@ -48,7 +48,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		Omega::any_t val = m_ptrKey->GetValue(*it);
 
 		wxLongLong_t iv;
-		if (val.Coerce(iv) != Omega::any_t::castUnrelated)
+		if (val.GetType() != Omega::TypeInfo::typeString && val.Coerce(iv) != Omega::any_t::castUnrelated)
 		{
 			long item = pList->InsertItem(i,wxString(it->c_str()),5);
 			pList->SetItem(item,1,_("Integer"));
@@ -261,7 +261,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 	Omega::any_t val = m_ptrKey->GetValue(strName);
 
 	wxLongLong_t iv;
-	if (val.Coerce(iv) != Omega::any_t::castUnrelated)
+	if (val.GetType() != Omega::TypeInfo::typeString && val.Coerce(iv) != Omega::any_t::castUnrelated)
 	{
 		EditUIntDlg dialog(NULL,-1,wxT(""));
 

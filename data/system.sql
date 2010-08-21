@@ -17,28 +17,35 @@ BEGIN TRANSACTION;
 	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(
 		3,
+		'Objects',
+		'',
+		2,6
+	);
+	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
+	(
+		4,
 		'All Users',
 		'A key shared between all users',
 		0,6
 	);
 	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(
-		4,
+		5,
 		'Objects',
-		'',
-		3,6
-	);
-	INSERT INTO RegistryKeys ( Name,Description,Parent,Access) VALUES 
-	(
-		'OIDs',
 		'',
 		4,6
 	);
 	INSERT INTO RegistryKeys ( Name,Description,Parent,Access) VALUES 
 	(
+		'OIDs',
+		'',
+		5,6
+	);
+	INSERT INTO RegistryKeys ( Name,Description,Parent,Access) VALUES 
+	(
 		'Applications',
 		'Applications store their configuration beneath this key',
-		3,6
+		,6
 	);
 	
 COMMIT;

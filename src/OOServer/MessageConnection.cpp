@@ -324,21 +324,9 @@ bool OOServer::MessageHandler::start_request_threads()
 bool OOServer::MessageHandler::start_thread()
 {
 	OOBase::Thread* pThread = 0;
-	OOBASE_NEW(pThread,OOBase::Thread());
+	OOBASE_NEW(pThread,OOBase::Thread(true));
 	if (!pThread)
 		LOG_ERROR_RETURN(("Out of memory"),false);
-
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		m_threads.push_back(pThread);
-	}
-	catch (std::exception& e)
-	{
-		delete pThread;
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
-	}
 
 	pThread->run(request_worker_fn,this);
 	return true;
@@ -487,40 +475,14 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,&wait2);
 
 		// Dec usage count
-		--m_waiting_threads;
+		size_t waiters = --m_waiting_threads;
 		
 		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
-			// Close any ended threads
-			try
-			{
-				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-				// Check to see which threads are still alive
-				for (std::list<OOBase::Thread*>::iterator i=m_threads.begin(); i!=m_threads.end();)
-				{
-					if (!(*i)->is_running())
-					{
-						delete (*i);
-						m_threads.erase(i++);
-					}
-					else
-						++i;
-				}
-
-				// If we have too many threads running, exit this thread
-				if (m_threads.size() > 2 && !bOnce)
-					return 0;
-			}
-			catch (std::exception& e)
-			{
-				LOG_ERROR(("std::exception thrown %s",e.what()));
-			}
-
-			// If we were waiting or closed, exit
-			if (wait || res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+			// If we have too many threads running, or we were waiting or closed, exit this thread
+			if (wait || res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed || (waiters > 2 && !bOnce))
 				return 0;
-
+			
 			// Wait again...
 			continue;
 		}
@@ -981,27 +943,9 @@ void OOServer::MessageHandler::stop_request_threads()
 	// Wait for all the request threads to finish
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::Zero)
+	while (wait != OOBase::timeval_t::Zero && m_waiting_threads != 0)
 	{
-		OOBase::Thread* pThread = 0;
-
-		try
-		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-			if (m_threads.size() == 0)
-				break;
-
-			pThread = m_threads.front();
-			m_threads.pop_front();
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("std::exception thrown %s",e.what()));
-		}
-
-		pThread->join();
-		delete pThread;
+		OOBase::Thread::yield();
 
 		countdown.update();
 	}

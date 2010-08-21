@@ -31,6 +31,7 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::UserSession::UserSession() :
+		m_worker_thread(false),
 		m_channel_id(0),
 		m_nIPSCookie(0),
 		m_next_compartment(0)

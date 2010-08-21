@@ -168,7 +168,6 @@ namespace OOServer
 
 		// Pooled queued members
 		OOBase::AtomicInt<size_t>                        m_waiting_threads;
-		std::list<OOBase::Thread*>                       m_threads;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
 		bool start_thread();

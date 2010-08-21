@@ -90,6 +90,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 {
 	size_t mark = response.buffer()->mark_wr_ptr();
 	size_t count = 0;
+	response.write(count);
 
 	if (channel_id != m_sandbox_channel)
 		LOG_ERROR(("Service opcode sent by non-sandbox process"));
@@ -100,7 +101,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 		int err = m_registry->open_key(0,uKey,"System/Services",0);
 		if (err != 0)
 		{
-			if (err == ENOENT)
+			if (err != ENOENT)
 				LOG_ERROR(("Failed to open /System/Services key: %d",err));
 		}
 		else
@@ -112,8 +113,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 			else
 			{
 				count = setSubKeys.size();
-
-				response.write(count);
+				
 				for (std::set<std::string>::const_iterator i=setSubKeys.begin();i!=setSubKeys.end();++i)
 				{
 					// Open the subkey

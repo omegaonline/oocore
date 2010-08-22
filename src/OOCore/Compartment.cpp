@@ -288,7 +288,7 @@ namespace OOCore
 	private:
 		OOBase::SpinLock                           m_lock;
 		ObjectPtr<ObjectImpl<OOCore::ComptChannel> > m_ptrChannel;
-		
+
 	// ICompartment members
 	public:
 		Remoting::IProxy* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);

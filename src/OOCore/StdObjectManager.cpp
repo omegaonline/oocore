@@ -360,7 +360,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 					OMEGA_THROW("Bad stub id");
 
 				ptrStub = i->second->second;
-				
+
 				guard.release();
 
 				// Ask the stub to make the call

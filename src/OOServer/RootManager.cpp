@@ -59,7 +59,7 @@ int Root::Manager::run()
 {
 #if defined(HAVE_SIGNAL_H) && !defined(_WIN32)
 	// Ignore SIGPIPE
-	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
+	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));
 #endif
 
@@ -336,7 +336,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncS
 	int err = ptrSocket->send(stream.buffer());
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);
-		
+
 	stream.reset();
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
@@ -376,7 +376,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncS
 		ptrMC->close();
 		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
 	}
-	
+
 	err = ptrSocket->async_send(stream.buffer());
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);

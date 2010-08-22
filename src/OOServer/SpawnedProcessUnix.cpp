@@ -524,11 +524,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	return pSpawn;
 }
 
-void Root::Manager::accept_client(OOBase::Socket* pSocket)
+void Root::Manager::accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket)
 {
 	// Socket will close when it drops out of scope
 
-	OOSvrBase::AsyncLocalSocket::uid_t uid = static_cast<OOBase::LocalSocket*>(pSocket)->get_uid();
+	OOSvrBase::AsyncLocalSocket::uid_t uid = ptrSocket->get_uid();
 
 	// Make sure we have a user process
 	UserProcess user_process;
@@ -549,7 +549,7 @@ void Root::Manager::accept_client(OOBase::Socket* pSocket)
 
 		// Bootstrap the user process...
 		OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-		Omega::uint32_t channel_id = bootstrap_user(pSocket,ptrMC,new_process.strPipe);
+		Omega::uint32_t channel_id = bootstrap_user(ptrSocket,ptrMC,new_process.strPipe);
 		if (channel_id)
 		{
 			// Create an async socket wrapper

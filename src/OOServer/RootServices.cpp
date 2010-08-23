@@ -464,14 +464,14 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	if (!pService)
 	{
 		*perr = ENOMEM;
-		LOG_ERROR_RETURN(("Out of memory"),0);
+		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)0);
 	}
 
 	pService->m_ptrSocket = Root::Proactor::instance()->accept_remote(pService,strAddress,strPort,perr);
 	if (*perr != 0)
 	{
 		delete pService;
-		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr).c_str()),0);
+		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr).c_str()),(TcpAcceptor*)0);
 	}
 
 	*perr = 0;

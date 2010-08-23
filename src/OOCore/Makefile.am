@@ -43,7 +43,7 @@ if WIN32
 lib_LTLIBRARIES = OOCore.la
 
 OOCore_la_LIBADD = @top_builddir@/oobase/liboobase.la
-OOCore_la_LDFLAGS = -module -avoid-version -no-undefined -lrpcrt4 -lws2_32
+OOCore_la_LDFLAGS = -module -avoid-version -no-undefined -lrpcrt4
 
 OOCore_la_SOURCES = \
 	$(common) \

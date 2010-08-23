@@ -56,6 +56,7 @@ ooserverd_SOURCES = \
 	RootManager.h \
 	RootManager.cpp \
 	RootRegistry.cpp \
+	RootServices.cpp \
 	RootUnix.cpp \
 	RootWin32.cpp \
 	SpawnedProcess.h \
@@ -97,7 +98,8 @@ oosvruser_SOURCES = \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \
-	UserROT.cpp
+	UserROT.cpp \
+	UserServices.cpp
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc

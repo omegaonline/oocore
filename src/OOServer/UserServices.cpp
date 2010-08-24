@@ -399,8 +399,17 @@ AsyncSocket::AsyncSocket() :
 
 AsyncSocket::~AsyncSocket()
 {
-	if (m_pManager && m_id)
-		m_pManager->close_socket(m_id);
+	try
+	{
+		if (m_pManager && m_id)
+			m_pManager->close_socket(m_id);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{ }
 }
 
 void AsyncSocket::Init(User::Manager* pManager, uint32_t id)

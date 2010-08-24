@@ -40,9 +40,14 @@ OOCore::UserSession::UserSession() :
 
 OOCore::UserSession::~UserSession()
 {
-	// Clear the thread id's of the ThreadContexts
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-		i->second->m_thread_id = 0;
+	try
+	{
+		// Clear the thread id's of the ThreadContexts
+		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+			i->second->m_thread_id = 0;
+	}
+	catch (...)
+	{}
 }
 
 IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,string_t>& args)
@@ -719,7 +724,12 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapThreadContexts.erase(thread_id);
+	try
+	{
+		m_mapThreadContexts.erase(thread_id);
+	}
+	catch (...)
+	{}
 }
 
 OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)

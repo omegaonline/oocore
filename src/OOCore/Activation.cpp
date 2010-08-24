@@ -142,7 +142,7 @@ namespace
 			m_dll_map.clear();
 		}
 		catch (...)
-		{ }
+		{}
 	}
 
 	OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)

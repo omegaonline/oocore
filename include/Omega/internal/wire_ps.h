@@ -491,7 +491,7 @@ namespace Omega
 						return i->second;
 				}
 				catch (...)
-					{}
+				{}
 
 				return 0;
 			}

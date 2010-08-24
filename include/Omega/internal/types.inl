@@ -104,7 +104,16 @@ inline void Omega::string_t::release(handle_t* h)
 
 inline Omega::string_t::~string_t()
 {
-	release(m_handle);
+	try
+	{
+		release(m_handle);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,h1,(in),const void*,h2));

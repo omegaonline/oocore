@@ -107,12 +107,21 @@ OOCore::ServiceManager::ServiceManager() : m_nNextCookie(1)
 
 OOCore::ServiceManager::~ServiceManager()
 {
-	// Because the DLL can be deleted without close being called...
-	for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin(); i!=m_mapServicesByCookie.end(); ++i)
+	try
 	{
-		// Just detach and leak every object...
-		i->second.m_ptrObject.Detach();
+		// Because the DLL can be deleted without close being called...
+		for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin(); i!=m_mapServicesByCookie.end(); ++i)
+		{
+			// Just detach and leak every object...
+			i->second.m_ptrObject.Detach();
+		}
 	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)

@@ -97,8 +97,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 		pE->Release();
 	}
 	catch (...)
-	{
-	}
+	{}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param))

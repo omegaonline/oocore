@@ -34,10 +34,38 @@ OOCore::Proxy::Proxy() :
 
 OOCore::Proxy::~Proxy()
 {
-	CallRemoteRelease();
+	try
+	{
+		CallRemoteRelease();
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 
-	m_pManager->RemoveProxy(m_proxy_id);
-	static_cast<Remoting::IObjectManager*>(m_pManager)->Release();
+	try
+	{
+		m_pManager->RemoveProxy(m_proxy_id);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
+
+	try
+	{
+		static_cast<Remoting::IObjectManager*>(m_pManager)->Release();
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 void OOCore::Proxy::init(uint32_t proxy_id, StdObjectManager* pManager)

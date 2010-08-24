@@ -741,7 +741,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 		pE->Release();
 		evt.Veto();
 	}
-	catch(...)
+	catch (...)
 	{
 		evt.Veto();
 		throw;

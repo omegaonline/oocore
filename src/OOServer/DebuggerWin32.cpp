@@ -172,8 +172,7 @@ namespace
 			}
 		}
 		catch (_com_error&)
-		{
-		}
+		{}
 
 		CoUninitialize();
 

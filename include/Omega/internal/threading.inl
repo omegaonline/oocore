@@ -31,7 +31,16 @@ inline Omega::Threading::Mutex::Mutex() :
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,h));
 inline Omega::Threading::Mutex::~Mutex()
 {
-	OOCore_cs__dctor(m_handle);
+	try
+	{
+		OOCore_cs__dctor(m_handle);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,h));
@@ -55,7 +64,16 @@ inline Omega::Threading::ReaderWriterLock::ReaderWriterLock() :
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,h));
 inline Omega::Threading::ReaderWriterLock::~ReaderWriterLock()
 {
-	OOCore_rw_lock__dctor(m_handle);
+	try
+	{
+		OOCore_rw_lock__dctor(m_handle);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,h));
@@ -111,22 +129,27 @@ inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 {
 	Guard<Mutex> guard(m_lock);
 
-	// Copy the list outside the lock
-	std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_list);
-
-	m_list.clear();
-
-	guard.Release();
-
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
+	try
 	{
-		try
+		// Copy the list outside the lock
+		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_list);
+
+		m_list.clear();
+
+		guard.Release();
+
+		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
 		{
-			(*(i->first))(i->second);
+			try
+			{
+				(*(i->first))(i->second);
+			}
+			catch (...)
+			{}
 		}
-		catch (...)
-		{ }
 	}
+	catch (...)
+	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
@@ -247,8 +270,7 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 		pE->Release();
 	}
 	catch (...)
-	{
-	}
+	{}
 }
 
 #ifdef OMEGA_DEBUG
@@ -267,7 +289,16 @@ inline Omega::Threading::AtomicRefCount::AtomicRefCount() :
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,h));
 inline Omega::Threading::AtomicRefCount::~AtomicRefCount()
 {
-	OOCore_atomic__dctor(m_handle);
+	try
+	{
+		OOCore_atomic__dctor(m_handle);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,h));

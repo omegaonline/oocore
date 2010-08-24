@@ -877,7 +877,14 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapThreadContexts.erase(pContext->m_thread_id);
+	try
+	{
+		m_mapThreadContexts.erase(pContext->m_thread_id);
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("std::exception thrown %s",e.what()));
+	}
 }
 
 void OOServer::MessageHandler::close_channels()

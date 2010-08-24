@@ -530,7 +530,8 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	if (!buffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	// Move the ptrs forwards
+	// Move the ptr forwards
+	buffer->rd_ptr(12);
 	buffer->wr_ptr(12);
 	
 	int err = m_ptrSocket->async_recv(buffer,bRecvAll ? lenBytes : 0);
@@ -545,10 +546,11 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 
 void AsyncSocket::on_recv(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* buffer, int err)
 {
-	if (buffer)
+	if (buffer && buffer->length() > 12)
 	{
 		// If we have data, then skip the wr_ptr back to the beginning
 		size_t mark = buffer->mark_wr_ptr();
+
 		buffer->mark_wr_ptr(0);
 		buffer->mark_rd_ptr(0);
 	
@@ -570,7 +572,7 @@ void AsyncSocket::on_recv(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* b
 		OOBase::SmartPtr<OOBase::CDRStream> response;
 		m_pManager->sendrecv_sandbox(request,response,0,1);
 	}
-	else
+	else if (err)
 	{
 		// Send message on to sandbox
 		OOBase::CDRStream request;

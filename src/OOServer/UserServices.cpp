@@ -389,6 +389,65 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 	}
 }
 
+void User::Manager::on_socket_sent(OOBase::CDRStream& request)
+{
+	int32_t err = 0;
+	uint32_t id = 0;
+			
+	if (!request.read(id) ||
+		!request.read(err))
+	{
+		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+	}
+	else
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
+		 
+		try
+		{
+			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
+			if (i != m_mapSockets.end())
+				i->second->on_sent(0,request.buffer(),err);
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("on_sent failed: %s",e.what()));
+		}
+		catch (IException* pE)
+		{
+			LOG_ERROR(("on_sent failed: %s",pE->GetDescription().ToNative().c_str()));
+			pE->Release();
+		}
+	}
+}
+
+void User::Manager::on_socket_close(OOBase::CDRStream& request)
+{
+	uint32_t id = 0;
+			
+	if (!request.read(id))
+		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+	else
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
+		 
+		try
+		{
+			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
+			if (i != m_mapSockets.end())
+				i->second->on_closed(0);
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("on_close failed: %s",e.what()));
+		}
+		catch (IException* pE)
+		{
+			LOG_ERROR(("on_close failed: %s",pE->GetDescription().ToNative().c_str()));
+			pE->Release();
+		}
+	}
+}
 
 AsyncSocket::AsyncSocket() :
 		m_pManager(0),

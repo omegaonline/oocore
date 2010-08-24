@@ -449,7 +449,12 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 		break;
 
 	case OOServer::OnSocketSent:
+		on_socket_sent(request);
+		break;
+		
 	case OOServer::OnSocketClose:
+		on_socket_close(request);
+		break;
 
 	default:
 		response.write(Omega::int32_t(EINVAL));

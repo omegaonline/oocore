@@ -115,6 +115,8 @@ namespace User
 
 		void on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void on_socket_recv(OOBase::CDRStream& request);
+		void on_socket_sent(OOBase::CDRStream& request);
+		void on_socket_close(OOBase::CDRStream& request);
 	};
 }
 

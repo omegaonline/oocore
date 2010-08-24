@@ -723,9 +723,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(co
 
 void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id)
 {
-	// Inform derived classes that the channel has gone...
-	on_channel_closed(channel_id);
-
 	// Propogate the message to all user processes...
 	try
 	{
@@ -757,6 +754,9 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
+
+	// Inform derived classes that the channel has gone...
+	on_channel_closed(channel_id);
 }
 
 Omega::uint16_t OOServer::MessageHandler::classify_channel(Omega::uint32_t channel_id)
@@ -935,10 +935,7 @@ void OOServer::MessageHandler::stop_request_threads()
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-		{
-			if (i->second->m_usage_count > 0)
-				i->second->m_msg_queue.pulse();
-		}
+			i->second->m_msg_queue.close();
 	}
 	catch (std::exception& e)
 	{

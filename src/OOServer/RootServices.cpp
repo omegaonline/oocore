@@ -474,6 +474,8 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr).c_str()),(TcpAcceptor*)0);
 	}
 
+	OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Listening on %s:%s",strAddress.empty() ? "localhost" : strAddress.c_str(),strPort.c_str());
+
 	*perr = 0;
 	return pService;
 }

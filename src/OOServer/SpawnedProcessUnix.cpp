@@ -320,7 +320,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 
 		int err = execv(strAppPath.c_str(),cmd_line);
 
-		LOG_DEBUG(("Child process exiting with code: %d",err));
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Child process exiting with code: %d",err);
 
 		free(cmd_line[0]);
 		free(cmd_line[1]);
@@ -332,7 +332,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 		// We are the parent...
 		m_pid = child_id;
 
-		LOG_DEBUG(("Starting new oosvruser process as uid:%u pid:%u",m_uid,child_id));
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Starting new oosvruser process as uid:%u pid:%u",m_uid,child_id);
 	}
 
 	return true;

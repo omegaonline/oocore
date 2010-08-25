@@ -339,7 +339,12 @@ namespace OTL
 			assert(m_refcount.m_debug_value > 0);
 
 			if (m_refcount.Release())
-				delete this;
+				Final_Release();
+		}
+
+		virtual void Final_Release()
+		{
+			delete this;
 		}
 
 	public:

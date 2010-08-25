@@ -65,6 +65,7 @@ namespace Root
 		struct Socket : public ControlledObject
 		{
 			virtual int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll) = 0;
+			virtual int send(OOBase::Buffer* buffer, Omega::bool_t bReliable) = 0;
 		};
 
 		Omega::uint32_t add_socket(Omega::uint32_t acceptor_id, Socket* pSocket);
@@ -145,6 +146,8 @@ namespace Root
 		void get_service_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void socket_close(Omega::uint32_t channel_id, OOBase::CDRStream& request);
 	};
 }
 

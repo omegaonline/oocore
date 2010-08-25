@@ -75,6 +75,7 @@ namespace
 		AsyncSocket& operator = (const AsyncSocket&);
 
 		int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll);
+		int send(OOBase::Buffer* buffer, Omega::bool_t bReliable);
 
 		void on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
 		void on_sent(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
@@ -437,16 +438,102 @@ void Root::Manager::socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& r
 		{
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i=m_mapSockets.find(id);
-			if (i == m_mapSockets.end())
+			try
+			{
+				std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i=m_mapSockets.find(id);
+				if (i == m_mapSockets.end())
+					err = EINVAL;
+				else
+					err = i->second->recv(lenBytes,bRecvAll);			
+			}
+			catch (std::exception& e)
+			{
+				LOG_ERROR(("Exception thrown: %s",e.what()));
 				err = EINVAL;
-			else
-				err = i->second->recv(lenBytes,bRecvAll);			
+			}
 		}
 	}
 
 	if (!response.write(err))
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
+}
+
+void Root::Manager::socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	Omega::int32_t err = 0;
+	if (channel_id != m_sandbox_channel)
+	{
+		LOG_ERROR(("Service opcode sent by non-sandbox process"));
+		err = EACCES;
+	}
+	else
+	{
+		Omega::uint32_t id = 0;
+		Omega::bool_t bReliable = true;
+		if (!request.read(id) ||
+			!request.read(bReliable))
+		{
+			LOG_ERROR(("Failed to read request"));
+			err = response.last_error();
+		}
+		else if (id == 0)
+		{
+			LOG_ERROR(("socket_recv called with invalid id"));
+			err = EINVAL;
+		}
+		else if (request.buffer()->length())
+		{
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+			try
+			{
+				std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i=m_mapSockets.find(id);
+				if (i == m_mapSockets.end())
+					err = EINVAL;
+				else
+					err = i->second->send(request.buffer(),bReliable);
+			}
+			catch (std::exception& e)
+			{
+				LOG_ERROR(("Exception thrown: %s",e.what()));
+				err = EINVAL;
+			}
+		}
+	}
+
+	if (!response.write(err))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
+}
+
+void Root::Manager::socket_close(Omega::uint32_t channel_id, OOBase::CDRStream& request)
+{
+	Omega::int32_t err = 0;
+	if (channel_id != m_sandbox_channel)
+	{
+		LOG_ERROR(("Service opcode sent by non-sandbox process"));
+		err = EACCES;
+	}
+	else
+	{
+		Omega::uint32_t id = 0;
+		if (!request.read(id))
+		{
+			LOG_ERROR(("Failed to read request"));
+		}
+		else
+		{
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+			try
+			{
+				m_mapSockets.erase(id);
+			}
+			catch (std::exception& e)
+			{
+				LOG_ERROR(("Exception thrown: %s",e.what()));
+			}
+		}
+	}
 }
 
 TcpAcceptor::TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id) :
@@ -591,6 +678,15 @@ void AsyncSocket::on_recv(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* b
 		OOBase::SmartPtr<OOBase::CDRStream> response;
 		m_pManager->sendrecv_sandbox(request,response,0,1);
 	}	
+}
+
+int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
+{
+	int err = m_ptrSocket->async_send(buffer);
+	if (err != 0)
+		LOG_ERROR(("async_send failed: %s",OOBase::system_error_text(err).c_str()));
+	
+	return err;
 }
 
 void AsyncSocket::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* buffer, int err)

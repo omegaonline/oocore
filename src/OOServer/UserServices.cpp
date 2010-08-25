@@ -59,7 +59,7 @@ namespace
 	// Net::IAsyncSocketBase members
 	public:
 		void Recv(uint32_t lenBytes, bool_t bRecvAll);
-		void Send(uint32_t lenBytes, const byte_t* bytes);
+		void Send(uint32_t lenBytes, const byte_t* bytes, bool_t bReliable);
 
 	// Net::IAsyncSocket members
 	public:
@@ -503,24 +503,19 @@ void AsyncSocket::Recv(uint32_t lenBytes, bool_t bRecvAll)
 		OMEGA_THROW(err);
 }
 
-void AsyncSocket::Send(uint32_t lenBytes, const byte_t* bytes)
+void AsyncSocket::Send(uint32_t lenBytes, const byte_t* bytes, bool_t bReliable)
 {
 	OOBase::CDRStream request(lenBytes + 12);
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SocketSend));
 	request.write(m_id);
-	request.write(lenBytes);
+	request.write(bReliable);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
 	if (lenBytes)
 	{
-		// Align the wr_ptr
-		int err = request.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
-		if (err != 0)
-			OMEGA_THROW(err);
-		
 		// Make room for the data
-		err = request.buffer()->space(lenBytes);
+		int err = request.buffer()->space(lenBytes);
 		if (err != 0)
 			OMEGA_THROW(err);
 

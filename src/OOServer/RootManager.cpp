@@ -471,6 +471,12 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		break;
 
 	case OOServer::SocketSend:
+		socket_send(src_channel_id,request,response);
+		break;
+
+	case OOServer::SocketClose:
+		socket_close(src_channel_id,request);
+		break;
 
 	default:
 		response.write(Omega::int32_t(EINVAL));

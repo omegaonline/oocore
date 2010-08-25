@@ -40,7 +40,7 @@ namespace Omega
 		interface IAsyncSocketBase : public IObject
 		{
 			virtual void Recv(uint32_t lenBytes, bool_t bRecvAll) = 0;
-			virtual void Send(uint32_t lenBytes, const byte_t* bytes) = 0;
+			virtual void Send(uint32_t lenBytes, const byte_t* bytes, bool_t bReliable = true) = 0;
 		};
 
 		interface IAsyncSocketNotify : public IObject
@@ -86,7 +86,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Net, IAsyncSocketBase, "{3651E79D-06FF-4E3B-BCCD-90B548452C8E}",
 
 	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,0,Recv,2,((in),uint32_t,lenBytes,(in),bool_t,bRecvAll))
-	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,0,Send,2,((in),uint32_t,lenBytes,(in)(size_is(lenBytes)),const byte_t*,bytes))
+	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,0,Send,3,((in),uint32_t,lenBytes,(in)(size_is(lenBytes)),const byte_t*,bytes,(in),bool_t,bReliable))
 )
 
 OMEGA_DEFINE_INTERFACE

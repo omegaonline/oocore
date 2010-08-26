@@ -37,7 +37,7 @@ namespace User
 		bool start(Manager* pManager, const std::string& pipe_name);
 		void stop();
 
-		bool on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		bool on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::string& strAddress, int err);
 
 		static std::string unique_name();
 

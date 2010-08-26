@@ -95,7 +95,7 @@ void User::Acceptor::stop()
 	m_pSocket = 0;
 }
 
-bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::string& /*strAddress*/, int err)
 {
 	// Make sure we delete any socket passed to us
 	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = pSocket;

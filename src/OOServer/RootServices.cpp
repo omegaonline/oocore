@@ -56,7 +56,7 @@ namespace
 		const Omega::uint32_t            m_id;
 		OOBase::SmartPtr<OOBase::Socket> m_ptrSocket;
 
-		bool on_accept(OOSvrBase::AsyncSocket* pSocket, int err);
+		bool on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& strAddress, int err);
 	};
 
 	class AsyncSocket : 
@@ -567,7 +567,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	return pService;
 }
 
-bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, int err)
+bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& /*strAddress*/, int err)
 {
 	if (err)
 	{

@@ -25,19 +25,18 @@
 using namespace Omega;
 using namespace OTL;
 
-OMEGA_DEFINE_OID(Http, OID_HttpService, "{8618D7FF-77A0-4785-B868-00BC81305FCE}");
+OMEGA_DEFINE_OID(OOHttp, OID_HttpService, "{8618D7FF-77A0-4785-B868-00BC81305FCE}");
 
-void Http::HttpService::Start(Omega::Registry::IKey* pKey)
+void OOHttp::Service::Start(Omega::Registry::IKey* pKey)
 {
-	m_ptrServer = OTL::SingletonObjectImpl<HttpServer>::CreateInstancePtr();
-	m_ptrServer->SetRegistryKey(pKey);
+	OTL::SingletonObjectImpl<Server>::CreateInstancePtr()->SetRegistryKey(pKey);
 }
 
-void Http::HttpService::Stop()
+void OOHttp::Service::Stop()
 {
 }
 
-void Http::HttpService::OnAccept(Net::IAsyncSocket* pSocket)
+void OOHttp::Service::OnAccept(Net::IAsyncSocket* pSocket)
 {
-	m_ptrServer->OnAccept(pSocket);	
+	OTL::SingletonObjectImpl<Server>::CreateInstancePtr()->OnAccept(pSocket);	
 }

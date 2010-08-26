@@ -19,35 +19,39 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOHTTPD_H_INCLUDED_
-#define OOHTTPD_H_INCLUDED_
+#ifndef OOHTTP_QUICK_BUFFER_H_INCLUDED_
+#define OOHTTP_QUICK_BUFFER_H_INCLUDED_
 
-//////////////////////////////////////////////
+namespace OOHttp
+{
+	class QuickBuffer
+	{
+	public:
+		QuickBuffer();
+		~QuickBuffer();
 
-#if defined(HAVE_CONFIG_H)
-#include <oocore-autoconf.h>
-#elif defined(_MSC_VER)
-#include "../oocore-msvc.h"
-#endif
+		void append(const char* bytes, size_t lenBytes);
+		void clear();
+		void compact();
+		void cache();
+		
+		const char* begin() const;
+		const char* end() const;
+		size_t length() const;
 
-/////////////////////////////////////////////////
+		void tell(size_t bytes);
 
-// Ensure we have the local Omega.h instead of the installed one...
-#include "../../include/Omega/Omega.h"
-#include "../../include/Omega/Remoting.h"
-#include "../../include/OTL/Remoting.h"
-#include "../../include/OTL/Exception.h"
-#include "../../include/OTL/Registry.h"
+	private:
+		const char*  m_ptr;
+		
+		char*       m_cached;
+		char*       m_cached_end;
+		size_t      m_cached_len;
+		const char* m_extern;
+		size_t      m_extern_len;
 
-#include "../../include/Omega/Service.h"
+		void grow(size_t len);
+	};
+}
 
-#include "Bits.h"
-
-/////////////////////////////////////////////////
-
-#include <sstream>
-#include <iomanip>
-
-#include <time.h>
-
-#endif // OOHTTPD_H_INCLUDED_
+#endif // OOHTTP_QUICK_BUFFER_H_INCLUDED_

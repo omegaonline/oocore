@@ -27,7 +27,7 @@
 #endif
 
 BEGIN_PROCESS_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(Http::HttpService)
+	OBJECT_MAP_ENTRY(OOHttp::Service)
 END_PROCESS_OBJECT_MAP()
 
 int main(int /*argc*/, char* /*argv*/[])

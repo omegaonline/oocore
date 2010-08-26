@@ -209,6 +209,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\QuickBuffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Request.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RequestHandler.cpp"
 				>
 			</File>
@@ -219,6 +227,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Bits.h"
+				>
+			</File>
+			<File
 				RelativePath=".\HttpServer.h"
 				>
 			</File>
@@ -228,6 +240,14 @@
 			</File>
 			<File
 				RelativePath=".\OOHttpd.h"
+				>
+			</File>
+			<File
+				RelativePath=".\QuickBuffer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Request.h"
 				>
 			</File>
 			<File

@@ -24,23 +24,20 @@
 
 #include "HttpServer.h"
 
-namespace Http
+namespace OOHttp
 {
 	extern "C" const Omega::guid_t OID_HttpService;
 	
-	class HttpService :
+	class Service :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactory<HttpService,&OID_HttpService,Omega::Activation::MachineLocal | Omega::Activation::SingleUse>,
+			public OTL::AutoObjectFactory<Service,&OID_HttpService,Omega::Activation::MachineLocal | Omega::Activation::SingleUse>,
 			public Omega::System::INetworkService
 	{
 	public:
-		BEGIN_INTERFACE_MAP(HttpService)
+		BEGIN_INTERFACE_MAP(Service)
 			INTERFACE_ENTRY(Omega::System::INetworkService)
 			INTERFACE_ENTRY(Omega::System::IService)
 		END_INTERFACE_MAP()
-
-	private:
-		OTL::ObjectPtr<OTL::SingletonObjectImpl<HttpServer> > m_ptrServer;
 
 	// IService members
 	public:

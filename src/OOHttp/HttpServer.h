@@ -22,23 +22,36 @@
 #ifndef OOHTTP_SERVER_H_INCLUDED_
 #define OOHTTP_SERVER_H_INCLUDED_
 
-namespace Http
+#include "RequestHandler.h"
+
+namespace OOHttp
 {
-	class HttpServer : 
+	void GetStatusText(unsigned int status_code, unsigned long nVersion, std::string& strText, std::string& strExtended);
+
+	class Server : 
 			public OTL::ObjectBase
 	{
 	public:
-		void InitOnce() {}
+		void InitOnce();
 
 		void SetRegistryKey(Omega::Registry::IKey* pKey);
 		void OnAccept(Omega::Net::IAsyncSocket* pSocket);
+		void GetHeaders(std::map<std::string,std::string>& headers); 
 
-		BEGIN_INTERFACE_MAP(HttpServer)
+		std::string GetErrorResponse(unsigned long nVersion, unsigned int status_code, const std::string strBodyText, const std::map<std::string,std::string>& headers = std::map<std::string,std::string>());
+		OTL::ObjectPtr<Omega::Http::Server::IResource> FindResource(IRequestHandler* request, RequestHandler::Info& info);
+
+		BEGIN_INTERFACE_MAP(Server)
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SpinLock                      m_lock;
+		Omega::Threading::Mutex               m_lock;
 		OTL::ObjectPtr<Omega::Registry::IKey> m_ptrKey;
+		
+		std::string GetVersion() const;
+		
+		OTL::ObjectPtr<Omega::Http::Server::IResource> options_resource(IRequestHandler* request, const RequestHandler::Info& info);
+		OTL::ObjectPtr<Omega::Http::Server::IResource> find_resource(IRequestHandler* request, const RequestHandler::Info& info);
 	};
 }
 

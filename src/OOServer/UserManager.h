@@ -104,8 +104,14 @@ namespace User
 		// Service handling
 		OOBase::RWMutex m_service_lock;
 		Omega::uint32_t m_nNextService;
-		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::IService> > m_mapServices;
-		std::map<Omega::uint32_t,OOSvrBase::IOHandler*>                    m_mapSockets;
+
+		struct Service
+		{
+			std::string                             strKey;
+			OTL::ObjectPtr<Omega::System::IService> ptrService;
+		};
+		std::map<Omega::uint32_t,Service>               m_mapServices;
+		std::map<Omega::uint32_t,OOSvrBase::IOHandler*> m_mapSockets;
 		
 		bool start_services();
 		void start_service(const std::string& strKey, const std::string& strOid);

@@ -111,6 +111,44 @@ bool User::Manager::start_services()
 
 		start_service(strKey,strOid);
 	}
+
+	// Now start all the network services listening...
+	try
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
+
+		std::map<uint32_t,Service> mapServices = m_mapServices;
+		
+		guard.release();
+
+		for (std::map<uint32_t,Service>::const_iterator i=mapServices.begin();i!=mapServices.end();++i)
+		{
+			try
+			{
+				ObjectPtr<System::INetworkService> ptrNS = i->second.ptrService;
+				if (ptrNS)
+				{
+					// Call the root, asking to start the async stuff, passing the id of the service...
+					listen_service_socket(i->second.strKey,i->first,ptrNS);
+				}
+			}
+			catch (IException* pE)
+			{
+				LOG_ERROR(("Failed to start network service %s: %s",i->second.strKey.c_str(),pE->GetDescription().ToNative().c_str()));
+				pE->Release();
+			}
+		}
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("Failed to start services: %s",e.what()));
+	}
+	catch (IException* pE)
+	{
+		LOG_ERROR(("Failed to start services: %s",pE->GetDescription().ToNative().c_str()));
+		pE->Release();
+	}
+
 	
 	return true;
 }
@@ -148,19 +186,15 @@ void User::Manager::start_service(const std::string& strKey, const std::string& 
 			while (!nServiceId && m_mapServices.find(m_nNextService) != m_mapServices.end());
 			
 			// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
+			Service svc;
+			svc.strKey = strKey;
+
 			if (pNS)
-				m_mapServices.insert(std::map<uint32_t,ObjectPtr<System::IService> >::value_type(nServiceId,pNS));
+				svc.ptrService = pNS;
 			else
-				m_mapServices.insert(std::map<uint32_t,ObjectPtr<System::IService> >::value_type(nServiceId,ptrService));
+				svc.ptrService = ptrService;
 
-			guard.release();
-
-			// Now try for the network parts...
-			if (ptrNetService)
-			{
-				// Call the root, asking to start the async stuff, passing the id of the service...
-				listen_service_socket(strKey,nServiceId,ptrNetService);
-			}
+			m_mapServices.insert(std::map<uint32_t,Service>::value_type(nServiceId,svc));
 		}
 		catch (...)
 		{
@@ -238,16 +272,16 @@ void User::Manager::stop_services()
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
 
-		std::map<uint32_t,ObjectPtr<System::IService> > mapServices = m_mapServices;
+		std::map<uint32_t,Service> mapServices = m_mapServices;
 		m_mapServices.clear();
 
 		guard.release();
 
-		for (std::map<uint32_t,ObjectPtr<System::IService> >::iterator i=mapServices.begin();i!=mapServices.end();++i)
+		for (std::map<uint32_t,Service>::iterator i=mapServices.begin();i!=mapServices.end();++i)
 		{
 			try
 			{
-				i->second->Stop();
+				i->second.ptrService->Stop();
 			}
 			catch (IException* pE)
 			{
@@ -299,12 +333,12 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
 		err = ENOENT;
-		std::map<uint32_t,ObjectPtr<System::IService> >::iterator i = m_mapServices.find(service_id);
+		std::map<uint32_t,Service>::iterator i = m_mapServices.find(service_id);
 		if (i != m_mapServices.end())
 		{
 			try
 			{
-				ObjectPtr<System::INetworkService> ptrService = i->second;
+				ObjectPtr<System::INetworkService> ptrService = i->second.ptrService;
 				if (ptrService)
 				{
 					guard.release();

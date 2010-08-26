@@ -386,7 +386,15 @@ void Root::Manager::remove_socket(Omega::uint32_t id)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapSockets.erase(id);
+		OOBase::SmartPtr<Socket> ptrSocket;
+		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i = m_mapSockets.find(id);
+		if (i != m_mapSockets.end())
+		{
+			ptrSocket = i->second;
+			m_mapSockets.erase(id);
+		}
+
+		guard.release();
 	}
 	catch (std::exception& e)
 	{
@@ -522,16 +530,7 @@ void Root::Manager::socket_close(Omega::uint32_t channel_id, OOBase::CDRStream& 
 		}
 		else
 		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-			try
-			{
-				m_mapSockets.erase(id);
-			}
-			catch (std::exception& e)
-			{
-				LOG_ERROR(("Exception thrown: %s",e.what()));
-			}
+			remove_socket(id);
 		}
 	}
 }

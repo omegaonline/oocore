@@ -953,6 +953,9 @@ void OOServer::MessageHandler::stop_request_threads()
 
 		countdown.update();
 	}
+
+	// Take a moment to let the threads actually complete...
+	OOBase::Thread::sleep(OOBase::timeval_t(0,100000));
 }
 
 OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)

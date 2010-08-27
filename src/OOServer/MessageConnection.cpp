@@ -110,7 +110,10 @@ bool OOServer::MessageConnection::read()
 	pBuffer->release();
 	
 	if (err != 0)
+	{
+		close();
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()),false);
+	}
 
 	return true;
 }
@@ -261,7 +264,10 @@ bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
 	int err = m_ptrSocket->async_send(pBuffer);
 	if (err != 0)
+	{
+		close();
 		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()),false);
+	}
 
 	return true;
 }

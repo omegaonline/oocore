@@ -64,7 +64,8 @@
 OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket) :
 		m_pHandler(pHandler),
 		m_ptrSocket(ptrSocket),
-		m_channel_id(0)
+		m_channel_id(0),
+		m_async_count(0)
 {
 	assert(m_ptrSocket);
 
@@ -74,6 +75,9 @@ OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const O
 OOServer::MessageConnection::~MessageConnection()
 {
 	m_ptrSocket->shutdown(true,true);
+
+	while (m_async_count > 0)
+		OOBase::Thread::yield();
 }
 
 void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
@@ -87,7 +91,7 @@ void OOServer::MessageConnection::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	m_ptrSocket->shutdown(true,true);
+	m_ptrSocket->shutdown(true,false);
 	
 	Omega::uint32_t prev_channel = m_channel_id;
 	m_channel_id = 0;
@@ -106,11 +110,14 @@ bool OOServer::MessageConnection::read()
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
+	++m_async_count;
+
 	int err = m_ptrSocket->async_recv(pBuffer);
 	pBuffer->release();
 	
 	if (err != 0)
 	{
+		--m_async_count;
 		close();
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()),false);
 	}
@@ -123,6 +130,7 @@ void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBas
 	if (err != 0)
 	{
 		LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
+		--m_async_count;
 		close();
 		return;
 	}
@@ -244,9 +252,13 @@ void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBas
 		}
 		else
 		{
+			++m_async_count;
+
 			err = pSocket->async_recv(buffer);
 			if (err != 0)
 			{
+				--m_async_count;
+
 				bSuccess = false;
 				LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
 			}
@@ -256,15 +268,20 @@ void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBas
 	if (bRelease)
 		buffer->release();
 
+	--m_async_count;
+
 	if (!bSuccess)
 		close();
 }
 
 bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
+	++m_async_count;
+
 	int err = m_ptrSocket->async_send(pBuffer);
 	if (err != 0)
 	{
+		--m_async_count;
 		close();
 		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()),false);
 	}
@@ -274,6 +291,8 @@ bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 
 void OOServer::MessageConnection::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
 {
+	--m_async_count;
+
 	if (err != 0)
 	{
 		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()));
@@ -283,6 +302,9 @@ void OOServer::MessageConnection::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, O
 
 void OOServer::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
 {
+	if (m_async_count-- == 0)
+		++m_async_count;
+
 	close();
 }
 

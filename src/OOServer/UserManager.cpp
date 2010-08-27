@@ -270,7 +270,10 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 
 	// Attach it to ourselves
 	if (register_channel(ptrMC,m_root_channel) == 0)
+	{
+		ptrMC->close();
 		return false;
+	}
 	
 	// Start I/O with root
 	if (!ptrMC->read())
@@ -282,10 +285,16 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 	// Now bootstrap
 	stream.reset();
 	if (!stream.write(sandbox_channel) || !stream.write(strPipe))
+	{
+		ptrMC->close();
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+	}
 
 	if (!call_async_function_i(&do_bootstrap,this,&stream))
+	{
+		ptrMC->close();
 		return false;
+	}
 
 	return true;
 }
@@ -359,16 +368,21 @@ bool User::Manager::on_accept(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocke
 	// Attach it to ourselves
 	uint32_t channel_id = register_channel(ptrMC,0);
 	if (channel_id == 0)
+	{
+		ptrMC->close();
 		return false;
+	}
 
 	// Send the channel id...
 	OOBase::CDRStream stream;
 	if (!stream.write(channel_id))
+	{
+		ptrMC->close();
 		LOG_ERROR_RETURN(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+	}
 
-	int err = ptrSocket->async_send(stream.buffer());
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOBase::system_error_text(err).c_str()),false);
+	if (!ptrMC->send(stream.buffer()))
+		return false;
 
 	// Start I/O
 	return ptrMC->read();

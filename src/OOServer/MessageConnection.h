@@ -58,6 +58,7 @@ namespace OOServer
 		MessageHandler*                          m_pHandler;
 		OOBase::SmartPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
 		Omega::uint32_t                          m_channel_id;
+		OOBase::AtomicInt<size_t>                m_async_count;
 
 		static const size_t     m_default_buffer_size = 1024;
 

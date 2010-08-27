@@ -318,13 +318,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	}
 
 	// Now start the read cycle from ptrMC
-	if (!ptrMC->read())
-	{
-		ptrMC->close();
-		return 0;
-	}
-
-	return channel_id;
+	return (ptrMC->read() ? channel_id : 0);
 }
 
 Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe)
@@ -377,11 +371,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncS
 		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
 	}
 
-	err = ptrSocket->async_send(stream.buffer());
-	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);
-
-	return channel_id;
+	return (ptrMC->send(stream.buffer()) ? channel_id : 0);
 }
 
 void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)

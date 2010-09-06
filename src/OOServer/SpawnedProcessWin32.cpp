@@ -96,9 +96,6 @@ namespace
 		strPipe = ssPipe.str();
 
 		// Create security descriptor
-		static const int NUM_ACES = 2;
-		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-
 		PSID pSID;
 		SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
 		if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
@@ -109,6 +106,9 @@ namespace
 			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
 		}
 		OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+
+		static const int NUM_ACES = 2;
+		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
 
 		// Set full control for the creating process SID
 		ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -248,7 +248,7 @@ namespace
 	static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 3;
-		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
 
 		// Set minimum access for the calling process SID
 		ea[0].grfAccessPermissions = WINSTA_CREATEDESKTOP;
@@ -287,7 +287,7 @@ namespace
 	static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 2;
-		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
 
 		// Set minimum access for the calling process SID
 		ea[0].grfAccessPermissions = DESKTOP_CREATEWINDOW;
@@ -520,7 +520,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		strCurDir = szPath;
 
 		// Restore path contents
-		len = len = (strAppPath.size()+1 > MAX_PATH ? MAX_PATH : strAppPath.size()+1);
+		len = (strAppPath.size()+1 > MAX_PATH ? MAX_PATH : strAppPath.size()+1);
 		memcpy(szPath,strAppPath.c_str(),len*sizeof(wchar_t));
 		szPath[len-1] = L'\0';
 
@@ -541,6 +541,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	ptrCmdLine[strCmdLine.size()] = L'\0';
 
 	// Forward declare these because of goto's
+	DWORD dwWait;
 	STARTUPINFOW startup_info = {0};
 	std::wstring strWindowStation;
 	HWINSTA hWinsta = 0;
@@ -655,7 +656,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 #endif
 
 	// See if process has immediately terminated...
-	DWORD dwWait = WaitForSingleObject(process_info.hProcess,100);
+	dwWait = WaitForSingleObject(process_info.hProcess,100);
 	if (dwWait != WAIT_TIMEOUT)
 	{
 		// Process aborted very quickly... this can happen if we have security issues
@@ -906,11 +907,13 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (bSandbox)
 	{
 		// Get username from config
+		std::wstring strUName;
 		std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
-		if (i == m_config_args.end())
-			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
+		if (i != m_config_args.end())
+			strUName = OOBase::from_utf8(i->second.c_str());
+			//LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
-		if (!LogonSandboxUser(OOBase::from_utf8(i->second.c_str()),uid))
+		if (!LogonSandboxUser(strUName,uid))
 		{
 			if (!bUnsafe)
 				return 0;

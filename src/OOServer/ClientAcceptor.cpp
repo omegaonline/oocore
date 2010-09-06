@@ -111,9 +111,6 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 
 	assert(!pipe_name.empty());
 
-	const int NUM_ACES  = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-
 	PSID pSID;
 	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
 	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
@@ -124,6 +121,9 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	}
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+	
+	const int NUM_ACES  = 2;
+	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;

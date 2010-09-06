@@ -97,7 +97,7 @@ namespace
 
 		// Create security descriptor
 		PSID pSID;
-		SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+		SID_IDENTIFIER_AUTHORITY SIDAuthCreator = {SECURITY_CREATOR_SID_AUTHORITY};
 		if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
 									  SECURITY_CREATOR_OWNER_RID,
 									  0, 0, 0, 0, 0, 0, 0,
@@ -621,7 +621,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		}
 		else
 		{
-			startup_info.lpDesktop = L"";
+			WCHAR sz[] = L"";
+			startup_info.lpDesktop = sz;
 			startup_info.wShowWindow = SW_HIDE;
 		}
 	}

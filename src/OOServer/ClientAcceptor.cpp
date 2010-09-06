@@ -112,7 +112,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	assert(!pipe_name.empty());
 
 	PSID pSID;
-	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = {SECURITY_CREATOR_SID_AUTHORITY};
 	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
 								  SECURITY_CREATOR_OWNER_RID,
 								  0, 0, 0, 0, 0, 0, 0,
@@ -134,7 +134,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
 
 	// Create a SID for the Local users group.
-	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_LOCAL_SID_AUTHORITY;
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_LOCAL_SID_AUTHORITY};
 	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
 								  SECURITY_LOCAL_RID,
 								  0, 0, 0, 0, 0, 0, 0,

@@ -163,7 +163,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
 	PSID pSID;
-	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = SECURITY_CREATOR_SID_AUTHORITY;
+	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = {SECURITY_CREATOR_SID_AUTHORITY};
 	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
 								  SECURITY_CREATOR_OWNER_RID,
 								  0, 0, 0, 0, 0, 0, 0,
@@ -174,7 +174,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
 
 	const int NUM_ACES = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;

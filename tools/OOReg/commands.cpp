@@ -127,11 +127,161 @@ static bool chkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	return true;
 }
 
+static bool mkkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+{
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_argument("key",0);
+		
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
+		return true;
+
+	if (args.find("help") != args.end())
+	{
+		std::cout << "Create a new key" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Usage: " << argv[0] << " <key name>" << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  --help (-h)              Display this help text" << std::endl;
+
+		return true;
+	}
+
+	std::map<std::string,std::string>::iterator key = args.find("key");
+	if (key == args.end() || key->second.empty())
+	{
+		std::cout << "Missing key argument";
+		return true;
+	}
+
+	std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+
+	OTL::ObjectPtr<Omega::Registry::IKey>(Omega::string_t(strKey.c_str(),false),Omega::Registry::IKey::CreateNew);
+
+	return true;
+}
+
+static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+{
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_argument("key",0);
+		
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
+		return true;
+
+	if (args.find("help") != args.end())
+	{
+		std::cout << "Remove an exisiting key" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Usage: " << argv[0] << " <key name>" << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  --help (-h)              Display this help text" << std::endl;
+
+		return true;
+	}
+
+	std::map<std::string,std::string>::iterator key = args.find("key");
+	if (key == args.end() || key->second.empty())
+	{
+		std::cout << "Missing key argument";
+		return true;
+	}
+
+	std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+
+	OTL::ObjectPtr<Omega::Registry::IKey>(L"/")->DeleteKey(Omega::string_t(strKey.c_str()+1,false));
+
+	return true;
+}
+
+static bool set(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+{
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_argument("name",0);
+	cmd_args.add_argument("value",1);
+		
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
+		return true;
+
+	if (args.find("help") != args.end())
+	{
+		std::cout << "Set a value" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Usage: " << argv[0] << " <name>" << " <value>" << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  --help (-h)              Display this help text" << std::endl;
+
+		return true;
+	}
+
+	std::map<std::string,std::string>::iterator name = args.find("name");
+	if (name == args.end() || name->second.empty())
+	{
+		std::cout << "Missing name argument";
+		return true;
+	}
+
+	std::map<std::string,std::string>::iterator value = args.find("value");
+	
+	ptrKey->SetValue(Omega::string_t(name->second.c_str(),false),Omega::string_t(value->second.c_str(),false));
+
+	return true;
+}
+
+static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+{
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_argument("name",0);
+		
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
+		return true;
+
+	if (args.find("help") != args.end())
+	{
+		std::cout << "Print a value" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Usage: " << argv[0] << " <name>" << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  --help (-h)              Display this help text" << std::endl;
+
+		return true;
+	}
+
+	std::map<std::string,std::string>::iterator name = args.find("name");
+	if (name == args.end() || name->second.empty())
+	{
+		std::cout << "Missing name argument";
+		return true;
+	}
+
+	Omega::any_t aVal = ptrKey->GetValue(Omega::string_t(name->second.c_str(),false));
+
+	std::cout << aVal.cast<Omega::string_t>().ToNative() << std::endl;
+
+	return true;
+}
+
 static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
 {
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
+	cmd_args.add_argument("key",0);
 		
 	// Parse command line
 	std::map<std::string,std::string> args;
@@ -142,19 +292,32 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	{
 		std::cout << "List the contents of the current key" << std::endl;
 		std::cout << std::endl;
+		std::cout << "Usage: " << argv[0] << " [<key>]" << std::endl;
 		std::cout << "Options:" << std::endl;
 		std::cout << "  --help (-h)              Display this help text" << std::endl;
 
 		return true;
 	}
+
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrLSKey = ptrKey;
+
+	std::map<std::string,std::string>::iterator key = args.find("key");
+	if (key != args.end() && !key->second.empty())
+	{
+		std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+
+		ptrLSKey = OTL::ObjectPtr<Omega::Registry::IKey>(Omega::string_t(strKey.c_str(),false));
+	}
+
+	std::cout << ptrLSKey->GetName().ToNative() << std::endl;
 	
-	std::set<Omega::string_t> keys = ptrKey->EnumSubKeys();
+	std::set<Omega::string_t> keys = ptrLSKey->EnumSubKeys();
 	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
 		std::cout << "[Key]  " << i->ToNative() << std::endl;
 	}
 
-	std::set<Omega::string_t> vals = ptrKey->EnumValues();
+	std::set<Omega::string_t> vals = ptrLSKey->EnumValues();
 	for (std::set<Omega::string_t>::const_iterator i=vals.begin();i!=vals.end();++i)
 	{
 		std::cout << i->ToNative() << std::endl;
@@ -197,7 +360,11 @@ static const Command cmds[] =
 {
 	{ "chkey", &chkey },
 	{ "ck", &chkey },
+	{ "mkkey", &mkkey },
+	{ "rmkey", &rmkey },
 	{ "help", &help },
+	{ "set", &set },
+	{ "print", &print },
 	{ "list", &list },
 	{ "ls", &list },
 	{ "quit", &quit },

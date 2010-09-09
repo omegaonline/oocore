@@ -33,7 +33,7 @@ static std::string canonicalise_key(const std::string& strIn, const std::string&
 {
 	// Try to work out where key is...
 	std::string strKey;
-	if (strIn.at(0) == '/')
+	if (!strIn.empty() && strIn.at(0) == '/')
 	{
 		// Absolute key...
 		strKey = strIn;
@@ -196,6 +196,10 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 
 	std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
 
+	// It would be nice to check whether we are deleting somewhere along the path to ptrKey
+	// And to ck up to the parent.
+	void* TODO;
+
 	OTL::ObjectPtr<Omega::Registry::IKey>(L"/")->DeleteKey(Omega::string_t(strKey.c_str()+1,false));
 
 	return true;
@@ -272,6 +276,41 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	Omega::any_t aVal = ptrKey->GetValue(Omega::string_t(name->second.c_str(),false));
 
 	std::cout << aVal.cast<Omega::string_t>().ToNative() << std::endl;
+
+	return true;
+}
+
+static bool rm(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+{
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_argument("name",0);
+		
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
+		return true;
+
+	if (args.find("help") != args.end())
+	{
+		std::cout << "Remove a value" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Usage: " << argv[0] << " <name>" << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  --help (-h)              Display this help text" << std::endl;
+
+		return true;
+	}
+
+	std::map<std::string,std::string>::iterator name = args.find("name");
+	if (name == args.end() || name->second.empty())
+	{
+		std::cout << "Missing name argument";
+		return true;
+	}
+
+	ptrKey->DeleteValue(Omega::string_t(name->second.c_str(),false));
 
 	return true;
 }
@@ -365,6 +404,9 @@ static const Command cmds[] =
 	{ "help", &help },
 	{ "set", &set },
 	{ "print", &print },
+	{ "p", &print },
+	{ "remove", &rm },
+	{ "rm", &rm },
 	{ "list", &list },
 	{ "ls", &list },
 	{ "quit", &quit },

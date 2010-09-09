@@ -25,6 +25,7 @@ stamp-h*
 
 # general stuff
 *.regdb
+oobase/
 
 # build stuff
 *.Plo

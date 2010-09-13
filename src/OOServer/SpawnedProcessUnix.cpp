@@ -42,6 +42,14 @@
 #include <sys/wait.h>
 #include <dirent.h>
 
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+
+#if defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif /* HAVE_SYS_FCNTL_H */
+
 #if defined(HAVE_SYS_STAT_H)
 #include <sys/stat.h>
 #endif
@@ -470,13 +478,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
 
-	// Wrap fd[0]
-	OOBase::POSIX::LocalSocket sock(fd[0],"");
-
 	// Add FD_CLOEXEC to fd[0]
 	int err = OOBase::BSD::set_close_on_exec(fd[0],true);
 	if (err != 0)
 	{
+		::close(fd[0]);
 		::close(fd[1]);
 		LOG_ERROR_RETURN(("fcntl() failed: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 	}
@@ -486,6 +492,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,bSandbox));
 	if (!pSpawnUnix)
 	{
+		::close(fd[0]);
 		::close(fd[1]);
 		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
 	}
@@ -501,6 +508,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,fd[1]))
 	{
+		::close(fd[0]);
 		::close(fd[1]);
 		return 0;
 	}
@@ -508,21 +516,18 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Done with fd[1]
 	::close(fd[1]);
 
-	// Bootstrap the user process...
-	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
-	if (!channel_id)
-		return 0;
-
 	// Create an async socket wrapper
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_local_socket(ptrMC,&err,&sock);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance()->attach_local_socket(fd[0],&err);
 	if (err != 0)
 	{
-		ptrMC->close();
+		::close(fd[0]);
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 	}
 
-	// Attach the async socket to the message connection
-	ptrMC->attach(pAsync);
+	// Bootstrap the user process...
+	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
+	if (!channel_id)
+		return 0;
 
 	return pSpawn;
 }
@@ -531,58 +536,50 @@ void Root::Manager::accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>&
 {
 	// Socket will close when it drops out of scope
 
-	OOSvrBase::AsyncLocalSocket::uid_t uid = ptrSocket->get_uid();
-
-	// Make sure we have a user process
-	UserProcess user_process;
-	if (get_user_process(uid,user_process))
+	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	int err = ptrSocket->get_uid(uid);
+	if (err != 0)
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err).c_str()));
+	else
 	{
-		// Alloc a new SpawnedProcess
-		SpawnedProcessUnix* pSpawnUnix = 0;
-		OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,false));
-		if (!pSpawnUnix)
+		// Make sure we have a user process
+		UserProcess user_process;
+		if (get_user_process(uid,user_process))
 		{
-			LOG_ERROR(("Out of memory"));
-			return;
-		}
-
-		UserProcess new_process;
-		new_process.ptrRegistry = user_process.ptrRegistry;
-		new_process.ptrSpawn = pSpawnUnix;
-
-		// Bootstrap the user process...
-		OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-		Omega::uint32_t channel_id = bootstrap_user(ptrSocket,ptrMC,new_process.strPipe);
-		if (channel_id)
-		{
-			// Create an async socket wrapper
-			int err = 0;
-			OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_local_socket(ptrMC,&err,pSocket);
-			if (err != 0)
+			// Alloc a new SpawnedProcess
+			SpawnedProcessUnix* pSpawnUnix = 0;
+			OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,false));
+			if (!pSpawnUnix)
 			{
-				ptrMC->close();
-				LOG_ERROR(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()));
+				LOG_ERROR(("Out of memory"));
 				return;
 			}
 
-			// Attach the async socket to the message connection
-			ptrMC->attach(pAsync);
+			UserProcess new_process;
+			new_process.ptrRegistry = user_process.ptrRegistry;
+			new_process.ptrSpawn = pSpawnUnix;
 
-			// Insert the data into the process map...
-			try
+			// Bootstrap the user process...
+			OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
+			Omega::uint32_t channel_id = bootstrap_user(ptrSocket,ptrMC,new_process.strPipe);
+			if (channel_id)
 			{
-				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+				// Insert the data into the process map...
+				try
+				{
+					OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-				m_mapUserProcesses.insert(std::map<Omega::uint32_t,UserProcess>::value_type(channel_id,new_process));
-			}
-			catch (std::exception& e)
-			{
-				ptrMC->close();
-				LOG_ERROR(("std::exception thrown %s",e.what()));
-			}
+					m_mapUserProcesses.insert(std::map<Omega::uint32_t,UserProcess>::value_type(channel_id,new_process));
+				}
+				catch (std::exception& e)
+				{
+					ptrMC->close();
+					LOG_ERROR(("std::exception thrown %s",e.what()));
+				}
 
-			// Now start the read cycle from ptrMC
-			ptrMC->read();
+				// Now start the read cycle from ptrMC
+				ptrMC->read();
+			}
 		}
 	}
 }

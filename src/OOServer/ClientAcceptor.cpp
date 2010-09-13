@@ -79,7 +79,7 @@ bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const
 {
 	// Make sure we delete any socket passed to us
 	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
-	
+
 	if (err != 0)
 		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -121,7 +121,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	}
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
-	
+
 	const int NUM_ACES  = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
 

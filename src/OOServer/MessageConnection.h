@@ -41,9 +41,9 @@ namespace OOServer
 	class MessageConnection : public OOSvrBase::IOHandler
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket);
+		MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
 		virtual ~MessageConnection();
-		
+
 		void set_channel_id(Omega::uint32_t channel_id);
 
 		void close();
@@ -54,11 +54,11 @@ namespace OOServer
 		MessageConnection(const MessageConnection&);
 		MessageConnection& operator = (const MessageConnection&);
 
-		OOBase::SpinLock                         m_lock;
-		MessageHandler*                          m_pHandler;
-		OOBase::SmartPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
-		Omega::uint32_t                          m_channel_id;
-		OOBase::AtomicInt<size_t>                m_async_count;
+		OOBase::SpinLock                              m_lock;
+		MessageHandler*                               m_pHandler;
+		OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
+		Omega::uint32_t                               m_channel_id;
+		OOBase::AtomicInt<size_t>                     m_async_count;
 
 		static const size_t     m_default_buffer_size = 1024;
 

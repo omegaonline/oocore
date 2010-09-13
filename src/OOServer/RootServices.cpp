@@ -37,7 +37,7 @@
 
 namespace
 {
-	class TcpAcceptor : 
+	class TcpAcceptor :
 		public OOSvrBase::Acceptor<OOSvrBase::AsyncSocket>,
 		public Root::Manager::ControlledObject
 	{
@@ -59,7 +59,7 @@ namespace
 		bool on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& strAddress, int err);
 	};
 
-	class AsyncSocket : 
+	class AsyncSocket :
 			public OOSvrBase::IOHandler,
 			public Root::Manager::Socket
 	{
@@ -114,7 +114,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 			else
 			{
 				count = setSubKeys.size();
-				
+
 				for (std::set<std::string>::const_iterator i=setSubKeys.begin();i!=setSubKeys.end();++i)
 				{
 					// Open the subkey
@@ -174,7 +174,7 @@ void Root::Manager::get_service_key(Omega::uint32_t channel_id, OOBase::CDRStrea
 			Omega::int64_t uKey = 0;
 			err = m_registry->open_key(0,uKey,strKey,0);
 			if (err != 0)
-				LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));			
+				LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
 			else
 			{
 				if (!response.write(err) ||
@@ -267,7 +267,7 @@ int Root::Manager::create_service_listener(Omega::uint32_t id, const std::string
 	// This is where we have a list of supported protocols...
 	if (strProtocol == "tcp")
 		ptrService = TcpAcceptor::create(this,id,strAddress,strPort,&err);
-	
+
 	/*else if (strProtocol == "udp")
 	{
 	}*/
@@ -296,7 +296,7 @@ int Root::Manager::create_service_listener(Omega::uint32_t id, const std::string
 			err = ENOMEM;
 		}
 	}
-	
+
 	return err;
 }
 
@@ -337,7 +337,7 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 
 		while (!id || m_mapSockets.find(id) != m_mapSockets.end())
 			id = m_uNextSocketId++;
-		
+
 		m_mapSockets.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::value_type(id,pSocket));
 	}
 	catch (std::exception& e)
@@ -452,7 +452,7 @@ void Root::Manager::socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& r
 				if (i == m_mapSockets.end())
 					err = EINVAL;
 				else
-					err = i->second->recv(lenBytes,bRecvAll);			
+					err = i->second->recv(lenBytes,bRecvAll);
 			}
 			catch (std::exception& e)
 			{
@@ -590,7 +590,7 @@ bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& 
 		m_pManager->remove_listener(m_id);
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -621,14 +621,14 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	// Move the ptr forwards
 	buffer->rd_ptr(12);
 	buffer->wr_ptr(12);
-	
+
 	int err = m_ptrSocket->async_recv(buffer,bRecvAll ? lenBytes : 0);
-	
+
 	buffer->release();
-	
+
 	if (err != 0)
 		LOG_ERROR(("async_recv failed: %s",OOBase::system_error_text(err).c_str()));
-	
+
 	return err;
 }
 
@@ -641,7 +641,7 @@ void AsyncSocket::on_recv(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* b
 
 		buffer->mark_wr_ptr(0);
 		buffer->mark_rd_ptr(0);
-	
+
 		// Send message on to sandbox
 		OOBase::CDRStream request(buffer);
 		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OnSocketRecv));
@@ -676,7 +676,7 @@ void AsyncSocket::on_recv(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* b
 		// Just forward on...
 		OOBase::SmartPtr<OOBase::CDRStream> response;
 		m_pManager->sendrecv_sandbox(request,response,0,1);
-	}	
+	}
 }
 
 int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
@@ -684,7 +684,7 @@ int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
 	int err = m_ptrSocket->async_send(buffer);
 	if (err != 0)
 		LOG_ERROR(("async_send failed: %s",OOBase::system_error_text(err).c_str()));
-	
+
 	return err;
 }
 
@@ -696,7 +696,7 @@ void AsyncSocket::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* b
 		size_t mark = buffer->mark_wr_ptr();
 		buffer->mark_wr_ptr(0);
 		buffer->mark_rd_ptr(0);
-	
+
 		// Send message on to sandbox
 		OOBase::CDRStream request(buffer);
 		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OnSocketSent));

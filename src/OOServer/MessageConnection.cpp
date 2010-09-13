@@ -61,7 +61,7 @@
 
 #include "MessageConnection.h"
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket) :
 		m_pHandler(pHandler),
 		m_ptrSocket(ptrSocket),
 		m_channel_id(0),
@@ -92,7 +92,7 @@ void OOServer::MessageConnection::close()
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	m_ptrSocket->shutdown(true,false);
-	
+
 	Omega::uint32_t prev_channel = m_channel_id;
 	m_channel_id = 0;
 
@@ -114,7 +114,7 @@ bool OOServer::MessageConnection::read()
 
 	int err = m_ptrSocket->async_recv(pBuffer);
 	pBuffer->release();
-	
+
 	if (err != 0)
 	{
 		--m_async_count;
@@ -153,7 +153,7 @@ void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBas
 
 		// Mark the read point
 		size_t mark_rd = buffer->mark_rd_ptr();
-		
+
 		OOBase::CDRStream header(buffer);
 
 		// Read the payload specific data
@@ -504,17 +504,17 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 
 		// Dec usage count
 		size_t waiters = --m_waiting_threads;
-		
+
 		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
 			// If we have too many threads running, or we were waiting or closed, exit this thread
 			if (wait || res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed || (waiters > 2 && !bOnce))
 				return 0;
-			
+
 			// Wait again...
 			continue;
 		}
-		
+
 		// Read remaining message members
 		Omega::uint32_t seq_no = 0;
 		msg->m_payload.read(seq_no);
@@ -1419,7 +1419,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	// Write out the header length and remember where we wrote it
 	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
 	header.write(Omega::uint32_t(0));
-	
+
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
 

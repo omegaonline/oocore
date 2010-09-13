@@ -980,7 +980,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	// Connect up
 	int err = 0;
-	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = Proactor::instance()->attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance()->attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 

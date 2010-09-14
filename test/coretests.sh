@@ -7,15 +7,18 @@ echo Starting OOServer...
 ../OOServer/ooserverd --version
 ../OOServer/oosvruser --version
 
-../OOServer/ooserverd --unsafe -f ../$srcdir/test.conf &
+../OOServer/ooserverd --unsafe -f $PWD/../$srcdir/test.conf &
 child=$!
 sleep 5s
 
 # Start up oosvruser
-if test -f ../OOServer/oo-launch; then
-	set OMEGA_USER_BINARY ../OOServer/oosvruser
-	eval `../OOServer/oo-launch`
+if test -f ../../tools/OOLaunch/oo-launch; then
+	OMEGA_USER_BINARY=$PWD/../OOServer/oosvruser
+	echo "OMEGA_USER_BINARY=$OMEGA_USER_BINARY"
+	export OMEGA_USER_BINARY
+	eval `../../tools/OOLaunch/oo-launch`
 	echo "OMEGA_SESSION_ADDRESS=$OMEGA_SESSION_ADDRESS"
+	echo "OMEGA_SESSION_PID=$OMEGA_SESSION_PID"
 fi
 
 cd ../../test
@@ -23,6 +26,7 @@ cd ../../test
 ../libtool --mode=execute -dlopen ../src/OOServer/oosvrlite.la -dlopen TestLibrary/testlibrary.la ./coretests
 ret=$?
 
-kill $child &> /dev/null
+#kill $child &> /dev/null
+kill -9 $child
 
 exit $ret

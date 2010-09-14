@@ -130,28 +130,23 @@ static int run_oosvruser()
 			exit(EXIT_FAILURE);
 		}
 
-		dup2(STDIN_FILENO,fd);
-		dup2(STDOUT_FILENO,fd);
-		dup2(STDERR_FILENO,fd);
+		// Check this session stuff with the Andrews book! umask? etc...
+		void* TODO;
+
+		dup2(fd,STDIN_FILENO);
+		dup2(fd,STDOUT_FILENO);
+		dup2(fd,STDERR_FILENO);
 		close(fd);
 
-		// Close out connection to the users terminal
+		// Become a session leader
 		if (setsid() == -1)
-		{
-			std::cerr << "setsid() failed in run_oosvruser: " << errno << std::endl;
 			exit(EXIT_FAILURE);
-		}
 
 		const char* run = getenv("OMEGA_USER_BINARY");
 		if (run)
 			do_exec(run,pipes[WRITE_END]);
-		else
-		{
-			do_exec(LIBEXEC_DIR "/oosvruser",pipes[WRITE_END]);
 
-			// Try current directory
-			do_exec("./oosvruser",pipes[WRITE_END]);
-		}
+		do_exec(LIBEXEC_DIR "/oosvruser",pipes[WRITE_END]);
 
 		exit(EXIT_FAILURE);
 	}
@@ -219,7 +214,7 @@ int main(int argc, char* argv[])
 	size_t r = read(p,&pid,sizeof(pid));
 	if (r == 0)
 	{
-		std::cerr << "Failed to lauch oosvruser process" << std::endl;
+		std::cerr << "Failed to launch oosvruser process" << std::endl;
 		return EXIT_FAILURE;
 	}
 	else if (r != sizeof(pid))

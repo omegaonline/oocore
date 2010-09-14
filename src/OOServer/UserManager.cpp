@@ -137,7 +137,7 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOBase::SmartPtr<OOSvrBase::AsyncSocket> local_socket = Proactor::instance()->connect_local_socket(strPipe,&err,&wait);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance()->connect_local_socket(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -150,17 +150,16 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	if (err != 0)
 	{
 		::close(fd);
-		LOG_ERROR_RETURN(("fcntl() failed: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err).c_str()),false);
 	}
 
-	OOBase::POSIX::LocalSocket* pLocal = 0;
-	OOBASE_NEW(pLocal,OOBase::POSIX::LocalSocket(fd,""));
-	if (!pLocal)
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance()->attach_local_socket(fd,&err);
+	if (err != 0)
 	{
 		::close(fd);
-		LOG_ERROR_RETURN(("Out of memory"),false);
+		LOG_ERROR_RETURN(("Failed to attach to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 	}
-	OOBase::SmartPtr<OOBase::LocalSocket> local_socket(pLocal);
+
 #endif
 
 	// Invent a new pipe name...
@@ -204,19 +203,21 @@ bool User::Manager::session_launch(const std::string& strPipe)
 
 	// Now connect to ooserverd
 	int err = 0;
-	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local("/tmp/omegaonline",&err);
-	if (!local_socket)
-		LOG_ERROR_RETURN(("Failed to connect to ooserverd: %s",OOBase::system_error_text(err).c_str()),false);
-
-	err = local_socket->close_on_exec();
-	if (err)
-		LOG_ERROR_RETURN(("close_on_exec failed: %s",OOBase::system_error_text(err).c_str()),false);
+	OOBase::timeval_t wait(20);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance()->connect_local_socket("/tmp/omegaonline",&err,&wait);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-	err = local_socket->send(version);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to communicate with ooserverd: %s",OOBase::system_error_text(err).c_str()),false);
+
+	OOBase::CDRStream stream;
+	if (!stream.write(version))
+		LOG_ERROR_RETURN(("Failed to write root data: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+
+	err = local_socket->send(stream.buffer());
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Connect up
 	return handshake_root(local_socket,strNewPipe);
@@ -224,7 +225,7 @@ bool User::Manager::session_launch(const std::string& strPipe)
 #endif
 }
 
-bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& local_socket, const std::string& strPipe)
+bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const std::string& strPipe)
 {
 	OOBase::CDRStream stream;
 
@@ -274,7 +275,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& loc
 		ptrMC->close();
 		return false;
 	}
-	
+
 	// Start I/O with root
 	if (!ptrMC->read())
 	{
@@ -318,7 +319,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 			!pThis->bootstrap(sandbox_channel) ||
 			!pThis->m_acceptor.start(pThis,strPipe) ||
 			!pThis->start_services();
-		
+
 	if (bQuit)
 		pThis->quit();
 }
@@ -357,7 +358,7 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 	}
 }
 
-bool User::Manager::on_accept(OOBase::SmartPtr<OOSvrBase::AsyncSocket>& ptrSocket)
+bool User::Manager::on_accept(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket)
 {
 	// Create a new MessageConnection
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
@@ -465,7 +466,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	case OOServer::OnSocketSent:
 		on_socket_sent(request);
 		break;
-		
+
 	case OOServer::OnSocketClose:
 		on_socket_close(request);
 		break;

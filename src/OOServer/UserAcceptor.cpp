@@ -98,8 +98,8 @@ void User::Acceptor::stop()
 bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::string& /*strAddress*/, int err)
 {
 	// Make sure we delete any socket passed to us
-	OOBase::SmartPtr<OOSvrBase::AsyncSocket> ptrSocket = pSocket;
-	
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
+
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -140,7 +140,7 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::
 #endif
 
 	m_pManager->on_accept(ptrSocket);
-		
+
 	// Keep accepting, whatever...
 	return true;
 }

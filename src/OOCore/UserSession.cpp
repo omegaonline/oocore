@@ -204,7 +204,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	bStandalone = false;
 
 	OOBase::CDRStream stream;
-	
+
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 	if (!stream.write(version))
@@ -243,7 +243,11 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	void* TODO; // Some error checking here maybe?
 
-	return std::string(getenv("OMEGA_SESSION_ADDRESS"));
+	char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
+	if (!pszAddr)
+		return std::string();
+	else
+		return std::string(pszAddr);
 
 #endif
 }
@@ -284,7 +288,7 @@ void OOCore::UserSession::term_i()
 	// Shutdown the socket...
 	if (m_stream)
 		m_stream->shutdown(true,true);
-	
+
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();
 
@@ -609,7 +613,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	{
 		j->second->process_channel_close(closed_channel_id);
 	}
-		
+
 	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
 		if (i->second->m_usage_count > 0)
@@ -791,7 +795,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, c
 		case ENOTCONN:
 #endif
 			throw Remoting::IChannelClosedException::Create();
-		
+
 		default:
 			OMEGA_THROW(err);
 		}

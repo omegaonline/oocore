@@ -156,6 +156,14 @@ static void recurse_output_exception(Omega::IException* pE)
 void output_exception(Omega::IException* pE)
 {
 	output("Desc:\t%ls\n",pE->GetDescription().c_str());
+
+	Omega::IInternalException* pInt = static_cast<Omega::IInternalException*>(pE->QueryInterface(OMEGA_GUIDOF(Omega::IInternalException)));
+	if (pInt)
+	{
+		output("Src:\t%ls\n",pInt->GetSource().c_str());
+		pInt->Release();
+	}
+
 	recurse_output_exception(pE);
 }
 

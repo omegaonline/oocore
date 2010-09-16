@@ -393,8 +393,8 @@ int OOCore::UserSession::run_read_loop()
 	{
 		// Read the header
 		header.reset();
-		err = m_stream->recv(header.buffer(),s_initial_read);
-		if (err != 0)
+		size_t recvd = m_stream->recv(header.buffer(),s_initial_read,&err);
+		if (err != 0 || recvd != s_initial_read)
 			break;
 
 		// Read the payload specific data
@@ -421,7 +421,7 @@ int OOCore::UserSession::run_read_loop()
 
 		err = header.last_error();
 		if (err != 0)
-			OOBase_CallCriticalFailure(err);
+			break;
 
 		// Subtract what we have already read
 		nReadLen -= s_initial_read;
@@ -433,9 +433,9 @@ int OOCore::UserSession::run_read_loop()
 			OOBase_OutOfMemory();
 
 		// Issue another read for the rest of the data
-		err = m_stream->recv(msg->m_payload.buffer(),nReadLen);
-		if (err != 0)
-			OOBase_CallCriticalFailure(err);
+		recvd = m_stream->recv(msg->m_payload.buffer(),nReadLen,&err);
+		if (err != 0 || recvd != nReadLen)
+			break;
 
 		// Reset the byte order
 		msg->m_payload.big_endian(big_endian);

@@ -90,7 +90,7 @@ bool User::Manager::start_services()
 		pE->Release();
 		return false;
 	}
-	
+
 	if (!response)
 		LOG_ERROR_RETURN(("No response from root"),false);
 
@@ -118,7 +118,7 @@ bool User::Manager::start_services()
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
 		std::map<uint32_t,Service> mapServices = m_mapServices;
-		
+
 		guard.release();
 
 		for (std::map<uint32_t,Service>::const_iterator i=mapServices.begin();i!=mapServices.end();++i)
@@ -149,7 +149,7 @@ bool User::Manager::start_services()
 		pE->Release();
 	}
 
-	
+
 	return true;
 }
 
@@ -172,7 +172,7 @@ void User::Manager::start_service(const std::string& strKey, const std::string& 
 		try
 		{
 			ObjectPtr<System::INetworkService> ptrNetService;
-				
+
 			System::INetworkService* pNS = ptrService.QueryInterface<System::INetworkService>();
 			if (pNS)
 				ptrNetService.Attach(pNS);
@@ -184,7 +184,7 @@ void User::Manager::start_service(const std::string& strKey, const std::string& 
 				nServiceId = (++m_nNextService);
 			}
 			while (!nServiceId && m_mapServices.find(m_nNextService) != m_mapServices.end());
-			
+
 			// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
 			Service svc;
 			svc.strKey = strKey;
@@ -250,7 +250,7 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const std::string& strK
 
 	if (err != 0)
 		OMEGA_THROW(err);
-	
+
 	int64_t uKey = 0;
 	std::string strKeyPath;
 	if (!response->read(uKey) ||
@@ -321,7 +321,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 	int32_t err = 0;
 	uint32_t service_id = 0;
 	uint32_t id = 0;
-	
+
 	if (!request.read(service_id) ||
 		!request.read(id))
 	{
@@ -342,7 +342,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 				if (ptrService)
 				{
 					guard.release();
-				
+
 					// Create a socket
 					ObjectPtr<ObjectImpl<AsyncSocket> > ptrSocket = ObjectImpl<AsyncSocket>::CreateInstancePtr();
 					ptrSocket->Init(this,id);
@@ -356,7 +356,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 					guard2.release();
 
 					// Let the service know...
-					ptrService->OnAccept(ptrSocket);	
+					ptrService->OnAccept(ptrSocket);
 					err = 0;
 				}
 			}
@@ -368,7 +368,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			}
 		}
 	}
-	
+
 	response.write(err);
 }
 
@@ -395,7 +395,7 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 {
 	int32_t err = 0;
 	uint32_t id = 0;
-			
+
 	if (!request.read(id) ||
 		!request.read(err))
 	{
@@ -404,7 +404,7 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 	else
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
-		 
+
 		try
 		{
 			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
@@ -427,7 +427,7 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 {
 	int32_t err = 0;
 	uint32_t id = 0;
-			
+
 	if (!request.read(id) ||
 		!request.read(err))
 	{
@@ -436,7 +436,7 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 	else
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
-		 
+
 		try
 		{
 			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
@@ -458,13 +458,13 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 void User::Manager::on_socket_close(OOBase::CDRStream& request)
 {
 	uint32_t id = 0;
-			
+
 	if (!request.read(id))
 		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error()).c_str()));
 	else
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
-		 
+
 		try
 		{
 			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
@@ -599,7 +599,7 @@ void AsyncSocket::on_recv(OOSvrBase::AsyncSocket*, OOBase::Buffer* buffer, int e
 	ObjectPtr<ISystemException> ptrSE;
 	if (err != 0)
 		ptrSE.Attach(ISystemException::Create(err));
-	
+
 	if (buffer)
 		ptrNotify->OnRecv(ptrSocket,buffer->length(),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
 	else
@@ -626,7 +626,7 @@ void AsyncSocket::on_sent(OOSvrBase::AsyncSocket*, OOBase::Buffer* buffer, int e
 	ObjectPtr<ISystemException> ptrSE;
 	if (err != 0)
 		ptrSE.Attach(ISystemException::Create(err));
-	
+
 	if (buffer && bIncludeData)
 		ptrNotify->OnSent(ptrSocket,buffer->length(),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
 	else

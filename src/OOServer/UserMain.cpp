@@ -146,7 +146,11 @@ int main(int argc, char* argv[])
 
 	// Now run...
 	if (bRun)
+	{
+		std::cout << std::string(argv[0]) << " started successfully." << std::endl;
+
 		manager.run();
+	}
 
 	// Stop the MessageHandler
 	manager.stop_request_threads();

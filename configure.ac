@@ -79,6 +79,9 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
 
   # Always try to hide symbols
   AX_CXXFLAGS_GCC_OPTION([-fvisibility=hidden])
+  
+  # Turn off C++0x nagging
+  AX_CXXFLAGS_GCC_OPTION([-Wno-c++0x])
 
   AS_IF([test "x$debug" = "xtrue"],
   [

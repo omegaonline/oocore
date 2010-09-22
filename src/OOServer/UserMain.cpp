@@ -148,7 +148,6 @@ int main(int argc, char* argv[])
 	if (bRun)
 	{
 		std::cout << std::string(argv[0]) << " started successfully." << std::endl;
-
 		manager.run();
 	}
 

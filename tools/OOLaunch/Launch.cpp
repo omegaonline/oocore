@@ -73,17 +73,16 @@ static void do_exec(const char* path, int fd)
 	os.imbue(std::locale::classic());
 	os << "--launch-session=" << fd;
 
-	char* env[] =
-	{
-		strdup(path),
-		strdup(os.str().c_str()),
-		0
-	};
+#if defined(OMEGA_DEBUG)
+	// Try to use xterm if we are debugging...
+	std::string cmd = path;
+	cmd += " ";
+	cmd += os.str();
+	
+	execlp("xterm","xterm","-e",cmd.c_str(),(char*)0);
+#endif
 
-	execv(path,env);
-
-	for (size_t i=0;i<sizeof(env)/sizeof(env[0]);++i)
-		free(env[i]);
+	execl(path,path,os.str().c_str(),(char*)0);
 }
 
 static int run_oosvruser()
@@ -130,7 +129,7 @@ static int run_oosvruser()
 			exit(EXIT_FAILURE);
 		}
 
-		// Check this session stuff with the Andrews book! umask? etc...
+		// Check this session stuff with the Stevens book! umask? etc...
 		void* TODO;
 
 		dup2(fd,STDIN_FILENO);
@@ -138,17 +137,18 @@ static int run_oosvruser()
 		dup2(fd,STDERR_FILENO);
 		close(fd);
 
+#if !defined(OMEGA_DEBUG)
 		// Become a session leader
 		if (setsid() == -1)
 			exit(EXIT_FAILURE);
+#endif
 
 		const char* run = getenv("OMEGA_USER_BINARY");
 		if (run)
 			do_exec(run,pipes[WRITE_END]);
 
 		do_exec(LIBEXEC_DIR "/oosvruser",pipes[WRITE_END]);
-
-		exit(EXIT_FAILURE);
+		exit(127);
 	}
 
 	// We are the grandparent
@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
 	size_t r = read(p,&pid,sizeof(pid));
 	if (r == 0)
 	{
-		std::cerr << "Failed to launch oosvruser process" << std::endl;
+		std::cerr << "oosvruser process failed to start or terminated unexpectedly" << std::endl;
 		return EXIT_FAILURE;
 	}
 	else if (r != sizeof(pid))

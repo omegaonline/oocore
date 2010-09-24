@@ -33,5 +33,11 @@ EXTRA_DIST = \
 	UTF-16-test.txt \
 	UTF-8-test.txt
 
+if DEBUG
+TESTS_ENVIRONMENT = \
+	OMEGA_DEBUG=yes \
+	OMEGA_USER_BINARY=$(abs_top_builddir)/src/OOServer/oosvruser 
+endif
+
 TESTS = \
 	$(srcdir)/coretests.sh

@@ -73,14 +73,16 @@ static void do_exec(const char* path, int fd)
 	os.imbue(std::locale::classic());
 	os << "--launch-session=" << fd;
 
-#if defined(OMEGA_DEBUG)
-	// Try to use xterm if we are debugging...
-	std::string cmd = path;
-	cmd += " ";
-	cmd += os.str();
-	
-	execlp("xterm","xterm","-e",cmd.c_str(),(char*)0);
-#endif
+	const char* debug = getenv("OMEGA_DEBUG");
+	if (debug && strcmp(debug,"yes")==0)
+	{
+		// Try to use xterm if we are debugging...
+		std::string cmd = path;
+		cmd += " ";
+		cmd += os.str();
+		
+		execlp("xterm","xterm","-e",cmd.c_str(),(char*)0);
+	}
 
 	execl(path,path,os.str().c_str(),(char*)0);
 }
@@ -137,11 +139,13 @@ static int run_oosvruser()
 		dup2(fd,STDERR_FILENO);
 		close(fd);
 
-#if !defined(OMEGA_DEBUG)
-		// Become a session leader
-		if (setsid() == -1)
-			exit(EXIT_FAILURE);
-#endif
+		const char* debug = getenv("OMEGA_DEBUG");
+		if (!debug || strcmp(debug,"yes")!=0)
+		{
+			// Become a session leader
+			if (setsid() == -1)
+				exit(EXIT_FAILURE);
+		}
 
 		const char* run = getenv("OMEGA_USER_BINARY");
 		if (run)

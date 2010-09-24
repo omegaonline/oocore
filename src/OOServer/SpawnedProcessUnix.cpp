@@ -238,8 +238,8 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 {
 	if (strAppPath.empty())
 		strAppPath = LIBEXEC_DIR "/oosvruser";
-
-	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %s",strAppPath.c_str());
+	else
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %s",strAppPath.c_str());
 
 	// Check our uid
 	bool bUnsafeStart = false;
@@ -333,7 +333,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 		free(cmd_line[0]);
 		free(cmd_line[1]);
 
-		exit(err);
+		exit(EXIT_FAILURE);
 	}
 	else
 	{

@@ -218,7 +218,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
 	size_t mark = stream.buffer()->mark_rd_ptr();
-	err = local_socket->recv(stream.buffer(),4);
+	local_socket->recv(stream.buffer(),4,&err);
 	if (err != 0)
 		OMEGA_THROW(err);
 
@@ -226,7 +226,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	if (!stream.read(len))
 		OMEGA_THROW(stream.last_error());
 
-	err = local_socket->recv(stream.buffer(),len);
+	local_socket->recv(stream.buffer(),len,&err);
 	if (err != 0)
 		OMEGA_THROW(err);
 

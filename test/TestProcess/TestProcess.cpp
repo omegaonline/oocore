@@ -45,12 +45,58 @@ BEGIN_PROCESS_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(TestProcessImpl)
 END_PROCESS_OBJECT_MAP()
 
+#include <iostream>
+
+static void exception_details(Omega::IException* pE);
+
+static void report_cause(Omega::IException* pE)
+{
+	Omega::IException* pCause = pE->GetCause();
+	if (pCause)
+	{
+		std::cerr << "Cause: ";
+		exception_details(pCause);
+	}
+}
+
+void report_exception(Omega::IException* pE)
+{
+	std::cerr << "Exception: ";
+	exception_details(pE);
+}
+
+static void exception_details(Omega::IException* pOrig)
+{
+	try
+	{
+		pOrig->Rethrow();
+	}
+	catch (Omega::IInternalException* pE)
+	{
+		std::cerr << "Omega::IInternalException - ";
+		std::cerr << pE->GetDescription().ToNative() << std::endl;
+
+		Omega::string_t strSource = pE->GetSource();
+		if (!strSource.IsEmpty())
+			std::cerr << "At: " << strSource.ToNative() << std::endl;
+
+		report_cause(pE);
+		pE->Release();
+	}
+	catch (Omega::IException* pE)
+	{
+		std::cerr << pE->GetDescription().ToNative() << std::endl;
+		report_cause(pE);
+		pE->Release();
+	}
+}
+
 int main(int /*argc*/, char* /*argv*/[])
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		pE->Release();
+		report_exception(pE);
 		return EXIT_FAILURE;
 	}
 
@@ -61,7 +107,7 @@ int main(int /*argc*/, char* /*argv*/[])
 	}
 	catch (Omega::IException* pE)
 	{
-		pE->Release();
+		report_exception(pE);
 		ret = EXIT_FAILURE;
 	}
 

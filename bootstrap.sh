@@ -2,7 +2,7 @@
 echo Running autotools...
 
 if test ! -d "./oobase"; then
-	echo You need a link to OOBase
+	echo You need to link oobase to ./oobase, try ln -s
 fi
 
 aclocal -I m4 && \

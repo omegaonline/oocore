@@ -5,9 +5,6 @@ echo Starting ooserverd...
 
 # Kill any running ooserverd
 
-rm /tmp/omegaonline &> /dev/null
-rm /tmp/oo-* &> /dev/null
-
 # This forces libtool to link the correct dlls under Win32...
 ../OOServer/ooserverd --version > /dev/null
 ../OOServer/oosvruser --version > /dev/null
@@ -41,5 +38,11 @@ kill -9 $child
 
 # Make sure our session is dead...
 kill -9 $OMEGA_SESSION_PID &> /dev/null
+
+if test -f /tmp/omegaonline; then
+	rm /tmp/omegaonline
+fi
+
+rm /tmp/oo-* &> /dev/null
 
 exit $ret

@@ -7,7 +7,7 @@ Makefile.in
 autom4te.cache/
 build-aux/
 libltdl/
-*/libltdl/
+.libs/
 m4/argz.m4
 m4/libtool.m4
 m4/ltdl.m4
@@ -25,6 +25,7 @@ stamp-h*
 
 # general stuff
 *.regdb
+oobase
 oobase/
 
 # build stuff
@@ -60,11 +61,9 @@ mt.dep
 dte80a.*
 
 # Unix stuff
-*.so
 ooserverd
 oosvruser
-lt-oosvruser
 oo-launch
+ooreg
 coretests
-lt-coretests
 testprocess

@@ -24,18 +24,24 @@
 
 #if defined(HAVE_UNISTD_H) && !defined(_WIN32)
 
+#include <unistd.h>
+#include <sys/wait.h>
+
 namespace
 {
 	class UserProcessUnix : public User::Process
 	{
 	public:
+		UserProcessUnix() : m_pid(0)
+		{}
+
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
 
 		void exec(const std::wstring& strExeName);
 
 	private:
-
+		pid_t m_pid;
 	};
 }
 
@@ -52,19 +58,51 @@ User::Process* User::Process::exec(const std::wstring& strExeName)
 
 void UserProcessUnix::exec(const std::wstring& strExeName)
 {
-	void* POSIX_TODO;
+	pid_t pid = fork();
+	if (pid < 0)
+		OMEGA_THROW(errno);
+	else if (pid == 0)
+	{
+		// We are the child
+
+		std::string strApp = OOBase::to_native(strExeName.c_str());
+		
+		// Check whether we need to control signals here...
+		// Not sure what we should do about stdin/out/err
+		void* POSIX_TODO;
+
+		execlp("sh","-c",strApp.c_str(),(char*)0);
+
+		_exit(EXIT_FAILURE);
+	}
+
+	m_pid = pid;
 }
 
 bool UserProcessUnix::running()
 {
-	void* POSIX_TODO;
+	if (m_pid == 0)
+		return false;
 
+	pid_t retv = waitpid(m_pid,NULL,WNOHANG);
+	if (retv == 0)
+		return true;
+
+	m_pid = 0;
 	return false;
 }
 
 bool UserProcessUnix::wait_for_exit(const OOBase::timeval_t* wait, int* exit_code)
 {
-	void* POSIX_TODO;
+	if (m_pid == 0)
+		return true;
+
+	if (wait)
+		OOBase::Thread::sleep(*wait);
+
+	pid_t retv = waitpid(m_pid,exit_code,WNOHANG);
+	if (retv != 0)
+		return true;
 
 	return false;
 }

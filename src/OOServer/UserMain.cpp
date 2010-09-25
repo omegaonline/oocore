@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 	// Now run...
 	if (bRun)
 	{
-		std::cout << std::string(argv[0]) << " started successfully." << std::endl;
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"%s started successfully.",argv[0]);
 		manager.run();
 	}
 

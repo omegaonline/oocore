@@ -93,7 +93,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 	std::string strPipe;
 	if (!bStandaloneAlways)
 		strPipe = discover_server_port(bStandalone);
-
+		
 	if (!bStandalone)
 	{
 		// Connect up to the root process...
@@ -103,7 +103,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 		do
 		{
 			m_stream = OOBase::Socket::connect_local(strPipe,&err,&wait);
-			if (!err)
+			if (!err || err != ENOENT)
 				break;
 
 			// We ignore the error, and try again until we timeout
@@ -241,14 +241,12 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 #else
 
-	void* TODO; // Some error checking here maybe?
-
 	char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
 	if (!pszAddr)
-		return std::string();
-	else
-		return std::string(pszAddr);
+		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
 
+	return std::string(pszAddr);
+	
 #endif
 }
 

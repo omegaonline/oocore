@@ -3,6 +3,11 @@
 cd ../src/OOCore
 echo Starting ooserverd...
 
+# Kill any running ooserverd
+
+rm /tmp/omegaonline &> /dev/null
+rm /tmp/oo-* &> /dev/null
+
 # This forces libtool to link the correct dlls under Win32...
 ../OOServer/ooserverd --version > /dev/null
 ../OOServer/oosvruser --version > /dev/null
@@ -32,7 +37,6 @@ cd ../../test
 ret=$?
 
 #kill $child &> /dev/null
-
 kill -9 $child
 
 # Make sure our session is dead...

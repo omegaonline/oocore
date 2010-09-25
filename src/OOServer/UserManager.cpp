@@ -198,6 +198,10 @@ bool User::Manager::session_launch(const std::string& strPipe)
 	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
 		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
 
+	// Make sure we set our OMEGA_SESSION_ADDRESS
+	if (setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1) != 0)
+		LOG_ERROR_RETURN(("Failed to set OMEGA_SESSION_ADDRESS: %s",OOBase::system_error_text(errno).c_str()),false);
+
 	// Done with the port...
 	close(fd);
 

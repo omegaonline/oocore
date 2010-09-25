@@ -77,6 +77,11 @@ static void do_exec(const char* path, int fd)
 	if (debug && strcmp(debug,"yes")==0)
 	{
 		// Try to use xterm if we are debugging...
+		/*std::string cmd = "libtool --mode=execute ddd --args ";
+		cmd += path;
+		cmd += " ";
+		cmd += os.str();*/
+
 		std::string cmd = path;
 		cmd += " ";
 		cmd += os.str();

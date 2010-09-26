@@ -24,11 +24,7 @@
 
 //////////////////////////////////////////////
 
-#if defined(HAVE_CONFIG_H)
-#include <oocore-autoconf.h>
-#elif defined(_MSC_VER)
-#include "../oocore-msvc.h"
-#endif
+#include "../oocore-config.h"
 
 /////////////////////////////////////////////////
 

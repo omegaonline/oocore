@@ -22,9 +22,7 @@
 #include "OOServer_User.h"
 #include "UserManager.h"
 
-#if defined(HAVE_SIGNAL_H)
 #include <signal.h>
-#endif
 
 #ifdef HAVE_VLD_H
 #include <vld.h>
@@ -99,7 +97,7 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-#if defined(HAVE_SIGNAL_H) && !defined(_WIN32)
+#if defined(HAVE_UNISTD_H)
 	// Ignore SIGPIPE
 	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));

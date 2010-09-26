@@ -38,9 +38,7 @@
 #include "SpawnedProcess.h"
 #include "Protocol.h"
 
-#if defined(HAVE_SIGNAL_H)
 #include <signal.h>
-#endif
 
 Root::Manager::Manager(const std::map<std::string,std::string>& args) :
 		m_cmd_args(args),
@@ -57,7 +55,7 @@ Root::Manager::~Manager()
 
 int Root::Manager::run()
 {
-#if defined(HAVE_SIGNAL_H) && !defined(_WIN32)
+#if !defined(_WIN32)
 	// Ignore SIGPIPE
 	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));
@@ -95,7 +93,7 @@ int Root::Manager::run()
 
 #if defined (_WIN32)
 					bQuit = (wait_for_quit() != CTRL_BREAK_EVENT);
-#elif defined(HAVE_SIGNAL_H)
+#elif defined(HAVE_UNISTD_H)
 					bQuit = (wait_for_quit() != SIGHUP);
 #else
 					wait_for_quit();

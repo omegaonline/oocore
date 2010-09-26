@@ -462,6 +462,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\oocore-config.h"
+				>
+			</File>
+			<File
 				RelativePath="..\oocore-msvc.h"
 				>
 			</File>

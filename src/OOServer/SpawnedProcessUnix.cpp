@@ -475,12 +475,12 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
 
 	// Add FD_CLOEXEC to fd[0]
-	int err = OOBase::BSD::set_close_on_exec(fd[0],true);
+	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
 	if (err != 0)
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("fcntl() failed: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 	}
 
 	// Alloc a new SpawnedProcess

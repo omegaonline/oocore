@@ -108,13 +108,13 @@ namespace
 SpawnedProcessUnix::SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox) :
 		m_bSandbox(bSandbox),
 		m_uid(id),
-		m_pid(-1)
+		m_pid(0)
 {
 }
 
 SpawnedProcessUnix::~SpawnedProcessUnix()
 {
-	if (m_pid != pid_t(-1))
+	if (m_pid != 0)
 	{
 		pid_t retv = 0;
 		for (int i=0; i<10; ++i)
@@ -131,7 +131,7 @@ SpawnedProcessUnix::~SpawnedProcessUnix()
 		if (retv == 0)
 			kill(m_pid,SIGKILL);
 
-		m_pid = pid_t(-1);
+		m_pid = 0;
 	}
 }
 
@@ -401,7 +401,7 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 
 bool SpawnedProcessUnix::Compare(uid_t uid) const
 {
-	return (m_uid == uid && m_pid != pid_t(-1));
+	return (m_uid == uid && m_pid != 0);
 }
 
 bool SpawnedProcessUnix::IsSameUser(uid_t uid) const

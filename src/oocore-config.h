@@ -31,10 +31,9 @@
 
 ////////////////////////////////////////
 // Try to work out what's going on with MS Windows
-
 #if defined(HAVE_WINDOWS_H)
-	#if (HAVE_WINDOWS_H != 1)
-	#error What are you doing?
+	#if !defined(_WIN32)
+	#error No _WIN32 ?!?
 	#endif
 
 	// Prevent inclusion of old winsock
@@ -72,10 +71,6 @@
 	#endif
 	#endif
 
-	#if !defined(_WIN32)
-	#error No _WIN32?!?
-	#endif
-
 	// Check for obsolete windows versions
 	#if defined(_WIN32_WINDOWS)
 	#error You cannot build Omega Online for Windows 95/98/Me!
@@ -91,7 +86,17 @@
 ////////////////////////////////////////
 // Bring in POSIX if possible
 #if defined(HAVE_UNISTD_H)
-#include <unistd.h>
+	#include <unistd.h>
+
+	// check for POSIX.1 IEEE 1003.1
+	#if !defined(_POSIX_VERSION)
+	#error <unistd.h> is not POSIX compliant?
+	#endif
+
+	// Check pthreads
+	#if defined (HAVE_PTHREADS_H) && !defined(_POSIX_THREADS)
+	#error Your pthreads does not appears to be POSIX compliant?
+	#endif
 #endif
 
 #endif // OOCORE_CONFIG_H_INCLUDED_

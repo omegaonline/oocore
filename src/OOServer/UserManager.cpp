@@ -141,11 +141,10 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
-#else
+#elif defined(HAVE_UNISTD_H)
 	// Use the passed fd
 	int fd = atoi(strPipe.c_str());
 
-#if defined(HAVE_UNISTD_H)
 	// Add FD_CLOEXEC to fd
 	int err = OOBase::POSIX::set_close_on_exec(fd,true);
 	if (err != 0)
@@ -153,7 +152,6 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 		::close(fd);
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err).c_str()),false);
 	}
-#endif
 
 	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance()->attach_local_socket(fd,&err);
 	if (err != 0)

@@ -28,7 +28,7 @@
 #include <shlobj.h>
 #endif
 
-#if defined(HAVE_SYS_STAT_H)
+#if defined(HAVE_UNISTD_H)
 #include <sys/stat.h>
 #endif
 

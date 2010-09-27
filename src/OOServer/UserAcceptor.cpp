@@ -120,7 +120,7 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::
 		return true;
 	}
 
-#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
+#if defined(HAVE_UNISTD_H)
 
 	// Check to see if the connection came from a process with our uid
 	OOSvrBase::AsyncLocalSocket::uid_t uid;

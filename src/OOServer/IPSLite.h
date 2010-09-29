@@ -32,8 +32,6 @@ public:
 	Omega::string_t GetArg(const Omega::string_t& arg);
 
 protected:
-	void InitOnce() {}
-
 	BEGIN_INTERFACE_MAP(InterProcessService)
 		INTERFACE_ENTRY(OOCore::IInterProcessService)
 	END_INTERFACE_MAP()

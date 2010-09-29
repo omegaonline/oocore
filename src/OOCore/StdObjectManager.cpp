@@ -229,10 +229,6 @@ OOCore::StdObjectManager::StdObjectManager() :
 {
 }
 
-OOCore::StdObjectManager::~StdObjectManager()
-{
-}
-
 void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);

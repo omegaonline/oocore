@@ -277,8 +277,6 @@ namespace OOCore
 			public Omega::Compartment::ICompartment
 	{
 	public:
-		virtual ~CompartmentImpl();
-
 		void init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel);
 
 		BEGIN_INTERFACE_MAP(CompartmentImpl)
@@ -289,15 +287,18 @@ namespace OOCore
 		OOBase::SpinLock                             m_lock;
 		ObjectPtr<ObjectImpl<OOCore::ComptChannel> > m_ptrChannel;
 
+		void Final_Release();
+
 	// ICompartment members
 	public:
 		void CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject);
 	};
 }
 
-OOCore::CompartmentImpl::~CompartmentImpl()
+void OOCore::CompartmentImpl::Final_Release()
 {
 	// Propogate close message upstream and out to other compartments...
+	delete this;
 	void* TODO;
 }
 

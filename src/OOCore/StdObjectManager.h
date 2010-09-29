@@ -56,8 +56,7 @@ namespace OOCore
 	{
 	public:
 		StdObjectManager();
-		virtual ~StdObjectManager();
-
+		
 		BEGIN_INTERFACE_MAP(StdObjectManager)
 			INTERFACE_ENTRY(IStdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)

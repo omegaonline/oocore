@@ -82,7 +82,7 @@ namespace
 			public IKey
 	{
 	protected:
-		void InitOnce();
+		void Init_Once();
 
 		BEGIN_INTERFACE_MAP(RootKey)
 			INTERFACE_ENTRY(IKey)
@@ -340,7 +340,7 @@ void HiveKey::DeleteValue(const string_t& strName)
 		OMEGA_THROW(err);
 }
 
-void RootKey::InitOnce()
+void RootKey::Init_Once()
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 

@@ -94,10 +94,6 @@ namespace
 	};
 }
 
-void OOHttp::Server::InitOnce()
-{
-}
-
 void OOHttp::Server::SetRegistryKey(Registry::IKey* pKey)
 {
 	Threading::Guard<Threading::Mutex> guard(m_lock);

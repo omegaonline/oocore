@@ -32,8 +32,6 @@ namespace OOHttp
 			public OTL::ObjectBase
 	{
 	public:
-		void InitOnce();
-
 		void SetRegistryKey(Omega::Registry::IKey* pKey);
 		void OnAccept(Omega::Net::IAsyncSocket* pSocket);
 		void GetHeaders(std::map<std::string,std::string>& headers); 

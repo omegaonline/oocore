@@ -105,7 +105,7 @@ OOCore::ServiceManager::ServiceManager() : m_nNextCookie(1)
 {
 }
 
-OOCore::ServiceManager::~ServiceManager()
+void OOCore::ServiceManager::Final_Release()
 {
 	try
 	{
@@ -116,12 +116,12 @@ OOCore::ServiceManager::~ServiceManager()
 			i->second.m_ptrObject.Detach();
 		}
 	}
-	catch (Omega::IException* pE)
+	catch (std::exception& e)
 	{
-		pE->Release();
+		OMEGA_THROW(e);
 	}
-	catch (...)
-	{}
+
+	delete this;
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)

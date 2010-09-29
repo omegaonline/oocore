@@ -53,9 +53,9 @@ namespace OOCore
 	{
 	public:
 		Proxy();
-		virtual ~Proxy();
-
+		
 		void init(Omega::uint32_t proxy_id, StdObjectManager* pManager);
+		void Final_Release();
 
 		Omega::IObject* UnmarshalInterface(Omega::Remoting::IMessage* pMessage);
 

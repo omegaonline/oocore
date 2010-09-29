@@ -46,7 +46,7 @@ void OOCore::Compartment::close()
 		}
 		m_mapChannels.clear();
 
-		for (std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
+		for (std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
 		{
 			i->second->disconnect();
 		}
@@ -202,7 +202,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::const_iterator i=m_mapCompartments.find(compartment_id);
+	std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::const_iterator i=m_mapCompartments.find(compartment_id);
 	if (i != m_mapCompartments.end())
 		ptrChannel = i->second;
 
@@ -220,7 +220,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 		// And add to the map
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::pair<std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::iterator,bool> p = m_mapCompartments.insert(std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > >::value_type(compartment_id,ptrChannel));
+		std::pair<std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator,bool> p = m_mapCompartments.insert(std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::value_type(compartment_id,ptrChannel));
 		if (!p.second)
 			ptrChannel = p.first->second;
 	}
@@ -286,12 +286,12 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SpinLock                           m_lock;
+		OOBase::SpinLock                             m_lock;
 		ObjectPtr<ObjectImpl<OOCore::ComptChannel> > m_ptrChannel;
 
 	// ICompartment members
 	public:
-		Remoting::IProxy* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+		void CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject);
 	};
 }
 
@@ -306,38 +306,20 @@ void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > 
 	m_ptrChannel = ptrChannel;
 }
 
-Remoting::IProxy* OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
 	// Get the remote instance IObjectFactory
-	IObject* pObject = 0;
-	ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
+	IObject* pObjF = 0;
+	ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObjF);
 
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
-	pObject = 0;
-
+	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObjF));
+	
 	// Call CreateInstance
+	pObject = 0;
 	ptrOF->CreateInstance(pOuter,iid,pObject);
-
-	ObjectPtr<IObject> ptrObj;
-	ptrObj.Attach(pObject);
-
-	ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(ptrObj);
-
-	System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
-	if (!shim || !static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
-		return 0;
-
-	// Retrieve the underlying proxy
-	System::Internal::auto_safe_shim proxy;
-	const System::Internal::SafeShim* pE = static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
-	if (pE)
-		System::Internal::throw_correct_exception(pE);
-
-	// Control its lifetime
-	return System::Internal::create_safe_proxy<Remoting::IProxy>(proxy);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Compartment::ICompartment*,OOCore_ICompartment_Create,0,())

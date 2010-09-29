@@ -24,19 +24,16 @@ static bool do_cmpt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	ptrCompartment.Attach(Omega::Compartment::ICompartment::Create());
 	TEST(ptrCompartment);
 
-	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy;
-	ptrProxy.Attach(ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest)));
-	TEST(ptrProxy);
+	Omega::IObject* pObj = 0;
+	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	TEST(pObj);
 
-	/*OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
-	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObject));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
+	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObj));
 
 	// Test the interface
 	TEST(ptrSimpleTest);
-	interface_tests(ptrSimpleTest);*/
-
-	// Test unregistering
-	TEST(unregister_library());
+	interface_tests(ptrSimpleTest);
 
 	return true;
 }
@@ -76,13 +73,12 @@ static bool do_cmpt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	ptrCompartment.Attach(Omega::Compartment::ICompartment::Create());
 	TEST(ptrCompartment);
 
-	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy;
-	ptrProxy.Attach(ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest)));
-	TEST(ptrProxy);
+	Omega::IObject* pObj = 0;
+	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	TEST(pObj);
 
-
-	/*OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
-	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObject));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
+	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObj));
 
 	// Test the interface
 	TEST(ptrSimpleTest);
@@ -96,10 +92,7 @@ static bool do_cmpt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}*/
-
-	// Test unregistering
-	TEST(unregister_process());
+	}
 
 	return true;
 }

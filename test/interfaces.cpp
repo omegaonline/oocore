@@ -624,8 +624,6 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	TEST(unregister_library());
-
 	return true;
 }
 

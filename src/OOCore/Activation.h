@@ -36,6 +36,7 @@ namespace OOCore
 	{
 	protected:
 		ServiceManager();
+		virtual ~ServiceManager();
 
 		BEGIN_INTERFACE_MAP(ServiceManager)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
@@ -44,8 +45,6 @@ namespace OOCore
 	private:
 		ServiceManager(const ServiceManager&);
 		ServiceManager& operator = (const ServiceManager&);
-
-		void Final_Release();
 
 		OOBase::RWMutex m_lock;
 		Omega::uint32_t m_nNextCookie;

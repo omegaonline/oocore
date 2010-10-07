@@ -38,7 +38,7 @@ public:
 
 void TestProcessImpl::Abort()
 {
-	exit(EXIT_FAILURE);
+	_exit(EXIT_FAILURE);
 }
 
 BEGIN_PROCESS_OBJECT_MAP()

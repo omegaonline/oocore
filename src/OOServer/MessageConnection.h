@@ -132,7 +132,6 @@ namespace OOServer
 
 		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs) = 0;
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
-		virtual bool on_channel_open(Omega::uint32_t channel);
 		virtual void on_channel_closed(Omega::uint32_t channel) = 0;
 		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 

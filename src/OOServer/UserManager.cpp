@@ -82,51 +82,37 @@ void User::Manager::run()
 	// Wait for stop
 	wait_for_quit();
 
-	// Stop accepting new clients
-	m_acceptor.stop();
+	{
+		void* TODO; // All this needs to be in an async_function()
 
-	// Close all the sinks
-	close_all_remotes();
+		// Stop accepting new clients
+		m_acceptor.stop();
 
-	// Stop services
-	stop_services();
+		// Close all the sinks
+		close_all_remotes();
+
+		// Stop services
+		stop_services();
+
+		// Unregister our object factories
+		GetModule()->UnregisterObjectFactories();
+
+		// Unregister InterProcessService
+		if (m_nIPSCookie)
+		{
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+			ptrROT->RevokeObject(m_nIPSCookie);
+			m_nIPSCookie = 0;
+		}
+
+		// Close the OOCore
+		Omega::Uninitialize();
+	}
 
 	// Close the user pipes
 	close_channels();
-
-	// Unregister our object factories
-	GetModule()->UnregisterObjectFactories();
-
-	// Unregister InterProcessService
-	if (m_nIPSCookie)
-	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-		ptrROT->RevokeObject(m_nIPSCookie);
-		m_nIPSCookie = 0;
-	}
-
-	// Close the OOCore
-	Omega::Uninitialize();
-}
-
-bool User::Manager::on_channel_open(Omega::uint32_t channel)
-{
-	if (channel != m_root_channel)
-	{
-		try
-		{
-			create_object_manager(channel,guid_t::Null());
-		}
-		catch (IException* pE)
-		{
-			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
-			pE->Release();
-			return false;
-		}
-	}
-	return true;
 }
 
 bool User::Manager::fork_slave(const std::string& strPipe)

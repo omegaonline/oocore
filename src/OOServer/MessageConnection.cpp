@@ -647,14 +647,6 @@ Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<Mess
 
 			m_mapChannelIds.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::value_type(channel_id,ptrMC));
 		}
-
-		if (!on_channel_open(channel_id))
-		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-			m_mapChannelIds.erase(channel_id);
-			return 0;
-		}
 	}
 	catch (std::exception& e)
 	{
@@ -666,12 +658,6 @@ Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<Mess
 }
 
 bool OOServer::MessageHandler::can_route(Omega::uint32_t, Omega::uint32_t)
-{
-	// Do nothing, used in derived classes
-	return true;
-}
-
-bool OOServer::MessageHandler::on_channel_open(Omega::uint32_t)
 {
 	// Do nothing, used in derived classes
 	return true;

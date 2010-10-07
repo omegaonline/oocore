@@ -785,20 +785,11 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, c
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
 	if (err != 0)
 	{
-		switch (err)
-		{
-#if defined(_WIN32)
-		case ERROR_NO_DATA:
-#else
-		case ENOTCONN:
-#endif
-			throw Remoting::IChannelClosedException::Create();
-
-		default:
-			OMEGA_THROW(err);
-		}
+		ObjectPtr<IException> ptrE;
+		ptrE.Attach(ISystemException::Create(err));
+		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
-
+					
 	if (attribs & TypeInfo::Asynchronous)
 		return 0;
 	else
@@ -825,7 +816,11 @@ void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t se
 
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
 	if (err != 0)
-		OMEGA_THROW(err);
+	{
+		ObjectPtr<IException> ptrE;
+		ptrE.Attach(ISystemException::Create(err));
+		throw Remoting::IChannelClosedException::Create(ptrE);
+	}
 }
 
 OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)

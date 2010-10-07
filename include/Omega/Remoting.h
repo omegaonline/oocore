@@ -73,7 +73,7 @@ namespace Omega
 
 		interface IChannelClosedException : public IException
 		{
-			static IChannelClosedException* Create();
+			static IChannelClosedException* Create(IException* pCause = 0);
 		};
 
 		interface IMarshal : public IObject
@@ -185,10 +185,10 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Remoting::IChannelSink*,Open,2,((in),const string_t&,strEndpoint,(in),Remoting::IChannelSink*,pSink))
 )
 
-OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,0,())
-inline Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create()
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,1,((in),Omega::IException*,pCause))
+inline Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create(Omega::IException* pCause)
 {
-	return OOCore_Remoting_IChannelClosedException_Create();
+	return OOCore_Remoting_IChannelClosedException_Create(pCause);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())

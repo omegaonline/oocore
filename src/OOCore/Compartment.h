@@ -57,7 +57,7 @@ namespace OOCore
 
 		void close();
 		
-		void process_channel_close(Omega::uint32_t closed_channel_id);
+		bool process_channel_close(Omega::uint32_t closed_channel_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_channel_om(Omega::uint32_t src_channel_id);
@@ -72,7 +72,13 @@ namespace OOCore
 		UserSession*    m_pSession;
 		Omega::uint16_t m_id;
 
-		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >    m_mapChannels;
+		struct ChannelInfo
+		{
+			OTL::ObjectPtr<OTL::ObjectImpl<Channel> > m_ptrChannel;
+			bool                                      m_bOpen;
+		};
+
+		std::map<Omega::uint32_t,ChannelInfo>      m_mapChannels;
 		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > > m_mapCompartments;
 	};
 }

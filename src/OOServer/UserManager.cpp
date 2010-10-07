@@ -396,7 +396,7 @@ bool User::Manager::on_accept(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptr
 void User::Manager::on_channel_closed(Omega::uint32_t channel)
 {
 	// Close the corresponding Object Manager
-	try
+	/*try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -429,7 +429,7 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 		}
 	}
 	catch (...)
-	{}
+	{}*/
 
 	// Give the remote layer a chance to close channels
 	local_channel_closed(channel);

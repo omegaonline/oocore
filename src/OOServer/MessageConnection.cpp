@@ -89,13 +89,13 @@ void OOServer::MessageConnection::close()
 
 	m_ptrSocket->shutdown(true,false);
 
-	Omega::uint32_t prev_channel = m_channel_id;
+	Omega::uint32_t channel_id = m_channel_id;
 	m_channel_id = 0;
 
 	guard.release();
 
-	if (prev_channel)
-		m_pHandler->channel_closed(prev_channel,0);
+	if (channel_id)
+		m_pHandler->channel_closed(channel_id,0);
 }
 
 bool OOServer::MessageConnection::read()
@@ -747,15 +747,28 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(co
 
 void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id)
 {
-	// Propogate the message to all user processes...
+	// Remove the channel
+	bool bPulse = false;
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		bPulse = (m_mapChannelIds.erase(channel_id) != 0);
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("std::exception thrown %s",e.what()));
+	}
+
 	try
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
+		// Propogate the message to all user processes...
 		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 		{
 			// Always route upstream, and/or follow routing rules
-			if (i->first != channel_id && i->first != src_channel_id &&
+			if (i->first != src_channel_id &&
 					(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
 			{
 				send_channel_close(i->first,channel_id);
@@ -767,20 +780,24 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 
-	try
-	{
-		// Remove the channel
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		m_mapChannelIds.erase(channel_id);
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
-
 	// Inform derived classes that the channel has gone...
 	on_channel_closed(channel_id);
+
+	if (bPulse)
+	{
+		try
+		{
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+			// Unblock all waiting threads
+			for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+				i->second->m_msg_queue.pulse();
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("std::exception thrown %s",e.what()));
+		}
+	}
 }
 
 Omega::uint16_t OOServer::MessageHandler::classify_channel(Omega::uint32_t channel_id)
@@ -1119,22 +1136,6 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 	// Close the channel
 	channel_closed(closed_channel_id,msg->m_src_channel_id);
-
-	try
-	{
-		// Unblock all waiting threads
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-		{
-			if (i->second->m_usage_count > 0)
-				i->second->m_msg_queue.pulse();
-		}
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
 }
 
 void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)

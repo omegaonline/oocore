@@ -555,8 +555,6 @@ int OOCore::UserSession::run_read_loop()
 		i->second->m_msg_queue.close();
 	}
 
-	guard.release();
-
 	// Stop the default message queue
 	m_default_msg_queue.close();
 
@@ -607,14 +605,16 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	// Pass on the message to the compartments
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
+	bool bPulse = false;
 	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
-		j->second->process_channel_close(closed_channel_id);
+		if (j->second->process_channel_close(closed_channel_id))
+			bPulse = true;
 	}
 
-	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	if (bPulse)
 	{
-		if (i->second->m_usage_count > 0)
+		for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 			i->second->m_msg_queue.pulse();
 	}
 }
@@ -1017,7 +1017,7 @@ OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint1
 
 	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i = m_mapCompartments.find(id);
 	if (i == m_mapCompartments.end())
-		throw Remoting::IChannelClosedException::Create();
+		return 0;
 
 	return i->second;
 }
@@ -1112,6 +1112,8 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 	if (pContext->m_current_cmpt != 0)
 	{
 		OOBase::SmartPtr<OOCore::Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
+		if (!ptrCompt)
+			throw Remoting::IChannelClosedException::Create();
 
 		ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = ptrCompt->create_compartment(0,guid_t::Null());
 

@@ -157,7 +157,7 @@ namespace OOCore
 		static int io_worker_fn(void* pParam);
 
 		// Compartment members
-		Omega::uint16_t                                        m_next_compartment;
+		Omega::uint16_t                                          m_next_compartment;
 		std::map<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
 
 		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment_i();

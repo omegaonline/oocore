@@ -46,8 +46,6 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	protected:
-		virtual ~ChannelBase() {}
-
 		void init(Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 
 		OOBase::SpinLock                                  m_lock;

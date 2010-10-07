@@ -161,12 +161,15 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
+	// The OM is actually the 'controlling' object for open state
+	if (!m_ptrOM)
+		throw Remoting::IChannelClosedException::Create();
+
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
 	
 	guard.release();
 
-	if (!ptrMarshaller)
-		throw Remoting::IChannelClosedException::Create();
+	assert(ptrMarshaller);
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
@@ -250,11 +253,11 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	{
 		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
 	}
-	catch (Remoting::IChannelClosedException*)
+	catch (Remoting::IChannelClosedException* pE)
 	{
 		// Disconnect ourselves on failure
 		disconnect();
-		throw;
+		pE->Rethrow();
 	}
 
 	uint32_t other_end = 0;

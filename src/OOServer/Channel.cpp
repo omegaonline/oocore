@@ -116,11 +116,9 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 				disconnect();
 				throw Omega::Remoting::IChannelClosedException::Create();
 			}
-			else
-			{
-				disconnect();
-				OMEGA_THROW("Internal server exception");
-			}
+			
+			disconnect();
+			OMEGA_THROW("Internal server exception");
 		}
 	}
 	catch (...)
@@ -203,11 +201,9 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 			disconnect();
 			throw Omega::Remoting::IChannelClosedException::Create();
 		}
-		else
-		{
-			disconnect();
-			OMEGA_THROW("Internal server exception");
-		}
+		
+		disconnect();
+		OMEGA_THROW("Internal server exception");
 	}
 
 	if (!response)

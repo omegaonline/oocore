@@ -277,6 +277,12 @@ void OOCore::ComptChannel::init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::u
 	m_ptrCompt = ptrCompt;
 }
 
+void OOCore::ComptChannel::close_compartment()
+{
+	// Tell the other end to go...
+
+}
+
 Omega::bool_t OOCore::ComptChannel::IsConnected()
 {
 	return true;
@@ -314,9 +320,9 @@ namespace OOCore
 
 void OOCore::CompartmentImpl::Final_Release()
 {
-	// Propogate close message upstream and out to other compartments...
+	m_ptrChannel->close_compartment();
+
 	delete this;
-	void* TODO;
 }
 
 void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel)

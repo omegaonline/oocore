@@ -37,6 +37,7 @@ namespace OOCore
 	{
 	public:
 		void init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		void close_compartment();
 		
 		BEGIN_INTERFACE_MAP(ComptChannel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)

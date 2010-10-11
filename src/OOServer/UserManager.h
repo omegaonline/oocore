@@ -78,6 +78,9 @@ namespace User
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 
+		static void do_quit(void* pParams, OOBase::CDRStream& input);
+		void do_quit_i();
+
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);

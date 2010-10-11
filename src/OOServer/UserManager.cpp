@@ -82,35 +82,6 @@ void User::Manager::run()
 	// Wait for stop
 	wait_for_quit();
 
-	{
-		void* TODO; // All this needs to be in an async_function()
-
-		// Stop accepting new clients
-		m_acceptor.stop();
-
-		// Close all the sinks
-		close_all_remotes();
-
-		// Stop services
-		stop_services();
-
-		// Unregister our object factories
-		GetModule()->UnregisterObjectFactories();
-
-		// Unregister InterProcessService
-		if (m_nIPSCookie)
-		{
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-			ptrROT->RevokeObject(m_nIPSCookie);
-			m_nIPSCookie = 0;
-		}
-
-		// Close the OOCore
-		Omega::Uninitialize();
-	}
-
 	// Close the user pipes
 	close_channels();
 }
@@ -311,7 +282,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 			!pThis->start_services();
 
 	if (bQuit)
-		pThis->quit();
+		pThis->call_async_function_i(&do_quit,pThis,0);
 }
 
 bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
@@ -422,7 +393,47 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 
 	// If the root closes, we should end!
 	if (channel == m_root_channel)
-		quit();
+		call_async_function_i(&do_quit,this,0);
+}
+
+void User::Manager::do_quit(void* pParams, OOBase::CDRStream&)
+{
+	static_cast<Manager*>(pParams)->do_quit_i();
+}
+
+void User::Manager::do_quit_i()
+{
+	// Stop accepting new clients
+	m_acceptor.stop();
+
+	// Close all the sinks
+	close_all_remotes();
+
+	// Stop services
+	stop_services();
+
+	// Unregister our object factories
+	GetModule()->UnregisterObjectFactories();
+
+	// Unregister InterProcessService
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	Omega::uint32_t nIPSCookie = m_nIPSCookie;
+	m_nIPSCookie = 0;
+	guard.release();
+
+	if (nIPSCookie)
+	{
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+		ptrROT->RevokeObject(nIPSCookie);
+	}
+
+	// Close the OOCore
+	Omega::Uninitialize();
+
+	// And now call quit()
+	quit();
 }
 
 void User::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)

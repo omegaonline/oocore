@@ -366,6 +366,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	// Read the destination
 	Omega::uint32_t dest_channel_id = 0;
 	input.read(dest_channel_id);
+	Omega::uint32_t orig_dest_channel_id = dest_channel_id;
 
 	// Read the source
 	Omega::uint32_t src_channel_id = 0;
@@ -461,7 +462,11 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 
 			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(dest_channel_id);
 			if (i == m_mapChannelIds.end())
+			{
+				// Send closed message back to sender
+				send_channel_close(src_channel_id,orig_dest_channel_id);
 				return true;
+			}
 
 			ptrMC = i->second;
 		}
@@ -735,39 +740,47 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 {
 	// Remove the channel
 	bool bPulse = false;
+	bool bReport = true;
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		bPulse = (m_mapChannelIds.erase(channel_id) != 0);
+
+		// If src_channel_id == 0 then the underlying connection has closed, check whether we need to report it...
+		if (!bPulse && src_channel_id == 0)
+			bReport = false;
 	}
 	catch (std::exception& e)
 	{
 		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 
-	try
+	if (bReport)
 	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		// Propogate the message to all user processes...
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
+		try
 		{
-			// Always route upstream, and/or follow routing rules
-			if (i->first != src_channel_id &&
-					(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+			// Propogate the message to all user processes...
+			for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 			{
-				send_channel_close(i->first,channel_id);
+				// Always route upstream, and/or follow routing rules
+				if (i->first != src_channel_id &&
+						(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
+				{
+					send_channel_close(i->first,channel_id);
+				}
 			}
 		}
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("std::exception thrown %s",e.what()));
+		}
 
-	// Inform derived classes that the channel has gone...
-	on_channel_closed(channel_id);
+		// Inform derived classes that the channel has gone...
+		on_channel_closed(channel_id);
+	}
 
 	if (bPulse)
 	{

@@ -894,10 +894,17 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->second;
 
-	if (!ptrCompt)
-		return;
-
 	guard.release();
+
+	if (!ptrCompt)
+	{
+		// Send a channel close back to the sender
+		OOBase::CDRStream msg;
+		if (msg.write(pMsg->m_dest_cmpt_id | m_channel_id))
+			send_request(pMsg->m_src_channel_id,&msg,(deadline ? deadline->msec() : 0),Message::asynchronous | Message::channel_close);
+
+		return;
+	}
 
 	uint16_t old_id = pContext->m_current_cmpt;
 	pContext->m_current_cmpt = pMsg->m_dest_cmpt_id;

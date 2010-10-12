@@ -38,6 +38,7 @@ namespace OOCore
 	public:
 		void init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void close_compartment();
+		void shutdown();
 		
 		BEGIN_INTERFACE_MAP(ComptChannel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)
@@ -56,7 +57,8 @@ namespace OOCore
 	public:
 		Compartment(UserSession* pSession, Omega::uint16_t id);
 
-		void close();
+		void shutdown();
+		Omega::Activation::IRunningObjectTable* get_rot();
 		
 		bool process_channel_close(Omega::uint32_t closed_channel_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
@@ -65,8 +67,8 @@ namespace OOCore
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 
-		OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > create_compartment(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);
-		Omega::IException* compartment_message(Omega::uint16_t cmpt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > create_compartment_channel(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);
+		Omega::IException* compartment_message(Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 
 	private:
 		OOBase::RWMutex m_lock;
@@ -79,8 +81,9 @@ namespace OOCore
 			bool                                      m_bOpen;
 		};
 
-		std::map<Omega::uint32_t,ChannelInfo>      m_mapChannels;
+		std::map<Omega::uint32_t,ChannelInfo>                                     m_mapChannels;
 		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > > m_mapCompartments;
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>                    m_ptrROT;
 	};
 }
 

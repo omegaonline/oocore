@@ -156,6 +156,16 @@ void OOCore::Channel::disconnect()
 	m_ptrMarshaller.Release();
 }
 
+void OOCore::Channel::shutdown(uint32_t closed_channel_id)
+{
+	// Send a channel close back to the sender
+	OOBase::CDRStream msg;
+	if (msg.write(closed_channel_id))
+		m_pSession->send_request(m_channel_id,&msg,0,Message::asynchronous | Message::channel_close);
+
+	disconnect();
+}
+
 IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	// Get the object manager

@@ -34,6 +34,8 @@ OOCore::UserSession::UserSession() :
 		m_worker_thread(false),
 		m_channel_id(0),
 		m_nIPSCookie(0),
+		m_init_count(0),
+		m_init_state(eStopped),
 		m_next_compartment(0)
 {
 }
@@ -52,27 +54,9 @@ OOCore::UserSession::~UserSession()
 
 IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,string_t>& args)
 {
-	void* TODO; // Use the lock
-
-	UserSession* pThis = USER_SESSION::instance();
-
-	// Don't double init...
-	if (pThis->m_initcount++ != 0)
-		return 0;
-
-#if defined(OMEGA_DEBUG) && defined(_WIN32)
-	// If this event exists, then we are being debugged
-	OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
-	if (hDebugEvent)
-	{
-		// Wait for a bit, letting the caller attach a debugger
-		WaitForSingleObject(hDebugEvent,5000);
-	}
-#endif
-
 	try
 	{
-		pThis->init_i(bStandalone,args);
+		USER_SESSION::instance()->init_i(bStandalone,args);
 	}
 	catch (IException* pE)
 	{
@@ -83,7 +67,102 @@ IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,
 	return 0;
 }
 
+void OOCore::UserSession::term()
+{
+	USER_SESSION::instance()->term_i();
+}
+
 void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,string_t>& args)
+{
+#if defined(OMEGA_DEBUG) && defined(_WIN32)
+	// If this event exists, then we are being debugged
+	OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
+	if (hDebugEvent)
+	{
+		// Wait for a bit, letting the caller attach a debugger
+		WaitForSingleObject(hDebugEvent,5000);
+	}
+#endif
+
+	OOBase::Guard<OOBase::Condition::Mutex> guard(m_cond_mutex);
+
+	for (;;)
+	{
+		switch (m_init_state)
+		{
+		case eStopped:
+			{
+				m_init_state = eStarting;
+				guard.release();
+				
+				try
+				{
+					start(bStandalone,args);
+
+					guard.acquire();
+					m_init_state = eStarted;
+					m_cond.broadcast();
+				}
+				catch (...)
+				{
+					guard.acquire();
+					m_init_state = eStopped;
+					m_cond.signal();
+
+					throw;
+				}
+			}
+			break;
+
+		case eStarting:
+		case eStopping:
+			// Wait for a change in state
+			m_cond.wait(m_cond_mutex);
+			break;
+
+		case eStarted:
+			// Inc init count if we have started...
+			++m_init_count;
+			return;
+		}
+	}
+}
+
+void OOCore::UserSession::term_i()
+{
+	OOBase::Guard<OOBase::Condition::Mutex> guard(m_cond_mutex);
+
+	for (;;)
+	{
+		switch (m_init_state)
+		{
+		case eStarted:
+			if (m_init_count > 0 && --m_init_count == 0)
+			{
+				m_init_state = eStopping;
+				guard.release();
+				
+				stop();
+
+				guard.acquire();
+				m_init_state = eStopped;
+				m_cond.broadcast();
+			}
+			break;
+
+		case eStarting:
+		case eStopping:
+			// Wait for a change in state
+			m_cond.wait(m_cond_mutex);
+			break;
+
+		case eStopped:
+			return;
+		}
+	}
+}
+
+void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string_t>& args)
 {
 	bool bStandaloneAlways = false;
 	std::map<string_t,string_t>::const_iterator i = args.find(L"standalone_always");
@@ -183,7 +262,6 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 	// Register locally...
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
 	m_nIPSCookie = ptrROT->RegisterObject(OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 }
 
@@ -250,26 +328,25 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 #endif
 }
 
-void OOCore::UserSession::term()
-{
-	void* TODO; // Use the lock
-
-	UserSession* pThis = USER_SESSION::instance();
-	if (pThis->m_initcount != 0 && --pThis->m_initcount == 0)
-	{
-		pThis->term_i();
-	}
-}
-
-void OOCore::UserSession::term_i()
+void OOCore::UserSession::stop()
 {
 	// Unregister InterProcessService
 	if (m_nIPSCookie)
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+		try
+		{
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
-		ptrROT->RevokeObject(m_nIPSCookie);
+			ptrROT->RevokeObject(m_nIPSCookie);
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+		}
+		catch (...)
+		{}
+
 		m_nIPSCookie = 0;
 	}
 
@@ -277,21 +354,27 @@ void OOCore::UserSession::term_i()
 	close_singletons_i();
 
 	// Close zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCmpt = get_compartment(0);
-	if (ptrZeroCmpt)
+	try
 	{
-		void* TODO;
+		OOBase::SmartPtr<Compartment> ptrZeroCmpt = get_compartment(0);
+		if (ptrZeroCmpt)
+		{
+			void* TODO;
+		}
 	}
-	
+	catch (IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
+
 	// Shutdown the socket...
 	if (m_stream)
 		m_stream->shutdown(true,true);
 
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();
-
-	// And clear the socket...
-	m_stream = 0;
 
 	// Unload the OOSvrLite dll if loaded
 	m_lite_dll.unload();
@@ -309,13 +392,23 @@ void OOCore::UserSession::close_singletons_i()
 	// Copy the list so we can delete outside the lock
 	std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_listUninitCalls);
 
-	m_listUninitCalls.clear();
+	try
+	{
+		m_listUninitCalls.clear();
+	}
+	catch (...)
+	{}
 
 	guard.release();
 
 	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
 	{
-		(*(i->first))(i->second);
+		try
+		{
+			(*(i->first))(i->second);
+		}
+		catch (...)
+		{}
 	}
 }
 

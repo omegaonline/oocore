@@ -97,13 +97,25 @@ namespace OOCore
 		UserSession(const UserSession&);
 		UserSession& operator = (const UserSession&);
 
+		// 'Main' data
 		OOBase::RWMutex                  m_lock;
-		OOBase::AtomicInt<size_t>        m_initcount;
 		OOBase::Thread                   m_worker_thread;
 		OOBase::SmartPtr<OOBase::Socket> m_stream;
 		Omega::uint32_t                  m_channel_id;
 		Omega::uint32_t                  m_nIPSCookie;
 		OOBase::DLL                      m_lite_dll;
+
+		// Startup/shutdown data
+		OOBase::Condition                m_cond;
+		OOBase::Condition::Mutex         m_cond_mutex;
+		size_t                           m_init_count;
+		enum
+		{
+			eStopped,
+			eStarting,
+			eStarted,
+			eStopping
+		} m_init_state;
 
 		struct ThreadContext
 		{
@@ -136,7 +148,9 @@ namespace OOCore
 
 		// Proper private members
 		void init_i(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
+		void start(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		void term_i();
+		void stop();
 		std::string discover_server_port(bool& bStandalone);
 
 		// Uninitialise destructors

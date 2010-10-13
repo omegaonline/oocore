@@ -80,24 +80,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_InitStandalone,1,((in),c
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 {
-	try
+	if (OOCore::HostedByOOServer())
 	{
-		if (OOCore::HostedByOOServer())
-		{
-			// This is a short-cut close for use by the OOServer
-			OOCore::UserSession::close_singletons();
-		}
-		else
-		{
-			OOCore::UserSession::term();
-		}
+		// This is a short-cut close for use by the OOServer
+		OOCore::UserSession::close_singletons();
 	}
-	catch (Omega::IException* pE)
+	else
 	{
-		pE->Release();
+		OOCore::UserSession::term();
 	}
-	catch (...)
-	{}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param))

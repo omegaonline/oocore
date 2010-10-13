@@ -155,6 +155,7 @@ namespace OOCore
 
 		// Uninitialise destructors
 		void close_singletons_i();
+		void close_compartments();
 		void add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		void remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_listUninitCalls;

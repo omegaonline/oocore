@@ -353,22 +353,9 @@ void OOCore::UserSession::stop()
 	// Close all singletons
 	close_singletons_i();
 
-	// Close zero compartment
-	try
-	{
-		OOBase::SmartPtr<Compartment> ptrZeroCmpt = get_compartment(0);
-		if (ptrZeroCmpt)
-		{
-			void* TODO;
-		}
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-	}
-	catch (...)
-	{}
-
+	// Close compartments
+	close_compartments();
+	
 	// Shutdown the socket...
 	if (m_stream)
 		m_stream->shutdown(true,true);
@@ -410,6 +397,39 @@ void OOCore::UserSession::close_singletons_i()
 		catch (...)
 		{}
 	}
+}
+
+void OOCore::UserSession::close_compartments()
+{
+	std::vector<uint16_t> vecCompts;
+
+	try
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
+			vecCompts.push_back(i->first);
+
+		guard.release();
+
+		for (std::vector<uint16_t>::const_iterator i=vecCompts.begin();i!=vecCompts.end();++i)
+		{
+			try
+			{
+				OOBase::SmartPtr<Compartment> ptrCmpt = get_compartment(*i);
+				if (ptrCmpt)
+					ptrCmpt->shutdown();		
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+			}
+			catch (...)
+			{}
+		}
+	}
+	catch (...)
+	{}	
 }
 
 Omega::uint32_t OOCore::UserSession::get_channel_id() const

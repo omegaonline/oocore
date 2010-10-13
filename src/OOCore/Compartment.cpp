@@ -74,6 +74,32 @@ void OOCore::Compartment::shutdown()
 	m_pSession->update_state(src_cmpt_id,0);
 }
 
+void OOCore::Compartment::process_compartment_close()
+{
+	// Update session state and timeout
+	uint16_t src_cmpt_id = m_pSession->update_state(m_id,0);
+
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(src_cmpt_id);
+		if (i != m_mapCompartments.end())
+		{
+			i->second->disconnect();
+
+			m_mapCompartments.erase(i);
+		}
+	}
+	catch (...)
+	{
+		m_pSession->update_state(src_cmpt_id,0);
+		throw;
+	}
+
+	m_pSession->update_state(src_cmpt_id,0);
+}
+
 bool OOCore::Compartment::process_channel_close(uint32_t closed_channel_id)
 {
 	// Close the corresponding Object Manager
@@ -333,7 +359,9 @@ void OOCore::ComptChannel::close_compartment()
 
 void OOCore::ComptChannel::shutdown()
 {
+	m_ptrCompt->process_compartment_close();
 
+	disconnect();
 }
 
 Omega::bool_t OOCore::ComptChannel::IsConnected()

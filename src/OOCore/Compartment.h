@@ -61,6 +61,7 @@ namespace OOCore
 		Omega::Activation::IRunningObjectTable* get_rot();
 		
 		bool process_channel_close(Omega::uint32_t closed_channel_id);
+		void process_compartment_close();
 		bool is_channel_open(Omega::uint32_t channel_id);
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_channel_om(Omega::uint32_t src_channel_id);

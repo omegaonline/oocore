@@ -488,8 +488,9 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	{
 		ptrSimpleTest->Abort();
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::Remoting::IChannelClosedException* pE)
 	{
+		add_success();
 		pE->Release();
 	}
 
@@ -502,7 +503,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	{
 		ptrSimpleTest->Abort();
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::Remoting::IChannelClosedException* pE)
 	{
 		add_success();
 		pE->Release();

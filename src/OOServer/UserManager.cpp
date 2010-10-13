@@ -350,27 +350,47 @@ bool User::Manager::on_accept(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptr
 	return ptrMC->read();
 }
 
-void User::Manager::on_channel_closed(Omega::uint32_t channel)
+void User::Manager::on_channel_closed(uint32_t channel)
+{
+	OOBase::CDRStream stream;
+	if (!stream.write(channel))
+		LOG_ERROR(("Failed to write channel_close data: %s",OOBase::system_error_text(stream.last_error()).c_str()));
+	else
+		call_async_function_i(&do_channel_closed,this,&stream);
+}
+
+void User::Manager::do_channel_closed(void* pParams, OOBase::CDRStream& stream)
+{
+	uint32_t channel_id = 0;
+	if (!stream.read(channel_id))
+		LOG_ERROR(("Failed to read channel_close data: %s",OOBase::system_error_text(stream.last_error()).c_str()));
+	else
+		static_cast<Manager*>(pParams)->do_channel_closed_i(channel_id);
+}
+
+void User::Manager::do_channel_closed_i(uint32_t channel_id)
 {
 	// Close the corresponding Object Manager
-	/*try
+	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();)
+		std::vector<uint32_t> dead_channels;
+
+		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();)
 		{
 			bool bErase = false;
-			if (i->first == channel)
+			if (i->first == channel_id)
 			{
 				// Close if its an exact match
 				bErase = true;
 			}
-			else if (!(channel & 0xFFF) && (i->first & 0xFFFFF000) == channel)
+			else if (!(channel_id & 0xFFF) && (i->first & 0xFFFFF000) == channel_id)
 			{
 				// Close all compartments if 0 cmpt dies
 				bErase = true;
 			}
-			else if (channel == m_root_channel && classify_channel(i->first) > 2)
+			else if (channel_id == m_root_channel && classify_channel(i->first) > 2)
 			{
 				// If the root channel closes, close all upstream OMs
 				bErase = true;
@@ -379,21 +399,25 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 			if (bErase)
 			{
 				i->second->disconnect();
+
+				dead_channels.push_back(i->first);
+
 				m_mapChannels.erase(i++);
 			}
 			else
 				++i;
 		}
+
+		// Give the remote layer a chance to close channels
+		if (!dead_channels.empty())
+			local_channel_closed(dead_channels);
 	}
 	catch (...)
-	{}*/
-
-	// Give the remote layer a chance to close channels
-	local_channel_closed(channel);
+	{}
 
 	// If the root closes, we should end!
-	if (channel == m_root_channel)
-		call_async_function_i(&do_quit,this,0);
+	if (channel_id == m_root_channel)
+		do_quit_i();
 }
 
 void User::Manager::do_quit(void* pParams, OOBase::CDRStream&)

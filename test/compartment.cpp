@@ -1,5 +1,6 @@
 #include "../include/Omega/Compartment.h"
 #include "../include/OTL/OTL.h"
+#include "../include/Omega/Remoting.h"
 #include "interfaces.h"
 
 #include "Test.h"
@@ -89,9 +90,10 @@ static bool do_cmpt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	{
 		ptrSimpleTest->Abort();
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::Remoting::IChannelClosedException* pE)
 	{
 		pE->Release();
+		add_success();
 	}
 
 	return true;

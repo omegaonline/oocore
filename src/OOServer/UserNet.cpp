@@ -584,46 +584,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 void User::RemoteChannel::channel_closed(uint32_t channel_id)
 {
-	// Do this async
-	OOBase::CDRStream output;
-	output.write(channel_id);
-	if (output.last_error() == 0)
-	{
-		AddRef();
-		if (!m_pManager->call_async_function_i(&do_channel_closed,this,&output))
-			Release();
-	}
-}
-
-void User::RemoteChannel::do_channel_closed(void* pParam, OOBase::CDRStream& input)
-{
-	User::RemoteChannel* pThis = (User::RemoteChannel*)pParam;
-
-	try
-	{
-		uint32_t channel_id = 0;
-		input.read(channel_id);
-
-		if (input.last_error() != 0)
-			OMEGA_THROW(input.last_error());
-
-		pThis->do_channel_closed_i(channel_id);
-	}
-	catch (IException* pE)
-	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
-		pE->Release();
-	}
-	catch (...)
-	{
-		LOG_ERROR(("Unknown exception thrown"));
-	}
-
-	pThis->Release();
-}
-
-void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
-{
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	std::map<Omega::uint32_t,Omega::uint32_t>::iterator i=m_mapChannelIds.find(channel_id);
@@ -906,14 +866,17 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	}
 }
 
-void User::Manager::local_channel_closed(Omega::uint32_t channel_id)
+void User::Manager::local_channel_closed(const std::vector<Omega::uint32_t>& channels)
 {
-	// Local end has closed
+	// Local channels have closed
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
-	for (std::map<uint32_t,RemoteChannelEntry>::iterator i=m_mapRemoteChannelIds.begin(); i!=m_mapRemoteChannelIds.end(); ++i)
+	for (std::vector<uint32_t>::const_iterator j=channels.begin();j!=channels.end();++j)
 	{
-		if ((channel_id & 0xFFF00000) != i->first)
-			i->second.ptrRemoteChannel->channel_closed(channel_id);
+		for (std::map<uint32_t,RemoteChannelEntry>::iterator i=m_mapRemoteChannelIds.begin(); i!=m_mapRemoteChannelIds.end(); ++i)
+		{
+			if ((*j & 0xFFF00000) != i->first)
+				i->second.ptrRemoteChannel->channel_closed(*j);
+		}
 	}
 }

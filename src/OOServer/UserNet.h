@@ -56,9 +56,7 @@ namespace User
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t channel_id);
 		void process_here_i(OOBase::CDRStream& input);
 		void send_away_i(Omega::Remoting::IMessage* pPayload, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
-		void do_channel_closed_i(Omega::uint32_t channel_id);
-
-		static void do_channel_closed(void* pParam, OOBase::CDRStream& input);
+		
 		static void process_here(void* pParams, OOBase::CDRStream& input);
 
 	// IChannelSink members

@@ -191,11 +191,11 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 	OOBase::CDRStream stream;
 
 	// Read the sandbox channel
-	int err = local_socket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	int err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
-	Omega::uint32_t sandbox_channel = 0;
+	uint32_t sandbox_channel = 0;
 	if (!stream.read(sandbox_channel))
 		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
@@ -213,11 +213,11 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 
 	// Read our channel id
 	stream.reset();
-	err = local_socket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
-	Omega::uint32_t our_channel = 0;
+	uint32_t our_channel = 0;
 	if (!stream.read(our_channel))
 		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
@@ -266,7 +266,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	Manager* pThis = static_cast<Manager*>(pParams);
 
 	bool bQuit = false;
-	Omega::uint32_t sandbox_channel = 0;
+	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
 	std::string strPipe;
 	input.read(strPipe);
@@ -285,7 +285,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 		pThis->call_async_function_i(&do_quit,pThis,0);
 }
 
-bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
+bool User::Manager::bootstrap(uint32_t sandbox_channel)
 {
 	// Register our service
 	try
@@ -417,7 +417,7 @@ void User::Manager::do_quit_i()
 
 	// Unregister InterProcessService
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-	Omega::uint32_t nIPSCookie = m_nIPSCookie;
+	uint32_t nIPSCookie = m_nIPSCookie;
 	m_nIPSCookie = 0;
 	guard.release();
 
@@ -430,13 +430,13 @@ void User::Manager::do_quit_i()
 	}
 
 	// Close the OOCore
-	Omega::Uninitialize();
+	Uninitialize();
 
 	// And now call quit()
 	quit();
 }
 
-void User::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+void User::Manager::process_request(OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	if (src_channel_id == m_root_channel)
 		process_root_request(request,seq_no,src_thread_id,deadline,attribs);
@@ -444,7 +444,7 @@ void User::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		process_user_request(request,seq_no,src_channel_id,src_thread_id,deadline,attribs);
 }
 
-void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t seq_no, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
@@ -473,7 +473,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 		break;
 
 	default:
-		response.write(Omega::int32_t(EINVAL));
+		response.write(int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
 		break;
 	}
@@ -486,7 +486,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	}
 }
 
-void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+void User::Manager::process_user_request(const OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	try
 	{
@@ -548,19 +548,19 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(Omega::uint32_t src_channel_id, const guid_t& message_oid)
+ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel_i(src_channel_id,message_oid);
 
 	return ptrChannel->GetObjectManager();
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(Omega::uint32_t src_channel_id, const guid_t& message_oid)
+ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	return s_instance->create_channel_i(src_channel_id,message_oid);
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uint32_t src_channel_id, const guid_t& message_oid)
+ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	assert(classify_channel(src_channel_id) > 1);
 
@@ -568,7 +568,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uin
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+		std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
 		if (i != m_mapChannels.end())
 			return i->second;
 	}
@@ -580,7 +580,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uin
 	// And add to the map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::pair<std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
+	std::pair<std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
 	if (!p.second)
 		ptrChannel = p.first->second;
 
@@ -605,9 +605,9 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)
-			throw Omega::ITimeoutException::Create();
+			throw ITimeoutException::Create();
 		else if (res == OOServer::MessageHandler::io_result::channel_closed)
-			throw Omega::Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create();
 		else
 			OMEGA_THROW("Internal server exception");
 	}

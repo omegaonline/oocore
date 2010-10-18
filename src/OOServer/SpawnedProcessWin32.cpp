@@ -550,8 +550,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	std::wstring strTitle;
-	bool bPrivError = false;
-
+	
 	// Load up the users profile
 	HANDLE hProfile = NULL;
 	if (!bSandbox)
@@ -612,13 +611,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	{
 		dwFlags |= DETACHED_PROCESS;
 
-		if (bSandbox)
-		{
-			if (!OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop))
-				goto Cleanup;
-
+		if (bSandbox && OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop))
 			startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
-		}
 		else
 		{
 			WCHAR sz[] = L"";
@@ -634,9 +628,6 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,/*strCurDir.c_str()*/ NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
-			bPrivError = true;
-
 		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
 
 		if (hDebugEvent)

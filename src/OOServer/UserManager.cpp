@@ -222,7 +222,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 
 	// Init our channel id
-	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
+	set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
 
 	// Create a new MessageConnection
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
@@ -231,7 +231,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
 	// Attach it to ourselves
-	if (register_channel(ptrMC,m_root_channel) == 0)
+	if (register_channel(ptrMC,m_uUpstreamChannel) == 0)
 	{
 		ptrMC->close();
 		return false;
@@ -390,7 +390,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 				// Close all compartments if 0 cmpt dies
 				bErase = true;
 			}
-			else if (channel_id == m_root_channel && classify_channel(i->first) > 2)
+			else if (channel_id == m_uUpstreamChannel && classify_channel(i->first) > 2)
 			{
 				// If the root channel closes, close all upstream OMs
 				bErase = true;
@@ -416,7 +416,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	{}
 
 	// If the root closes, we should end!
-	if (channel_id == m_root_channel)
+	if (channel_id == m_uUpstreamChannel)
 		do_quit_i();
 }
 
@@ -462,7 +462,7 @@ void User::Manager::do_quit_i()
 
 void User::Manager::process_request(OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
-	if (src_channel_id == m_root_channel)
+	if (src_channel_id == m_uUpstreamChannel)
 		process_root_request(request,seq_no,src_thread_id,deadline,attribs);
 	else
 		process_user_request(request,seq_no,src_channel_id,src_thread_id,deadline,attribs);
@@ -504,7 +504,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t se
 
 	if (response.last_error() == 0 && !(attribs & TypeInfo::Asynchronous))
 	{
-		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_root_channel,src_thread_id,response,deadline,attribs);
+		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_uUpstreamChannel,src_thread_id,response,deadline,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)
 			LOG_ERROR(("Root response sending failed"));
 	}
@@ -625,7 +625,7 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 	}
 
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-	OOServer::MessageHandler::io_result::type res = send_request(m_root_channel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
+	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)

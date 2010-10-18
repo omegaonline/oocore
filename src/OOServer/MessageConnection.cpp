@@ -305,10 +305,10 @@ void OOServer::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
 }
 
 OOServer::MessageHandler::MessageHandler() :
+		m_uUpstreamChannel(0),
 		m_uChannelId(0),
 		m_uChannelMask(0),
 		m_uChildMask(0),
-		m_uUpstreamChannel(0),
 		m_uNextChannelId(0),
 		m_uNextChannelMask(0),
 		m_uNextChannelShift(0)
@@ -398,7 +398,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 			if ((src_channel_id & m_uChannelMask) == m_uChannelId)
 			{
 				// Check we can route from src to dest
-				if (!can_route(src_channel_id & (m_uChannelMask | m_uChildMask),dest_channel_id & (m_uChannelMask | m_uChildMask)))
+				if (!can_route(src_channel_id,dest_channel_id))
 					LOG_ERROR_RETURN(("Attempting to route via illegal path"),false);
 			}
 
@@ -662,10 +662,10 @@ Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<Mess
 	return channel_id;
 }
 
-bool OOServer::MessageHandler::can_route(Omega::uint32_t, Omega::uint32_t)
+bool OOServer::MessageHandler::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
 {
-	// Do nothing, used in derived classes
-	return true;
+	// Don't route to null channels
+	return (src_channel != 0 && dest_channel != 0 && src_channel != dest_channel);
 }
 
 void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
@@ -766,8 +766,8 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 			for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 			{
 				// Always route upstream, and/or follow routing rules
-				if (i->first != src_channel_id &&
-						(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
+				if (i->first != src_channel_id && 
+						(i->first == m_uUpstreamChannel || can_route(channel_id,i->first)))
 				{
 					send_channel_close(i->first,channel_id);
 				}
@@ -1346,7 +1346,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 			if ((src_channel_id & m_uChannelMask) == m_uChannelId)
 			{
 				// Check we can route from src to dest
-				if (!can_route(src_channel_id & (m_uChannelMask | m_uChildMask),dest_channel_id & (m_uChannelMask | m_uChildMask)))
+				if (!can_route(src_channel_id,dest_channel_id))
 					LOG_ERROR_RETURN(("Attempting to route via illegal path"),io_result::failed);
 			}
 

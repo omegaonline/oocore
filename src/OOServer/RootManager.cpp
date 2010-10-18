@@ -202,12 +202,11 @@ bool Root::Manager::load_config_file(const std::string& strFile)
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
 {
-	// Don't route to null channels
-	if (!src_channel || !dest_channel)
+	if (!OOServer::MessageHandler::can_route(src_channel,dest_channel))
 		return false;
 
 	// Only route to or from the sandbox
-	return (src_channel == m_sandbox_channel || dest_channel == m_sandbox_channel);
+	return ((src_channel & 0xFF000000) == (m_sandbox_channel & 0xFF000000) || (dest_channel & 0xFF000000) == (m_sandbox_channel & 0xFF000000));
 }
 
 void Root::Manager::on_channel_closed(Omega::uint32_t channel)

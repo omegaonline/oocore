@@ -138,6 +138,8 @@ namespace OOServer
 		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
 		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
 
+		Omega::uint32_t      m_uUpstreamChannel;
+
 	private:
 		MessageHandler(const MessageHandler&);
 		MessageHandler& operator = (const MessageHandler&);
@@ -146,7 +148,6 @@ namespace OOServer
 		Omega::uint32_t      m_uChannelId;
 		Omega::uint32_t      m_uChannelMask;
 		Omega::uint32_t      m_uChildMask;
-		Omega::uint32_t      m_uUpstreamChannel;
 		Omega::uint32_t      m_uNextChannelId;
 		Omega::uint32_t      m_uNextChannelMask;
 		Omega::uint32_t      m_uNextChannelShift;

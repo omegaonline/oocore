@@ -53,8 +53,7 @@ namespace User
 
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
-		static const Omega::uint32_t m_root_channel = 0x80000000;
-
+		
 		Manager();
 		virtual ~Manager();
 

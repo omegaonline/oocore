@@ -701,10 +701,10 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		while (!channel_id || m_mapRemoteChannelIds.find(channel_id) != m_mapRemoteChannelIds.end())
 		{
 			// Skip anything in the root bits
-			if (m_nNextRemoteChannel & m_root_channel)
+			if (m_nNextRemoteChannel & m_uUpstreamChannel)
 				m_nNextRemoteChannel = 0;
 
-			channel_id = ((++m_nNextRemoteChannel << 20) & ~m_root_channel);
+			channel_id = ((++m_nNextRemoteChannel << 20) & ~m_uUpstreamChannel);
 		}
 
 		// Init the sink
@@ -838,10 +838,10 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 		while (!channel_id || m_mapRemoteChannelIds.find(channel_id) != m_mapRemoteChannelIds.end())
 		{
 			// Skip anything in the root bits
-			if (m_nNextRemoteChannel & m_root_channel)
+			if (m_nNextRemoteChannel & m_uUpstreamChannel)
 				m_nNextRemoteChannel = 0;
 
-			channel_id = ((++m_nNextRemoteChannel << 20) & ~m_root_channel);
+			channel_id = ((++m_nNextRemoteChannel << 20) & ~m_uUpstreamChannel);
 		}
 
 		// Init the sink

@@ -38,7 +38,11 @@ public:
 
 void TestProcessImpl::Abort()
 {
+#if defined(_WIN32)
+	TerminateProcess(GetCurrentProcess(),EXIT_FAILURE);
+#else
 	_exit(EXIT_FAILURE);
+#endif
 }
 
 BEGIN_PROCESS_OBJECT_MAP()

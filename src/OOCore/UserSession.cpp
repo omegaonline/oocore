@@ -27,6 +27,10 @@
 #include "IPS.h"
 #include "LoopChannel.h"
 
+#if defined(HAVE_UNISTD_H)
+#include <signal.h>
+#endif
+
 using namespace Omega;
 using namespace OTL;
 
@@ -470,6 +474,21 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
 {
+#if defined(HAVE_UNISTD_H)
+
+	// Block all signals here...
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGQUIT);
+	sigaddset(&set, SIGTERM);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGCHLD);
+	sigaddset(&set, SIGPIPE);
+
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+#endif
+
 	return static_cast<UserSession*>(pParam)->run_read_loop();
 }
 

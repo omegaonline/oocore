@@ -152,7 +152,16 @@ int main(int argc, char* argv[])
 	// Stop the MessageHandler
 	manager.stop_request_threads();
 
-	return (bRun ? EXIT_SUCCESS : EXIT_FAILURE);
+	if (!bRun)
+	{
+#if defined(OMEGA_DEBUG)
+		// Give us a chance to read the errors!
+		OOBase::Thread::sleep(OOBase::timeval_t(5,0));
+#endif
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
 
 namespace OOBase

@@ -115,7 +115,13 @@ int Root::Manager::run()
 			stop_request_threads();
 
 			if (!bOk)
+			{
+#if defined(OMEGA_DEBUG)
+				// Give us a chance to read the errors!
+				OOBase::Thread::sleep(OOBase::timeval_t(5,0));
+#endif
 				return EXIT_FAILURE;
+			}
 		}
 	}
 	catch (std::exception& e)

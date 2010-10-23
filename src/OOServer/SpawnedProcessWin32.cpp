@@ -583,10 +583,13 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
 
-#if defined(OMEGA_DEBUG)
-	if (IsDebuggerPresent())
+	const char* debug = getenv("OMEGA_DEBUG");
+	if (debug && strcmp(debug,"yes")==0)
 	{
-		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+#if defined(OMEGA_DEBUG)
+		if (IsDebuggerPresent())
+			hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+#endif
 
 		dwFlags |= CREATE_NEW_CONSOLE;
 
@@ -605,9 +608,10 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 
 		if (bSandbox)
 			strTitle += L" [Sandbox]";
+
+		startup_info.lpTitle = (LPWSTR)strTitle.c_str();
 	}
 	else
-#endif
 	{
 		dwFlags |= DETACHED_PROCESS;
 
@@ -619,9 +623,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 			startup_info.lpDesktop = sz;
 			startup_info.wShowWindow = SW_HIDE;
 		}
-	}
-	if (!strTitle.empty())
-		startup_info.lpTitle = (LPWSTR)strTitle.c_str();
+	}	
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;

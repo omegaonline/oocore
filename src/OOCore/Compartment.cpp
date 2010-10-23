@@ -45,25 +45,36 @@ void OOCore::Compartment::shutdown()
 
 		// Done with cached objects
 		m_ptrROT.Release();
+
+		std::vector<ChannelInfo> vecChannels;
+		std::vector<ObjectPtr<ObjectImpl<ComptChannel> > > vecCompts;
 	
 		// Shutdown all channels and compartments
 		uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
 		for (std::map<uint32_t,ChannelInfo>::iterator j=m_mapChannels.begin(); j!=m_mapChannels.end(); ++j)
-		{
-			if (j->second.m_bOpen)
-				j->second.m_ptrChannel->shutdown(our_channel_id);
-			else
-				j->second.m_ptrChannel->disconnect();
-		}
+			vecChannels.push_back(j->second);
+
 		m_mapChannels.clear();
-	
+
 		for (std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
-		{
-			i->second->shutdown();
-		}
+			vecCompts.push_back(i->second);
+
 		m_mapCompartments.clear();
 
 		m_pSession->remove_compartment(m_id);
+
+		guard.release();
+
+		for (std::vector<ChannelInfo>::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
+		{
+			if (j->m_bOpen)
+				j->m_ptrChannel->shutdown(our_channel_id);
+			else
+				j->m_ptrChannel->disconnect();
+		}
+		
+		for (std::vector<ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=vecCompts.begin();i!=vecCompts.end();++i)
+			(*i)->shutdown();
 	}
 	catch (...)
 	{
@@ -81,15 +92,21 @@ void OOCore::Compartment::process_compartment_close()
 
 	try
 	{
+		ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
+
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(src_cmpt_id);
 		if (i != m_mapCompartments.end())
 		{
-			i->second->disconnect();
-
+			ptrCompt = i->second;
+			
 			m_mapCompartments.erase(i);
 		}
+
+		guard.release();
+
+		ptrCompt->disconnect();
 	}
 	catch (...)
 	{

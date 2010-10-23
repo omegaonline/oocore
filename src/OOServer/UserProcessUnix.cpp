@@ -71,9 +71,13 @@ void UserProcessUnix::exec(const std::wstring& strExeName)
 		// Not sure what we should do about stdin/out/err
 		void* POSIX_TODO;
 
-		execlp("sh","-c",strApp.c_str(),(char*)0);
+		const char* debug = getenv("OMEGA_DEBUG");
+		if (debug && strcmp(debug,"yes")==0)
+			execlp("xterm","xterm","-e",strApp.c_str(),(char*)0);
+		
+		execlp("sh","sh","-c",strApp.c_str(),(char*)0);
 
-		_exit(EXIT_FAILURE);
+		_exit(127);
 	}
 
 	m_pid = pid;

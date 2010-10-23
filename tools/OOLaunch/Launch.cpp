@@ -86,7 +86,7 @@ static void do_exec(const char* path, int fd)
 		cmd += " ";
 		cmd += os.str();
 		
-		execlp("xterm","xterm","-e",cmd.c_str(),(char*)0);
+		execlp("xterm","xterm","-T","oosvruser - User process","-e",cmd.c_str(),(char*)0);
 	}
 
 	execl(path,path,os.str().c_str(),(char*)0);
@@ -157,7 +157,8 @@ static int run_oosvruser()
 			do_exec(run,pipes[WRITE_END]);
 
 		do_exec(LIBEXEC_DIR "/oosvruser",pipes[WRITE_END]);
-		exit(127);
+		
+		_exit(127);
 	}
 
 	// We are the grandparent

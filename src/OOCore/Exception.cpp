@@ -50,17 +50,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 
-#if defined(_WIN32)
-
-	pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
-
-#else
-
-	pExcept->m_strDesc = string_t(OOBase::strerror(e).c_str(),false);
-
-#endif
-
+	pExcept->m_strDesc = string_t(OOBase::system_error_text(e).c_str(),false);
 	pExcept->m_errno = e;
+
 	return pExcept;
 }
 

@@ -798,6 +798,9 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 
 bool SpawnedProcessWin32::Compare(HANDLE hToken) const
 {
+	if (m_bSandbox)
+		return false;
+
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));

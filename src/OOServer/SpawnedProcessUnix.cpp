@@ -35,24 +35,14 @@
 #include "RootManager.h"
 #include "SpawnedProcess.h"
 
-#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
+#if defined(HAVE_UNISTD_H)
 
-#include <stdio.h>
 #include <grp.h>
-#include <sys/wait.h>
 #include <dirent.h>
-
-#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
 
-#if defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
-#endif /* HAVE_SYS_FCNTL_H */
-
-#if defined(HAVE_SYS_STAT_H)
 #include <sys/stat.h>
-#endif
+#include <sys/wait.h>
 
 namespace
 {
@@ -74,35 +64,8 @@ namespace
 		uid_t   m_uid;
 		pid_t   m_pid;
 
-		bool clean_environment();
 		void close_all_fds(int except_fd);
 	};
-
-	static bool y_or_n_p(const char* question)
-	{
-		fputs(question,stdout);
-		while (1)
-		{
-			// Write a space
-			fputc(' ',stdout);
-
-			// Read first char of line
-			int c = fgetc(stdin);
-			int answer = c;
-
-			// Discard rest of line
-			while (c != '\n' && c != EOF)
-				c = fgetc(stdin);
-
-			if (answer == 'Y')
-				return true;
-			else if (answer == 'n')
-				return false;
-
-			// Invalid answer
-			fputs("Please answer Y or n:",stdout);
-		}
-	}
 }
 
 SpawnedProcessUnix::SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox) :
@@ -135,56 +98,6 @@ SpawnedProcessUnix::~SpawnedProcessUnix()
 	}
 }
 
-extern char **environ;
-
-bool SpawnedProcessUnix::clean_environment()
-{
-	// Add other safe environment variable names here
-	// NOTE: PATH is set by hand!
-	static const char* safe_env_lst[] =
-	{
-		"LANG",
-		"TZ",
-		NULL
-	};
-
-	static const size_t env_max = 256;
-	char** cleanenv = static_cast<char**>(calloc(env_max,sizeof(char*)));
-	if (!cleanenv)
-		return false;
-
-	cleanenv[0] = strdup("PATH=/usr/local/bin:/usr/bin:/bin");
-
-	size_t cidx = 1;
-	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
-	{
-		if (!strncmp(*ep,"OMEGA_",6)==0)
-		{
-			cleanenv[cidx] = *ep;
-			cidx++;
-		}
-		else
-		{
-			for (size_t idx = 0; safe_env_lst[idx]; idx++)
-			{
-				if (strncmp(*ep,safe_env_lst[idx],strlen(safe_env_lst[idx]))==0)
-				{
-					cleanenv[cidx] = *ep;
-					cidx++;
-					break;
-				}
-			}
-		}
-	}
-
-	void* POSIX_TODO; // Add USER, TERM etc...
-
-	cleanenv[cidx] = NULL;
-	environ = cleanenv;
-
-	return true;
-}
-
 void SpawnedProcessUnix::close_all_fds(int except_fd)
 {
 	int mx = -1;
@@ -198,8 +111,6 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	mx = _POSIX_OPEN_MAX;
 #endif
 #endif
-
-	void* POSIX_TODO; // what about getdtablesize()?
 
 	if (mx > 4)
 	{
@@ -239,107 +150,92 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 	if (strAppPath.empty())
 		strAppPath = LIBEXEC_DIR "/oosvruser";
 	else
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %s",strAppPath.c_str());
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppPath.c_str());
 
 	// Check our uid
-	bool bUnsafeStart = false;
 	uid_t our_uid = getuid();
-	if (our_uid != 0)
+	if (our_uid != 0 && !bUnsafe)
+		LOG_ERROR_RETURN(("ooserverd must be started as root."),false);
+	
+	bool bChangeUid = (m_uid != our_uid);
+	if (bChangeUid && our_uid != 0)
 	{
-		if (!bUnsafe)
-			LOG_ERROR_RETURN(("OOServer must be started as root."),false);
-
-		OOSvrBase::pw_info pw(our_uid);
-		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()),false);
-
-		// Prompt for continue...
+		// Warn!
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
 							   "ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
-							   "Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
-							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.",
-							   pw->pw_name);
+							   "Because the 'unsafe' mode is set the new user process will be started under the current user account.\n\n"
+							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n");
 
-		bUnsafeStart = true;
+		bChangeUid = false;
 	}
 
 	pid_t child_id = fork();
 	if (child_id == -1)
-	{
-		// Error
 		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text(errno).c_str()),false);
-	}
-	else if (child_id == 0)
+	
+	if (child_id != 0)
 	{
-		// We are the child...
+		// We are the parent
+		m_pid = child_id;
+		return true;
+	}
 
-		// This all needs sorting out badly!
-		// We should be spawning the user's shell with -c
-		// Set pwd to user's home dir, etc...
-		void* POSIX_TODO;
+	// We are the child...
 
-		if (!bUnsafeStart)
+	// Close all open handles - not that we should have any ;)
+	close_all_fds(pass_fd);
+
+	if (bChangeUid)
+	{
+		// get our pw_info
+		OOSvrBase::pw_info pw(m_uid);
+		if (!pw)
 		{
-			// get our pw_info
-			OOSvrBase::pw_info pw(m_uid);
-			if (!pw)
-			{
-				LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()));
-				exit(errno);
-			}
-
-			// Set our gid...
-			if (setgid(pw->pw_gid) != 0)
-			{
-				LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text(errno).c_str()));
-				exit(errno);
-			}
-
-			// Init our groups...
-			if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-			{
-				LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text(errno).c_str()));
-				exit(errno);
-			}
-
-			// Stop being priviledged!
-			if (setuid(m_uid) != 0)
-			{
-				LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text(errno).c_str()));
-				exit(errno);
-			}
+			LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()));
+			exit(errno);
 		}
 
-		// Close all open handles - not that we should have any ;)
-		close_all_fds(pass_fd);
-
-		// Clean up environment...
-		if (!clean_environment())
+		// Set our gid...
+		if (setgid(pw->pw_gid) != 0)
+		{
+			LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text(errno).c_str()));
 			exit(errno);
+		}
 
-		// Exec the user process
-		std::ostringstream os;
-		os.imbue(std::locale::classic());
-		os << "--fork-slave=" << pass_fd;
+		// Init our groups...
+		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
+		{
+			LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text(errno).c_str()));
+			exit(errno);
+		}
 
-		char* cmd_line[3] = { 0,0,0 };
-		cmd_line[0] = strdup(strAppPath.c_str());
-		cmd_line[1] = strdup(os.str().c_str());
-
-		int err = execv(strAppPath.c_str(),cmd_line);
-
-		free(cmd_line[0]);
-		free(cmd_line[1]);
-
-		_exit(127);
+		// Stop being priviledged!
+		if (setuid(m_uid) != 0)
+		{
+			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text(errno).c_str()));
+			exit(errno);
+		}
 	}
-	else
+
+	// Exec the user process
+	std::ostringstream os;
+	os.imbue(std::locale::classic());
+	os << "--fork-slave=" << pass_fd;
+
+	const char* debug = getenv("OMEGA_DEBUG");
+	if (debug && strcmp(debug,"yes")==0)
 	{
-		// We are the parent...
-		m_pid = child_id;
-	}
+		std::string strExec = strAppPath + " ";
+		strExec += os.str();
 
-	return true;
+		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strExec.c_str(),(char*)0);
+	}
+	
+	execlp(strAppPath.c_str(),strAppPath.c_str(),os.str().c_str(),(char*)0);
+
+	LOG_ERROR(("Failed to launch %s",strAppPath.c_str()));
+
+	_exit(127);	
 }
 
 bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
@@ -442,27 +338,41 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
 {
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
+
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == OOSvrBase::AsyncLocalSocket::uid_t(-1));
 	if (bSandbox)
 	{
 		// Get username from config
+		std::string strUName;
 		std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
-		if (i == m_config_args.end())
-			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
+		if (i != m_config_args.end())
+			strUName = i->second.c_str();
 
-		if (i->second.empty())
+		if (strUName.empty())
+		{
+			if (!bUnsafe)
+				LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config file"),(SpawnedProcess*)0);
+			
+			// Warn!
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+				"Failed to find the 'sandbox_uname' setting in the config file.\n\n"
+				"Because the 'unsafe' mode is set the sandbox process will be started under the current user account.\n\n"
+				"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n");
+
 			uid = getuid();
+		}
 		else
 		{
 			// Resolve to uid
-			OOSvrBase::pw_info pw(i->second.c_str());
+			OOSvrBase::pw_info pw(strUName.c_str());
 			if (!pw)
 			{
 				if (errno)
-					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
+					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
 				else
-					LOG_ERROR_RETURN(("There is no account for the user '%s'",i->second.c_str()),(SpawnedProcess*)0);
+					LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),(SpawnedProcess*)0);
 			}
 
 			uid = pw->pw_uid;
@@ -495,13 +405,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-
 	std::string strAppName;
-	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");
-	if (a != m_config_args.end())
-		strAppName = a->second;
-
+	const char* user_host = getenv("OMEGA_USER_BINARY");
+	if (user_host)
+		strAppName = user_host;
+	
 	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,fd[1]))
 	{
 		::close(fd[0]);

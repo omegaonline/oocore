@@ -21,8 +21,6 @@ sleep 3s
 # Start up oosvruser
 if test -f ../../tools/OOLaunch/oo-launch; then
 	eval `../../tools/OOLaunch/oo-launch`
-	#echo "OMEGA_SESSION_ADDRESS=$OMEGA_SESSION_ADDRESS"
-	#echo "OMEGA_SESSION_PID=$OMEGA_SESSION_PID"
 fi
 
 echo Running tests...
@@ -33,7 +31,9 @@ cd ../../test
 ret=$?
 
 # Close our ooserver
-pid=$(cat "./ooserverd.pid") 
-kill $pid
+if test -f ./ooserverd.pid; then
+	pid=$(cat "./ooserverd.pid") 
+	kill $pid
+fi
 
 exit $ret

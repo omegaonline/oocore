@@ -505,10 +505,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SpawnedProcessUnix.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SpawnedProcessWin32.cpp"
 				>
 			</File>

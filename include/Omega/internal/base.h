@@ -79,7 +79,7 @@ namespace Omega
 
 	namespace TypeInfo
 	{
-		// These are the types supported aby Omega::any_t
+		// These are the types supported by Omega::any_t
 		enum Type
 		{
 			typeVoid = 0,

@@ -61,6 +61,14 @@ int Root::Manager::run()
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));
 #endif
 
+	std::string strPidfile = "/var/run/ooserverd.pid";
+	std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("pidfile");
+	if (f != m_cmd_args.end())
+		strPidfile = f->second;
+
+	if (!pid_file(strPidfile.c_str()))
+		return EXIT_FAILURE;
+
 	try
 	{
 		// Loop until we quit
@@ -91,14 +99,8 @@ int Root::Manager::run()
 				{
 					bOk = true;
 
-#if defined (_WIN32)
-					bQuit = (wait_for_quit() != CTRL_BREAK_EVENT);
-#elif defined(HAVE_UNISTD_H)
-					bQuit = (wait_for_quit() != SIGHUP);
-#else
-					wait_for_quit();
-					bQuit = true;
-#endif
+					// Wait for quit
+					bQuit = wait_to_quit();
 
 					// Stop accepting new clients
 					m_client_acceptor.stop();
@@ -204,6 +206,38 @@ bool Root::Manager::load_config_file(const std::string& strFile)
 	}
 
 	return true;
+}
+
+bool Root::Manager::wait_to_quit()
+{
+	const char* debug = getenv("OMEGA_DEBUG");
+	bool bDebug = (debug && strcmp(debug,"yes")==0);
+
+	for (;;)
+	{
+		switch (wait_for_quit())
+		{
+#if defined (_WIN32)
+			case CTRL_BREAK_EVENT:
+				return bDebug;
+
+			default:
+				return true;
+#elif defined(HAVE_UNISTD_H)
+			case SIGHUP:
+				return bDebug;
+				
+			case SIGQUIT:
+			case SIGTERM:
+				return true;
+
+			default:
+				break;
+#else
+#error Fix me!
+#endif
+		}
+	}
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)

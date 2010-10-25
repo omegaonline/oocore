@@ -83,6 +83,7 @@ namespace Root
 		bool load_config();
 		bool load_config_file(const std::string& strFile);
 		bool init_database();
+		bool wait_to_quit();
 
 		// Configuration members
 		std::map<std::string,std::string> m_cmd_args;

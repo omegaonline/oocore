@@ -22,7 +22,7 @@
 #include "OOServer_User.h"
 #include "UserProcess.h"
 
-#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
+#if defined(HAVE_UNISTD_H)
 
 #include <unistd.h>
 #include <sys/wait.h>

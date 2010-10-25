@@ -10,12 +10,11 @@ echo Starting ooserverd...
 ../OOServer/oosvruser --version > /dev/null
 
 if test "$OMEGA_DEBUG" = "yes" && test -n "$DISPLAY"; then
-	xterm -e ../OOServer/ooserverd --unsafe -f $PWD/../$srcdir/test.conf &
+	xterm -e ../OOServer/ooserverd --unsafe --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
 else
-	../OOServer/ooserverd --unsafe -f $PWD/../$srcdir/test.conf &
+	../OOServer/ooserverd --unsafe --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
 fi
 
-child=$!
 echo Giving ooserverd a chance to start...
 sleep 3s
 
@@ -33,16 +32,8 @@ cd ../../test
 ../libtool --mode=execute -dlopen ../src/OOServer/oosvrlite.la -dlopen TestLibrary/testlibrary.la ./coretests
 ret=$?
 
-#kill $child &> /dev/null
-kill -9 $child
-
-# Make sure our session is dead...
-kill -9 $OMEGA_SESSION_PID &> /dev/null
-
-if test -f /tmp/omegaonline; then
-	rm /tmp/omegaonline
-fi
-
-rm /tmp/oo-* &> /dev/null
+# Close our ooserver
+pid=$(cat "./ooserverd.pid") 
+kill $pid
 
 exit $ret

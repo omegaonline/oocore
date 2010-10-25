@@ -101,6 +101,10 @@ int main(int argc, char* argv[])
 	// Ignore SIGPIPE
 	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));
+
+	// Ignore SIGCHLD
+	if (signal(SIGCHLD,SIG_IGN) == SIG_ERR)
+		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::strerror(errno).c_str()));
 #endif
 
 	std::string strPipe;
@@ -144,11 +148,8 @@ int main(int argc, char* argv[])
 
 	// Now run...
 	if (bRun)
-	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"%s started successfully.",argv[0]);
 		manager.run();
-	}
-
+	
 	// Stop the MessageHandler
 	manager.stop_request_threads();
 

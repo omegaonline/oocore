@@ -20,7 +20,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\..\bin\$(ConfigurationName)"
+			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -52,7 +52,6 @@
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -99,7 +98,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -125,14 +124,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\include"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions=""
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -178,7 +176,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\..\..\bin"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -205,7 +203,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\..\include"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -256,7 +254,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -284,12 +282,11 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\..\include"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

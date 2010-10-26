@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;;C:;..\..\..\OOBase\include"
+				AdditionalIncludeDirectories="..\..\..\OOBase\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
+				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug;..\..\..\OOBase\src\Win32\Debug_Svr"
 				GenerateDebugInformation="true"
 			/>
@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\OOBase\include"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -198,7 +198,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;C:\OOBase\include"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -218,7 +218,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
+				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
 				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release;C:\OOBase\src\Win32\Release_Svr"
 			/>
 			<Tool
@@ -276,7 +276,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;C:\OOBase\include"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -479,6 +479,10 @@
 			</File>
 			<File
 				RelativePath=".\UserROT.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UserServices.cpp"
 				>
 			</File>
 		</Filter>

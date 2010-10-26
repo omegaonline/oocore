@@ -342,7 +342,11 @@ namespace
 
 			// See if we are allowed to load...
 			if (!(flags & Activation::DontLaunch))
-				return LoadObject(oid,flags,iid);
+			{
+				pObject = LoadObject(oid,flags,iid);
+				if (pObject)
+					return pObject;
+			}
 		}
 		catch (Activation::IOidNotFoundException* pE)
 		{

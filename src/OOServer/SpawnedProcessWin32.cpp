@@ -932,7 +932,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 				"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n");
 		}
 			
-		if (!LogonSandboxUser(strUName,uid))
+		if (strUName.empty() || !LogonSandboxUser(strUName,uid))
 		{
 			if (!bUnsafe)
 				return 0;
@@ -940,21 +940,24 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
 				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),(SpawnedProcess*)0);
 
-			// Get the names associated with the user SID
-			std::wstring strUserName;
-			std::wstring strDomainName;
-			DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,strUserName,strDomainName);
-			if (dwRes != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
+			if (!strUName.empty())
+			{
+				// Get the names associated with the user SID
+				std::wstring strUserName;
+				std::wstring strDomainName;
+				DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,strUserName,strDomainName);
+				if (dwRes != ERROR_SUCCESS)
+					LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
 
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-				"OOServer is running under a user account that does not have the priviledges required to log-on as the sandbox user.\n\n"
-				"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the sandbox process will be started under the user account '%ls\\%ls'.\n\n"
-				"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-				strDomainName.c_str(),strUserName.c_str());
+				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+					"OOServer is running under a user account that does not have the priviledges required to log-on as the sandbox user.\n\n"
+					"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the sandbox process will be started under the user account '%ls\\%ls'.\n\n"
+					"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+					strDomainName.c_str(),strUserName.c_str());
+			}
 			
 			// Restrict the Token
-			dwRes = OOSvrBase::Win32::RestrictToken(uid);
+			DWORD dwRes = OOSvrBase::Win32::RestrictToken(uid);
 			if (dwRes != ERROR_SUCCESS)
 				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
 		}

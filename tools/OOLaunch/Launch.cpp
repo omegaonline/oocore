@@ -74,7 +74,8 @@ static void do_exec(const char* path, int fd)
 	os << "--launch-session=" << fd;
 
 	const char* debug = getenv("OMEGA_DEBUG");
-	if (debug && strcmp(debug,"yes")==0)
+	const char* display = getenv("DISPLAY");
+	if (debug && strcmp(debug,"yes")==0 && display)
 	{
 		// Try to use xterm if we are debugging...
 		/*std::string cmd = "libtool --mode=execute ddd --args ";

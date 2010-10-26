@@ -223,7 +223,8 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 	os << "--fork-slave=" << pass_fd;
 
 	const char* debug = getenv("OMEGA_DEBUG");
-	if (debug && strcmp(debug,"yes")==0)
+	const char* display = getenv("DISPLAY");
+	if (debug && strcmp(debug,"yes")==0 && display)
 	{
 		std::string strExec = strAppPath + " ";
 		strExec += os.str();

@@ -72,7 +72,8 @@ void UserProcessUnix::exec(const std::wstring& strExeName)
 		void* POSIX_TODO;
 
 		const char* debug = getenv("OMEGA_DEBUG");
-		if (debug && strcmp(debug,"yes")==0)
+		const char* display = getenv("DISPLAY");
+		if (debug && strcmp(debug,"yes")==0 && display)
 			execlp("xterm","xterm","-e",strApp.c_str(),(char*)0);
 		
 		execlp("sh","sh","-c",strApp.c_str(),(char*)0);

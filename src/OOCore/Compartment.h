@@ -76,6 +76,25 @@ namespace OOCore
 		UserSession*    m_pSession;
 		Omega::uint16_t m_id;
 
+		struct ComptState
+		{
+			ComptState(Compartment* cmpt, Omega::uint32_t* timeout = 0);
+			~ComptState();
+
+			Omega::uint16_t id() const
+			{
+				return m_prev_id;
+			}
+
+		private:
+			ComptState(const ComptState&);
+			ComptState& operator = (const ComptState&);
+
+			Compartment* const m_cmpt;
+			Omega::uint16_t    m_prev_id;
+		};
+		friend struct ComptState;
+
 		struct ChannelInfo
 		{
 			OTL::ObjectPtr<OTL::ObjectImpl<Channel> > m_ptrChannel;

@@ -34,87 +34,78 @@ OOCore::Compartment::Compartment(UserSession* pSession, uint16_t id) :
 {
 }
 
+
+OOCore::Compartment::ComptState::ComptState(Compartment* cmpt, uint32_t* timeout) : m_cmpt(cmpt)
+{
+	m_prev_id = m_cmpt->m_pSession->update_state(m_cmpt->m_id,timeout);
+}
+
+OOCore::Compartment::ComptState::~ComptState()
+{
+	m_cmpt->m_pSession->update_state(m_prev_id,0);
+}
+
 void OOCore::Compartment::shutdown()
 {
-	// Update session state and timeout
-	uint16_t src_cmpt_id = m_pSession->update_state(m_id,0);
-
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		// Done with cached objects
-		m_ptrROT.Release();
-
-		std::vector<ChannelInfo> vecChannels;
-		std::vector<ObjectPtr<ObjectImpl<ComptChannel> > > vecCompts;
+	// Switch state...
+	ComptState compt_state(this);
 	
-		// Shutdown all channels and compartments
-		uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
-		for (std::map<uint32_t,ChannelInfo>::iterator j=m_mapChannels.begin(); j!=m_mapChannels.end(); ++j)
-			vecChannels.push_back(j->second);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapChannels.clear();
+	// Done with cached objects
+	m_ptrROT.Release();
 
-		for (std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
-			vecCompts.push_back(i->second);
+	std::vector<ChannelInfo> vecChannels;
+	std::vector<ObjectPtr<ObjectImpl<ComptChannel> > > vecCompts;
 
-		m_mapCompartments.clear();
+	// Shutdown all channels and compartments
+	uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
+	for (std::map<uint32_t,ChannelInfo>::iterator j=m_mapChannels.begin(); j!=m_mapChannels.end(); ++j)
+		vecChannels.push_back(j->second);
 
-		m_pSession->remove_compartment(m_id);
+	m_mapChannels.clear();
 
-		guard.release();
+	for (std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
+		vecCompts.push_back(i->second);
 
-		for (std::vector<ChannelInfo>::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
-		{
-			if (j->m_bOpen)
-				j->m_ptrChannel->shutdown(our_channel_id);
-			else
-				j->m_ptrChannel->disconnect();
-		}
-		
-		for (std::vector<ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=vecCompts.begin();i!=vecCompts.end();++i)
-			(*i)->shutdown();
-	}
-	catch (...)
+	m_mapCompartments.clear();
+
+	m_pSession->remove_compartment(m_id);
+
+	guard.release();
+
+	for (std::vector<ChannelInfo>::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
 	{
-		m_pSession->update_state(src_cmpt_id,0);
-		throw;
+		if (j->m_bOpen)
+			j->m_ptrChannel->shutdown(our_channel_id);
+		else
+			j->m_ptrChannel->disconnect();
 	}
-
-	m_pSession->update_state(src_cmpt_id,0);
+	
+	for (std::vector<ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=vecCompts.begin();i!=vecCompts.end();++i)
+		(*i)->shutdown();	
 }
 
 void OOCore::Compartment::process_compartment_close()
 {
-	// Update session state and timeout
-	uint16_t src_cmpt_id = m_pSession->update_state(m_id,0);
+	// Switch state...
+	ComptState compt_state(this);
 
-	try
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(compt_state.id());
+	if (i != m_mapCompartments.end())
 	{
-		ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
-
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(src_cmpt_id);
-		if (i != m_mapCompartments.end())
-		{
-			ptrCompt = i->second;
-			
-			m_mapCompartments.erase(i);
-		}
-
-		guard.release();
-
-		ptrCompt->disconnect();
-	}
-	catch (...)
-	{
-		m_pSession->update_state(src_cmpt_id,0);
-		throw;
+		ptrCompt = i->second;
+		
+		m_mapCompartments.erase(i);
 	}
 
-	m_pSession->update_state(src_cmpt_id,0);
+	guard.release();
+
+	ptrCompt->disconnect();
 }
 
 bool OOCore::Compartment::process_channel_close(uint32_t closed_channel_id)
@@ -304,22 +295,13 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 
 IException* OOCore::Compartment::compartment_message(Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
-	// Update session state and timeout
-	uint16_t src_cmpt_id = m_pSession->update_state(m_id,&timeout);
+	// Switch state...
+	ComptState compt_state(this);
 
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	try
-	{
-		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(src_cmpt_id,guid_t::Null());
-		ptrOM = ptrChannel->GetObjectManager();
-	}
-	catch (...)
-	{
-		m_pSession->update_state(src_cmpt_id,0);
-		throw;
-	}	
-
+	// Find and/or create the object manager associated with src_channel_id
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(compt_state.id(),guid_t::Null());
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
+	
 	// Make the call
 	IException* pRet = 0;
 	try
@@ -330,8 +312,6 @@ IException* OOCore::Compartment::compartment_message(Remoting::IMessage* pSend, 
 	{
 		pRet = pE;
 	}
-
-	m_pSession->update_state(src_cmpt_id,0);
 
 	return pRet;
 }

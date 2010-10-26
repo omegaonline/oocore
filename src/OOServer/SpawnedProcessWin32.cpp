@@ -42,6 +42,24 @@
 #include <shlobj.h>
 #include <ntsecapi.h>
 
+static std::string getenv_i(const char* val)
+{
+#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
+	char* buf = 0;
+	size_t len = 0;
+	std::string ret;
+	if (!_dupenv_s(&buf,&len,val))
+	{
+		if (len)
+			ret = std::string(buf,len-1);
+		free(buf);
+	}
+	return ret;
+#else
+	return getenv(val);
+#endif
+}
+
 void AttachDebugger(DWORD pid);
 
 namespace
@@ -583,8 +601,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
 
-	const char* debug = getenv("OMEGA_DEBUG");
-	if (debug && strcmp(debug,"yes")==0)
+	if (getenv_i("OMEGA_DEBUG") == "yes")
 	{
 #if defined(OMEGA_DEBUG)
 		if (IsDebuggerPresent())
@@ -961,11 +978,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	std::wstring strAppName;
-	const char* user_host = getenv("OMEGA_USER_BINARY");
-	if (user_host)
-		strAppName = OOBase::from_native(user_host);
-
+	std::wstring strAppName = OOBase::from_native(getenv_i("OMEGA_USER_BINARY").c_str());
+	
 	if (!pSpawn32->Spawn(strAppName,bUnsafe,uid,strRootPipe,bSandbox))
 		return 0;
 

@@ -40,6 +40,24 @@
 
 #include <signal.h>
 
+static std::string getenv_i(const char* val)
+{
+#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
+	char* buf = 0;
+	size_t len = 0;
+	std::string ret;
+	if (!_dupenv_s(&buf,&len,val))
+	{
+		if (len)
+			ret = std::string(buf,len-1);
+		free(buf);
+	}
+	return ret;
+#else
+	return getenv(val);
+#endif
+}
+
 Root::Manager::Manager(const std::map<std::string,std::string>& args) :
 		m_cmd_args(args),
 		m_sandbox_channel(0),
@@ -210,22 +228,19 @@ bool Root::Manager::load_config_file(const std::string& strFile)
 
 bool Root::Manager::wait_to_quit()
 {
-	const char* debug = getenv("OMEGA_DEBUG");
-	bool bDebug = (debug && strcmp(debug,"yes")==0);
-
-	for (;;)
+	for (std::string debug = getenv_i("OMEGA_DEBUG");;)
 	{
 		switch (wait_for_quit())
 		{
 #if defined (_WIN32)
 			case CTRL_BREAK_EVENT:
-				return bDebug;
+				return (debug=="yes");
 
 			default:
 				return true;
 #elif defined(HAVE_UNISTD_H)
 			case SIGHUP:
-				return bDebug;
+				return (debug=="yes");
 				
 			case SIGQUIT:
 			case SIGTERM:

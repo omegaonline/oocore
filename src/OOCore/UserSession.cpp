@@ -27,9 +27,7 @@
 #include "IPS.h"
 #include "LoopChannel.h"
 
-#if defined(HAVE_UNISTD_H)
 #include <signal.h>
-#endif
 
 using namespace Omega;
 using namespace OTL;
@@ -323,7 +321,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 #else
 
-	char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
+	const char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
 	if (!pszAddr)
 		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
 

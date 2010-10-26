@@ -760,6 +760,8 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		try
 		{
+			std::vector<Omega::uint32_t> send_to;
+
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			// Propogate the message to all user processes...
@@ -769,8 +771,15 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 				if (i->first != src_channel_id && 
 						(i->first == m_uUpstreamChannel || can_route(channel_id,i->first)))
 				{
-					send_channel_close(i->first,channel_id);
+					send_to.push_back(i->first);
 				}
+			}
+
+			guard.release();
+
+			for (std::vector<Omega::uint32_t>::const_iterator i=send_to.begin();i!=send_to.end();++i)
+			{
+				send_channel_close(*i,channel_id);
 			}
 		}
 		catch (std::exception& e)

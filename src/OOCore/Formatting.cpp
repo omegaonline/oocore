@@ -1167,11 +1167,21 @@ namespace
 				return fmt_recurse(val,parts[2],def_precision,false);
 
 		case 2:
+#if defined(__clang__)
 			{
-				bool neg;
+ 				bool neg;
 				return fmt_recurse(quick_abs(val,neg),neg ? parts[1] : parts[0],def_precision,false);
-			}
-
+ 			}
+#else
+			if (val < 0)
+ 			{
+ 				bool neg;
+				return fmt_recurse(quick_abs(val,neg),parts[1],def_precision,false);
+ 			}
+			else
+				return fmt_recurse(val,parts[0],def_precision,false);
+#endif
+			
 		default:
 			return fmt_custom_i(val,strFormat);
 		}

@@ -62,6 +62,10 @@
 	#error No idea how to control symbol visibility for this compiler/linker/output format!
 #endif
 
+#if !defined(OMEGA_MODULE_PRIVATE_NAME)
+	#define OMEGA_MODULE_PRIVATE_NAME
+#endif
+
 #ifdef __cplusplus
 	#include <new>
 	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \

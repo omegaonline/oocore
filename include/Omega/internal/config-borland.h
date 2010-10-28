@@ -39,6 +39,10 @@
 #define OMEGA_IMPORT __declspec(dllimport)
 #define OMEGA_EXPORT __declspec(dllexport)
 
+#if !defined(OMEGA_MODULE_PRIVATE_NAME)
+	#define OMEGA_MODULE_PRIVATE_NAME
+#endif
+
 #define OMEGA_HAS_INT16_T
 #define OMEGA_HAS_UINT16_T
 #define OMEGA_HAS_INT32_T

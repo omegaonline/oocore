@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_APARTMENT_H_INCLUDED_
-#define OOCORE_APARTMENT_H_INCLUDED_
+#ifndef OMEGA_COMPARTMENT_H_INCLUDED_
+#define OMEGA_COMPARTMENT_H_INCLUDED_
 
 #include "Omega.h"
 
@@ -54,4 +54,4 @@ inline Omega::Compartment::ICompartment* Omega::Compartment::ICompartment::Creat
 
 #endif // !defined(DOXYGEN)
 
-#endif // OOCORE_APARTMENT_H_INCLUDED_
+#endif // OMEGA_COMPARTMENT_H_INCLUDED_

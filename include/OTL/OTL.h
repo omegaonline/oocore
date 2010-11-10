@@ -19,11 +19,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OTL_OTL_H_INCLUDED_
-#define OTL_OTL_H_INCLUDED_
+#ifndef OTL_H_INCLUDED_
+#define OTL_H_INCLUDED_
 
-#if !defined(OOCORE_H_INCLUDED_)
-#include <Omega/Omega.h>
+#if !defined(OMEGA_H_INCLUDED_)
+#include "../Omega/Omega.h"
 #endif
 
 ///////////////////////////////////////////////////////////////////
@@ -949,4 +949,4 @@ namespace OTL
 
 #include "OTL.inl"
 
-#endif // OTL_OTL_H_INCLUDED_
+#endif // OTL_H_INCLUDED_

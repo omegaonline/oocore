@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_H_INCLUDED_
-#define OOCORE_H_INCLUDED_
+#ifndef OMEGA_H_INCLUDED_
+#define OMEGA_H_INCLUDED_
 
 //////////////////////////////////////////////
 #include "internal/config-guess.h"
@@ -200,4 +200,4 @@ inline Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 
 #endif // !defined(DOXYGEN)
 
-#endif // OOCORE_H_INCLUDED_
+#endif // OMEGA_H_INCLUDED_

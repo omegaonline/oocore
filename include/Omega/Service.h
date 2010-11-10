@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_SERVICE_H_INCLUDED_
-#define OOCORE_SERVICE_H_INCLUDED_
+#ifndef OMEGA_SERVICE_H_INCLUDED_
+#define OMEGA_SERVICE_H_INCLUDED_
 
 #include "Omega.h"
 
@@ -112,4 +112,4 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	OMEGA_METHOD_VOID(OnAccept,1,((in),Net::IAsyncSocket*,pSocket))
 )
 
-#endif // OOCORE_SERVICE_H_INCLUDED_
+#endif // OMEGA_SERVICE_H_INCLUDED_

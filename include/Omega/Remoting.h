@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_REMOTING_H_INCLUDED_
-#define OOCORE_REMOTING_H_INCLUDED_
+#ifndef OMEGA_REMOTING_H_INCLUDED_
+#define OMEGA_REMOTING_H_INCLUDED_
 
 #include "Omega.h"
 
@@ -217,4 +217,4 @@ inline Omega::Remoting::IChannelSink* Omega::Remoting::IChannelSink::OpenServerS
 
 #endif // !defined(DOXYGEN)
 
-#endif // OOCORE_REMOTING_H_INCLUDED_
+#endif // OMEGA_REMOTING_H_INCLUDED_

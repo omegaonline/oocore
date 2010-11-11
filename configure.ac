@@ -40,9 +40,6 @@ AM_CONDITIONAL([DEBUG], [test "x$debug" = "xtrue"])
 OO_PROG_CC
 OO_PROG_CXX
 
-# Check for pkg-config
-PKG_PROG_PKG_CONFIG
-
 # Check the multi-threading flags
 OO_MULTI_THREAD
 
@@ -97,7 +94,7 @@ AS_IF([test "x$debug" = "xtrue"],[CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"],[CPPFLAGS=
 # Set up libtool correctly
 m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])
 LT_PREREQ([2.2.6])
-LT_INIT([win32-dll disable-static dlopen])
+LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
 # Find sqlite3

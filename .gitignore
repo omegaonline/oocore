@@ -56,9 +56,17 @@ OOServer_msgs.rc
 *.ilk
 *.vcproj.*.user
 *.suo
+*.aps
 BuildLog.htm
 mt.dep
 dte80a.*
+
+# WiX stuff
+*.msi
+*.wixpdb
+*.wixobj
+*.wixproj.FileList.txt
+
 
 # Unix stuff
 ooserverd

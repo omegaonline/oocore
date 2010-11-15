@@ -23,7 +23,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 -->
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" RequiredVersion="3.0.0.0">
   <Product Id="{28CFA922-1E70-4665-88F5-61F9F553515E}"
       Name="Omega Online Core"
       Language="1033"
@@ -58,12 +58,12 @@
     <!-- Define file components -->
     <DirectoryRef Id="SystemFolder">
       <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}" Permanent="yes">
-        <File Source="$(var.Bindir)OOCore.dll" KeyPath="yes" Checksum="yes" />
+        <File Source="$(var.BinDir)\OOCore.dll" KeyPath="yes" Checksum="yes" />
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="OOServer.exe" Guid="{13EC374D-B4C7-4B4E-8ABF-BF937A1EDECB}">
-        <File Source="$(var.Bindir)OOServer.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
+        <File Source="$(var.BinDir)\OOServer.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
         
         <!-- Stop and remove the service -->
         <ServiceControl Id="OOServer.Service.Control"
@@ -83,7 +83,7 @@
                         ErrorControl="ignore" />
       </Component>
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
-        <File Source="$(var.Bindir)OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
+        <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
       </Component>
       
       <!-- We don't install OOSvrLite.dll - it is designed for hand-held devices only -->
@@ -91,13 +91,13 @@
     </DirectoryRef>
     <DirectoryRef Id="COMMONAPPDIR">
       <Component Id="OOServer.system.regdb" Guid="{8B2918F6-80C9-4D50-A514-0460F7D37BD5}">
-        <File Source="$(var.Datadir)system.regdb" KeyPath="yes" />
+        <File Source="$(var.DataDir)\system.regdb" KeyPath="yes" />
       </Component>
       <Component Id="OOServer.default_user.regdb" Guid="{2723E66D-E2FC-4659-B49B-3E9E4FAD8012}">
-        <File Source="$(var.Datadir)default_user.regdb" KeyPath="yes" />
+        <File Source="$(var.DataDir)\default_user.regdb" KeyPath="yes" />
       </Component>
       <Component Id="OOServer.sandbox.regdb" Guid="{BD35170C-A657-4E8E-8DAD-C6048C3EA9C3}">
-        <File Source="$(var.Datadir)sandbox.regdb" KeyPath="yes" />
+        <File Source="$(var.DataDir)\sandbox.regdb" KeyPath="yes" />
       </Component>
     </DirectoryRef>
     
@@ -115,13 +115,13 @@
     <CustomAction Id="OOServer.CheckUser"
                   Return="check"
                   Execute="immediate"
-                  BinaryKey="CustomLibrary"
+                  BinaryKey="UserCALibrary"
                   DllEntry="_CheckUser@4" />
     
     <CustomAction Id="OOServer.AddUser" 
                   Return="check" 
                   Execute="deferred"
-                  BinaryKey="CustomLibrary" 
+                  BinaryKey="UserCALibrary" 
                   DllEntry="_AddUser@4"
                   HideTarget="yes" 
                   Impersonate="no" />
@@ -133,7 +133,7 @@
     <CustomAction Id="OOServer.AddUser.Rollback"
                   Return="ignore"
                   Execute="rollback"
-                  BinaryKey="CustomLibrary"
+                  BinaryKey="UserCALibrary"
                   DllEntry="_RemoveUser@4"
                   HideTarget="yes"
                   Impersonate="no" />
@@ -145,7 +145,7 @@
     <CustomAction Id="OOServer.UpdateUser"
                   Return="check"
                   Execute="deferred"
-                  BinaryKey="CustomLibrary"
+                  BinaryKey="UserCALibrary"
                   DllEntry="_UpdateUser@4"
                   HideTarget="yes"
                   Impersonate="no" />
@@ -157,7 +157,7 @@
     <CustomAction Id="OOServer.RemoveUser"
                   Return="check"
                   Execute="deferred"
-                  BinaryKey="CustomLibrary"
+                  BinaryKey="UserCALibrary"
                   DllEntry="_RemoveUser@4"
                   HideTarget="yes"
                   Impersonate="no" />
@@ -168,9 +168,9 @@
     
     <!-- Define binary -->
     <?ifdef Debug ?>
-      <Binary Id="CustomLibrary" SourceFile=".\bin\Debug\Custom.dll" />
+      <Binary Id="UserCALibrary" SourceFile=".\bin\Debug\UserCA.dll" />
     <?else?>
-      <Binary Id="CustomLibrary" SourceFile=".\bin\Release\Custom.dll" />
+      <Binary Id="UserCALibrary" SourceFile=".\bin\Release\UserCA.dll" />
     <?endif?>
 
     <!-- Set execute order -->

@@ -198,25 +198,5 @@
       <Custom Action="RemoveUser.Set" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
       <Custom Action="RemoveUser" After="RemoveUser.Set"><![CDATA[REMOVE~="ALL"]]></Custom>
     </InstallExecuteSequence>
-
-    <!-- Group components -->
-    <!--<ComponentGroup Id="OOCore">
-      <ComponentRef Id="OOCore.dll" />
-    </ComponentGroup>
-
-    <ComponentGroup Id="OOServer">
-      <ComponentRef Id="OOServer.exe" />
-      <ComponentRef Id="OOSvrUser.exe" />
-      <ComponentRef Id="OOServer.RegKeys" />
-      <ComponentRef Id="OOServer.system.regdb" />
-      <ComponentRef Id="OOServer.sandbox.regdb" />
-      <ComponentRef Id="OOServer.default_user.regdb" />
-    </ComponentGroup>
-
-     Define features 
-    <Feature Id="Core" Title="Omega Online base components" Level="1" >
-      <ComponentGroupRef Id="OOCore" />
-      <ComponentGroupRef Id="OOServer" />
-    </Feature>-->
 	</Module>
 </Wix>

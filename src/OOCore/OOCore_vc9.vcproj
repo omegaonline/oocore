@@ -217,6 +217,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
+				SetChecksum="true"
 				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release"
 			/>
 			<Tool
@@ -294,6 +295,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
 				AdditionalLibraryDirectories="C:\OOBase\src\x64\Release"
+				SetChecksum="true"
 				TargetMachine="17"
 			/>
 			<Tool

@@ -222,6 +222,7 @@
 				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release;C:\OOBase\src\Win32\Release_Svr"
 				GenerateManifest="false"
 				LinkTimeCodeGeneration="1"
+				SetChecksum="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -299,6 +300,7 @@
 				AdditionalLibraryDirectories="C:\OOBase\src\x64\Release;C:\OOBase\src\x64\Release"
 				GenerateManifest="false"
 				LinkTimeCodeGeneration="1"
+				SetChecksum="true"
 				TargetMachine="17"
 			/>
 			<Tool

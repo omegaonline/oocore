@@ -63,6 +63,7 @@ dte80a.*
 
 # WiX stuff
 *.msi
+*.msm
 *.wixpdb
 *.wixobj
 *.wixproj.FileList.txt

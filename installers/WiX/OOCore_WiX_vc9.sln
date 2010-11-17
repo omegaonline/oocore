@@ -1,12 +1,12 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "OOCore", "OOCore.wixproj", "{4BF48188-7C69-4B24-8504-F46C668771E8}"
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UserCA", "UserCA\UserCA_vc9.vcproj", "{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "OOCore_MergeModule", "OOCore_MergeModule.wixproj", "{ACCC68D0-270D-40E8-9875-8675E96386A8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1} = {6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}
 	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UserCA", "UserCA\UserCA_vc8.vcproj", "{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,14 +14,14 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4BF48188-7C69-4B24-8504-F46C668771E8}.Debug|x86.ActiveCfg = Debug|x86
-		{4BF48188-7C69-4B24-8504-F46C668771E8}.Debug|x86.Build.0 = Debug|x86
-		{4BF48188-7C69-4B24-8504-F46C668771E8}.Release|x86.ActiveCfg = Release|x86
-		{4BF48188-7C69-4B24-8504-F46C668771E8}.Release|x86.Build.0 = Release|x86
 		{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}.Debug|x86.ActiveCfg = Debug|Win32
 		{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}.Debug|x86.Build.0 = Debug|Win32
 		{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}.Release|x86.ActiveCfg = Release|Win32
 		{6B9267FF-DBB7-4F78-94FB-5C15DEE822C1}.Release|x86.Build.0 = Release|Win32
+		{ACCC68D0-270D-40E8-9875-8675E96386A8}.Debug|x86.ActiveCfg = Debug|x86
+		{ACCC68D0-270D-40E8-9875-8675E96386A8}.Debug|x86.Build.0 = Debug|x86
+		{ACCC68D0-270D-40E8-9875-8675E96386A8}.Release|x86.ActiveCfg = Release|x86
+		{ACCC68D0-270D-40E8-9875-8675E96386A8}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

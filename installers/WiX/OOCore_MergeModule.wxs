@@ -24,26 +24,20 @@
 -->
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" RequiredVersion="3.0.0.0">
-  <Product Id="{28CFA922-1E70-4665-88F5-61F9F553515E}"
-      Name="Omega Online Core"
-      Language="1033"
-      Version="0.5.0"
-      Manufacturer="www.omegaonline.org.uk"
-      UpgradeCode="{DF39C47D-E9EC-4644-93C4-6D649CED5CB8}">
+	<Module Id="OOCore_MergeModule" Language="0" Version="0.5.0">
+		<Package Id="072e8f9f-7b5d-49fc-b0e6-df716d13ac34" 
+             Manufacturer="www.omegaonline.org.uk" 
+             InstallerVersion="200"
+             ReadOnly="yes" 
+             InstallScope="perMachine" />
 
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
-
-    <Icon Id="Icon" SourceFile="../../src/OOServer/logo.ico"/>
-    <Property Id="ARPPRODUCTICON" Value="Icon" />
-    
     <!-- Define properties -->
     <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="default" >
       <RegistrySearch Id="OMEGASANDBOXUNAME.Search" Type="raw" Root="HKLM" Key="Software\Omega Online\OOServer" Name="sandbox_uname" />
     </Property>
     <Property Id="OMEGASANDBOXPWD" Admin="yes" Value="default" Hidden="yes" />
-    <Property Id="OOServer.AddUser.DoAdd" Value="no" />
-      
+    <Property Id="AddUser.DoAdd" Value="no" />
+
     <!-- Define directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
@@ -53,24 +47,27 @@
       <Directory Id="CommonAppDataFolder">
         <Directory Id="COMMONAPPDIR" Name="Omega Online" />
       </Directory>
+      <Directory Id="CommonFilesFolder">
+        <Directory Id="COMMONDIR" Name="Omega Online" />
+      </Directory>
     </Directory>
-    
+
     <!-- Define file components -->
     <DirectoryRef Id="SystemFolder">
-      <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}" Permanent="yes">
+      <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}">
         <File Source="$(var.BinDir)\OOCore.dll" KeyPath="yes" Checksum="yes" />
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="OOServer.exe" Guid="{13EC374D-B4C7-4B4E-8ABF-BF937A1EDECB}">
         <File Source="$(var.BinDir)\OOServer.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
-        
+
         <!-- Stop and remove the service -->
         <ServiceControl Id="OOServer.Service.Control"
                         Name="OOServer"
                         Stop="both"
                         Remove="uninstall" />
-        
+
         <!-- Install the service -->
         <ServiceInstall Id="OOServer.Service"
                         Name="OOServer"
@@ -85,10 +82,12 @@
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
         <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
       </Component>
-      
+
       <!-- We don't install OOSvrLite.dll - it is designed for hand-held devices only -->
-      
+
     </DirectoryRef>
+
+    <!-- Install registry databases -->
     <DirectoryRef Id="COMMONAPPDIR">
       <Component Id="OOServer.system.regdb" Guid="{8B2918F6-80C9-4D50-A514-0460F7D37BD5}">
         <File Source="$(var.DataDir)\system.regdb" KeyPath="yes" />
@@ -100,7 +99,14 @@
         <File Source="$(var.DataDir)\sandbox.regdb" KeyPath="yes" />
       </Component>
     </DirectoryRef>
-    
+
+    <!-- Install tools -->
+    <DirectoryRef Id="COMMONDIR">
+      <Component Id="OOReg.exe" Guid="{B6158997-7D0F-4524-93EA-FB30FE10E8D3}">
+        <File Source="$(var.BinDir)\OOReg.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
     <!-- Define registry components -->
     <DirectoryRef Id="TARGETDIR" >
       <Component Id="OOServer.RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
@@ -110,27 +116,28 @@
         </RegistryKey>
       </Component>
     </DirectoryRef>
-    
+
     <!-- Define custom actions -->
-    <CustomAction Id="OOServer.CheckUser"
+    <CustomAction Id="CheckUser"
                   Return="check"
                   Execute="immediate"
                   BinaryKey="UserCALibrary"
                   DllEntry="_CheckUser@4" />
-    
-    <CustomAction Id="OOServer.AddUser" 
-                  Return="check" 
+
+    <CustomAction Id="AddUser"
+                  Return="check"
                   Execute="deferred"
-                  BinaryKey="UserCALibrary" 
+                  BinaryKey="UserCALibrary"
                   DllEntry="_AddUser@4"
-                  HideTarget="yes" 
+                  HideTarget="yes"
                   Impersonate="no" />
-    
-    <CustomAction Id="OOServer.AddUser.SetProperty" 
-                  Property="OOServer.AddUser" 
+
+    <CustomAction Id="AddUser.Set"
+                  Property="AddUser"
+                  HideTarget="yes"
                   Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
 
-    <CustomAction Id="OOServer.AddUser.Rollback"
+    <CustomAction Id="AddUser.RB"
                   Return="ignore"
                   Execute="rollback"
                   BinaryKey="UserCALibrary"
@@ -138,11 +145,12 @@
                   HideTarget="yes"
                   Impersonate="no" />
 
-    <CustomAction Id="OOServer.AddUser.Rollback.SetProperty"
-                  Property="OOServer.AddUser.Rollback"
+    <CustomAction Id="AddUser.RB.Set"
+                  Property="AddUser.RB"
+                  HideTarget="yes"
                   Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
 
-    <CustomAction Id="OOServer.UpdateUser"
+    <CustomAction Id="UpdateUser"
                   Return="check"
                   Execute="deferred"
                   BinaryKey="UserCALibrary"
@@ -150,11 +158,12 @@
                   HideTarget="yes"
                   Impersonate="no" />
 
-    <CustomAction Id="OOServer.UpdateUser.SetProperty"
-                  Property="OOServer.UpdateUser"
+    <CustomAction Id="UpdateUser.Set"
+                  Property="UpdateUser"
+                  HideTarget="yes"
                   Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
 
-    <CustomAction Id="OOServer.RemoveUser"
+    <CustomAction Id="RemoveUser"
                   Return="check"
                   Execute="deferred"
                   BinaryKey="UserCALibrary"
@@ -162,38 +171,39 @@
                   HideTarget="yes"
                   Impersonate="no" />
 
-    <CustomAction Id="OOServer.RemoveUser.SetProperty"
-                  Property="OOServer.RemoveUser"
+    <CustomAction Id="RemoveUser.Set"
+                  Property="RemoveUser"
+                  HideTarget="yes"
                   Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
-    
+
     <!-- Define binary -->
     <?ifdef Debug ?>
-      <Binary Id="UserCALibrary" SourceFile=".\bin\Debug\UserCA.dll" />
+    <Binary Id="UserCALibrary" SourceFile=".\bin\Debug\UserCA.dll" />
     <?else?>
-      <Binary Id="UserCALibrary" SourceFile=".\bin\Release\UserCA.dll" />
+    <Binary Id="UserCALibrary" SourceFile=".\bin\Release\UserCA.dll" />
     <?endif?>
 
     <!-- Set execute order -->
     <InstallExecuteSequence>
-      <Custom Action="OOServer.CheckUser" Before="InstallFiles"><![CDATA[NOT REMOVE]]></Custom>
-      
-      <Custom Action="OOServer.AddUser.SetProperty" After="InstallFiles"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
-      <Custom Action="OOServer.AddUser" After="OOServer.AddUser.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
-      <Custom Action="OOServer.AddUser.Rollback.SetProperty" Before="OOServer.AddUser"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
-      <Custom Action="OOServer.AddUser.Rollback" After="OOServer.AddUser.Rollback.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
-      
-      <Custom Action="OOServer.UpdateUser.SetProperty" After="InstallFiles"><![CDATA[OOServer.AddUser.DoAdd="update"]]></Custom>
-      <Custom Action="OOServer.UpdateUser" After="OOServer.UpdateUser.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="update"]]></Custom>
+      <Custom Action="CheckUser" Before="InstallFiles"><![CDATA[NOT REMOVE]]></Custom>
 
-      <Custom Action="OOServer.RemoveUser.SetProperty" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
-      <Custom Action="OOServer.RemoveUser" After="OOServer.RemoveUser.SetProperty"><![CDATA[REMOVE~="ALL"]]></Custom>
+      <Custom Action="AddUser.Set" After="InstallFiles"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="AddUser" After="AddUser.Set"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="AddUser.RB.Set" Before="AddUser"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="AddUser.RB" After="AddUser.RB.Set"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
+
+      <Custom Action="UpdateUser.Set" After="InstallFiles"><![CDATA[AddUser.DoAdd="update"]]></Custom>
+      <Custom Action="UpdateUser" After="UpdateUser.Set"><![CDATA[AddUser.DoAdd="update"]]></Custom>
+
+      <Custom Action="RemoveUser.Set" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
+      <Custom Action="RemoveUser" After="RemoveUser.Set"><![CDATA[REMOVE~="ALL"]]></Custom>
     </InstallExecuteSequence>
 
     <!-- Group components -->
-    <ComponentGroup Id="OOCore">
+    <!--<ComponentGroup Id="OOCore">
       <ComponentRef Id="OOCore.dll" />
     </ComponentGroup>
-    
+
     <ComponentGroup Id="OOServer">
       <ComponentRef Id="OOServer.exe" />
       <ComponentRef Id="OOSvrUser.exe" />
@@ -202,11 +212,11 @@
       <ComponentRef Id="OOServer.sandbox.regdb" />
       <ComponentRef Id="OOServer.default_user.regdb" />
     </ComponentGroup>
-    
-    <!-- Define features -->
+
+     Define features 
     <Feature Id="Core" Title="Omega Online base components" Level="1" >
       <ComponentGroupRef Id="OOCore" />
       <ComponentGroupRef Id="OOServer" />
-    </Feature>
-  </Product>
+    </Feature>-->
+	</Module>
 </Wix>

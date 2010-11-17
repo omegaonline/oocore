@@ -153,7 +153,7 @@ bool Root::Manager::load_config()
 
 		// Read from registry
 		HKEY hKey = 0;
-		LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software/Omega Online/OOServer",0,KEY_READ,&hKey);
+		LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
 		if (lRes == ERROR_FILE_NOT_FOUND)
 			return true;
 		else if (lRes != ERROR_SUCCESS)

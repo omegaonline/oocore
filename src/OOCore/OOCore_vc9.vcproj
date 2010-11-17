@@ -196,7 +196,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="..\..\..\oobase\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -217,8 +217,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release"
 				SetChecksum="true"
-				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release"
 			/>
 			<Tool
 				Name="VCALinkTool"

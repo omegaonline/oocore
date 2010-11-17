@@ -120,7 +120,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="..\..\..\oobase\include"
 				PreprocessorDefinitions="NDEBUG;_CRT_NONSTDC_NO_WARNINGS"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
@@ -139,7 +139,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release;C:\OOBase\src\Win32\Release_Svr"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
 				SubSystem="1"
 				TargetMachine="1"
 			/>

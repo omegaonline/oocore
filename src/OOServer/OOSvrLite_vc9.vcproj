@@ -198,7 +198,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;C:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite;..\..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -219,7 +219,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release;C:\OOBase\src\Win32\Release_Svr"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool

@@ -446,6 +446,8 @@ extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 		BuildUnicodeString(szVal,strPwd.c_str());
 
 		err = LsaNtStatusToWinError(LsaStorePrivateData(hPolicy,&szKey,&szVal));
+		if (err != ERROR_SUCCESS)
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaStorePrivateData failed: [1]",1,FormatMessage(err).c_str());
 	}
 
 	LsaClose(hPolicy);
@@ -541,8 +543,7 @@ extern "C" UINT __declspec(dllexport) __stdcall UpdateUser(MSIHANDLE hInstall)
 
 	LsaFreeMemory(pDL);
 	LsaFreeMemory(pSIDs);
-	LsaClose(hPolicy);
-
+	
 	// Confirm logon is possible...
 	HANDLE hToken;
 	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
@@ -552,6 +553,22 @@ extern "C" UINT __declspec(dllexport) __stdcall UpdateUser(MSIHANDLE hInstall)
 	}
 	else
 		CloseHandle(hToken);
+
+	// Make sure we set the password to the Policy store...
+	if (err == ERROR_SUCCESS)
+	{
+		LSA_UNICODE_STRING szKey;
+		BuildUnicodeString(szKey,s_szPwdKey);
+
+		LSA_UNICODE_STRING szVal;
+		BuildUnicodeString(szVal,strPwd.c_str());
+
+		err = LsaNtStatusToWinError(LsaStorePrivateData(hPolicy,&szKey,&szVal));
+		if (err != ERROR_SUCCESS)
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaStorePrivateData failed: [1]",1,FormatMessage(err).c_str());
+	}
+
+	LsaClose(hPolicy);
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }

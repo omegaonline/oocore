@@ -109,6 +109,10 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 {
 #if defined(_WIN32)
 
+#if defined(_MSC_VER)
+	pipe_name;
+#endif
+
 	assert(!pipe_name.empty());
 
 	PSID pSID;

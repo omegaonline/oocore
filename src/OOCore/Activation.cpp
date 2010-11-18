@@ -40,6 +40,7 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY(OOCore::OidNotFoundExceptionMarshalFactoryImpl)
 END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
 
 #endif // DOXYGEN
@@ -48,29 +49,10 @@ using namespace Omega;
 using namespace OTL;
 
 OMEGA_DEFINE_OID(OOCore,OID_ServiceManager,"{60B09DE7-609E-4b82-BA35-270A9544BE29}");
+OMEGA_DEFINE_OID(OOCore,OID_OidNotFoundExceptionMarshalFactory, "{0CA3037F-08C0-442a-B4EC-84A9156839CD}");
 
 namespace
 {
-	class OidNotFoundException :
-			public ExceptionImpl<Omega::Activation::IOidNotFoundException>
-	{
-	public:
-		static void Throw(const any_t& oid, IException* pE = 0);
-
-		BEGIN_INTERFACE_MAP(OidNotFoundException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
-		END_INTERFACE_MAP()
-
-		any_t m_oid;
-
-	// Activation::IOidNotFoundException members
-	public:
-		any_t GetMissingOid()
-		{
-			return m_oid;
-		}
-	};
-
 	class NoAggregationException :
 			public ExceptionImpl<Activation::INoAggregationException>
 	{
@@ -205,16 +187,6 @@ namespace
 		}
 	}
 
-	void OidNotFoundException::Throw(const any_t& oid, IException* pE)
-	{
-		ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-		pNew->m_strDesc = L"The identified object could not be found: {0}";
-		pNew->m_strDesc %= oid;
-		pNew->m_ptrCause.Attach(pE);
-		pNew->m_oid = oid;
-		throw static_cast<IOidNotFoundException*>(pNew);
-	}
-
 	void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
 	{
 		ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
@@ -289,79 +261,64 @@ namespace
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		IObject* pObject = 0;
-		try
+		
+		// Try ourselves first... this prevents anyone overloading standard behaviours!
+		if (flags & Activation::InProcess)
 		{
-			// Try ourselves first... this prevents anyone overloading standard behaviours!
-			if (flags & Activation::InProcess)
+			if (oid == OOCore::OID_ServiceManager)
 			{
-				if (oid == OOCore::OID_ServiceManager)
-				{
-					pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
-					if (!pObject)
-						throw INoInterfaceException::Create(iid);
-					return pObject;
-				}
-			
-				pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
-				if (pObject)
-					return pObject;
+				pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
+				if (!pObject)
+					throw INoInterfaceException::Create(iid);
+				return pObject;
 			}
-
-			// Build RegisterFlags
-			Activation::RegisterFlags_t reg_mask = 0;
-			if (flags & Activation::InProcess)
-				reg_mask |= Activation::ProcessLocal;
-			
-			if (flags & Activation::OutOfProcess)
-				reg_mask |= Activation::UserLocal | Activation::MachineLocal;
-
-			// Surrogates must not be ProcessLocal
-			if (flags & (Activation::Surrogate | Activation::PrivateSurrogate))
-			{
-				reg_mask |= Activation::UserLocal;
-				reg_mask &= ~Activation::ProcessLocal;
-			}
-
-			// Sandbox must be not be UserLocal
-			if (flags & (Activation::Sandbox | Activation::VM))
-				reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
-			
-			// Remote activation
-			if (flags & Activation::RemoteActivation)
-				reg_mask |= Activation::Anywhere;
-
-			// See if we have it registered ion the ROT
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-			ptrROT->GetObject(oid,reg_mask,iid,pObject);
+		
+			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 			if (pObject)
 				return pObject;
-
-			void* TODO; // Allow injection of callback
-
-			// See if we are allowed to load...
-			if (!(flags & Activation::DontLaunch))
-			{
-				pObject = LoadObject(oid,flags,iid);
-				if (pObject)
-					return pObject;
-			}
-		}
-		catch (Activation::IOidNotFoundException* pE)
-		{
-			pE->Rethrow();
-		}
-		catch (INoInterfaceException* pE)
-		{
-			pE->Rethrow();
-		}
-		catch (IException* pE)
-		{
-			OidNotFoundException::Throw(oid,pE);
 		}
 
-		OidNotFoundException::Throw(oid);
+		// Build RegisterFlags
+		Activation::RegisterFlags_t reg_mask = 0;
+		if (flags & Activation::InProcess)
+			reg_mask |= Activation::ProcessLocal;
+		
+		if (flags & Activation::OutOfProcess)
+			reg_mask |= Activation::UserLocal | Activation::MachineLocal;
+
+		// Surrogates must not be ProcessLocal
+		if (flags & (Activation::Surrogate | Activation::PrivateSurrogate))
+		{
+			reg_mask |= Activation::UserLocal;
+			reg_mask &= ~Activation::ProcessLocal;
+		}
+
+		// Sandbox must be not be UserLocal
+		if (flags & (Activation::Sandbox | Activation::VM))
+			reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
+		
+		// Remote activation
+		if (flags & Activation::RemoteActivation)
+			reg_mask |= Activation::Anywhere;
+
+		// See if we have it registered ion the ROT
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+		ptrROT->GetObject(oid,reg_mask,iid,pObject);
+		if (pObject)
+			return pObject;
+
+		void* TODO; // Allow injection of callback
+
+		// See if we are allowed to load...
+		if (!(flags & Activation::DontLaunch))
+		{
+			pObject = LoadObject(oid,flags,iid);
+			if (pObject)
+				return pObject;
+		}
+		
 		return 0;
 	}
 
@@ -383,10 +340,20 @@ namespace
 			}
 			catch (IException* pE)
 			{
-				OidNotFoundException::Throw(strCurName,pE);
+				OOCore::OidNotFoundException::Throw(strCurName,pE);
 			}
 		}
 	}
+}
+
+void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
+{
+	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
+	pNew->m_strDesc = L"The identified object could not be found: {0}";
+	pNew->m_strDesc %= oid;
+	pNew->m_ptrCause.Attach(pE);
+	pNew->m_oid = oid;
+	throw static_cast<IOidNotFoundException*>(pNew);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
@@ -399,7 +366,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCor
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
 {
-	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
+	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
 	pNew->m_strDesc = L"The identified object could not be found: {0}";
 	pNew->m_strDesc %= oid;
 	pNew->m_oid = oid;
@@ -408,51 +375,76 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_
 
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	// First try to determine the protocol...
-	guid_t oid_guid;
-	if (oid.Coerce(oid_guid) == any_t::castValid)
-		return GetLocalInstance(oid_guid,flags,iid);
-
-	string_t strObject = oid.cast<string_t>();
-	string_t strEndpoint;
-	size_t pos = strObject.Find(L'@');
-	if (pos != string_t::npos)
+	try
 	{
-		strEndpoint = strObject.Mid(pos+1).ToLower();
-		strObject = strObject.Left(pos);
+		// First try to determine the protocol...
+		guid_t oid_guid;
+		if (oid.Coerce(oid_guid) == any_t::castValid)
+		{
+			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
+			if (!pObject)
+				OidNotFoundException::Throw(oid);
+			return pObject;
+		}
 
-		if (strEndpoint == L"local")
-			strEndpoint.Clear();
+		string_t strObject = oid.cast<string_t>();
+		string_t strEndpoint;
+		size_t pos = strObject.Find(L'@');
+		if (pos != string_t::npos)
+		{
+			strEndpoint = strObject.Mid(pos+1).ToLower();
+			strObject = strObject.Left(pos);
+
+			if (strEndpoint == L"local")
+				strEndpoint.Clear();
+		}
+
+		if (strEndpoint.IsEmpty())
+		{
+			// Do a quick registry lookup
+			if (!guid_t::FromString(strObject,oid_guid))
+				oid_guid = NameToOid(strObject);
+
+			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
+			if (!pObject)
+				OidNotFoundException::Throw(oid);
+			return pObject;
+		}
+
+		// Get IPS
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (!ptrIPS)
+			throw IInternalException::Create("Omega::Initialize not called","OOCore");
+
+		// Open a remote channel
+		ObjectPtr<Remoting::IChannel> ptrChannel;
+		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
+
+		// Get the ObjectManager
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
+
+		// Get the remote instance
+		IObject* pObject = 0;
+		ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
+		if (!pObject)
+			OidNotFoundException::Throw(oid);
+
+		return pObject;
+	}
+	catch (Activation::IOidNotFoundException* pE)
+	{
+		pE->Rethrow();
+	}
+	catch (INoInterfaceException* pE)
+	{
+		pE->Rethrow();
+	}
+	catch (IException* pE)
+	{
+		OidNotFoundException::Throw(oid,pE);
 	}
 
-	if (strEndpoint.IsEmpty())
-	{
-		// Do a quick registry lookup
-		if (!guid_t::FromString(strObject,oid_guid))
-			oid_guid = NameToOid(strObject);
-
-		return GetLocalInstance(oid_guid,flags,iid);
-	}
-
-	// Get IPS
-	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-	if (!ptrIPS)
-		OidNotFoundException::Throw(oid);
-
-	// Open a remote channel
-	ObjectPtr<Remoting::IChannel> ptrChannel;
-	ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
-
-	// Get the ObjectManager
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
-
-	// Get the remote instance
-	IObject* pObject = 0;
-	ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
-	if (!pObject)
-		OidNotFoundException::Throw(oid);
-
-	return pObject;
+	return 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags))

@@ -149,7 +149,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSID);
 
 	// Set read/write access
-	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
 	ea[1].grfAccessMode = SET_ACCESS;
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;

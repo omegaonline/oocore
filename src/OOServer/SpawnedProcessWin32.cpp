@@ -137,7 +137,7 @@ namespace
 		ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
 
 		// Set read/write control for Specific logon.
-		ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+		ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
 		ea[1].grfAccessMode = SET_ACCESS;
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;

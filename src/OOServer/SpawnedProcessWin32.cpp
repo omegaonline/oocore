@@ -70,7 +70,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
@@ -82,7 +82,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(std::wstring strAppPath, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		DWORD SpawnFromToken(std::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 }
 
@@ -158,9 +158,7 @@ namespace
 		// Create the named pipe instance
 		HANDLE hPipe = CreateNamedPipeA(("\\\\.\\pipe\\" + strPipe).c_str(),
 										PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
-										PIPE_TYPE_BYTE |
-										PIPE_READMODE_BYTE |
-										PIPE_WAIT,
+										PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
 										1,
 										0,
 										0,
@@ -496,7 +494,7 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	wchar_t szPath[MAX_PATH];
 	std::wstring strCurDir;
@@ -506,8 +504,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		// Get our module name
 		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 		{
-			DWORD dwRes = GetLastError();
-			LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+			DWORD dwErr = GetLastError();
+			LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 		}
 
 		// Strip off our name, and add OOSvrUser.exe
@@ -517,8 +515,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 
 		if (!PathAppendW(szPath,L"OOSvrUser.exe"))
 		{
-			DWORD dwRes = GetLastError();
-			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),dwRes);
+			DWORD dwErr = GetLastError();
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 		}
 
 		strAppPath = szPath;
@@ -546,6 +544,15 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	}
 
 	PathQuoteSpacesW(szPath);
+
+	// Create the named pipe
+	std::string strPipe;
+	hPipe = CreatePipe(hToken,strPipe);
+	if (!hPipe.is_valid())
+	{
+		DWORD dwErr = GetLastError();
+		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+	}
 
 	std::wstring strCmdLine = szPath;
 	strCmdLine += L" --fork-slave=" + OOBase::from_native(strPipe.c_str());
@@ -717,11 +724,11 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
-	DWORD dwRes = SpawnFromToken(strAppPath,hToken,strPipe,bSandbox);
+	DWORD dwRes = SpawnFromToken(strAppPath,hToken,hPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
@@ -749,7 +756,7 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HA
 			if (dwRes != ERROR_SUCCESS)
 				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-			if (SpawnFromToken(strAppPath,hToken2,strPipe,bSandbox) != ERROR_SUCCESS)
+			if (SpawnFromToken(strAppPath,hToken2,hPipe,bSandbox) != ERROR_SUCCESS)
 				return false;
 
 			// Stash our original token as the process token
@@ -966,12 +973,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 		sandbox_uid = uid;
 	}
 
-	// Create the named pipe
-	std::string strRootPipe;
-	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
-	if (!hPipe.is_valid())
-		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::Win32::FormatMessage().c_str()),(SpawnedProcess*)0);
-
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = 0;
 	OOBASE_NEW(pSpawn32,SpawnedProcessWin32);
@@ -983,7 +984,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Spawn the process
 	std::wstring strAppName = OOBase::from_native(getenv_i("OMEGA_USER_BINARY").c_str());
 	
-	if (!pSpawn32->Spawn(strAppName,bUnsafe,uid,strRootPipe,bSandbox))
+	OOBase::Win32::SmartHandle hPipe;
+	if (!pSpawn32->Spawn(strAppName,bUnsafe,uid,hPipe,bSandbox))
 		return 0;
 
 	// Wait for the connect attempt

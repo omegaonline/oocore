@@ -173,27 +173,17 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	}
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
 
-	const int NUM_ACES = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
-
-	// Set full control for the creating process SID
-	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = NO_INHERITANCE;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
-
-	// Set full control for the Logon SID
-	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
-	ea[1].grfAccessMode = SET_ACCESS;
-	ea[1].grfInheritance = NO_INHERITANCE;
-	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
+	// Set full control for the Logon SID only
+	EXPLICIT_ACCESSW ea = {0};
+	ea.grfAccessPermissions = FILE_ALL_ACCESS;
+	ea.grfAccessMode = SET_ACCESS;
+	ea.grfInheritance = NO_INHERITANCE;
+	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea.Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 	// Create a new ACL
-	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+	DWORD dwErr = m_sd.SetEntriesInAcl(1,&ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 

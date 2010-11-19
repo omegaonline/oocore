@@ -65,6 +65,7 @@
         <!-- Stop and remove the service -->
         <ServiceControl Id="OOServer.Service.Control"
                         Name="OOServer"
+                        Start="install"
                         Stop="both"
                         Remove="uninstall" />
 
@@ -185,17 +186,17 @@
 
     <!-- Set execute order -->
     <InstallExecuteSequence>
-      <Custom Action="CheckUser" Before="InstallFiles"><![CDATA[NOT REMOVE]]></Custom>
+      <Custom Action="CheckUser" Before="InstallInitialize"><![CDATA[NOT REMOVE]]></Custom>
 
-      <Custom Action="AddUser.Set" After="InstallFiles"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="AddUser.Set" Before="StartServices"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
       <Custom Action="AddUser" After="AddUser.Set"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
       <Custom Action="AddUser.RB.Set" Before="AddUser"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
       <Custom Action="AddUser.RB" After="AddUser.RB.Set"><![CDATA[AddUser.DoAdd="yes"]]></Custom>
 
-      <Custom Action="UpdateUser.Set" After="InstallFiles"><![CDATA[AddUser.DoAdd="update"]]></Custom>
+      <Custom Action="UpdateUser.Set" Before="StartServices"><![CDATA[AddUser.DoAdd="update"]]></Custom>
       <Custom Action="UpdateUser" After="UpdateUser.Set"><![CDATA[AddUser.DoAdd="update"]]></Custom>
 
-      <Custom Action="RemoveUser.Set" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
+      <Custom Action="RemoveUser.Set" After="DeleteServices"><![CDATA[REMOVE~="ALL"]]></Custom>
       <Custom Action="RemoveUser" After="RemoveUser.Set"><![CDATA[REMOVE~="ALL"]]></Custom>
     </InstallExecuteSequence>
 	</Module>

@@ -344,8 +344,8 @@ void RootKey::Init_Once()
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 
-	OMEGA_NEW(m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb",::Registry::Hive::write_check | ::Registry::Hive::read_check));
-	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8(),0));
+	OMEGA_NEW(m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb"));
+	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8()));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");

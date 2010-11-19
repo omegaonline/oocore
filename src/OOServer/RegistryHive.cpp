@@ -34,10 +34,9 @@
 #include "OOServer_Root.h"
 #include "RegistryHive.h"
 
-Registry::Hive::Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions) :
+Registry::Hive::Hive(Manager* pManager, const std::string& strdb) :
 		m_pManager(pManager),
-		m_strdb(strdb),
-		m_default_permissions(default_permissions)
+		m_strdb(strdb)
 {
 }
 
@@ -55,7 +54,7 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 	// Lock must be held first...
 	if (uKey == 0)
 	{
-		access_mask = static_cast<access_rights_t>(Hive::never_delete | m_default_permissions);
+		access_mask = static_cast<access_rights_t>(Hive::never_delete | Hive::write_check);
 		return SQLITE_ROW;
 	}
 
@@ -124,7 +123,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	// Check for root key
 	if (uParent==0 && strSubKey.empty())
 	{
-		access_mask = static_cast<access_rights_t>(Hive::never_delete | m_default_permissions);
+		access_mask = static_cast<access_rights_t>(Hive::never_delete | Hive::write_check);
 		uKey = 0;
 		return 0;
 	}

@@ -52,7 +52,7 @@ namespace Registry
 		};
 		typedef Omega::uint16_t access_rights_t;
 
-		Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions);
+		Hive(Manager* pManager, const std::string& strdb);
 
 		bool open(int flags);
 
@@ -79,8 +79,7 @@ namespace Registry
 		Manager*                       m_pManager;
 		OOBase::Mutex                  m_lock;
 		std::string                    m_strdb;
-		access_rights_t                m_default_permissions;
-
+		
 		OOBase::SmartPtr<OOSvrBase::Db::Database> m_db;
 
 		// Stashed prepared statements...

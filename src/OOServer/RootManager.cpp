@@ -174,7 +174,7 @@ bool Root::Manager::init_database()
 	}
 
 	// Create a new system database
-	OOBASE_NEW(m_registry,Registry::Hive(this,dir + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));
+	OOBASE_NEW(m_registry,Registry::Hive(this,dir + "system.regdb"));
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -182,7 +182,7 @@ bool Root::Manager::init_database()
 		return false;
 
 	// Create a new System database
-	OOBASE_NEW(m_registry_sandbox,Registry::Hive(this,dir + "sandbox.regdb",Registry::Hive::write_check));
+	OOBASE_NEW(m_registry_sandbox,Registry::Hive(this,dir + "sandbox.regdb"));
 	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -332,7 +332,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		if (process.ptrSpawn->GetRegistryHive(m_config_args["regdb_path"],m_config_args["users_path"],strHive))
 		{
 			// Create a new database
-			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strHive,0));
+			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strHive));
 			if (!process.ptrRegistry)
 				LOG_ERROR(("Out of memory"));
 			else

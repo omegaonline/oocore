@@ -27,6 +27,8 @@
 namespace OOCore
 {
 	OTL::ObjectPtr<IInterProcessService> GetInterProcessService();
+
+	bool HostedByOOServer(IInterProcessService* pIPS);
 }
 
 #endif // OOCORE_IPS_H_INCLUDED_

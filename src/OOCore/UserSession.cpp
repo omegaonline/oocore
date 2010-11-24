@@ -1249,5 +1249,34 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
 {
+	// We need to do a little song and dance here because the IPS may not be registered yet,
+	// But we need to check if we are hosted or not
+
+	// There is no harm in racing
+	static bool bChecked = false;
+	static bool bHosted = false;
+
+	if (!bChecked)
+	{
+		// Get the zero cmpt service manager...
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance());
+
+		// Manually get the ROT
+		IObject* pIPS = 0;
+		ptrROT->GetObject(OOCore::OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		if (!pIPS)
+			return ptrROT;
+
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
+
+		bHosted = OOCore::HostedByOOServer(ptrIPS);
+		bChecked = true;
+	}
+
+	if (bHosted)
+		return OTL::SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
+
 	return OOCore::UserSession::get_rot();
 }

@@ -75,7 +75,7 @@
 namespace OOCore
 {
 	bool HostedByOOServer();
-
+	
 	struct DLL
 	{
 		int unused;

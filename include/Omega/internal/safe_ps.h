@@ -73,12 +73,6 @@ namespace Omega
 					return m_pI;
 				}
 
-				void attach(I* pI)
-				{
-					Release();
-					m_pI = pI;
-				}
-
 			private:
 				void AddRef()
 				{
@@ -139,19 +133,6 @@ namespace Omega
 					assert(m_pS != 0);
 
 					return m_pS;
-				}
-
-				void attach(const SafeShim* pS)
-				{
-					Release();
-					m_pS = pS;
-				}
-
-				const SafeShim* detach()
-				{
-					const SafeShim* ret = m_pS;
-					m_pS = 0;
-					return ret;
 				}
 
 			private:

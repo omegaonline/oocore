@@ -58,10 +58,10 @@ inline void Omega::System::Internal::unregister_typeinfo(const Omega::guid_t& ii
 	OOCore_Internal_UnregisterAutoTypeInfo(iid,(const void*)type_info);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,1,((in),Omega::uint32_t,e))
-inline Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_val)
+OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),Omega::IException*,pCause))
+inline Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_val, Omega::IException* pCause)
 {
-	return OOCore_ISystemException_Create_errno(errno_val);
+	return OOCore_ISystemException_Create_errno(errno_val,pCause);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create_errno,4,((in),Omega::int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))

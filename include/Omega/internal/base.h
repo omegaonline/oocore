@@ -53,7 +53,7 @@ namespace Omega
 	{
 		virtual uint32_t GetErrorCode() = 0;
 
-		static ISystemException* Create(uint32_t errno_val);
+		static ISystemException* Create(uint32_t errno_val, IException* pCause = 0);
 	};
 
 	interface IInternalException : public IException

@@ -146,7 +146,10 @@ namespace
 		// Load the new DLL
 		int err = dll->load(name.ToUTF8().c_str());
 		if (err != 0)
-			throw ISystemException::Create(err);
+		{
+			std::string str = "Loading library: " + name.ToUTF8();
+			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(str.c_str()));
+		}
 
 		// Add to the map
 		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));

@@ -272,7 +272,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 		// Get the compartment
 		OOBase::SmartPtr<OOCore::Compartment> ptrCompt = m_pSession->get_compartment(compartment_id);
 		if (!ptrCompt)
-			throw Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment in session"));
 
 		// Create a new OM
 		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();

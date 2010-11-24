@@ -124,7 +124,7 @@ Omega::bool_t OOCore::LoopChannel::IsConnected()
 
 IException* OOCore::LoopChannel::SendAndReceive(TypeInfo::MethodAttributes_t, Remoting::IMessage*, Remoting::IMessage*&, uint32_t)
 {
-	throw Remoting::IChannelClosedException::Create();
+	throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on loopback channel"));
 }
 
 void OOCore::LoopChannel::GetManager(const guid_t& iid, IObject*& pObject)

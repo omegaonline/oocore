@@ -1247,4 +1247,6 @@ namespace Omega
 	}
 }
 
+#define OMEGA_CREATE_INTERNAL(e)  (Omega::System::Internal::auto_iface_ptr<Omega::IInternalException>(Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)))
+
 #endif // OOCORE_SAFE_H_INCLUDED_

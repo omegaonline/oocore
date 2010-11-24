@@ -66,7 +66,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::ChannelBase::GetObjectManager()
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	if (!m_ptrOM)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("GetObjectManager() called on disconnected channel"));
 
 	return m_ptrOM;
 }
@@ -108,7 +108,7 @@ void OOCore::ChannelBase::GetManager(const guid_t& iid, IObject*& pObject)
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	if (!m_ptrOM)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("GetManager() called on disconnected channel"));
 
 	pObject = m_ptrOM->QueryInterface(iid);
 }
@@ -173,7 +173,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 
 	// The OM is actually the 'controlling' object for open state
 	if (!m_ptrOM)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected channel"));
 
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
 	

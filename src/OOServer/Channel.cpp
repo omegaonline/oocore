@@ -91,7 +91,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
 	if (!ptrMarshaller)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected channel"));
 
 	guard.release();
 
@@ -114,7 +114,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			else if (res == OOServer::MessageHandler::io_result::channel_closed)
 			{
 				disconnect();
-				throw Omega::Remoting::IChannelClosedException::Create();
+				throw Omega::Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send request"));
 			}
 			
 			disconnect();
@@ -199,7 +199,7 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		else if (res == OOServer::MessageHandler::io_result::channel_closed)
 		{
 			disconnect();
-			throw Omega::Remoting::IChannelClosedException::Create();
+			throw Omega::Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send channel_reflect request"));
 		}
 		
 		disconnect();
@@ -224,7 +224,7 @@ void User::Channel::GetManager(const guid_t& iid, IObject*& pObject)
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	if (!m_ptrOM)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("GetManager() called on a disconnected channel"));
 
 	pObject = m_ptrOM->QueryInterface(iid);
 }

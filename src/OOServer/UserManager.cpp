@@ -631,7 +631,7 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 		if (res == OOServer::MessageHandler::io_result::timedout)
 			throw ITimeoutException::Create();
 		else if (res == OOServer::MessageHandler::io_result::channel_closed)
-			throw Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send root request"));
 		else
 			OMEGA_THROW("Internal server exception");
 	}

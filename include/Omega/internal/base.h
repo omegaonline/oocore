@@ -230,13 +230,11 @@ namespace Omega
 OMEGA_SET_GUIDOF(Omega, IObject, "{01010101-0101-0101-0101-010101010101}");
 OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 
-#if defined(DOXYGEN)
-/// Return the current source filename and line as a string_t
-#define OMEGA_THROW(e)       throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
-#elif !defined(OMEGA_FUNCNAME)
-#define OMEGA_THROW(e)       throw Omega::IInternalException::Create(e,__FILE__,__LINE__)
-#else
-#define OMEGA_THROW(e)       throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
+#if !defined(OMEGA_FUNCNAME)
+#define OMEGA_FUNCNAME "(No function information)"
 #endif
+
+/// Return the current source filename and line as a string_t
+#define OMEGA_THROW(e)            throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
 
 #endif // OOCORE_BASE_H_INCLUDED_

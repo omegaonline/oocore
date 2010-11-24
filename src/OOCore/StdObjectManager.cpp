@@ -290,7 +290,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Invoke() called on disconnected ObjectManager"));
 
 	if (!pParamsIn)
 		OMEGA_THROW("Invoke called with no message");
@@ -453,7 +453,7 @@ bool OOCore::StdObjectManager::IsAlive()
 Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("CreateMessage() called on disconnected ObjectManager"));
 
 	return m_ptrChannel->CreateMessage();
 }
@@ -461,7 +461,7 @@ Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected ObjectManager"));
 
 	Remoting::IMessage* pInternalRecv = 0;
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pInternalRecv,timeout);
@@ -584,7 +584,7 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("CustomMarshalInterface() called on disconnected ObjectManager"));
 
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
@@ -629,7 +629,7 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarsh
 void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("MarshalInterface() called on disconnected ObjectManager"));
 
 	// Write a header
 	pMessage->WriteStructStart(strName,L"$iface_marshal");
@@ -703,7 +703,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("UnmarshalInterface() called on disconnected ObjectManager"));
 
 	// Read the header
 	pMessage->ReadStructStart(strName,L"$iface_marshal");
@@ -769,7 +769,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("ReleaseMarshalData() called on disconnected ObjectManager"));
 
 	// Read the header
 	pMessage->ReadStructStart(strName,L"$iface_marshal");
@@ -854,7 +854,7 @@ void OOCore::StdObjectManager::UndoMarshalChannel(Remoting::IMarshaller* pMarsha
 void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
 	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("MarshalChannel() called on disconnected ObjectManager"));
 
 	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
 	if (!ptrMarshal)

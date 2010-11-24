@@ -711,7 +711,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
 			// Its gone... user process has terminated
-			throw Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Default message queue popped unusually"));
 		}
 
 		if (msg->m_type == Message::Request)
@@ -769,7 +769,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const
 		if (!ptrCompt || !ptrCompt->is_channel_open(from_channel_id))
 		{
 			// Channel has closed
-			throw Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Other compartment closed while waiting for response"));
 		}
 
 		// Increment the usage count
@@ -797,7 +797,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const
 		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
 		{
 			// I/O socket has closed
-			throw Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response"));
 		}
 		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
 			break;
@@ -916,7 +916,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, c
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE;
-		ptrE.Attach(ISystemException::Create(err));
+		ptrE.Attach(ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer")));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
 					
@@ -948,7 +948,7 @@ void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t se
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE;
-		ptrE.Attach(ISystemException::Create(err));
+		ptrE.Attach(ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer")));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
 }
@@ -1210,7 +1210,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!
-			throw Remoting::IChannelClosedException::Create();
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment for new channel"));
 		}
 		ptrCompt = i->second;
 	}
@@ -1242,8 +1242,8 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 
 	OOBase::SmartPtr<OOCore::Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
 	if (!ptrCompt)
-		throw Remoting::IChannelClosedException::Create();
-
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("The current compartment has died"));
+	
 	return ptrCompt->get_rot();
 }
 

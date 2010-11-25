@@ -144,11 +144,15 @@ inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 			{
 				(*(i->first))(i->second);
 			}
+			catch (IException* pE)
+			{
+				pE->Release();
+			}
 			catch (...)
 			{}
 		}
 	}
-	catch (...)
+	catch (std::exception&)
 	{}
 }
 
@@ -204,11 +208,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	{
 		ModuleDestructor<DLL>::remove_destructor(destruct,param);
 	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-	catch (...)
+	catch (std::exception&)
 	{}
 
 	multi_dctor* p = static_cast<multi_dctor*>(param);
@@ -217,7 +217,6 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	{
 		// Now call the destructor
 		(*(p->pfn_dctor))(p->param);
-		delete p;
 	}
 	catch (Omega::IException* pE)
 	{
@@ -225,6 +224,8 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	}
 	catch (...)
 	{}
+
+	delete p;
 }
 
 template <typename T, typename Lifetime>
@@ -250,6 +251,10 @@ inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Li
 	catch (Omega::IException* pE)
 	{
 		return System::Internal::return_safe_exception(pE);
+	}
+	catch (std::exception& e)
+	{
+		return System::Internal::return_safe_exception(IInternalException::Create(e,"Omega::Threading::Singleton::constructor()"));
 	}
 	catch (...)
 	{

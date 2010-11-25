@@ -216,7 +216,7 @@ void User::Manager::start_service(const std::string& strKey, const std::string& 
 				m_mapServices.erase(nServiceId);
 			}
 			catch (std::exception&)
-			{ }
+			{}
 
 			throw;
 		}
@@ -290,8 +290,14 @@ void User::Manager::stop_services()
 			}
 		}
 	}
-	catch (std::exception&)
+	catch (std::exception& e)
 	{
+		LOG_ERROR(("std::exception thrown %s",e.what()));
+	}
+	catch (IException* pE)
+	{
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+		pE->Release();
 	}
 }
 

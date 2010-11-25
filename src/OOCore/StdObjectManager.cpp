@@ -422,14 +422,12 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 	catch (...)
 	{
 		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-
 		ptrParamsOut->ReadValue(L"$stub_id");
 		ptrParamsOut->ReadValue(L"$method_id");
 		ptrParamsOut->ReadValue(L"oid");
 		ptrParamsOut->ReadValue(L"iid");
 		ptrParamsOut->ReadValue(L"flags");
 		ptrParamsOut->ReadStructEnd();
-
 		throw;
 	}
 
@@ -528,12 +526,10 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	catch (...)
 	{
 		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-
 		ptrParamsOut->ReadValue(L"$stub_id");
 		ptrParamsOut->ReadValue(L"$method_id");
 		ptrParamsOut->ReadValue(L"iid");
 		ptrParamsOut->ReadStructEnd();
-
 		throw;
 	}
 

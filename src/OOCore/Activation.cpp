@@ -124,7 +124,7 @@ namespace
 			// Clear out our map now, as the smart ptrs use m_lock
 			m_dll_map.clear();
 		}
-		catch (...)
+		catch (std::exception&)
 		{}
 	}
 
@@ -163,32 +163,37 @@ namespace
 
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
+		try
 		{
-			bool_t erase = false;
-			try
+			for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
 			{
-				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
-				if (pfn)
+				bool_t erase = false;
+				try
 				{
-					System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
+					pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
+					if (pfn)
+					{
+						System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
 
-					// Ignore exceptions
-					if (CanUnloadLibrary_Exception)
-						System::Internal::release_safe(CanUnloadLibrary_Exception);
+						// Ignore exceptions
+						if (CanUnloadLibrary_Exception)
+							System::Internal::release_safe(CanUnloadLibrary_Exception);
+					}
 				}
-			}
-			catch (IException* pE)
-			{
-				// Ignore exceptions
-				pE->Release();
-			}
+				catch (IException* pE)
+				{
+					// Ignore exceptions
+					pE->Release();
+				}
 
-			if (erase)
-				m_dll_map.erase(i++);
-			else
-				++i;
+				if (erase)
+					m_dll_map.erase(i++);
+				else
+					++i;
+			}
 		}
+		catch (std::exception&)
+		{}
 	}
 
 	void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)

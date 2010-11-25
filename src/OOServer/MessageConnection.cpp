@@ -327,7 +327,7 @@ OOServer::MessageHandler::~MessageHandler()
 			i->second->m_pHandler = 0;
 		}
 	}
-	catch (...)
+	catch (std::exception&)
 	{}
 }
 
@@ -573,23 +573,14 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id)).first;
 					i->second = msg->m_src_thread_id;
 
-					try
-					{
-						// Process the message...
-						process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-					}
-					catch (...)
-					{
-						// This shouldn't ever occur, but that means it will ;)
-						LOG_ERROR(("Unexpected exception thrown"));
-					}
-
+					// Process the message...
+					process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					
 					// Clear the channel/threads map
 					pContext->m_mapChannelThreads.clear();
 				}
 				catch (std::exception& e)
 				{
-					// This shouldn't ever occur, but that means it will ;)
 					LOG_ERROR(("std::exception thrown %s",e.what()));
 				}
 			}
@@ -1087,16 +1078,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 					old_thread_id = i->second;
 					i->second = msg->m_src_thread_id;
 
-					try
-					{
-						// Process the message...
-						process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-					}
-					catch (...)
-					{
-						LOG_ERROR(("Unexpected exception thrown"));
-					}
-
+					// Process the message...
+					process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					
 					// Restore old per channel thread id
 					i->second = old_thread_id;
 				}

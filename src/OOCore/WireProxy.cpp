@@ -177,8 +177,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	{
 		ReadStubInfo(pParamsOut);
 		pParamsOut->ReadValue(L"iid");
-		m_pManager->UndoMarshalChannel(pMarshaller,pParamsOut);
-		
+		m_pManager->UndoMarshalChannel(pMarshaller,pParamsOut);	
 		throw;
 	}
 

@@ -275,11 +275,12 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error()).c_str()));
 		bQuit = true;
 	}
-
-	bQuit = bQuit ||
-			!pThis->bootstrap(sandbox_channel) ||
+	else
+	{
+		bQuit = !pThis->bootstrap(sandbox_channel) ||
 			!pThis->m_acceptor.start(pThis,strPipe) ||
 			!pThis->start_services();
+	}
 
 	if (bQuit)
 		pThis->call_async_function_i(&do_quit,pThis,0);
@@ -412,9 +413,16 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 		if (!dead_channels.empty())
 			local_channel_closed(dead_channels);
 	}
-	catch (...)
-	{}
-
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("std::exception thrown %s",e.what()));
+	}
+	catch (IException* pE)
+	{
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+		pE->Release();
+	}
+	
 	// If the root closes, we should end!
 	if (channel_id == m_uUpstreamChannel)
 		do_quit_i();
@@ -427,34 +435,53 @@ void User::Manager::do_quit(void* pParams, OOBase::CDRStream&)
 
 void User::Manager::do_quit_i()
 {
-	// Stop accepting new clients
-	m_acceptor.stop();
-
-	// Close all the sinks
-	close_all_remotes();
-
-	// Stop services
-	stop_services();
-
-	// Unregister our object factories
-	GetModule()->UnregisterObjectFactories();
-
-	// Unregister InterProcessService
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-	uint32_t nIPSCookie = m_nIPSCookie;
-	m_nIPSCookie = 0;
-	guard.release();
-
-	if (nIPSCookie)
+	try
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+		// Stop accepting new clients
+		m_acceptor.stop();
 
-		ptrROT->RevokeObject(nIPSCookie);
+		// Close all the sinks
+		close_all_remotes();
+
+		// Stop services
+		stop_services();
+
+		try
+		{
+			// Unregister our object factories
+			GetModule()->UnregisterObjectFactories();
+
+			// Unregister InterProcessService
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+			uint32_t nIPSCookie = m_nIPSCookie;
+			m_nIPSCookie = 0;
+			guard.release();
+
+			if (nIPSCookie)
+			{
+				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+				ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+				ptrROT->RevokeObject(nIPSCookie);
+			}
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("std::exception thrown %s",e.what()));
+		}
+		catch (IException* pE)
+		{
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+			pE->Release();
+		}
+		
+		// Close the OOCore
+		Uninitialize();
 	}
-
-	// Close the OOCore
-	Uninitialize();
+	catch (...)
+	{
+		LOG_ERROR(("Unrecognised exception thrown"));
+	}
 
 	// And now call quit()
 	quit();

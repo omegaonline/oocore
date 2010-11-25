@@ -50,7 +50,7 @@ OOCore::UserSession::~UserSession()
 		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 			i->second->m_thread_id = 0;
 	}
-	catch (...)
+	catch (std::exception&)
 	{}
 }
 
@@ -110,7 +110,6 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 					guard.acquire();
 					m_init_state = eStopped;
 					m_cond.signal();
-
 					throw;
 				}
 			}
@@ -346,9 +345,7 @@ void OOCore::UserSession::stop()
 		{
 			pE->Release();
 		}
-		catch (...)
-		{}
-
+		
 		m_nIPSCookie = 0;
 	}
 
@@ -376,37 +373,41 @@ void OOCore::UserSession::close_singletons()
 
 void OOCore::UserSession::close_singletons_i()
 {
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	// Copy the list so we can delete outside the lock
-	std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_listUninitCalls);
-
 	try
 	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		// Copy the list so we can delete outside the lock
+		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_listUninitCalls);
+
 		m_listUninitCalls.clear();
-	}
-	catch (...)
-	{}
+	
+		guard.release();
 
-	guard.release();
-
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
-	{
-		try
+		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
 		{
-			(*(i->first))(i->second);
+			try
+			{
+				(*(i->first))(i->second);
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+			}
+			catch (...)
+			{}
 		}
-		catch (...)
-		{}
 	}
+	catch (std::exception&)
+	{}
 }
 
 void OOCore::UserSession::close_compartments()
 {
-	std::vector<uint16_t> vecCompts;
-
 	try
 	{
+		std::vector<uint16_t> vecCompts;
+
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
@@ -426,11 +427,9 @@ void OOCore::UserSession::close_compartments()
 			{
 				pE->Release();
 			}
-			catch (...)
-			{}
 		}
 	}
-	catch (...)
+	catch (std::exception&)
 	{}	
 }
 
@@ -718,8 +717,16 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		{
 			ThreadContext* pContext = ThreadContext::instance();
 
-			// Don't confuse the wait deadline with the message processing deadline
-			process_request(pContext,msg,0);
+			try
+			{
+				// Don't confuse the wait deadline with the message processing deadline
+				process_request(pContext,msg,0);
+			}
+			catch (...)
+			{
+				pContext->m_mapChannelThreads.clear();
+				throw;
+			}
 
 			// Clear the channel/threads map
 			pContext->m_mapChannelThreads.clear();
@@ -860,7 +867,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	{
 		m_mapThreadContexts.erase(thread_id);
 	}
-	catch (...)
+	catch (std::exception&)
 	{}
 }
 
@@ -1058,14 +1065,8 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 			// Process the message...
 			ptrCompt->process_request(pMsg,pContext->m_deadline);
 		}
-		catch (IException* pOuter)
-		{
-			// Just drop the exception, and let it pass...
-			pOuter->Release();
-		}
 		catch (...)
 		{
-			pContext->m_deadline = old_deadline;
 			i->second = old_thread_id;
 			throw;
 		}

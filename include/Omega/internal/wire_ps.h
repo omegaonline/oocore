@@ -490,7 +490,7 @@ namespace Omega
 					if (i != iid_map->end())
 						return i->second;
 				}
-				catch (...)
+				catch (std::exception&)
 				{}
 
 				return 0;

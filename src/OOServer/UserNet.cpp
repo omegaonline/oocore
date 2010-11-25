@@ -279,11 +279,11 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
-	catch (...)
+	catch (std::exception& e)
 	{
-		LOG_ERROR(("Unknown exception thrown"));
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
-
+	
 	pThis->Release();
 }
 
@@ -755,29 +755,32 @@ void User::Manager::close_all_remotes()
 		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
-	catch (...)
+	
+	try
 	{
-		LOG_ERROR(("Unrecognised exception thrown"));
-	}
+		// Now spin, waiting for all the channels to close...
+		OOBase::timeval_t wait(30);
+		OOBase::Countdown countdown(&wait);
+		while (wait != OOBase::timeval_t::Zero)
+		{
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
-	// Now spin, waiting for all the channels to close...
-	OOBase::timeval_t wait(30);
-	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::Zero)
+			if (m_mapRemoteChannelIds.empty())
+				break;
+
+			guard.release();
+
+			OOBase::Thread::yield();
+
+			countdown.update();
+		}
+
+		assert(m_mapRemoteChannelIds.empty());
+	}
+	catch (std::exception& e)
 	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
-
-		if (m_mapRemoteChannelIds.empty())
-			break;
-
-		guard.release();
-
-		OOBase::Thread::yield();
-
-		countdown.update();
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
-
-	assert(m_mapRemoteChannelIds.empty());
 }
 
 OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)

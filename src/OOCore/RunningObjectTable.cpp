@@ -123,8 +123,12 @@ OOCore::ServiceManager::~ServiceManager()
 			i->second.m_ptrObject.Detach();
 		}
 	}
-	catch (...)
-	{ }
+	catch (IException* pE)
+	{
+		pE->Release();
+	}
+	catch (std::exception&)
+	{}
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)

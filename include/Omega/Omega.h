@@ -24,7 +24,7 @@
 
 //////////////////////////////////////////////
 #include "internal/config-guess.h"
-#include "version.h"
+#include "OOCore_version.h"
 
 //////////////////////////////////////////////
 // Set up the correct export macros

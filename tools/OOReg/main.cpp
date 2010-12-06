@@ -22,7 +22,7 @@
 #include <OOSvrBase/CmdArgs.h>
 
 #include "../../include/Omega/Omega.h"
-#include "../../include/Omega/version.h"
+#include "../../include/Omega/OOCore_version.h"
 #include "../../include/OTL/Registry.h"
 
 #include <iostream>

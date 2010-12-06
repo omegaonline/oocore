@@ -34,7 +34,7 @@ nobase_include_HEADERS = \
 	Omega/Omega.h \
 	Omega/Remoting.h \
 	Omega/Service.h \
-	Omega/version.h \
+	Omega/OOCore_version.h \
 	OTL/OTL.h \
 	OTL/OTL.inl \
 	OTL/Exception.h \

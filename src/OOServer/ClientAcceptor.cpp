@@ -35,7 +35,7 @@
 #include "ClientAcceptor.h"
 #include "RootManager.h"
 
-#include "../../include/Omega/version.h"
+#include "../../include/Omega/OOCore_version.h"
 
 #if defined(_WIN32)
 #include <aclapi.h>

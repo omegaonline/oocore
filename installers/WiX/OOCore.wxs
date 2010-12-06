@@ -89,9 +89,6 @@
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
         <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
       </Component>
-
-      <!-- We don't install OOSvrLite.dll - it is designed for hand-held devices only -->
-
     </DirectoryRef>
 
     <!-- Install registry databases -->
@@ -116,6 +113,11 @@
 
     <!-- Define registry components -->
     <DirectoryRef Id="TARGETDIR" >
+      <Component Id="OOCore.RegKeys" Guid="{41FC4BA1-449B-435b-A3C0-616FBDF9ECD2}">
+        <RegistryKey Root="HKLM" Key="Software\Omega Online\Installation" Action="create" >
+          <RegistryValue Name="CommonComponents" Type="string" Value="[COMMONDIR]" KeyPath="yes" />
+        </RegistryKey>
+      </Component>
       <Component Id="OOServer.RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
         <RegistryKey Root="HKLM" Key="Software\Omega Online\OOServer" Action="create" >
           <RegistryValue Name="sandbox_uname" Type="string" Value="[OMEGASANDBOXUNAME]" KeyPath="yes" />
@@ -209,6 +211,7 @@
     <!-- Group components -->
     <ComponentGroup Id="OOCore">
       <ComponentRef Id="OOCore.dll" />
+      <ComponentRef Id="OOCore.RegKeys" />
     </ComponentGroup>
 
     <ComponentGroup Id="OOServer">

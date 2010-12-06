@@ -24,12 +24,18 @@
 -->
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" RequiredVersion="3.0.0.0">
-	<Module Id="OOCore_MergeModule" Language="0" Version="0.5.0">
-		<Package Id="072e8f9f-7b5d-49fc-b0e6-df716d13ac34" 
-             Manufacturer="www.omegaonline.org.uk" 
-             InstallerVersion="200"
-             ReadOnly="yes" 
-             InstallScope="perMachine" />
+  <Product Id="{28CFA922-1E70-4665-88F5-61F9F553515E}"
+    Name="Omega Online Core"
+    Language="1033"
+    Version="0.5.0"
+    Manufacturer="www.omegaonline.org.uk"
+    UpgradeCode="{DF39C47D-E9EC-4644-93C4-6D649CED5CB8}">
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+    <Icon Id="Icon" SourceFile="../../src/OOServer/logo.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="Icon" />
 
     <!-- Define properties -->
     <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="default" >
@@ -54,7 +60,7 @@
 
     <!-- Define file components -->
     <DirectoryRef Id="SystemFolder">
-      <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}">
+      <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}" Permanent="yes">
         <File Source="$(var.BinDir)\OOCore.dll" KeyPath="yes" Checksum="yes" />
       </Component>
     </DirectoryRef>
@@ -199,5 +205,30 @@
       <Custom Action="RemoveUser.Set" After="DeleteServices"><![CDATA[REMOVE~="ALL"]]></Custom>
       <Custom Action="RemoveUser" After="RemoveUser.Set"><![CDATA[REMOVE~="ALL"]]></Custom>
     </InstallExecuteSequence>
-	</Module>
+
+    <!-- Group components -->
+    <ComponentGroup Id="OOCore">
+      <ComponentRef Id="OOCore.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="OOServer">
+      <ComponentRef Id="OOServer.exe" />
+      <ComponentRef Id="OOSvrUser.exe" />
+      <ComponentRef Id="OOServer.RegKeys" />
+      <ComponentRef Id="OOServer.system.regdb" />
+      <ComponentRef Id="OOServer.sandbox.regdb" />
+      <ComponentRef Id="OOServer.default_user.regdb" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="OOReg">
+      <ComponentRef Id="OOReg.exe" />
+    </ComponentGroup>
+
+    <!-- Define features -->
+    <Feature Id="Core" Title="Omega Online base components" Level="1" >
+      <ComponentGroupRef Id="OOCore" />
+      <ComponentGroupRef Id="OOServer" />
+      <ComponentGroupRef Id="OOReg" />
+    </Feature>
+  </Product>
 </Wix>

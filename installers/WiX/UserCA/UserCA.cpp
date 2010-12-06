@@ -104,14 +104,10 @@ static void InstallMessage(MSIHANDLE hInstall, INSTALLMESSAGE msg_type, const wc
 	}
 }
 
-static UINT GetProperty(MSIHANDLE hInstall, const wchar_t* prop, std::wstring& val, bool bAppendGuid = true)
+static UINT GetProperty(MSIHANDLE hInstall, const wchar_t* prop, std::wstring& val)
 {
-	std::wstring strProp = prop;
-	if (bAppendGuid)
-		strProp += L".072E8F9F_7B5D_49FC_B0E6_DF716D13AC34";
-
 	DWORD dwLen = 0;
-	UINT err = MsiGetPropertyW(hInstall,strProp.c_str(),L"",&dwLen);
+	UINT err = MsiGetPropertyW(hInstall,prop,L"",&dwLen);
 	if (err == ERROR_MORE_DATA && dwLen > 0)
 	{
 		++dwLen;
@@ -122,28 +118,25 @@ static UINT GetProperty(MSIHANDLE hInstall, const wchar_t* prop, std::wstring& v
 			return ERROR_INSTALL_FAILURE;
 		}
 
-		err = MsiGetPropertyW(hInstall,strProp.c_str(),buf,&dwLen);
+		err = MsiGetPropertyW(hInstall,prop,buf,&dwLen);
 		if (err == ERROR_SUCCESS)
 			val.assign(buf,dwLen);
 		else
-			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to access property [1]: [2]",2,strProp.c_str(),FormatMessage(err).c_str());
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to access property [1]: [2]",2,prop,FormatMessage(err).c_str());
 
 		free(buf);
 	}
 	else if (err != ERROR_SUCCESS)
-		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to access property [1]: [2]",2,strProp.c_str(),FormatMessage(err).c_str());
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to access property [1]: [2]",2,prop,FormatMessage(err).c_str());
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }
 
 static UINT SetProperty(MSIHANDLE hInstall, const wchar_t* prop, const wchar_t* val)
 {
-	std::wstring strProp = prop;
-	strProp += L".072E8F9F_7B5D_49FC_B0E6_DF716D13AC34";
-
-	UINT err = MsiSetPropertyW(hInstall,strProp.c_str(),val);
+	UINT err = MsiSetPropertyW(hInstall,prop,val);
 	if (err != ERROR_SUCCESS)
-		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to set property [1] to [2], [3]",3,strProp.c_str(),val,FormatMessage(err).c_str());
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to set property [1] to [2], [3]",3,prop,val,FormatMessage(err).c_str());
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }
@@ -159,7 +152,7 @@ static void BuildUnicodeString(LSA_UNICODE_STRING& strOut, const wchar_t* strIn)
 static UINT ParseUser(MSIHANDLE hInstall, std::wstring& strUName, std::wstring& strPwd)
 {
 	std::wstring all;
-	UINT err = GetProperty(hInstall,L"CustomActionData",all,false);
+	UINT err = GetProperty(hInstall,L"CustomActionData",all);
 	if (err != ERROR_SUCCESS)
 		return err;
 

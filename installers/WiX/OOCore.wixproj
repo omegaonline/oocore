@@ -5,10 +5,11 @@
     <ProductVersion>3.0</ProductVersion>
     <ProjectGuid>{accc68d0-270d-40e8-9875-8675e96386a8}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>OOCore_redist</OutputName>
-    <OutputType>Module</OutputType>
+    <OutputName>OOCore</OutputName>
+    <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.0\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.0\Wix.targets</WixTargetsPath>
+    <Name>OOCore</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -21,7 +22,14 @@
     <DefineConstants>BinDir=..\..\bin;DataDir=..\..\build\data</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="OOCore_MergeModule.wxs" />
+    <Compile Include="OOCore.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="UserCA\UserCA_vc9.vcproj">
+      <Name>UserCA</Name>
+      <Project>{6b9267ff-dbb7-4f78-94fb-5c15dee822c1}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <!--

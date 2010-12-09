@@ -31,6 +31,7 @@ nobase_include_HEADERS = \
 	Omega/internal/wire_ps.h \
 	Omega/internal/wire.inl \
 	Omega/Compartment.h \
+	Omega/IO.h \
 	Omega/Omega.h \
 	Omega/Remoting.h \
 	Omega/Service.h \

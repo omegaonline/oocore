@@ -350,6 +350,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IO.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LoopChannel.cpp"
 				>
 			</File>
@@ -579,6 +583,10 @@
 			</File>
 			<File
 				RelativePath="..\..\include\Omega\internal\interfaces.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\Omega\IO.h"
 				>
 			</File>
 			<File

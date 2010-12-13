@@ -67,6 +67,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug;..\..\..\OOBase\src\Win32\Debug_Svr"
+				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="1"
@@ -142,6 +143,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
 				AdditionalLibraryDirectories="C:\OOBase\src\x64\Debug;C:\OOBase\src\x64\Debug"
+				GenerateManifest="false"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -217,6 +219,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
 				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
+				GenerateManifest="false"
 				SetChecksum="true"
 			/>
 			<Tool
@@ -293,6 +296,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
 				AdditionalLibraryDirectories="C:\OOBase\src\x64\Release;C:\OOBase\src\x64\Release"
+				GenerateManifest="false"
 				SetChecksum="true"
 			/>
 			<Tool

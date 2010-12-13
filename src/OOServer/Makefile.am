@@ -106,5 +106,6 @@ oosvruser_SOURCES += OOSvrUser.rc
 endif
 
 EXTRA_DIST = \
+	asInvoker_manifest.xml \
 	logo.ico \
 	OOServer_msgs.bin

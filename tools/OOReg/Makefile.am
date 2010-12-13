@@ -19,3 +19,7 @@ ooreg_SOURCES = \
 	commands.cpp \
 	exception.cpp \
 	main.cpp
+
+if WIN32
+ooreg_SOURCES += OOReg.rc
+endif

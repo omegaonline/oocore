@@ -65,6 +65,7 @@
 				AdditionalDependencies="OOBased.lib OOSvrBased.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug;..\..\..\OOBase\src\Win32\Debug_Svr"
+				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -140,6 +141,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="OOBase.lib OOSvrBase.lib"
 				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
+				GenerateManifest="false"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -198,6 +200,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\OOReg.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

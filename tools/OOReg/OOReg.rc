@@ -1,21 +1,21 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor
+// Copyright (C) 2010 Rick Taylor
 //
-// This file is part of OOServer, the Omega Online Server application.
+// This file is part of OOReg, the Omega Online Registry editor application.
 //
-// OOServer is free software: you can redistribute it and/or modify
+// OOReg is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// OOServer is distributed in the hope that it will be useful,
+// OOReg is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with OOServer.  If not, see <http://www.gnu.org/licenses/>.
+// along with OOReg.  If not, see <http://www.gnu.org/licenses/>.
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -28,24 +28,10 @@
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Message Table
-//
-
-1 11 OOServer_msgs.bin
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-1 ICON logo.ico
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // UAC manifest
 //
 
-1 24 asInvoker_manifest.xml
+1 24 "../../src/OOServer/asInvoker_manifest.xml"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -56,7 +42,7 @@ VS_VERSION_INFO VERSIONINFO
  FILEVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
  PRODUCTVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
  FILEFLAGSMASK 0x17L
-#ifdef _DEBUG
+#ifdef OMEGA_DEBUG
  FILEFLAGS 0x1L
 #else
  FILEFLAGS 0x0L
@@ -70,11 +56,11 @@ BEGIN
         BLOCK "080004b0"
         BEGIN
             VALUE "CompanyName", "www.omegaonline.org.uk"
-            VALUE "FileDescription", "Omega Online network gateway"
+            VALUE "FileDescription", "Omega Online registry command processor"
             VALUE "FileVersion", OOCORE_VERSION
 			VALUE "LegalCopyright", "GNU General Public License"
-            VALUE "InternalName", "OOServer"
-            VALUE "OriginalFilename", "OOServer.exe"
+            VALUE "InternalName", "OOReg"
+            VALUE "OriginalFilename", "OOReg.exe"
             VALUE "ProductName", "Omega Online Core"
             VALUE "ProductVersion", OOCORE_VERSION
         END

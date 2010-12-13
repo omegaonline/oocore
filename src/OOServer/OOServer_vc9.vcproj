@@ -555,15 +555,15 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\asInvoker_manifest.xml"
+				>
+			</File>
+			<File
 				RelativePath=".\logo.ico"
 				>
 			</File>
 			<File
 				RelativePath=".\OOServer.rc"
-				>
-			</File>
-			<File
-				RelativePath=".\OOServer_manifest.xml"
 				>
 			</File>
 			<File

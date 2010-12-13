@@ -39,12 +39,6 @@
 #include <vld.h>
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32__)
-#define APPNAME "OOServer"
-#else
-#define APPNAME "ooserverd"
-#endif
-
 static int Version();
 
 static int Help()

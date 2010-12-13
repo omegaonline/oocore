@@ -70,7 +70,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		bool Spawn(const std::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
@@ -213,7 +213,7 @@ namespace
 		return (dwErr == 0);
 	}
 
-	static bool LogonSandboxUser(const std::wstring& strUName, HANDLE& hToken)
+	static DWORD LogonSandboxUser(const std::wstring& strUName, HANDLE& hToken)
 	{
 		// Open the local account policy...
 		std::wstring strPwd;
@@ -221,7 +221,7 @@ namespace
 		LSA_OBJECT_ATTRIBUTES oa = {0};
 		DWORD dwErr = LsaNtStatusToWinError(LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy));
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("LsaOpenPolicy failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+			LOG_ERROR_RETURN(("LsaOpenPolicy failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 
 		LSA_UNICODE_STRING szKey;
 		szKey.Buffer = const_cast<PWSTR>(L"L$OOServer_sandbox_pwd");
@@ -234,7 +234,7 @@ namespace
 		if (dwErr != ERROR_SUCCESS)
 		{
 			LsaClose(hPolicy);
-			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 		}
 
 		strPwd.assign(pszVal->Buffer,pszVal->Length / sizeof(wchar_t));
@@ -242,7 +242,10 @@ namespace
 		LsaClose(hPolicy);
 
 		if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
-			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		{
+			dwErr = GetLastError();
+			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+		}
 
 		// Control handle lifetime
 		OOBase::Win32::SmartHandle tok(hToken);
@@ -250,15 +253,15 @@ namespace
 		// Restrict the Token
 		dwErr = OOSvrBase::Win32::RestrictToken(hToken);
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 
 		// This might be needed for retricted tokens...
 		dwErr = OOSvrBase::Win32::SetTokenDefaultDACL(hToken);
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 
 		tok.detach();
-		return true;
+		return ERROR_SUCCESS;
 	}
 
 	static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
@@ -578,15 +581,13 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	
 	// Load up the users profile
 	HANDLE hProfile = NULL;
-	if (!bSandbox)
-	{
-		DWORD dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
-		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
-	}
-
+	DWORD dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
+	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
+		dwRes = ERROR_SUCCESS;
+	else if (dwRes != ERROR_SUCCESS && dwRes != ERROR_PRIVILEGE_NOT_HELD)
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+	
 	// Load the users environment vars
-	DWORD dwRes = ERROR_SUCCESS;
 	LPVOID lpEnv = NULL;
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
@@ -724,49 +725,14 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, bool bUnsafe, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
 	DWORD dwRes = SpawnFromToken(strAppPath,hToken,hPipe,bSandbox);
-	if (dwRes != ERROR_SUCCESS)
-	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
-		{
-			OOBase::Win32::SmartHandle hToken2;
-			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
-				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-			// Get the names associated with the user SID
-			std::wstring strUserName;
-			std::wstring strDomainName;
-
-			dwRes = OOSvrBase::Win32::GetNameFromToken(hToken2,strUserName,strDomainName);
-			if (dwRes != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
-
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-				"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-				"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the new user process will be started under the user account '%ls\\%ls'.\n\n"
-				"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-				strDomainName.c_str(),strUserName.c_str());
-			
-			// Restrict the Token
-			dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
-			if (dwRes != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
-
-			if (SpawnFromToken(strAppPath,hToken2,hPipe,bSandbox) != ERROR_SUCCESS)
-				return false;
-
-			// Stash our original token as the process token
-			CloseHandle(m_hToken);
-
-			// Duplicate the impersonated token...
-			DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
-		}
-	}
-
+	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
+		bAgain = true;
+		
 	return (dwRes == ERROR_SUCCESS);
 }
 
@@ -912,67 +878,8 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
-	// Stash the sandbox flag because we adjust uid...
-	bool bSandbox = (uid == OOSvrBase::AsyncLocalSocket::uid_t(-1));
-
-	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-
-	OOBase::Win32::SmartHandle sandbox_uid;
-	if (bSandbox)
-	{
-		// Get username from config
-		std::wstring strUName;
-		std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
-		if (i != m_config_args.end())
-			strUName = OOBase::from_utf8(i->second.c_str());
-
-		if (strUName.empty())
-		{
-			if (!bUnsafe)
-				LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the Win32 registry or config file"),(SpawnedProcess*)0);
-
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-				"Failed to find the 'sandbox_uname' setting in the Win32 registry or config file.\n\n"
-				"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the sandbox process will be started under the current user account.\n\n"
-				"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n");
-		}
-			
-		if (strUName.empty() || !LogonSandboxUser(strUName,uid))
-		{
-			if (!bUnsafe)
-				return 0;
-
-			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
-				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),(SpawnedProcess*)0);
-
-			if (!strUName.empty())
-			{
-				// Get the names associated with the user SID
-				std::wstring strUserName;
-				std::wstring strDomainName;
-				DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,strUserName,strDomainName);
-				if (dwRes != ERROR_SUCCESS)
-					LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
-
-				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-					"OOServer is running under a user account that does not have the priviledges required to log-on as the sandbox user.\n\n"
-					"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the sandbox process will be started under the user account '%ls\\%ls'.\n\n"
-					"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-					strDomainName.c_str(),strUserName.c_str());
-			}
-			
-			// Restrict the Token
-			DWORD dwRes = OOSvrBase::Win32::RestrictToken(uid);
-			if (dwRes != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
-		}
-
-		// Make sure it's closed
-		sandbox_uid = uid;
-	}
-
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = 0;
 	OOBASE_NEW(pSpawn32,SpawnedProcessWin32);
@@ -985,7 +892,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	std::wstring strAppName = OOBase::from_native(getenv_i("OMEGA_USER_BINARY").c_str());
 	
 	OOBase::Win32::SmartHandle hPipe;
-	if (!pSpawn32->Spawn(strAppName,bUnsafe,uid,hPipe,bSandbox))
+	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
 		return 0;
 
 	// Wait for the connect attempt
@@ -1006,6 +913,50 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 		return 0;
 
 	return pSpawn;
+}
+
+bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::string& strUName)
+{
+	if (uid != INVALID_HANDLE_VALUE)
+		CloseHandle(uid);
+
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+	// Get the names associated with the user SID
+	std::wstring strUserName;
+	std::wstring strDomainName;
+
+	DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,strUserName,strDomainName);
+	if (dwRes != ERROR_SUCCESS)
+	{
+		CloseHandle(uid);
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+	}
+
+	if (strDomainName.empty())
+		strUName = OOBase::to_native(strUserName.c_str());
+	else
+		strUName = OOBase::to_native(strDomainName.c_str()) + "\\" + OOBase::to_native(strUserName.c_str());
+
+	// Restrict the Token
+	dwRes = OOSvrBase::Win32::RestrictToken(uid);
+	if (dwRes != ERROR_SUCCESS)
+	{
+		CloseHandle(uid);
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+	}
+
+	return true;
+}
+
+bool Root::Manager::get_sandbox_uid(const std::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+{
+	DWORD dwErr = LogonSandboxUser(OOBase::from_utf8(strUName.c_str()),uid);
+	if (dwErr == ERROR_ACCESS_DENIED)
+		bAgain = true;
+
+	return (dwErr == ERROR_SUCCESS);
 }
 
 #endif // _WIN32

@@ -77,10 +77,6 @@ namespace OOCore
 		else
 			pExcept->m_strSource = (L"{0}" % Omega::string_t(pszFile,false));
 
-#if defined(_MSC_VER) && defined(OMEGA_DEBUG)
-		_CrtDbgBreak();
-#endif
-
 		return pExcept;
 	}
 }

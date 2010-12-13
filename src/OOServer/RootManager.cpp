@@ -108,9 +108,7 @@ int Root::Manager::run()
 			bool bOk = false;
 
 			// Spawn the sandbox
-			std::string strPipe;
-			m_sandbox_channel = spawn_user(OOSvrBase::AsyncLocalSocket::uid_t(-1),m_registry_sandbox,strPipe);
-			if (m_sandbox_channel)
+			if (spawn_sandbox())
 			{
 				// Start listening for clients
 				if (m_client_acceptor.start(this))
@@ -226,6 +224,76 @@ bool Root::Manager::load_config_file(const std::string& strFile)
 	return true;
 }
 
+bool Root::Manager::spawn_sandbox()
+{
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
+
+	// Get username from config
+	std::string strUName;
+	std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
+	if (i != m_config_args.end())
+		strUName = i->second.c_str();
+
+	bool bAgain = false;
+	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
+	if (strUName.empty())
+	{
+		if (!bUnsafe)
+			LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
+
+		std::string strOurUName;
+		if (!get_our_uid(uid,strOurUName))
+			return false;
+		
+		// Warn!
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+			"Failed to find the 'sandbox_uname' setting in the config.\n\n"
+			"Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
+			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+			strOurUName.c_str());		
+	}
+	else 
+	{
+		if (!get_sandbox_uid(strUName,uid,bAgain) && bAgain && bUnsafe)
+		{
+			std::string strOurUName;
+			if (!get_our_uid(uid,strOurUName))
+				return false;
+
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+								   APPNAME " is running under a user account that does not have the priviledges required to impersonate a different user.\n\n"
+								   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
+								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+								   strOurUName.c_str());
+		}
+		else
+			return false;
+	}
+
+	std::string strPipe;
+	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
+	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
+	{
+		std::string strOurUName;
+		if (!get_our_uid(uid,strOurUName))
+			return false;
+
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+							   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
+							   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
+							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+							   strOurUName.c_str());
+
+		m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
+	}
+
+#if defined(_WIN32)
+	CloseHandle(uid);
+#endif
+	
+	return (m_sandbox_channel != 0);	
+}
+
 bool Root::Manager::wait_to_quit()
 {
 	for (std::string debug = getenv_i("OMEGA_DEBUG");;)
@@ -279,43 +347,67 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	}
 }
 
-bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t uid, UserProcess& user_process)
+bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process)
 {
 	try
 	{
-		// See if we have a process already
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
 
-		for (std::map<Omega::uint32_t,UserProcess>::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		for (bool bFirst = true;bFirst;bFirst = false)
 		{
-			if (i->second.ptrSpawn->Compare(uid))
+			// See if we have a process already
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+			for (std::map<Omega::uint32_t,UserProcess>::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 			{
-				user_process = i->second;
-				return true;
+				if (i->second.ptrSpawn->Compare(uid))
+				{
+					user_process = i->second;
+					return true;
+				}
+				else if (i->second.ptrSpawn->IsSameUser(uid))
+				{
+					user_process.ptrRegistry = i->second.ptrRegistry;
+				}
 			}
-			else if (i->second.ptrSpawn->IsSameUser(uid))
+
+			guard.release();
+
+			// Spawn a new user process
+			bool bAgain = false;
+			if (spawn_user(uid,user_process.ptrRegistry,false,user_process.strPipe,bAgain) != 0)
+				return true;
+
+			if (bFirst && bAgain && bUnsafe)
 			{
-				user_process.ptrRegistry = i->second.ptrRegistry;
+				std::string strOurUName;
+				if (!get_our_uid(uid,strOurUName))
+					return false;
+
+				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+									   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
+									   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
+									   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+									   strOurUName.c_str());
 			}
 		}
+
+		return false;
 	}
 	catch (std::exception& e)
 	{
 		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
 	}
-
-	// Spawn a new user process
-	return (spawn_user(uid,user_process.ptrRegistry,user_process.strPipe) != 0);
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, std::string& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
-	process.ptrSpawn = platform_spawn(uid,strPipe,channel_id,ptrMC);
+	process.ptrSpawn = platform_spawn(uid,bSandbox,strPipe,channel_id,ptrMC,bAgain);
 	if (!process.ptrSpawn)
 		return 0;
 

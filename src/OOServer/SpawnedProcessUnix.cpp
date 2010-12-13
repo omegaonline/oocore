@@ -52,7 +52,7 @@ namespace
 		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(std::string strAppPath, bool bUnsafe, int pass_fd);
+		bool Spawn(std::string strAppPath, int pass_fd, bool& bAgain);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
@@ -145,7 +145,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd)
+bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain)
 {
 	if (strAppPath.empty())
 		strAppPath = LIBEXEC_DIR "/oosvruser";
@@ -154,19 +154,12 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, bool bUnsafe, int pass_fd
 
 	// Check our uid
 	uid_t our_uid = getuid();
-	if (our_uid != 0 && !bUnsafe)
-		LOG_ERROR_RETURN(("ooserverd must be started as root."),false);
-	
+		
 	bool bChangeUid = (m_uid != our_uid);
 	if (bChangeUid && our_uid != 0)
 	{
-		// Warn!
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-							   "ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
-							   "Because the 'unsafe' mode is set the new user process will be started under the current user account.\n\n"
-							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n");
-
-		bChangeUid = false;
+		bAgain = true;
+		return false;
 	}
 
 	pid_t child_id = fork();
@@ -337,49 +330,8 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
-	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-
-	// Stash the sandbox flag because we adjust uid...
-	bool bSandbox = (uid == OOSvrBase::AsyncLocalSocket::uid_t(-1));
-	if (bSandbox)
-	{
-		// Get username from config
-		std::string strUName;
-		std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
-		if (i != m_config_args.end())
-			strUName = i->second.c_str();
-
-		if (strUName.empty())
-		{
-			if (!bUnsafe)
-				LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config file"),(SpawnedProcess*)0);
-			
-			// Warn!
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-				"Failed to find the 'sandbox_uname' setting in the config file.\n\n"
-				"Because the 'unsafe' mode is set the sandbox process will be started under the current user account.\n\n"
-				"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n");
-
-			uid = getuid();
-		}
-		else
-		{
-			// Resolve to uid
-			OOSvrBase::pw_info pw(strUName.c_str());
-			if (!pw)
-			{
-				if (errno)
-					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
-				else
-					LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),(SpawnedProcess*)0);
-			}
-
-			uid = pw->pw_uid;
-		}
-	}
-
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
@@ -411,7 +363,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (user_host)
 		strAppName = user_host;
 	
-	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,fd[1]))
+	if (!pSpawnUnix->Spawn(strAppName,fd[1],bAgain))
 	{
 		::close(fd[0]);
 		::close(fd[1]);
@@ -487,6 +439,35 @@ void Root::Manager::accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>&
 			}
 		}
 	}
+}
+
+bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::string& strUName)
+{
+	uid = getuid();
+
+	OOSvrBase::pw_info pw(uid);
+	if (pw)
+		strUName = pw->pw_name;
+		
+	return true;
+}
+
+bool Root::Manager::get_sandbox_uid(const std::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+{
+	bAgain = false;
+
+	// Resolve to uid
+	OOSvrBase::pw_info pw(strUName.c_str());
+	if (!pw)
+	{
+		if (errno)
+			LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOBase::system_error_text(errno).c_str()),false);
+		else
+			LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),false);
+	}
+
+	uid = pw->pw_uid;
+	return true;
 }
 
 #endif // !HAVE_UNISTD_H

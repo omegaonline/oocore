@@ -40,6 +40,12 @@
 #include "RegistryHive.h"
 #include "SpawnedProcess.h"
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+#define APPNAME "OOServer"
+#else
+#define APPNAME "ooserverd"
+#endif
+
 namespace Root
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,Root::Module> Proactor;
@@ -83,6 +89,7 @@ namespace Root
 		bool load_config();
 		bool load_config_file(const std::string& strFile);
 		bool init_database();
+		bool spawn_sandbox();
 		bool wait_to_quit();
 
 		// Configuration members
@@ -103,10 +110,12 @@ namespace Root
 		};
 		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
 
-		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC);
+		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe);
-		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe);
-		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t uid, UserProcess& user_process);
+		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, std::string& strPipe, bool& bAgain);
+		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process);
+		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::string& strUName);
+		bool get_sandbox_uid(const std::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
 
 		// Message handling members
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);

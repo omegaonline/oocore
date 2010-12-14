@@ -257,12 +257,11 @@ namespace
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
-
 				if (IsRelativePath(strLib))
 				{
 					string_t strErr = L"Relative path \"{0}\" in object library '{1}' activation registry value.";
-					strErr %= oid;
 					strErr %= strLib;
+					strErr %= oid;
 					OMEGA_THROW(OOBase::to_native(strErr.c_str()).c_str());
 				}
 

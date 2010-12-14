@@ -252,9 +252,9 @@ bool Root::Manager::spawn_sandbox()
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 			strOurUName.c_str());		
 	}
-	else 
+	else if (!get_sandbox_uid(strUName,uid,bAgain))
 	{
-		if (!get_sandbox_uid(strUName,uid,bAgain) && bAgain && bUnsafe)
+		if (bAgain && bUnsafe)
 		{
 			std::string strOurUName;
 			if (!get_our_uid(uid,strOurUName))
@@ -269,7 +269,7 @@ bool Root::Manager::spawn_sandbox()
 		else
 			return false;
 	}
-
+	
 	std::string strPipe;
 	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
 	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)

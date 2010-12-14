@@ -78,13 +78,14 @@
         <!-- Install the service -->
         <ServiceInstall Id="OOServer.Service"
                         Name="OOServer"
+                        Account="LocalSystem"
                         Description="Manages the peer connections for the Omega Online network"
                         DisplayName="Omega Online Network Gateway"
                         Type="ownProcess"
                         Interactive="no"
                         Vital="yes"
                         Start="auto"
-                        ErrorControl="ignore" />
+                        ErrorControl="normal" />
       </Component>
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
         <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />

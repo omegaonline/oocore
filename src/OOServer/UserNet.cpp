@@ -477,7 +477,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 			AddRef();
 
-			if (!m_pManager->call_async_function_i(&process_here,this,&output))
+			if (!m_pManager->call_async_function_i("process_here",&process_here,this,&output))
 			{
 				Release();
 

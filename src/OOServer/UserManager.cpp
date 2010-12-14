@@ -252,7 +252,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
 	}
 
-	if (!call_async_function_i(&do_bootstrap,this,&stream))
+	if (!call_async_function_i("do_bootstrap",&do_bootstrap,this,&stream))
 	{
 		ptrMC->close();
 		return false;
@@ -283,7 +283,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	}
 
 	if (bQuit)
-		pThis->call_async_function_i(&do_quit,pThis,0);
+		pThis->call_async_function_i("do_quit",&do_quit,pThis,0);
 }
 
 bool User::Manager::bootstrap(uint32_t sandbox_channel)
@@ -357,7 +357,7 @@ void User::Manager::on_channel_closed(uint32_t channel)
 	if (!stream.write(channel))
 		LOG_ERROR(("Failed to write channel_close data: %s",OOBase::system_error_text(stream.last_error()).c_str()));
 	else
-		call_async_function_i(&do_channel_closed,this,&stream);
+		call_async_function_i("do_channel_closed",&do_channel_closed,this,&stream);
 }
 
 void User::Manager::do_channel_closed(void* pParams, OOBase::CDRStream& stream)

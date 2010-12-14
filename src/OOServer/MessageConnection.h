@@ -103,7 +103,7 @@ namespace OOServer
 	public:
 		int pump_requests(const OOBase::timeval_t* wait = 0, bool bOnce = false);
 		bool parse_message(OOBase::CDRStream& input);
-		bool call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream);
+		bool call_async_function_i(const std::string& strFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream);
 
 		struct io_result
 		{

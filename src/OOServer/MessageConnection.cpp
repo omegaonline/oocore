@@ -412,7 +412,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		input.buffer()->mark_rd_ptr(0);
 
 		// Ignore the return
-		call_async_function_i(&do_route_off,this,&input);
+		call_async_function_i("do_route_off",&do_route_off,this,&input);
 
 		return true;
 	}
@@ -1132,6 +1132,9 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
+	std::string strFn;
+	msg->m_payload.read(strFn);
+
 	void (*pfnCall)(void*,OOBase::CDRStream&);
 	msg->m_payload.read(pfnCall);
 
@@ -1153,13 +1156,9 @@ void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>&
 		// Make the call...
 		(*pfnCall)(pParam,msg->m_payload);
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("Unhandled std::exception: %s",e.what()));
-	}
 	catch (...)
 	{
-		LOG_ERROR(("Unhandled exception"));
+		LOG_ERROR(("Unhandled exception in %s",strFn.c_str()));
 	}
 }
 
@@ -1173,7 +1172,7 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 	}
 }
 
-bool OOServer::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
+bool OOServer::MessageHandler::call_async_function_i(const std::string& strFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
 {
 	assert(pfnCall);
 	if (!pfnCall)
@@ -1200,6 +1199,7 @@ bool OOServer::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBas
 	// 2 Bytes of padding here
 	msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
+	msg->m_payload.write(strFn);
 	msg->m_payload.write(pfnCall);
 	msg->m_payload.write(pParam);
 

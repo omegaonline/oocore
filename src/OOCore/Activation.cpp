@@ -28,6 +28,10 @@
 #include "Activation.h"
 #include "IPS.h"
 
+#if defined(_WIN32)
+#include <shlwapi.h>
+#endif
+
 #if !defined(DOXYGEN)
 
 // Our library map
@@ -234,6 +238,15 @@ namespace
 		return pObj;
 	}
 
+	bool IsRelativePath(const string_t& strPath)
+	{
+#if defined(_WIN32)
+		return (PathIsRelativeW(strPath.c_str()) != FALSE);
+#else
+		return (strPath[0] != L'/');
+#endif
+	}
+
 	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		// Try to load a library, if allowed
@@ -243,9 +256,19 @@ namespace
 			ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/OIDs/" + oid.ToString());
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
+				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
+
+				if (IsRelativePath(strLib))
+				{
+					string_t strErr = L"Relative path \"{0}\" in object library '{1}' activation registry value.";
+					strErr %= oid;
+					strErr %= strLib;
+					OMEGA_THROW(OOBase::to_native(strErr.c_str()).c_str());
+				}
+
 				void* TICKET_89; // Surrogates here?!?
 
-				IObject* pObject = LoadLibraryObject(ptrOidKey->GetValue(L"Library").cast<string_t>(),oid,iid);
+				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
 					return pObject;
 			}

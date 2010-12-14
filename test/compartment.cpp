@@ -6,17 +6,17 @@
 #include "Test.h"
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest);
-bool register_library(const wchar_t* pszLibName, bool& bSkipped);
+bool register_library(const Omega::string_t& strLibName, bool& bSkipped);
 bool unregister_library();
-bool register_process(const wchar_t* pszExeName, bool& bSkipped);
+bool register_process(const Omega::string_t& strExeName, bool& bSkipped);
 bool unregister_process();
 
-static bool do_cmpt_library_test(const wchar_t* pszLibName, bool& bSkipped)
+static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipped)
 {
-	output("  %-45ls ",pszLibName);
+	output("  %-45ls ",strLibName.c_str());
 
 	// Register the library
-	TEST(register_library(pszLibName,bSkipped));
+	TEST(register_library(strLibName,bSkipped));
 	if (bSkipped)
 		return true;
 		
@@ -40,6 +40,7 @@ static bool do_cmpt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 }
 
 const wchar_t** get_dlls();
+Omega::string_t make_absolute(const wchar_t* wsz);
 
 bool compartment_dll_tests()
 {
@@ -48,7 +49,7 @@ bool compartment_dll_tests()
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		bool res = do_cmpt_library_test(*pszDlls,bSkipped);
+		bool res = do_cmpt_library_test(make_absolute(*pszDlls),bSkipped);
 		
 		unregister_library();
 
@@ -60,12 +61,12 @@ bool compartment_dll_tests()
 	return true;
 }
 
-static bool do_cmpt_process_test(const wchar_t* pszModulePath, bool& bSkipped)
+static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSkipped)
 {
-	output("  %-45ls ",pszModulePath);
+	output("  %-45ls ",strModulePath.c_str());
 
 	// Register the process
-	TEST(register_process(pszModulePath,bSkipped));
+	TEST(register_process(strModulePath,bSkipped));
 	if (bSkipped)
 		return true;
 		
@@ -108,7 +109,7 @@ bool compartment_process_tests()
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		bool res = do_cmpt_process_test(*pszExes,bSkipped);
+		bool res = do_cmpt_process_test(make_absolute(*pszExes),bSkipped);
 
 		unregister_process();
 

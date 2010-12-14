@@ -89,6 +89,11 @@ namespace
 	}
 }
 
+bool User::Process::is_relative_path(const std::wstring& strPath)
+{
+	return (PathIsRelativeW(strPath.c_str()) != FALSE);
+}
+
 User::Process* User::Process::exec(const std::wstring& strExeName)
 {
 	// Do a ShellExecute style lookup for the actual thing to call..

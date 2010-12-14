@@ -18,12 +18,12 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 
 #include "Test.h"
 
-bool register_library(const wchar_t* pszLibName, bool& bSkipped)
+bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 {
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToNative().c_str(),0) != 0)
+	if (access(strLibName.ToNative().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -37,7 +37,7 @@ bool register_library(const wchar_t* pszLibName, bool& bSkipped)
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
 	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetValue(L"Library",Omega::string_t(pszLibName,Omega::string_t::npos));
+	ptrSubKey->SetValue(L"Library",strLibName);
 
 	return true;
 }
@@ -57,12 +57,12 @@ bool unregister_library()
 	return true;
 }
 
-bool register_process(const wchar_t* pszExeName, bool& bSkipped)
+bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 {
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszExeName,Omega::string_t::npos).ToNative().c_str(),0) != 0)
+	if (access(strExeName.ToNative().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -80,7 +80,7 @@ bool register_process(const wchar_t* pszExeName, bool& bSkipped)
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"/Local User/Applications",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess/Activation",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetValue(L"Path",Omega::string_t(pszExeName,Omega::string_t::npos));
+	ptrSubKey->SetValue(L"Path",strExeName);
 
 	return true;
 }
@@ -299,13 +299,13 @@ namespace
 	};
 }
 
-static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
+static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkipped)
 {
 	// Register the library
-	output("  %-45ls ",pszLibName);
+	output("  %-45ls ",strLibName.c_str());
 
 	// Register the library
-	TEST(register_library(pszLibName,bSkipped));
+	TEST(register_library(strLibName,bSkipped));
 	if (bSkipped)
 		return true;
 	
@@ -425,12 +425,12 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	return true;
 }
 
-static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
+static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bSkipped)
 {
-	output("  %-45ls ",pszModulePath);
+	output("  %-45ls ",strModulePath.c_str());
 
 	// Register the exe
-	TEST(register_process(pszModulePath,bSkipped));
+	TEST(register_process(strModulePath,bSkipped));
 	if (bSkipped)
 		return true;
 
@@ -549,6 +549,20 @@ const wchar_t** get_dlls()
 	return dlls;
 }
 
+Omega::string_t make_absolute(const wchar_t* wsz)
+{
+#if defined(_WIN32)
+	wchar_t szBuf[MAX_PATH] = {0};
+	GetFullPathNameW(wsz,MAX_PATH,szBuf,NULL);
+	return Omega::string_t(szBuf,Omega::string_t::npos,true);
+#else
+	char szBuf1[PATH_MAX+1] = {0};
+	char szBuf2[PATH_MAX+1] = {0};
+	wcstombs(szBuf1,wsz,PATH_MAX);
+	return Omega::string_t(realpath(szBuf1,szBuf2),Omega::string_t::npos);
+#endif
+}
+
 bool interface_dll_tests()
 {
 	output("\n");
@@ -556,7 +570,7 @@ bool interface_dll_tests()
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		bool res = do_local_library_test(*pszDlls,bSkipped);
+		bool res = do_local_library_test(make_absolute(*pszDlls),bSkipped);
 
 		unregister_library();
 
@@ -598,7 +612,7 @@ bool interface_process_tests()
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		bool res = do_local_process_test(*pszExes,bSkipped);
+		bool res = do_local_process_test(make_absolute(*pszExes),bSkipped);
 
 		unregister_process();
 
@@ -611,13 +625,13 @@ bool interface_process_tests()
 	return true;
 }
 
-static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoint, bool& bSkipped)
+static bool do_library_test(const Omega::string_t& strLibName, const wchar_t* pszEndpoint, bool& bSkipped)
 {
 	// Register the library ready for local loopback stuff
-	output("  %-45ls ",pszLibName);
+	output("  %-45ls ",strLibName.c_str());
 
 	// Register the library
-	TEST(register_library(pszLibName,bSkipped));
+	TEST(register_library(strLibName,bSkipped));
 	if (bSkipped)
 		return true;
 		
@@ -628,12 +642,12 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	return true;
 }
 
-static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndpoint, bool& bSkipped)
+static bool do_process_test(const Omega::string_t& strModulePath, const wchar_t* pszEndpoint, bool& bSkipped)
 {
-	output("  %-45ls ",pszModulePath);
+	output("  %-45ls ",strModulePath.c_str());
 
 	// Register the exe
-	TEST(register_process(pszModulePath,bSkipped));
+	TEST(register_process(strModulePath,bSkipped));
 	if (bSkipped)
 		return true;
 
@@ -653,7 +667,7 @@ static bool interface_tests_i(const wchar_t* pszHost)
 	for (const wchar_t** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
 		bool bSkipped;
-		bool res = do_library_test(*pszDlls,pszHost,bSkipped);
+		bool res = do_library_test(make_absolute(*pszDlls),pszHost,bSkipped);
 
 		unregister_library();
 
@@ -666,7 +680,7 @@ static bool interface_tests_i(const wchar_t* pszHost)
 	for (const wchar_t** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
 		bool bSkipped;
-		bool res = do_process_test(*pszExes,pszHost,bSkipped);
+		bool res = do_process_test(make_absolute(*pszExes),pszHost,bSkipped);
 
 		unregister_process();
 

@@ -45,6 +45,11 @@ namespace
 	};
 }
 
+bool User::Process::is_relative_path(const std::wstring& strPath)
+{
+	return (strPath[0] != L'/');
+}
+
 User::Process* User::Process::exec(const std::wstring& strExeName)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess;

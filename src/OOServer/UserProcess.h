@@ -33,6 +33,7 @@ namespace User
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code) = 0;
 
 		static Process* exec(const std::wstring& strProcess);
+		static bool is_relative_path(const std::wstring& strPath);
 
 	protected:
 		Process() {}

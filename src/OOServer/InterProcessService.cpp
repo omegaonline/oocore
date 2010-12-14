@@ -96,6 +96,14 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	string_t strProcess = ptrServer->GetValue(L"Path").cast<string_t>();
 
+	if (User::Process::is_relative_path(strProcess.c_str()))
+	{
+		string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value.";
+		strErr %= strProcess;
+		strErr %= strAppName;
+		OMEGA_THROW(OOBase::to_native(strErr.c_str()).c_str());
+	}
+
 	// The timeout needs to be related to the request timeout...
 #if defined(OMEGA_DEBUG)
 	OOBase::timeval_t wait(60);

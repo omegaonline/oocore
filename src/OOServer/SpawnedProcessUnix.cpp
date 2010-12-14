@@ -181,7 +181,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 	// Change dir to a known location
 	if (chdir(LIBEXEC_DIR) != 0)
 	{
-		LOG_ERROR(("chdir() failed: %s",OOBase::system_error_text(errno).c_str()));
+		LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text(errno).c_str()));
 		exit(errno);
 	}
 

@@ -28,13 +28,13 @@ using namespace OTL;
 
 namespace
 {
-	class BufferInputStream : 
+	class BufferInputStream :
 			public ObjectBase,
 			public IO::IInputStream
 	{
 	public:
-		BufferInputStream() : 
-				m_bOwn(false), 
+		BufferInputStream() :
+				m_bOwn(false),
 				m_len(0),
 				m_pos(0),
 				m_data(0)
@@ -87,7 +87,7 @@ namespace
 		}
 	};
 
-	class FileInputStream : 
+	class FileInputStream :
 			public ObjectBase,
 			public IO::IInputStream
 	{

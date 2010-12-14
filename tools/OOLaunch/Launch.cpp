@@ -86,7 +86,7 @@ static void do_exec(const char* path, int fd)
 		std::string cmd = path;
 		cmd += " ";
 		cmd += os.str();
-		
+
 		execlp("xterm","xterm","-T","oosvruser - User process","-e",cmd.c_str(),(char*)0);
 	}
 
@@ -158,7 +158,7 @@ static int run_oosvruser()
 			do_exec(run,pipes[WRITE_END]);
 
 		do_exec(LIBEXEC_DIR "/oosvruser",pipes[WRITE_END]);
-		
+
 		_exit(127);
 	}
 

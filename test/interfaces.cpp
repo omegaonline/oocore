@@ -53,7 +53,7 @@ bool unregister_library()
 
 	if (ptrKey->IsSubKey(L"OIDs/" + strOid))
 		ptrKey->DeleteKey(L"OIDs/" + strOid);
-	
+
 	return true;
 }
 
@@ -308,7 +308,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	TEST(register_library(strLibName,bSkipped));
 	if (bSkipped)
 		return true;
-	
+
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
 	TEST(ptrSimpleTest);
@@ -382,7 +382,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"CurrentVersion",L"Test.Library");
-	
+
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
@@ -511,7 +511,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 
 	// Test unregistering
 	TEST(unregister_process());
-	
+
 	// Check its gone
 	try
 	{
@@ -634,7 +634,7 @@ static bool do_library_test(const Omega::string_t& strLibName, const wchar_t* ps
 	TEST(register_library(strLibName,bSkipped));
 	if (bSkipped)
 		return true;
-		
+
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);

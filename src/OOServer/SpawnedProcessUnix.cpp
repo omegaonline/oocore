@@ -154,7 +154,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 
 	// Check our uid
 	uid_t our_uid = getuid();
-		
+
 	bool bChangeUid = (m_uid != our_uid);
 	if (bChangeUid && our_uid != 0)
 	{
@@ -165,7 +165,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 	pid_t child_id = fork();
 	if (child_id == -1)
 		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text(errno).c_str()),false);
-	
+
 	if (child_id != 0)
 	{
 		// We are the parent
@@ -231,12 +231,12 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 
 		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strExec.c_str(),(char*)0);
 	}
-	
+
 	execlp(strAppPath.c_str(),strAppPath.c_str(),os.str().c_str(),(char*)0);
 
 	LOG_ERROR(("Failed to launch %s",strAppPath.c_str()));
 
-	_exit(127);	
+	_exit(127);
 }
 
 bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
@@ -369,7 +369,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	const char* user_host = getenv("OMEGA_USER_BINARY");
 	if (user_host)
 		strAppName = user_host;
-	
+
 	if (!pSpawnUnix->Spawn(strAppName,fd[1],bAgain))
 	{
 		::close(fd[0]);

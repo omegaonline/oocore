@@ -134,7 +134,7 @@ namespace
 				::close(m_fd);
 		}
 
-		void Init(int fd)
+		void init(int fd)
 		{
 			m_fd = fd;
 		}
@@ -178,7 +178,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1
 	return ptrRet.AddRef();
 }
 #else
-OOCORE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),int,fd))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),int,fd))
 {
 	ObjectPtr<ObjectImpl<FileInputStream> > ptrRet = ObjectImpl<FileInputStream>::CreateInstancePtr();
 

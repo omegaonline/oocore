@@ -2,6 +2,8 @@
 #include "../include/OTL/Registry.h"
 #include "interfaces.h"
 
+#include <limits.h>
+
 void normalise_path(Omega::string_t& strPath);
 
 namespace Omega
@@ -542,7 +544,7 @@ const wchar_t** get_dlls()
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestLibrary_msvc.dll",
 		L"TestLibrary/.libs/TestLibrary.dll",
 #else
-		L"TestLibrary/testlibrary",
+		L"TestLibrary/testlibrary.la",
 #endif
 		0
 	};
@@ -559,7 +561,11 @@ Omega::string_t make_absolute(const wchar_t* wsz)
 	char szBuf1[PATH_MAX+1] = {0};
 	char szBuf2[PATH_MAX+1] = {0};
 	wcstombs(szBuf1,wsz,PATH_MAX);
-	return Omega::string_t(realpath(szBuf1,szBuf2),Omega::string_t::npos);
+	char* ret = realpath(szBuf1,szBuf2);
+	if (!ret)
+		return Omega::string_t(wsz,Omega::string_t::npos);
+
+	return Omega::string_t(ret,Omega::string_t::npos);
 #endif
 }
 

@@ -84,10 +84,7 @@ namespace
 
 		DWORD SpawnFromToken(std::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
-}
 
-namespace
-{
 	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe)
 	{
 		// Create a new unique pipe
@@ -470,6 +467,52 @@ namespace
 
 		return true;
 	}
+
+	static DWORD GetUserCwd(std::wstring& strCurDir)
+	{
+		// Find the cwd
+		HKEY hKey;
+		LONG dwRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE,L"SOFTWARE\\Omega Online\\Installation",0,KEY_READ,&hKey);
+		if (dwRes == ERROR_SUCCESS)
+		{
+			wchar_t szPath[MAX_PATH] = {0};
+			DWORD dwSize = sizeof(szPath);
+			dwRes = RegQueryValueExW(hKey,L"CommonComponents",NULL,NULL,(LPBYTE)&szPath,&dwSize);
+			if (dwRes == ERROR_SUCCESS)
+				strCurDir = szPath;
+			else if (dwRes != ERROR_FILE_NOT_FOUND)
+				LOG_ERROR(("Failed to query CommonComponents: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
+						
+			RegCloseKey(hKey);
+		}
+		else if (dwRes != ERROR_FILE_NOT_FOUND)
+			LOG_ERROR_RETURN(("Failed to access HKEY_LOCAL_MACHINE\\SOFTWARE\\Omega Online\\Installation: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+		
+		if (dwRes == ERROR_FILE_NOT_FOUND)
+		{
+			// Compose the dir ourselves
+			wchar_t szPath[MAX_PATH] = {0};
+			HRESULT hr = SHGetFolderPathW(0,CSIDL_PROGRAM_FILES_COMMON,0,SHGFP_TYPE_DEFAULT,szPath);
+			if FAILED(hr)
+			{
+				dwRes = GetLastError();
+				LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+			}
+			else
+				dwRes = ERROR_SUCCESS;
+
+			strCurDir = szPath;
+			strCurDir += L"\\OmegaOnline\\";
+		}		
+
+		if (dwRes == ERROR_SUCCESS)
+		{
+			if (GetFileAttributesW(strCurDir.c_str()) == INVALID_FILE_ATTRIBUTES)
+				strCurDir.clear();
+		}
+
+		return dwRes;
+	}
 }
 
 SpawnedProcessWin32::SpawnedProcessWin32() :
@@ -499,9 +542,12 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 
 DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	wchar_t szPath[MAX_PATH];
 	std::wstring strCurDir;
+	DWORD dwRes = GetUserCwd(strCurDir);
+	if (dwRes != ERROR_SUCCESS)
+		return dwRes;
 
+	wchar_t szPath[MAX_PATH];	
 	if (strAppPath.empty())
 	{
 		// Get our module name
@@ -513,8 +559,6 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 
 		// Strip off our name, and add OOSvrUser.exe
 		PathRemoveFileSpecW(szPath);
-
-		strCurDir = szPath;
 
 		if (!PathAppendW(szPath,L"OOSvrUser.exe"))
 		{
@@ -535,8 +579,6 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 
 		// Strip off our name
 		PathRemoveFileSpecW(szPath);
-
-		strCurDir = szPath;
 
 		// Restore path contents
 		len = (strAppPath.size()+1 > MAX_PATH ? MAX_PATH : strAppPath.size()+1);
@@ -581,10 +623,10 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	
 	// Load up the users profile
 	HANDLE hProfile = NULL;
-	DWORD dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
+	dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		dwRes = ERROR_SUCCESS;
-	else if (dwRes != ERROR_SUCCESS && dwRes != ERROR_PRIVILEGE_NOT_HELD)
+	else if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
 	
 	// Load the users environment vars
@@ -648,11 +690,11 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 			startup_info.lpDesktop = sz;
 			startup_info.wShowWindow = SW_HIDE;
 		}
-	}	
+	}
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,/*strCurDir.c_str()*/ NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,strCurDir.empty() ? NULL : strCurDir.c_str(),&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));

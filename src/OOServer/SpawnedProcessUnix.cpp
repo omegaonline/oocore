@@ -178,6 +178,13 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 	// Close all open handles - not that we should have any ;)
 	close_all_fds(pass_fd);
 
+	// Change dir to a known location
+	if (chdir(LIBEXEC_DIR) != 0)
+	{
+		LOG_ERROR(("chdir() failed: %s",OOBase::system_error_text(errno).c_str()));
+		exit(errno);
+	}
+
 	if (bChangeUid)
 	{
 		// get our pw_info

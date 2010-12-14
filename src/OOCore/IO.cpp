@@ -28,13 +28,13 @@ using namespace OTL;
 
 namespace
 {
-	class BufferInputStream : 
+	class BufferInputStream :
 			public ObjectBase,
 			public IO::IInputStream
 	{
 	public:
-		BufferInputStream() : 
-				m_bOwn(false), 
+		BufferInputStream() :
+				m_bOwn(false),
 				m_len(0),
 				m_pos(0),
 				m_data(0)
@@ -87,7 +87,7 @@ namespace
 		}
 	};
 
-	class FileInputStream : 
+	class FileInputStream :
 			public ObjectBase,
 			public IO::IInputStream
 	{
@@ -134,7 +134,7 @@ namespace
 				::close(m_fd);
 		}
 
-		void Init(int fd)
+		void init(int fd)
 		{
 			m_fd = fd;
 		}
@@ -178,7 +178,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1
 	return ptrRet.AddRef();
 }
 #else
-OOCORE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),int,fd))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),int,fd))
 {
 	ObjectPtr<ObjectImpl<FileInputStream> > ptrRet = ObjectImpl<FileInputStream>::CreateInstancePtr();
 

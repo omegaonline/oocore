@@ -257,12 +257,11 @@ namespace
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
-
 				if (IsRelativePath(strLib))
 				{
 					string_t strErr = L"Relative path \"{0}\" in object library '{1}' activation registry value.";
-					strErr %= oid;
 					strErr %= strLib;
+					strErr %= oid;
 					OMEGA_THROW(OOBase::to_native(strErr.c_str()).c_str());
 				}
 
@@ -286,14 +285,14 @@ namespace
 				return pObject;
 			}
 		}
-		
+
 		return 0;
 	}
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		IObject* pObject = 0;
-		
+
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
@@ -304,7 +303,7 @@ namespace
 					throw INoInterfaceException::Create(iid);
 				return pObject;
 			}
-		
+
 			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 			if (pObject)
 				return pObject;
@@ -314,7 +313,7 @@ namespace
 		Activation::RegisterFlags_t reg_mask = 0;
 		if (flags & Activation::InProcess)
 			reg_mask |= Activation::ProcessLocal;
-		
+
 		if (flags & Activation::OutOfProcess)
 			reg_mask |= Activation::UserLocal | Activation::MachineLocal;
 
@@ -328,7 +327,7 @@ namespace
 		// Sandbox must be not be UserLocal
 		if (flags & (Activation::Sandbox | Activation::VM))
 			reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
-		
+
 		// Remote activation
 		if (flags & Activation::RemoteActivation)
 			reg_mask |= Activation::Anywhere;
@@ -350,7 +349,7 @@ namespace
 			if (pObject)
 				return pObject;
 		}
-		
+
 		return 0;
 	}
 

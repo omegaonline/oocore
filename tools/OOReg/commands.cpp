@@ -58,7 +58,7 @@ static std::string canonicalise_key(const std::string& strIn, const std::string&
 		}
 
 		key_parts.push_back(strKey.substr(1,next-1));
-		strKey = strKey.substr(next);
+		strKey.erase(0,next);
 	}
 
 	// Walk the vector, resolving . and ..

@@ -170,7 +170,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 		if (pos == std::string::npos)
 			break;
 
-		strSubKey = strSubKey.substr(pos+1);
+		strSubKey.erase(0,pos+1);
 		uSubKey = uKey;
 	}
 
@@ -259,7 +259,7 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, std
 		if (pos == std::string::npos)
 			break;
 
-		strSubKey = strSubKey.substr(pos+1);
+		strSubKey.erase(0,pos+1);
 		uSubKey = uKey;
 	}
 

@@ -356,7 +356,7 @@ namespace
 			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
 
 		// Crack out the last two parts - there is probably an easier way... but this works
-		strWindowStation = strWindowStation.substr(8);
+		strWindowStation.erase(0,8);
 		const wchar_t* p = strWindowStation.c_str();
 		wchar_t* pEnd = 0;
 		DWORD dwParts[2];

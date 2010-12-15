@@ -511,7 +511,7 @@ namespace
 
 		std::string ret = fmt_fixed_i(val,precision);
 		if (!ret.empty() && (ret[0]=='-' || ret[0]=='+'))
-			ret = ret.substr(1);
+			ret.erase(0,1);
 
 		do_intl_mon(ret,val < 0.0);
 

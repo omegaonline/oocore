@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 	// Parse command line
 	std::map<std::string,std::string> args;
 	if (!cmd_args.parse(argc,argv,args))
-		return EXIT_FAILURE;
+		LOG_ERROR_RETURN(("Failed to parse command line arguments."),EXIT_FAILURE);
 
 	if (args.find("help") != args.end())
 		return Help();
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 		{
 			// Ooops...
 			std::cerr << APPNAME " - Invalid or missing arguments" << std::endl;
-			return EXIT_FAILURE;
+			LOG_ERROR_RETURN(("Invalid or missing arguments."),EXIT_FAILURE);
 		}
 	}
 
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(OOBase::timeval_t(5,0));
 #endif
-		return EXIT_FAILURE;
+		LOG_ERROR_RETURN((APPNAME " exiting prematurely."),EXIT_FAILURE);
 	}
 
 	return EXIT_SUCCESS;

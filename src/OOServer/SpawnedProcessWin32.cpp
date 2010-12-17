@@ -207,6 +207,9 @@ namespace
 			}
 		}
 
+		if (dwErr != 0)
+			LOG_ERROR(("WaitForConnect failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+
 		return (dwErr == 0);
 	}
 
@@ -623,11 +626,14 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	
 	// Load up the users profile
 	HANDLE hProfile = NULL;
-	dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
-	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
-		dwRes = ERROR_SUCCESS;
-	else if (dwRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+	if (!bSandbox)
+	{
+		dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
+			dwRes = ERROR_SUCCESS;
+		else if (dwRes != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+	}
 	
 	// Load the users environment vars
 	LPVOID lpEnv = NULL;
@@ -717,18 +723,22 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 #endif
 
 	// See if process has immediately terminated...
-	dwWait = WaitForSingleObject(process_info.hProcess,100);
+	dwWait = WaitForSingleObject(process_info.hProcess,500);
 	if (dwWait != WAIT_TIMEOUT)
 	{
 		// Process aborted very quickly... this can happen if we have security issues
-		dwRes = ERROR_INTERNAL_ERROR;
+		if (!GetExitCodeProcess(process_info.hProcess,&dwRes))
+			dwRes = ERROR_INTERNAL_ERROR;
 
-		LOG_ERROR(("Process exited immediately."));
+		if (dwRes != STILL_ACTIVE)
+		{
+			LOG_ERROR(("Process exited immediately, exit code: %#x, %s",dwRes,OOBase::system_error_text(dwRes).c_str()));
 
-		CloseHandle(process_info.hProcess);
-		CloseHandle(process_info.hThread);
+			CloseHandle(process_info.hProcess);
+			CloseHandle(process_info.hThread);
 
-		goto Cleanup;
+			goto Cleanup;
+		}
 	}
 
 	// Stash handles to close on end...
@@ -741,7 +751,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	// And close any others
 	CloseHandle(process_info.hThread);
 
-	// Don't want to close this one...
+	// Don't want to close this one now...
 	hProfile = NULL;
 
 Cleanup:
@@ -932,7 +942,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	// Spawn the process
 	std::wstring strAppName = OOBase::from_native(getenv_i("OMEGA_USER_BINARY").c_str());
-	
+
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
 		return 0;

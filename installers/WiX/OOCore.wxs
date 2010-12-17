@@ -85,7 +85,9 @@
                         Interactive="no"
                         Vital="yes"
                         Start="auto"
-                        ErrorControl="normal" />
+                        ErrorControl="normal" >
+          <ServiceDependency Id="LanmanWorkstation"/>
+        </ServiceInstall>
       </Component>
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
         <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />

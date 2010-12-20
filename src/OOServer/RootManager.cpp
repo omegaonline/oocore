@@ -355,12 +355,18 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 		for (bool bFirst = true;bFirst;bFirst = false)
 		{
+			std::vector<Omega::uint32_t> vecDead;
+
 			// See if we have a process already
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			for (std::map<Omega::uint32_t,UserProcess>::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 			{
-				if (i->second.ptrSpawn->Compare(uid))
+				if (!i->second.ptrSpawn->IsRunning())
+				{
+					vecDead.push_back(i->first);
+				}
+				else if (i->second.ptrSpawn->IsSameLogin(uid))
 				{
 					user_process = i->second;
 					return true;
@@ -372,6 +378,14 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 			}
 
 			guard.release();
+
+			if (!vecDead.empty())
+			{
+				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+				for (std::vector<Omega::uint32_t>::const_iterator i=vecDead.begin();i!=vecDead.end();++i)
+					m_mapUserProcesses.erase(*i);
+			}
 
 			// Spawn a new user process
 			bool bAgain = false;
@@ -446,7 +460,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		// Check we haven't created a duplicate while we spawned...
 		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 		{
-			if (i->second.ptrSpawn->Compare(uid))
+			if (i->second.ptrSpawn->IsSameLogin(uid))
 			{
 				ptrMC->close();
 				return i->first;

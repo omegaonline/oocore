@@ -54,8 +54,9 @@ namespace
 
 		bool Spawn(std::string strAppPath, int pass_fd, bool& bAgain);
 
+		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
@@ -239,6 +240,19 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 	_exit(127);
 }
 
+bool SpawnedProcessUnix::IsRunning() const
+{
+	if (m_pid == 0)
+		return false;
+
+	pid_t retv = waitpid(m_pid,NULL,WNOHANG);
+	if (retv == 0)
+		return true;
+
+	m_pid = 0;
+	return false;
+}
+
 bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
@@ -296,9 +310,10 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	return true;
 }
 
-bool SpawnedProcessUnix::Compare(uid_t uid) const
+bool SpawnedProcessUnix::IsSameLogin(uid_t uid) const
 {
-	return (m_uid == uid && m_pid != 0);
+	// All POSIX sessions are assumed unique...
+	return false;
 }
 
 bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
@@ -307,7 +322,7 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
 	if (m_bSandbox)
 		return false;
 
-	return Compare(uid);
+	return (m_uid == uid);
 }
 
 bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)

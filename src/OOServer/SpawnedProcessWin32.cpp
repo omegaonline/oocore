@@ -70,9 +70,10 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
+		bool IsRunning() const;
 		bool Spawn(const std::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool Compare(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
@@ -372,7 +373,7 @@ namespace
 			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
 
 		wchar_t szBuf[128] = {0};
-		wsprintfW(szBuf,L"Service-0x%lu-%lu$",dwParts[0],dwParts[1]);
+		wsprintfW(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
 		strWindowStation = szBuf;
 
 		// Get the current processes user SID
@@ -692,7 +693,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 			startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 		else
 		{
-			WCHAR sz[] = L"";
+			WCHAR sz[] = L"WinSta0\\default";
 			startup_info.lpDesktop = sz;
 			startup_info.wShowWindow = SW_HIDE;
 		}
@@ -788,6 +789,14 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, HANDLE hToken, O
 	return (dwRes == ERROR_SUCCESS);
 }
 
+bool SpawnedProcessWin32::IsRunning() const
+{
+	if (!m_hProcess.is_valid())
+		return false;
+
+	return (WaitForSingleObject(m_hProcess,0) == WAIT_TIMEOUT);
+}
+
 bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
@@ -838,11 +847,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	return true;
 }
 
-bool SpawnedProcessWin32::Compare(HANDLE hToken) const
+bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken) const
 {
-	if (m_bSandbox)
-		return false;
-
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));

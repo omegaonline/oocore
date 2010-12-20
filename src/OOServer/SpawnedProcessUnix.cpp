@@ -246,11 +246,7 @@ bool SpawnedProcessUnix::IsRunning() const
 		return false;
 
 	pid_t retv = waitpid(m_pid,NULL,WNOHANG);
-	if (retv == 0)
-		return true;
-
-	m_pid = 0;
-	return false;
+	return (retv == 0);
 }
 
 bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const

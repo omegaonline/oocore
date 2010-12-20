@@ -128,8 +128,7 @@ int main(int argc, char* argv[])
 		else
 		{
 			// Ooops...
-			std::cerr << APPNAME " - Invalid or missing arguments" << std::endl;
-			LOG_ERROR_RETURN(("Invalid or missing arguments."),EXIT_FAILURE);
+			LOG_ERROR_RETURN((APPNAME " - Invalid or missing arguments."),EXIT_FAILURE);
 		}
 	}
 
@@ -149,7 +148,7 @@ int main(int argc, char* argv[])
 	// Now run...
 	if (bRun)
 		manager.run();
-	
+
 	// Stop the MessageHandler
 	manager.stop_request_threads();
 
@@ -157,7 +156,7 @@ int main(int argc, char* argv[])
 	{
 #if defined(OMEGA_DEBUG)
 		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(5,0));
+		OOBase::Thread::sleep(OOBase::timeval_t(15,0));
 #endif
 		LOG_ERROR_RETURN((APPNAME " exiting prematurely."),EXIT_FAILURE);
 	}

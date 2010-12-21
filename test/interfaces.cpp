@@ -533,11 +533,14 @@ const wchar_t** get_dlls()
 	static const wchar_t* dlls[] =
 	{
 #if defined(_MSC_VER)
-		L"TestLibrary_msvc.dll",
 	#if defined(_DEBUG)
-			L"..\\..\\build\\test\\TestLibrary\\.libs\\TestLibrary.dll",
+		L"TestLibrary_msvc.dll",
+		L"..\\TestLibrary_msvc.dll",
+		L"..\\..\\build\\test\\TestLibrary\\.libs\\TestLibrary.dll",
 	#else
-			L"..\\build\\test\\TestLibrary\\.libs\\TestLibrary.dll",
+		L"TestLibrary_msvc.dll",
+		L"Debug\\TestLibrary_msvc.dll",
+		L"..\\build\\test\\TestLibrary\\.libs\\TestLibrary.dll",
 	#endif
 #elif defined(_WIN32)
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestLibrary_msvc.dll",
@@ -593,11 +596,14 @@ const wchar_t** get_exes()
 	static const wchar_t* exes[] =
 	{
 #if defined(_MSC_VER)
-		L"TestProcess_msvc.exe",
 	#if defined(_DEBUG)
-			L"..\\..\\build\\test\\TestProcess\\testprocess.exe",
+		L"TestProcess_msvc.exe",
+		L"..\\TestProcess_msvc.exe",	
+		L"..\\..\\build\\test\\TestProcess\\.libs\\testprocess.exe",
 	#else
-			L"..\\build\\test\\TestProcess\\testprocess.exe",
+		L"TestProcess_msvc.exe",
+		L"Debug\\TestProcess_msvc.exe",
+		L"..\\build\\test\\TestProcess\\.libs\\testprocess.exe",
 	#endif
 #elif defined(_WIN32)
 		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestProcess_msvc.exe",

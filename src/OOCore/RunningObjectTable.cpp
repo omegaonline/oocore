@@ -163,15 +163,17 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		string_t strOid = oid.cast<string_t>();
 		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid; ++i)
 		{
-			if (!(i->second->second.m_flags & Activation::MultipleRegistration))
-				DuplicateRegistrationException::Throw(oid);
-
-			if (i->second->second.m_flags == flags)
-				DuplicateRegistrationException::Throw(oid);
-			
 			// Check its still alive...
 			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
 				revoke_list.push_back(i->second->first);
+			else
+			{
+				if (!(i->second->second.m_flags & Activation::MultipleRegistration))
+					DuplicateRegistrationException::Throw(oid);
+
+				if (i->second->second.m_flags == flags)
+					DuplicateRegistrationException::Throw(oid);
+			}			
 		}
 
 		// Create a new cookie

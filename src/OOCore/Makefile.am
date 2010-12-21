@@ -1,4 +1,4 @@
-include @top_srcdir@/m4/ltrc.inc
+include $(top_srcdir)/m4/ltrc.inc
 
 AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
 AM_CFLAGS = $(PTHREAD_CFLAGS)

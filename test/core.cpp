@@ -26,11 +26,7 @@ bool init_standalone_tests()
 	std::map<Omega::string_t,Omega::string_t> args;
 
 #if defined(_MSC_VER)
-	#if defined(_DEBUG)
-		Omega::string_t regdb_path = L"..\\..\\build\\data\\";
-	#else
-		Omega::string_t regdb_path = L"..\\build\\data\\";
-	#endif
+	Omega::string_t regdb_path = L"..\\build\\data\\";
 #else
 	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../data/";
 #endif

@@ -206,7 +206,6 @@
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOCore_precomp.h"
 				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -221,9 +220,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
 				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release"
-				GenerateDebugInformation="true"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
+				EnableCOMDATFolding="1"
 				SetChecksum="true"
 			/>
 			<Tool

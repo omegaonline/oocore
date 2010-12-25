@@ -43,8 +43,8 @@ if WIN32
 
 lib_LTLIBRARIES = OOCore.la
 
-OOCore_la_LIBADD = @top_builddir@/oobase/liboobase.la
-OOCore_la_LDFLAGS = -module -avoid-version -no-undefined -lrpcrt4 -lshlwapi
+OOCore_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4 -lshlwapi
+OOCore_la_LDFLAGS = -module -avoid-version -no-undefined
 
 OOCore_la_SOURCES = \
 	$(common) \
@@ -54,8 +54,8 @@ else
 
 lib_LTLIBRARIES = liboocore.la
 
-liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la
-liboocore_la_LDFLAGS = $(UUID_LIBS) -release $(VERSION) -no-undefined
+liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la $(UUID_LIBS) 
+liboocore_la_LDFLAGS = -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \
 	$(common)

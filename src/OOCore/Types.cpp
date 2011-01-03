@@ -35,7 +35,7 @@ namespace
 		{
 			assert(length);
 
-			OMEGA_NEW(m_buf,wchar_t[length+1]);
+			m_buf = static_cast<wchar_t*>(System::Allocate((length+1)*sizeof(wchar_t),1,__FILE__,__LINE__));
 			m_buf[length] = L'\0';
 			m_len = length;
 		}
@@ -47,7 +47,7 @@ namespace
 
 			if (m_own)
 			{
-				OMEGA_NEW(m_buf,wchar_t[length+1]);
+				m_buf = static_cast<wchar_t*>(System::Allocate((length+1)*sizeof(wchar_t),1,__FILE__,__LINE__));
 				memcpy(m_buf,sz,length*sizeof(wchar_t));
 				m_buf[length] = L'\0';
 			}
@@ -64,7 +64,7 @@ namespace
 			assert(sz2);
 			assert(len2);
 
-			OMEGA_NEW(m_buf,wchar_t[len1+len2+1]);
+			m_buf = static_cast<wchar_t*>(System::Allocate((len1+len2+1)*sizeof(wchar_t),1,__FILE__,__LINE__));
 			memcpy(m_buf,sz1,len1*sizeof(wchar_t));
 			memcpy(m_buf+len1,sz2,len2*sizeof(wchar_t));
 			m_buf[len1+len2] = L'\0';
@@ -82,15 +82,13 @@ namespace
 			if (m_own)
 				return AddRef();
 
-			StringNode* pNode;
-			OMEGA_NEW(pNode,StringNode(m_buf,m_len,true));
-			return pNode;
+			OMEGA_NEW_T_RETURN(StringNode,StringNode(m_buf,m_len,true));
 		}
 
 		void Release()
 		{
 			if (--m_refcount==0)
-				delete this;
+				OMEGA_DELETE(StringNode,this);
 		}
 
 		wchar_t* m_buf;
@@ -120,8 +118,8 @@ namespace
 		~StringNode()
 		{
 			if (m_own)
-				delete [] m_buf;
-			delete m_fs;
+				System::Free(m_buf,1);
+			OMEGA_DELETE(format_state_t,m_fs);
 		}
 
 		size_t find_brace(size_t start, wchar_t brace);
@@ -170,8 +168,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const ch
 	if (!wlen)
 		return 0;
 
-	StringNode* pNode = 0;
-	OMEGA_NEW(pNode,StringNode(wlen));
+	StringNode* pNode;
+	OMEGA_NEW_T(StringNode,pNode,StringNode(wlen));
 	if (bUTF8)
 		OOBase::from_utf8(pNode->m_buf,pNode->m_len+1,sz,len);
 	else
@@ -197,9 +195,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,3,((in),const wc
 	if (!length)
 		return 0;
 
-	StringNode* pNode = 0;
-	OMEGA_NEW(pNode,StringNode(wsz,length,copy==0 ? false : true));
-	return pNode;
+	OMEGA_NEW_T_RETURN(StringNode,StringNode(wsz,length,copy==0 ? false : true));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,s1))
@@ -260,7 +256,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(
 		return pAdd->Own();
 
 	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,pAdd->m_buf,pAdd->m_len));
+	OMEGA_NEW_T(StringNode,pNode,StringNode(pOrig->m_buf,pOrig->m_len,pAdd->m_buf,pAdd->m_len));
 
 	pOrig->Release();
 
@@ -275,7 +271,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(
 		return OOCore_string_t__ctor2(&c,1,1);
 
 	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,&c,1));
+	OMEGA_NEW_T(StringNode,pNode,StringNode(pOrig->m_buf,pOrig->m_len,&c,1));
 
 	pOrig->Release();
 
@@ -373,8 +369,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const v
 	if (!s1)
 		return 0;
 
-	StringNode* s2 = 0;
-	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len,true));
+	StringNode* s2;
+	OMEGA_NEW_T(StringNode,s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len,true));
 
 	for (wchar_t* p=s2->m_buf; size_t(p-s2->m_buf) < s2->m_len; ++p)
 		*p = towlower(*p);
@@ -387,8 +383,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const v
 	if (!s1)
 		return 0;
 
-	StringNode* s2 = 0;
-	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len,true));
+	StringNode* s2;
+	OMEGA_NEW_T(StringNode,s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len,true));
 
 	for (wchar_t* p=s2->m_buf; size_t(p-s2->m_buf) < s2->m_len; ++p)
 		*p = towupper(*p);
@@ -544,9 +540,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_left,2,((in),const void
 	if (length >= s->m_len)
 		return s->Own();
 
-	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(s->m_buf,length,true));
-	return s2;
+	OMEGA_NEW_T_RETURN(StringNode,StringNode(s->m_buf,length,true));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_mid,3,((in),const void*,s1,(in),size_t,start,(in),size_t,length))
@@ -564,9 +558,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_mid,3,((in),const void*
 	if (start == 0 && length == s->m_len)
 		return s->Own();
 
-	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(s->m_buf + start,length,true));
-	return s2;
+	OMEGA_NEW_T_RETURN(StringNode,StringNode(s->m_buf + start,length,true));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const void*,s1,(in),size_t,length))
@@ -575,9 +567,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const voi
 	if (length >= s->m_len)
 		return s->Own();
 
-	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(s->m_buf + s->m_len-length,length,true));
-	return s2;
+	OMEGA_NEW_T_RETURN(StringNode,StringNode(s->m_buf + s->m_len-length,length,true));
 }
 
 void StringNode::parse_arg(size_t& pos)
@@ -662,7 +652,7 @@ void StringNode::parse_format()
 	if (pos == string_t::npos)
 		throw Formatting::IFormattingException::Create(L"No inserts in format string: {0}" % string_t(m_buf,m_len));
 
-	OMEGA_NEW(m_fs,format_state_t);
+	OMEGA_NEW_T(format_state_t,m_fs,format_state_t);
 	m_fs->m_curr_arg = (size_t)-1;
 	m_fs->m_prefix.assign(m_buf,pos++);
 	merge_braces(m_fs->m_prefix);
@@ -726,14 +716,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	if (!idx)
 	{
 		// Clone s
-		StringNode* pNewNode = 0;
-		OMEGA_NEW(pNewNode,StringNode(s->m_buf,s->m_len,true));
+		StringNode* pNewNode;
+		OMEGA_NEW_T(StringNode,pNewNode,StringNode(s->m_buf,s->m_len,true));
 
 		if (s->m_fs)
-		{
-			OMEGA_NEW(pNewNode->m_fs,StringNode::format_state_t(*s->m_fs));
-		}
-
+			OMEGA_NEW_T(StringNode::format_state_t,pNewNode->m_fs,StringNode::format_state_t(*s->m_fs));
+		
 		s->Release();
 		s = pNewNode;
 		*s1 = s;
@@ -748,6 +736,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 		assert(s->m_fs);
 		arg = s->m_fs->m_curr_arg-1;
 	}
+
+	assert(s->m_own);
 
 	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
 	{
@@ -768,12 +758,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 
 	if (str.size() > s->m_len)
 	{
-		wchar_t* buf_new = 0;
-		OMEGA_NEW(buf_new,wchar_t[str.size()+1]);
+		wchar_t* buf_new = static_cast<wchar_t*>(System::Allocate((str.size()+1)*sizeof(wchar_t),1,__FILE__,__LINE__));
 		buf_new[str.size()] = L'\0';
 
-		if (s->m_own)
-			delete [] s->m_buf;
+		System::Free(s->m_buf,1);
 		s->m_buf = buf_new;
 	}
 

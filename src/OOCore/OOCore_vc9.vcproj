@@ -601,6 +601,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\Omega\internal\memory.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\Omega\Omega.h"
 				>
 			</File>

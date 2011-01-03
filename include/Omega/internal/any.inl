@@ -64,12 +64,12 @@ inline void Omega::any_t::swap(const any_t& rhs)
 		u.fl8Val = rhs.u.fl8Val;
 		break;
 	case TypeInfo::typeString:
-		OMEGA_NEW(u.pstrVal,string_t(*rhs.u.pstrVal));
+		OMEGA_NEW_T(string_t,u.pstrVal,string_t(*rhs.u.pstrVal));
 		break;
 	case TypeInfo::typeGuid:
 		u.pgVal = 0;
 		if (rhs.u.pgVal)
-			OMEGA_NEW(u.pgVal,guid_t(*rhs.u.pgVal));
+			OMEGA_NEW_T2(guid_t,u.pgVal,guid_t(*rhs.u.pgVal));
 		break;
 	case TypeInfo::typeVoid:
 		break;
@@ -158,7 +158,7 @@ inline Omega::any_t::any_t(const guid_t& val) :
 		m_type(TypeInfo::typeGuid)
 {
 	if (val != guid_t::Null())
-		OMEGA_NEW(u.pgVal,guid_t(val));
+		OMEGA_NEW_T2(guid_t,u.pgVal,guid_t(val));
 	else
 		u.pgVal = 0;
 }
@@ -166,19 +166,19 @@ inline Omega::any_t::any_t(const guid_t& val) :
 inline Omega::any_t::any_t(const string_t& val) :
 		m_type(TypeInfo::typeString)
 {
-	OMEGA_NEW(u.pstrVal,string_t(val));
+	OMEGA_NEW_T(string_t,u.pstrVal,string_t(val));
 }
 
 inline Omega::any_t::any_t(const wchar_t* wsz, size_t length, bool copy) :
 		m_type(TypeInfo::typeString)
 {
-	OMEGA_NEW(u.pstrVal,string_t(wsz,length,copy));
+	OMEGA_NEW_T(string_t,u.pstrVal,string_t(wsz,length,copy));
 }
 
 inline Omega::any_t::any_t(const char* sz, bool bUTF8, size_t length) :
 		m_type(TypeInfo::typeString)
 {
-	OMEGA_NEW(u.pstrVal,string_t(sz,bUTF8,length));
+	OMEGA_NEW_T(string_t,u.pstrVal,string_t(sz,bUTF8,length));
 }
 
 inline Omega::any_t::~any_t()
@@ -189,9 +189,9 @@ inline Omega::any_t::~any_t()
 inline void Omega::any_t::clear()
 {
 	if (m_type == TypeInfo::typeGuid)
-		delete u.pgVal;
+		OMEGA_DELETE(guid_t,u.pgVal);
 	else if (m_type == TypeInfo::typeString)
-		delete u.pstrVal;
+		OMEGA_DELETE(string_t,u.pstrVal);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs));
@@ -959,7 +959,7 @@ inline Omega::guid_t& Omega::any_t::GetGuidValue()
 		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<guid_t&>::type());
 
 	if (!u.pgVal)
-		OMEGA_NEW(u.pgVal,guid_t(guid_t::Null()));
+		OMEGA_NEW_T(guid_t,u.pgVal,guid_t(guid_t::Null()));
 
 	return *u.pgVal;
 }

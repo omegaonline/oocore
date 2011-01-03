@@ -345,9 +345,9 @@ namespace Omega
 								m_val = marshal_info<T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW_THREAD_LOCAL(m_pVals,T[cbSize]);
+								m_pVals = static_cast<T*>(System::Allocate(cbSize*sizeof(T),1,__FILE__,__LINE__));
 								for (size_t i=0; i<cbSize; ++i)
-									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
+									new (m_pVals+i) T(marshal_info<T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -359,9 +359,12 @@ namespace Omega
 							if (m_pVals)
 							{
 								for (size_t i=0; i<m_cbSize; ++i)
+								{
 									static_cast<T&>(marshal_info<T&>::safe_type::coerce(m_pOrig+i)) = m_pVals[i];
+									m_pVals[i].~T();
+								}
 
-								delete [] m_pVals;
+								System::Free(m_pVals,1);
 							}
 							else
 								m_val.update(*m_pOrig);
@@ -401,9 +404,9 @@ namespace Omega
 								m_val = marshal_info<T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW_THREAD_LOCAL(m_pVals,arr_type[cbSize]);
+								m_pVals = static_cast<arr_type*>(System::Allocate(cbSize*sizeof(arr_type),1,__FILE__,__LINE__));
 								for (size_t i=0; i<cbSize; ++i)
-									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
+									new (m_pVals+i) arr_type(marshal_info<T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -415,9 +418,12 @@ namespace Omega
 							if (m_pVals)
 							{
 								for (size_t i=0; i<m_cbSize; ++i)
+								{
 									*marshal_info<T&>::safe_type::coerce(m_pOrig[i]) = m_pVals[i];
+									m_pVals[i].~arr_type();
+								}
 
-								delete [] m_pVals;
+								System::Free(m_pVals,1);
 							}
 							else
 								m_val.update(*m_pOrig);
@@ -450,19 +456,19 @@ namespace Omega
 				struct type_wrapper
 				{
 					type_wrapper(safe_type vals, size_t cbSize) :
-							m_bNull(!vals),
 							m_val(default_value<T>::value()),
-							m_pVals(0)
+							m_pVals(0),
+							m_cbSize(!vals ? 0 : cbSize)
 					{
-						if (!m_bNull)
+						if (vals)
 						{
 							if (cbSize == 1)
 								m_val = marshal_info<const T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW_THREAD_LOCAL(m_pVals,T[cbSize]);
+								m_pVals = static_cast<T*>(System::Allocate(cbSize*sizeof(T),1,__FILE__,__LINE__));
 								for (size_t i=0; i<cbSize; ++i)
-									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
+									new (m_pVals+i) T(marshal_info<const T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -470,12 +476,17 @@ namespace Omega
 					~type_wrapper()
 					{
 						if (m_pVals)
-							delete [] m_pVals;
+						{
+							for (size_t i=0; i<m_cbSize; ++i)
+								m_pVals[i].~T();
+
+							System::Free(m_pVals,1);
+						}
 					}
 
 					operator const T*()
 					{
-						if (m_bNull)
+						if (m_cbSize == 0)
 							return 0;
 						else if (m_pVals)
 							return m_pVals;
@@ -484,9 +495,9 @@ namespace Omega
 					}
 
 				private:
-					const bool m_bNull;
-					T          m_val;
-					T*         m_pVals;
+					T            m_val;
+					T*           m_pVals;
+					const size_t m_cbSize;
 				};
 
 				struct safe_type_wrapper
@@ -494,19 +505,19 @@ namespace Omega
 					typedef typename marshal_info<T>::safe_type::type arr_type;
 
 					safe_type_wrapper(const T* vals, size_t cbSize) :
-							m_bNull(!vals),
 							m_val(default_value<arr_type>::value()),
-							m_pVals(0)
+							m_pVals(0),
+							m_cbSize(!vals ? 0 : cbSize)
 					{
-						if (!m_bNull)
+						if (vals)
 						{
 							if (cbSize == 1)
 								m_val = marshal_info<const T>::safe_type::coerce(*vals);
 							else if (cbSize > 1)
 							{
-								OMEGA_NEW_THREAD_LOCAL(m_pVals,arr_type[cbSize]);
+								m_pVals = static_cast<arr_type*>(System::Allocate(cbSize*sizeof(arr_type),1,__FILE__,__LINE__));
 								for (size_t i=0; i<cbSize; ++i)
-									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
+									new (m_pVals+i) arr_type(marshal_info<const T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -514,12 +525,17 @@ namespace Omega
 					~safe_type_wrapper()
 					{
 						if (m_pVals)
-							delete [] m_pVals;
+						{
+							for (size_t i=0; i<m_cbSize; ++i)
+								m_pVals[i].~arr_type();
+
+							System::Free(m_pVals,1);
+						}
 					}
 
 					operator safe_type()
 					{
-						if (m_bNull)
+						if (!m_cbSize)
 							return 0;
 						else if (m_pVals)
 							return m_pVals;
@@ -528,9 +544,9 @@ namespace Omega
 					}
 
 				private:
-					const bool m_bNull;
-					arr_type   m_val;
-					arr_type*  m_pVals;
+					arr_type     m_val;
+					arr_type*    m_pVals;
+					const size_t m_cbSize;
 				};
 			};
 

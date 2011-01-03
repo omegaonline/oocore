@@ -76,6 +76,21 @@ namespace
 		void DeleteValue(const string_t& strName);
 	};
 
+	template <typename T>
+	class OmegaDestructor
+	{
+	public:
+		static void destroy(T* ptr)
+		{
+			OMEGA_DELETE(T,ptr);
+		}
+
+		static void destroy_void(void* ptr)
+		{
+			OMEGA_DELETE(T,static_cast<T*>(ptr));
+		}
+	};
+
 	class RootKey :
 			public ObjectBase,
 			public ::Registry::Manager,
@@ -89,8 +104,8 @@ namespace
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SmartPtr< ::Registry::Hive> m_system_hive;
-		OOBase::SmartPtr< ::Registry::Hive> m_localuser_hive;
+		OOBase::SmartPtr< ::Registry::Hive,OmegaDestructor< ::Registry::Hive> > m_system_hive;
+		OOBase::SmartPtr< ::Registry::Hive,OmegaDestructor< ::Registry::Hive> > m_localuser_hive;
 
 		ObjectPtr<IKey> m_ptrSystemKey;
 		ObjectPtr<IKey> m_ptrLocalUserKey;
@@ -344,8 +359,8 @@ void RootKey::Init_Once()
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 
-	OMEGA_NEW(m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb"));
-	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8()));
+	OMEGA_NEW_T(::Registry::Hive,m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb"));
+	OMEGA_NEW_T(::Registry::Hive,m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8()));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");

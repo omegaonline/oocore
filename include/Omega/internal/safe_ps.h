@@ -191,6 +191,7 @@ namespace Omega
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const = 0;
 				virtual IObject* QIReturn__proxy__() = 0;
+				virtual void Destruct__proxy__() = 0;
 
 				virtual void AddRef()
 				{
@@ -210,7 +211,7 @@ namespace Omega
 						release_safe(m_shim);
 
 						if (m_intcount.Release() && m_pincount.IsZero())
-							delete this;
+							Destruct__proxy__();
 					}
 				}
 
@@ -282,7 +283,7 @@ namespace Omega
 					assert(m_intcount.m_debug_value > 0);
 
 					if (m_intcount.Release() && m_refcount.IsZero() && m_pincount.IsZero())
-						delete this;
+						Destruct__proxy__();
 				}
 
 				void Pin()
@@ -308,7 +309,7 @@ namespace Omega
 							throw_correct_exception(except);
 
 						if (m_intcount.IsZero() && m_refcount.IsZero())
-							delete this;
+							Destruct__proxy__();
 					}
 				}
 
@@ -347,7 +348,7 @@ namespace Omega
 				static IObject* bind(const SafeShim* shim)
 				{
 					Safe_Proxy* pThis;
-					OMEGA_NEW(pThis,Safe_Proxy(shim));
+					OMEGA_NEW_T(Safe_Proxy,pThis,Safe_Proxy(shim));
 					return pThis->QIReturn__proxy__();
 				}
 
@@ -365,6 +366,11 @@ namespace Omega
 				IObject* QIReturn__proxy__()
 				{
 					return static_cast<D*>(this);
+				}
+
+				void Destruct__proxy__()
+				{
+					OMEGA_DELETE(Safe_Proxy,this);
 				}
 
 			// IObject members
@@ -391,7 +397,7 @@ namespace Omega
 				static IObject* bind(const SafeShim* shim)
 				{
 					Safe_Proxy_IObject* pThis;
-					OMEGA_NEW(pThis,Safe_Proxy_IObject(shim));
+					OMEGA_NEW_T(Safe_Proxy_IObject,pThis,Safe_Proxy_IObject(shim));
 
 					// Add to the map...
 					IObject* pExisting = SAFE_HOLDER::instance()->add(shim,pThis);
@@ -442,7 +448,7 @@ namespace Omega
 						m_pI->Release();
 
 						if (m_pincount.Release())
-							delete this;
+							OMEGA_DELETE(Safe_Stub_Base,this);
 					}
 				}
 
@@ -471,7 +477,7 @@ namespace Omega
 					assert(m_pincount.m_debug_value > 0);
 
 					if (m_pincount.Release() && m_refcount.IsZero())
-						delete this;
+						OMEGA_DELETE(Safe_Stub_Base,this);
 				}
 
 				const SafeShim* QueryInterface(const guid_t& iid)
@@ -510,7 +516,7 @@ namespace Omega
 				static const SafeShim* create(IObject* pI)
 				{
 					Safe_Stub* pThis;
-					OMEGA_NEW(pThis,Safe_Stub(pI,OMEGA_GUIDOF(IObject)));
+					OMEGA_NEW_T(Safe_Stub,pThis,Safe_Stub(pI,OMEGA_GUIDOF(IObject)));
 					return &pThis->m_shim;
 				}
 
@@ -636,7 +642,7 @@ namespace Omega
 				static const SafeShim* create(IObject* pI)
 				{
 					Safe_Stub_IObject* pThis;
-					OMEGA_NEW(pThis,Safe_Stub_IObject(pI,OMEGA_GUIDOF(IObject)));
+					OMEGA_NEW_T(Safe_Stub_IObject,pThis,Safe_Stub_IObject(pI,OMEGA_GUIDOF(IObject)));
 
 					// Add to the map...
 					const SafeShim* pExisting = SAFE_HOLDER::instance()->add(pI,&pThis->m_shim);
@@ -726,7 +732,7 @@ namespace Omega
 				static IObject* bind(const SafeShim* shim)
 				{
 					Safe_Proxy* pThis;
-					OMEGA_NEW(pThis,Safe_Proxy(shim));
+					OMEGA_NEW_T(Safe_Proxy,pThis,Safe_Proxy(shim));
 					return pThis->QIReturn__proxy__();
 				}
 

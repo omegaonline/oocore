@@ -210,14 +210,14 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	}
 
 	// Create the zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCompt;
-	OMEGA_NEW(ptrZeroCompt,Compartment(this,0));
+	CompartmentPtr ptrZeroCompt;
+	OMEGA_NEW_T(Compartment,ptrZeroCompt,Compartment(this,0));
 
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(0,ptrZeroCompt));
+		m_mapCompartments.insert(std::map<uint16_t,CompartmentPtr>::value_type(0,ptrZeroCompt));
 	}
 	catch (std::exception& e)
 	{
@@ -410,7 +410,7 @@ void OOCore::UserSession::close_compartments()
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
+		for (std::map<uint16_t,CompartmentPtr>::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
 			vecCompts.push_back(i->first);
 
 		guard.release();
@@ -419,7 +419,7 @@ void OOCore::UserSession::close_compartments()
 		{
 			try
 			{
-				OOBase::SmartPtr<Compartment> ptrCmpt = get_compartment(*i);
+				CompartmentPtr ptrCmpt = get_compartment(*i);
 				if (ptrCmpt)
 					ptrCmpt->shutdown();		
 			}
@@ -743,7 +743,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	bool bPulse = false;
-	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
+	for (std::map<uint16_t,CompartmentPtr>::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
 		if (j->second->process_channel_close(closed_channel_id))
 			bPulse = true;
@@ -756,18 +756,18 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	}
 }
 
-OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+OOCore::ResponsePtr OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
-	OOBase::CDRStream* response = 0;
+	ResponsePtr response;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::SmartPtr<Compartment> ptrCompt;
-		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		CompartmentPtr ptrCompt;
+		std::map<uint16_t,CompartmentPtr>::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i != m_mapCompartments.end())
 			ptrCompt = i->second;
 
@@ -797,7 +797,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint32_t seq_no, const
 			}
 			else if (msg->m_type == Message::Response && msg->m_seq_no == seq_no)
 			{
-				OMEGA_NEW(response,OOBase::CDRStream(msg->m_payload));
+				OMEGA_NEW_T(OOBase::CDRStream,response,OOBase::CDRStream(msg->m_payload));
 				break;
 			}
 		}
@@ -871,7 +871,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	{}
 }
 
-OOBase::CDRStream* OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
+OOCore::ResponsePtr OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -1026,8 +1026,8 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::SmartPtr<Compartment> ptrCompt;
-	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
+	CompartmentPtr ptrCompt;
+	std::map<uint16_t,CompartmentPtr>::const_iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->second;
 
@@ -1137,11 +1137,11 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	while (m_mapCompartments.find(cmpt_id) != m_mapCompartments.end());
 
 	// Create the new object
-	OOBase::SmartPtr<Compartment> ptrCompt;
-	OMEGA_NEW(ptrCompt,Compartment(this,cmpt_id));
+	CompartmentPtr ptrCompt;
+	OMEGA_NEW_T(Compartment,ptrCompt,Compartment(this,cmpt_id));
 
 	// Add it to the map
-	m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(cmpt_id,ptrCompt));
+	m_mapCompartments.insert(std::map<uint16_t,CompartmentPtr>::value_type(cmpt_id,ptrCompt));
 
 	write_guard.release();
 	
@@ -1150,11 +1150,11 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	return ptrCompt->create_compartment_channel(cmpt_id,guid_t::Null());
 }
 
-OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
+OOCore::CompartmentPtr OOCore::UserSession::get_compartment(uint16_t id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i = m_mapCompartments.find(id);
+	std::map<uint16_t,CompartmentPtr>::const_iterator i = m_mapCompartments.find(id);
 	if (i == m_mapCompartments.end())
 		return 0;
 
@@ -1203,11 +1203,11 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	// Create a channel in the context of the current compartment
 	const ThreadContext* pContext = ThreadContext::instance();
 
-	OOBase::SmartPtr<Compartment> ptrCompt;
+	CompartmentPtr ptrCompt;
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		std::map<uint16_t,CompartmentPtr>::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!
@@ -1241,7 +1241,7 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 	if (pContext->m_current_cmpt == 0)
 		return SingletonObjectImpl<ServiceManager>::CreateInstance();
 
-	OOBase::SmartPtr<OOCore::Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
+	CompartmentPtr ptrCompt = get_compartment(pContext->m_current_cmpt);
 	if (!ptrCompt)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("The current compartment has died"));
 	

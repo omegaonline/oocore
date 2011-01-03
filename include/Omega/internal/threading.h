@@ -212,6 +212,10 @@ namespace Omega
 		private:
 			struct multi_dctor
 			{
+				multi_dctor(void (OMEGA_CALL *fn)(void*), void* p) :
+					pfn_dctor(fn), param(p)
+				{}
+
 				void (OMEGA_CALL *pfn_dctor)(void*);
 				void*                         param;
 			};

@@ -17,6 +17,7 @@ nobase_include_HEADERS = \
 	Omega/internal/config-win32.h \
 	Omega/internal/export.h \
 	Omega/internal/interfaces.h \
+	Omega/internal/memory.h \
 	Omega/internal/rtti.h \
 	Omega/internal/rtti.inl \
 	Omega/internal/safe.h \

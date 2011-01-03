@@ -456,7 +456,8 @@
 	public: \
 		static const SafeShim* create(IObject* pI) \
 		{ \
-			Safe_Stub* pThis; OMEGA_NEW(pThis,Safe_Stub(static_cast<n_space::name*>(pI),OMEGA_GUIDOF(n_space::name))); \
+			Safe_Stub* pThis; \
+			OMEGA_NEW_T(Safe_Stub,pThis,Safe_Stub(static_cast<n_space::name*>(pI),OMEGA_GUIDOF(n_space::name))); \
 			return &pThis->m_shim; \
 		} \
 	protected: \
@@ -486,9 +487,7 @@
 	public: \
 		static Remoting::IStub* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) \
 		{ \
-			Wire_Stub* pThis; \
-			OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI)); \
-			return pThis; \
+			OMEGA_NEW_T_RETURN(Wire_Stub,Wire_Stub(pController,pMarshaller,pI)); \
 		} \
 	protected: \
 		Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) : \
@@ -693,7 +692,8 @@
 	public: \
 		static IObject* bind(const SafeShim* shim) \
 		{ \
-			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim)); \
+			Safe_Proxy* pThis; \
+			OMEGA_NEW_T(Safe_Proxy,pThis,Safe_Proxy(shim)); \
 			return pThis->QIReturn__proxy__(); \
 		} \
 	protected: \
@@ -715,7 +715,8 @@
 	public: \
 		static IObject* bind(Remoting::IProxy* pProxy) \
 		{ \
-			Wire_Proxy* pThis; OMEGA_NEW(pThis,Wire_Proxy(pProxy)); \
+			Wire_Proxy* pThis; \
+			OMEGA_NEW_T(Wire_Proxy,pThis,Wire_Proxy(pProxy)); \
 			return pThis->QIReturn__proxy__(); \
 		} \
 	protected: \

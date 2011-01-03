@@ -100,18 +100,20 @@ namespace
 	class DLLManagerImpl
 	{
 	public:
+		typedef OOBase::SmartPtr<OOBase::DLL,OOCore::OmegaDestructor<OOBase::DLL> > DLLPtr;
+
 		DLLManagerImpl();
 		~DLLManagerImpl();
 
-		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
+		DLLPtr load_dll(const string_t& name);
 		void unload_unused();
 
 	private:
 		DLLManagerImpl(const DLLManagerImpl&);
 		DLLManagerImpl& operator = (const DLLManagerImpl&);
 
-		OOBase::Mutex                                     m_lock;
-		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
+		OOBase::Mutex             m_lock;
+		std::map<string_t,DLLPtr> m_dll_map;
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
@@ -132,20 +134,20 @@ namespace
 		{}
 	}
 
-	OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
+	DLLManagerImpl::DLLPtr DLLManagerImpl::load_dll(const string_t& name)
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 		// See if we have it already
-		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
+		std::map<string_t,DLLPtr>::iterator i=m_dll_map.find(name);
 		if (i != m_dll_map.end())
 			return i->second;
 
 		// Try to unload any unused dlls
 		unload_unused();
 
-		OOBase::SmartPtr<OOBase::DLL> dll;
-		OMEGA_NEW(dll,OOBase::DLL());
+		DLLPtr dll;
+		OMEGA_NEW_T(OOBase::DLL,dll,OOBase::DLL());
 
 		// Load the new DLL
 		int err = dll->load(name.ToUTF8().c_str());
@@ -156,7 +158,7 @@ namespace
 		}
 
 		// Add to the map
-		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
+		m_dll_map.insert(std::map<string_t,DLLPtr>::value_type(name,dll));
 
 		return dll;
 	}
@@ -169,7 +171,7 @@ namespace
 
 		try
 		{
-			for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
+			for (std::map<string_t,DLLPtr>::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
 			{
 				bool_t erase = false;
 				try
@@ -214,7 +216,7 @@ namespace
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
 		pfnGetLibraryObject pfn = 0;
-		OOBase::SmartPtr<OOBase::DLL> dll;
+		DLLManagerImpl::DLLPtr dll;
 
 		try
 		{

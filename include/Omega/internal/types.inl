@@ -148,19 +148,18 @@ inline std::string Omega::string_t::ToUTF8() const
 	size_t len = ToUTF8(szBuf,sizeof(szBuf));
 	if (len > sizeof(szBuf))
 	{
-		char* pszBuf = 0;
-		OMEGA_NEW(pszBuf,char[len]);
+		char* pszBuf = static_cast<char*>(System::Allocate(len,2,__FILE__,__LINE__));
 		try
 		{
 			ToUTF8(pszBuf,len);
+			str.assign(pszBuf,len-1);
 		}
 		catch (...)
 		{
-			delete [] pszBuf;
+			System::Free(pszBuf,2);
 			throw;
 		}
-		str.assign(pszBuf,len-1);
-		delete [] pszBuf;
+		System::Free(pszBuf,2);
 	}
 	else
 		str.assign(szBuf,len-1);
@@ -181,19 +180,18 @@ inline std::string Omega::string_t::ToNative() const
 	size_t len = ToNative(szBuf,sizeof(szBuf));
 	if (len > sizeof(szBuf))
 	{
-		char* pszBuf = 0;
-		OMEGA_NEW(pszBuf,char[len]);
+		char* pszBuf = static_cast<char*>(System::Allocate(len,2,__FILE__,__LINE__));
 		try
 		{
 			ToNative(pszBuf,len);
+			str.assign(pszBuf,len-1);
 		}
 		catch (...)
 		{
-			delete [] pszBuf;
+			System::Free(pszBuf,2);
 			throw;
 		}
-		str.assign(pszBuf,len-1);
-		delete [] pszBuf;
+		System::Free(pszBuf,2);
 	}
 	else
 		str.assign(szBuf,len-1);

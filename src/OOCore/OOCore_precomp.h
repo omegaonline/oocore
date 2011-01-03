@@ -80,6 +80,21 @@ namespace OOCore
 	{
 		int unused;
 	};
+
+	template <typename T>
+	class OmegaDestructor
+	{
+	public:
+		static void destroy(T* ptr)
+		{
+			OMEGA_DELETE(T,ptr);
+		}
+
+		static void destroy_void(void* ptr)
+		{
+			OMEGA_DELETE(T,static_cast<T*>(ptr));
+		}
+	};
 }
 
 #include "Formatting.h"

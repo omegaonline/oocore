@@ -185,7 +185,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
 	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
-	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+	ResponsePtr response;
 	try
 	{
 		response = m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),timeout,attribs);
@@ -224,7 +224,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 
 bool_t OOCore::Channel::IsConnected()
 {
-	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+	ResponsePtr response;
 
 	bool connected = true;
 	try
@@ -257,8 +257,7 @@ bool_t OOCore::Channel::IsConnected()
 
 void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
-	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-
+	ResponsePtr response;
 	try
 	{
 		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_reflect);

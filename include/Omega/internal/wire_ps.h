@@ -78,6 +78,7 @@ namespace Omega
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const = 0;
 				virtual IObject* QIReturn__proxy__() = 0;
+				virtual void Destruct__proxy__() = 0;
 
 				virtual void AddRef()
 				{
@@ -89,7 +90,7 @@ namespace Omega
 					assert(m_refcount.m_debug_value > 0);
 
 					if (m_refcount.Release() && m_pincount.IsZero())
-						delete this;
+						Destruct__proxy__();
 				}
 
 				virtual IObject* QueryInterface(const guid_t& iid);
@@ -169,7 +170,7 @@ namespace Omega
 					assert(m_pincount.m_debug_value > 0);
 
 					if (m_pincount.Release() && m_refcount.IsZero())
-						delete this;
+						Destruct__proxy__();
 				}
 
 				const SafeShim* GetShim(const Omega::guid_t& /*iid*/)
@@ -236,7 +237,7 @@ namespace Omega
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
 					Wire_Proxy* pThis;
-					OMEGA_NEW(pThis,Wire_Proxy(pProxy));
+					OMEGA_NEW_T(Wire_Proxy,pThis,Wire_Proxy(pProxy));
 					return pThis->QIReturn__proxy__();
 				}
 
@@ -254,6 +255,11 @@ namespace Omega
 				IObject* QIReturn__proxy__()
 				{
 					return static_cast<D*>(this);
+				}
+
+				void Destruct__proxy__()
+				{
+					OMEGA_DELETE(Wire_Proxy,this);
 				}
 
 				auto_iface_ptr<Remoting::IMessage> CreateMessage(uint32_t method_id)
@@ -287,7 +293,7 @@ namespace Omega
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
 					Wire_Proxy_IObject* pThis;
-					OMEGA_NEW(pThis,Wire_Proxy_IObject(pProxy));
+					OMEGA_NEW_T(Wire_Proxy_IObject,pThis,Wire_Proxy_IObject(pProxy));
 
 					// Add to the map...
 					IObject* pExisting = WIRE_HOLDER::instance()->add(pThis->m_ptrProxyObj,pThis);
@@ -384,7 +390,7 @@ namespace Omega
 					assert(m_refcount.m_debug_value > 0);
 
 					if (m_refcount.Release())
-						delete this;
+						OMEGA_DELETE(Wire_Stub_Base,this);
 				}
 
 				IObject* QueryInterface(const guid_t& iid)
@@ -447,9 +453,7 @@ namespace Omega
 			public:
 				static IStub* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI)
 				{
-					Wire_Stub* pThis;
-					OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI));
-					return pThis;
+					OMEGA_NEW_T_RETURN(Wire_Stub,Wire_Stub(pController,pMarshaller,pI));
 				}
 
 			protected:
@@ -512,7 +516,7 @@ namespace Omega
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
 					Wire_Proxy* pThis;
-					OMEGA_NEW(pThis,Wire_Proxy(pProxy));
+					OMEGA_NEW_T(Wire_Proxy,pThis,Wire_Proxy(pProxy));
 					return pThis->QIReturn__proxy__();
 				}
 

@@ -79,18 +79,6 @@
 	#define OMEGA_64
 #endif
 
-#ifdef __cplusplus
-	#include <new>
-	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		do { \
-			POINTER = new (std::nothrow) CONSTRUCTOR; \
-			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
-		} while ((void)0,false)
-
-	// Change this one day
-	#define OMEGA_NEW_THREAD_LOCAL(POINTER,CONSTRUCTOR) OMEGA_NEW(POINTER,CONSTRUCTOR)
-#endif
-
 #if defined(_WIN32_WCE)
 	#include "config-wince.h"
 #elif defined(_WIN32)

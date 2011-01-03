@@ -206,7 +206,13 @@ namespace Omega
 
 					~type()
 					{
-						delete [] m_pVals;
+						if (m_pVals)
+						{
+							for (size_t i=0;i<m_alloc_count;++i)
+								m_pVals[i].~T();
+
+							::Omega::System::Free(m_pVals,1);
+						}
 					}
 
 					void init(Remoting::IMarshaller* /*pManager*/, size_t count)
@@ -217,9 +223,20 @@ namespace Omega
 						//
 						// The solution might be to have a throttling pool for allocation here...
 						// Use pManager to detect who is doing what...
-
-						m_alloc_count = count;
-						OMEGA_NEW_THREAD_LOCAL(m_pVals,typename remove_const<T>::type[m_alloc_count]);
+						//
+						// Or maybe implement IMarshaller::Allocate()...
+						
+						void* ptr = System::Allocate(count * sizeof(T),1,__FILE__,__LINE__);
+						try 
+						{ 
+							m_pVals = new (ptr) typename remove_const<T>::type[count];
+							m_alloc_count = count;
+						} 
+						catch (...) 
+						{ 
+							System::Free(ptr,1); 
+							throw; 
+						}
 					}
 
 					operator T*()

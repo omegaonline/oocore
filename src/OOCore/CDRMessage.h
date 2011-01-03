@@ -100,9 +100,17 @@ namespace OOCore
 			}
 			else
 			{
-				OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
-				OMEGA_NEW_THREAD_LOCAL(szBuf,Omega::byte_t[len]);
-				pMessage->ReadBytes(L"data",len,szBuf);
+				Omega::byte_t* szBuf = static_cast<Omega::byte_t*>(::Omega::System::Allocate(len,2,__FILE__,__LINE__));
+				try
+				{
+					pMessage->ReadBytes(L"data",len,szBuf);
+				}
+				catch (...)
+				{
+					::Omega::System::Free(szBuf,2);
+					throw;
+				}
+				::Omega::System::Free(szBuf,2);
 			}
 		}
 

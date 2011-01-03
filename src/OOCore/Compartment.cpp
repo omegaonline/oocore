@@ -270,7 +270,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 	if (!ptrChannel)
 	{
 		// Get the compartment
-		OOBase::SmartPtr<OOCore::Compartment> ptrCompt = m_pSession->get_compartment(compartment_id);
+		CompartmentPtr ptrCompt = m_pSession->get_compartment(compartment_id);
 		if (!ptrCompt)
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment in session"));
 
@@ -341,7 +341,7 @@ Activation::IRunningObjectTable* OOCore::Compartment::get_rot()
 	return m_ptrROT.AddRef();
 }
 
-void OOCore::ComptChannel::init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::ComptChannel::init(CompartmentPtr ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
 	ChannelBase::init(channel_id,Remoting::Compartment,pOM,message_oid);
 
@@ -400,7 +400,7 @@ void OOCore::CompartmentImpl::Final_Release()
 {
 	m_ptrChannel->close_compartment();
 
-	delete this;
+	OMEGA_DELETE(CompartmentImpl,this);
 }
 
 void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel)

@@ -86,6 +86,7 @@
 #pragma warning(disable : 4244 4267)
 #endif
 
+#include "internal/memory.h"
 #include "internal/types.h"
 #include "internal/threading.h"
 #include "internal/base.h"
@@ -196,6 +197,18 @@ OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega:
 inline Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 {
 	return OOCore_Omega_HandleRequest(timeout);
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in),int,flags,(in),const char*,file,(in),unsigned int,line));
+inline void* Omega::System::Allocate(size_t len, int flags, const char* file, unsigned int line)
+{
+	return OOCore_allocate(len,flags,file,line);
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,2,((in),void*,mem,(in),int,flags));
+inline void Omega::System::Free(void* mem, int flags)
+{
+	OOCore_free(mem,flags);
 }
 
 #endif // !defined(DOXYGEN)

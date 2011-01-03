@@ -44,14 +44,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
-	OOBase::Mutex* pm = 0;
-	OMEGA_NEW(pm,OOBase::Mutex);
-	return pm;
+	OMEGA_NEW_T_RETURN(OOBase::Mutex,OOBase::Mutex());
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 {
-	delete static_cast<OOBase::Mutex*>(m1);
+	OMEGA_DELETE(Mutex,static_cast<OOBase::Mutex*>(m1));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
@@ -66,14 +64,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
 {
-	OOBase::RWMutex* pm = 0;
-	OMEGA_NEW(pm,OOBase::RWMutex);
-	return pm;
+	OMEGA_NEW_T_RETURN(OOBase::RWMutex,OOBase::RWMutex());
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,m1))
 {
-	delete static_cast<OOBase::RWMutex*>(m1);
+	OMEGA_DELETE(RWMutex,static_cast<OOBase::RWMutex*>(m1));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,m1))
@@ -98,14 +94,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,())
 {
-	OOBase::AtomicInt<size_t>* pm = 0;
-	OMEGA_NEW(pm,OOBase::AtomicInt<size_t>);
-	return pm;
+	OMEGA_NEW_T_RETURN(OOBase::AtomicInt<size_t>,OOBase::AtomicInt<size_t>);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,m1))
 {
-	delete static_cast<OOBase::AtomicInt<size_t>*>(m1);
+	OMEGA_DELETE(AtomicInt<size_t>,static_cast<OOBase::AtomicInt<size_t>*>(m1));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,m1))

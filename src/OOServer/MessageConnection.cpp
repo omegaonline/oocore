@@ -57,7 +57,7 @@
 
 #include "MessageConnection.h"
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, const OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocketPtr ptrSocket) :
 		m_pHandler(pHandler),
 		m_ptrSocket(ptrSocket),
 		m_channel_id(0),
@@ -101,8 +101,8 @@ void OOServer::MessageConnection::close()
 bool OOServer::MessageConnection::read()
 {
 	// This buffer is reused...
-	OOBase::Buffer* pBuffer = 0;
-	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
+	OOBase::Buffer* pBuffer;
+	OOBASE_NEW_T(OOBase::Buffer,pBuffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -121,7 +121,7 @@ bool OOServer::MessageConnection::read()
 	return true;
 }
 
-void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
+void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 {
 	if (err != 0)
 	{
@@ -223,8 +223,8 @@ void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBas
 			// Don't keep oversize buffers alive
 			if (buffer->space() > m_default_buffer_size * 4)
 			{
-				OOBase::Buffer* new_buffer = 0;
-				OOBASE_NEW(new_buffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
+				OOBase::Buffer* new_buffer;
+				OOBASE_NEW_T(OOBase::Buffer,new_buffer,OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment));
 				if (new_buffer)
 				{
 					if (bRelease)
@@ -250,7 +250,7 @@ void OOServer::MessageConnection::on_recv(OOSvrBase::AsyncSocket* pSocket, OOBas
 		{
 			++m_async_count;
 
-			err = pSocket->async_recv(buffer);
+			err = m_ptrSocket->async_recv(buffer);
 			if (err != 0)
 			{
 				--m_async_count;
@@ -285,7 +285,7 @@ bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 	return true;
 }
 
-void OOServer::MessageConnection::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
+void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	--m_async_count;
 
@@ -296,7 +296,7 @@ void OOServer::MessageConnection::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, O
 	}
 }
 
-void OOServer::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
+void OOServer::MessageConnection::on_closed()
 {
 	if (m_async_count-- == 0)
 		++m_async_count;
@@ -347,8 +347,8 @@ bool OOServer::MessageHandler::start_request_threads()
 
 bool OOServer::MessageHandler::start_thread()
 {
-	OOBase::Thread* pThread = 0;
-	OOBASE_NEW(pThread,OOBase::Thread(true));
+	OOBase::Thread* pThread;
+	OOBASE_NEW_T(OOBase::Thread,pThread,OOBase::Thread(true));
 	if (!pThread)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -428,7 +428,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 
 		// Read in the message info
 		OOBase::SmartPtr<MessageHandler::Message> msg;
-		OOBASE_NEW(msg,MessageHandler::Message);
+		OOBASE_NEW_T(MessageHandler::Message,msg,MessageHandler::Message());
 		if (!msg)
 			LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -1093,7 +1093,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			}
 			else if (type == Message_t::Response && recv_seq_no == seq_no)
 			{
-				OOBASE_NEW(response,OOBase::CDRStream(msg->m_payload));
+				OOBASE_NEW_T(OOBase::CDRStream,response,OOBase::CDRStream(msg->m_payload));
 				if (!response)
 					LOG_ERROR(("Out of memory"));
 				else
@@ -1180,7 +1180,7 @@ bool OOServer::MessageHandler::call_async_function_i(const std::string& strFn, v
 
 	// Create a new message
 	OOBase::SmartPtr<MessageHandler::Message> msg;
-	OOBASE_NEW(msg,MessageHandler::Message(24 + (stream ? stream->buffer()->length() : 0)));
+	OOBASE_NEW_T(MessageHandler::Message,msg,MessageHandler::Message(24 + (stream ? stream->buffer()->length() : 0)));
 	if (!msg)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -1358,7 +1358,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		// If its our message, route it
 
 		OOBase::SmartPtr<MessageHandler::Message> msg;
-		OOBASE_NEW(msg,MessageHandler::Message(8 + message.buffer()->length()));
+		OOBASE_NEW_T(MessageHandler::Message,msg,MessageHandler::Message(8 + message.buffer()->length()));
 		if (!msg)
 			LOG_ERROR_RETURN(("Out of memory"),io_result::failed);
 

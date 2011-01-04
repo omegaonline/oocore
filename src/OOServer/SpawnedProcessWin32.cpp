@@ -95,7 +95,7 @@ namespace
 		ssPipe << "OOR";
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
@@ -343,7 +343,7 @@ namespace
 		// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
@@ -381,7 +381,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
-		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrProcessUser)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
@@ -606,8 +606,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	std::wstring strCmdLine = szPath;
 	strCmdLine += L" --fork-slave=" + OOBase::from_native(strPipe.c_str());
 
-	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > ptrCmdLine = 0;
-	OOBASE_NEW(ptrCmdLine,wchar_t[strCmdLine.size()+1]);
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > ptrCmdLine = static_cast<wchar_t*>(OOBase::Allocate((strCmdLine.size()+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
 	if (!ptrCmdLine)
 		LOG_ERROR_RETURN(("PathRemoveFileSpecW failed: %s",OOBase::Win32::FormatMessage(ERROR_OUTOFMEMORY).c_str()),ERROR_OUTOFMEMORY);
 
@@ -802,17 +801,19 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	bAllowed = false;
 	std::wstring strFName = OOBase::from_utf8(pszFName);
 
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSD = 0;
-	DWORD cbNeeded = 0;
-	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
-		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	pSD = malloc(cbNeeded);
-	if (!pSD)
-		LOG_ERROR_RETURN(("Out of memory"),false);
-
-	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,cbNeeded,&cbNeeded))
-		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<2> > pSD;
+	for (DWORD cbNeeded = 512;;)
+	{
+		pSD = OOBase::Allocate(cbNeeded,2,__FILE__,__LINE__);
+		if (!pSD)
+			LOG_ERROR_RETURN(("Out of memory"),false);
+	
+		if (GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,cbNeeded,&cbNeeded))
+			break;
+		
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+			LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	}
 
 	// Map the generic access rights
 	DWORD dwAccessDesired = 0;
@@ -850,8 +851,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken) const
 {
 	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<1> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<1> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
 
 	if (!pStats1 || !pStats2)
 		return false;
@@ -870,11 +871,11 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	if (m_bSandbox)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
 	if (!ptrUserInfo1)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
 	if (!ptrUserInfo2)
 		return false;
 
@@ -939,8 +940,8 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Alloc a new SpawnedProcess
-	SpawnedProcessWin32* pSpawn32 = 0;
-	OOBASE_NEW(pSpawn32,SpawnedProcessWin32);
+	SpawnedProcessWin32* pSpawn32;
+	OOBASE_NEW_T(SpawnedProcessWin32,pSpawn32,SpawnedProcessWin32());
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
 
@@ -959,7 +960,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	// Connect up
 	int err = 0;
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance()->attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
+	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance()->attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
 

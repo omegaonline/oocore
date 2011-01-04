@@ -554,10 +554,10 @@ int OOCore::UserSession::run_read_loop()
 		nReadLen -= s_initial_read;
 
 		// Create a new Message struct
-		OOBase::SmartPtr<Message> msg = 0;
-		OOBASE_NEW(msg,Message(nReadLen));
+		OOBase::SmartPtr<Message> msg;
+		OOBASE_NEW_T(Message,msg,Message(nReadLen));
 		if (!msg)
-			OOBase_OutOfMemory();
+			OOBase::CallCriticalFailureMem(__FILE__,__LINE__);
 
 		// Issue another read for the rest of the data
 		recvd = m_stream->recv(msg->m_payload.buffer(),nReadLen,&err);

@@ -63,8 +63,7 @@ namespace
 				strRet = szBuf;
 			else if (hRes == E_POINTER)
 			{
-				OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > pszBuf;
-				OOBASE_NEW(pszBuf,wchar_t[dwLen+1]);
+				OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > pszBuf = static_cast<wchar_t*>(OOBase::Allocate((dwLen+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
 				if (pszBuf)
 				{
 					hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
@@ -100,7 +99,7 @@ User::Process* User::Process::exec(const std::wstring& strExeName)
 	std::wstring strActualName = ShellParse(strExeName.c_str());
 
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess;
-	OOBASE_NEW(ptrProcess,UserProcessWin32());
+	OOBASE_NEW_T(UserProcessWin32,ptrProcess,UserProcessWin32());
 	if (!ptrProcess)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
@@ -117,8 +116,7 @@ void UserProcessWin32::exec(const std::wstring& strExeName)
 
 #endif // OMEGA_DEBUG
 
-	OOBase::SmartPtr<wchar_t> ptrCmdLine = 0;
-	OOBASE_NEW(ptrCmdLine,wchar_t[strExeName.size()+1]);
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > ptrCmdLine = static_cast<wchar_t*>(OOBase::Allocate((strExeName.size()+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
 	if (!ptrCmdLine)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 

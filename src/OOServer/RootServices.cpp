@@ -56,7 +56,7 @@ namespace
 		const Omega::uint32_t            m_id;
 		OOBase::SmartPtr<OOBase::Socket> m_ptrSocket;
 
-		bool on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& strAddress, int err);
+		bool on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const std::string& strAddress, int err);
 	};
 
 	class AsyncSocket :
@@ -77,13 +77,13 @@ namespace
 		int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll);
 		int send(OOBase::Buffer* buffer, Omega::bool_t bReliable);
 
-		void on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
-		void on_sent(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
-		void on_closed(OOSvrBase::AsyncSocket* pSocket);
+		void on_recv(OOBase::Buffer* buffer, int err);
+		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_closed();
 
-		Root::Manager* const                     m_pManager;
-		Omega::uint32_t                          m_id;
-		OOBase::SmartPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
+		Root::Manager* const      m_pManager;
+		Omega::uint32_t           m_id;
+		OOSvrBase::AsyncSocketPtr m_ptrSocket;
 	};
 }
 
@@ -545,8 +545,8 @@ TcpAcceptor::TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id) :
 
 TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const std::string& strAddress, const std::string& strPort, int* perr)
 {
-	TcpAcceptor* pService = 0;
-	OOBASE_NEW(pService,TcpAcceptor(pManager,id));
+	TcpAcceptor* pService;
+	OOBASE_NEW_T(TcpAcceptor,pService,TcpAcceptor(pManager,id));
 	if (!pService)
 	{
 		*perr = ENOMEM;
@@ -556,7 +556,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	pService->m_ptrSocket = Root::Proactor::instance()->accept_remote(pService,strAddress,strPort,perr);
 	if (*perr != 0)
 	{
-		delete pService;
+		OOBASE_DELETE(TcpAcceptor,pService);
 		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr).c_str()),(TcpAcceptor*)0);
 	}
 
@@ -566,7 +566,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	return pService;
 }
 
-bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& /*strAddress*/, int err)
+bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const std::string& /*strAddress*/, int err)
 {
 	if (err)
 	{
@@ -575,18 +575,17 @@ bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const std::string& 
 		return false;
 	}
 
-	AsyncSocket* pAsyncSocket = 0;
-	OOBASE_NEW(pAsyncSocket,AsyncSocket(m_pManager,pSocket));
+	AsyncSocket* pAsyncSocket;
+	OOBASE_NEW_T(AsyncSocket,pAsyncSocket,AsyncSocket(m_pManager,ptrSocket));
 	if (!pAsyncSocket)
-	{
-		delete pSocket;
 		LOG_ERROR_RETURN(("Out of memory"),true);
-	}
+	
+	ptrSocket.detach();
 
 	pAsyncSocket->m_id = m_pManager->add_socket(m_id,pAsyncSocket);
 	if (!pAsyncSocket->m_id)
 	{
-		delete pAsyncSocket;
+		OOBASE_DELETE(AsyncSocket,pAsyncSocket);
 		m_pManager->remove_listener(m_id);
 		return false;
 	}
@@ -613,8 +612,8 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	// We know we are going to pass this buffer along, so we preallocate the header we use later,
 	// and read the data behind it...
 
-	OOBase::Buffer* buffer = 0;
-	OOBASE_NEW(buffer,OOBase::Buffer(12 + lenBytes,OOBase::CDRStream::MaxAlignment));
+	OOBase::Buffer* buffer;
+	OOBASE_NEW_T(OOBase::Buffer,buffer,OOBase::Buffer(12 + lenBytes,OOBase::CDRStream::MaxAlignment));
 	if (!buffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -632,7 +631,7 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	return err;
 }
 
-void AsyncSocket::on_recv(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* buffer, int err)
+void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 {
 	if (buffer && buffer->length() > 12)
 	{
@@ -688,7 +687,7 @@ int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
 	return err;
 }
 
-void AsyncSocket::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* buffer, int err)
+void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 {
 	if (buffer)
 	{
@@ -734,7 +733,7 @@ void AsyncSocket::on_sent(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* b
 	}
 }
 
-void AsyncSocket::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
+void AsyncSocket::on_closed()
 {
 	// Send message on to sandbox
 	OOBase::CDRStream request;

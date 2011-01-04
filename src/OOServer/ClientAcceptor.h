@@ -49,7 +49,7 @@ namespace Root
 		bool start(Manager* pManager);
 		void stop();
 
-		bool on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::string& strAddress, int err);
+		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& strAddress, int err);
 
 	private:
 		ClientAcceptor(const ClientAcceptor&);

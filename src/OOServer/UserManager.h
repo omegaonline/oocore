@@ -48,7 +48,7 @@ namespace User
 
 		OOBase::SmartPtr<OOBase::CDRStream> sendrecv_root(const OOBase::CDRStream& request, Omega::TypeInfo::MethodAttributes_t attribs);
 
-		bool on_accept(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
+		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket);
 		void close_socket(Omega::uint32_t id);
 
 	private:
@@ -75,7 +75,7 @@ namespace User
 		bool fork_slave(const std::string& strPipe);
 		bool session_launch(const std::string& strPipe);
 
-		bool handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const std::string& strPipe);
+		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const std::string& strPipe);
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 

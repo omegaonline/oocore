@@ -103,26 +103,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in),int,flags,(in),const char*,file,(in),unsigned int,line))
 {
-	OMEGA_UNUSED_ARG(file);
-	OMEGA_UNUSED_ARG(line);
-
-	/*std::ostringstream os;
-	os << "Alloc(" << flags << ") " << len << " " << file << " " << line << std::endl;
-	OutputDebugString(os.str().c_str());*/
-
-	if (flags == 2)
-	{
-#if defined(_MSC_VER)
-		void* sp = _malloca(len);
-		if (!sp)
-			OMEGA_THROW(ENOMEM);
-		return sp;
-#else
-		flags = 1;
-#endif
-	}
-	
-	void* p = ::malloc(len);
+	void* p = OOBase::Allocate(len,flags,file,line);
 	if (!p)
 		OMEGA_THROW(ENOMEM);
 	
@@ -131,19 +112,5 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in)
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,2,((in),void*,mem,(in),int,flags))
 {
-	/*std::ostringstream os;
-	os << "Free:  " << mem << std::endl;
-	OutputDebugString(os.str().c_str());*/
-
-	if (flags == 2)
-	{
-#if defined(_MSC_VER)
-		_freea(mem);
-		return;
-#else
-		flags = 1;
-#endif
-	}
-	
-	::free(mem);
+	OOBase::Free(mem,flags);
 }

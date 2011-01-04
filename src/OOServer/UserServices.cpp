@@ -52,9 +52,9 @@ namespace
 		ObjectPtr<Net::IAsyncSocketNotify> m_ptrNotify;
 		Net::IAsyncSocket::BindFlags_t     m_flags;
 
-		void on_recv(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
-		void on_sent(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
-		void on_closed(OOSvrBase::AsyncSocket* pSocket);
+		void on_recv(OOBase::Buffer* buffer, int err);
+		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_closed();
 
 	// Net::IAsyncSocketBase members
 	public:
@@ -415,7 +415,7 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 		{
 			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
 			if (i != m_mapSockets.end())
-				i->second->on_recv(0,request.buffer(),err);
+				i->second->on_recv(request.buffer(),err);
 		}
 		catch (std::exception& e)
 		{
@@ -447,7 +447,7 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 		{
 			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
 			if (i != m_mapSockets.end())
-				i->second->on_sent(0,request.buffer(),err);
+				i->second->on_sent(request.buffer(),err);
 		}
 		catch (std::exception& e)
 		{
@@ -475,7 +475,7 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 		{
 			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
 			if (i != m_mapSockets.end())
-				i->second->on_closed(0);
+				i->second->on_closed();
 		}
 		catch (std::exception& e)
 		{
@@ -587,7 +587,7 @@ Net::IAsyncSocketNotify* AsyncSocket::Bind(Net::IAsyncSocketNotify* pNotify, Net
 	return ptrRet.AddRef();
 }
 
-void AsyncSocket::on_recv(OOSvrBase::AsyncSocket*, OOBase::Buffer* buffer, int err)
+void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -612,7 +612,7 @@ void AsyncSocket::on_recv(OOSvrBase::AsyncSocket*, OOBase::Buffer* buffer, int e
 		ptrNotify->OnRecv(ptrSocket,0,0,ptrSE);
 }
 
-void AsyncSocket::on_sent(OOSvrBase::AsyncSocket*, OOBase::Buffer* buffer, int err)
+void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -639,7 +639,7 @@ void AsyncSocket::on_sent(OOSvrBase::AsyncSocket*, OOBase::Buffer* buffer, int e
 		ptrNotify->OnSent(ptrSocket,0,0,ptrSE);
 }
 
-void AsyncSocket::on_closed(OOSvrBase::AsyncSocket*)
+void AsyncSocket::on_closed()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 

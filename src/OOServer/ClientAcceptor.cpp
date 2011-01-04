@@ -75,11 +75,8 @@ void Root::ClientAcceptor::stop()
 	m_pSocket = 0;
 }
 
-bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::string& /*strAddress*/, int err)
+bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& /*strAddress*/, int err)
 {
-	// Make sure we delete any socket passed to us
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
-
 	if (err != 0)
 		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 

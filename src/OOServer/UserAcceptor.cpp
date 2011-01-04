@@ -49,7 +49,7 @@ std::string User::Acceptor::unique_name()
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),"");
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),"");
@@ -95,17 +95,14 @@ void User::Acceptor::stop()
 	m_pSocket = 0;
 }
 
-bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::string& /*strAddress*/, int err)
+bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& /*strAddress*/, int err)
 {
-	// Make sure we delete any socket passed to us
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
-
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
-	err = pSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
@@ -124,7 +121,7 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, const std::
 
 	// Check to see if the connection came from a process with our uid
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	err = pSocket->get_uid(uid);
+	err = ptrSocket->get_uid(uid);
 	if (err != 0)
 	{
 		LOG_WARNING(("User::Acceptor::on_accept: get_uid failure: %s",OOBase::system_error_text(err).c_str()));
@@ -157,7 +154,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);

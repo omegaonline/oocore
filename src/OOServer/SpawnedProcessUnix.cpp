@@ -365,8 +365,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	}
 
 	// Alloc a new SpawnedProcess
-	SpawnedProcessUnix* pSpawnUnix = 0;
-	OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,bSandbox));
+	SpawnedProcessUnix* pSpawnUnix;
+	OOBASE_NEW_T(SpawnedProcessUnix,pSpawnUnix,SpawnedProcessUnix(uid,bSandbox));
 	if (!pSpawnUnix)
 	{
 		::close(fd[0]);
@@ -392,7 +392,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	::close(fd[1]);
 
 	// Create an async socket wrapper
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance()->attach_local_socket(fd[0],&err);
+	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance()->attach_local_socket(fd[0],&err);
 	if (err != 0)
 	{
 		::close(fd[0]);
@@ -407,7 +407,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	return pSpawn;
 }
 
-void Root::Manager::accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket)
+void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 {
 	// Socket will close when it drops out of scope
 
@@ -422,8 +422,8 @@ void Root::Manager::accept_client(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>&
 		if (get_user_process(uid,user_process))
 		{
 			// Alloc a new SpawnedProcess
-			SpawnedProcessUnix* pSpawnUnix = 0;
-			OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix(uid,false));
+			SpawnedProcessUnix* pSpawnUnix;
+			OOBASE_NEW_T(SpawnedProcessUnix,pSpawnUnix,SpawnedProcessUnix(uid,false));
 			if (!pSpawnUnix)
 			{
 				LOG_ERROR(("Out of memory"));

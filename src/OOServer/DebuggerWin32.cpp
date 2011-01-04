@@ -92,7 +92,7 @@ namespace
 		{
 			ULONG ret = --m_refcount;
 			if (!ret)
-				delete this;
+				OOBASE_DELETE(MyMessageFilter,this);
 			return ret;
 		}
 
@@ -143,7 +143,11 @@ namespace
 
 		try
 		{
-			MyMessageFilter* pFilter = new MyMessageFilter();
+			MyMessageFilter* pFilter;
+			OOBASE_NEW_T(MyMessageFilter,pFilter,MyMessageFilter());
+			if (!pFilter)
+				return false;
+
 			IMessageFilter* pPrev = 0;
 			hr = CoRegisterMessageFilter(pFilter,&pPrev);
 			if FAILED(hr)

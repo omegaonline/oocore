@@ -53,7 +53,7 @@ bool User::Process::is_relative_path(const std::wstring& strPath)
 User::Process* User::Process::exec(const std::wstring& strExeName)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess;
-	OOBASE_NEW(ptrProcess,UserProcessUnix());
+	OOBASE_NEW_T(UserProcessUnix,ptrProcess,UserProcessUnix());
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 

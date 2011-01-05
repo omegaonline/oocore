@@ -274,7 +274,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 	// Init the base class
 	if (type_info->base_type)
 	{
-		m_ptrBase.Attach(TIMap::instance()->get_type_info(*type_info->base_type));
+		m_ptrBase.Attach(TIMap::instance().get_type_info(*type_info->base_type));
 		m_base_methods = m_ptrBase->GetMethodCount();
 	}
 
@@ -430,17 +430,17 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 
 TypeInfo::IInterfaceInfo* OOCore::GetInterfaceInfo(const guid_t& iid)
 {
-	return TIMap::instance()->get_type_info(iid);
+	return TIMap::instance().get_type_info(iid);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info))
 {
-	TIMap::instance()->insert(iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
+	TIMap::instance().insert(iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const guid_t&,iid,(in),const void*,type_info))
 {
-	TIMap::instance()->remove(iid,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
+	TIMap::instance().remove(iid,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }
 
 void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const System::Internal::type_holder* typeDest)

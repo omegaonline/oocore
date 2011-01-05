@@ -553,7 +553,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)0);
 	}
 
-	pService->m_ptrSocket = Root::Proactor::instance()->accept_remote(pService,strAddress,strPort,perr);
+	pService->m_ptrSocket = Root::Proactor::instance().accept_remote(pService,strAddress,strPort,perr);
 	if (*perr != 0)
 	{
 		OOBASE_DELETE(TcpAcceptor,pService);

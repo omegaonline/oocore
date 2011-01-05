@@ -29,8 +29,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 	// Do a double lock... this is so we can call it more than once
 	if (!pVal)
 	{
-		// This singleton should be race start safe...
-		OOBase::Guard<OOBase::SpinLock> guard(*OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>::instance());
+		// This singleton is race start safe...
+		OOBase::Guard<OOBase::SpinLock> guard(OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>::instance());
 
 		if (!pVal)
 		{

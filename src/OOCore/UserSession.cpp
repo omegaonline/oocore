@@ -58,7 +58,7 @@ IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,
 {
 	try
 	{
-		USER_SESSION::instance()->init_i(bStandalone,args);
+		USER_SESSION::instance().init_i(bStandalone,args);
 	}
 	catch (IException* pE)
 	{
@@ -71,7 +71,7 @@ IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,
 
 void OOCore::UserSession::term()
 {
-	USER_SESSION::instance()->term_i();
+	USER_SESSION::instance().term_i();
 }
 
 void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,string_t>& args)
@@ -368,7 +368,7 @@ void OOCore::UserSession::stop()
 
 void OOCore::UserSession::close_singletons()
 {
-	USER_SESSION::instance()->close_singletons_i();
+	USER_SESSION::instance().close_singletons_i();
 }
 
 void OOCore::UserSession::close_singletons_i()
@@ -440,7 +440,7 @@ Omega::uint32_t OOCore::UserSession::get_channel_id() const
 
 void OOCore::UserSession::add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	USER_SESSION::instance()->add_uninit_call_i(pfn_dctor,param);
+	USER_SESSION::instance().add_uninit_call_i(pfn_dctor,param);
 }
 
 void OOCore::UserSession::add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
@@ -452,7 +452,7 @@ void OOCore::UserSession::add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*),
 
 void OOCore::UserSession::remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	USER_SESSION::instance()->remove_uninit_call_i(pfn_dctor,param);
+	USER_SESSION::instance().remove_uninit_call_i(pfn_dctor,param);
 }
 
 void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
@@ -817,7 +817,7 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 {
 	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext,OOCore::DLL>::instance();
 	if (pThis->m_thread_id == 0)
-		pThis->m_thread_id = UserSession::USER_SESSION::instance()->insert_thread_context(pThis);
+		pThis->m_thread_id = UserSession::USER_SESSION::instance().insert_thread_context(pThis);
 
 	return pThis;
 }
@@ -833,7 +833,7 @@ OOCore::UserSession::ThreadContext::ThreadContext() :
 OOCore::UserSession::ThreadContext::~ThreadContext()
 {
 	if (m_thread_id)
-		UserSession::USER_SESSION::instance()->remove_thread_context(m_thread_id);
+		UserSession::USER_SESSION::instance().remove_thread_context(m_thread_id);
 }
 
 // Accessors for ThreadContext
@@ -1089,7 +1089,7 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 {
 	OOBase::timeval_t wait(timeout/1000,(timeout % 1000) * 1000);
 
-	return USER_SESSION::instance()->pump_request((timeout ? &wait : 0));
+	return USER_SESSION::instance().pump_request((timeout ? &wait : 0));
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))
@@ -1117,7 +1117,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_Op
 
 ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment()
 {
-	return USER_SESSION::instance()->create_compartment_i();
+	return USER_SESSION::instance().create_compartment_i();
 }
 
 ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment_i()
@@ -1195,7 +1195,7 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pT
 
 IObject* OOCore::UserSession::create_channel(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
 {
-	return USER_SESSION::instance()->create_channel_i(src_channel_id,message_oid,iid);
+	return USER_SESSION::instance().create_channel_i(src_channel_id,message_oid,iid);
 }
 
 IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
@@ -1231,7 +1231,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 
 Activation::IRunningObjectTable* OOCore::UserSession::get_rot()
 {
-	return USER_SESSION::instance()->get_rot_i();
+	return USER_SESSION::instance().get_rot_i();
 }
 
 Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()

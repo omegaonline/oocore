@@ -63,7 +63,7 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 		return false;
 
 	int err = 0;
-	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
+	m_pSocket = Proactor::instance().accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOBase::system_error_text(err).c_str()),false);
 

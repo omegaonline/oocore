@@ -94,7 +94,7 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance()->connect_local_socket(strPipe,&err,&wait);
+	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 

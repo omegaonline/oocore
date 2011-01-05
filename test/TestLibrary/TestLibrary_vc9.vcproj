@@ -46,8 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Visual Leak Detector\include&quot;"
-				PreprocessorDefinitions="HAVE_VLD_H"
+				AdditionalIncludeDirectories=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -65,7 +64,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="1"

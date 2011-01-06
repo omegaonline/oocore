@@ -94,6 +94,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,())
 {
+	// Look at using an instrinsic on available platforms rather than thrashing the heap...
+	void* TODO; 
+
 	OMEGA_NEW_T_RETURN(OOBase::AtomicInt<size_t>,OOBase::AtomicInt<size_t>);
 }
 

@@ -35,6 +35,8 @@ namespace
 		{
 			assert(length);
 
+			void* TODO; // Use a resizable buffer and attempt to realloc when appending
+
 			m_buf = static_cast<wchar_t*>(System::Allocate((length+1)*sizeof(wchar_t),1,__FILE__,__LINE__));
 			m_buf[length] = L'\0';
 			m_len = length;

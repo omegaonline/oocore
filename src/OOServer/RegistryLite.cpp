@@ -84,11 +84,6 @@ namespace
 		{
 			OMEGA_DELETE(T,ptr);
 		}
-
-		static void destroy_void(void* ptr)
-		{
-			OMEGA_DELETE(T,static_cast<T*>(ptr));
-		}
 	};
 
 	class RootKey :

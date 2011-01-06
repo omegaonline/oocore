@@ -89,11 +89,6 @@ namespace OOCore
 		{
 			OMEGA_DELETE(T,ptr);
 		}
-
-		static void destroy_void(void* ptr)
-		{
-			destroy(static_cast<T*>(ptr));
-		}
 	};
 }
 

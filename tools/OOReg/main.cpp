@@ -29,7 +29,7 @@
 
 // Manual externs
 extern void report_exception(Omega::IException* pE);
-extern bool process_command(const std::vector<std::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
+extern bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define APPNAME "OOReg"
@@ -64,7 +64,7 @@ static int help()
 	return EXIT_SUCCESS;
 }
 
-static bool parse_args(const std::string& line, std::vector<std::string>& line_args, bool& bCont)
+static bool parse_args(const OOBase::string& line, std::vector<OOBase::string>& line_args, bool& bCont)
 {
 	bCont = false;
 
@@ -73,7 +73,7 @@ static bool parse_args(const std::string& line, std::vector<std::string>& line_a
 	for (size_t start = 0;start < line.length();)
 	{
 		size_t pos = line.find_first_of(" \t\"\\",start);
-		if (pos == std::string::npos)
+		if (pos == OOBase::string::npos)
 		{
 			if (bAppend && !line_args.empty())
 				line_args.back() += line.substr(start);
@@ -122,7 +122,7 @@ static bool parse_args(const std::string& line, std::vector<std::string>& line_a
 		case '\"':
 			bQuote = !bQuote;
 			if (bQuote && pos == start)
-				line_args.push_back(std::string());
+				line_args.push_back(OOBase::string());
 
 			bAppend = bQuote;
 			start = pos + 1;
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("non-interactive",'n');
 	
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
 
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/");
 	
 		// Now loop processing commands
-		std::vector<std::string> line_args;
+		std::vector<OOBase::string> line_args;
 		for (bool bCont = false;!std::cin.eof();)
 		{
 			if (!bCont)
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 			}
 
 			// Read a line...
-			std::string line;
+			OOBase::string line;
 			std::getline(std::cin,line);	
 
 			// Parse it...

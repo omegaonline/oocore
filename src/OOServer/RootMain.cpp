@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("unsafe");
 
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
 

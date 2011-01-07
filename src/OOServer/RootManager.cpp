@@ -58,7 +58,7 @@ static OOBase::string getenv_i(const char* val)
 #endif
 }
 
-Root::Manager::Manager(const std::map<std::string,std::string>& args) :
+Root::Manager::Manager(const OOSvrBase::CmdArgs::resultsType& args) :
 		m_cmd_args(args),
 		m_sandbox_channel(0),
 		m_uNextSocketId(0)
@@ -79,8 +79,8 @@ int Root::Manager::run()
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno).c_str()));
 #endif
 
-	std::string strPidfile = "/var/run/ooserverd.pid";
-	std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("pidfile");
+	OOBase::string strPidfile = "/var/run/ooserverd.pid";
+	OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("pidfile");
 	if (f != m_cmd_args.end())
 		strPidfile = f->second;
 
@@ -187,7 +187,7 @@ bool Root::Manager::init_database()
 	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }
 
-bool Root::Manager::load_config_file(const std::string& strFile)
+bool Root::Manager::load_config_file(const OOBase::string& strFile)
 {
 	// Load simple config file...
 	std::ifstream fs(strFile.c_str());

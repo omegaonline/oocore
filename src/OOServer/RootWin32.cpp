@@ -147,7 +147,7 @@ bool Root::Manager::load_config()
 
 		m_config_args["regdb_path"] = OOBase::to_utf8(szBuf).c_str();
 
-		std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("conf-file");
+		OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("conf-file");
 		if (f != m_cmd_args.end())
 			return load_config_file(f->second);
 

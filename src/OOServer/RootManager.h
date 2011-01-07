@@ -56,7 +56,7 @@ namespace Root
 			public OOSvrBase::Service
 	{
 	public:
-		Manager(const std::map<std::string,std::string>& args);
+		Manager(const OOSvrBase::CmdArgs::resultsType& args);
 		virtual ~Manager();
 
 		int run();
@@ -87,13 +87,13 @@ namespace Root
 
 		// Init and run members
 		bool load_config();
-		bool load_config_file(const std::string& strFile);
+		bool load_config_file(const OOBase::string& strFile);
 		bool init_database();
 		bool spawn_sandbox();
 		bool wait_to_quit();
 
 		// Configuration members
-		std::map<std::string,std::string> m_cmd_args;
+		OOSvrBase::CmdArgs::resultsType m_cmd_args;
 		std::map<OOBase::string,OOBase::string> m_config_args;
 
 		// I/O members

@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 #endif
 
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		LOG_ERROR_RETURN(("Failed to parse command line arguments."),EXIT_FAILURE);
 
@@ -111,13 +111,11 @@ int main(int argc, char* argv[])
 	bool bForkSlave = false;
 
 	// Try to work out how we are being asked to start
-	std::map<std::string,std::string>::const_iterator i=args.find("fork-slave");
+	OOSvrBase::CmdArgs::resultsType::const_iterator i=args.find("fork-slave");
 	if (i != args.end())
 	{
 		// Fork start from ooserverd
-
-		void* TODO;
-		strPipe = i->second.c_str();
+		strPipe = i->second;
 		bForkSlave = true;
 	}
 	else
@@ -125,9 +123,7 @@ int main(int argc, char* argv[])
 		if ((i=args.find("launch-session")) != args.end())
 		{
 			// Start from oo-launch
-
-			void* TODO;
-			strPipe = i->second.c_str();
+			strPipe = i->second;
 		}
 		else
 		{

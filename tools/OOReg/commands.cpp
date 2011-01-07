@@ -29,10 +29,10 @@
 
 static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&);
 
-static std::string canonicalise_key(const std::string& strIn, const std::string& strStart)
+static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega::string_t& strStart)
 {
 	// Try to work out where key is...
-	std::string strKey;
+	OOBase::string strKey;
 	if (!strIn.empty() && strIn.at(0) == '/')
 	{
 		// Absolute key...
@@ -41,17 +41,20 @@ static std::string canonicalise_key(const std::string& strIn, const std::string&
 	else
 	{
 		// Relative key
-		strKey = strStart + strIn;
+		std::string s = strStart.ToNative();
+
+		strKey = s.c_str();
+		strKey += strIn;
 	}
 
 	// Now, make key canonical...
-	std::vector<std::string> key_parts;
+	std::vector<OOBase::string> key_parts;
 	while (!strKey.empty())
 	{
 		assert(strKey[0] == '/');
 
 		size_t next = strKey.find("/",1);
-		if (next == std::string::npos)
+		if (next == OOBase::string::npos)
 		{
 			key_parts.push_back(strKey.substr(1));
 			break;
@@ -62,7 +65,7 @@ static std::string canonicalise_key(const std::string& strIn, const std::string&
 	}
 
 	// Walk the vector, resolving . and ..
-	for (std::vector<std::string>::reverse_iterator i=key_parts.rbegin();i!=key_parts.rend();)
+	for (std::vector<OOBase::string>::reverse_iterator i=key_parts.rbegin();i!=key_parts.rend();)
 	{
 		if (*i == "..")
 		{
@@ -78,7 +81,7 @@ static std::string canonicalise_key(const std::string& strIn, const std::string&
 
 	// Build absolute key path...
 	strKey.clear();
-	for (std::vector<std::string>::iterator i=key_parts.begin();i!=key_parts.end();++i)
+	for (std::vector<OOBase::string>::iterator i=key_parts.begin();i!=key_parts.end();++i)
 	{
 		if (!i->empty())
 			strKey += "/" + *i;
@@ -87,7 +90,7 @@ static std::string canonicalise_key(const std::string& strIn, const std::string&
 	if (strKey.empty())
 		strKey = "/";
 
-	return strKey;
+	return Omega::string_t(strKey.c_str(),false);
 }
 
 static bool chkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
@@ -98,7 +101,7 @@ static bool chkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -113,16 +116,16 @@ static bool chkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
 	if (key == args.end() || key->second.empty())
 	{
 		std::cout << "Missing key argument";
 		return true;
 	}
 
-	std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+	Omega::string_t strKey = canonicalise_key(key->second,ptrKey->GetName());
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(Omega::string_t(strKey.c_str(),false));
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(strKey);
 
 	return true;
 }
@@ -135,7 +138,7 @@ static bool mkkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -150,16 +153,16 @@ static bool mkkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
 	if (key == args.end() || key->second.empty())
 	{
 		std::cout << "Missing key argument";
 		return true;
 	}
 
-	std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+	Omega::string_t strKey = canonicalise_key(key->second,ptrKey->GetName());
 
-	OTL::ObjectPtr<Omega::Registry::IKey>(Omega::string_t(strKey.c_str(),false),Omega::Registry::IKey::CreateNew);
+	OTL::ObjectPtr<Omega::Registry::IKey>(strKey,Omega::Registry::IKey::CreateNew);
 
 	return true;
 }
@@ -172,7 +175,7 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -187,20 +190,20 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
 	if (key == args.end() || key->second.empty())
 	{
 		std::cout << "Missing key argument";
 		return true;
 	}
 
-	std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+	Omega::string_t strKey = canonicalise_key(key->second,ptrKey->GetName());
 
 	// It would be nice to check whether we are deleting somewhere along the path to ptrKey
 	// And to ck up to the parent.
 	void* TODO;
 
-	OTL::ObjectPtr<Omega::Registry::IKey>(L"/")->DeleteKey(Omega::string_t(strKey.c_str()+1,false));
+	OTL::ObjectPtr<Omega::Registry::IKey>(L"/")->DeleteKey(strKey);
 
 	return true;
 }
@@ -214,7 +217,7 @@ static bool set(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& p
 	cmd_args.add_argument("value",1);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -229,14 +232,14 @@ static bool set(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& p
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator name = args.find("name");
+	OOSvrBase::CmdArgs::resultsType::iterator name = args.find("name");
 	if (name == args.end() || name->second.empty())
 	{
 		std::cout << "Missing name argument";
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator value = args.find("value");
+	OOSvrBase::CmdArgs::resultsType::iterator value = args.find("value");
 	
 	ptrKey->SetValue(Omega::string_t(name->second.c_str(),false),Omega::string_t(value->second.c_str(),false));
 
@@ -251,7 +254,7 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("name",0);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -266,7 +269,7 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator name = args.find("name");
+	OOSvrBase::CmdArgs::resultsType::iterator name = args.find("name");
 	if (name == args.end() || name->second.empty())
 	{
 		std::cout << "Missing name argument";
@@ -288,7 +291,7 @@ static bool rm(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& pt
 	cmd_args.add_argument("name",0);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -303,7 +306,7 @@ static bool rm(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& pt
 		return true;
 	}
 
-	std::map<std::string,std::string>::iterator name = args.find("name");
+	OOSvrBase::CmdArgs::resultsType::iterator name = args.find("name");
 	if (name == args.end() || name->second.empty())
 	{
 		std::cout << "Missing name argument";
@@ -323,7 +326,7 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -340,12 +343,12 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrLSKey = ptrKey;
 
-	std::map<std::string,std::string>::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
 	if (key != args.end() && !key->second.empty())
 	{
-		std::string strKey = canonicalise_key(key->second,ptrKey->GetName().ToNative());
+		Omega::string_t strKey = canonicalise_key(key->second,ptrKey->GetName());
 
-		ptrLSKey = OTL::ObjectPtr<Omega::Registry::IKey>(Omega::string_t(strKey.c_str(),false));
+		ptrLSKey = OTL::ObjectPtr<Omega::Registry::IKey>(strKey);
 	}
 
 	std::cout << ptrLSKey->GetName().ToNative() << std::endl;
@@ -372,7 +375,7 @@ static bool quit(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&)
 	cmd_args.add_option("help",'h');
 		
 	// Parse command line
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 	
@@ -413,14 +416,14 @@ static const Command cmds[] =
 	{ 0,0 }
 };
 
-bool process_command(const std::vector<std::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
+bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
 
 static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
 {
 	OOSvrBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 
-	std::map<std::string,std::string> args;
+	OOSvrBase::CmdArgs::resultsType args;
 	if (cmd_args.parse(argc,argv,args) && !args.empty())
 	{
 		if (args.find("help") != args.end())
@@ -432,18 +435,18 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 		{
 			for (size_t i=0;;++i)
 			{
-				std::ostringstream ss;
+				OOBase::ostringstream ss;
 				ss.imbue(std::locale::classic());
 				ss << "$" << i;
 
-				std::map<std::string,std::string>::const_iterator j=args.find(ss.str());
+				OOSvrBase::CmdArgs::resultsType::const_iterator j=args.find(ss.str());
 				if (j == args.end())
 					break;
 
 				if (i)
 					std::cout << std::endl;
 
-				std::vector<std::string> args2;
+				std::vector<OOBase::string> args2;
 				args2.push_back(j->second);
 				args2.push_back("--help");
 				process_command(args2,ptrKey);
@@ -462,7 +465,7 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	return true;
 }
 
-bool process_command(const std::vector<std::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
 {
 	// Search for the command
 	typedef bool (*PFN)(int,char*[],OTL::ObjectPtr<Omega::Registry::IKey>&);
@@ -479,7 +482,7 @@ bool process_command(const std::vector<std::string>& line_args, OTL::ObjectPtr<O
 	if (pfn)
 	{
 		// Build cmd args
-		char** argv = new char*[line_args.size()];
+		char** argv = new (std::nothrow) char*[line_args.size()];
 		if (!argv)
 		{
 			std::cerr << "Out of memory";
@@ -487,14 +490,14 @@ bool process_command(const std::vector<std::string>& line_args, OTL::ObjectPtr<O
 		}
 
 		int argc = 0;
-		for (std::vector<std::string>::const_iterator i=line_args.begin();i!=line_args.end();++i)
+		for (std::vector<OOBase::string>::const_iterator i=line_args.begin();i!=line_args.end();++i)
 			argv[argc++] = strdup(i->c_str());
 		
 		// Call the function
 		bool ret = (*pfn)(argc,argv,ptrKey);
 
 		argc = 0;
-		for (std::vector<std::string>::const_iterator i=line_args.begin();i!=line_args.end();++i)
+		for (std::vector<OOBase::string>::const_iterator i=line_args.begin();i!=line_args.end();++i)
 			free(argv[argc++]);
 		
 		delete [] argv;

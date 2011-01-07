@@ -76,7 +76,7 @@ int Root::Manager::run()
 #if !defined(_WIN32)
 	// Ignore SIGPIPE
 	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));
+		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno).c_str()));
 #endif
 
 	std::string strPidfile = "/var/run/ooserverd.pid";

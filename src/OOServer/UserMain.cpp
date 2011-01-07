@@ -100,11 +100,11 @@ int main(int argc, char* argv[])
 #if defined(HAVE_UNISTD_H)
 	// Ignore SIGPIPE
 	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::strerror(errno).c_str()));
+		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno).c_str()));
 
 	// Ignore SIGCHLD
 	if (signal(SIGCHLD,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::strerror(errno).c_str()));
+		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text(errno).c_str()));
 #endif
 
 	std::string strPipe;

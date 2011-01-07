@@ -1132,7 +1132,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
-	OOBase::string strFn;
+	OOBase::stack_string strFn;
 	msg->m_payload.read(strFn);
 
 	void (*pfnCall)(void*,OOBase::CDRStream&);

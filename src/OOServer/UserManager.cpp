@@ -268,7 +268,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	bool bQuit = false;
 	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
-	OOBase::string strPipe;
+	OOBase::stack_string strPipe;
 	input.read(strPipe);
 	if (input.last_error() != 0)
 	{

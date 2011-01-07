@@ -217,7 +217,7 @@ namespace
 	static DWORD LogonSandboxUser(const OOBase::wstring& strUName, HANDLE& hToken)
 	{
 		// Open the local account policy...
-		OOBase::wstring strPwd;
+		OOBase::stack_wstring strPwd;
 		LSA_HANDLE hPolicy;
 		LSA_OBJECT_ATTRIBUTES oa = {0};
 		DWORD dwErr = LsaNtStatusToWinError(LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy));

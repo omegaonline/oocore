@@ -217,7 +217,12 @@ namespace OOCore
 			case Omega::TypeInfo::typeFloat8:
 				return write(value.cast<const Omega::float8_t&>());
 			case Omega::TypeInfo::typeString:
-				return write(value.cast<const Omega::string_t&>().ToUTF8());
+				{
+					std::string s;
+					value.cast<const Omega::string_t&>().ToUTF8(s);
+					return write(s);
+				}
+				break;
 
 			case Omega::TypeInfo::typeGuid:
 				{

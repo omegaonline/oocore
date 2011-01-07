@@ -78,18 +78,28 @@ static void exception_details(Omega::IException* pOrig)
 	catch (Omega::IInternalException* pE)
 	{
 		std::cerr << "Omega::IInternalException - ";
-		std::cerr << pE->GetDescription().ToNative() << std::endl;
+
+		std::string s;
+		pE->GetDescription().ToNative(s);
+
+		std::cerr << s << std::endl;
 
 		Omega::string_t strSource = pE->GetSource();
 		if (!strSource.IsEmpty())
-			std::cerr << "At: " << strSource.ToNative() << std::endl;
+		{
+			strSource.ToNative(s);
+			std::cerr << "At: " << s << std::endl;
+		}
 
 		report_cause(pE);
 		pE->Release();
 	}
 	catch (Omega::IException* pE)
 	{
-		std::cerr << pE->GetDescription().ToNative() << std::endl;
+		std::string s;
+		pE->GetDescription().ToNative(s);
+
+		std::cerr << s << std::endl;
 		report_cause(pE);
 		pE->Release();
 	}

@@ -42,7 +42,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw OOCore_IInternalException_Create(string_t(msg,false).ToUTF8().c_str(),"OOCore Critical Failure",size_t(-1),0);
+		throw OOCore_IInternalException_Create(msg,"OOCore Critical Failure",size_t(-1),0);
 	}
 }
 

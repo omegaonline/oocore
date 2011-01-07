@@ -41,9 +41,7 @@ static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega
 	else
 	{
 		// Relative key
-		std::string s = strStart.ToNative();
-
-		strKey = s.c_str();
+		strStart.ToNative(strKey);
 		strKey += strIn;
 	}
 
@@ -278,7 +276,10 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 
 	Omega::any_t aVal = ptrKey->GetValue(Omega::string_t(name->second.c_str(),false));
 
-	std::cout << aVal.cast<Omega::string_t>().ToNative() << std::endl;
+	std::string s;
+	aVal.cast<Omega::string_t>().ToNative(s);
+
+	std::cout << s << std::endl;
 
 	return true;
 }
@@ -351,18 +352,22 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 		ptrLSKey = OTL::ObjectPtr<Omega::Registry::IKey>(strKey);
 	}
 
-	std::cout << ptrLSKey->GetName().ToNative() << std::endl;
+	std::string s;
+	ptrLSKey->GetName().ToNative(s);
+	std::cout << s << std::endl;
 	
 	std::set<Omega::string_t> keys = ptrLSKey->EnumSubKeys();
 	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
-		std::cout << "[Key]  " << i->ToNative() << std::endl;
+		i->ToNative(s);
+		std::cout << "[Key]  " << s << std::endl;
 	}
 
 	std::set<Omega::string_t> vals = ptrLSKey->EnumValues();
 	for (std::set<Omega::string_t>::const_iterator i=vals.begin();i!=vals.end();++i)
 	{
-		std::cout << i->ToNative() << std::endl;
+		i->ToNative(s);
+		std::cout << s << std::endl;
 	}
 
 	return true;

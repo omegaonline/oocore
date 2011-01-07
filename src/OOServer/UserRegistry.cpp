@@ -69,7 +69,11 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::KeyExists));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strSubKey.ToUTF8().c_str());
+
+	std::string s;
+	strSubKey.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -99,7 +103,11 @@ bool_t Key::IsValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueExists));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
+
+	std::string s;
+	strName.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -129,7 +137,11 @@ any_t Key::GetValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValue));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
+
+	std::string s;
+	strName.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -163,8 +175,14 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValue));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
-	request.write(value.cast<string_t>().ToUTF8().c_str());
+	
+	std::string s;
+	strName.ToUTF8(s);
+	request.write(s.c_str());
+
+	value.cast<string_t>().ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -223,7 +241,11 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
+	
+	std::string s;
+	strName.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -255,7 +277,11 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetDescription));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strDesc.ToUTF8().c_str());
+
+	std::string s;
+	strDesc.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -281,8 +307,14 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strValue.ToUTF8().c_str());
-	request.write(strDesc.ToUTF8().c_str());
+	
+	std::string s;
+	strValue.ToUTF8(s);
+	request.write(s.c_str());
+
+	strDesc.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -382,7 +414,11 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::CreateKey));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strSubKey.ToUTF8().c_str());
+
+	std::string s;
+	strSubKey.ToUTF8(s);
+	request.write(s.c_str());
+
 	request.write(flags);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -523,7 +559,11 @@ void Key::DeleteKey(const string_t& strSubKey)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteKey));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strSubKey.ToUTF8().c_str());
+	
+	std::string s;
+	strSubKey.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -551,7 +591,11 @@ void Key::DeleteValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteValue));
 	request.write(m_key);
 	request.write(m_type);
-	request.write(strName.ToUTF8().c_str());
+	
+	std::string s;
+	strName.ToUTF8(s);
+	request.write(s.c_str());
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 

@@ -150,10 +150,13 @@ namespace
 		OMEGA_NEW_T(OOBase::DLL,dll,OOBase::DLL());
 
 		// Load the new DLL
-		int err = dll->load(name.ToUTF8().c_str());
+		std::string s;
+		name.ToNative(s);
+
+		int err = dll->load(s.c_str());
 		if (err != 0)
 		{
-			std::string str = "Loading library: " + name.ToUTF8();
+			std::string str = "Loading library: " + s;
 			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(str.c_str()));
 		}
 

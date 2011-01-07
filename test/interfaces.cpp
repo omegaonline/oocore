@@ -25,7 +25,10 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(strLibName.ToNative().c_str(),0) != 0)
+	std::string s;
+	strLibName.ToNative(s);
+
+	if (access(s.c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -64,7 +67,10 @@ bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(strExeName.ToNative().c_str(),0) != 0)
+	std::string s;
+	strExeName.ToNative(s);
+
+	if (access(s.c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;

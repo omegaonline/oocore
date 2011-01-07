@@ -322,7 +322,10 @@ bool string_tests_utf8()
 	Omega::string_t str(strUTF8.c_str(),true);
 
 	//TEST(str == strUTF16.c_str());
-	TEST(str.ToUTF8() == strUTF8);
+	std::string s;
+	str.ToUTF8(s);
+
+	TEST(s == strUTF8);
 
 	return true;
 }

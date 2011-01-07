@@ -128,8 +128,9 @@ namespace
 
 	static OOBase::string get_db_dir(InterProcessService* pIPS)
 	{
-		void* TODO;
-		OOBase::string dir = pIPS->GetArg(L"regdb_path").ToUTF8().c_str();
+		OOBase::string dir;
+		pIPS->GetArg(L"regdb_path").ToUTF8(dir);
+
 		if (!dir.empty())
 		{
 #if defined(_WIN32)
@@ -357,8 +358,10 @@ void RootKey::Init_Once()
 
 	OMEGA_NEW_T(::Registry::Hive,m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb"));
 
-	void* TODO; // final c_str()
-	OMEGA_NEW_T(::Registry::Hive,m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8().c_str()));
+	OOBase::string s;
+	ptrIPS->GetArg(L"user_regdb").ToNative(s);
+
+	OMEGA_NEW_T(::Registry::Hive,m_localuser_hive,::Registry::Hive(this,s));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");

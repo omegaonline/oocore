@@ -86,7 +86,9 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Sending message to root failed: %s",pE->GetDescription().ToNative().c_str()));
+		OOBase::stack_string s;
+		pE->GetDescription().ToNative(s);
+		LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
 		pE->Release();
 		return false;
 	}
@@ -134,7 +136,9 @@ bool User::Manager::start_services()
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("Failed to start network service %s: %s",i->second.strKey.c_str(),pE->GetDescription().ToNative().c_str()));
+				OOBase::stack_string s;
+				pE->GetDescription().ToNative(s);
+				LOG_ERROR(("Failed to start network service %s: %s",i->second.strKey.c_str(),s.c_str()));
 				pE->Release();
 			}
 		}
@@ -145,7 +149,9 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Failed to start services: %s",pE->GetDescription().ToNative().c_str()));
+		OOBase::stack_string s;
+		pE->GetDescription().ToNative(s);
+		LOG_ERROR(("Failed to start services: %s",s.c_str()));
 		pE->Release();
 	}
 
@@ -227,7 +233,9 @@ void User::Manager::start_service(const std::string& strKey, const std::string& 
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Failed to start service %s: %s",strKey.c_str(),pE->GetDescription().ToNative().c_str()));
+		OOBase::stack_string s;
+		pE->GetDescription().ToNative(s);
+		LOG_ERROR(("Failed to start service %s: %s",strKey.c_str(),s.c_str()));
 		pE->Release();
 	}
 }
@@ -368,7 +376,9 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("Sending message to root failed: %s",pE->GetDescription().ToNative().c_str()));
+				OOBase::stack_string s;
+				pE->GetDescription().ToNative(s);
+				LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
 				pE->Release();
 				err = EINVAL;
 			}
@@ -423,7 +433,9 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("on_recv failed: %s",pE->GetDescription().ToNative().c_str()));
+			OOBase::stack_string s;
+			pE->GetDescription().ToNative(s);
+			LOG_ERROR(("on_recv failed: %s",s.c_str()));
 			pE->Release();
 		}
 	}
@@ -455,7 +467,9 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("on_sent failed: %s",pE->GetDescription().ToNative().c_str()));
+			OOBase::stack_string s;
+			pE->GetDescription().ToNative(s);
+			LOG_ERROR(("on_sent failed: %s",s.c_str()));
 			pE->Release();
 		}
 	}
@@ -483,7 +497,9 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("on_close failed: %s",pE->GetDescription().ToNative().c_str()));
+			OOBase::stack_string s;
+			pE->GetDescription().ToNative(s);
+			LOG_ERROR(("on_close failed: %s",s.c_str()));
 			pE->Release();
 		}
 	}

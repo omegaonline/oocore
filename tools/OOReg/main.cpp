@@ -190,7 +190,11 @@ int main(int argc, char* argv[])
 				line_args.clear();
 
 				if (bPrompt)
-					std::cout << ptrKey->GetName().ToNative() << "> ";
+				{
+					std::string s;
+					ptrKey->GetName().ToNative(s);
+					std::cout << s << "> ";
+				}
 			}
 
 			// Read a line...

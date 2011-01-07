@@ -355,7 +355,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 		for (bool bFirst = true;bFirst;bFirst = false)
 		{
-			std::vector<Omega::uint32_t> vecDead;
+			std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> > vecDead;
 
 			// See if we have a process already
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -383,7 +383,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 			{
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-				for (std::vector<Omega::uint32_t>::const_iterator i=vecDead.begin();i!=vecDead.end();++i)
+				for (std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> >::const_iterator i=vecDead.begin();i!=vecDead.end();++i)
 					m_mapUserProcesses.erase(*i);
 			}
 

@@ -456,25 +456,19 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	{
 		// Find the correct channel
 		OOBase::SmartPtr<MessageConnection> ptrMC;
-		try
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(dest_channel_id);
-			if (i == m_mapChannelIds.end())
-			{
-				// Send closed message back to sender
-				send_channel_close(src_channel_id,orig_dest_channel_id);
-				return true;
-			}
-
-			ptrMC = i->second;
-		}
-		catch (std::exception& e)
+		channelMapType::const_iterator i=m_mapChannelIds.find(dest_channel_id);
+		if (i == m_mapChannelIds.end())
 		{
-			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+			// Send closed message back to sender
+			send_channel_close(src_channel_id,orig_dest_channel_id);
+			return true;
 		}
 
+		ptrMC = i->second;
+		
 		if (deadline <= OOBase::timeval_t::gettimeofday())
 			return true;
 
@@ -617,38 +611,31 @@ void OOServer::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::ui
 
 Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id)
 {
-	try
+	// Scope the lock
 	{
-		// Scope the lock
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		if (channel_id != 0)
 		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-			if (channel_id != 0)
-			{
-				if (m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end())
-					LOG_ERROR_RETURN(("Duplicate fixed channel registered"),0);
-			}
-			else if (m_mapChannelIds.size() >= m_uNextChannelMask - 0xF)
-			{
-				LOG_ERROR_RETURN(("Out of free channels"),0);
-			}
-			else
-			{
-				do
-				{
-					channel_id = m_uChannelId | ((++m_uNextChannelId & m_uNextChannelMask) << m_uNextChannelShift);
-				}
-				while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
-			}
-
-			m_mapChannelIds.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::value_type(channel_id,ptrMC));
+			if (m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end())
+				LOG_ERROR_RETURN(("Duplicate fixed channel registered"),0);
 		}
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),0);
-	}
+		else if (m_mapChannelIds.size() >= m_uNextChannelMask - 0xF)
+		{
+			LOG_ERROR_RETURN(("Out of free channels"),0);
+		}
+		else
+		{
+			do
+			{
+				channel_id = m_uChannelId | ((++m_uNextChannelId & m_uNextChannelMask) << m_uNextChannelShift);
+			}
+			while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
+		}
 
+		m_mapChannelIds.insert(channelMapType::value_type(channel_id,ptrMC));
+	}
+	
 	ptrMC->set_channel_id(channel_id);
 	return channel_id;
 }
@@ -732,7 +719,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	// Remove the channel
 	bool bPulse = false;
 	bool bReport = true;
-	try
+	
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -742,42 +729,31 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 		if (!bPulse && src_channel_id == 0)
 			bReport = false;
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
-
+	
 	if (bReport)
 	{
-		try
+		std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> > send_to;
+
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		// Propogate the message to all user processes...
+		for (channelMapType::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
 		{
-			std::vector<Omega::uint32_t> send_to;
-
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-			// Propogate the message to all user processes...
-			for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
+			// Always route upstream, and/or follow routing rules
+			if (i->first != src_channel_id && 
+					(i->first == m_uUpstreamChannel || can_route(channel_id,i->first)))
 			{
-				// Always route upstream, and/or follow routing rules
-				if (i->first != src_channel_id && 
-						(i->first == m_uUpstreamChannel || can_route(channel_id,i->first)))
-				{
-					send_to.push_back(i->first);
-				}
-			}
-
-			guard.release();
-
-			for (std::vector<Omega::uint32_t>::const_iterator i=send_to.begin();i!=send_to.end();++i)
-			{
-				send_channel_close(*i,channel_id);
+				send_to.push_back(i->first);
 			}
 		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("std::exception thrown %s",e.what()));
-		}
 
+		guard.release();
+
+		for (std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> >::const_iterator i=send_to.begin();i!=send_to.end();++i)
+		{
+			send_channel_close(*i,channel_id);
+		}
+		
 		// Inform derived classes that the channel has gone...
 		on_channel_closed(channel_id);
 	}
@@ -930,24 +906,17 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 void OOServer::MessageHandler::close_channels()
 {
 	// Copy all the channels away and then close them
-	try
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	channelMapType map_copy(m_mapChannelIds);
+
+	guard.release();
+
+	for (channelMapType::iterator i=map_copy.begin(); i!=map_copy.end(); ++i)
 	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > map_copy(m_mapChannelIds);
-
-		guard.release();
-
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=map_copy.begin(); i!=map_copy.end(); ++i)
-		{
-			i->second->close();
-		}
+		i->second->close();
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
-
+	
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
@@ -1009,24 +978,16 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
-		try
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(from_channel_id);
-			if (i == m_mapChannelIds.end())
-			{
-				// Channel has gone!
-				ret = io_result::channel_closed;
-				break;
-			}
-		}
-		catch (std::exception& e)
+		channelMapType::const_iterator i=m_mapChannelIds.find(from_channel_id);
+		if (i == m_mapChannelIds.end())
 		{
-			LOG_ERROR(("std::exception thrown %s",e.what()));
+			// Channel has gone!
+			ret = io_result::channel_closed;
 			break;
 		}
-
+		
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.pop(msg,deadline);
@@ -1441,21 +1402,15 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.replace(header.buffer()->length(),msg_len_mark);
 
 	OOBase::SmartPtr<MessageConnection> ptrMC;
-	try
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::const_iterator i=m_mapChannelIds.find(actual_dest_channel_id);
-		if (i == m_mapChannelIds.end())
-			return io_result::channel_closed;
+	channelMapType::const_iterator i=m_mapChannelIds.find(actual_dest_channel_id);
+	if (i == m_mapChannelIds.end())
+		return io_result::channel_closed;
 
-		ptrMC = i->second;
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),io_result::failed);
-	}
-
+	ptrMC = i->second;
+	
 	// Check the timeout
 	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
 		return io_result::timedout;

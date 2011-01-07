@@ -195,10 +195,18 @@ bool Root::Manager::load_config()
 						continue;
 					}
 
-					OOBase::ostringstream os;
-					os.imbue(std::locale::classic());
-					os << dwVal;
-					value = os.str();
+					try
+					{
+						OOBase::ostringstream os;
+						os.imbue(std::locale::classic());
+						os << dwVal;
+						value = os.str();
+					}
+					catch (std::exception& e)
+					{
+						LOG_ERROR(("std::exception thrown %s",e.what()));
+						continue;
+					}
 				}
 				else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
 				{

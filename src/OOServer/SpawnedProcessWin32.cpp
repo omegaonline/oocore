@@ -89,10 +89,6 @@ namespace
 	static HANDLE CreatePipe(HANDLE hToken, OOBase::string& strPipe)
 	{
 		// Create a new unique pipe
-		OOBase::ostringstream ssPipe;
-		ssPipe.imbue(std::locale::classic());
-		ssPipe.setf(std::ios_base::hex);
-		ssPipe << "OOR";
 
 		// Get the logon SID of the Token
 		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
@@ -100,16 +96,28 @@ namespace
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
 
-		char* pszSid;
-		if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+		try
 		{
-			ssPipe << pszSid;
-			LocalFree(pszSid);
-		}
+			OOBase::ostringstream ssPipe;
+			ssPipe.imbue(std::locale::classic());
+			ssPipe.setf(std::ios_base::hex);
+			ssPipe << "OOR";
 
-		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
-		ssPipe << "-" << now.tv_usec();
-		strPipe = ssPipe.str();
+			char* pszSid;
+			if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+			{
+				ssPipe << pszSid;
+				LocalFree(pszSid);
+			}
+
+			OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+			ssPipe << "-" << now.tv_usec();
+			strPipe = ssPipe.str();
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),INVALID_HANDLE_VALUE);
+		}
 
 		// Create security descriptor
 		PSID pSID;

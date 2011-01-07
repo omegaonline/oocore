@@ -152,7 +152,8 @@ namespace OOServer
 		Omega::uint32_t      m_uNextChannelMask;
 		Omega::uint32_t      m_uNextChannelShift;
 
-		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > m_mapChannelIds;
+		typedef std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,std::less<Omega::uint32_t>,OOBase::CriticalAllocator<OOBase::SmartPtr<MessageConnection> > > channelMapType;
+		channelMapType m_mapChannelIds;
 
 		struct Message
 		{

@@ -74,7 +74,7 @@ std::string User::Acceptor::unique_name()
 	return ssPipe.str();
 }
 
-bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
+bool User::Acceptor::start(Manager* pManager, const char* pipe_name)
 {
 	assert(!m_pManager);
 	m_pManager = pManager;
@@ -85,7 +85,7 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 	int err = 0;
 	m_pSocket = Proactor::instance().accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
@@ -95,7 +95,7 @@ void User::Acceptor::stop()
 	m_pSocket = 0;
 }
 
-bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& /*strAddress*/, int err)
+bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* /*strAddress*/, int err)
 {
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
@@ -142,7 +142,7 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const s
 	return true;
 }
 
-bool User::Acceptor::init_security(const std::string& pipe_name)
+bool User::Acceptor::init_security(const char* pipe_name)
 {
 #if defined(_WIN32)
 

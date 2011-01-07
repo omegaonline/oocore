@@ -34,7 +34,7 @@
 #include "OOServer_Root.h"
 #include "RegistryHive.h"
 
-Registry::Hive::Hive(Manager* pManager, const std::string& strdb) :
+Registry::Hive::Hive(Manager* pManager, const OOBase::string& strdb) :
 		m_pManager(pManager),
 		m_strdb(strdb)
 {
@@ -81,7 +81,7 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 	return err;
 }
 
-int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const std::string& strSubKey, access_rights_t& access_mask)
+int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::string& strSubKey, access_rights_t& access_mask)
 {
 	// Lock must be held first...
 
@@ -116,7 +116,7 @@ int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& 
 	return err;
 }
 
-int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id)
+int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, OOBase::string& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id)
 {
 	// Lock must be held first...
 
@@ -149,7 +149,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	for (;;)
 	{
 		size_t pos = strSubKey.find('/');
-		if (pos == std::string::npos)
+		if (pos == OOBase::string::npos)
 			err = get_key_info(uSubKey,uKey,strSubKey,access_mask);
 		else
 			err = get_key_info(uSubKey,uKey,strSubKey.substr(0,pos),access_mask);
@@ -167,7 +167,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 				return acc;
 		}
 
-		if (pos == std::string::npos)
+		if (pos == OOBase::string::npos)
 			break;
 
 		strSubKey.erase(0,pos+1);
@@ -178,7 +178,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	return 0;
 }
 
-int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const std::string& strSubKey, access_rights_t access_mask)
+int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::string& strSubKey, access_rights_t access_mask)
 {
 	OOBase::SmartPtr<OOSvrBase::Db::Statement> ptrStmt;
 	int err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%u);",strSubKey.c_str(),uParent,access_mask);
@@ -192,7 +192,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 	return err;
 }
 
-int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
+int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::string strSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -201,7 +201,7 @@ int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::
 	return find_key(uParent,uKey,strSubKey,access_mask,channel_id);
 }
 
-int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
+int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -246,7 +246,7 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, std
 	for (;;)
 	{
 		size_t pos = strSubKey.find('/');
-		if (pos == std::string::npos)
+		if (pos == OOBase::string::npos)
 			err = insert_key(uSubKey,uKey,strSubKey,access);
 		else
 			err = insert_key(uSubKey,uKey,strSubKey.substr(0,pos),access);
@@ -256,7 +256,7 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, std
 		else if (err != SQLITE_DONE)
 			return EIO;
 
-		if (pos == std::string::npos)
+		if (pos == OOBase::string::npos)
 			break;
 
 		strSubKey.erase(0,pos+1);
@@ -334,7 +334,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	return 0;
 }
 
-int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSubKey, Omega::uint32_t channel_id)
+int Registry::Hive::delete_key(const Omega::int64_t& uParent, OOBase::string strSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -368,7 +368,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 	return err;
 }
 
-int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setSubKeys)
+int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, setType& setSubKeys)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -400,7 +400,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			std::string strSubKey;
+			OOBase::string strSubKey;
 			const char* v = ptrStmt->column_text(0);
 			if (v)
 				strSubKey = v;
@@ -472,7 +472,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			std::string strSubKey;
+			OOBase::string strSubKey;
 			const char* v = ptrStmt->column_text(0);
 			if (v)
 				strSubKey = v;
@@ -498,7 +498,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	if (err == SQLITE_DONE)
 	{
 		// Write terminating null
-		response.write(std::string());
+		response.write(OOBase::string());
 	}
 	else
 	{
@@ -507,7 +507,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	}
 }
 
-int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setValues)
+int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, setType& setValues)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -595,7 +595,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			std::string str;
+			OOBase::string str;
 			const char* v = ptrStmt->column_text(0);
 			if (v)
 				str = v;
@@ -613,7 +613,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	if (err == SQLITE_DONE)
 	{
 		// Write terminating null
-		response.write(std::string());
+		response.write(OOBase::string());
 	}
 	else
 	{
@@ -622,7 +622,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	}
 }
 
-int Registry::Hive::delete_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id)
+int Registry::Hive::delete_value(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -656,7 +656,7 @@ int Registry::Hive::delete_value(const Omega::int64_t& uKey, const std::string& 
 	return 0;
 }
 
-int Registry::Hive::value_exists(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id)
+int Registry::Hive::value_exists(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -679,7 +679,7 @@ int Registry::Hive::value_exists(const Omega::int64_t& uKey, const std::string& 
 	return value_exists_i(uKey,strValue);
 }
 
-int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const std::string& strValue)
+int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const OOBase::string& strValue)
 {
 	if (!m_ptrGetValue_Stmt)
 	{
@@ -708,7 +708,7 @@ int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const std::string
 		return EIO;
 }
 
-int Registry::Hive::get_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_value(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, OOBase::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -761,7 +761,7 @@ int Registry::Hive::get_value(const Omega::int64_t& uKey, const std::string& str
 		return EIO;
 }
 
-int Registry::Hive::set_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val)
+int Registry::Hive::set_value(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, const char* val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -814,7 +814,7 @@ int Registry::Hive::set_value(const Omega::int64_t& uKey, const std::string& str
 	return 0;
 }
 
-int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -864,7 +864,7 @@ int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t 
 		return EIO;
 }
 
-int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, OOBase::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -920,7 +920,7 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std:
 		return EIO;
 }
 
-int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val)
+int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const OOBase::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -955,7 +955,7 @@ int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t 
 	return 0;
 }
 
-int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const std::string& val)
+int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, const OOBase::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 

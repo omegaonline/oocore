@@ -72,8 +72,8 @@ namespace User
 		void do_channel_closed_i(Omega::uint32_t channel_id);
 
 		void run();
-		bool fork_slave(const std::string& strPipe);
-		bool session_launch(const std::string& strPipe);
+		bool fork_slave(const OOBase::string& strPipe);
+		bool session_launch(const OOBase::string& strPipe);
 
 		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const std::string& strPipe);
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);

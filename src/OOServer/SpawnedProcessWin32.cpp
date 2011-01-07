@@ -42,16 +42,16 @@
 #include <shlobj.h>
 #include <ntsecapi.h>
 
-static std::string getenv_i(const char* val)
+static OOBase::string getenv_i(const char* val)
 {
 #if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
 	char* buf = 0;
 	size_t len = 0;
-	std::string ret;
+	OOBase::string ret;
 	if (!_dupenv_s(&buf,&len,val))
 	{
 		if (len)
-			ret = std::string(buf,len-1);
+			ret = OOBase::string(buf,len-1);
 		free(buf);
 	}
 	return ret;
@@ -71,11 +71,11 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool IsRunning() const;
-		bool Spawn(const std::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		bool Spawn(const OOBase::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
+		bool GetRegistryHive(const OOBase::string& strSysDir, const OOBase::string& strUsersDir, OOBase::string& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -83,13 +83,13 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(std::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD SpawnFromToken(OOBase::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
-	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe)
+	static HANDLE CreatePipe(HANDLE hToken, OOBase::string& strPipe)
 	{
 		// Create a new unique pipe
-		std::ostringstream ssPipe;
+		OOBase::ostringstream ssPipe;
 		ssPipe.imbue(std::locale::classic());
 		ssPipe.setf(std::ios_base::hex);
 		ssPipe << "OOR";
@@ -214,10 +214,10 @@ namespace
 		return (dwErr == 0);
 	}
 
-	static DWORD LogonSandboxUser(const std::wstring& strUName, HANDLE& hToken)
+	static DWORD LogonSandboxUser(const OOBase::wstring& strUName, HANDLE& hToken)
 	{
 		// Open the local account policy...
-		std::wstring strPwd;
+		OOBase::wstring strPwd;
 		LSA_HANDLE hPolicy;
 		LSA_OBJECT_ATTRIBUTES oa = {0};
 		DWORD dwErr = LsaNtStatusToWinError(LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy));
@@ -336,7 +336,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static bool OpenCorrectWindowStation(HANDLE hToken, std::wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	static bool OpenCorrectWindowStation(HANDLE hToken, OOBase::wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
 	{
 		// Service window stations are created with the name "Service-0xZ1-Z2$",
 		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
@@ -472,7 +472,7 @@ namespace
 		return true;
 	}
 
-	static DWORD GetUserCwd(std::wstring& strCurDir)
+	static DWORD GetUserCwd(OOBase::wstring& strCurDir)
 	{
 		// Find the cwd
 		HKEY hKey;
@@ -544,9 +544,9 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	std::wstring strCurDir;
+	OOBase::wstring strCurDir;
 	DWORD dwRes = GetUserCwd(strCurDir);
 	if (dwRes != ERROR_SUCCESS)
 		return dwRes;
@@ -595,7 +595,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	PathQuoteSpacesW(szPath);
 
 	// Create the named pipe
-	std::string strPipe;
+	OOBase::string strPipe;
 	hPipe = CreatePipe(hToken,strPipe);
 	if (!hPipe.is_valid())
 	{
@@ -603,7 +603,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
 	}
 
-	std::wstring strCmdLine = szPath;
+	OOBase::wstring strCmdLine = szPath;
 	strCmdLine += L" --fork-slave=" + OOBase::from_native(strPipe.c_str());
 
 	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > ptrCmdLine = static_cast<wchar_t*>(OOBase::Allocate((strCmdLine.size()+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
@@ -616,13 +616,13 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 	// Forward declare these because of goto's
 	DWORD dwWait;
 	STARTUPINFOW startup_info = {0};
-	std::wstring strWindowStation;
+	OOBase::wstring strWindowStation;
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
-	std::wstring strTitle;
+	OOBase::wstring strTitle;
 	
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -669,8 +669,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken
 		strTitle = strAppPath;
 
 		// Get the names associated with the user SID
-		std::wstring strUserName;
-		std::wstring strDomainName;
+		OOBase::wstring strUserName;
+		OOBase::wstring strDomainName;
 		if (OOSvrBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
 		{
 			strTitle += L" - ";
@@ -777,7 +777,7 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+bool SpawnedProcessWin32::Spawn(const OOBase::wstring& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
@@ -799,7 +799,7 @@ bool SpawnedProcessWin32::IsRunning() const
 bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
-	std::wstring strFName = OOBase::from_utf8(pszFName);
+	OOBase::wstring strFName = OOBase::from_utf8(pszFName);
 
 	OOBase::SmartPtr<void,OOBase::FreeDestructor<2> > pSD;
 	for (DWORD cbNeeded = 512;;)
@@ -882,7 +882,7 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
+bool SpawnedProcessWin32::GetRegistryHive(const OOBase::string& strSysDir, const OOBase::string& strUsersDir, OOBase::string& strHive)
 {
 	assert(!m_bSandbox);
 
@@ -908,8 +908,8 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 	else
 	{
 		// Get the names associated with the user SID
-		std::wstring strUserName;
-		std::wstring strDomainName;
+		OOBase::wstring strUserName;
+		OOBase::wstring strDomainName;
 
 		DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
 		if (dwErr != ERROR_SUCCESS)
@@ -937,7 +937,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32;
@@ -948,7 +948,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	std::wstring strAppName = OOBase::from_native(getenv_i("OMEGA_USER_BINARY").c_str());
+	OOBase::wstring strAppName = OOBase::from_native(getenv_i("OMEGA_USER_BINARY").c_str());
 
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
@@ -974,7 +974,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	return pSpawn;
 }
 
-bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::string& strUName)
+bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::string& strUName)
 {
 	if (uid != INVALID_HANDLE_VALUE)
 		CloseHandle(uid);
@@ -983,8 +983,8 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::st
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	// Get the names associated with the user SID
-	std::wstring strUserName;
-	std::wstring strDomainName;
+	OOBase::wstring strUserName;
+	OOBase::wstring strDomainName;
 
 	DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,strUserName,strDomainName);
 	if (dwRes != ERROR_SUCCESS)
@@ -1009,7 +1009,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::st
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const std::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
 {
 	DWORD dwErr = LogonSandboxUser(OOBase::from_utf8(strUName.c_str()),uid);
 	if (dwErr == ERROR_ACCESS_DENIED)

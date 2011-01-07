@@ -40,16 +40,16 @@
 
 #include <signal.h>
 
-static std::string getenv_i(const char* val)
+static OOBase::string getenv_i(const char* val)
 {
 #if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
 	char* buf = 0;
 	size_t len = 0;
-	std::string ret;
+	OOBase::string ret;
 	if (!_dupenv_s(&buf,&len,val))
 	{
 		if (len)
-			ret = std::string(buf,len-1);
+			ret = OOBase::string(buf,len-1);
 		free(buf);
 	}
 	return ret;
@@ -153,11 +153,11 @@ int Root::Manager::run()
 bool Root::Manager::init_database()
 {
 	// Get dir from config
-	std::map<std::string,std::string>::const_iterator i=m_config_args.find("regdb_path");
+	std::map<OOBase::string,OOBase::string>::const_iterator i=m_config_args.find("regdb_path");
 	if (i == m_config_args.end())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-	std::string dir = i->second;
+	OOBase::string dir = i->second;
 	if (!dir.empty())
 	{
 #if defined(_WIN32)
@@ -197,13 +197,13 @@ bool Root::Manager::load_config_file(const std::string& strFile)
 	while (!fs.eof())
 	{
 		// Read line
-		std::string line;
+		OOBase::string line;
 		std::getline(fs,line);
 
 		if (!line.empty() && line[0] != '#')
 		{
 			// Read line as key=value
-			std::string key,value;
+			OOBase::string key,value;
 			size_t pos = line.find('=');
 			if (pos == std::string::npos)
 			{
@@ -229,8 +229,8 @@ bool Root::Manager::spawn_sandbox()
 	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
 
 	// Get username from config
-	std::string strUName;
-	std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
+	OOBase::string strUName;
+	std::map<OOBase::string,OOBase::string>::const_iterator i=m_config_args.find("sandbox_uname");
 	if (i != m_config_args.end())
 		strUName = i->second.c_str();
 
@@ -241,7 +241,7 @@ bool Root::Manager::spawn_sandbox()
 		if (!bUnsafe)
 			LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 
-		std::string strOurUName;
+		OOBase::string strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 		
@@ -256,7 +256,7 @@ bool Root::Manager::spawn_sandbox()
 	{
 		if (bAgain && bUnsafe)
 		{
-			std::string strOurUName;
+			OOBase::string strOurUName;
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
@@ -270,11 +270,11 @@ bool Root::Manager::spawn_sandbox()
 			return false;
 	}
 	
-	std::string strPipe;
+	OOBase::string strPipe;
 	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
 	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
 	{
-		std::string strOurUName;
+		OOBase::string strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
@@ -296,7 +296,7 @@ bool Root::Manager::spawn_sandbox()
 
 bool Root::Manager::wait_to_quit()
 {
-	for (std::string debug = getenv_i("OMEGA_DEBUG");;)
+	for (OOBase::string debug = getenv_i("OMEGA_DEBUG");;)
 	{
 		switch (wait_for_quit())
 		{
@@ -394,7 +394,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 			if (bFirst && bAgain && bUnsafe)
 			{
-				std::string strOurUName;
+				OOBase::string strOurUName;
 				if (!get_our_uid(uid,strOurUName))
 					return false;
 
@@ -414,7 +414,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 	}
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, std::string& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::string& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
@@ -434,7 +434,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	{
 		bOk = false;
 
-		std::string strHive;
+		OOBase::string strHive;
 		if (process.ptrSpawn->GetRegistryHive(m_config_args["regdb_path"],m_config_args["users_path"],strHive))
 		{
 			// Create a new database
@@ -479,7 +479,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	return (ptrMC->read() ? channel_id : 0);
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, std::string& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::string& strPipe)
 {
 	OOBase::CDRStream stream;
 	if (!stream.write(m_sandbox_channel))

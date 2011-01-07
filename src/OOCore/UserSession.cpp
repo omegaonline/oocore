@@ -182,7 +182,7 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 		int err = 0;
 		do
 		{
-			m_stream = OOBase::Socket::connect_local(strPipe,&err,&wait);
+			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),&err,&wait);
 			if (!err || err != ENOENT)
 				break;
 

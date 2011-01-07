@@ -44,9 +44,9 @@
 #define PROTECTED_DACL_SECURITY_INFORMATION  (0x80000000L)
 #endif
 
-/*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
+/*bool Root::Manager::secure_file(const OOBase::string& strFile, bool bPublicRead)
 {
-    std::wstring strFilename = OOBase::from_utf8(strFile.c_str());
+    OOBase::wstring strFilename = OOBase::from_utf8(strFile.c_str());
 
     // Create a SID for the BUILTIN\Users group.
     PSID pSid;
@@ -181,7 +181,7 @@ bool Root::Manager::load_config()
 				if (dwValLen>=1 && valName[0]=='#')
 					continue;
 
-				std::string value,key(valName,dwNameLen);
+				OOBase::string value,key(valName,dwNameLen);
 				++dwNameLen;
 
 				if (dwType == REG_DWORD)
@@ -195,7 +195,7 @@ bool Root::Manager::load_config()
 						continue;
 					}
 
-					std::ostringstream os;
+					OOBase::ostringstream os;
 					os.imbue(std::locale::classic());
 					os << dwVal;
 					value = os.str();

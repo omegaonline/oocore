@@ -86,7 +86,7 @@ void User::Manager::run()
 	close_channels();
 }
 
-bool User::Manager::fork_slave(const std::string& strPipe)
+bool User::Manager::fork_slave(const OOBase::string& strPipe)
 {
 	// Connect to the root
 
@@ -94,7 +94,7 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe,&err,&wait);
+	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe.c_str(),&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
@@ -127,7 +127,7 @@ bool User::Manager::fork_slave(const std::string& strPipe)
 	return handshake_root(local_socket,strNewPipe);
 }
 
-bool User::Manager::session_launch(const std::string& strPipe)
+bool User::Manager::session_launch(const OOBase::string& strPipe)
 {
 #if defined(_WIN32)
 	OMEGA_UNUSED_ARG(strPipe);
@@ -268,7 +268,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	bool bQuit = false;
 	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
-	std::string strPipe;
+	OOBase::string strPipe;
 	input.read(strPipe);
 	if (input.last_error() != 0)
 	{
@@ -278,7 +278,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	else
 	{
 		bQuit = !pThis->bootstrap(sandbox_channel) ||
-			!pThis->m_acceptor.start(pThis,strPipe) ||
+			!pThis->m_acceptor.start(pThis,strPipe.c_str()) ||
 			!pThis->start_services();
 	}
 

@@ -31,7 +31,7 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include <OOBase/../config-base.h>
+#include <OOBase/Allocator.h>
 
 #if defined(_MSC_VER) && defined(_DEBUG) && !defined(OMEGA_DEBUG)
 #define OMEGA_DEBUG
@@ -185,7 +185,7 @@ namespace
 
 	void PromptForDebugger(DWORD pid)
 	{
-		std::ostringstream out;
+		OOBase::ostringstream out;
 		out << "Attach the debugger to process id " << pid << " now if you want!";
 		MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 	}

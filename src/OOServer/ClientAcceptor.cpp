@@ -49,9 +49,9 @@ Root::ClientAcceptor::ClientAcceptor() :
 bool Root::ClientAcceptor::start(Manager* pManager)
 {
 #if defined(_WIN32)
-	std::string pipe_name = "OmegaOnline";
+	const char* pipe_name = "OmegaOnline";
 #elif defined(HAVE_UNISTD_H)
-	std::string pipe_name = "/tmp/omegaonline";
+	const char* pipe_name = "/tmp/omegaonline";
 #else
 #error Fix me!
 #endif
@@ -65,7 +65,7 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 	int err = 0;
 	m_pSocket = Proactor::instance().accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name.c_str(),OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err).c_str()),false);
 
 	return true;
 }
@@ -75,7 +75,7 @@ void Root::ClientAcceptor::stop()
 	m_pSocket = 0;
 }
 
-bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& /*strAddress*/, int err)
+bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* /*strAddress*/, int err)
 {
 	if (err != 0)
 		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
@@ -102,7 +102,7 @@ bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, c
 	return true;
 }
 
-bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
+bool Root::ClientAcceptor::init_security(const OOBase::string& pipe_name)
 {
 #if defined(_WIN32)
 

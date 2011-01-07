@@ -42,7 +42,7 @@ namespace
 		public Root::Manager::ControlledObject
 	{
 	public:
-		static TcpAcceptor* create(Root::Manager* pManager, Omega::uint32_t id, const std::string& strAddress, const std::string& strPort, int* perr);
+		static TcpAcceptor* create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::string& strAddress, const OOBase::string& strPort, int* perr);
 
 		virtual ~TcpAcceptor() {}
 
@@ -56,7 +56,7 @@ namespace
 		const Omega::uint32_t            m_id;
 		OOBase::SmartPtr<OOBase::Socket> m_ptrSocket;
 
-		bool on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const std::string& strAddress, int err);
+		bool on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* strAddress, int err);
 	};
 
 	class AsyncSocket :
@@ -107,7 +107,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 		}
 		else
 		{
-			std::set<std::string> setSubKeys;
+			::Registry::Hive::setType setSubKeys;
 			err = m_registry->enum_subkeys(uKey,0,setSubKeys);
 			if (err != 0)
 				LOG_ERROR(("Failed to enum subkeys of /System/Services key: %d",err));
@@ -115,7 +115,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 			{
 				count = setSubKeys.size();
 
-				for (std::set<std::string>::const_iterator i=setSubKeys.begin();i!=setSubKeys.end();++i)
+				for (::Registry::Hive::setType::const_iterator i=setSubKeys.begin();i!=setSubKeys.end();++i)
 				{
 					// Open the subkey
 					Omega::int64_t uSubKey = 0;
@@ -127,7 +127,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 						continue;
 					}
 
-					std::string strOid;
+					OOBase::string strOid;
 					err = m_registry->get_value(uSubKey,"OID",0,strOid);
 					if (err != 0)
 					{
@@ -161,7 +161,7 @@ void Root::Manager::get_service_key(Omega::uint32_t channel_id, OOBase::CDRStrea
 	}
 	else
 	{
-		std::string strKey;
+		OOBase::string strKey;
 		if (!request.read(strKey))
 		{
 			LOG_ERROR(("get_service_key called with invalid key name"));
@@ -203,7 +203,7 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 	}
 	else
 	{
-		std::string strKey;
+		OOBase::string strKey;
 		Omega::uint32_t id = 0;
 		if (!request.read(strKey) ||
 			!request.read(id))
@@ -232,7 +232,7 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 					LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
 				else
 				{
-					std::string strProtocol;
+					OOBase::string strProtocol;
 					err = m_registry->get_value(uKey,"Protocol",0,strProtocol);
 					if (err != 0)
 						LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
@@ -244,7 +244,7 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 					else
 					{
 						// These are allowed to be missing...
-						std::string strAddress, strPort;
+						OOBase::string strAddress, strPort;
 						m_registry->get_value(uKey,"Address",0,strAddress);
 						m_registry->get_value(uKey,"Port",0,strPort);
 
@@ -259,7 +259,7 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
 }
 
-int Root::Manager::create_service_listener(Omega::uint32_t id, const std::string& strProtocol, const std::string& strAddress, const std::string& strPort)
+int Root::Manager::create_service_listener(Omega::uint32_t id, const OOBase::string& strProtocol, const OOBase::string& strAddress, const OOBase::string& strPort)
 {
 	int err = 0;
 	OOBase::SmartPtr<ControlledObject> ptrService;
@@ -543,7 +543,7 @@ TcpAcceptor::TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id) :
 	assert(m_id);
 }
 
-TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const std::string& strAddress, const std::string& strPort, int* perr)
+TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::string& strAddress, const OOBase::string& strPort, int* perr)
 {
 	TcpAcceptor* pService;
 	OOBASE_NEW_T(TcpAcceptor,pService,TcpAcceptor(pManager,id));
@@ -553,7 +553,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)0);
 	}
 
-	pService->m_ptrSocket = Root::Proactor::instance().accept_remote(pService,strAddress,strPort,perr);
+	pService->m_ptrSocket = Root::Proactor::instance().accept_remote(pService,strAddress.c_str(),strPort.c_str(),perr);
 	if (*perr != 0)
 	{
 		OOBASE_DELETE(TcpAcceptor,pService);
@@ -566,7 +566,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	return pService;
 }
 
-bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const std::string& /*strAddress*/, int err)
+bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* /*strAddress*/, int err)
 {
 	if (err)
 	{

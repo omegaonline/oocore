@@ -34,10 +34,10 @@ namespace User
 		Acceptor();
 		virtual ~Acceptor() {}
 		
-		bool start(Manager* pManager, const std::string& pipe_name);
+		bool start(Manager* pManager, const char* pipe_name);
 		void stop();
 
-		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& strAddress, int err);
+		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* strAddress, int err);
 
 		static std::string unique_name();
 
@@ -48,7 +48,7 @@ namespace User
 		Manager*                         m_pManager;
 		OOBase::SmartPtr<OOBase::Socket> m_pSocket;
 
-		bool init_security(const std::string& pipe_name);
+		bool init_security(const char* pipe_name);
 
 		SECURITY_ATTRIBUTES              m_sa;
 

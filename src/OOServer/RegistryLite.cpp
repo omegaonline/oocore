@@ -106,7 +106,7 @@ namespace
 		ObjectPtr<IKey> m_ptrLocalUserKey;
 
 		string_t parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey);
-		int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, ::Registry::Hive::access_rights_t access_mask);
+		int registry_access_check(const OOBase::string& strdb, Omega::uint32_t channel_id, ::Registry::Hive::access_rights_t access_mask);
 
 	// IKey members
 	public:
@@ -126,9 +126,10 @@ namespace
 		void DeleteValue(const string_t& strName);
 	};
 
-	static std::string get_db_dir(InterProcessService* pIPS)
+	static OOBase::string get_db_dir(InterProcessService* pIPS)
 	{
-		std::string dir = pIPS->GetArg(L"regdb_path").ToUTF8();
+		void* TODO;
+		OOBase::string dir = pIPS->GetArg(L"regdb_path").ToUTF8().c_str();
 		if (!dir.empty())
 		{
 #if defined(_WIN32)
@@ -190,7 +191,7 @@ any_t HiveKey::GetValue(const string_t& strName)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	std::string strValue;
+	OOBase::string strValue;
 	int err = m_pHive->get_value(m_key,OOBase::to_utf8(strName.c_str()),0,strValue);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
@@ -217,7 +218,7 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 
 string_t HiveKey::GetDescription()
 {
-	std::string strValue;
+	OOBase::string strValue;
 	int err = m_pHive->get_description(m_key,0,strValue);
 	if (err==ENOENT)
 		User::Registry::NotFoundException::Throw(GetName());
@@ -233,7 +234,7 @@ string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	std::string strValue;
+	OOBase::string strValue;
 	int err = m_pHive->get_value_description(m_key,OOBase::to_utf8(strName.c_str()),0,strValue);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
@@ -290,7 +291,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 std::set<Omega::string_t> HiveKey::EnumSubKeys()
 {
-	std::set<std::string> setSubKeys;
+	::Registry::Hive::setType setSubKeys;
 	int err = m_pHive->enum_subkeys(m_key,0,setSubKeys);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
@@ -300,7 +301,7 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 		OMEGA_THROW(err);
 
 	std::set<Omega::string_t> setOutSubKeys;
-	for (std::set<std::string>::const_iterator i=setSubKeys.begin(); i!=setSubKeys.end(); ++i)
+	for (::Registry::Hive::setType::const_iterator i=setSubKeys.begin(); i!=setSubKeys.end(); ++i)
 		setOutSubKeys.insert(string_t(i->c_str(),true));
 
 	return setOutSubKeys;
@@ -308,7 +309,7 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 
 std::set<Omega::string_t> HiveKey::EnumValues()
 {
-	std::set<std::string> setValues;
+	::Registry::Hive::setType setValues;
 	int err = m_pHive->enum_values(m_key,0,setValues);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
@@ -318,7 +319,7 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 		OMEGA_THROW(err);
 
 	std::set<Omega::string_t> setOutValues;
-	for (std::set<std::string>::const_iterator i=setValues.begin(); i!=setValues.end(); ++i)
+	for (::Registry::Hive::setType::const_iterator i=setValues.begin(); i!=setValues.end(); ++i)
 		setOutValues.insert(string_t(i->c_str(),true));
 
 	return setOutValues;
@@ -355,7 +356,9 @@ void RootKey::Init_Once()
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 
 	OMEGA_NEW_T(::Registry::Hive,m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb"));
-	OMEGA_NEW_T(::Registry::Hive,m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8()));
+
+	void* TODO; // final c_str()
+	OMEGA_NEW_T(::Registry::Hive,m_localuser_hive,::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToUTF8().c_str()));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");
@@ -372,7 +375,7 @@ void RootKey::Init_Once()
 	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
 }
 
-int RootKey::registry_access_check(const std::string& /*strdb*/, Omega::uint32_t /*channel_id*/, ::Registry::Hive::access_rights_t /*access_mask*/)
+int RootKey::registry_access_check(const OOBase::string& /*strdb*/, Omega::uint32_t /*channel_id*/, ::Registry::Hive::access_rights_t /*access_mask*/)
 {
 	// Allow sqlite's underlying protection mechanism to sort it out
 	return 0;

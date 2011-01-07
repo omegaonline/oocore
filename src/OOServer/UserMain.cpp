@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text(errno).c_str()));
 #endif
 
-	std::string strPipe;
+	OOBase::string strPipe;
 	bool bForkSlave = false;
 
 	// Try to work out how we are being asked to start
@@ -115,7 +115,9 @@ int main(int argc, char* argv[])
 	if (i != args.end())
 	{
 		// Fork start from ooserverd
-		strPipe = i->second;
+
+		void* TODO;
+		strPipe = i->second.c_str();
 		bForkSlave = true;
 	}
 	else
@@ -123,7 +125,9 @@ int main(int argc, char* argv[])
 		if ((i=args.find("launch-session")) != args.end())
 		{
 			// Start from oo-launch
-			strPipe = i->second;
+
+			void* TODO;
+			strPipe = i->second.c_str();
 		}
 		else
 		{

@@ -35,7 +35,7 @@
 #include "RootManager.h"
 #include "SpawnedProcess.h"
 
-int Root::Manager::registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask)
+int Root::Manager::registry_access_check(const OOBase::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask)
 {
 	// Zero channel always has access...
 	if (channel_id == 0)
@@ -103,7 +103,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 	// Find the process info
 	Omega::byte_t local_type = 0;
 	Omega::int32_t err = 0;
-	std::string strName;
+	OOBase::string strName;
 	Omega::int64_t uKey;
 
 	std::map<Omega::uint32_t,UserProcess>::const_iterator i = m_mapUserProcesses.find(channel_id);
@@ -150,7 +150,7 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		std::string strSubKey;
+		OOBase::string strSubKey;
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
@@ -169,7 +169,7 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		std::string strSubKey;
+		OOBase::string strSubKey;
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
@@ -198,7 +198,7 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		std::string strSubKey;
+		OOBase::string strSubKey;
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
@@ -230,7 +230,7 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strValue;
+		OOBase::string strValue;
 		if (!request.read(strValue))
 			err = request.last_error();
 		else
@@ -242,14 +242,14 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 
 void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	std::string val;
+	OOBase::string val;
 
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strValue;
+		OOBase::string strValue;
 		if (!request.read(strValue))
 			err = request.last_error();
 		else
@@ -268,12 +268,12 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strValue;
+		OOBase::string strValue;
 		if (!request.read(strValue))
 			err = request.last_error();
 		else
 		{
-			std::string val;
+			OOBase::string val;
 			if (!request.read(val))
 				err = request.last_error();
 			else
@@ -291,7 +291,7 @@ void Root::Manager::registry_set_description(Omega::uint32_t channel_id, OOBase:
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strDesc;
+		OOBase::string strDesc;
 		if (!request.read(strDesc))
 			err = request.last_error();
 		else
@@ -308,12 +308,12 @@ void Root::Manager::registry_set_value_description(Omega::uint32_t channel_id, O
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strValue;
+		OOBase::string strValue;
 		if (!request.read(strValue))
 			err = request.last_error();
 		else
 		{
-			std::string strDesc;
+			OOBase::string strDesc;
 			if (!request.read(strDesc))
 				err = request.last_error();
 			else
@@ -326,7 +326,7 @@ void Root::Manager::registry_set_value_description(Omega::uint32_t channel_id, O
 
 void Root::Manager::registry_get_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	std::string val;
+	OOBase::string val;
 
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
@@ -341,14 +341,14 @@ void Root::Manager::registry_get_description(Omega::uint32_t channel_id, OOBase:
 
 void Root::Manager::registry_get_value_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	std::string val;
+	OOBase::string val;
 
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strValue;
+		OOBase::string strValue;
 		if (!request.read(strValue))
 			err = request.last_error();
 		else
@@ -379,7 +379,7 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		std::string strValue;
+		OOBase::string strValue;
 		if (!request.read(strValue))
 			err = request.last_error();
 		else

@@ -49,7 +49,7 @@ namespace Root
 		bool start(Manager* pManager);
 		void stop();
 
-		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const std::string& strAddress, int err);
+		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* strAddress, int err);
 
 	private:
 		ClientAcceptor(const ClientAcceptor&);
@@ -58,7 +58,7 @@ namespace Root
 		Manager*                         m_pManager;
 		OOBase::SmartPtr<OOBase::Socket> m_pSocket;
 
-		bool init_security(const std::string& pipe_name);
+		bool init_security(const OOBase::string& pipe_name);
 
 		SECURITY_ATTRIBUTES              m_sa;
 #if defined(_WIN32)

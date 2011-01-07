@@ -1132,7 +1132,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
-	std::string strFn;
+	OOBase::string strFn;
 	msg->m_payload.read(strFn);
 
 	void (*pfnCall)(void*,OOBase::CDRStream&);
@@ -1172,7 +1172,7 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 	}
 }
 
-bool OOServer::MessageHandler::call_async_function_i(const std::string& strFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
+bool OOServer::MessageHandler::call_async_function_i(const OOBase::string& strFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
 {
 	assert(pfnCall);
 	if (!pfnCall)

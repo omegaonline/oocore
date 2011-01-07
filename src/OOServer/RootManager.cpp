@@ -153,7 +153,7 @@ int Root::Manager::run()
 bool Root::Manager::init_database()
 {
 	// Get dir from config
-	std::map<OOBase::string,OOBase::string>::const_iterator i=m_config_args.find("regdb_path");
+	OOSvrBase::CmdArgs::resultsType::const_iterator i=m_config_args.find("regdb_path");
 	if (i == m_config_args.end())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
@@ -230,7 +230,7 @@ bool Root::Manager::spawn_sandbox()
 
 	// Get username from config
 	OOBase::string strUName;
-	std::map<OOBase::string,OOBase::string>::const_iterator i=m_config_args.find("sandbox_uname");
+	OOSvrBase::CmdArgs::resultsType::const_iterator i=m_config_args.find("sandbox_uname");
 	if (i != m_config_args.end())
 		strUName = i->second.c_str();
 

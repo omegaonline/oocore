@@ -94,7 +94,7 @@ namespace Root
 
 		// Configuration members
 		OOSvrBase::CmdArgs::resultsType m_cmd_args;
-		std::map<OOBase::string,OOBase::string> m_config_args;
+		OOSvrBase::CmdArgs::resultsType m_config_args;
 
 		// I/O members
 		OOBase::RWMutex m_lock;

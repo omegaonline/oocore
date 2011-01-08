@@ -140,8 +140,10 @@ namespace OOCore
 			~ThreadContext();
 		};
 
-		OOBase::AtomicInt<size_t>                        m_usage_count;
-		std::map<Omega::uint16_t,ThreadContext*>         m_mapThreadContexts;
+		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
+
+		OOBase::AtomicInt<size_t>                        m_usage_count;		
+		mapThreadContextsType                            m_mapThreadContexts;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
 		// Accessors for ThreadContext

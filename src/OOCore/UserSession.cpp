@@ -44,14 +44,11 @@ OOCore::UserSession::UserSession() :
 
 OOCore::UserSession::~UserSession()
 {
-	try
-	{
-		// Clear the thread id's of the ThreadContexts
-		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-			i->second->m_thread_id = 0;
-	}
-	catch (std::exception&)
-	{}
+	// Clear the thread id's of the ThreadContexts
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	for (mapThreadContextsType::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		i->second->m_thread_id = 0;
 }
 
 IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,string_t>& args)
@@ -623,7 +620,10 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(msg->m_src_channel_id))
 					err = response.last_error();
 				else
+				{
+					void* TODO; // send_response can throw!
 					send_response(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
+				}
 			}
 			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
 			{
@@ -638,7 +638,10 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(res))
 					err = response.last_error();
 				else
+				{
+					void* TODO; // send_response can throw!
 					send_response(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
+				}
 			}
 		}
 		else if (msg->m_dest_thread_id != 0)
@@ -646,7 +649,7 @@ int OOCore::UserSession::run_read_loop()
 			// Find the right queue to send it to...
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+			mapThreadContextsType::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
 			if (i != m_mapThreadContexts.end())
 			{
 				size_t waiting = i->second->m_usage_count;
@@ -679,7 +682,7 @@ int OOCore::UserSession::run_read_loop()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Tell all worker threads that we are done with them...
-	for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	for (mapThreadContextsType::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 	{
 		i->second->m_msg_queue.close();
 	}
@@ -751,7 +754,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 
 	if (bPulse)
 	{
-		for (std::map<uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		for (mapThreadContextsType::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 			i->second->m_msg_queue.pulse();
 	}
 }
@@ -841,20 +844,15 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	try
+	for (uint16_t i=1; i<=0xFFF; ++i)
 	{
-		for (uint16_t i=1; i<=0xFFF; ++i)
+		if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
 		{
-			if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
-			{
-				m_mapThreadContexts.insert(std::map<uint16_t,ThreadContext*>::value_type(i,pContext));
-				return i;
-			}
+			m_mapThreadContexts.insert(mapThreadContextsType::value_type(i,pContext));
+			return i;
 		}
 	}
-	catch (std::exception&)
-	{}
-
+	
 	OOBase_CallCriticalFailure("Too many threads");
 	return 0;
 }
@@ -863,12 +861,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	try
-	{
-		m_mapThreadContexts.erase(thread_id);
-	}
-	catch (std::exception&)
-	{}
+	m_mapThreadContexts.erase(thread_id);
 }
 
 OOCore::ResponsePtr OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)

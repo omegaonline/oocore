@@ -317,18 +317,13 @@ OOServer::MessageHandler::MessageHandler() :
 
 OOServer::MessageHandler::~MessageHandler()
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		// Tell every thread context that we have gone...
-		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-		{
-			i->second->m_pHandler = 0;
-		}
+	// Tell every thread context that we have gone...
+	for (mapThreadContextsType::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+	{
+		i->second->m_pHandler = 0;
 	}
-	catch (std::exception&)
-	{}
 }
 
 bool OOServer::MessageHandler::start_request_threads()
@@ -760,18 +755,11 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 
 	if (bPulse)
 	{
-		try
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			// Unblock all waiting threads
-			for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-				i->second->m_msg_queue.pulse();
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("std::exception thrown %s",e.what()));
-		}
+		// Unblock all waiting threads
+		for (mapThreadContextsType::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+			i->second->m_msg_queue.pulse();
 	}
 }
 
@@ -806,16 +794,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 		// Find the right queue to send it to...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		try
-		{
-			std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
-			if (i != m_mapThreadContexts.end())
-				res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),io_result::failed);
-		}
+		mapThreadContextsType::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+		if (i != m_mapThreadContexts.end())
+			res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 	}
 	else
 	{
@@ -869,22 +850,15 @@ Omega::uint16_t OOServer::MessageHandler::insert_thread_context(OOServer::Messag
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	try
+	for (Omega::uint16_t i=1; i<=0xFFF; ++i)
 	{
-		for (Omega::uint16_t i=1; i<=0xFFF; ++i)
+		if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
 		{
-			if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
-			{
-				m_mapThreadContexts.insert(std::map<Omega::uint16_t,ThreadContext*>::value_type(i,pContext));
-				return i;
-			}
+			m_mapThreadContexts.insert(mapThreadContextsType::value_type(i,pContext));
+			return i;
 		}
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
-
+	
 	OOBase_CallCriticalFailure("Too many threads");
 	return 0;
 }
@@ -893,14 +867,7 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	try
-	{
-		m_mapThreadContexts.erase(pContext->m_thread_id);
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
+	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
 void OOServer::MessageHandler::close_channels()
@@ -939,18 +906,13 @@ void OOServer::MessageHandler::close_channels()
 
 void OOServer::MessageHandler::stop_request_threads()
 {
-	try
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-			i->second->m_msg_queue.close();
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
-
+	for (mapThreadContextsType::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		i->second->m_msg_queue.close();
+	
+	guard.release();
+	
 	m_default_msg_queue.close();
 
 	// Wait for all the request threads to finish

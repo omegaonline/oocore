@@ -199,7 +199,9 @@ namespace OOServer
 			ThreadContext& operator = (const ThreadContext&);
 		};
 		friend struct ThreadContext;
-		std::map<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
+
+		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
+		mapThreadContextsType m_mapThreadContexts;
 
 		// Accessors for ThreadContext
 		Omega::uint16_t insert_thread_context(ThreadContext* pContext);

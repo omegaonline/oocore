@@ -317,10 +317,10 @@ OOServer::MessageHandler::MessageHandler() :
 
 OOServer::MessageHandler::~MessageHandler()
 {
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
 	try
 	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
 		// Tell every thread context that we have gone...
 		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
 		{

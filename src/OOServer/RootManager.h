@@ -108,7 +108,9 @@ namespace Root
 			OOBase::SmartPtr<SpawnedProcess> ptrSpawn;
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
-		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
+
+		typedef std::map<Omega::uint32_t,UserProcess,std::less<Omega::uint32_t>,OOBase::CriticalAllocator<std::pair<Omega::uint32_t,UserProcess> > > mapUserProcessesType;
+		mapUserProcessesType m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::string& strPipe);

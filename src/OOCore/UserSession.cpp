@@ -557,7 +557,7 @@ int OOCore::UserSession::run_read_loop()
 		OOBase::SmartPtr<Message> msg;
 		OOBASE_NEW_T(Message,msg,Message(nReadLen));
 		if (!msg)
-			OOBase::CallCriticalFailureMem(__FILE__,__LINE__);
+			OOBase::CallCriticalFailureMem(__FILE__,__LINE__-2);
 
 		// Issue another read for the rest of the data
 		recvd = m_stream->recv(msg->m_payload.buffer(),nReadLen,&err);

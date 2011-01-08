@@ -141,9 +141,9 @@ int main(int argc, char* argv[])
 	// Do the correct init
 	bool bRun = false;
 	if (bForkSlave)
-		bRun = manager.fork_slave(strPipe);
+		bRun = manager.fork_slave(strPipe.c_str());
 	else
-		bRun = manager.session_launch(strPipe);
+		bRun = manager.session_launch(strPipe.c_str());
 
 	// Now run...
 	if (bRun)

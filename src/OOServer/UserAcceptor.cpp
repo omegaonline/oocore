@@ -33,45 +33,52 @@ User::Acceptor::Acceptor() :
 {
 }
 
-std::string User::Acceptor::unique_name()
+OOBase::string User::Acceptor::unique_name()
 {
 	// Create a new unique pipe
-	std::ostringstream ssPipe;
-	ssPipe.imbue(std::locale::classic());
-	ssPipe.setf(std::ios_base::hex,std::ios_base::basefield);
+	try
+	{
+		OOBase::ostringstream ssPipe;
+		ssPipe.imbue(std::locale::classic());
+		ssPipe.setf(std::ios_base::hex,std::ios_base::basefield);
 
 #if defined(_WIN32)
-	ssPipe << "OOU";
+		ssPipe << "OOU";
 
-	// Get the current user's Logon SID
-	OOBase::Win32::SmartHandle hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),"");
+		// Get the current user's Logon SID
+		OOBase::Win32::SmartHandle hProcessToken;
+		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),"");
 
-	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
-	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
-	if (dwRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),"");
+		// Get the logon SID of the Token
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
+		if (dwRes != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),"");
 
-	char* pszSid;
-	if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
-	{
-		ssPipe << pszSid;
-		LocalFree(pszSid);
-	}
+		char* pszSid;
+		if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+		{
+			ssPipe << pszSid;
+			LocalFree(pszSid);
+		}
 #elif defined(HAVE_UNISTD_H)
 
-	ssPipe << "/tmp/oo-" << getuid() << "-" << getpid();
+		ssPipe << "/tmp/oo-" << getuid() << "-" << getpid();
 
 #else
 #error Fix me!
 #endif
 
-	// Add the current time...
-	ssPipe << "-" << OOBase::timeval_t::gettimeofday().tv_usec();
+		// Add the current time...
+		ssPipe << "-" << OOBase::timeval_t::gettimeofday().tv_usec();
 
-	return ssPipe.str();
+		return ssPipe.str();
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),OOBase::string());
+	}
 }
 
 bool User::Acceptor::start(Manager* pManager, const char* pipe_name)

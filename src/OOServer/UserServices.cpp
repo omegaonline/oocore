@@ -103,8 +103,8 @@ bool User::Manager::start_services()
 	// Loop through returned services, starting each one...
 	for (;count > 0;--count)
 	{
-		std::string strKey;
-		std::string strOid;
+		OOBase::string strKey;
+		OOBase::string strOid;
 		if (!response->read(strKey) ||
 			!response->read(strOid))
 		{
@@ -159,7 +159,7 @@ bool User::Manager::start_services()
 	return true;
 }
 
-void User::Manager::start_service(const std::string& strKey, const std::string& strOid)
+void User::Manager::start_service(const OOBase::string& strKey, const OOBase::string& strOid)
 {
 	ObjectPtr<System::IService> ptrService;
 	try
@@ -240,7 +240,7 @@ void User::Manager::start_service(const std::string& strKey, const std::string& 
 	}
 }
 
-ObjectPtr<Registry::IKey> User::Manager::get_service_key(const std::string& strKey)
+ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::string& strKey)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetServiceKey));
@@ -260,7 +260,7 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const std::string& strK
 		OMEGA_THROW(err);
 
 	int64_t uKey = 0;
-	std::string strKeyPath;
+	OOBase::string strKeyPath;
 	if (!response->read(uKey) ||
 		!response->read(strKeyPath))
 	{
@@ -309,7 +309,7 @@ void User::Manager::stop_services()
 	}
 }
 
-void User::Manager::listen_service_socket(const std::string& strKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
+void User::Manager::listen_service_socket(const OOBase::string& strKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ListenSocket));

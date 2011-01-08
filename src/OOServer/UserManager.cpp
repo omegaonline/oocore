@@ -86,7 +86,7 @@ void User::Manager::run()
 	close_channels();
 }
 
-bool User::Manager::fork_slave(const OOBase::string& strPipe)
+bool User::Manager::fork_slave(const char* strPipe)
 {
 	// Connect to the root
 
@@ -94,13 +94,13 @@ bool User::Manager::fork_slave(const OOBase::string& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe.c_str(),&err,&wait);
+	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
 
 #elif defined(HAVE_UNISTD_H)
 	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
+	int fd = atoi(strPipe);
 
 	// Add FD_CLOEXEC to fd
 	int err = OOBase::POSIX::set_close_on_exec(fd,true);
@@ -120,14 +120,14 @@ bool User::Manager::fork_slave(const OOBase::string& strPipe)
 #endif
 
 	// Invent a new pipe name...
-	std::string strNewPipe = Acceptor::unique_name();
+	OOBase::string strNewPipe = Acceptor::unique_name();
 	if (strNewPipe.empty())
 		return false;
 
 	return handshake_root(local_socket,strNewPipe);
 }
 
-bool User::Manager::session_launch(const OOBase::string& strPipe)
+bool User::Manager::session_launch(const char* strPipe)
 {
 #if defined(_WIN32)
 	OMEGA_UNUSED_ARG(strPipe);
@@ -136,10 +136,10 @@ bool User::Manager::session_launch(const OOBase::string& strPipe)
 #else
 
 	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
+	int fd = atoi(strPipe);
 
 	// Invent a new pipe name...
-	std::string strNewPipe = Acceptor::unique_name();
+	OOBase::string strNewPipe = Acceptor::unique_name();
 	if (strNewPipe.empty())
 		return false;
 
@@ -186,7 +186,7 @@ bool User::Manager::session_launch(const OOBase::string& strPipe)
 #endif
 }
 
-bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const std::string& strPipe)
+bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::string& strPipe)
 {
 	OOBase::CDRStream stream;
 

@@ -44,7 +44,7 @@ int Root::Manager::registry_access_check(const OOBase::string& strdb, Omega::uin
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Find the process info
-	std::map<Omega::uint32_t,UserProcess>::const_iterator i = m_mapUserProcesses.find(channel_id);
+	mapUserProcessesType::const_iterator i = m_mapUserProcesses.find(channel_id);
 	if (i == m_mapUserProcesses.end())
 		return EINVAL;
 
@@ -77,7 +77,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Find the process info
-		std::map<Omega::uint32_t,UserProcess>::const_iterator i = m_mapUserProcesses.find(channel_id);
+		mapUserProcessesType::const_iterator i = m_mapUserProcesses.find(channel_id);
 		if (i == m_mapUserProcesses.end())
 			return EINVAL;
 
@@ -106,7 +106,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 	OOBase::string strName;
 	Omega::int64_t uKey;
 
-	std::map<Omega::uint32_t,UserProcess>::const_iterator i = m_mapUserProcesses.find(channel_id);
+	mapUserProcessesType::const_iterator i = m_mapUserProcesses.find(channel_id);
 	if (i == m_mapUserProcesses.end())
 		err = EINVAL;
 	else

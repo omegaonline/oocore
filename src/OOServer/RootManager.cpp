@@ -77,7 +77,6 @@ int Root::Manager::run()
 	// Ignore SIGPIPE
 	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno).c_str()));
-#endif
 
 	OOBase::string strPidfile = "/var/run/ooserverd.pid";
 	OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("pidfile");
@@ -86,6 +85,7 @@ int Root::Manager::run()
 
 	if (!pid_file(strPidfile.c_str()))
 		return EXIT_FAILURE;
+#endif
 
 	try
 	{
@@ -205,7 +205,7 @@ bool Root::Manager::load_config_file(const OOBase::string& strFile)
 			// Read line as key=value
 			OOBase::string key,value;
 			size_t pos = line.find('=');
-			if (pos == std::string::npos)
+			if (pos == OOBase::string::npos)
 			{
 				key = line;
 				value = "true";
@@ -335,83 +335,69 @@ bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_
 void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 {
 	// Remove the associated spawned process
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapUserProcesses.erase(channel);
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
+	m_mapUserProcesses.erase(channel);
 }
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process)
 {
-	try
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
+
+	for (bool bFirst = true;bFirst;bFirst = false)
 	{
-		bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
+		std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> > vecDead;
 
-		for (bool bFirst = true;bFirst;bFirst = false)
+		// See if we have a process already
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		for (mapUserProcessesType::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
 		{
-			std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> > vecDead;
-
-			// See if we have a process already
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-			for (std::map<Omega::uint32_t,UserProcess>::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+			if (!i->second.ptrSpawn->IsRunning())
 			{
-				if (!i->second.ptrSpawn->IsRunning())
-				{
-					vecDead.push_back(i->first);
-				}
-				else if (i->second.ptrSpawn->IsSameLogin(uid))
-				{
-					user_process = i->second;
-					return true;
-				}
-				else if (i->second.ptrSpawn->IsSameUser(uid))
-				{
-					user_process.ptrRegistry = i->second.ptrRegistry;
-				}
+				vecDead.push_back(i->first);
 			}
-
-			guard.release();
-
-			if (!vecDead.empty())
+			else if (i->second.ptrSpawn->IsSameLogin(uid))
 			{
-				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-				for (std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> >::const_iterator i=vecDead.begin();i!=vecDead.end();++i)
-					m_mapUserProcesses.erase(*i);
-			}
-
-			// Spawn a new user process
-			bool bAgain = false;
-			if (spawn_user(uid,user_process.ptrRegistry,false,user_process.strPipe,bAgain) != 0)
+				user_process = i->second;
 				return true;
-
-			if (bFirst && bAgain && bUnsafe)
+			}
+			else if (i->second.ptrSpawn->IsSameUser(uid))
 			{
-				OOBase::string strOurUName;
-				if (!get_our_uid(uid,strOurUName))
-					return false;
-
-				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-									   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
-									   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
-									   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-									   strOurUName.c_str());
+				user_process.ptrRegistry = i->second.ptrRegistry;
 			}
 		}
 
-		return false;
+		guard.release();
+
+		if (!vecDead.empty())
+		{
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+			for (std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> >::const_iterator i=vecDead.begin();i!=vecDead.end();++i)
+				m_mapUserProcesses.erase(*i);
+		}
+
+		// Spawn a new user process
+		bool bAgain = false;
+		if (spawn_user(uid,user_process.ptrRegistry,false,user_process.strPipe,bAgain) != 0)
+			return true;
+
+		if (bFirst && bAgain && bUnsafe)
+		{
+			OOBase::string strOurUName;
+			if (!get_our_uid(uid,strOurUName))
+				return false;
+
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+								   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
+								   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
+								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+								   strOurUName.c_str());
+		}
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
-	}
+
+	return false;
 }
 
 Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::string& strPipe, bool& bAgain)
@@ -453,28 +439,20 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	}
 
 	// Insert the data into the process map...
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		// Check we haven't created a duplicate while we spawned...
-		for (std::map<Omega::uint32_t,UserProcess>::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+	// Check we haven't created a duplicate while we spawned...
+	for (mapUserProcessesType::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+	{
+		if (i->second.ptrSpawn->IsSameLogin(uid))
 		{
-			if (i->second.ptrSpawn->IsSameLogin(uid))
-			{
-				ptrMC->close();
-				return i->first;
-			}
+			ptrMC->close();
+			return i->first;
 		}
-
-		m_mapUserProcesses.insert(std::map<Omega::uint32_t,UserProcess>::value_type(channel_id,process));
-	}
-	catch (std::exception& e)
-	{
-		ptrMC->close();
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),0);
 	}
 
+	m_mapUserProcesses.insert(mapUserProcessesType::value_type(channel_id,process));
+	
 	// Now start the read cycle from ptrMC
 	return (ptrMC->read() ? channel_id : 0);
 }

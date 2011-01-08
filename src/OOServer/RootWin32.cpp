@@ -128,161 +128,146 @@
 
 bool Root::Manager::load_config()
 {
-	try
+	// Clear current entries
+	m_config_args.clear();
+
+	// Insert platform defaults
+	wchar_t szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	if FAILED(hr)
+		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+	if (!PathAppendW(szBuf,L"Omega Online"))
+		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+	if (!PathFileExistsW(szBuf))
+		LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
+
+	m_config_args["regdb_path"] = OOBase::to_utf8(szBuf).c_str();
+
+	OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("conf-file");
+	if (f != m_cmd_args.end())
+		return load_config_file(f->second);
+
+	// Read from registry
+	HKEY hKey = 0;
+	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
+	if (lRes == ERROR_FILE_NOT_FOUND)
+		return true;
+	else if (lRes != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+
+	// Loop pulling out registry values
+	for (DWORD dwIndex=0;; ++dwIndex)
 	{
-		// Clear current entries
-		m_config_args.clear();
-
-		// Insert platform defaults
-		wchar_t szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-		if FAILED(hr)
-			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-		if (!PathAppendW(szBuf,L"Omega Online"))
-			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-		if (!PathFileExistsW(szBuf))
-			LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
-
-		m_config_args["regdb_path"] = OOBase::to_utf8(szBuf).c_str();
-
-		OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("conf-file");
-		if (f != m_cmd_args.end())
-			return load_config_file(f->second);
-
-		// Read from registry
-		HKEY hKey = 0;
-		LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
-		if (lRes == ERROR_FILE_NOT_FOUND)
-			return true;
+		char valName[16383 + 1];
+		DWORD dwNameLen = 16383 + 1;
+		DWORD dwType = 0;
+		DWORD dwValLen = 0;
+		lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
+		if (lRes == ERROR_NO_MORE_ITEMS)
+			break;
 		else if (lRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
-
-		try
 		{
-			// Loop pulling out registry values
-			for (DWORD dwIndex=0;; ++dwIndex)
+			RegCloseKey(hKey);
+			LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+		}
+
+		// Skip anything starting with #
+		if (dwValLen>=1 && valName[0]=='#')
+			continue;
+
+		OOBase::string value,key(valName,dwNameLen);
+		++dwNameLen;
+
+		if (dwType == REG_DWORD)
+		{
+			DWORD dwVal = 0;
+			DWORD dwLen = sizeof(dwVal);
+			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
+			if (lRes != ERROR_SUCCESS)
 			{
-				char valName[16383 + 1];
-				DWORD dwNameLen = 16383 + 1;
-				DWORD dwType = 0;
-				DWORD dwValLen = 0;
-				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
-				if (lRes == ERROR_NO_MORE_ITEMS)
-					break;
-				else if (lRes != ERROR_SUCCESS)
-				{
-					RegCloseKey(hKey);
-					LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
-				}
+				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+				continue;
+			}
 
-				// Skip anything starting with #
-				if (dwValLen>=1 && valName[0]=='#')
+			try
+			{
+				OOBase::ostringstream os;
+				os.imbue(std::locale::classic());
+				os << dwVal;
+				value = os.str();
+			}
+			catch (std::exception& e)
+			{
+				LOG_ERROR(("std::exception thrown %s",e.what()));
+				continue;
+			}
+		}
+		else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
+		{
+			++dwValLen;
+			OOBase::SmartPtr<char,OOBase::FreeDestructor<2> > buf = static_cast<char*>(OOBase::Allocate(dwValLen+1,2,__FILE__,__LINE__));
+			if (!buf)
+			{
+				LOG_ERROR(("Out of memory"));
+				continue;
+			}
+
+			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
+			if (lRes != ERROR_SUCCESS)
+			{
+				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+				continue;
+			}
+
+			if (dwType == REG_EXPAND_SZ)
+			{
+				char buf2[1024] = {0};
+				DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1022);
+				if (dwExpLen == 0)
+				{
+					DWORD dwErr = GetLastError();
+					LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
 					continue;
-
-				OOBase::string value,key(valName,dwNameLen);
-				++dwNameLen;
-
-				if (dwType == REG_DWORD)
-				{
-					DWORD dwVal = 0;
-					DWORD dwLen = sizeof(dwVal);
-					lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
-					if (lRes != ERROR_SUCCESS)
-					{
-						LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
-						continue;
-					}
-
-					try
-					{
-						OOBase::ostringstream os;
-						os.imbue(std::locale::classic());
-						os << dwVal;
-						value = os.str();
-					}
-					catch (std::exception& e)
-					{
-						LOG_ERROR(("std::exception thrown %s",e.what()));
-						continue;
-					}
 				}
-				else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
+				else if (dwExpLen <= 1022)
+					value.assign(buf2,dwExpLen-1);
+				else
 				{
-					++dwValLen;
-					OOBase::SmartPtr<char,OOBase::FreeDestructor<2> > buf = static_cast<char*>(OOBase::Allocate(dwValLen+1,2,__FILE__,__LINE__));
-					if (!buf)
+					OOBase::SmartPtr<char,OOBase::FreeDestructor<2> > buf3 = static_cast<char*>(OOBase::Allocate(dwExpLen+1,2,__FILE__,__LINE__));
+					if (!buf3)
 					{
 						LOG_ERROR(("Out of memory"));
 						continue;
 					}
 
-					lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
-					if (lRes != ERROR_SUCCESS)
+					if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
 					{
-						LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+						DWORD dwErr = GetLastError();
+						LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
 						continue;
 					}
 
-					if (dwType == REG_EXPAND_SZ)
-					{
-						char buf2[1024] = {0};
-						DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1022);
-						if (dwExpLen == 0)
-						{
-							DWORD dwErr = GetLastError();
-							LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
-							continue;
-						}
-						else if (dwExpLen <= 1022)
-							value.assign(buf2,dwExpLen-1);
-						else
-						{
-							OOBase::SmartPtr<char,OOBase::FreeDestructor<2> > buf3 = static_cast<char*>(OOBase::Allocate(dwExpLen+1,2,__FILE__,__LINE__));
-							if (!buf3)
-							{
-								LOG_ERROR(("Out of memory"));
-								continue;
-							}
-
-							if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
-							{
-								DWORD dwErr = GetLastError();
-								LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
-								continue;
-							}
-
-							value.assign(buf3,dwExpLen-1);
-						}
-					}
-					else
-						value.assign(buf,dwValLen-1);
+					value.assign(buf3,dwExpLen-1);
 				}
-				else
-				{
-					LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
-					continue;
-				}
-
-				if (!key.empty())
-					m_config_args[key] = value;
 			}
-
-			RegCloseKey(hKey);
-
-			return true;
+			else
+				value.assign(buf,dwValLen-1);
 		}
-		catch (...)
+		else
 		{
-			RegCloseKey(hKey);
-			throw;
+			LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
+			continue;
 		}
+
+		if (!key.empty())
+			m_config_args[key] = value;
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
-	}
+
+	RegCloseKey(hKey);
+
+	return true;
 }
 
 void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)

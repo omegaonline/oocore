@@ -92,6 +92,9 @@
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
         <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
       </Component>
+      <Component Id="OOReg.exe" Guid="{B6158997-7D0F-4524-93EA-FB30FE10E8D3}">
+        <File Source="$(var.BinDir)\OOReg.exe" KeyPath="yes" />
+      </Component>
     </DirectoryRef>
 
     <!-- Install registry databases -->
@@ -104,13 +107,6 @@
       </Component>
       <Component Id="OOServer.sandbox.regdb" Guid="{BD35170C-A657-4E8E-8DAD-C6048C3EA9C3}">
         <File Source="$(var.DataDir)\sandbox.regdb" KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
-
-    <!-- Install tools -->
-    <DirectoryRef Id="COMMONDIR">
-      <Component Id="OOReg.exe" Guid="{B6158997-7D0F-4524-93EA-FB30FE10E8D3}">
-        <File Source="$(var.BinDir)\OOReg.exe" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 

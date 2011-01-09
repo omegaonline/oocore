@@ -86,7 +86,7 @@ bool User::Acceptor::start(Manager* pManager, const char* pipe_name)
 	assert(!m_pManager);
 	m_pManager = pManager;
 
-	if (!init_security(pipe_name))
+	if (!init_security())
 		return false;
 
 	int err = 0;
@@ -149,11 +149,9 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const c
 	return true;
 }
 
-bool User::Acceptor::init_security(const char* pipe_name)
+bool User::Acceptor::init_security()
 {
 #if defined(_WIN32)
-
-	OMEGA_UNUSED_ARG(pipe_name);
 
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
@@ -165,17 +163,6 @@ bool User::Acceptor::init_security(const char* pipe_name)
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
-
-	PSID pSID;
-	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = {SECURITY_CREATOR_SID_AUTHORITY};
-	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
-								  SECURITY_CREATOR_OWNER_RID,
-								  0, 0, 0, 0, 0, 0, 0,
-								  &pSID))
-	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
 
 	// Set full control for the Logon SID only
 	EXPLICIT_ACCESSW ea = {0};

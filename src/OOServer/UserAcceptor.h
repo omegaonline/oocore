@@ -48,7 +48,7 @@ namespace User
 		Manager*                         m_pManager;
 		OOBase::SmartPtr<OOBase::Socket> m_pSocket;
 
-		bool init_security(const char* pipe_name);
+		bool init_security();
 
 		SECURITY_ATTRIBUTES              m_sa;
 

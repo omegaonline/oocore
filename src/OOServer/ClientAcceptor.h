@@ -58,7 +58,7 @@ namespace Root
 		Manager*                         m_pManager;
 		OOBase::SmartPtr<OOBase::Socket> m_pSocket;
 
-		bool init_security(const OOBase::string& pipe_name);
+		bool init_security();
 
 		SECURITY_ATTRIBUTES              m_sa;
 #if defined(_WIN32)

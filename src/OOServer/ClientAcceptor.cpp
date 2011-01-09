@@ -59,7 +59,7 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 	assert(!m_pManager);
 	m_pManager = pManager;
 
-	if (!init_security(pipe_name))
+	if (!init_security())
 		return false;
 
 	int err = 0;
@@ -102,56 +102,70 @@ bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, c
 	return true;
 }
 
-bool Root::ClientAcceptor::init_security(const OOBase::string& pipe_name)
+bool Root::ClientAcceptor::init_security()
 {
 #if defined(_WIN32)
 
-#if defined(_MSC_VER)
-	pipe_name;
-#endif
+	// Get the current user's Logon SID
+	OOBase::Win32::SmartHandle hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
-	assert(!pipe_name.empty());
+	// Get the logon SID of the Token
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
+	if (dwRes != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-	PSID pSID;
-	SID_IDENTIFIER_AUTHORITY SIDAuthCreator = {SECURITY_CREATOR_SID_AUTHORITY};
-	if (!AllocateAndInitializeSid(&SIDAuthCreator, 1,
-								  SECURITY_CREATOR_OWNER_RID,
-								  0, 0, 0, 0, 0, 0, 0,
-								  &pSID))
-	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
-
-	const int NUM_ACES  = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
+	const int NUM_ACES = 3;
+	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
 	ea[0].grfAccessMode = SET_ACCESS;
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
 
-	// Create a SID for the Local users group.
-	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_LOCAL_SID_AUTHORITY};
-	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
-								  SECURITY_LOCAL_RID,
+	// Create a SID for the EVERYONE group.
+	PSID pSID;
+	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = {SECURITY_WORLD_SID_AUTHORITY};
+	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1,
+								  SECURITY_WORLD_RID,
 								  0, 0, 0, 0, 0, 0, 0,
 								  &pSID))
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSID);
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDEveryone(pSID);
 
-	// Set read/write access
+	// Set read/write access for EVERYONE
 	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
 	ea[1].grfAccessMode = SET_ACCESS;
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDUsers;
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDEveryone;
+
+	// Create a SID for the Network group.
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
+								  SECURITY_NETWORK_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	}
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDNetwork(pSID);
+
+	// Deny all to NETWORK
+	ea[2].grfAccessPermissions = FILE_ALL_ACCESS;
+	ea[2].grfAccessMode = DENY_ACCESS;
+	ea[2].grfInheritance = NO_INHERITANCE;
+	ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[2].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[2].Trustee.ptstrName = (LPWSTR)pSIDNetwork;
 
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);

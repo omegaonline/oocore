@@ -106,19 +106,20 @@ bool Root::ClientAcceptor::init_security()
 {
 #if defined(_WIN32)
 
-	// Get the current user's Logon SID
-	OOBase::Win32::SmartHandle hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
-	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
-	if (dwRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
-
 	const int NUM_ACES = 3;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
+
+	PSID pSID;
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
+								  SECURITY_LOCAL_SYSTEM_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	}
+
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDSystem(pSID);
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -126,10 +127,22 @@ bool Root::ClientAcceptor::init_security()
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDSystem;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+		
+	// Get the current user's Logon SID
+	OOBase::Win32::SmartHandle hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+	// Get the logon SID of the Token
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+	if (OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
+	{
+		// Use logon sid instead...
+		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+	}
 
 	// Create a SID for the EVERYONE group.
-	PSID pSID;
 	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = {SECURITY_WORLD_SID_AUTHORITY};
 	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1,
 								  SECURITY_WORLD_RID,
@@ -149,7 +162,6 @@ bool Root::ClientAcceptor::init_security()
 	ea[1].Trustee.ptstrName = (LPWSTR)pSIDEveryone;
 
 	// Create a SID for the Network group.
-	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
 	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
 								  SECURITY_NETWORK_RID,
 								  0, 0, 0, 0, 0, 0, 0,

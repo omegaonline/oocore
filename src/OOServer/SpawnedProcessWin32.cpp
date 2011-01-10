@@ -624,14 +624,14 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	// Forward declare these because of goto's
 	DWORD dwWait;
 	STARTUPINFOW startup_info = {0};
-	OOBase::wstring strWindowStation;
+	OOBase::wstring strWindowStation = L"WinSta0\\default";
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	OOBase::wstring strTitle;
-	
+		
 	// Load up the users profile
 	HANDLE hProfile = NULL;
 	if (!bSandbox)
@@ -696,14 +696,11 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	{
 		dwFlags |= DETACHED_PROCESS;
 
-		if (bSandbox && OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop))
-			startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
-		else
-		{
-			WCHAR sz[] = L"WinSta0\\default";
-			startup_info.lpDesktop = sz;
-			startup_info.wShowWindow = SW_HIDE;
-		}
+		if (bSandbox)
+			OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
+
+		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
+		startup_info.wShowWindow = SW_HIDE;
 	}
 
 	// Actually create the process!

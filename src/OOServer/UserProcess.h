@@ -24,6 +24,8 @@
 
 namespace User
 {
+	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, Omega::System::stl_allocator<wchar_t> > wstring;
+
 	class Process
 	{
 	public:
@@ -32,8 +34,8 @@ namespace User
 		virtual bool running() = 0;
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code) = 0;
 
-		static Process* exec(const std::wstring& strProcess);
-		static bool is_relative_path(const std::wstring& strPath);
+		static Process* exec(const wstring& strProcess);
+		static bool is_relative_path(const wstring& strPath);
 
 	protected:
 		Process() {}

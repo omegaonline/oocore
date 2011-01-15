@@ -140,7 +140,7 @@ namespace OOCore
 			~ThreadContext();
 		};
 
-		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
+		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<const Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
 
 		OOBase::AtomicInt<size_t>                        m_usage_count;		
 		mapThreadContextsType                            m_mapThreadContexts;
@@ -155,7 +155,7 @@ namespace OOCore
 		void start(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		void term_i();
 		void stop();
-		std::string discover_server_port(bool& bStandalone);
+		OOCore::string discover_server_port(bool& bStandalone);
 
 		// Uninitialise destructors
 		void close_singletons_i();

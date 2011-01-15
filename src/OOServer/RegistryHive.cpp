@@ -472,7 +472,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			OOBase::stack_string strSubKey;
+			OOBase::local_string strSubKey;
 			const char* v = ptrStmt->column_text(0);
 			if (v)
 				strSubKey = v;
@@ -498,7 +498,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	if (err == SQLITE_DONE)
 	{
 		// Write terminating null
-		response.write(OOBase::stack_string());
+		response.write(OOBase::local_string());
 	}
 	else
 	{
@@ -595,7 +595,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			OOBase::stack_string str;
+			OOBase::local_string str;
 			const char* v = ptrStmt->column_text(0);
 			if (v)
 				str = v;
@@ -613,7 +613,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	if (err == SQLITE_DONE)
 	{
 		// Write terminating null
-		response.write(OOBase::stack_string());
+		response.write(OOBase::local_string());
 	}
 	else
 	{

@@ -162,7 +162,7 @@ namespace OOCore
 			case Omega::TypeInfo::typeFloat8:
 				return read<Omega::float8_t>();
 			case Omega::TypeInfo::typeString:
-				return Omega::string_t(read<std::string>().c_str(),true);
+				return Omega::string_t(read<std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > >().c_str(),true);
 
 			case Omega::TypeInfo::typeGuid:
 				{
@@ -218,7 +218,7 @@ namespace OOCore
 				return write(value.cast<const Omega::float8_t&>());
 			case Omega::TypeInfo::typeString:
 				{
-					std::string s;
+					std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > s;
 					value.cast<const Omega::string_t&>().ToUTF8(s);
 					return write(s);
 				}

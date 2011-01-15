@@ -86,7 +86,7 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		OOBase::stack_string s;
+		OOBase::local_string s;
 		pE->GetDescription().ToNative(s);
 		LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
 		pE->Release();
@@ -136,7 +136,7 @@ bool User::Manager::start_services()
 			}
 			catch (IException* pE)
 			{
-				OOBase::stack_string s;
+				OOBase::local_string s;
 				pE->GetDescription().ToNative(s);
 				LOG_ERROR(("Failed to start network service %s: %s",i->second.strKey.c_str(),s.c_str()));
 				pE->Release();
@@ -149,7 +149,7 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		OOBase::stack_string s;
+		OOBase::local_string s;
 		pE->GetDescription().ToNative(s);
 		LOG_ERROR(("Failed to start services: %s",s.c_str()));
 		pE->Release();
@@ -233,7 +233,7 @@ void User::Manager::start_service(const OOBase::string& strKey, const OOBase::st
 	}
 	catch (IException* pE)
 	{
-		OOBase::stack_string s;
+		OOBase::local_string s;
 		pE->GetDescription().ToNative(s);
 		LOG_ERROR(("Failed to start service %s: %s",strKey.c_str(),s.c_str()));
 		pE->Release();
@@ -376,7 +376,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			}
 			catch (IException* pE)
 			{
-				OOBase::stack_string s;
+				OOBase::local_string s;
 				pE->GetDescription().ToNative(s);
 				LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
 				pE->Release();
@@ -433,7 +433,7 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			OOBase::stack_string s;
+			OOBase::local_string s;
 			pE->GetDescription().ToNative(s);
 			LOG_ERROR(("on_recv failed: %s",s.c_str()));
 			pE->Release();
@@ -467,7 +467,7 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			OOBase::stack_string s;
+			OOBase::local_string s;
 			pE->GetDescription().ToNative(s);
 			LOG_ERROR(("on_sent failed: %s",s.c_str()));
 			pE->Release();
@@ -497,7 +497,7 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			OOBase::stack_string s;
+			OOBase::local_string s;
 			pE->GetDescription().ToNative(s);
 			LOG_ERROR(("on_close failed: %s",s.c_str()));
 			pE->Release();

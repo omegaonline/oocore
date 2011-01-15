@@ -55,18 +55,18 @@ namespace
 
 		struct MethodInfo
 		{
-			string_t                      strName;
-			TypeInfo::MethodAttributes_t  attribs;
-			uint32_t                      timeout;
-			ObjectPtr<Remoting::IMessage> return_type;
-			std::vector<ParamInfo>        params;
+			string_t                                                 strName;
+			TypeInfo::MethodAttributes_t                             attribs;
+			uint32_t                                                 timeout;
+			ObjectPtr<Remoting::IMessage>                            return_type;
+			std::vector<ParamInfo,System::stl_allocator<ParamInfo> > params;
 		};
 
-		string_t                            m_strName;
-		guid_t                              m_iid;
-		std::vector<MethodInfo>             m_methods;
-		uint32_t                            m_base_methods;
-		ObjectPtr<TypeInfo::IInterfaceInfo> m_ptrBase;
+		string_t                                                   m_strName;
+		guid_t                                                     m_iid;
+		std::vector<MethodInfo,System::stl_allocator<MethodInfo> > m_methods;
+		uint32_t                                                   m_base_methods;
+		ObjectPtr<TypeInfo::IInterfaceInfo>                        m_ptrBase;
 
 	// IInterfaceInfo members
 	public:
@@ -382,7 +382,7 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 		OMEGA_THROW("GetAttributeRef requesting non-ref param reference");
 
 	byte_t idx = 0;
-	for (std::vector<ParamInfo>::const_iterator i=mi.params.begin(); i!=mi.params.end(); ++i,++idx)
+	for (std::vector<ParamInfo,System::stl_allocator<ParamInfo> >::const_iterator i=mi.params.begin(); i!=mi.params.end(); ++i,++idx)
 	{
 		if (i->strName == pi.strRef)
 			return idx;

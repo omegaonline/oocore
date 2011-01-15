@@ -727,7 +727,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	
 	if (bReport)
 	{
-		std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> > send_to;
+		std::vector<Omega::uint32_t,OOBase::LocalAllocator<Omega::uint32_t> > send_to;
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -744,11 +744,9 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 
 		guard.release();
 
-		for (std::vector<Omega::uint32_t,OOBase::StackAllocator<Omega::uint32_t> >::const_iterator i=send_to.begin();i!=send_to.end();++i)
-		{
+		for (std::vector<Omega::uint32_t,OOBase::LocalAllocator<Omega::uint32_t> >::const_iterator i=send_to.begin();i!=send_to.end();++i)
 			send_channel_close(*i,channel_id);
-		}
-		
+				
 		// Inform derived classes that the channel has gone...
 		on_channel_closed(channel_id);
 	}
@@ -873,17 +871,20 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 void OOServer::MessageHandler::close_channels()
 {
 	// Copy all the channels away and then close them
+	std::vector<OOBase::SmartPtr<MessageConnection>,OOBase::CriticalAllocator<OOBase::SmartPtr<MessageConnection> > > vecCopy;
+
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	channelMapType map_copy(m_mapChannelIds);
+	vecCopy.reserve(m_mapChannelIds.size());
+
+	for (channelMapType::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
+		vecCopy.push_back(i->second);
 
 	guard.release();
 
-	for (channelMapType::iterator i=map_copy.begin(); i!=map_copy.end(); ++i)
-	{
-		i->second->close();
-	}
-	
+	for (std::vector<OOBase::SmartPtr<MessageConnection>,OOBase::CriticalAllocator<OOBase::SmartPtr<MessageConnection> > >::iterator j=vecCopy.begin(); j!=vecCopy.end(); ++j)
+		(*j)->close();
+		
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
@@ -1055,7 +1056,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
-	OOBase::stack_string strFn;
+	OOBase::local_string strFn;
 	msg->m_payload.read(strFn);
 
 	void (*pfnCall)(void*,OOBase::CDRStream&);

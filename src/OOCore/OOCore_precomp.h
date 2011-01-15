@@ -90,6 +90,11 @@ namespace OOCore
 			OMEGA_DELETE(T,ptr);
 		}
 	};
+
+	typedef std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > string;
+	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, Omega::System::stl_allocator<wchar_t> > wstring;
+
+	typedef std::basic_ostringstream<char, std::char_traits<char>, Omega::System::stl_allocator<char> > ostringstream;
 }
 
 #include "Formatting.h"

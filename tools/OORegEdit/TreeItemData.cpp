@@ -14,8 +14,8 @@ TreeItemData::~TreeItemData(void)
 
 void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 {
-	std::set<Omega::string_t> keys = m_ptrKey->EnumSubKeys();
-	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
+	Omega::Registry::IKey::string_set_t keys = m_ptrKey->EnumSubKeys();
+	for (Omega::Registry::IKey::string_set_t::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey = m_ptrKey.OpenSubKey(*i);
 
@@ -24,7 +24,7 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 
 		if (m_nDepth==0)
 		{
-			std::set<Omega::string_t> sub_keys = ptrKey->EnumSubKeys();
+			Omega::Registry::IKey::string_set_t sub_keys = ptrKey->EnumSubKeys();
 			if (!sub_keys.empty())
 				pTree->AppendItem(itemId,wxT("DUFF!"));
 		}
@@ -41,9 +41,9 @@ void TreeItemData::InitList(wxListCtrl* pList)
 {
 	pList->DeleteAllItems();
 
-	std::set<Omega::string_t> values = m_ptrKey->EnumValues();
+	Omega::Registry::IKey::string_set_t values = m_ptrKey->EnumValues();
 	int i = 0;
-	for (std::set<Omega::string_t>::const_iterator it=values.begin();it!=values.end();++i,++it)
+	for (Omega::Registry::IKey::string_set_t::const_iterator it=values.begin();it!=values.end();++i,++it)
 	{
 		Omega::any_t val = m_ptrKey->GetValue(*it);
 
@@ -130,14 +130,14 @@ void TreeItemData::RenameKey(const Omega::string_t& strFrom, const Omega::string
 
 void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL::ObjectPtr<Omega::Registry::IKey>& ptrNewKey)
 {
-	std::set<Omega::string_t> values = ptrOldKey->EnumValues();
-	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
+	Omega::Registry::IKey::string_set_t values = ptrOldKey->EnumValues();
+	for (Omega::Registry::IKey::string_set_t::const_iterator i=values.begin();i!=values.end();++i)
 	{
 		ptrNewKey->SetValue(*i,ptrOldKey->GetValue(*i));
 	}
 
 	values = ptrOldKey->EnumSubKeys();
-	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
+	for (Omega::Registry::IKey::string_set_t::const_iterator i=values.begin();i!=values.end();++i)
 	{
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrOldSub = ptrOldKey.OpenSubKey(*i,Omega::Registry::IKey::OpenExisting);
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey.OpenSubKey(*i,Omega::Registry::IKey::CreateNew);
@@ -172,7 +172,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 
 	if (m_nDepth==0)
 	{
-		std::set<Omega::string_t> sub_keys = ptrKey->EnumSubKeys();
+		Omega::Registry::IKey::string_set_t sub_keys = ptrKey->EnumSubKeys();
 		if (!sub_keys.empty())
 			pTree->AppendItem(itemId,wxT("DUFF!"));
 	}
@@ -419,8 +419,8 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey, const Omega::string_t& strFind, bool bKeys, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase, bool& bKey)
 {
 	// Check the current sub-keys
-	std::set<Omega::string_t> keys = ptrKey->EnumSubKeys();
-	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
+	Omega::Registry::IKey::string_set_t keys = ptrKey->EnumSubKeys();
+	for (Omega::Registry::IKey::string_set_t::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
 		// Check key name
 		if (bKeys)
@@ -444,8 +444,8 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKe
 
 		// Check key values
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(*i);
-		std::set<Omega::string_t> values = ptrSubKey->EnumValues();
-		for (std::set<Omega::string_t>::const_iterator j=values.begin();j!=values.end();++j)
+		Omega::Registry::IKey::string_set_t values = ptrSubKey->EnumValues();
+		for (Omega::Registry::IKey::string_set_t::const_iterator j=values.begin();j!=values.end();++j)
 		{
 			if (MatchValue(strFind,ptrSubKey,*j,bValues,bData,bMatchAll,bIgnoreCase))
 			{

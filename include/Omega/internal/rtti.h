@@ -63,7 +63,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> struct type_kind<std::vector<T> >
+			template <typename T, typename A> struct type_kind<std::vector<T,A> >
 			{
 				static const type_holder* type()
 				{
@@ -72,7 +72,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> struct type_kind<std::deque<T> >
+			template <typename T, typename A> struct type_kind<std::deque<T,A> >
 			{
 				static const type_holder* type()
 				{
@@ -81,7 +81,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> struct type_kind<std::list<T> >
+			template <typename T, typename A> struct type_kind<std::list<T,A> >
 			{
 				static const type_holder* type()
 				{
@@ -90,7 +90,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> struct type_kind<std::set<T> >
+			template <typename T, typename P, typename A> struct type_kind<std::set<T,P,A> >
 			{
 				static const type_holder* type()
 				{
@@ -99,7 +99,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> struct type_kind<std::multiset<T> >
+			template <typename T, typename P, typename A> struct type_kind<std::multiset<T,P,A> >
 			{
 				static const type_holder* type()
 				{
@@ -108,27 +108,27 @@ namespace Omega
 				}
 			};
 
-			template <typename T1, typename T2> struct type_kind<std::map<T1,T2> >
+			template <typename K, typename V, typename P, typename A> struct type_kind<std::map<K,V,P,A> >
 			{
 				static const type_holder* type()
 				{
 					static const type_holder t[2] =
 					{
-						{ TypeInfo::typeSTLMap, type_kind<T1>::type() },
-						{ TypeInfo::typeSTLMap, type_kind<T2>::type() }
+						{ TypeInfo::typeSTLMap, type_kind<K>::type() },
+						{ TypeInfo::typeSTLMap, type_kind<V>::type() }
 					};
 					return t;
 				}
 			};
 
-			template <typename T1, typename T2> struct type_kind<std::multimap<T1,T2> >
+			template <typename K, typename V, typename P, typename A> struct type_kind<std::multimap<K,V,P,A> >
 			{
 				static const type_holder* type()
 				{
 					static const type_holder t[2] =
 					{
-						{ TypeInfo::typeSTLMultimap, type_kind<T1>::type() },
-						{ TypeInfo::typeSTLMultimap, type_kind<T2>::type() }
+						{ TypeInfo::typeSTLMultimap, type_kind<K>::type() },
+						{ TypeInfo::typeSTLMultimap, type_kind<V>::type() }
 					};
 					return t;
 				}

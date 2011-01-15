@@ -156,11 +156,12 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	
 	try
 	{
+		std::vector<uint32_t,Omega::System::stl_allocator<uint32_t> > revoke_list;
+		string_t strOid = oid.cast<string_t>();
+
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check if we have someone registered already
-		std::vector<uint32_t> revoke_list;
-		string_t strOid = oid.cast<string_t>();
 		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid; ++i)
 		{
 			// Check its still alive...
@@ -196,11 +197,9 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		guard.release();
 
 		// Revoke the revoke_list
-		for (std::vector<uint32_t>::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
-		{
+		for (std::vector<uint32_t,Omega::System::stl_allocator<uint32_t> >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
 			RevokeObject(*i);
-		}
-
+		
 		// This forces the detection, so cleanup succeeds
 		OOCore::HostedByOOServer();
 
@@ -222,10 +221,11 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	// Strip off the option flags
 	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
+	std::vector<uint32_t,Omega::System::stl_allocator<uint32_t> > revoke_list;
+	string_t strOid = oid.cast<string_t>();
+
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::vector<uint32_t> revoke_list;
-	string_t strOid = oid.cast<string_t>();
 	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::const_iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid;++i)
 	{
 		if (i->second->second.m_flags & search_flags)
@@ -251,11 +251,9 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	guard.release();
 
 	// Revoke the revoke_list
-	for (std::vector<uint32_t>::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
-	{
+	for (std::vector<uint32_t,Omega::System::stl_allocator<uint32_t> >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
 		RevokeObject(*i);
-	}
-
+	
 	// If we have an object, get out now
 	if (ptrObject)
 	{

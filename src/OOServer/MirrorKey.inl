@@ -209,30 +209,30 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 	return ptrNew.AddRef();
 }
 
-std::set<string_t> User::Registry::MirrorKey::EnumSubKeys()
+Omega::Registry::IKey::string_set_t User::Registry::MirrorKey::EnumSubKeys()
 {
-	std::set<string_t> ret;
+	Omega::Registry::IKey::string_set_t ret;
 	if (m_ptrLocal)
 		ret = m_ptrLocal->EnumSubKeys();
 
 	if (m_ptrSystem)
 	{
-		std::set<string_t> ret2 = m_ptrSystem->EnumSubKeys();
+		Omega::Registry::IKey::string_set_t ret2 = m_ptrSystem->EnumSubKeys();
 		ret.insert(ret2.begin(),ret2.end());
 	}
 
 	return ret;
 }
 
-std::set<string_t> User::Registry::MirrorKey::EnumValues()
+Omega::Registry::IKey::string_set_t User::Registry::MirrorKey::EnumValues()
 {
-	std::set<string_t> ret;
+	Omega::Registry::IKey::string_set_t ret;
 	if (m_ptrLocal)
 		ret = m_ptrLocal->EnumValues();
 
 	if (m_ptrSystem)
 	{
-		std::set<string_t> ret2 = m_ptrSystem->EnumValues();
+		Omega::Registry::IKey::string_set_t ret2 = m_ptrSystem->EnumValues();
 		ret.insert(ret2.begin(),ret2.end());
 	}
 

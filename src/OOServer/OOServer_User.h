@@ -47,7 +47,6 @@
 
 #include <set>
 #include <iostream>
-#include <sstream>
 
 /////////////////////////////////////////////////
 

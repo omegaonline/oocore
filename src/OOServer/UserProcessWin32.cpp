@@ -42,15 +42,15 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
 
-		void exec(const std::wstring& strExeName);
+		void exec(const User::wstring& strExeName);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
 	};
 
-	static std::wstring ShellParse(const wchar_t* pszFile)
+	static User::wstring ShellParse(const wchar_t* pszFile)
 	{
-		std::wstring strRet = pszFile;
+		User::wstring strRet = pszFile;
 
 		const wchar_t* pszExt = PathFindExtensionW(pszFile);
 		if (pszExt && wcsicmp(pszExt,L".exe")!=0)
@@ -88,15 +88,15 @@ namespace
 	}
 }
 
-bool User::Process::is_relative_path(const std::wstring& strPath)
+bool User::Process::is_relative_path(const User::wstring& strPath)
 {
 	return (PathIsRelativeW(strPath.c_str()) != FALSE);
 }
 
-User::Process* User::Process::exec(const std::wstring& strExeName)
+User::Process* User::Process::exec(const User::wstring& strExeName)
 {
 	// Do a ShellExecute style lookup for the actual thing to call..
-	std::wstring strActualName = ShellParse(strExeName.c_str());
+	User::wstring strActualName = ShellParse(strExeName.c_str());
 
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess;
 	OOBASE_NEW_T(UserProcessWin32,ptrProcess,UserProcessWin32());
@@ -107,7 +107,7 @@ User::Process* User::Process::exec(const std::wstring& strExeName)
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(const std::wstring& strExeName)
+void UserProcessWin32::exec(const User::wstring& strExeName)
 {
 #if defined(OMEGA_DEBUG)
 	OOBase::Win32::SmartHandle hDebugEvent;

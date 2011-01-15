@@ -46,7 +46,7 @@
 
 /*bool Root::Manager::secure_file(const OOBase::string& strFile, bool bPublicRead)
 {
-    OOBase::wstring strFilename = OOBase::from_utf8(strFile.c_str());
+    OOBase::local_wstring strFilename = OOBase::from_utf8(strFile.c_str());
 
     // Create a SID for the BUILTIN\Users group.
     PSID pSid;

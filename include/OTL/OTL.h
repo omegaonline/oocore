@@ -893,9 +893,9 @@ namespace OTL
 			public Omega::TypeInfo::IProvideObjectInfo
 	{
 	private:
-		std::set<Omega::guid_t> WalkEntries(const ObjectBase::QIEntry* pEntries)
+		Omega::TypeInfo::IProvideObjectInfo::guid_set_t WalkEntries(const ObjectBase::QIEntry* pEntries)
 		{
-			std::set<Omega::guid_t> retval;
+			Omega::TypeInfo::IProvideObjectInfo::guid_set_t retval;
 
 			for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 			{
@@ -917,13 +917,13 @@ namespace OTL
 					ptrAgg.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI)));
 					if (ptrAgg)
 					{
-						std::set<Omega::guid_t> agg = ptrAgg->EnumInterfaces();
+						Omega::TypeInfo::IProvideObjectInfo::guid_set_t agg = ptrAgg->EnumInterfaces();
 						retval.insert(agg.begin(),agg.end());
 					}
 				}
 				else if (pEntries[i].baseEntries)
 				{
-					std::set<Omega::guid_t> base = WalkEntries(pEntries[i].baseEntries);
+					Omega::TypeInfo::IProvideObjectInfo::guid_set_t base = WalkEntries(pEntries[i].baseEntries);
 					retval.insert(base.begin(),base.end());
 				}
 			}
@@ -934,7 +934,7 @@ namespace OTL
 
 	// IProvideObjectInfo members
 	public:
-		virtual std::set<Omega::guid_t> EnumInterfaces()
+		virtual Omega::TypeInfo::IProvideObjectInfo::guid_set_t EnumInterfaces()
 		{
 			return WalkEntries(ROOT::getQIEntries());
 		}

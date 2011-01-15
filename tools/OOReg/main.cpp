@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
 
 				if (bPrompt)
 				{
-					std::string s;
+					OOBase::local_string s;
 					ptrKey->GetName().ToNative(s);
 					std::cout << s << "> ";
 				}

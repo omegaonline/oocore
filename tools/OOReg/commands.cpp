@@ -276,7 +276,7 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 
 	Omega::any_t aVal = ptrKey->GetValue(Omega::string_t(name->second.c_str(),false));
 
-	std::string s;
+	OOBase::local_string s;
 	aVal.cast<Omega::string_t>().ToNative(s);
 
 	std::cout << s << std::endl;
@@ -352,19 +352,19 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 		ptrLSKey = OTL::ObjectPtr<Omega::Registry::IKey>(strKey);
 	}
 
-	std::string s;
+	OOBase::local_string s;
 	ptrLSKey->GetName().ToNative(s);
 	std::cout << s << std::endl;
 	
-	std::set<Omega::string_t> keys = ptrLSKey->EnumSubKeys();
-	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
+	Omega::Registry::IKey::string_set_t keys = ptrLSKey->EnumSubKeys();
+	for (Omega::Registry::IKey::string_set_t::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
 		i->ToNative(s);
 		std::cout << "[Key]  " << s << std::endl;
 	}
 
-	std::set<Omega::string_t> vals = ptrLSKey->EnumValues();
-	for (std::set<Omega::string_t>::const_iterator i=vals.begin();i!=vals.end();++i)
+	Omega::Registry::IKey::string_set_t vals = ptrLSKey->EnumValues();
+	for (Omega::Registry::IKey::string_set_t::const_iterator i=vals.begin();i!=vals.end();++i)
 	{
 		i->ToNative(s);
 		std::cout << s << std::endl;

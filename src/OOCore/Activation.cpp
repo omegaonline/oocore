@@ -150,16 +150,13 @@ namespace
 		OMEGA_NEW_T(OOBase::DLL,dll,OOBase::DLL());
 
 		// Load the new DLL
-		std::string s;
+		OOCore::string s;
 		name.ToNative(s);
 
 		int err = dll->load(s.c_str());
 		if (err != 0)
-		{
-			std::string str = "Loading library: " + s;
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(str.c_str()));
-		}
-
+			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(("Loading library: " + s).c_str()));
+		
 		// Add to the map
 		m_dll_map.insert(std::map<string_t,DLLPtr>::value_type(name,dll));
 

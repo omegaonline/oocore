@@ -268,7 +268,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	bool bQuit = false;
 	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
-	OOBase::stack_string strPipe;
+	OOBase::local_string strPipe;
 	input.read(strPipe);
 	if (input.last_error() != 0)
 	{
@@ -374,9 +374,9 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	// Close the corresponding Object Manager
 	try
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+		std::vector<uint32_t,OOBase::LocalAllocator<uint32_t> > dead_channels;
 
-		std::vector<uint32_t> dead_channels;
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();)
 		{

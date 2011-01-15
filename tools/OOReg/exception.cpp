@@ -19,9 +19,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "../../include/Omega/Omega.h"
+#include <OOBase/Allocator.h>
 
 #include <iostream>
+
+#include "../../include/Omega/Omega.h"
 
 static void exception_details(Omega::IException* pE);
 
@@ -51,7 +53,7 @@ static void exception_details(Omega::IException* pOrig)
 	{
 		std::cerr << "Omega::IInternalException - ";
 
-		std::string s;
+		OOBase::local_string s;
 		pE->GetDescription().ToNative(s);
 
 		std::cerr << s << std::endl;
@@ -68,7 +70,7 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IException* pE)
 	{
-		std::string s;
+		OOBase::local_string s;
 		pE->GetDescription().ToNative(s);
 
 		std::cerr << s << std::endl;

@@ -227,7 +227,7 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(ptrPOI);
 
 	// Try to get the first interface
-	std::set<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
+	Omega::TypeInfo::IProvideObjectInfo::guid_set_t interfaces = ptrPOI->EnumInterfaces();
 	TEST(!interfaces.empty());
 	TEST(*interfaces.begin() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 

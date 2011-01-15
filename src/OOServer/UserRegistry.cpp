@@ -25,6 +25,8 @@
 #include "UserManager.h"
 #include "SpawnedProcess.h"
 
+typedef std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > throw_string;
+
 using namespace Omega;
 using namespace Omega::Registry;
 using namespace OTL;
@@ -70,7 +72,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	request.write(m_key);
 	request.write(m_type);
 
-	std::string s;
+	throw_string s;
 	strSubKey.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -104,7 +106,7 @@ bool_t Key::IsValue(const string_t& strName)
 	request.write(m_key);
 	request.write(m_type);
 
-	std::string s;
+	throw_string s;
 	strName.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -138,7 +140,7 @@ any_t Key::GetValue(const string_t& strName)
 	request.write(m_key);
 	request.write(m_type);
 
-	std::string s;
+	throw_string s;
 	strName.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -160,7 +162,7 @@ any_t Key::GetValue(const string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::string strValue;
+	throw_string strValue;
 	if (!response->read(strValue))
 		OMEGA_THROW(response->last_error());
 
@@ -176,7 +178,7 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	request.write(m_key);
 	request.write(m_type);
 	
-	std::string s;
+	throw_string s;
 	strName.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -226,7 +228,7 @@ string_t Key::GetDescription()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::string strValue;
+	throw_string strValue;
 	if (!response->read(strValue))
 		OMEGA_THROW(response->last_error());
 
@@ -242,7 +244,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	request.write(m_key);
 	request.write(m_type);
 	
-	std::string s;
+	throw_string s;
 	strName.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -264,7 +266,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::string strValue;
+	throw_string strValue;
 	if (!response->read(strValue))
 		OMEGA_THROW(response->last_error());
 
@@ -278,7 +280,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	request.write(m_key);
 	request.write(m_type);
 
-	std::string s;
+	throw_string s;
 	strDesc.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -308,7 +310,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	request.write(m_key);
 	request.write(m_type);
 	
-	std::string s;
+	throw_string s;
 	strValue.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -385,7 +387,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 
 		Omega::byte_t local_type = 255;
 		Omega::int64_t mirror_key = 0;
-		std::string strName;
+		throw_string strName;
 
 		if (!response->read(local_type) ||
 				!response->read(mirror_key) ||
@@ -415,7 +417,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	request.write(m_key);
 	request.write(m_type);
 
-	std::string s;
+	throw_string s;
 	strSubKey.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -451,7 +453,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	return ptrNew;
 }
 
-std::set<Omega::string_t> Key::EnumSubKeys()
+Omega::Registry::IKey::string_set_t Key::EnumSubKeys()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
@@ -475,10 +477,10 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> sub_keys;
+	Omega::Registry::IKey::string_set_t sub_keys;
 	for (;;)
 	{
-		std::string strName;
+		throw_string strName;
 		if (!response->read(strName))
 			OMEGA_THROW(response->last_error());
 
@@ -497,7 +499,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	return sub_keys;
 }
 
-std::set<Omega::string_t> Key::EnumValues()
+Omega::Registry::IKey::string_set_t Key::EnumValues()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
@@ -521,10 +523,10 @@ std::set<Omega::string_t> Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> values;
+	Omega::Registry::IKey::string_set_t values;
 	for (;;)
 	{
-		std::string strName;
+		throw_string strName;
 		if (!response->read(strName))
 			OMEGA_THROW(response->last_error());
 
@@ -560,7 +562,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	request.write(m_key);
 	request.write(m_type);
 	
-	std::string s;
+	throw_string s;
 	strSubKey.ToUTF8(s);
 	request.write(s.c_str());
 
@@ -592,7 +594,7 @@ void Key::DeleteValue(const string_t& strName)
 	request.write(m_key);
 	request.write(m_type);
 	
-	std::string s;
+	throw_string s;
 	strName.ToUTF8(s);
 	request.write(s.c_str());
 

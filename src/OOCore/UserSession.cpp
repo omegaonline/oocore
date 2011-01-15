@@ -167,7 +167,7 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	if (i != args.end() && i->second == L"true")
 		bStandaloneAlways = true;
 
-	std::string strPipe;
+	OOCore::string strPipe;
 	if (!bStandaloneAlways)
 		strPipe = discover_server_port(bStandalone);
 		
@@ -263,7 +263,7 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	m_nIPSCookie = ptrROT->RegisterObject(OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 }
 
-std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
+OOCore::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 {
 #if defined(_WIN32)
 	const char* name = "OmegaOnline";
@@ -273,7 +273,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	if (!local_socket)
 	{
 		if (bStandalone)
-			return std::string();
+			return OOCore::string();
 		else
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
@@ -309,7 +309,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	// Now reset rd_ptr and read the string
 	stream.buffer()->mark_rd_ptr(mark);
 
-	std::string strPipe;
+	OOCore::string strPipe;
 	if (!stream.read(strPipe))
 		OMEGA_THROW(stream.last_error());
 
@@ -321,7 +321,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	if (!pszAddr)
 		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
 
-	return std::string(pszAddr);
+	return OOCore::string(pszAddr);
 	
 #endif
 }
@@ -401,33 +401,29 @@ void OOCore::UserSession::close_singletons_i()
 
 void OOCore::UserSession::close_compartments()
 {
-	try
+	std::vector<uint16_t,OOBase::CriticalAllocator<uint16_t> > vecCompts;
+
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	vecCompts.reserve(m_mapCompartments.size());
+	for (std::map<uint16_t,CompartmentPtr>::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
+		vecCompts.push_back(i->first);
+
+	guard.release();
+
+	for (std::vector<uint16_t,OOBase::CriticalAllocator<uint16_t> >::const_iterator i=vecCompts.begin();i!=vecCompts.end();++i)
 	{
-		std::vector<uint16_t> vecCompts;
-
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::map<uint16_t,CompartmentPtr>::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
-			vecCompts.push_back(i->first);
-
-		guard.release();
-
-		for (std::vector<uint16_t>::const_iterator i=vecCompts.begin();i!=vecCompts.end();++i)
+		try
 		{
-			try
-			{
-				CompartmentPtr ptrCmpt = get_compartment(*i);
-				if (ptrCmpt)
-					ptrCmpt->shutdown();		
-			}
-			catch (IException* pE)
-			{
-				pE->Release();
-			}
+			CompartmentPtr ptrCmpt = get_compartment(*i);
+			if (ptrCmpt)
+				ptrCmpt->shutdown();		
 		}
-	}
-	catch (std::exception&)
-	{}	
+		catch (IException* pE)
+		{
+			pE->Release();
+		}
+	}	
 }
 
 Omega::uint32_t OOCore::UserSession::get_channel_id() const

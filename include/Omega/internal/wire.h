@@ -596,8 +596,8 @@ namespace Omega
 			};
 
 			// std::vector<bool> is badly broken in the C++ standard and shouldn't be used
-			template <>
-			struct stl_safe_type_coll1<std::vector<bool> >;
+			template <typename A>
+			struct stl_safe_type_coll1<std::vector<bool,A> >;
 
 			template <typename Coll>
 			struct stl_wire_type_coll1
@@ -893,88 +893,88 @@ namespace Omega
 			};
 
 			// We could probably do something clever with SFINAE here...
-			template <typename V>
-			struct custom_safe_type<std::vector<V> >
+			template <typename T, typename A>
+			struct custom_safe_type<std::vector<T,A> >
 			{
-				typedef stl_safe_type_coll1<std::vector<V> > impl;
+				typedef stl_safe_type_coll1<std::vector<T,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_wire_type<std::vector<V> >
+			template <typename T, typename A>
+			struct custom_wire_type<std::vector<T,A> >
 			{
-				typedef stl_wire_type_coll1<std::vector<V> > impl;
+				typedef stl_wire_type_coll1<std::vector<T,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_safe_type<std::deque<V> >
+			template <typename T, typename A>
+			struct custom_safe_type<std::deque<T,A> >
 			{
-				typedef stl_safe_type_coll1<std::deque<V> > impl;
+				typedef stl_safe_type_coll1<std::deque<T,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_wire_type<std::deque<V> >
+			template <typename T, typename A>
+			struct custom_wire_type<std::deque<T,A> >
 			{
-				typedef stl_wire_type_coll1<std::deque<V> > impl;
+				typedef stl_wire_type_coll1<std::deque<T,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_safe_type<std::list<V> >
+			template <typename T, typename A>
+			struct custom_safe_type<std::list<T,A> >
 			{
-				typedef stl_safe_type_coll1<std::list<V> > impl;
+				typedef stl_safe_type_coll1<std::list<T,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_wire_type<std::list<V> >
+			template <typename T, typename A>
+			struct custom_wire_type<std::list<T,A> >
 			{
-				typedef stl_wire_type_coll1<std::list<V> > impl;
+				typedef stl_wire_type_coll1<std::list<T,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_safe_type<std::set<V> >
+			template <typename T, typename P, typename A>
+			struct custom_safe_type<std::set<T,P,A> >
 			{
-				typedef stl_safe_type_coll1<std::set<V> > impl;
+				typedef stl_safe_type_coll1<std::set<T,P,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_wire_type<std::set<V> >
+			template <typename T, typename P, typename A>
+			struct custom_wire_type<std::set<T,P,A> >
 			{
-				typedef stl_wire_type_coll1<std::set<V> > impl;
+				typedef stl_wire_type_coll1<std::set<T,P,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_safe_type<std::multiset<V> >
+			template <typename T, typename P, typename A>
+			struct custom_safe_type<std::multiset<T,P,A> >
 			{
-				typedef stl_safe_type_coll1<std::multiset<V> > impl;
+				typedef stl_safe_type_coll1<std::multiset<T,P,A> > impl;
 			};
 
-			template <typename V>
-			struct custom_wire_type<std::multiset<V> >
+			template <typename T, typename P, typename A>
+			struct custom_wire_type<std::multiset<T,P,A> >
 			{
-				typedef stl_wire_type_coll1<std::multiset<V> > impl;
+				typedef stl_wire_type_coll1<std::multiset<T,P,A> > impl;
 			};
 
-			template <typename K, typename V>
-			struct custom_safe_type<std::map<K,V> >
+			template <typename K, typename V, typename P, typename A>
+			struct custom_safe_type<std::map<K,V,P,A> >
 			{
-				typedef stl_safe_type_coll2<std::map<K,V> > impl;
+				typedef stl_safe_type_coll2<std::map<K,V,P,A> > impl;
 			};
 
-			template <typename K, typename V>
-			struct custom_wire_type<std::map<K,V> >
+			template <typename K, typename V, typename P, typename A>
+			struct custom_wire_type<std::map<K,V,P,A> >
 			{
-				typedef stl_wire_type_coll2<std::map<K,V> > impl;
+				typedef stl_wire_type_coll2<std::map<K,V,P,A> > impl;
 			};
 
-			template <typename K, typename V>
-			struct custom_safe_type<std::multimap<K,V> >
+			template <typename K, typename V, typename P, typename A>
+			struct custom_safe_type<std::multimap<K,V,P,A> >
 			{
-				typedef stl_safe_type_coll2<std::multimap<K,V> > impl;
+				typedef stl_safe_type_coll2<std::multimap<K,V,P,A> > impl;
 			};
 
-			template <typename K, typename V>
-			struct custom_wire_type<std::multimap<K,V> >
+			template <typename K, typename V, typename P, typename A>
+			struct custom_wire_type<std::multimap<K,V,P,A> >
 			{
-				typedef stl_wire_type_coll2<std::multimap<K,V> > impl;
+				typedef stl_wire_type_coll2<std::multimap<K,V,P,A> > impl;
 			};
 		}
 	}

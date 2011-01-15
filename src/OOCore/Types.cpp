@@ -35,8 +35,6 @@ namespace
 		{
 			assert(length);
 
-			void* TODO; // Use a resizable buffer and attempt to realloc when appending
-
 			m_buf = static_cast<wchar_t*>(System::Allocate((length+1)*sizeof(wchar_t),1,__FILE__,__LINE__));
 			m_buf[length] = L'\0';
 			m_len = length;
@@ -101,14 +99,14 @@ namespace
 		{
 			struct insert_t
 			{
-				uint32_t     index;
-				int32_t      alignment;
-				std::wstring format;
-				std::wstring suffix;
+				uint32_t        index;
+				int32_t         alignment;
+				OOCore::wstring format;
+				OOCore::wstring suffix;
 			};
 			std::list<insert_t> m_listInserts;
 			size_t              m_curr_arg;
-			std::wstring        m_prefix;
+			OOCore::wstring     m_prefix;
 		};
 		format_state_t* m_fs;
 
@@ -125,20 +123,20 @@ namespace
 		}
 
 		size_t find_brace(size_t start, wchar_t brace);
-		void merge_braces(std::wstring& str);
+		void merge_braces(OOCore::wstring& str);
 		void parse_arg(size_t& pos);
 	};
 
-	std::wstring align(const std::wstring& str, int align)
+	OOCore::wstring align(const OOCore::wstring& str, int align)
 	{
 		unsigned width = (align < 0 ? -align : align);
 		if (str.size() >= width)
 			return str;
 
 		if (align < 0)
-			return str + std::wstring(width-str.size(),L' ');
+			return str + OOCore::wstring(width-str.size(),L' ');
 		else
-			return std::wstring(width-str.size(),L' ') + str;
+			return OOCore::wstring(width-str.size(),L' ') + str;
 	}
 
 	template <typename T>
@@ -608,12 +606,12 @@ void StringNode::parse_arg(size_t& pos)
 	pos = end + 1;
 }
 
-void StringNode::merge_braces(std::wstring& str)
+void StringNode::merge_braces(OOCore::wstring& str)
 {
 	for (size_t pos = 0;;)
 	{
 		size_t found = str.find(L'{',pos);
-		if (found == std::wstring::npos)
+		if (found == OOCore::wstring::npos)
 			break;
 
 		str.erase(found,1);
@@ -623,7 +621,7 @@ void StringNode::merge_braces(std::wstring& str)
 	for (size_t pos = 0;;)
 	{
 		size_t found = str.find(L'}',pos);
-		if (found == std::wstring::npos)
+		if (found == OOCore::wstring::npos)
 			break;
 
 		str.erase(found,1);
@@ -666,7 +664,7 @@ void StringNode::parse_format()
 
 		size_t found = find_brace(pos,L'{');
 
-		std::wstring suffix;
+		OOCore::wstring suffix;
 		if (found == string_t::npos)
 			suffix.assign(m_buf+pos);
 		else
@@ -751,7 +749,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	}
 
 	// Now measure how much space we need
-	std::wstring str = s->m_fs->m_prefix;
+	OOCore::wstring str = s->m_fs->m_prefix;
 	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
 	{
 		str += i->format;
@@ -784,7 +782,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1
 		{
 			if (i == s->m_fs->m_listInserts.begin())
 			{
-				std::wstring str;
+				OOCore::wstring str;
 				if (arg)
 					str.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
 
@@ -833,7 +831,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-	std::ostringstream ss;
+	OOCore::ostringstream ss;
 	ss.imbue(std::locale::classic());
 
 	ss.setf(std::ios_base::hex,std::ios_base::basefield);

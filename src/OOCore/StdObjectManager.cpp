@@ -241,29 +241,31 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 
 void OOCore::StdObjectManager::Shutdown()
 {
-	std::list<ObjectPtr<ObjectImpl<Stub> > >  listStubs;
-	std::list<ObjectImpl<Proxy>* > listProxies;
+	std::vector<ObjectPtr<ObjectImpl<Stub> >,System::stl_allocator<ObjectPtr<ObjectImpl<Stub> > > > vecStubs;
+	std::vector<ObjectImpl<Proxy>*,System::stl_allocator<ObjectImpl<Proxy>*> > vecProxies;
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Copy the stub map
+	vecStubs.reserve(m_mapStubObjs.size());
 	for (std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator i=m_mapStubObjs.begin(); i!=m_mapStubObjs.end(); ++i)
-		listStubs.push_back(i->second);
+		vecStubs.push_back(i->second);
 
 	m_mapStubIds.clear();
 	m_mapStubObjs.clear();
 
 	// Copy the proxys
+	vecProxies.reserve(m_mapProxyIds.size());
 	for (std::map<uint32_t,ObjectImpl<Proxy>* >::iterator j=m_mapProxyIds.begin(); j!=m_mapProxyIds.end(); ++j)
-		listProxies.push_back(j->second);
+		vecProxies.push_back(j->second);
 
 	m_mapProxyIds.clear();
 
 	guard.release();
 
 	// Now do the final releases on the stub and proxies
-	listProxies.clear();
-	listStubs.clear();
+	vecProxies.clear();
+	vecStubs.clear();
 }
 
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)

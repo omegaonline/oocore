@@ -49,28 +49,31 @@ void OOCore::Compartment::shutdown()
 {
 	// Switch state...
 	ComptState compt_state(this);
+
+	std::vector<ChannelInfo> vecChannels;
+	std::vector<ObjectPtr<ObjectImpl<ComptChannel> > > vecCompts;
 	
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Done with cached objects
 	m_ptrROT.Release();
 
-	std::vector<ChannelInfo> vecChannels;
-	std::vector<ObjectPtr<ObjectImpl<ComptChannel> > > vecCompts;
-
 	// Shutdown all channels and compartments
-	uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
+	vecChannels.reserve(m_mapChannels.size());
 	for (std::map<uint32_t,ChannelInfo>::iterator j=m_mapChannels.begin(); j!=m_mapChannels.end(); ++j)
 		vecChannels.push_back(j->second);
 
 	m_mapChannels.clear();
 
+	vecCompts.reserve(m_mapCompartments.size());
 	for (std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
 		vecCompts.push_back(i->second);
 
 	m_mapCompartments.clear();
 
 	m_pSession->remove_compartment(m_id);
+	
+	uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
 
 	guard.release();
 

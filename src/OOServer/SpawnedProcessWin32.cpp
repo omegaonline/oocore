@@ -225,7 +225,7 @@ namespace
 	static DWORD LogonSandboxUser(const OOBase::wstring& strUName, HANDLE& hToken)
 	{
 		// Open the local account policy...
-		OOBase::stack_wstring strPwd;
+		OOBase::local_wstring strPwd;
 		LSA_HANDLE hPolicy;
 		LSA_OBJECT_ATTRIBUTES oa = {0};
 		DWORD dwErr = LsaNtStatusToWinError(LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy));
@@ -344,7 +344,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static bool OpenCorrectWindowStation(HANDLE hToken, OOBase::wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	static bool OpenCorrectWindowStation(HANDLE hToken, OOBase::local_wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
 	{
 		// Service window stations are created with the name "Service-0xZ1-Z2$",
 		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
@@ -480,7 +480,7 @@ namespace
 		return true;
 	}
 
-	static DWORD GetUserCwd(OOBase::wstring& strCurDir)
+	static DWORD GetUserCwd(OOBase::local_wstring& strCurDir)
 	{
 		// Find the cwd
 		HKEY hKey;
@@ -554,7 +554,7 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 
 DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	OOBase::wstring strCurDir;
+	OOBase::local_wstring strCurDir;
 	DWORD dwRes = GetUserCwd(strCurDir);
 	if (dwRes != ERROR_SUCCESS)
 		return dwRes;
@@ -624,7 +624,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	// Forward declare these because of goto's
 	DWORD dwWait;
 	STARTUPINFOW startup_info = {0};
-	OOBase::wstring strWindowStation = L"WinSta0\\default";
+	OOBase::local_wstring strWindowStation = L"WinSta0\\default";
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;

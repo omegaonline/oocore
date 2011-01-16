@@ -454,35 +454,49 @@ namespace
 
 	OOCore::string fmt_fixed_i(const double& val, int precision)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
+		try
+		{
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
 
-		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+			ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
 
-		ss.precision(precision);
+			ss.precision(precision);
 
-		ss << val;
+			ss << val;
 
-		return ss.str();
+			return ss.str();
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>
 	OOCore::string fmt_fixed_i(T val, int precision)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
-
-		ss << val;
-
-		OOCore::string ret = ss.str();
-
-		if (precision > 0)
+		try
 		{
-			ret += '.';
-			ret.append(precision,'0');
-		}
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
 
-		return ret;
+			ss << val;
+
+			OOCore::string ret = ss.str();
+
+			if (precision > 0)
+			{
+				ret += '.';
+				ret.append(precision,'0');
+			}
+
+			return ret;
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>
@@ -552,37 +566,51 @@ namespace
 	template <typename T>
 	OOCore::string fmt_decimal_i(T val, int width)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
-
-		if (width >= 0)
+		try
 		{
-			ss.fill('0');
-			ss.width(width);
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
+
+			if (width >= 0)
+			{
+				ss.fill('0');
+				ss.width(width);
+			}
+
+			ss << val;
+
+			return ss.str();
 		}
-
-		ss << val;
-
-		return ss.str();
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	OOCore::string fmt_decimal_i(const double& val, int width)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
-
-		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
-		ss.precision(0);
-
-		if (width >= 0)
+		try
 		{
-			ss.fill('0');
-			ss.width(width);
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
+
+			ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+			ss.precision(0);
+
+			if (width >= 0)
+			{
+				ss.fill('0');
+				ss.width(width);
+			}
+
+			ss << val;
+
+			return ss.str();
 		}
-
-		ss << val;
-
-		return ss.str();
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>
@@ -594,22 +622,29 @@ namespace
 	template <typename T>
 	string_t fmt_hex(T val, bool capital, int precision)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
-
-		ss.setf(std::ios_base::hex,std::ios_base::basefield);
-		if (capital)
-			ss.setf(std::ios_base::uppercase);
-
-		if (precision >= 0)
+		try
 		{
-			ss.fill('0');
-			ss.width(precision);
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
+
+			ss.setf(std::ios_base::hex,std::ios_base::basefield);
+			if (capital)
+				ss.setf(std::ios_base::uppercase);
+
+			if (precision >= 0)
+			{
+				ss.fill('0');
+				ss.width(precision);
+			}
+
+			ss << val;
+
+			return string_t(ss.str().c_str(),false);
 		}
-
-		ss << val;
-
-		return string_t(ss.str().c_str(),false);
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>
@@ -677,20 +712,27 @@ namespace
 
 	OOCore::string fmt_scientific_i(const double& val, bool capital, int precision)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
+		try
+		{
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
 
-		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
+			ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
 
-		if (precision >= 0)
-			ss.precision(precision);
+			if (precision >= 0)
+				ss.precision(precision);
 
-		if (capital)
-			ss.setf(std::ios_base::uppercase);
+			if (capital)
+				ss.setf(std::ios_base::uppercase);
 
-		ss << val;
+			ss << val;
 
-		return ss.str();
+			return ss.str();
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>
@@ -712,28 +754,42 @@ namespace
 
 	string_t fmt_general(const double& val, bool capital, int precision)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
+		try
+		{
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
 
-		if (capital)
-			ss.setf(std::ios_base::uppercase);
+			if (capital)
+				ss.setf(std::ios_base::uppercase);
 
-		ss.precision(precision);
+			ss.precision(precision);
 
-		ss << val;
+			ss << val;
 
-		return string_t(exp_strip(ss.str(),0,false).c_str(),false);
+			return string_t(exp_strip(ss.str(),0,false).c_str(),false);
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>
 	string_t fmt_general(T val, bool /*capital*/, int /*precision*/)
 	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
+		try
+		{
+			OOCore::ostringstream ss;
+			ss.imbue(std::locale::classic());
 
-		ss << val;
+			ss << val;
 
-		return string_t(ss.str().c_str(),false);
+			return string_t(ss.str().c_str(),false);
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	template <typename T>

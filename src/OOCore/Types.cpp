@@ -831,31 +831,38 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-	OOCore::ostringstream ss;
-	ss.imbue(std::locale::classic());
+	try
+	{
+		OOCore::ostringstream ss;
+		ss.imbue(std::locale::classic());
 
-	ss.setf(std::ios_base::hex,std::ios_base::basefield);
-	ss.setf(std::ios_base::uppercase);
-	ss.fill('0');
+		ss.setf(std::ios_base::hex,std::ios_base::basefield);
+		ss.setf(std::ios_base::uppercase);
+		ss.fill('0');
 
-	ss << '{';
-	ss << std::setw(8) << guid.Data1 << '-';
-	ss << std::setw(4) << guid.Data2 << '-';
-	ss << std::setw(4) << guid.Data3 << '-';
+		ss << '{';
+		ss << std::setw(8) << guid.Data1 << '-';
+		ss << std::setw(4) << guid.Data2 << '-';
+		ss << std::setw(4) << guid.Data3 << '-';
 
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[0]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[1]);
-	ss << '-';
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[0]);
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[1]);
+		ss << '-';
 
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[2]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[3]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[4]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[5]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[6]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[7]);
-	ss << '}';
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[2]);
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[3]);
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[4]);
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[5]);
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[6]);
+		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[7]);
+		ss << '}';
 
-	return string_t(ss.str().c_str(),true);
+		return string_t(ss.str().c_str(),true);
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))

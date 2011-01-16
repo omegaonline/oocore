@@ -185,9 +185,14 @@ namespace
 
 	void PromptForDebugger(DWORD pid)
 	{
-		OOBase::ostringstream out;
-		out << "Attach the debugger to process id " << pid << " now if you want!";
-		MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
+		try
+		{
+			OOBase::ostringstream out;
+			out << "Attach the debugger to process id " << pid << " now if you want!";
+			MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
+		}
+		catch (std::exception&)
+		{}
 	}
 }
 

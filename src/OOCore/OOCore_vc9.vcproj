@@ -46,8 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Visual Leak Detector\include&quot;;..\..\..\OOBase\include"
-				PreprocessorDefinitions="HAVE_VLD_H"
+				AdditionalIncludeDirectories="..\..\..\OOBase\include"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOCore_precomp.h"
@@ -66,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug"
+				AdditionalLibraryDirectories="..\..\..\OOBase\src\Win32\Debug"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="1"

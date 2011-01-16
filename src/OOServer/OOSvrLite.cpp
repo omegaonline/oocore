@@ -22,10 +22,6 @@
 #include "OOServer_Lite.h"
 #include "IPSLite.h"
 
-#ifdef HAVE_VLD_H
-#include <vld.h>
-#endif
-
 using namespace Omega;
 using namespace OTL;
 

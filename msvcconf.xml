@@ -4,10 +4,6 @@
     <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
     </Configuration>
     <Configuration Name="Release">
       <Library Name="OOBase.lib" />
@@ -37,10 +33,6 @@
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
       <Library Name="OOSvrBased.lib" />
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
     </Configuration>
     <Configuration Name="Release">
       <Library Name="OOBase.lib" />
@@ -64,30 +56,14 @@
     </Configuration>
   </Project>
 
-  <Project Name="OOHttpd">
-    <Include Name="OOBase/Win32.h" />
-    <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
-    </Configuration>
-  </Project>
-
   <Project Name="OOReg">
     <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
+      <Library Name="OOBased.lib" />
       <Library Name="OOSvrBased.lib" />
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
     </Configuration>
     <Configuration Name="Release">
+      <Library Name="OOBase.lib" />
       <Library Name="OOSvrBase.lib" />
     </Configuration>
   </Project>

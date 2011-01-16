@@ -24,10 +24,6 @@
 #include "UserSession.h"
 #include "Activation.h"
 
-#ifdef HAVE_VLD_H
-#include <vld.h>
-#endif
-
 using namespace Omega;
 using namespace OTL;
 

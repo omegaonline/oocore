@@ -50,9 +50,6 @@
         <Directory Id="INSTALLDIR" Name="Omega Online" />
       </Directory>
       <Directory Id="SystemFolder" />
-      <Directory Id="CommonAppDataFolder">
-        <Directory Id="COMMONAPPDIR" Name="Omega Online" />
-      </Directory>
       <Directory Id="CommonFilesFolder">
         <Directory Id="COMMONDIR" Name="Omega Online" />
       </Directory>
@@ -98,7 +95,7 @@
     </DirectoryRef>
 
     <!-- Install registry databases -->
-    <DirectoryRef Id="COMMONAPPDIR">
+    <DirectoryRef Id="INSTALLDIR">
       <Component Id="OOServer.system.regdb" Guid="{8B2918F6-80C9-4D50-A514-0460F7D37BD5}">
         <File Source="$(var.DataDir)\system.regdb" KeyPath="yes" />
       </Component>

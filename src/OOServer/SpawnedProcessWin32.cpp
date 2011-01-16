@@ -479,52 +479,6 @@ namespace
 
 		return true;
 	}
-
-	static DWORD GetUserCwd(OOBase::local_wstring& strCurDir)
-	{
-		// Find the cwd
-		HKEY hKey;
-		LONG dwRes = RegOpenKeyExW(HKEY_LOCAL_MACHINE,L"SOFTWARE\\Omega Online\\Installation",0,KEY_READ,&hKey);
-		if (dwRes == ERROR_SUCCESS)
-		{
-			wchar_t szPath[MAX_PATH] = {0};
-			DWORD dwSize = sizeof(szPath);
-			dwRes = RegQueryValueExW(hKey,L"CommonComponents",NULL,NULL,(LPBYTE)&szPath,&dwSize);
-			if (dwRes == ERROR_SUCCESS)
-				strCurDir = szPath;
-			else if (dwRes != ERROR_FILE_NOT_FOUND)
-				LOG_ERROR(("Failed to query CommonComponents: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
-						
-			RegCloseKey(hKey);
-		}
-		else if (dwRes != ERROR_FILE_NOT_FOUND)
-			LOG_ERROR_RETURN(("Failed to access HKEY_LOCAL_MACHINE\\SOFTWARE\\Omega Online\\Installation: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
-		
-		if (dwRes == ERROR_FILE_NOT_FOUND)
-		{
-			// Compose the dir ourselves
-			wchar_t szPath[MAX_PATH] = {0};
-			HRESULT hr = SHGetFolderPathW(0,CSIDL_PROGRAM_FILES_COMMON,0,SHGFP_TYPE_DEFAULT,szPath);
-			if FAILED(hr)
-			{
-				dwRes = GetLastError();
-				LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
-			}
-			else
-				dwRes = ERROR_SUCCESS;
-
-			strCurDir = szPath;
-			strCurDir += L"\\OmegaOnline\\";
-		}		
-
-		if (dwRes == ERROR_SUCCESS)
-		{
-			if (GetFileAttributesW(strCurDir.c_str()) == INVALID_FILE_ATTRIBUTES)
-				strCurDir.clear();
-		}
-
-		return dwRes;
-	}
 }
 
 SpawnedProcessWin32::SpawnedProcessWin32() :
@@ -554,11 +508,6 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 
 DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	OOBase::local_wstring strCurDir;
-	DWORD dwRes = GetUserCwd(strCurDir);
-	if (dwRes != ERROR_SUCCESS)
-		return dwRes;
-
 	wchar_t szPath[MAX_PATH];	
 	if (strAppPath.empty())
 	{
@@ -622,6 +571,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	ptrCmdLine[strCmdLine.size()] = L'\0';
 
 	// Forward declare these because of goto's
+	DWORD dwRes = ERROR_SUCCESS;
 	DWORD dwWait;
 	STARTUPINFOW startup_info = {0};
 	OOBase::local_wstring strWindowStation = L"WinSta0\\default";
@@ -705,7 +655,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,strCurDir.empty() ? NULL : strCurDir.c_str(),&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));

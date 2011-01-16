@@ -175,6 +175,8 @@ namespace OOServer
 		bool start_thread();
 		static int request_worker_fn(void* pParam);
 
+		typedef std::map<Omega::uint32_t,Omega::uint16_t,std::less<Omega::uint32_t>,OOBase::LocalAllocator<std::pair<const Omega::uint32_t,Omega::uint16_t> > > mapChannelThreadsType;
+
 		struct ThreadContext
 		{
 			Omega::uint16_t                                  m_thread_id;
@@ -182,10 +184,10 @@ namespace OOServer
 			MessageHandler*                                  m_pHandler;
 
 			// Transient data
-			OOBase::AtomicInt<size_t>                 m_usage_count;
-			std::map<Omega::uint32_t,Omega::uint16_t> m_mapChannelThreads;
-			OOBase::timeval_t                         m_deadline;
-			Omega::uint32_t                           m_seq_no;
+			OOBase::AtomicInt<size_t> m_usage_count;
+			mapChannelThreadsType     m_mapChannelThreads;
+			OOBase::timeval_t         m_deadline;
+			Omega::uint32_t           m_seq_no;
 
 			static ThreadContext* instance(MessageHandler* pHandler);
 

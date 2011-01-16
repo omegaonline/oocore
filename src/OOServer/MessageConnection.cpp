@@ -556,22 +556,15 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 			}
 			else
 			{
-				try
-				{
-					// Set per channel thread id
-					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id)).first;
-					i->second = msg->m_src_thread_id;
+				// Set per channel thread id
+				mapChannelThreadsType::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id)).first;
+				i->second = msg->m_src_thread_id;
 
-					// Process the message...
-					process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-					
-					// Clear the channel/threads map
-					pContext->m_mapChannelThreads.clear();
-				}
-				catch (std::exception& e)
-				{
-					LOG_ERROR(("std::exception thrown %s",e.what()));
-				}
+				// Process the message...
+				process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+				
+				// Clear the channel/threads map
+				pContext->m_mapChannelThreads.clear();
 			}
 
 			// Reset deadline
@@ -993,26 +986,19 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 				if (deadline && *deadline < pContext->m_deadline)
 					pContext->m_deadline = *deadline;
 
-				try
-				{
-					Omega::uint16_t old_thread_id = 0;
+				Omega::uint16_t old_thread_id = 0;
 
-					// Set per channel thread id
-					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
-					old_thread_id = i->second;
-					i->second = msg->m_src_thread_id;
+				// Set per channel thread id
+				mapChannelThreadsType::iterator i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
+				old_thread_id = i->second;
+				i->second = msg->m_src_thread_id;
 
-					// Process the message...
-					process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-					
-					// Restore old per channel thread id
-					i->second = old_thread_id;
-				}
-				catch (std::exception& e)
-				{
-					LOG_ERROR(("std::exception thrown %s",e.what()));
-				}
-
+				// Process the message...
+				process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+				
+				// Restore old per channel thread id
+				i->second = old_thread_id;
+				
 				pContext->m_deadline = old_deadline;
 			}
 			else if (type == Message_t::Response && recv_seq_no == seq_no)
@@ -1160,17 +1146,10 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	{
 		ThreadContext* pContext = ThreadContext::instance(this);
 
-		try
-		{
-			std::map<Omega::uint32_t,Omega::uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
-			if (i != pContext->m_mapChannelThreads.end())
-				msg.m_dest_thread_id = i->second;
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),io_result::failed);
-		}
-
+		mapChannelThreadsType::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
+		if (i != pContext->m_mapChannelThreads.end())
+			msg.m_dest_thread_id = i->second;
+		
 		msg.m_src_thread_id = pContext->m_thread_id;
 		msg.m_deadline = pContext->m_deadline;
 

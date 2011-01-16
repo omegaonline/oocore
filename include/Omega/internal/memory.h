@@ -114,6 +114,19 @@ namespace Omega
 			~stl_allocator() throw() 
 			{}
 
+			// return that all specializations of this allocator are interchangeable
+			template <typename U>
+			bool operator == (const stl_allocator<U>&) const throw() 
+			{
+				return true;
+			}
+
+			template <typename U>
+			bool operator != (const stl_allocator<U>&) const throw() 
+			{
+				return false;
+			}
+
 			// return maximum number of elements that can be allocated
 			size_type max_size() const throw() 
 			{
@@ -162,22 +175,6 @@ namespace Omega
 				}	
 			}
 		};
-	}
-}
-
-namespace std
-{
-	// return that all specializations of this allocator are interchangeable
-	template <typename T1, typename T2>
-	bool operator == (const Omega::System::stl_allocator<T1>&, const Omega::System::stl_allocator<T2>&) throw() 
-	{
-		return true;
-	}
-
-	template <typename T1, typename T2>
-	bool operator != (const Omega::System::stl_allocator<T1>&, const Omega::System::stl_allocator<T2>&) throw() 
-	{
-		return false;
 	}
 }
 

@@ -165,17 +165,20 @@ namespace Omega
 	}
 }
 
-// return that all specializations of this allocator are interchangeable
-template <typename T1, typename T2>
-bool operator == (const Omega::System::stl_allocator<T1>&, const Omega::System::stl_allocator<T2>&) throw() 
+namespace std
 {
-	return true;
-}
+	// return that all specializations of this allocator are interchangeable
+	template <typename T1, typename T2>
+	bool operator == (const Omega::System::stl_allocator<T1>&, const Omega::System::stl_allocator<T2>&) throw() 
+	{
+		return true;
+	}
 
-template <typename T1, typename T2>
-bool operator != (const Omega::System::stl_allocator<T1>&, const Omega::System::stl_allocator<T2>&) throw() 
-{
-	return false;
+	template <typename T1, typename T2>
+	bool operator != (const Omega::System::stl_allocator<T1>&, const Omega::System::stl_allocator<T2>&) throw() 
+	{
+		return false;
+	}
 }
 
 #endif // OMEGA_MEMORY_H_INCLUDED_

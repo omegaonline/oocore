@@ -19,6 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <OOBase/SmartPtr.h>
 #include <OOSvrBase/CmdArgs.h>
 
 #include "../../include/Omega/Omega.h"
@@ -28,6 +29,8 @@
 #include <algorithm>
 
 static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&);
+
+typedef std::vector<OOBase::string,OOBase::LocalAllocator<OOBase::string> > vector_string;
 
 static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega::string_t& strStart)
 {
@@ -46,7 +49,7 @@ static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega
 	}
 
 	// Now, make key canonical...
-	std::vector<OOBase::string> key_parts;
+	vector_string key_parts;
 	while (!strKey.empty())
 	{
 		assert(strKey[0] == '/');
@@ -63,7 +66,7 @@ static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega
 	}
 
 	// Walk the vector, resolving . and ..
-	for (std::vector<OOBase::string>::reverse_iterator i=key_parts.rbegin();i!=key_parts.rend();)
+	for (vector_string::reverse_iterator i=key_parts.rbegin();i!=key_parts.rend();)
 	{
 		if (*i == "..")
 		{
@@ -79,7 +82,7 @@ static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega
 
 	// Build absolute key path...
 	strKey.clear();
-	for (std::vector<OOBase::string>::iterator i=key_parts.begin();i!=key_parts.end();++i)
+	for (vector_string::iterator i=key_parts.begin();i!=key_parts.end();++i)
 	{
 		if (!i->empty())
 			strKey += "/" + *i;
@@ -202,6 +205,8 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	void* TODO;
 
 	OTL::ObjectPtr<Omega::Registry::IKey>(L"/")->DeleteKey(strKey);
+
+	std::cout << "Removed value '" << key->second << "'." << std::endl;
 
 	return true;
 }
@@ -421,7 +426,7 @@ static const Command cmds[] =
 	{ 0,0 }
 };
 
-bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
+bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
 
 static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
 {
@@ -451,7 +456,7 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 				if (i)
 					std::cout << std::endl;
 
-				std::vector<OOBase::string> args2;
+				vector_string args2;
 				args2.push_back(j->second);
 				args2.push_back("--help");
 				process_command(args2,ptrKey);
@@ -470,7 +475,7 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	return true;
 }
 
-bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
+bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey)
 {
 	// Search for the command
 	typedef bool (*PFN)(int,char*[],OTL::ObjectPtr<Omega::Registry::IKey>&);
@@ -487,27 +492,37 @@ bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPt
 	if (pfn)
 	{
 		// Build cmd args
-		char** argv = new (std::nothrow) char*[line_args.size()];
+		OOBase::SmartPtr<char*,OOBase::FreeDestructor<2> > argv = static_cast<char**>(OOBase::Allocate(line_args.size()*sizeof(char*),2,__FILE__,__LINE__));
 		if (!argv)
 		{
 			std::cerr << "Out of memory";
 			return false;
 		}
 
+		bool bOk = true;
 		int argc = 0;
-		for (std::vector<OOBase::string>::const_iterator i=line_args.begin();i!=line_args.end();++i)
-			argv[argc++] = strdup(i->c_str());
+		for (vector_string::const_iterator i=line_args.begin();i!=line_args.end();++i)
+		{
+			argv[argc] = static_cast<char*>(OOBase::Allocate(i->size()+1,2,__FILE__,__LINE__));
+			if (!argv[argc])
+			{
+				std::cerr << "Out of memory";
+				bOk = false;
+				break;
+			}
+
+			memcpy(argv[argc],i->c_str(),i->size()+1);
+			++argc;
+		}
 		
 		// Call the function
-		bool ret = (*pfn)(argc,argv,ptrKey);
+		if (bOk)
+			bOk = (*pfn)(argc,argv,ptrKey);
 
-		argc = 0;
-		for (std::vector<OOBase::string>::const_iterator i=line_args.begin();i!=line_args.end();++i)
-			free(argv[argc++]);
+		for (;argc > 0;--argc)
+			OOBase::Free(argv[argc-1],2);
 		
-		delete [] argv;
-
-		return ret;
+		return bOk;
 	}
 	
 	// Unknown command

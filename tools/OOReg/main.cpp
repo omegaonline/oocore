@@ -27,9 +27,15 @@
 
 #include <iostream>
 
+#ifdef HAVE_VLD_H
+#include <vld.h>
+#endif
+
 // Manual externs
+typedef std::vector<OOBase::string,OOBase::LocalAllocator<OOBase::string> > vector_string;
+
 extern void report_exception(Omega::IException* pE);
-extern bool process_command(const std::vector<OOBase::string>& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
+extern bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define APPNAME "OOReg"
@@ -64,7 +70,7 @@ static int help()
 	return EXIT_SUCCESS;
 }
 
-static bool parse_args(const OOBase::string& line, std::vector<OOBase::string>& line_args, bool& bCont)
+static bool parse_args(const OOBase::string& line, vector_string& line_args, bool& bCont)
 {
 	bCont = false;
 
@@ -182,7 +188,7 @@ int main(int argc, char* argv[])
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/");
 	
 		// Now loop processing commands
-		std::vector<OOBase::string> line_args;
+		vector_string line_args;
 		for (bool bCont = false;!std::cin.eof();)
 		{
 			if (!bCont)

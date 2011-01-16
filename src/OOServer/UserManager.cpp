@@ -465,10 +465,6 @@ void User::Manager::do_quit_i()
 				ptrROT->RevokeObject(nIPSCookie);
 			}
 		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("std::exception thrown %s",e.what()));
-		}
 		catch (IException* pE)
 		{
 			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));

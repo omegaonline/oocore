@@ -79,7 +79,7 @@ namespace Registry
 
 	private:
 		Manager*                       m_pManager;
-		OOBase::Mutex                  m_lock;
+		OOBase::SpinLock               m_lock;
 		OOBase::string                 m_strdb;
 		
 		OOBase::SmartPtr<OOSvrBase::Db::Database> m_db;

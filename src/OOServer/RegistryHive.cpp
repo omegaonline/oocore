@@ -194,7 +194,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::string strSubKey, Omega::uint32_t channel_id)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Find the key
 	access_rights_t access_mask;
@@ -203,7 +203,7 @@ int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBas
 
 int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -336,7 +336,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 
 int Registry::Hive::delete_key(const Omega::int64_t& uParent, OOBase::string strSubKey, Omega::uint32_t channel_id)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Get the start key
 	Omega::int64_t uKey = 0;
@@ -370,7 +370,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, OOBase::string str
 
 int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, setType& setSubKeys)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -425,7 +425,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 
 void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -509,7 +509,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 
 int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, setType& setValues)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -550,7 +550,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 
 void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -624,7 +624,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 
 int Registry::Hive::delete_value(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -658,7 +658,7 @@ int Registry::Hive::delete_value(const Omega::int64_t& uKey, const OOBase::strin
 
 int Registry::Hive::value_exists(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -710,7 +710,7 @@ int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const OOBase::str
 
 int Registry::Hive::get_value(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, OOBase::string& val)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -763,7 +763,7 @@ int Registry::Hive::get_value(const Omega::int64_t& uKey, const OOBase::string& 
 
 int Registry::Hive::set_value(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, const char* val)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -816,7 +816,7 @@ int Registry::Hive::set_value(const Omega::int64_t& uKey, const OOBase::string& 
 
 int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::string& val)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -866,7 +866,7 @@ int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t 
 
 int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, OOBase::string& val)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -922,7 +922,7 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const OOBa
 
 int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const OOBase::string& val)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
@@ -957,7 +957,7 @@ int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t 
 
 int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const OOBase::string& strValue, Omega::uint32_t channel_id, const OOBase::string& val)
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;

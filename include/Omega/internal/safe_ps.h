@@ -195,13 +195,13 @@ namespace Omega
 
 				virtual void AddRef()
 				{
-					if (m_refcount.AddRef())
-						addref_safe(m_shim);
+					m_refcount.AddRef();
+					addref_safe(m_shim);
 				}
 
 				virtual void Release()
 				{
-					assert(m_refcount.m_debug_value > 0);
+					assert(!m_refcount.IsZero());
 
 					if (m_refcount.Release())
 					{
@@ -280,7 +280,7 @@ namespace Omega
 
 				virtual void Internal_Release()
 				{
-					assert(m_intcount.m_debug_value > 0);
+					assert(!m_intcount.IsZero());
 
 					if (m_intcount.Release() && m_refcount.IsZero() && m_pincount.IsZero())
 						Destruct__proxy__();
@@ -288,18 +288,17 @@ namespace Omega
 
 				void Pin()
 				{
-					if (m_pincount.AddRef())
-					{
-						// Pin the shim
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
-					}
+					m_pincount.AddRef();
+					
+					// Pin the shim
+					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
+					if (except)
+						throw_correct_exception(except);
 				}
 
 				void Unpin()
 				{
-					assert(m_pincount.m_debug_value > 0);
+					assert(!m_pincount.IsZero());
 
 					if (m_pincount.Release())
 					{
@@ -432,13 +431,13 @@ namespace Omega
 			public:
 				void AddRef()
 				{
-					if (m_refcount.AddRef())
-						m_pI->AddRef();
+					m_refcount.AddRef();
+					m_pI->AddRef();
 				}
 
 				void Release()
 				{
-					assert(m_refcount.m_debug_value > 0);
+					assert(!m_refcount.IsZero());
 
 					if (m_refcount.Release())
 					{
@@ -474,7 +473,7 @@ namespace Omega
 
 				void Unpin()
 				{
-					assert(m_pincount.m_debug_value > 0);
+					assert(!m_pincount.IsZero());
 
 					if (m_pincount.Release() && m_refcount.IsZero())
 						OMEGA_DELETE(Safe_Stub_Base,this);

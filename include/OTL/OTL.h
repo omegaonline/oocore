@@ -336,7 +336,7 @@ namespace OTL
 
 		virtual void Internal_Release()
 		{
-			assert(m_refcount.m_debug_value > 0);
+			assert(!m_refcount.IsZero());
 
 			if (m_refcount.Release())
 				Final_Release();
@@ -671,7 +671,7 @@ namespace OTL
 
 		virtual void Release()
 		{
-			assert(m_refcount.m_debug_value > 0);
+			assert(!m_refcount.IsZero());
 
 			if (m_refcount.Release())
 				OMEGA_DELETE(AggregatedObjectImpl,this);

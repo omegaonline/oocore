@@ -49,11 +49,11 @@ namespace OOCore
 		Stub(const Stub&);
 		Stub& operator = (const Stub&);
 
-		OOBase::AtomicInt<Omega::uint32_t>     m_marshal_count;
-		OOBase::SpinLock                       m_lock;
-		Omega::uint32_t                        m_stub_id;
-		OTL::ObjectPtr<Omega::IObject>         m_ptrObj;
-		StdObjectManager*                      m_pManager;
+		OOBase::Atomic<Omega::uint32_t>     m_marshal_count;
+		OOBase::SpinLock                    m_lock;
+		Omega::uint32_t                     m_stub_id;
+		OTL::ObjectPtr<Omega::IObject>      m_ptrObj;
+		StdObjectManager*                   m_pManager;
 
 		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::Remoting::IStub> > m_iid_map;
 

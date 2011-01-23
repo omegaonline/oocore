@@ -265,7 +265,7 @@ namespace
 
 		void Release()
 		{
-			assert(m_refcount.m_debug_value > 0);
+			assert(!m_refcount.IsZero());
 
 			if (m_refcount.Release())
 				OMEGA_DELETE(Aggregator,this);

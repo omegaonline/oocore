@@ -482,7 +482,7 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 	return static_cast<UserSession*>(pParam)->run_read_loop();
 }
 
-void OOCore::UserSession::wait_or_alert(const OOBase::AtomicInt<size_t>& usage)
+void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 {
 	// Make this value configurable somehow...
 	OOBase::timeval_t wait(0,500000);

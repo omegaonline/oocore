@@ -158,22 +158,22 @@ namespace Omega
 		class AtomicRefCount
 		{
 		public:
-			AtomicRefCount();
-			~AtomicRefCount();
+			AtomicRefCount() : m_value(0)
+			{}
 
-			bool AddRef();
+			~AtomicRefCount()
+			{}
+
+			void AddRef();
 			bool Release();
-			bool IsZero() const;
-
-#ifdef OMEGA_DEBUG
-			size_t m_debug_value;
-#endif
+			
+			bool IsZero() const
+			{
+				return (m_value == 0);
+			}
 
 		private:
-			struct handle_t
-			{
-				int unused;
-			}* m_handle;
+			size_t m_value;
 		};
 
 		template <typename DLL>

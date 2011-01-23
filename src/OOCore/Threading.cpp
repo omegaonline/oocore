@@ -92,30 +92,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*
 	static_cast<OOBase::RWMutex*>(m1)->release();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,())
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),size_t*,v))
 {
-	// Look at using an instrinsic on available platforms rather than thrashing the heap...
-	void* TODO; 
-
-	OMEGA_NEW_T_RETURN(OOBase::AtomicInt<size_t>,OOBase::AtomicInt<size_t>);
+	OOBase::Atomic<size_t>::Increment(*v);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),size_t*,v))
 {
-	OMEGA_DELETE(AtomicInt<size_t>,static_cast<OOBase::AtomicInt<size_t>*>(m1));
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,m1))
-{
-	return ((*static_cast<OOBase::AtomicInt<size_t>*>(m1))++ == 0);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,m1))
-{
-	return (-- *static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0) ? 1 : 0;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_iszero,1,((in),void*,m1))
-{
-	return (*static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0) ? 1 : 0;
+	return (OOBase::Atomic<size_t>::Decrement(*v) == 0) ? 1 : 0;
 }

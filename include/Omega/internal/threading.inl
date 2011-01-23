@@ -276,52 +276,16 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 	{}
 }
 
-#ifdef OMEGA_DEBUG
-#define OMEGA_DEBUG_STASH_ATOMIC(expr)  m_debug_value expr
-#else
-#define OMEGA_DEBUG_STASH_ATOMIC(expr)  (void)0
-#endif
-
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,());
-inline Omega::Threading::AtomicRefCount::AtomicRefCount() :
-		m_handle(static_cast<handle_t*>(OOCore_atomic__ctor()))
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),size_t*,v));
+inline void Omega::Threading::AtomicRefCount::AddRef()
 {
-	OMEGA_DEBUG_STASH_ATOMIC(=0);
+	OOCore_atomic_addref(&m_value);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,h));
-inline Omega::Threading::AtomicRefCount::~AtomicRefCount()
-{
-	try
-	{
-		OOCore_atomic__dctor(m_handle);
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-	catch (...)
-	{}
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,h));
-inline bool Omega::Threading::AtomicRefCount::AddRef()
-{
-	OMEGA_DEBUG_STASH_ATOMIC(++);
-	return (OOCore_atomic_addref(m_handle) != 0);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,h));
+OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),size_t*,v));
 inline bool Omega::Threading::AtomicRefCount::Release()
 {
-	OMEGA_DEBUG_STASH_ATOMIC(--);
-	return (OOCore_atomic_release(m_handle) != 0);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_iszero,1,((in),void*,h));
-inline bool Omega::Threading::AtomicRefCount::IsZero() const
-{
-	return (OOCore_atomic_iszero(m_handle) != 0);
+	return (OOCore_atomic_release(&m_value) != 0);
 }
 
 #endif // OMEGA_THREADING_INL_INCLUDED_

@@ -58,7 +58,7 @@ namespace OOServer
 		MessageHandler*                m_pHandler;
 		OOSvrBase::AsyncLocalSocketPtr m_ptrSocket;
 		Omega::uint32_t                m_channel_id;
-		OOBase::AtomicInt<size_t>      m_async_count;
+		OOBase::Atomic<size_t>         m_async_count;
 
 		static const size_t     m_default_buffer_size = 1024;
 
@@ -169,7 +169,7 @@ namespace OOServer
 		};
 
 		// Pooled queued members
-		OOBase::AtomicInt<size_t>                        m_waiting_threads;
+		OOBase::Atomic<size_t>                           m_waiting_threads;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
 		bool start_thread();
@@ -184,7 +184,7 @@ namespace OOServer
 			MessageHandler*                                  m_pHandler;
 
 			// Transient data
-			OOBase::AtomicInt<size_t> m_usage_count;
+			OOBase::Atomic<size_t>    m_usage_count;
 			mapChannelThreadsType     m_mapChannelThreads;
 			OOBase::timeval_t         m_deadline;
 			Omega::uint32_t           m_seq_no;

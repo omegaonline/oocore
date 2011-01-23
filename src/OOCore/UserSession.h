@@ -125,11 +125,11 @@ namespace OOCore
 			OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_msg_queue;
 
 			// Transient data
-			OOBase::AtomicInt<size_t>                   m_usage_count;
-			std::map<Omega::uint32_t,Omega::uint16_t>   m_mapChannelThreads;
-			OOBase::timeval_t                           m_deadline;
-			Omega::uint32_t                             m_seq_no;
-			Omega::uint16_t                             m_current_cmpt;
+			OOBase::Atomic<size_t>                    m_usage_count;
+			std::map<Omega::uint32_t,Omega::uint16_t> m_mapChannelThreads;
+			OOBase::timeval_t                         m_deadline;
+			Omega::uint32_t                           m_seq_no;
+			Omega::uint16_t                           m_current_cmpt;
 
 			static ThreadContext* instance();
 
@@ -142,7 +142,7 @@ namespace OOCore
 
 		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<const Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
 
-		OOBase::AtomicInt<size_t>                        m_usage_count;		
+		OOBase::Atomic<size_t>                           m_usage_count;		
 		mapThreadContextsType                            m_mapThreadContexts;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
@@ -171,7 +171,7 @@ namespace OOCore
 		ResponsePtr wait_for_response(Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
-		void wait_or_alert(const OOBase::AtomicInt<size_t>& usage);
+		void wait_or_alert(const OOBase::Atomic<size_t>& usage);
 
 		static int io_worker_fn(void* pParam);
 

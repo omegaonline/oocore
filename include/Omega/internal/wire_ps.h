@@ -87,7 +87,7 @@ namespace Omega
 
 				virtual void Release()
 				{
-					assert(m_refcount.m_debug_value > 0);
+					assert(!m_refcount.IsZero());
 
 					if (m_refcount.Release() && m_pincount.IsZero())
 						Destruct__proxy__();
@@ -167,7 +167,7 @@ namespace Omega
 
 				void Unpin()
 				{
-					assert(m_pincount.m_debug_value > 0);
+					assert(!m_pincount.IsZero());
 
 					if (m_pincount.Release() && m_refcount.IsZero())
 						Destruct__proxy__();
@@ -387,7 +387,7 @@ namespace Omega
 
 				void Release()
 				{
-					assert(m_refcount.m_debug_value > 0);
+					assert(!m_refcount.IsZero());
 
 					if (m_refcount.Release())
 						OMEGA_DELETE(Wire_Stub_Base,this);

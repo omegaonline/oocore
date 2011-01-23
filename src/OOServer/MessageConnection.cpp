@@ -311,7 +311,8 @@ OOServer::MessageHandler::MessageHandler() :
 		m_uChildMask(0),
 		m_uNextChannelId(0),
 		m_uNextChannelMask(0),
-		m_uNextChannelShift(0)
+		m_uNextChannelShift(0),
+		m_waiting_threads(0)
 {
 }
 
@@ -825,6 +826,7 @@ OOServer::MessageHandler::ThreadContext* OOServer::MessageHandler::ThreadContext
 OOServer::MessageHandler::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_pHandler(0),
+		m_usage_count(0),
 		m_deadline(OOBase::timeval_t::MaxTime),
 		m_seq_no(0)
 {

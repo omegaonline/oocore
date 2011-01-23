@@ -28,9 +28,10 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::Stub::Stub() :
-		m_stub_id(0), m_pManager(0)
-{
-}
+		m_marshal_count(0),
+		m_stub_id(0),
+		m_pManager(0)
+{}
 
 void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pManager)
 {

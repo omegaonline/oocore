@@ -38,6 +38,7 @@ OOCore::UserSession::UserSession() :
 		m_nIPSCookie(0),
 		m_init_count(0),
 		m_init_state(eStopped),
+		m_usage_count(0),
 		m_next_compartment(0)
 {
 }
@@ -823,6 +824,7 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 
 OOCore::UserSession::ThreadContext::ThreadContext() :
 		m_thread_id(0),
+		m_usage_count(0),
 		m_deadline(OOBase::timeval_t::MaxTime),
 		m_seq_no(0),
 		m_current_cmpt(0)

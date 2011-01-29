@@ -48,13 +48,13 @@ OOBase::string User::Acceptor::unique_name()
 		// Get the current user's Logon SID
 		OOBase::Win32::SmartHandle hProcessToken;
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),"");
+			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),"");
 
 		// Get the logon SID of the Token
 		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),"");
+			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),"");
 
 		char* pszSid;
 		if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
@@ -156,13 +156,13 @@ bool User::Acceptor::init_security()
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 	// Get the logon SID of the Token
 	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 
 	// Set full control for the Logon SID only
 	EXPLICIT_ACCESSW ea = {0};
@@ -176,7 +176,7 @@ bool User::Acceptor::init_security()
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(1,&ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
 	// Create a new security descriptor
 	m_sa.nLength = sizeof(m_sa);

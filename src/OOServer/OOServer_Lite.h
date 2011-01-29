@@ -23,8 +23,8 @@
 #define OOSERVER_LITE_H_INCLUDED_
 
 #include <OOBase/Mutex.h>
+#include <OOBase/Posix.h>
 
-#include <OOSvrBase/pw_info.h>
 #include <OOSvrBase/Database.h>
 
 // Ensure we have the local Omega.h instead of the installed one...

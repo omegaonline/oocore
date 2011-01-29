@@ -94,7 +94,7 @@ namespace
 		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
+			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),INVALID_HANDLE_VALUE);
 
 		try
 		{
@@ -127,7 +127,7 @@ namespace
 									  0, 0, 0, 0, 0, 0, 0,
 									  &pSID))
 		{
-			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
+			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text(GetLastError()).c_str()),INVALID_HANDLE_VALUE);
 		}
 		OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
 
@@ -153,7 +153,7 @@ namespace
 		OOSvrBase::Win32::sec_descript_t sd;
 		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
+			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwRes).c_str()),INVALID_HANDLE_VALUE);
 
 		// Create security attribute
 		SECURITY_ATTRIBUTES sa;
@@ -172,7 +172,7 @@ namespace
 										&sa);
 
 		if (hPipe == INVALID_HANDLE_VALUE)
-			LOG_ERROR(("CreateNamedPipeA failed: %s",OOBase::Win32::FormatMessage().c_str()));
+			LOG_ERROR(("CreateNamedPipeA failed: %s",OOBase::system_error_text(GetLastError()).c_str()));
 
 		return hPipe;
 	}
@@ -205,19 +205,19 @@ namespace
 		}
 
 		if (dwErr != 0)
-			LOG_ERROR(("ConnectNamedPipe failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+			LOG_ERROR(("ConnectNamedPipe failed: %s",OOBase::system_error_text(dwErr).c_str()));
 		else
 		{
 			DWORD dw = 0;
 			if (!GetOverlappedResult(hPipe,&ov,&dw,TRUE))
 			{
 				dwErr = GetLastError();
-				LOG_ERROR(("GetOverlappedResult failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+				LOG_ERROR(("GetOverlappedResult failed: %s",OOBase::system_error_text(dwErr).c_str()));
 			}
 		}
 
 		if (dwErr != 0)
-			LOG_ERROR(("WaitForConnect failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+			LOG_ERROR(("WaitForConnect failed: %s",OOBase::system_error_text(dwErr).c_str()));
 
 		return (dwErr == 0);
 	}
@@ -230,7 +230,7 @@ namespace
 		LSA_OBJECT_ATTRIBUTES oa = {0};
 		DWORD dwErr = LsaNtStatusToWinError(LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy));
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("LsaOpenPolicy failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("LsaOpenPolicy failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 
 		LSA_UNICODE_STRING szKey;
 		szKey.Buffer = const_cast<PWSTR>(L"L$OOServer_sandbox_pwd");
@@ -243,7 +243,7 @@ namespace
 		if (dwErr != ERROR_SUCCESS)
 		{
 			LsaClose(hPolicy);
-			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 		}
 
 		strPwd.assign(pszVal->Buffer,pszVal->Length / sizeof(wchar_t));
@@ -253,7 +253,7 @@ namespace
 		if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 		{
 			dwErr = GetLastError();
-			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 		}
 
 		// Control handle lifetime
@@ -262,12 +262,12 @@ namespace
 		// Restrict the Token
 		dwErr = OOSvrBase::Win32::RestrictToken(hToken);
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 
 		// This might be needed for retricted tokens...
 		dwErr = OOSvrBase::Win32::SetTokenDefaultDACL(hToken);
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 
 		tok.detach();
 		return ERROR_SUCCESS;
@@ -354,18 +354,18 @@ namespace
 		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 
 		wchar_t* pszSid = 0;
 		if (!ConvertSidToStringSidW(ptrSIDLogon,&pszSid))
-			LOG_ERROR_RETURN(("ConvertSidToStringSidW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("ConvertSidToStringSidW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		strWindowStation = pszSid;
 		LocalFree(pszSid);
 
 		// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
 		if (wcsncmp(strWindowStation.c_str(),L"S-1-5-5-",8) != 0)
-			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
+			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::system_error_text(ERROR_INVALID_SID).c_str()),false);
 
 		// Crack out the last two parts - there is probably an easier way... but this works
 		strWindowStation.erase(0,8);
@@ -374,11 +374,11 @@ namespace
 		DWORD dwParts[2];
 		dwParts[0] = wcstoul(p,&pEnd,10);
 		if (*pEnd != L'-')
-			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
+			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::system_error_text(ERROR_INVALID_SID).c_str()),false);
 
 		dwParts[1] = wcstoul(pEnd+1,&pEnd,10);
 		if (*pEnd != L'\0')
-			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::Win32::FormatMessage(ERROR_INVALID_SID).c_str()),false);
+			LOG_ERROR_RETURN(("OpenCorrectWindowStation failed: %s",OOBase::system_error_text(ERROR_INVALID_SID).c_str()),false);
 
 		wchar_t szBuf[128] = {0};
 		wsprintfW(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
@@ -387,11 +387,11 @@ namespace
 		// Get the current processes user SID
 		OOBase::Win32::SmartHandle hProcessToken;
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrProcessUser)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		// Open or create the new window station and desktop
 		// Now confirm the Window Station exists...
@@ -401,12 +401,12 @@ namespace
 			// See if just doesn't exist yet...
 			dwRes = GetLastError();
 			if (dwRes != ERROR_FILE_NOT_FOUND)
-				LOG_ERROR_RETURN(("OpenWindowStationW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+				LOG_ERROR_RETURN(("OpenWindowStationW failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 
 			OOSvrBase::Win32::sec_descript_t sd;
 			dwRes = CreateWindowStationSD(ptrProcessUser,ptrSIDLogon,sd);
 			if (dwRes != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("CreateWindowStationSD failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+				LOG_ERROR_RETURN(("CreateWindowStationSD failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 
 			SECURITY_ATTRIBUTES sa;
 			sa.nLength = sizeof(sa);
@@ -415,7 +415,7 @@ namespace
 
 			hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,&sa);
 			if (!hWinsta)
-				LOG_ERROR_RETURN(("CreateWindowStationW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+				LOG_ERROR_RETURN(("CreateWindowStationW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 		}
 
 		// Stash our old
@@ -424,7 +424,7 @@ namespace
 		{
 			dwRes = GetLastError();
 			CloseWindowStation(hWinsta);
-			LOG_ERROR_RETURN(("GetProcessWindowStation failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+			LOG_ERROR_RETURN(("GetProcessWindowStation failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 		}
 
 		// Swap our Window Station
@@ -432,7 +432,7 @@ namespace
 		{
 			dwRes = GetLastError();
 			CloseWindowStation(hWinsta);
-			LOG_ERROR_RETURN(("SetProcessWindowStation failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+			LOG_ERROR_RETURN(("SetProcessWindowStation failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 		}
 
 		// Try for the desktop
@@ -445,7 +445,7 @@ namespace
 			{
 				SetProcessWindowStation(hOldWinsta);
 				CloseWindowStation(hWinsta);
-				LOG_ERROR_RETURN(("OpenDesktopW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+				LOG_ERROR_RETURN(("OpenDesktopW failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 			}
 
 			OOSvrBase::Win32::sec_descript_t sd;
@@ -454,7 +454,7 @@ namespace
 			{
 				SetProcessWindowStation(hOldWinsta);
 				CloseWindowStation(hWinsta);
-				LOG_ERROR_RETURN(("CreateDesktopSD failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+				LOG_ERROR_RETURN(("CreateDesktopSD failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 			}
 
 			SECURITY_ATTRIBUTES sa;
@@ -468,7 +468,7 @@ namespace
 				dwRes = GetLastError();
 				SetProcessWindowStation(hOldWinsta);
 				CloseWindowStation(hWinsta);
-				LOG_ERROR_RETURN(("CreateDesktopW failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+				LOG_ERROR_RETURN(("CreateDesktopW failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 			}
 		}
 
@@ -515,7 +515,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 		{
 			DWORD dwErr = GetLastError();
-			LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 		}
 
 		// Strip off our name, and add OOSvrUser.exe
@@ -524,7 +524,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 		if (!PathAppendW(szPath,L"OOSvrUser.exe"))
 		{
 			DWORD dwErr = GetLastError();
-			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 		}
 
 		strAppPath = szPath;
@@ -557,7 +557,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	if (!hPipe.is_valid())
 	{
 		DWORD dwErr = GetLastError();
-		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),dwErr);
+		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::system_error_text(dwErr).c_str()),dwErr);
 	}
 
 	OOBase::wstring strCmdLine = szPath;
@@ -565,7 +565,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 
 	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > ptrCmdLine = static_cast<wchar_t*>(OOBase::Allocate((strCmdLine.size()+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
 	if (!ptrCmdLine)
-		LOG_ERROR_RETURN(("PathRemoveFileSpecW failed: %s",OOBase::Win32::FormatMessage(ERROR_OUTOFMEMORY).c_str()),ERROR_OUTOFMEMORY);
+		LOG_ERROR_RETURN(("PathRemoveFileSpecW failed: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY).c_str()),ERROR_OUTOFMEMORY);
 
 	memcpy(ptrCmdLine,strCmdLine.c_str(),strCmdLine.size()*sizeof(wchar_t));
 	ptrCmdLine[strCmdLine.size()] = L'\0';
@@ -590,7 +590,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 			dwRes = ERROR_SUCCESS;
 		else if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),dwRes);
+			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::system_error_text(dwRes).c_str()),dwRes);
 	}
 	
 	// Load the users environment vars
@@ -598,7 +598,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
 		dwRes = GetLastError();
-		LOG_ERROR(("CreateEnvironmentBlock: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
+		LOG_ERROR(("CreateEnvironmentBlock: %s",OOBase::system_error_text(dwRes).c_str()));
 		goto Cleanup;
 	}
 
@@ -606,7 +606,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
 		dwRes = GetLastError();
-		LOG_ERROR(("DuplicateTokenEx: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
+		LOG_ERROR(("DuplicateTokenEx: %s",OOBase::system_error_text(dwRes).c_str()));
 		goto Cleanup;
 	}
 
@@ -658,7 +658,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
-		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
+		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::system_error_text(dwRes).c_str()));
 
 		if (hDebugEvent)
 			CloseHandle(hDebugEvent);
@@ -767,7 +767,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 			break;
 		
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 	}
 
 	// Map the generic access rights
@@ -797,7 +797,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	DWORD err = GetLastError();
 
 	if (!bRes && err != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("AccessCheck failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
+		LOG_ERROR_RETURN(("AccessCheck failed: %s",OOBase::system_error_text(err).c_str()),false);
 
 	bAllowed = (bAllowedVal == TRUE);
 	return true;
@@ -846,13 +846,13 @@ bool SpawnedProcessWin32::GetRegistryHive(const OOBase::string& strSysDir, const
 		wchar_t szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
 		if FAILED(hr)
-			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		if (!PathAppendW(szBuf,L"Omega Online"))
-			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
-			LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		strHive = OOBase::to_utf8(szBuf).c_str();
 		if (!strHive.empty() && *strHive.rbegin() != '\\')
@@ -868,7 +868,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const OOBase::string& strSysDir, const
 
 		DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
 		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
 		strHive = strUsersDir + OOBase::to_utf8(strUserName.c_str());
 		if (!strDomainName.empty())
@@ -881,7 +881,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const OOBase::string& strSysDir, const
 	if (!PathFileExistsW(OOBase::from_utf8(strHive.c_str()).c_str()))
 	{
 		if (!CopyFileW(OOBase::from_utf8((strSysDir + "default_user.regdb").c_str()).c_str(),OOBase::from_utf8(strHive.c_str()).c_str(),TRUE))
-			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::system_error_text(GetLastError()).c_str()),false);
 
 		::SetFileAttributesW(OOBase::from_utf8(strHive.c_str()).c_str(),FILE_ATTRIBUTE_NORMAL);
 
@@ -935,7 +935,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 		CloseHandle(uid);
 
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 	// Get the names associated with the user SID
 	OOBase::wstring strUserName;
@@ -945,7 +945,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	if (dwRes != ERROR_SUCCESS)
 	{
 		CloseHandle(uid);
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 	}
 
 	if (strDomainName.empty())
@@ -958,7 +958,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	if (dwRes != ERROR_SUCCESS)
 	{
 		CloseHandle(uid);
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+		LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
 	}
 
 	return true;

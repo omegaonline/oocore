@@ -45,7 +45,6 @@
 #include <OOBase/utf8.h>
 #include <OOBase/Socket.h>
 
-#include <OOSvrBase/pw_info.h>
 #include <OOSvrBase/Proactor.h>
 #include <OOSvrBase/Logger.h>
 #include <OOSvrBase/CmdArgs.h>

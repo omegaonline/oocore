@@ -57,7 +57,7 @@
         0, 0, 0, 0, 0, 0,
         &pSid))
     {
-        LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+        LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
     OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
 
@@ -68,7 +68,7 @@
         0, 0, 0, 0, 0, 0,
         &pSid))
     {
-        LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+        LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
     OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
@@ -106,7 +106,7 @@
     PACL pACL = 0;
     DWORD dwErr = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
     if (dwErr != 0)
-        LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+        LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
     OOBase::SmartPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
 
@@ -121,7 +121,7 @@
         NULL);                                   // don't change SACL
 
     if (dwErr != 0)
-        LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+        LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
     return true;
 }*/
@@ -135,10 +135,10 @@ bool Root::Manager::load_config()
 	wchar_t szBuf[MAX_PATH] = {0};
 	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
-		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 	if (!PathAppendW(szBuf,L"Omega Online"))
-		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 	if (!PathFileExistsW(szBuf))
 		LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
@@ -155,7 +155,7 @@ bool Root::Manager::load_config()
 	if (lRes == ERROR_FILE_NOT_FOUND)
 		return true;
 	else if (lRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+		LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::system_error_text(lRes).c_str()),false);
 
 	// Loop pulling out registry values
 	for (DWORD dwIndex=0;; ++dwIndex)
@@ -170,7 +170,7 @@ bool Root::Manager::load_config()
 		else if (lRes != ERROR_SUCCESS)
 		{
 			RegCloseKey(hKey);
-			LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+			LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::system_error_text(lRes).c_str()),false);
 		}
 
 		// Skip anything starting with #
@@ -187,7 +187,7 @@ bool Root::Manager::load_config()
 			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
 			if (lRes != ERROR_SUCCESS)
 			{
-				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes).c_str()));
 				continue;
 			}
 
@@ -217,7 +217,7 @@ bool Root::Manager::load_config()
 			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
 			if (lRes != ERROR_SUCCESS)
 			{
-				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes).c_str()));
 				continue;
 			}
 
@@ -228,7 +228,7 @@ bool Root::Manager::load_config()
 				if (dwExpLen == 0)
 				{
 					DWORD dwErr = GetLastError();
-					LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+					LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text(dwErr).c_str()));
 					continue;
 				}
 				else if (dwExpLen <= 1022)
@@ -245,7 +245,7 @@ bool Root::Manager::load_config()
 					if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
 					{
 						DWORD dwErr = GetLastError();
-						LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+						LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text(dwErr).c_str()));
 						continue;
 					}
 
@@ -275,7 +275,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
 	int err = ptrSocket->get_uid(uid);
 	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::Win32::FormatMessage(err).c_str()));
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err).c_str()));
 	else
 	{
 		// Make sure the handle is closed
@@ -286,7 +286,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 		{
 			OOBase::CDRStream stream;
 			if (!stream.write(user_process.strPipe))
-				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::Win32::FormatMessage(stream.last_error()).c_str()));
+				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error()).c_str()));
 			else
 				ptrSocket->send(stream.buffer());
 		}

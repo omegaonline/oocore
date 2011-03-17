@@ -92,7 +92,7 @@ namespace
 		{
 			ULONG ret = --m_refcount;
 			if (!ret)
-				OOBASE_DELETE(MyMessageFilter,this);
+				delete this;
 			return ret;
 		}
 
@@ -143,8 +143,7 @@ namespace
 
 		try
 		{
-			MyMessageFilter* pFilter;
-			OOBASE_NEW_T(MyMessageFilter,pFilter,MyMessageFilter());
+			MyMessageFilter* pFilter = new (std::nothrow) MyMessageFilter();
 			if (!pFilter)
 				return false;
 

@@ -40,7 +40,7 @@ namespace Omega
 	};
 #endif
 
-	struct guid_t : public guid_base_t
+	struct guid_t : public guid_base_t, public System::ThrowingNew
 	{
 		guid_t(const guid_base_t& rhs = guid_t::Null()) : guid_base_t(rhs)
 		{}

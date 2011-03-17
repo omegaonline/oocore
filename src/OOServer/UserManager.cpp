@@ -225,8 +225,7 @@ bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, 
 	set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
 
 	// Create a new MessageConnection
-	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-	OOBASE_NEW_T(OOServer::MessageConnection,ptrMC,OOServer::MessageConnection(this,local_socket));
+	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -323,8 +322,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 bool User::Manager::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 {
 	// Create a new MessageConnection
-	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-	OOBASE_NEW_T(OOServer::MessageConnection,ptrMC,OOServer::MessageConnection(this,ptrSocket));
+	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 

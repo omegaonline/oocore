@@ -895,8 +895,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const OOBase::string& strSysDir, const
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Alloc a new SpawnedProcess
-	SpawnedProcessWin32* pSpawn32;
-	OOBASE_NEW_T(SpawnedProcessWin32,pSpawn32,SpawnedProcessWin32());
+	SpawnedProcessWin32* pSpawn32 = new (std::nothrow) SpawnedProcessWin32();
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
 

@@ -31,37 +31,32 @@ namespace Omega
 		//        2 - Thread-local buffer - align 32
 		void* Allocate(size_t len, int flags, const char* file = 0, unsigned int line = 0);
 		void Free(void* mem, int flags);
-	}
-}
 
-#define OMEGA_NEW_T2(TYPE,POINTER,CONSTRUCTOR) \
-	POINTER = new (::Omega::System::Allocate(sizeof(TYPE),0,__FILE__,__LINE__)) CONSTRUCTOR
+		class ThrowingNew
+		{
+		public:
+			// Custom new and delete
+			void* operator new(size_t size)
+			{
+				return Omega::System::Allocate(size,0,__FILE__,__LINE__);
+			}
 
-#define OMEGA_NEW_T(TYPE,POINTER,CONSTRUCTOR) \
-	do { \
-		void* OMEGA_NEW_ptr = ::Omega::System::Allocate(sizeof(TYPE),0,__FILE__,__LINE__); \
-		try { POINTER = new (OMEGA_NEW_ptr) CONSTRUCTOR; } catch (...) { ::Omega::System::Free(OMEGA_NEW_ptr,0); throw; } \
-	} while ((void)0,false)
+			void* operator new[](size_t size)
+			{
+				return Omega::System::Allocate(size,1,__FILE__,__LINE__);
+			}
 
-#define OMEGA_NEW_T_RETURN(TYPE,CONSTRUCTOR) \
-	do { \
-		void* OMEGA_NEW_ptr = ::Omega::System::Allocate(sizeof(TYPE),0,__FILE__,__LINE__); \
-		try { return new (OMEGA_NEW_ptr) CONSTRUCTOR; } catch (...) { ::Omega::System::Free(OMEGA_NEW_ptr,0); throw; } \
-	} while ((void)0,false)
+			void operator delete(void* p)
+			{
+				Omega::System::Free(p,0);
+			}
 
-#define OMEGA_DELETE(TYPE,POINTER) \
-	do { \
-		if (POINTER) \
-		{ \
-			POINTER->~TYPE(); \
-			::Omega::System::Free(POINTER,0); \
-		} \
-	} while ((void)0,false)
+			void operator delete[](void* p)
+			{
+				Omega::System::Free(p,1);
+			}
+		};
 
-namespace Omega
-{
-	namespace System
-	{
 		template <typename T>
 		class stl_allocator
 		{

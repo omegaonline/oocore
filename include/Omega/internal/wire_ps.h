@@ -45,7 +45,7 @@ namespace Omega
 			};
 			typedef Threading::Singleton<wire_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_HOLDER;
 
-			class Wire_Proxy_Base
+			class Wire_Proxy_Base : public System::ThrowingNew
 			{
 			protected:
 				Wire_Proxy_Base(Remoting::IProxy* pProxy) :
@@ -236,8 +236,7 @@ namespace Omega
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
-					Wire_Proxy* pThis;
-					OMEGA_NEW_T(Wire_Proxy,pThis,Wire_Proxy(pProxy));
+					Wire_Proxy* pThis = new Wire_Proxy(pProxy);
 					return pThis->QIReturn__proxy__();
 				}
 
@@ -259,7 +258,7 @@ namespace Omega
 
 				void Destruct__proxy__()
 				{
-					OMEGA_DELETE(Wire_Proxy,this);
+					delete this;
 				}
 
 				auto_iface_ptr<Remoting::IMessage> CreateMessage(uint32_t method_id)
@@ -292,8 +291,7 @@ namespace Omega
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
-					Wire_Proxy_IObject* pThis;
-					OMEGA_NEW_T(Wire_Proxy_IObject,pThis,Wire_Proxy_IObject(pProxy));
+					Wire_Proxy_IObject* pThis = new Wire_Proxy_IObject(pProxy));
 
 					// Add to the map...
 					IObject* pExisting = WIRE_HOLDER::instance()->add(pThis->m_ptrProxyObj,pThis);
@@ -328,7 +326,7 @@ namespace Omega
 				}
 			};
 
-			class Wire_Stub_Base : public Remoting::IStub
+			class Wire_Stub_Base : public Remoting::IStub, public System::ThrowingNew
 			{
 			public:
 				template <typename I>
@@ -390,7 +388,7 @@ namespace Omega
 					assert(!m_refcount.IsZero());
 
 					if (m_refcount.Release())
-						OMEGA_DELETE(Wire_Stub_Base,this);
+						delete this;
 				}
 
 				IObject* QueryInterface(const guid_t& iid)
@@ -453,7 +451,7 @@ namespace Omega
 			public:
 				static IStub* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI)
 				{
-					OMEGA_NEW_T_RETURN(Wire_Stub,Wire_Stub(pController,pMarshaller,pI));
+					return new Wire_Stub(pController,pMarshaller,pI);
 				}
 
 			protected:
@@ -515,8 +513,7 @@ namespace Omega
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
-					Wire_Proxy* pThis;
-					OMEGA_NEW_T(Wire_Proxy,pThis,Wire_Proxy(pProxy));
+					Wire_Proxy* pThis = new Wire_Proxy(pProxy);
 					return pThis->QIReturn__proxy__();
 				}
 

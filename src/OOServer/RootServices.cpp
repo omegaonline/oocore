@@ -545,8 +545,7 @@ TcpAcceptor::TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id) :
 
 TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::string& strAddress, const OOBase::string& strPort, int* perr)
 {
-	TcpAcceptor* pService;
-	OOBASE_NEW_T(TcpAcceptor,pService,TcpAcceptor(pManager,id));
+	TcpAcceptor* pService = new (std::nothrow) TcpAcceptor(pManager,id);
 	if (!pService)
 	{
 		*perr = ENOMEM;
@@ -556,7 +555,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	pService->m_ptrSocket = Root::Proactor::instance().accept_remote(pService,strAddress.c_str(),strPort.c_str(),perr);
 	if (*perr != 0)
 	{
-		OOBASE_DELETE(TcpAcceptor,pService);
+		delete pService;
 		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr).c_str()),(TcpAcceptor*)0);
 	}
 
@@ -575,8 +574,7 @@ bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* /*s
 		return false;
 	}
 
-	AsyncSocket* pAsyncSocket;
-	OOBASE_NEW_T(AsyncSocket,pAsyncSocket,AsyncSocket(m_pManager,ptrSocket));
+	AsyncSocket* pAsyncSocket = new (std::nothrow) AsyncSocket(m_pManager,ptrSocket);
 	if (!pAsyncSocket)
 		LOG_ERROR_RETURN(("Out of memory"),true);
 	
@@ -585,7 +583,7 @@ bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* /*s
 	pAsyncSocket->m_id = m_pManager->add_socket(m_id,pAsyncSocket);
 	if (!pAsyncSocket->m_id)
 	{
-		OOBASE_DELETE(AsyncSocket,pAsyncSocket);
+		delete pAsyncSocket;
 		m_pManager->remove_listener(m_id);
 		return false;
 	}
@@ -612,8 +610,7 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	// We know we are going to pass this buffer along, so we preallocate the header we use later,
 	// and read the data behind it...
 
-	OOBase::Buffer* buffer;
-	OOBASE_NEW_T(OOBase::Buffer,buffer,OOBase::Buffer(12 + lenBytes,OOBase::CDRStream::MaxAlignment));
+	OOBase::Buffer* buffer = new (std::nothrow) OOBase::Buffer(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
 	if (!buffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 

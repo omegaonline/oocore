@@ -42,7 +42,7 @@ Registry::Hive::Hive(Manager* pManager, const OOBase::string& strdb) :
 
 bool Registry::Hive::open(int flags)
 {
-	OOBASE_NEW_T(OOSvrBase::Db::Database,m_db,OOSvrBase::Db::Database());
+	m_db = new (std::nothrow) OOSvrBase::Db::Database();
 	if (!m_db)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 

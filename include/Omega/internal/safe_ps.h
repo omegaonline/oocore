@@ -174,7 +174,7 @@ namespace Omega
 			};
 			typedef Threading::Singleton<safe_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_HOLDER;
 
-			class Safe_Proxy_Base
+			class Safe_Proxy_Base : public System::ThrowingNew
 			{
 			protected:
 				Safe_Proxy_Base(const SafeShim* shim) :
@@ -346,8 +346,7 @@ namespace Omega
 			public:
 				static IObject* bind(const SafeShim* shim)
 				{
-					Safe_Proxy* pThis;
-					OMEGA_NEW_T(Safe_Proxy,pThis,Safe_Proxy(shim));
+					Safe_Proxy* pThis = new Safe_Proxy(shim);
 					return pThis->QIReturn__proxy__();
 				}
 
@@ -369,7 +368,7 @@ namespace Omega
 
 				void Destruct__proxy__()
 				{
-					OMEGA_DELETE(Safe_Proxy,this);
+					delete this;
 				}
 
 			// IObject members
@@ -395,8 +394,7 @@ namespace Omega
 			public:
 				static IObject* bind(const SafeShim* shim)
 				{
-					Safe_Proxy_IObject* pThis;
-					OMEGA_NEW_T(Safe_Proxy_IObject,pThis,Safe_Proxy_IObject(shim));
+					Safe_Proxy_IObject* pThis = new Safe_Proxy_IObject(shim));
 
 					// Add to the map...
 					IObject* pExisting = SAFE_HOLDER::instance()->add(shim,pThis);
@@ -426,7 +424,7 @@ namespace Omega
 				}
 			};
 
-			class Safe_Stub_Base
+			class Safe_Stub_Base : public System::ThrowingNew
 			{
 			public:
 				void AddRef()
@@ -447,7 +445,7 @@ namespace Omega
 						m_pI->Release();
 
 						if (m_pincount.Release())
-							OMEGA_DELETE(Safe_Stub_Base,this);
+							delete this;
 					}
 				}
 
@@ -476,7 +474,7 @@ namespace Omega
 					assert(!m_pincount.IsZero());
 
 					if (m_pincount.Release() && m_refcount.IsZero())
-						OMEGA_DELETE(Safe_Stub_Base,this);
+						delete this;
 				}
 
 				const SafeShim* QueryInterface(const guid_t& iid)
@@ -514,8 +512,7 @@ namespace Omega
 			public:
 				static const SafeShim* create(IObject* pI)
 				{
-					Safe_Stub* pThis;
-					OMEGA_NEW_T(Safe_Stub,pThis,Safe_Stub(pI,OMEGA_GUIDOF(IObject)));
+					Safe_Stub* pThis = new Safe_Stub(pI,OMEGA_GUIDOF(IObject));
 					return &pThis->m_shim;
 				}
 
@@ -640,8 +637,7 @@ namespace Omega
 			public:
 				static const SafeShim* create(IObject* pI)
 				{
-					Safe_Stub_IObject* pThis;
-					OMEGA_NEW_T(Safe_Stub_IObject,pThis,Safe_Stub_IObject(pI,OMEGA_GUIDOF(IObject)));
+					Safe_Stub_IObject* pThis = new Safe_Stub_IObject(pI,OMEGA_GUIDOF(IObject));
 
 					// Add to the map...
 					const SafeShim* pExisting = SAFE_HOLDER::instance()->add(pI,&pThis->m_shim);
@@ -730,8 +726,7 @@ namespace Omega
 			public:
 				static IObject* bind(const SafeShim* shim)
 				{
-					Safe_Proxy* pThis;
-					OMEGA_NEW_T(Safe_Proxy,pThis,Safe_Proxy(shim));
+					Safe_Proxy* pThis = new Safe_Proxy(shim);
 					return pThis->QIReturn__proxy__();
 				}
 

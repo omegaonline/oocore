@@ -320,7 +320,7 @@ namespace OTL
 	template <>
 	class ObjectPtr<Omega::Registry::IKey>;
 
-	class ObjectBase
+	class ObjectBase : public Omega::System::ThrowingNew
 	{
 	protected:
 		ObjectBase()
@@ -344,7 +344,7 @@ namespace OTL
 
 		virtual void Final_Release()
 		{
-			OMEGA_DELETE(ObjectBase,this);
+			delete this;
 		}
 
 		virtual void Init_Once() 
@@ -494,7 +494,7 @@ namespace OTL
 	public:
 		static ObjectImpl<ROOT>* CreateInstance()
 		{
-			OMEGA_NEW_T_RETURN(ObjectImpl<ROOT>,ObjectImpl<ROOT>());
+			return new ObjectImpl<ROOT>();
 		}
 
 		static ObjectPtr<ObjectImpl<ROOT> > CreateInstancePtr()
@@ -543,7 +543,7 @@ namespace OTL
 	public:
 		static NoLockObjectImpl<ROOT>* CreateInstance()
 		{
-			OMEGA_NEW_T_RETURN(NoLockObjectImpl<ROOT>,NoLockObjectImpl<ROOT>());
+			return new NoLockObjectImpl<ROOT>();
 		}
 
 		static ObjectPtr<NoLockObjectImpl<ROOT> > CreateInstancePtr()
@@ -647,7 +647,7 @@ namespace OTL
 	public:
 		static AggregatedObjectImpl* CreateInstance(Omega::IObject* pOuter)
 		{
-			OMEGA_NEW_T_RETURN(AggregatedObjectImpl,AggregatedObjectImpl(pOuter));
+			return new AggregatedObjectImpl(pOuter);
 		}
 
 		static ObjectPtr<AggregatedObjectImpl> CreateInstancePtr(Omega::IObject* pOuter)
@@ -674,7 +674,7 @@ namespace OTL
 			assert(!m_refcount.IsZero());
 
 			if (m_refcount.Release())
-				OMEGA_DELETE(AggregatedObjectImpl,this);
+				delete this;
 		}
 
 		Omega::IObject* QueryInterface(const Omega::guid_t& iid)

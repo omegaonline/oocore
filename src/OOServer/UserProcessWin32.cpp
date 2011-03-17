@@ -98,8 +98,7 @@ User::Process* User::Process::exec(const User::wstring& strExeName)
 	// Do a ShellExecute style lookup for the actual thing to call..
 	User::wstring strActualName = ShellParse(strExeName.c_str());
 
-	OOBase::SmartPtr<UserProcessWin32> ptrProcess;
-	OOBASE_NEW_T(UserProcessWin32,ptrProcess,UserProcessWin32());
+	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
 	if (!ptrProcess)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 

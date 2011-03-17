@@ -33,7 +33,7 @@ namespace Omega
 		}
 	}
 
-	class string_t
+	class string_t : public System::ThrowingNew
 	{
 	public:
 		static const size_t npos = size_t(-1);

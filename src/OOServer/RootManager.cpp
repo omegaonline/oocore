@@ -172,7 +172,7 @@ bool Root::Manager::init_database()
 	}
 
 	// Create a new system database
-	OOBASE_NEW_T(Registry::Hive,m_registry,Registry::Hive(this,dir + "system.regdb"));
+	m_registry = new (std::nothrow) Registry::Hive(this,dir + "system.regdb");
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -180,7 +180,7 @@ bool Root::Manager::init_database()
 		return false;
 
 	// Create a new System database
-	OOBASE_NEW_T(Registry::Hive,m_registry_sandbox,Registry::Hive(this,dir + "sandbox.regdb"));
+	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir + "sandbox.regdb");
 	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -425,7 +425,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		if (process.ptrSpawn->GetRegistryHive(m_config_args["regdb_path"],m_config_args["users_path"],strHive))
 		{
 			// Create a new database
-			OOBASE_NEW_T(Registry::Hive,process.ptrRegistry,Registry::Hive(this,strHive));
+			process.ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive);
 			if (!process.ptrRegistry)
 				LOG_ERROR(("Out of memory"));
 			else
@@ -489,7 +489,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptr
 	if (!stream.read(strPipe))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
 
-	OOBASE_NEW_T(OOServer::MessageConnection,ptrMC,OOServer::MessageConnection(this,ptrSocket));
+	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),0);
 

@@ -99,7 +99,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in),int,flags,(in),const char*,file,(in),unsigned int,line))
 {
-	void* p = OOBase::Allocate(len,flags,file,line);
+	void* p = OOBase::HeapAllocate(len);
 	if (!p)
 		OMEGA_THROW(ENOMEM);
 	
@@ -108,5 +108,5 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in)
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,2,((in),void*,mem,(in),int,flags))
 {
-	OOBase::Free(mem,flags);
+	OOBase::HeapFree(mem);
 }

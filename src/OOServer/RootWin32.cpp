@@ -207,7 +207,7 @@ bool Root::Manager::load_config()
 		else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
 		{
 			++dwValLen;
-			OOBase::SmartPtr<char,OOBase::FreeDestructor<2> > buf = static_cast<char*>(OOBase::Allocate(dwValLen+1,2,__FILE__,__LINE__));
+			OOBase::SmartPtr<char,OOBase::LocalDestructor> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
 			if (!buf)
 			{
 				LOG_ERROR(("Out of memory"));
@@ -235,7 +235,7 @@ bool Root::Manager::load_config()
 					value.assign(buf2,dwExpLen-1);
 				else
 				{
-					OOBase::SmartPtr<char,OOBase::FreeDestructor<2> > buf3 = static_cast<char*>(OOBase::Allocate(dwExpLen+1,2,__FILE__,__LINE__));
+					OOBase::SmartPtr<char,OOBase::LocalDestructor> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
 					if (!buf3)
 					{
 						LOG_ERROR(("Out of memory"));

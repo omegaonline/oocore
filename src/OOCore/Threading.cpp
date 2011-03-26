@@ -44,12 +44,15 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
-	OMEGA_NEW_T_RETURN(OOBase::Mutex,OOBase::Mutex());
+	void* r = new (std::nothrow) OOBase::Mutex();
+	if (!r)
+		OMEGA_THROW("Out of memory");
+	return r;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 {
-	OMEGA_DELETE(Mutex,static_cast<OOBase::Mutex*>(m1));
+	delete static_cast<OOBase::Mutex*>(m1);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
@@ -64,12 +67,15 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
 {
-	OMEGA_NEW_T_RETURN(OOBase::RWMutex,OOBase::RWMutex());
+	void* r = new (std::nothrow) OOBase::RWMutex();
+	if (!r)
+		OMEGA_THROW("Out of memory");
+	return r;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,m1))
 {
-	OMEGA_DELETE(RWMutex,static_cast<OOBase::RWMutex*>(m1));
+	delete static_cast<OOBase::RWMutex*>(m1);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,m1))

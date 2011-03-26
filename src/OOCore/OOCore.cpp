@@ -97,16 +97,16 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,
 	return OOCore::UserSession::remove_uninit_call((void (OMEGA_CALL*)(void*))pfn_dctor,param);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in),int,flags,(in),const char*,file,(in),unsigned int,line))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 {
-	void* p = OOBase::HeapAllocate(len);
+	void* p = OOBase::HeapAllocate(bytes);
 	if (!p)
 		OMEGA_THROW(ENOMEM);
 	
 	return p;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,2,((in),void*,mem,(in),int,flags))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,1,((in),void*,mem))
 {
 	OOBase::HeapFree(mem);
 }

@@ -211,7 +211,7 @@ namespace Omega
 							for (size_t i=0;i<m_alloc_count;++i)
 								m_pVals[i].~T();
 
-							::Omega::System::Free(m_pVals,1);
+							::Omega::System::Free(m_pVals);
 						}
 					}
 
@@ -226,15 +226,15 @@ namespace Omega
 						//
 						// Or maybe implement IMarshaller::Allocate()...
 						
-						void* ptr = System::Allocate(count * sizeof(T),1,__FILE__,__LINE__);
+						void* ptr = System::Allocate(count * sizeof(T));
 						try 
 						{ 
-							m_pVals = new (ptr) typename remove_const<T>::type[count];
+							m_pVals = ::new (ptr) typename remove_const<T>::type[count];
 							m_alloc_count = count;
 						} 
 						catch (...) 
 						{ 
-							System::Free(ptr,1); 
+							System::Free(ptr); 
 							throw; 
 						}
 					}

@@ -162,8 +162,7 @@ OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,pfn_dc
 template <typename DLL>
 inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	multi_dctor* p;
-	OMEGA_NEW_T(multi_dctor,p,multi_dctor(pfn_dctor,param));
+	multi_dctor* p = new multi_dctor(pfn_dctor,param);
 
 	try
 	{
@@ -171,7 +170,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OM
 	}
 	catch (...)
 	{
-		OMEGA_DELETE(multi_dctor,p);
+		delete p;
 		throw;
 	}
 
@@ -182,7 +181,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OM
 	catch (...)
 	{
 		OOCore_remove_uninit_call((void*)destruct,p);
-		OMEGA_DELETE(multi_dctor,p);
+		delete p;
 		throw;
 	}
 }
@@ -222,7 +221,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	catch (...)
 	{}
 
-	OMEGA_DELETE(multi_dctor,p);
+	delete p;
 }
 
 template <typename T, typename Lifetime>
@@ -241,7 +240,7 @@ inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Li
 {
 	try
 	{
-		OMEGA_NEW_T(T,s_instance,T());
+		s_instance = new T();
 
 		Lifetime::add_destructor(do_term,0);
 		return 0;
@@ -265,7 +264,8 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 {
 	try
 	{
-		OMEGA_DELETE(T,static_cast<T*>(s_instance));
+		delete static_cast<T*>(s_instance);
+
 		s_instance = 0;
 	}
 	catch (Omega::IException* pE)

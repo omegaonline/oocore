@@ -30,7 +30,7 @@
 
 static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&);
 
-typedef std::vector<OOBase::string,OOBase::LocalAllocator<OOBase::string> > vector_string;
+typedef std::vector<OOBase::string,OOBase::STLAllocator<OOBase::string,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vector_string;
 
 static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega::string_t& strStart)
 {
@@ -361,15 +361,15 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	ptrLSKey->GetName().ToNative(s);
 	std::cout << s << std::endl;
 	
-	Omega::Registry::IKey::string_set_t keys = ptrLSKey->EnumSubKeys();
-	for (Omega::Registry::IKey::string_set_t::const_iterator i=keys.begin();i!=keys.end();++i)
+	std::set<Omega::string_t> keys = ptrLSKey->EnumSubKeys();
+	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
 		i->ToNative(s);
 		std::cout << "[Key]  " << s << std::endl;
 	}
 
-	Omega::Registry::IKey::string_set_t vals = ptrLSKey->EnumValues();
-	for (Omega::Registry::IKey::string_set_t::const_iterator i=vals.begin();i!=vals.end();++i)
+	std::set<Omega::string_t> vals = ptrLSKey->EnumValues();
+	for (std::set<Omega::string_t>::const_iterator i=vals.begin();i!=vals.end();++i)
 	{
 		i->ToNative(s);
 		std::cout << s << std::endl;
@@ -492,7 +492,7 @@ bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Regis
 	if (pfn)
 	{
 		// Build cmd args
-		OOBase::SmartPtr<char*,OOBase::FreeDestructor<2> > argv = static_cast<char**>(OOBase::Allocate(line_args.size()*sizeof(char*),2,__FILE__,__LINE__));
+		OOBase::SmartPtr<char*,OOBase::LocalDestructor> argv = static_cast<char**>(OOBase::LocalAllocate(line_args.size()*sizeof(char*)));
 		if (!argv)
 		{
 			std::cerr << "Out of memory";
@@ -503,7 +503,7 @@ bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Regis
 		int argc = 0;
 		for (vector_string::const_iterator i=line_args.begin();i!=line_args.end();++i)
 		{
-			argv[argc] = static_cast<char*>(OOBase::Allocate(i->size()+1,2,__FILE__,__LINE__));
+			argv[argc] = static_cast<char*>(OOBase::LocalAllocate(i->size()+1));
 			if (!argv[argc])
 			{
 				std::cerr << "Out of memory";
@@ -520,7 +520,7 @@ bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Regis
 			bOk = (*pfn)(argc,argv,ptrKey);
 
 		for (;argc > 0;--argc)
-			OOBase::Free(argv[argc-1],2);
+			OOBase::LocalFree(argv[argc-1]);
 		
 		return bOk;
 	}

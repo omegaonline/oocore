@@ -149,11 +149,8 @@ namespace Omega
 			virtual void SetDescription(const string_t& desc) = 0;
 			virtual void SetValueDescription(const string_t& name, const string_t& desc) = 0;
 			virtual IKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
-
-			typedef std::set<string_t,std::less<string_t>,System::stl_allocator<string_t> > string_set_t;
-
-			virtual string_set_t EnumSubKeys() = 0;
-			virtual string_set_t EnumValues() = 0;
+			virtual std::set<string_t> EnumSubKeys() = 0;
+			virtual std::set<string_t> EnumValues() = 0;
 
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
@@ -318,8 +315,8 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(SetDescription,1,((in),const string_t&,desc))
 	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const string_t&,name,(in),const string_t&,desc))
 	OMEGA_METHOD(Registry::IKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
-	OMEGA_METHOD(Omega::Registry::IKey::string_set_t,EnumSubKeys,0,())
-	OMEGA_METHOD(Omega::Registry::IKey::string_set_t,EnumValues,0,())
+	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
+	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())
 	OMEGA_METHOD_VOID(DeleteKey,1,((in),const string_t&,strKey))
 	OMEGA_METHOD_VOID(DeleteValue,1,((in),const string_t&,strValue))
 )

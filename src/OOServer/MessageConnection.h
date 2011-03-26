@@ -152,7 +152,7 @@ namespace OOServer
 		Omega::uint32_t      m_uNextChannelMask;
 		Omega::uint32_t      m_uNextChannelShift;
 
-		typedef std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,std::less<Omega::uint32_t>,OOBase::CriticalAllocator<std::pair<const Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > > > channelMapType;
+		typedef std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,std::less<Omega::uint32_t>,OOBase::STLAllocator<std::pair<const Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >,OOBase::HeapAllocator<OOBase::CriticalFailure> > > channelMapType;
 		channelMapType m_mapChannelIds;
 
 		struct Message
@@ -175,7 +175,7 @@ namespace OOServer
 		bool start_thread();
 		static int request_worker_fn(void* pParam);
 
-		typedef std::map<Omega::uint32_t,Omega::uint16_t,std::less<Omega::uint32_t>,OOBase::LocalAllocator<std::pair<const Omega::uint32_t,Omega::uint16_t> > > mapChannelThreadsType;
+		typedef std::map<Omega::uint32_t,Omega::uint16_t,std::less<Omega::uint32_t>,OOBase::STLAllocator<std::pair<const Omega::uint32_t,Omega::uint16_t>,OOBase::LocalAllocator<OOBase::CriticalFailure> > > mapChannelThreadsType;
 
 		struct ThreadContext
 		{
@@ -202,7 +202,7 @@ namespace OOServer
 		};
 		friend struct ThreadContext;
 
-		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<const Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
+		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::STLAllocator<std::pair<const Omega::uint16_t,ThreadContext*>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > mapThreadContextsType;
 		mapThreadContextsType m_mapThreadContexts;
 
 		// Accessors for ThreadContext

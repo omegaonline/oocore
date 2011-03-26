@@ -87,7 +87,7 @@ namespace OOCore
 	public:
 		static void destroy(T* ptr)
 		{
-			OMEGA_DELETE(T,ptr);
+			delete ptr;
 		}
 	};
 

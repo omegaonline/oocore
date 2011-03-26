@@ -268,7 +268,7 @@ namespace
 			assert(!m_refcount.IsZero());
 
 			if (m_refcount.Release())
-				OMEGA_DELETE(Aggregator,this);
+				delete this;
 		}
 
 		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
@@ -329,8 +329,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	ptrSimpleTest2.Release();
 
 	// Test aggregation
-	Aggregator* pAgg;
-	OMEGA_NEW_T(Aggregator,pAgg,Aggregator());
+	Aggregator* pAgg = new Aggregator();
 
 	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
@@ -454,8 +453,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	ptrSimpleTest2.Release();
 
 	// Test aggregation
-	Aggregator* pAgg;
-	OMEGA_NEW_T(Aggregator,pAgg,Aggregator());
+	Aggregator* pAgg = new Aggregator();
 
 	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 

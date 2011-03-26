@@ -51,7 +51,7 @@ OOBase::string User::Acceptor::unique_name()
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),"");
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),"");
@@ -159,7 +159,7 @@ bool User::Acceptor::init_security()
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+	OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),false);

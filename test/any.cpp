@@ -54,9 +54,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::byte_t&>() == 24);
 	}
 	{
 		Omega::int16_t v = 23;
@@ -72,9 +69,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::int16_t&>() == 24);
 	}
 	{
 		Omega::uint16_t v = 23;
@@ -90,9 +84,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::uint16_t&>() == 24);
 	}
 	{
 		Omega::int32_t v = 23;
@@ -108,9 +99,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::int32_t&>() == 24);
 	}
 	{
 		Omega::uint32_t v = 23;
@@ -126,9 +114,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::uint32_t&>() == 24);
 	}
 	{
 		Omega::int64_t v = 23;
@@ -144,9 +129,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::int64_t&>() == 24);
 	}
 	{
 		Omega::uint64_t v = 23;
@@ -162,9 +144,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::uint64_t&>() == 24);
 	}
 	{
 		Omega::float4_t v = 23.0f;
@@ -180,9 +159,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::float4_t&>() == 24.0);
 	}
 	{
 		Omega::float8_t v = 23.0;
@@ -198,9 +174,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::float4_t>(v) == 23.0f);
 		TEST(Omega::any_cast<Omega::float8_t>(v) == 23.0);
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
-
-		Omega::any_t a(v);
-		TEST(++a.cast<Omega::float8_t&>() == 24.0);
 	}
 	{
 		Omega::float4_t v = 23.5f;
@@ -247,7 +220,6 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"false");
 
 		Omega::any_t a(v);
-		a.cast<Omega::bool_t&>() = true;
 		TEST(a == true);
 		TEST(a != false);
 	}

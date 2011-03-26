@@ -63,8 +63,9 @@ namespace OOCore
 	{
 		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstancePtr();
 
-		void* TODO;
 		// Make this use gettext etc...
+		void* TODO;
+		
 		pExcept->m_strDesc = string_t(desc,false);
 
 		if (nLine != size_t(-1))

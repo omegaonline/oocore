@@ -146,9 +146,10 @@ namespace
 		// Try to unload any unused dlls
 		unload_unused();
 
-		DLLPtr dll;
-		OMEGA_NEW_T(OOBase::DLL,dll,OOBase::DLL());
-
+		DLLPtr dll = new (std::nothrow) OOBase::DLL();
+		if (!dll)
+			OMEGA_THROW("Out of memory");
+	
 		// Load the new DLL
 		OOCore::string s;
 		name.ToNative(s);

@@ -717,7 +717,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	
 	if (bReport)
 	{
-		std::vector<Omega::uint32_t,OOBase::LocalAllocator<Omega::uint32_t> > send_to;
+		std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > > send_to;
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -734,7 +734,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 
 		guard.release();
 
-		for (std::vector<Omega::uint32_t,OOBase::LocalAllocator<Omega::uint32_t> >::const_iterator i=send_to.begin();i!=send_to.end();++i)
+		for (std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >::const_iterator i=send_to.begin();i!=send_to.end();++i)
 			send_channel_close(*i,channel_id);
 				
 		// Inform derived classes that the channel has gone...
@@ -862,7 +862,7 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 void OOServer::MessageHandler::close_channels()
 {
 	// Copy all the channels away and then close them
-	std::vector<OOBase::SmartPtr<MessageConnection>,OOBase::CriticalAllocator<OOBase::SmartPtr<MessageConnection> > > vecCopy;
+	std::vector<OOBase::SmartPtr<MessageConnection>,OOBase::STLAllocator<OOBase::SmartPtr<MessageConnection>,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vecCopy;
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -873,9 +873,9 @@ void OOServer::MessageHandler::close_channels()
 
 	guard.release();
 
-	for (std::vector<OOBase::SmartPtr<MessageConnection>,OOBase::CriticalAllocator<OOBase::SmartPtr<MessageConnection> > >::iterator j=vecCopy.begin(); j!=vecCopy.end(); ++j)
-		(*j)->close();
-		
+	// Close them all
+	std::for_each(vecCopy.begin(),vecCopy.end(),std::mem_fun(&MessageConnection::close));
+
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);

@@ -869,12 +869,12 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	}
 }
 
-void User::Manager::local_channel_closed(const std::vector<uint32_t,OOBase::LocalAllocator<uint32_t> >& channels)
+void User::Manager::local_channel_closed(const std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >& channels)
 {
 	// Local channels have closed
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
-	for (std::vector<uint32_t,OOBase::LocalAllocator<uint32_t> >::const_iterator j=channels.begin();j!=channels.end();++j)
+	for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >::const_iterator j=channels.begin();j!=channels.end();++j)
 	{
 		for (std::map<uint32_t,RemoteChannelEntry>::iterator i=m_mapRemoteChannelIds.begin(); i!=m_mapRemoteChannelIds.end(); ++i)
 		{

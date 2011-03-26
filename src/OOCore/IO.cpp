@@ -43,7 +43,7 @@ namespace
 		virtual ~BufferInputStream()
 		{
 			if (m_bOwn)
-				System::Free(m_data,1);
+				System::Free(m_data);
 		}
 
 		void init(size_t lenBytes, const byte_t* data, bool bCopy)
@@ -55,7 +55,7 @@ namespace
 				m_data = const_cast<byte_t*>(data);
 			else if (m_len)
 			{
-				m_data = static_cast<byte_t*>(System::Allocate(m_len,1,__FILE__,__LINE__));
+				m_data = static_cast<byte_t*>(System::Allocate(m_len));
 				memcpy(m_data,data,m_len);
 			}
 		}

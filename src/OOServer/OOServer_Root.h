@@ -67,6 +67,7 @@
 #include <set>
 #include <iostream>
 #include <fstream>
+#include <errno.h>
 
 //////////////////////////////////////////////
 

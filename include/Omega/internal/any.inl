@@ -592,7 +592,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 	switch (m_type)
 	{
 	case TypeInfo::typeBool:
-		v = (u.bVal ? true : false);
+		v = u.bVal;
 		break;
 	case TypeInfo::typeByte:
 		v = (u.byVal ? true : false);
@@ -682,7 +682,7 @@ namespace Omega
 			{
 				static const C cast(const any_t& a)
 				{
-					const C v = System::Internal::default_value<const C>::value();
+					C v = System::Internal::default_value<const C>::value();
 					Omega::any_t::CastResult_t r = a.Coerce(v);
 					if (r != any_t::castValid)
 						throw_cast_exception(a,r,System::Internal::type_kind<const C>::type());
@@ -692,169 +692,11 @@ namespace Omega
 			};
 
 			template <typename C>
-			struct cast_helper<const C&>
+			struct cast_helper<C&>
 			{
-				static const C& cast(const any_t& a)
+				static const C cast(const any_t& a)
 				{
-					const C& v = System::Internal::default_value<C>::value();
-					Omega::any_t::CastResult_t r = a.Coerce(v);
-					if (r != any_t::castValid)
-						throw_cast_exception(a,r,System::Internal::type_kind<const C&>::type());
-
-					return v;
-				}
-			};
-
-			template <>
-			struct cast_helper<bool_t&>
-			{
-				static bool_t& cast(any_t& a)
-				{
-					return a.GetBoolValue();
-				}
-			};
-
-			template <>
-			struct cast_helper<byte_t&>
-			{
-				static byte_t& cast(any_t& a)
-				{
-					return a.GetByteValue();
-				}
-			};
-
-			template <>
-			struct cast_helper<int16_t&>
-			{
-				static int16_t& cast(any_t& a)
-				{
-					return a.GetInt16Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<uint16_t&>
-			{
-				static uint16_t& cast(any_t& a)
-				{
-					return a.GetUInt16Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<int32_t&>
-			{
-				static int32_t& cast(any_t& a)
-				{
-					return a.GetInt32Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<uint32_t&>
-			{
-				static uint32_t& cast(any_t& a)
-				{
-					return a.GetUInt32Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<int64_t&>
-			{
-				static int64_t& cast(any_t& a)
-				{
-					return a.GetInt64Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<uint64_t&>
-			{
-				static uint64_t& cast(any_t& a)
-				{
-					return a.GetUInt64Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<float4_t&>
-			{
-				static float4_t& cast(any_t& a)
-				{
-					return a.GetFloat4Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<float8_t&>
-			{
-				static float8_t& cast(any_t& a)
-				{
-					return a.GetFloat8Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<guid_t&>
-			{
-				static guid_t& cast(any_t& a)
-				{
-					return a.GetGuidValue();
-				}
-			};
-
-			template <>
-			struct cast_helper<string_t&>
-			{
-				static string_t& cast(any_t& a)
-				{
-					return a.GetStringValue();
-				}
-			};
-
-			template <>
-			struct cast_helper<const int64_t&>
-			{
-				static const int64_t& cast(const any_t& a)
-				{
-					return a.GetInt64Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<const uint64_t&>
-			{
-				static const uint64_t& cast(const any_t& a)
-				{
-					return a.GetUInt64Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<const float8_t&>
-			{
-				static const float8_t& cast(const any_t& a)
-				{
-					return a.GetFloat8Value();
-				}
-			};
-
-			template <>
-			struct cast_helper<const guid_t&>
-			{
-				static const guid_t& cast(const any_t& a)
-				{
-					return a.GetGuidValue();
-				}
-			};
-
-			template <>
-			struct cast_helper<const string_t&>
-			{
-				static const string_t& cast(const any_t& a)
-				{
-					return a.GetStringValue();
+					static_assert(false,"Do not attempt to cast any_t to a reference type");
 				}
 			};
 		}
@@ -865,151 +707,6 @@ template <typename T>
 inline T Omega::any_t::cast() const
 {
 	return System::Internal::cast_helper<T>::cast(*this);
-}
-
-template <typename T>
-inline T Omega::any_t::cast()
-{
-	return System::Internal::cast_helper<T>::cast(*this);
-}
-
-inline Omega::bool_t& Omega::any_t::GetBoolValue()
-{
-	if (m_type != TypeInfo::typeBool)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<bool_t&>::type());
-
-	return u.bVal;
-}
-
-inline Omega::byte_t& Omega::any_t::GetByteValue()
-{
-	if (m_type != TypeInfo::typeByte)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<byte_t&>::type());
-
-	return u.byVal;
-}
-
-inline Omega::int16_t& Omega::any_t::GetInt16Value()
-{
-	if (m_type != TypeInfo::typeInt16)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<int16_t&>::type());
-
-	return u.i16Val;
-}
-
-inline Omega::uint16_t& Omega::any_t::GetUInt16Value()
-{
-	if (m_type != TypeInfo::typeUInt16)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<uint16_t&>::type());
-
-	return u.ui16Val;
-}
-
-inline Omega::int32_t& Omega::any_t::GetInt32Value()
-{
-	if (m_type != TypeInfo::typeInt32)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<int32_t&>::type());
-
-	return u.i32Val;
-}
-
-inline Omega::uint32_t& Omega::any_t::GetUInt32Value()
-{
-	if (m_type != TypeInfo::typeUInt32)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<uint32_t&>::type());
-
-	return u.ui32Val;
-}
-
-inline Omega::int64_t& Omega::any_t::GetInt64Value()
-{
-	if (m_type != TypeInfo::typeInt64)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<int64_t&>::type());
-
-	return u.i64Val;
-}
-
-inline Omega::uint64_t& Omega::any_t::GetUInt64Value()
-{
-	if (m_type != TypeInfo::typeUInt64)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<uint64_t&>::type());
-
-	return u.ui64Val;
-}
-
-inline Omega::float4_t& Omega::any_t::GetFloat4Value()
-{
-	if (m_type != TypeInfo::typeFloat4)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<float4_t&>::type());
-
-	return u.fl4Val;
-}
-
-inline Omega::float8_t& Omega::any_t::GetFloat8Value()
-{
-	if (m_type != TypeInfo::typeFloat8)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<float8_t&>::type());
-
-	return u.fl8Val;
-}
-
-inline Omega::guid_t& Omega::any_t::GetGuidValue()
-{
-	if (m_type != TypeInfo::typeGuid)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<guid_t&>::type());
-
-	if (!u.pgVal)
-		u.pgVal = new guid_t(guid_t::Null());
-
-	return *u.pgVal;
-}
-
-inline Omega::string_t& Omega::any_t::GetStringValue()
-{
-	if (m_type != TypeInfo::typeString)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<string_t&>::type());
-
-	return *u.pstrVal;
-}
-
-inline const Omega::int64_t& Omega::any_t::GetInt64Value() const
-{
-	if (m_type != TypeInfo::typeInt64)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const int64_t&>::type());
-
-	return u.i64Val;
-}
-
-inline const Omega::uint64_t& Omega::any_t::GetUInt64Value() const
-{
-	if (m_type != TypeInfo::typeUInt64)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const uint64_t&>::type());
-
-	return u.ui64Val;
-}
-
-inline const Omega::float8_t& Omega::any_t::GetFloat8Value() const
-{
-	if (m_type != TypeInfo::typeFloat8)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const float8_t&>::type());
-
-	return u.fl8Val;
-}
-
-inline const Omega::guid_t& Omega::any_t::GetGuidValue() const
-{
-	if (m_type != TypeInfo::typeGuid)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const guid_t&>::type());
-
-	return (u.pgVal ? *u.pgVal : guid_t::Null());
-}
-
-inline const Omega::string_t& Omega::any_t::GetStringValue() const
-{
-	if (m_type != TypeInfo::typeString)
-		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const string_t&>::type());
-
-	return *u.pstrVal;
 }
 
 // string_t::ToNumber<T> uses helpers defined in this file

@@ -32,7 +32,7 @@
 #endif
 
 // Manual externs
-typedef std::vector<OOBase::string,OOBase::LocalAllocator<OOBase::string> > vector_string;
+typedef std::vector<OOBase::string,OOBase::STLAllocator<OOBase::string,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vector_string;
 
 extern void report_exception(Omega::IException* pE);
 extern bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);

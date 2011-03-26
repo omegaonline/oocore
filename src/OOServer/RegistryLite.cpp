@@ -70,8 +70,8 @@ namespace
 		void SetDescription(const string_t& strValue);
 		void SetValueDescription(const string_t& strName, const string_t& strValue);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-		Omega::Registry::IKey::string_set_t EnumSubKeys();
-		Omega::Registry::IKey::string_set_t EnumValues();
+		std::set<Omega::string_t> EnumSubKeys();
+		std::set<Omega::string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
@@ -82,7 +82,7 @@ namespace
 	public:
 		static void destroy(T* ptr)
 		{
-			OMEGA_DELETE(T,ptr);
+			delete ptr;
 		}
 	};
 
@@ -120,8 +120,8 @@ namespace
 		void SetDescription(const string_t& strValue);
 		void SetValueDescription(const string_t& strName, const string_t& strValue);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-		Omega::Registry::IKey::string_set_t EnumSubKeys();
-		Omega::Registry::IKey::string_set_t EnumValues();
+		std::set<Omega::string_t> EnumSubKeys();
+		std::set<Omega::string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
@@ -290,7 +290,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrNew.AddRef();
 }
 
-Omega::Registry::IKey::string_set_t HiveKey::EnumSubKeys()
+std::set<Omega::string_t> HiveKey::EnumSubKeys()
 {
 	::Registry::Hive::setType setSubKeys;
 	int err = m_pHive->enum_subkeys(m_key,0,setSubKeys);
@@ -301,14 +301,14 @@ Omega::Registry::IKey::string_set_t HiveKey::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::Registry::IKey::string_set_t setOutSubKeys;
+	std::set<Omega::string_t> setOutSubKeys;
 	for (::Registry::Hive::setType::const_iterator i=setSubKeys.begin(); i!=setSubKeys.end(); ++i)
 		setOutSubKeys.insert(string_t(i->c_str(),true));
 
 	return setOutSubKeys;
 }
 
-Omega::Registry::IKey::string_set_t HiveKey::EnumValues()
+std::set<Omega::string_t> HiveKey::EnumValues()
 {
 	::Registry::Hive::setType setValues;
 	int err = m_pHive->enum_values(m_key,0,setValues);
@@ -319,7 +319,7 @@ Omega::Registry::IKey::string_set_t HiveKey::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::Registry::IKey::string_set_t setOutValues;
+	std::set<Omega::string_t> setOutValues;
 	for (::Registry::Hive::setType::const_iterator i=setValues.begin(); i!=setValues.end(); ++i)
 		setOutValues.insert(string_t(i->c_str(),true));
 
@@ -356,12 +356,16 @@ void RootKey::Init_Once()
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 
-	OMEGA_NEW_T(::Registry::Hive,m_system_hive,::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb"));
+	m_system_hive = new (std::nothrow) ::Registry::Hive(this,get_db_dir(ptrIPS) + "system.regdb");
+	if (!m_system_hive)
+		OMEGA_THROW("Out of memory");
 
 	OOBase::string s;
 	ptrIPS->GetArg(L"user_regdb").ToNative(s);
 
-	OMEGA_NEW_T(::Registry::Hive,m_localuser_hive,::Registry::Hive(this,s));
+	m_localuser_hive = new (std::nothrow) ::Registry::Hive(this,s);
+	if (!m_localuser_hive)
+		OMEGA_THROW("Out of memory");
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");
@@ -481,9 +485,9 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrKey->OpenSubKey(strSubKey2,flags);
 }
 
-Omega::Registry::IKey::string_set_t RootKey::EnumSubKeys()
+std::set<Omega::string_t> RootKey::EnumSubKeys()
 {
-	Omega::Registry::IKey::string_set_t ret = m_ptrSystemKey->EnumSubKeys();
+	std::set<Omega::string_t> ret = m_ptrSystemKey->EnumSubKeys();
 
 	// Add the local user key, although it doesn't really exist...
 	ret.insert(L"Local User");
@@ -491,7 +495,7 @@ Omega::Registry::IKey::string_set_t RootKey::EnumSubKeys()
 	return ret;
 }
 
-Omega::Registry::IKey::string_set_t RootKey::EnumValues()
+std::set<Omega::string_t> RootKey::EnumValues()
 {
 	return m_ptrSystemKey->EnumValues();
 }

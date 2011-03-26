@@ -291,7 +291,7 @@ namespace Omega
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
-					Wire_Proxy_IObject* pThis = new Wire_Proxy_IObject(pProxy));
+					Wire_Proxy_IObject* pThis = new Wire_Proxy_IObject(pProxy);
 
 					// Add to the map...
 					IObject* pExisting = WIRE_HOLDER::instance()->add(pThis->m_ptrProxyObj,pThis);

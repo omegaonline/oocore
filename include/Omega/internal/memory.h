@@ -26,11 +26,8 @@ namespace Omega
 {
 	namespace System
 	{
-		// flags: 0 - C++ object - align to size
-		//        1 - Buffer - align 32
-		//        2 - Thread-local buffer - align 32
-		void* Allocate(size_t len, int flags, const char* file = 0, unsigned int line = 0);
-		void Free(void* mem, int flags);
+		void* Allocate(size_t bytes);
+		void Free(void* mem);
 
 		class ThrowingNew
 		{
@@ -38,22 +35,22 @@ namespace Omega
 			// Custom new and delete
 			void* operator new(size_t size)
 			{
-				return Omega::System::Allocate(size,0,__FILE__,__LINE__);
+				return Omega::System::Allocate(size);
 			}
 
 			void* operator new[](size_t size)
 			{
-				return Omega::System::Allocate(size,1,__FILE__,__LINE__);
+				return Omega::System::Allocate(size);
 			}
 
 			void operator delete(void* p)
 			{
-				Omega::System::Free(p,0);
+				Omega::System::Free(p);
 			}
 
 			void operator delete[](void* p)
 			{
-				Omega::System::Free(p,1);
+				Omega::System::Free(p);
 			}
 		};
 
@@ -109,19 +106,6 @@ namespace Omega
 			~stl_allocator() throw() 
 			{}
 
-			// return that all specializations of this allocator are interchangeable
-			template <typename U>
-			bool operator == (const stl_allocator<U>&) const throw() 
-			{
-				return true;
-			}
-
-			template <typename U>
-			bool operator != (const stl_allocator<U>&) const throw() 
-			{
-				return false;
-			}
-
 			// return maximum number of elements that can be allocated
 			size_type max_size() const throw() 
 			{
@@ -132,7 +116,7 @@ namespace Omega
 			void construct(pointer p, const T& value) 
 			{
 				// initialize memory with placement new
-				new (static_cast<void*>(p)) T(value);
+				::new (static_cast<void*>(p)) T(value);
 			}
 
 			// destroy elements of initialized storage p
@@ -146,30 +130,28 @@ namespace Omega
 			// allocate but don't initialize num elements of type T
 			pointer allocate(size_type num, const void* = 0) 
 			{
-				if (!num)
-					return 0;
-
-				void* p = 0;
-				if (num > 1)
-					p = Omega::System::Allocate(num*sizeof(T),1,"Omega::System::stl_allocator::allocate()",0);
-				else
-					p = Omega::System::Allocate(sizeof(T),0,"Omega::System::stl_allocator::allocate()",0);
-				
-				return static_cast<pointer>(p);
+				return static_cast<pointer>(Omega::System::Allocate(num*sizeof(T)));
 			}
 
 			// deallocate storage p of deleted elements
-			void deallocate(pointer p, size_type num) 
+			void deallocate(pointer p, size_type /*num*/) 
 			{
-				if (p && num)
-				{
-					if (num > 1)
-						Omega::System::Free(p,1);
-					else
-						Omega::System::Free(p,0);
-				}	
+				Omega::System::Free(p);
 			}
 		};
+
+		// return that all specializations of this allocator are interchangeable
+		template <typename T1, typename T2>
+		bool operator == (const stl_allocator<T1>&, const stl_allocator<T2>&) throw()
+		{
+			return true;
+		}
+
+		template <typename T1, typename T2>
+		bool operator != (const stl_allocator<T1>& a1, const stl_allocator<T2>& a2) throw()
+		{
+			return !(a1 == a2);
+		}
 	}
 }
 

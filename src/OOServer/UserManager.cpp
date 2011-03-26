@@ -372,7 +372,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	// Close the corresponding Object Manager
 	try
 	{
-		std::vector<uint32_t,OOBase::LocalAllocator<uint32_t> > dead_channels;
+		std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > > dead_channels;
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 

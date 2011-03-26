@@ -210,7 +210,7 @@ namespace Omega
 			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 
 		private:
-			struct multi_dctor
+			struct multi_dctor : public Omega::System::ThrowingNew
 			{
 				multi_dctor(void (OMEGA_CALL *fn)(void*), void* p) :
 					pfn_dctor(fn), param(p)

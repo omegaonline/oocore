@@ -92,29 +92,7 @@ namespace Omega
 
 		// Perform a cast, and throw on failure (includes loss of precision, etc...)
 		template <typename T> T cast() const;
-		template <typename T> T cast();
-
-		// Explicit reference accessors
-		bool_t& GetBoolValue();
-		byte_t& GetByteValue();
-		int16_t& GetInt16Value();
-		uint16_t& GetUInt16Value();
-		int32_t& GetInt32Value();
-		uint32_t& GetUInt32Value();
-		int64_t& GetInt64Value();
-		uint64_t& GetUInt64Value();
-		float4_t& GetFloat4Value();
-		float8_t& GetFloat8Value();
-		guid_t& GetGuidValue();
-		string_t& GetStringValue();
-
-		// Explicit const reference accessors
-		const int64_t& GetInt64Value() const;
-		const uint64_t& GetUInt64Value() const;
-		const float8_t& GetFloat8Value() const;
-		const guid_t& GetGuidValue() const;
-		const string_t& GetStringValue() const;
-
+		
 		string_t ToString(const string_t& strFormat = string_t()) const;
 
 	private:

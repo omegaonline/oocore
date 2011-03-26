@@ -199,16 +199,16 @@ inline Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 	return OOCore_Omega_HandleRequest(timeout);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,4,((in),size_t,len,(in),int,flags,(in),const char*,file,(in),unsigned int,line));
-inline void* Omega::System::Allocate(size_t len, int flags, const char* file, unsigned int line)
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes));
+inline void* Omega::System::Allocate(size_t bytes)
 {
-	return OOCore_allocate(len,flags,file,line);
+	return OOCore_allocate(bytes);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,2,((in),void*,mem,(in),int,flags));
-inline void Omega::System::Free(void* mem, int flags)
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,1,((in),void*,mem));
+inline void Omega::System::Free(void* mem)
 {
-	OOCore_free(mem,flags);
+	OOCore_free(mem);
 }
 
 #endif // !defined(DOXYGEN)

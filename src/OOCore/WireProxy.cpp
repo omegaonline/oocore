@@ -40,7 +40,7 @@ void OOCore::Proxy::Final_Release()
 	
 	static_cast<Remoting::IObjectManager*>(m_pManager)->Release();
 
-	OMEGA_DELETE(Proxy,this);
+	delete this;
 }
 
 void OOCore::Proxy::init(uint32_t proxy_id, StdObjectManager* pManager)

@@ -91,7 +91,7 @@ namespace
 		// Create a new unique pipe
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),INVALID_HANDLE_VALUE);
@@ -351,7 +351,7 @@ namespace
 		// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::FreeDestructor<1> > ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
@@ -389,7 +389,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
-		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapDestructor> ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrProcessUser)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
 
@@ -563,7 +563,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::wstring strAppPath, HANDLE hTo
 	OOBase::wstring strCmdLine = szPath;
 	strCmdLine += L" --fork-slave=" + OOBase::from_native(strPipe.c_str());
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > ptrCmdLine = static_cast<wchar_t*>(OOBase::Allocate((strCmdLine.size()+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
+	OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate((strCmdLine.size()+1)*sizeof(wchar_t)));
 	if (!ptrCmdLine)
 		LOG_ERROR_RETURN(("PathRemoveFileSpecW failed: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY).c_str()),ERROR_OUTOFMEMORY);
 
@@ -756,10 +756,10 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	bAllowed = false;
 	OOBase::wstring strFName = OOBase::from_utf8(pszFName);
 
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<2> > pSD;
+	OOBase::SmartPtr<void,OOBase::LocalDestructor> pSD;
 	for (DWORD cbNeeded = 512;;)
 	{
-		pSD = OOBase::Allocate(cbNeeded,2,__FILE__,__LINE__);
+		pSD = OOBase::LocalAllocate(cbNeeded);
 		if (!pSD)
 			LOG_ERROR_RETURN(("Out of memory"),false);
 	
@@ -806,8 +806,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken) const
 {
 	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<1> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<1> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapDestructor> pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapDestructor> pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
 
 	if (!pStats1 || !pStats2)
 		return false;
@@ -826,11 +826,11 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	if (m_bSandbox)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapDestructor> ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
 	if (!ptrUserInfo1)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<1> > ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapDestructor> ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
 	if (!ptrUserInfo2)
 		return false;
 

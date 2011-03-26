@@ -63,7 +63,7 @@ namespace
 				strRet = szBuf;
 			else if (hRes == E_POINTER)
 			{
-				OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > pszBuf = static_cast<wchar_t*>(OOBase::Allocate((dwLen+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
+				OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> pszBuf = static_cast<wchar_t*>(OOBase::LocalAllocate((dwLen+1)*sizeof(wchar_t)));
 				if (pszBuf)
 				{
 					hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
@@ -115,7 +115,7 @@ void UserProcessWin32::exec(const User::wstring& strExeName)
 
 #endif // OMEGA_DEBUG
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<2> > ptrCmdLine = static_cast<wchar_t*>(OOBase::Allocate((strExeName.size()+1)*sizeof(wchar_t),2,__FILE__,__LINE__));
+	OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate((strExeName.size()+1)*sizeof(wchar_t)));
 	if (!ptrCmdLine)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 

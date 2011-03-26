@@ -394,7 +394,7 @@ namespace Omega
 			public:
 				static IObject* bind(const SafeShim* shim)
 				{
-					Safe_Proxy_IObject* pThis = new Safe_Proxy_IObject(shim));
+					Safe_Proxy_IObject* pThis = new Safe_Proxy_IObject(shim);
 
 					// Add to the map...
 					IObject* pExisting = SAFE_HOLDER::instance()->add(shim,pThis);

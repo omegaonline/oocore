@@ -140,7 +140,7 @@ namespace OOCore
 			~ThreadContext();
 		};
 
-		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::CriticalAllocator<std::pair<const Omega::uint16_t,ThreadContext*> > > mapThreadContextsType;
+		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::STLAllocator<std::pair<const Omega::uint16_t,ThreadContext*>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > mapThreadContextsType;
 
 		OOBase::Atomic<size_t>                           m_usage_count;		
 		mapThreadContextsType                            m_mapThreadContexts;

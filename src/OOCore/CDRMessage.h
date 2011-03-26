@@ -100,17 +100,17 @@ namespace OOCore
 			}
 			else
 			{
-				Omega::byte_t* szBuf = static_cast<Omega::byte_t*>(::Omega::System::Allocate(len,2,__FILE__,__LINE__));
+				Omega::byte_t* szBuf = static_cast<Omega::byte_t*>(::Omega::System::Allocate(len));
 				try
 				{
 					pMessage->ReadBytes(L"data",len,szBuf);
 				}
 				catch (...)
 				{
-					::Omega::System::Free(szBuf,2);
+					::Omega::System::Free(szBuf);
 					throw;
 				}
-				::Omega::System::Free(szBuf,2);
+				::Omega::System::Free(szBuf);
 			}
 		}
 
@@ -209,24 +209,24 @@ namespace OOCore
 			case Omega::TypeInfo::typeUInt32:
 				return write(value.cast<Omega::uint32_t>());
 			case Omega::TypeInfo::typeInt64:
-				return write(value.cast<const Omega::int64_t&>());
+				return write(value.cast<Omega::int64_t>());
 			case Omega::TypeInfo::typeUInt64:
-				return write(value.cast<const Omega::uint64_t&>());
+				return write(value.cast<Omega::uint64_t>());
 			case Omega::TypeInfo::typeFloat4:
 				return write(value.cast<Omega::float4_t>());
 			case Omega::TypeInfo::typeFloat8:
-				return write(value.cast<const Omega::float8_t&>());
+				return write(value.cast<Omega::float8_t>());
 			case Omega::TypeInfo::typeString:
 				{
 					std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > s;
-					value.cast<const Omega::string_t&>().ToUTF8(s);
+					value.cast<Omega::string_t>().ToUTF8(s);
 					return write(s);
 				}
 				break;
 
 			case Omega::TypeInfo::typeGuid:
 				{
-					const Omega::guid_t& g = value.cast<const Omega::guid_t&>();
+					Omega::guid_t g = value.cast<Omega::guid_t>();
 					if (g == Omega::guid_t::Null())
 						write(Omega::byte_t(0));
 					else

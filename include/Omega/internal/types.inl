@@ -148,7 +148,7 @@ inline void Omega::string_t::ToUTF8(std::basic_string<char,Traits,Alloc>& str) c
 	size_t len = ToUTF8(szBuf,sizeof(szBuf));
 	if (len > sizeof(szBuf))
 	{
-		char* pszBuf = static_cast<char*>(System::Allocate(len,2,__FILE__,__LINE__));
+		char* pszBuf = static_cast<char*>(System::Allocate(len));
 		try
 		{
 			ToUTF8(pszBuf,len);
@@ -156,10 +156,10 @@ inline void Omega::string_t::ToUTF8(std::basic_string<char,Traits,Alloc>& str) c
 		}
 		catch (...)
 		{
-			System::Free(pszBuf,2);
+			System::Free(pszBuf);
 			throw;
 		}
-		System::Free(pszBuf,2);
+		System::Free(pszBuf);
 	}
 	else
 		str.assign(szBuf,len-1);
@@ -178,7 +178,7 @@ inline void Omega::string_t::ToNative(std::basic_string<char,Traits,Alloc>& str)
 	size_t len = ToNative(szBuf,sizeof(szBuf));
 	if (len > sizeof(szBuf))
 	{
-		char* pszBuf = static_cast<char*>(System::Allocate(len,2,__FILE__,__LINE__));
+		char* pszBuf = static_cast<char*>(System::Allocate(len));
 		try
 		{
 			ToNative(pszBuf,len);
@@ -186,10 +186,10 @@ inline void Omega::string_t::ToNative(std::basic_string<char,Traits,Alloc>& str)
 		}
 		catch (...)
 		{
-			System::Free(pszBuf,2);
+			System::Free(pszBuf);
 			throw;
 		}
-		System::Free(pszBuf,2);
+		System::Free(pszBuf);
 	}
 	else
 		str.assign(szBuf,len-1);

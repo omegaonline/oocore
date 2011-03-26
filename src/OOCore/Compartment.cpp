@@ -403,7 +403,7 @@ void OOCore::CompartmentImpl::Final_Release()
 {
 	m_ptrChannel->close_compartment();
 
-	OMEGA_DELETE(CompartmentImpl,this);
+	delete this;
 }
 
 void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel)

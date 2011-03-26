@@ -453,7 +453,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	return ptrNew;
 }
 
-Omega::Registry::IKey::string_set_t Key::EnumSubKeys()
+std::set<Omega::string_t> Key::EnumSubKeys()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
@@ -477,7 +477,7 @@ Omega::Registry::IKey::string_set_t Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::Registry::IKey::string_set_t sub_keys;
+	std::set<Omega::string_t> sub_keys;
 	for (;;)
 	{
 		throw_string strName;
@@ -499,7 +499,7 @@ Omega::Registry::IKey::string_set_t Key::EnumSubKeys()
 	return sub_keys;
 }
 
-Omega::Registry::IKey::string_set_t Key::EnumValues()
+std::set<Omega::string_t> Key::EnumValues()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
@@ -523,7 +523,7 @@ Omega::Registry::IKey::string_set_t Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::Registry::IKey::string_set_t values;
+	std::set<Omega::string_t> values;
 	for (;;)
 	{
 		throw_string strName;

@@ -56,7 +56,7 @@ namespace Registry
 
 		bool open(int flags);
 
-		typedef std::set<OOBase::string,std::less<OOBase::string>,OOBase::CriticalAllocator<OOBase::string> > setType;
+		typedef std::set<OOBase::string,std::less<OOBase::string>,OOBase::STLAllocator<OOBase::string,OOBase::HeapAllocator<OOBase::CriticalFailure> > > setType;
 
 		int open_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::string strSubKey, Omega::uint32_t channel_id);
 		int create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id);

@@ -54,7 +54,7 @@ namespace OOCore
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};
 
-	class Compartment
+	class Compartment : public Omega::System::ThrowingNew
 	{
 	public:
 		Compartment(UserSession* pSession, Omega::uint16_t id);

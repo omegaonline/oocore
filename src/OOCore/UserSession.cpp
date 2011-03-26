@@ -208,8 +208,7 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	}
 
 	// Create the zero compartment
-	CompartmentPtr ptrZeroCompt;
-	OMEGA_NEW_T(Compartment,ptrZeroCompt,Compartment(this,0));
+	CompartmentPtr ptrZeroCompt = new Compartment(this,0);
 
 	try
 	{
@@ -402,7 +401,7 @@ void OOCore::UserSession::close_singletons_i()
 
 void OOCore::UserSession::close_compartments()
 {
-	std::vector<uint16_t,OOBase::CriticalAllocator<uint16_t> > vecCompts;
+	std::vector<uint16_t,OOBase::STLAllocator<uint16_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vecCompts;
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -412,7 +411,7 @@ void OOCore::UserSession::close_compartments()
 
 	guard.release();
 
-	for (std::vector<uint16_t,OOBase::CriticalAllocator<uint16_t> >::const_iterator i=vecCompts.begin();i!=vecCompts.end();++i)
+	for (std::vector<uint16_t,OOBase::STLAllocator<uint16_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >::const_iterator i=vecCompts.begin();i!=vecCompts.end();++i)
 	{
 		try
 		{
@@ -794,7 +793,10 @@ OOCore::ResponsePtr OOCore::UserSession::wait_for_response(uint32_t seq_no, cons
 			}
 			else if (msg->m_type == Message::Response && msg->m_seq_no == seq_no)
 			{
-				OMEGA_NEW_T(OOBase::CDRStream,response,OOBase::CDRStream(msg->m_payload));
+				response = new (std::nothrow) OOBase::CDRStream(msg->m_payload);
+				if (!response)
+					OMEGA_THROW("Out of memory");
+
 				break;
 			}
 		}
@@ -1125,8 +1127,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	while (m_mapCompartments.find(cmpt_id) != m_mapCompartments.end());
 
 	// Create the new object
-	CompartmentPtr ptrCompt;
-	OMEGA_NEW_T(Compartment,ptrCompt,Compartment(this,cmpt_id));
+	CompartmentPtr ptrCompt = new Compartment(this,cmpt_id);
 
 	// Add it to the map
 	m_mapCompartments.insert(std::map<uint16_t,CompartmentPtr>::value_type(cmpt_id,ptrCompt));

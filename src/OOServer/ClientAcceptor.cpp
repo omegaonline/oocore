@@ -65,7 +65,7 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 	int err = 0;
 	m_pSocket = Proactor::instance().accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
 	return true;
 }
@@ -78,14 +78,14 @@ void Root::ClientAcceptor::stop()
 bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* /*strAddress*/, int err)
 {
 	if (err != 0)
-		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Root::ClientAcceptor::on_accept: accept failure: %s",OOBase::system_error_text(err)),false);
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
 	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
-		LOG_WARNING(("Root::ClientAcceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
+		LOG_WARNING(("Root::ClientAcceptor::on_accept: receive failure: %s",OOBase::system_error_text(err)));
 		return true;
 	}
 
@@ -116,7 +116,7 @@ bool Root::ClientAcceptor::init_security()
 								  0, 0, 0, 0, 0, 0, 0,
 								  &pSID))
 	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDSystem(pSID);
@@ -132,10 +132,10 @@ bool Root::ClientAcceptor::init_security()
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
+	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
 	if (OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
 	{
 		// Use logon sid instead...
@@ -149,7 +149,7 @@ bool Root::ClientAcceptor::init_security()
 								  0, 0, 0, 0, 0, 0, 0,
 								  &pSID))
 	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDEveryone(pSID);
 
@@ -167,7 +167,7 @@ bool Root::ClientAcceptor::init_security()
 								  0, 0, 0, 0, 0, 0, 0,
 								  &pSID))
 	{
-		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDNetwork(pSID);
 
@@ -182,7 +182,7 @@ bool Root::ClientAcceptor::init_security()
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
+		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
 
 	// Create a new security descriptor
 	m_sa.nLength = sizeof(m_sa);

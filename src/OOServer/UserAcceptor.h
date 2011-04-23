@@ -39,7 +39,7 @@ namespace User
 
 		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* strAddress, int err);
 
-		static OOBase::string unique_name();
+		static bool unique_name(OOBase::LocalString& name);
 
 	private:
 		Acceptor(const Acceptor&);

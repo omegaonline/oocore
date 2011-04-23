@@ -39,24 +39,27 @@
 #include <vld.h>
 #endif
 
-static int Version();
-
-static int Help()
+namespace
 {
-	std::cout << APPNAME " - The Omega Online network deamon." << std::endl;
-	std::cout << std::endl;
-	std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl;
-	std::cout << std::endl;
-	std::cout << "Usage: " APPNAME " [options]" << std::endl;
-	std::cout << std::endl;
-	std::cout << "Options:" << std::endl;
-	std::cout << "  --help (-h)      Display this help text" << std::endl;
-	std::cout << "  --version (-v)   Display version information" << std::endl;
-	std::cout << "  --conf-file (-f) <file_path>  Use the specified configuration file" << std::endl;
-	std::cout << "  --pidfile <file_path>         Override the default name and location for the pidfile" << std::endl;
-	std::cout << std::endl;
+	int Version();
 
-	return EXIT_SUCCESS;
+	int Help()
+	{
+		std::cout << APPNAME " - The Omega Online network deamon." << std::endl;
+		std::cout << std::endl;
+		std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl;
+		std::cout << std::endl;
+		std::cout << "Usage: " APPNAME " [options]" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  --help (-h)      Display this help text" << std::endl;
+		std::cout << "  --version (-v)   Display version information" << std::endl;
+		std::cout << "  --conf-file (-f) <file_path>  Use the specified configuration file" << std::endl;
+		std::cout << "  --pidfile <file_path>         Override the default name and location for the pidfile" << std::endl;
+		std::cout << std::endl;
+
+		return EXIT_SUCCESS;
+	}
 }
 
 int main(int argc, char* argv[])
@@ -73,18 +76,18 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("unsafe");
 
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
-	if (!cmd_args.parse(argc,argv,args))
+	OOSvrBase::CmdArgs::results_t args;
+	if (cmd_args.parse(argc,argv,args) != 0)
 		return EXIT_FAILURE;
 
-	if (args.find("help") != args.end())
+	if (args.find("help") != args.npos)
 		return Help();
 
-	if (args.find("version") != args.end())
+	if (args.find("version") != args.npos)
 		return Version();
 
 	// Run the one and only Root::Manager instance
-	return Root::Manager(args).run();
+	return Root::Manager().run(args);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -93,17 +96,20 @@ int main(int argc, char* argv[])
 #include "../../include/Omega/internal/config-guess.h"
 #include "../../include/Omega/OOCore_version.h"
 
-static int Version()
+namespace
 {
-	std::cout << APPNAME " version information:" << std::endl;
-	std::cout << "Version: " << OOCORE_VERSION;
-#if defined(OMEGA_DEBUG)
-	std::cout << " (Debug build)";
-#endif
-	std::cout << std::endl;
-	std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
-	std::cout << "SQLite library version: " << sqlite3_libversion() << ", built with " << sqlite3_version << " headers" << std::endl;
-	std::cout << std::endl;
+	int Version()
+	{
+		std::cout << APPNAME " version information:" << std::endl;
+		std::cout << "Version: " << OOCORE_VERSION;
+	#if defined(OMEGA_DEBUG)
+		std::cout << " (Debug build)";
+	#endif
+		std::cout << std::endl;
+		std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
+		std::cout << "SQLite library version: " << sqlite3_libversion() << ", built with " << sqlite3_version << " headers" << std::endl;
+		std::cout << std::endl;
 
-	return EXIT_SUCCESS;
+		return EXIT_SUCCESS;
+	}
 }

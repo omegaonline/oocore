@@ -53,7 +53,7 @@ static void exception_details(Omega::IException* pOrig)
 	{
 		std::cerr << "Omega::IInternalException - ";
 
-		OOBase::local_string s;
+		std::string s;
 		pE->GetDescription().ToNative(s);
 
 		std::cerr << s << std::endl;
@@ -70,7 +70,7 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IException* pE)
 	{
-		OOBase::local_string s;
+		std::string s;
 		pE->GetDescription().ToNative(s);
 
 		std::cerr << s << std::endl;

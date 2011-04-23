@@ -32,7 +32,7 @@
 #endif
 
 // Manual externs
-typedef std::vector<OOBase::string,OOBase::STLAllocator<OOBase::string,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vector_string;
+typedef std::vector<std::string> vector_string;
 
 extern void report_exception(Omega::IException* pE);
 extern bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
@@ -70,7 +70,7 @@ static int help()
 	return EXIT_SUCCESS;
 }
 
-static bool parse_args(const OOBase::string& line, vector_string& line_args, bool& bCont)
+static bool parse_args(const std::string& line, vector_string& line_args, bool& bCont)
 {
 	bCont = false;
 
@@ -79,7 +79,7 @@ static bool parse_args(const OOBase::string& line, vector_string& line_args, boo
 	for (size_t start = 0;start < line.length();)
 	{
 		size_t pos = line.find_first_of(" \t\"\\",start);
-		if (pos == OOBase::string::npos)
+		if (pos == OOSvrBase::CmdArgs::result_t::npos)
 		{
 			if (bAppend && !line_args.empty())
 				line_args.back() += line.substr(start);
@@ -128,7 +128,7 @@ static bool parse_args(const OOBase::string& line, vector_string& line_args, boo
 		case '\"':
 			bQuote = !bQuote;
 			if (bQuote && pos == start)
-				line_args.push_back(OOBase::string());
+				line_args.push_back(std::string());
 
 			bAppend = bQuote;
 			start = pos + 1;
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("non-interactive",'n');
 	
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
 
@@ -197,14 +197,14 @@ int main(int argc, char* argv[])
 
 				if (bPrompt)
 				{
-					OOBase::local_string s;
+					std::string s;
 					ptrKey->GetName().ToNative(s);
 					std::cout << s << "> ";
 				}
 			}
 
 			// Read a line...
-			OOBase::string line;
+			std::string line;
 			std::getline(std::cin,line);	
 
 			// Parse it...
@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
 namespace OOBase
 {
 	// This is the critical failure hook
-	void CriticalFailure(const char* msg)
+	void OnCriticalFailure(const char* msg)
 	{
 		std::cerr << msg << std::endl;
 

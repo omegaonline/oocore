@@ -42,7 +42,7 @@ namespace
 		public Root::Manager::ControlledObject
 	{
 	public:
-		static TcpAcceptor* create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::string& strAddress, const OOBase::string& strPort, int* perr);
+		static TcpAcceptor* create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort, int* perr);
 
 		virtual ~TcpAcceptor() {}
 
@@ -107,39 +107,38 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 		}
 		else
 		{
-			::Registry::Hive::setType setSubKeys;
+			Registry::Hive::registry_set_t setSubKeys;
 			err = m_registry->enum_subkeys(uKey,0,setSubKeys);
 			if (err != 0)
 				LOG_ERROR(("Failed to enum subkeys of /System/Services key: %d",err));
 			else
 			{
-				count = setSubKeys.size();
-
-				for (::Registry::Hive::setType::const_iterator i=setSubKeys.begin();i!=setSubKeys.end();++i)
+				OOBase::String i;
+				while (setSubKeys.pop(&i))
 				{
 					// Open the subkey
 					Omega::int64_t uSubKey = 0;
-					err = m_registry->open_key(uKey,uSubKey,*i,0);
+					err = m_registry->open_key(uKey,uSubKey,i.c_str(),0);
 					if (err != 0)
 					{
 						--count;
-						LOG_ERROR(("Failed to open /System/Services/%s: %d",i->c_str(),err));
+						LOG_ERROR(("Failed to open /System/Services/%s: %d",i.c_str(),err));
 						continue;
 					}
 
-					OOBase::string strOid;
+					OOBase::LocalString strOid;
 					err = m_registry->get_value(uSubKey,"OID",0,strOid);
 					if (err != 0)
 					{
 						--count;
-						LOG_ERROR(("Failed to get /System/Services/%s value OID: %d",i->c_str(),err));
+						LOG_ERROR(("Failed to get /System/Services/%s value OID: %d",i.c_str(),err));
 						continue;
 					}
 
-					if (!response.write(*i) ||
-						!response.write(strOid))
+					if (!response.write(i.c_str()) ||
+						!response.write(strOid.c_str()))
 					{
-						LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
+						LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 						count = 0;
 						break;
 					}
@@ -161,29 +160,35 @@ void Root::Manager::get_service_key(Omega::uint32_t channel_id, OOBase::CDRStrea
 	}
 	else
 	{
-		OOBase::string strKey;
-		if (!request.read(strKey))
+		OOBase::LocalString strKeyEnd;
+		if (!request.read(strKeyEnd))
 		{
 			LOG_ERROR(("get_service_key called with invalid key name"));
 			err = response.last_error();
 		}
 		else
 		{
-			strKey = "System/Services/" + strKey;
-
-			Omega::int64_t uKey = 0;
-			err = m_registry->open_key(0,uKey,strKey,0);
+			OOBase::LocalString strKey;
+			err = strKey.concat("System/Services/",strKeyEnd.c_str());
 			if (err != 0)
-				LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
-			else
+				LOG_ERROR(("Failed to construct string: %s",OOBase::system_error_text(err)));
+			
+			if (!strKey.empty())
 			{
-				if (!response.write(err) ||
-					!response.write(uKey) ||
-					!response.write(strKey))
+				Omega::int64_t uKey = 0;
+				err = m_registry->open_key(0,uKey,strKey.c_str(),0);
+				if (err != 0)
+					LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
+				else
 				{
-					err = response.last_error();
-					LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(err).c_str()));
-					response.reset();
+					if (!response.write(err) ||
+						!response.write(uKey) ||
+						!response.write(strKey.c_str()))
+					{
+						err = response.last_error();
+						LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(err)));
+						response.reset();
+					}
 				}
 			}
 		}
@@ -203,9 +208,9 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 	}
 	else
 	{
-		OOBase::string strKey;
+		OOBase::LocalString strKeyEnd;
 		Omega::uint32_t id = 0;
-		if (!request.read(strKey) ||
+		if (!request.read(strKeyEnd) ||
 			!request.read(id))
 		{
 			LOG_ERROR(("Failed to read request"));
@@ -218,37 +223,43 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 		}
 		else
 		{
-			strKey = "System/Services/" + strKey;
-
-			Omega::int64_t uKey = 0;
-			err = m_registry->open_key(0,uKey,strKey,0);
+			OOBase::LocalString strKey;
+			err = strKey.concat("System/Services/",strKeyEnd.c_str());			
 			if (err != 0)
-				LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
-			else
+				LOG_ERROR(("Failed to construct string: %s",OOBase::system_error_text(err)));
+
+			if (!strKey.empty())
 			{
-				// Now we want to get the networking key
-				err = m_registry->open_key(uKey,uKey,"Network",0);
+				Omega::int64_t uKey = 0;
+				err = m_registry->open_key(0,uKey,strKey.c_str(),0);
 				if (err != 0)
-					LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
+					LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
 				else
 				{
-					OOBase::string strProtocol;
-					err = m_registry->get_value(uKey,"Protocol",0,strProtocol);
+					// Now we want to get the networking key
+					err = m_registry->open_key(uKey,uKey,"Network",0);
 					if (err != 0)
 						LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
-					else if (strProtocol.empty())
-					{
-						LOG_ERROR(("%s/Network Protocol value is empty",strKey.c_str()));
-						err = EINVAL;
-					}
 					else
 					{
-						// These are allowed to be missing...
-						OOBase::string strAddress, strPort;
-						m_registry->get_value(uKey,"Address",0,strAddress);
-						m_registry->get_value(uKey,"Port",0,strPort);
+						OOBase::LocalString strProtocol;
+						err = m_registry->get_value(uKey,"Protocol",0,strProtocol);
+						if (err != 0)
+							LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
+						else if (strProtocol.empty())
+						{
+							LOG_ERROR(("%s/Network Protocol value is empty",strKey.c_str()));
+							err = EINVAL;
+						}
+						else
+						{
+							// These are allowed to be missing...
+							OOBase::LocalString strAddress, strPort;
+							m_registry->get_value(uKey,"Address",0,strAddress);
+							m_registry->get_value(uKey,"Port",0,strPort);
 
-						err = create_service_listener(id,strProtocol,strAddress,strPort);
+							err = create_service_listener(id,strProtocol,strAddress,strPort);
+						}
 					}
 				}
 			}
@@ -256,10 +267,10 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 	}
 
 	if (!response.write(err))
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-int Root::Manager::create_service_listener(Omega::uint32_t id, const OOBase::string& strProtocol, const OOBase::string& strAddress, const OOBase::string& strPort)
+int Root::Manager::create_service_listener(Omega::uint32_t id, const OOBase::LocalString& strProtocol, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort)
 {
 	int err = 0;
 	OOBase::SmartPtr<ControlledObject> ptrService;
@@ -353,7 +364,7 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 	if (request.last_error() != 0)
 	{
 		remove_socket(id);
-		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()),0);
+		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),0);
 	}
 
 	OOBase::SmartPtr<OOBase::CDRStream> response;
@@ -361,19 +372,19 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 	if (!response)
 	{
 		remove_socket(id);
-		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()),0);
+		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),0);
 	}
 
 	Omega::int32_t err = 0;
 	if (!response->read(err))
 	{
 		remove_socket(id);
-		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response->last_error()).c_str()),0);
+		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response->last_error())),0);
 	}
 	else if (err != 0)
 	{
 		remove_socket(id);
-		LOG_DEBUG(("Sandbox accept failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_DEBUG(("Sandbox accept failed: %s",OOBase::system_error_text(err)));
 		return 0;
 	}
 
@@ -463,7 +474,7 @@ void Root::Manager::socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& r
 	}
 
 	if (!response.write(err))
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -510,7 +521,7 @@ void Root::Manager::socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& r
 	}
 
 	if (!response.write(err))
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error()).c_str()));
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::socket_close(Omega::uint32_t channel_id, OOBase::CDRStream& request)
@@ -543,7 +554,7 @@ TcpAcceptor::TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id) :
 	assert(m_id);
 }
 
-TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::string& strAddress, const OOBase::string& strPort, int* perr)
+TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort, int* perr)
 {
 	TcpAcceptor* pService = new (std::nothrow) TcpAcceptor(pManager,id);
 	if (!pService)
@@ -556,7 +567,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	if (*perr != 0)
 	{
 		delete pService;
-		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr).c_str()),(TcpAcceptor*)0);
+		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr)),(TcpAcceptor*)0);
 	}
 
 	OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Listening on %s:%s",strAddress.empty() ? "localhost" : strAddress.c_str(),strPort.c_str());
@@ -569,7 +580,7 @@ bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* /*s
 {
 	if (err)
 	{
-		LOG_ERROR(("on_accept failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("on_accept failed: %s",OOBase::system_error_text(err)));
 		m_pManager->remove_listener(m_id);
 		return false;
 	}
@@ -623,7 +634,7 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	buffer->release();
 
 	if (err != 0)
-		LOG_ERROR(("async_recv failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("async_recv failed: %s",OOBase::system_error_text(err)));
 
 	return err;
 }
@@ -645,7 +656,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		request.write(Omega::int32_t(err));
 		if (request.last_error() != 0)
 		{
-			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()));
+			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 			return;
 		}
 
@@ -665,7 +676,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		request.write(Omega::int32_t(err));
 		if (request.last_error() != 0)
 		{
-			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()));
+			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 			return;
 		}
 
@@ -679,7 +690,7 @@ int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
 {
 	int err = m_ptrSocket->async_send(buffer);
 	if (err != 0)
-		LOG_ERROR(("async_send failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("async_send failed: %s",OOBase::system_error_text(err)));
 
 	return err;
 }
@@ -700,7 +711,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 		request.write(Omega::int32_t(err));
 		if (request.last_error() != 0)
 		{
-			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()));
+			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 			return;
 		}
 
@@ -720,7 +731,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 		request.write(Omega::int32_t(err));
 		if (request.last_error() != 0)
 		{
-			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()));
+			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 			return;
 		}
 
@@ -737,7 +748,7 @@ void AsyncSocket::on_closed()
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OnSocketClose));
 	request.write(m_id);
 	if (request.last_error() != 0)
-		LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()));
+		LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 	else
 	{
 		OOBase::SmartPtr<OOBase::CDRStream> response;

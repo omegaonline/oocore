@@ -42,16 +42,29 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
 
-		void exec(const User::wstring& strExeName);
+		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
 	};
 
-	static User::wstring ShellParse(const wchar_t* pszFile)
+	static OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> CopyCmdLine(const wchar_t* psz)
 	{
-		User::wstring strRet = pszFile;
+		size_t wlen = (wcslen(psz)+1)*sizeof(wchar_t);
 
+		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen));
+		if (!ptrCmdLine)
+			User::OmegaFailure::fail();
+
+		memcpy(ptrCmdLine,psz,wlen);
+
+		return ptrCmdLine;
+	}
+
+	static OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ShellParse(const wchar_t* pszFile)
+	{
+		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = CopyCmdLine(pszFile);
+		
 		const wchar_t* pszExt = PathFindExtensionW(pszFile);
 		if (pszExt && wcsicmp(pszExt,L".exe")!=0)
 		{
@@ -60,53 +73,49 @@ namespace
 			ASSOCF flags = (ASSOCF)(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL);
 			HRESULT hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
 			if (hRes == S_OK)
-				strRet = szBuf;
+				ptrCmdLine = CopyCmdLine(szBuf);
 			else if (hRes == E_POINTER)
 			{
-				OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> pszBuf = static_cast<wchar_t*>(OOBase::LocalAllocate((dwLen+1)*sizeof(wchar_t)));
-				if (pszBuf)
-				{
-					hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
-					if (hRes==S_OK)
-						strRet = pszBuf;
-				}
+				ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate((dwLen+1)*sizeof(wchar_t)));
+				if (!ptrCmdLine)
+					User::OmegaFailure::fail();
+
+				hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,ptrCmdLine,&dwLen);
 			}
 
 			if (hRes == S_OK)
 			{
 				LPVOID lpBuffer = 0;
 				if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-								   strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
+								   ptrCmdLine,0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
 				{
-					strRet = (LPWSTR)lpBuffer;
+					ptrCmdLine = CopyCmdLine((LPWSTR)lpBuffer);
 					LocalFree(lpBuffer);
 				}
 			}
 		}
-
-		return strRet;
+		
+		return ptrCmdLine;
 	}
 }
 
-bool User::Process::is_relative_path(const User::wstring& strPath)
+bool User::Process::is_relative_path(const wchar_t* pszPath)
 {
-	return (PathIsRelativeW(strPath.c_str()) != FALSE);
+	return (PathIsRelativeW(pszPath) != FALSE);
 }
 
-User::Process* User::Process::exec(const User::wstring& strExeName)
+User::Process* User::Process::exec(const wchar_t* pszExeName)
 {
 	// Do a ShellExecute style lookup for the actual thing to call..
-	User::wstring strActualName = ShellParse(strExeName.c_str());
-
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
 	if (!ptrProcess)
-		OMEGA_THROW(ERROR_OUTOFMEMORY);
+		User::OmegaFailure::fail();
 
-	ptrProcess->exec(strExeName);
+	ptrProcess->exec(ShellParse(pszExeName));
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(const User::wstring& strExeName)
+void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine)
 {
 #if defined(OMEGA_DEBUG)
 	OOBase::Win32::SmartHandle hDebugEvent;
@@ -114,13 +123,6 @@ void UserProcessWin32::exec(const User::wstring& strExeName)
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Local\\OOCORE_DEBUG_MUTEX");
 
 #endif // OMEGA_DEBUG
-
-	OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate((strExeName.size()+1)*sizeof(wchar_t)));
-	if (!ptrCmdLine)
-		OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-	memcpy(ptrCmdLine,strExeName.data(),strExeName.size()*sizeof(wchar_t));
-	ptrCmdLine[strExeName.size()] = L'\0';
 
 	STARTUPINFOW si = {0};
 	si.cb = sizeof(STARTUPINFOW);

@@ -29,7 +29,7 @@
 #include <OOBase/TimeVal.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>
-#include <OOBase/Queue.h>
+#include <OOBase/BoundedQueue.h>
 #include <OOBase/DLL.h>
 #include <OOBase/Win32.h>
 #include <OOBase/utf8.h>
@@ -81,20 +81,18 @@ namespace OOCore
 		int unused;
 	};
 
-	template <typename T>
-	class OmegaDestructor
+	class OmegaFailure
 	{
 	public:
-		static void destroy(T* ptr)
+		static void fail()
 		{
-			delete ptr;
+#if defined(_WIN32)
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+#else
+			OMEGA_THROW(ENOMEM);
+#endif
 		}
 	};
-
-	typedef std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > string;
-	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, Omega::System::stl_allocator<wchar_t> > wstring;
-
-	typedef std::basic_ostringstream<char, std::char_traits<char>, Omega::System::stl_allocator<char> > ostringstream;
 }
 
 #include "Formatting.h"

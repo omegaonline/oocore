@@ -23,9 +23,6 @@
 
 #include "UserRegistry.h"
 #include "UserManager.h"
-#include "SpawnedProcess.h"
-
-typedef std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > throw_string;
 
 using namespace Omega;
 using namespace Omega::Registry;
@@ -35,6 +32,16 @@ using namespace OTL;
 
 using namespace User;
 using namespace User::Registry;
+
+namespace
+{
+	void write_utf8(OOBase::CDRStream& request, const Omega::string_t& str)
+	{
+		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<User::OmegaFailure> > > s;
+		str.ToUTF8(s);
+		request.write(s.c_str());
+	}
+}
 
 void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type)
 {
@@ -71,11 +78,8 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::KeyExists));
 	request.write(m_key);
 	request.write(m_type);
-
-	throw_string s;
-	strSubKey.ToUTF8(s);
-	request.write(s.c_str());
-
+	write_utf8(request,strSubKey);
+	
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -105,11 +109,8 @@ bool_t Key::IsValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueExists));
 	request.write(m_key);
 	request.write(m_type);
-
-	throw_string s;
-	strName.ToUTF8(s);
-	request.write(s.c_str());
-
+	write_utf8(request,strName);
+	
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -139,10 +140,7 @@ any_t Key::GetValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValue));
 	request.write(m_key);
 	request.write(m_type);
-
-	throw_string s;
-	strName.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strName);
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -162,7 +160,7 @@ any_t Key::GetValue(const string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	throw_string strValue;
+	OOBase::LocalString strValue;
 	if (!response->read(strValue))
 		OMEGA_THROW(response->last_error());
 
@@ -177,13 +175,8 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValue));
 	request.write(m_key);
 	request.write(m_type);
-	
-	throw_string s;
-	strName.ToUTF8(s);
-	request.write(s.c_str());
-
-	value.cast<string_t>().ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strName);
+	write_utf8(request,value.cast<string_t>());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -228,7 +221,7 @@ string_t Key::GetDescription()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	throw_string strValue;
+	OOBase::LocalString strValue;
 	if (!response->read(strValue))
 		OMEGA_THROW(response->last_error());
 
@@ -243,10 +236,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
-	
-	throw_string s;
-	strName.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strName);
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -266,7 +256,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	throw_string strValue;
+	OOBase::LocalString strValue;
 	if (!response->read(strValue))
 		OMEGA_THROW(response->last_error());
 
@@ -279,10 +269,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetDescription));
 	request.write(m_key);
 	request.write(m_type);
-
-	throw_string s;
-	strDesc.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strDesc);
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -309,13 +296,8 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
-	
-	throw_string s;
-	strValue.ToUTF8(s);
-	request.write(s.c_str());
-
-	strDesc.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strValue);
+	write_utf8(request,strDesc);
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -387,7 +369,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 
 		Omega::byte_t local_type = 255;
 		Omega::int64_t mirror_key = 0;
-		throw_string strName;
+		OOBase::LocalString strName;
 
 		if (!response->read(local_type) ||
 				!response->read(mirror_key) ||
@@ -416,10 +398,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::CreateKey));
 	request.write(m_key);
 	request.write(m_type);
-
-	throw_string s;
-	strSubKey.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strSubKey);
 
 	request.write(flags);
 	if (request.last_error() != 0)
@@ -480,7 +459,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	std::set<Omega::string_t> sub_keys;
 	for (;;)
 	{
-		throw_string strName;
+		OOBase::LocalString strName;
 		if (!response->read(strName))
 			OMEGA_THROW(response->last_error());
 
@@ -526,7 +505,7 @@ std::set<Omega::string_t> Key::EnumValues()
 	std::set<Omega::string_t> values;
 	for (;;)
 	{
-		throw_string strName;
+		OOBase::LocalString strName;
 		if (!response->read(strName))
 			OMEGA_THROW(response->last_error());
 
@@ -561,10 +540,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteKey));
 	request.write(m_key);
 	request.write(m_type);
-	
-	throw_string s;
-	strSubKey.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strSubKey);
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -593,10 +569,7 @@ void Key::DeleteValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteValue));
 	request.write(m_key);
 	request.write(m_type);
-	
-	throw_string s;
-	strName.ToUTF8(s);
-	request.write(s.c_str());
+	write_utf8(request,strName);
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());

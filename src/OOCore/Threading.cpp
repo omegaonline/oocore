@@ -46,7 +46,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
 	void* r = new (std::nothrow) OOBase::Mutex();
 	if (!r)
-		OMEGA_THROW("Out of memory");
+		OOCore::OmegaFailure::fail();
+
 	return r;
 }
 
@@ -69,7 +70,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
 {
 	void* r = new (std::nothrow) OOBase::RWMutex();
 	if (!r)
-		OMEGA_THROW("Out of memory");
+		OOCore::OmegaFailure::fail();
+
 	return r;
 }
 

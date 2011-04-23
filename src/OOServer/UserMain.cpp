@@ -74,14 +74,14 @@ int main(int argc, char* argv[])
 #endif
 
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
-	if (!cmd_args.parse(argc,argv,args))
+	OOSvrBase::CmdArgs::results_t args;
+	if (cmd_args.parse(argc,argv,args) != 0)
 		LOG_ERROR_RETURN(("Failed to parse command line arguments."),EXIT_FAILURE);
 
-	if (args.find("help") != args.end())
+	if (args.find("help") != args.npos)
 		return Help();
 
-	if (args.find("version") != args.end())
+	if (args.find("version") != args.npos)
 		return Version();
 
 #if defined(_WIN32) && defined(OMEGA_DEBUG)
@@ -107,25 +107,18 @@ int main(int argc, char* argv[])
 		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text(errno).c_str()));
 #endif
 
-	OOBase::string strPipe;
+	OOBase::String strPipe;
 	bool bForkSlave = false;
 
 	// Try to work out how we are being asked to start
-	OOSvrBase::CmdArgs::resultsType::const_iterator i=args.find("fork-slave");
-	if (i != args.end())
+	if (args.find("fork-slave",strPipe))
 	{
 		// Fork start from ooserverd
-		strPipe = i->second;
 		bForkSlave = true;
 	}
 	else
 	{
-		if ((i=args.find("launch-session")) != args.end())
-		{
-			// Start from oo-launch
-			strPipe = i->second;
-		}
-		else
+		if (!args.find("launch-session",strPipe))
 		{
 			// Ooops...
 			LOG_ERROR_RETURN((APPNAME " - Invalid or missing arguments."),EXIT_FAILURE);
@@ -167,7 +160,7 @@ int main(int argc, char* argv[])
 namespace OOBase
 {
 	// This is the critical failure hook
-	void CriticalFailure(const char* msg)
+	void OnCriticalFailure(const char* msg)
 	{
 		std::cerr << msg << std::endl << std::endl;
 		abort();

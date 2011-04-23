@@ -40,26 +40,29 @@
 
 #include <signal.h>
 
-static OOBase::string getenv_i(const char* val)
+namespace
 {
-#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
-	char* buf = 0;
-	size_t len = 0;
-	OOBase::string ret;
-	if (!_dupenv_s(&buf,&len,val))
+	bool getenv_OMEGA_DEBUG()
 	{
-		if (len)
-			ret = OOBase::string(buf,len-1);
-		free(buf);
+	#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
+		bool ret = false;
+		char* buf = 0;
+		size_t len = 0;
+		if (!_dupenv_s(&buf,&len,"OMEGA_DEBUG"))
+		{
+			if (len)
+				ret = (strncmp(buf,"yes",len-1) == 0);
+			free(buf);
+		}
+		return ret;
+	#else
+		return (strcmp(getenv("OMEGA_DEBUG"),"yes") == 0);
+	#endif
 	}
-	return ret;
-#else
-	return getenv(val);
-#endif
 }
 
-Root::Manager::Manager(const OOSvrBase::CmdArgs::resultsType& args) :
-		m_cmd_args(args),
+Root::Manager::Manager() :
+		m_bUnsafe(false),
 		m_sandbox_channel(0),
 		m_uNextSocketId(0)
 {
@@ -71,177 +74,279 @@ Root::Manager::~Manager()
 {
 }
 
-int Root::Manager::run()
+int Root::Manager::run(const OOSvrBase::CmdArgs::results_t& cmd_args)
 {
+	m_bUnsafe = (cmd_args.find("unsafe") != cmd_args.npos);
+
 #if !defined(_WIN32)
 	// Ignore SIGPIPE
 	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno).c_str()));
+		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno)));
 
-	OOBase::string strPidfile = "/var/run/ooserverd.pid";
-	OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("pidfile");
-	if (f != m_cmd_args.end())
-		strPidfile = f->second;
-
+	OOBase::String strPidfile = "/var/run/ooserverd.pid";
+	cmd_args.find("pidfile",strPidFile);
+	
 	if (!pid_file(strPidfile.c_str()))
 		return EXIT_FAILURE;
 #endif
 
-	try
+	// Loop until we quit
+	for (bool bQuit=false; !bQuit;)
 	{
-		// Loop until we quit
-		for (bool bQuit=false; !bQuit;)
+		// Load the config
+		if (!load_config(cmd_args))
+			return EXIT_FAILURE;
+
+		// Open the root registry
+		if (!init_database())
+			return EXIT_FAILURE;
+
+		// Start the handler
+		if (!start_request_threads())
+			return EXIT_FAILURE;
+
+		// Just so we can exit cleanly...
+		bool bOk = false;
+
+		// Spawn the sandbox
+		if (spawn_sandbox())
 		{
-			// Load the config
-			if (!load_config())
-				return EXIT_FAILURE;
-
-			// Open the root registry
-			if (!init_database())
-				return EXIT_FAILURE;
-
-			// Start the handler
-			if (!start_request_threads())
-				return EXIT_FAILURE;
-
-			// Just so we can exit cleanly...
-			bool bOk = false;
-
-			// Spawn the sandbox
-			if (spawn_sandbox())
+			// Start listening for clients
+			if (m_client_acceptor.start(this))
 			{
-				// Start listening for clients
-				if (m_client_acceptor.start(this))
-				{
-					bOk = true;
+				bOk = true;
 
-					// Wait for quit
-					bQuit = wait_to_quit();
+				// Wait for quit
+				bQuit = wait_to_quit();
 
-					// Stop accepting new clients
-					m_client_acceptor.stop();
-				}
-
-				// Stop services
-				stop_services();
-
-				// Close all channels
-				close_channels();
+				// Stop accepting new clients
+				m_client_acceptor.stop();
 			}
 
-			// Stop the MessageHandler
-			stop_request_threads();
+			// Stop services
+			stop_services();
 
-			if (!bOk)
-			{
+			// Close all channels
+			close_channels();
+		}
+
+		// Stop the MessageHandler
+		stop_request_threads();
+
+		if (!bOk)
+		{
 #if defined(OMEGA_DEBUG)
-				// Give us a chance to read the errors!
-				OOBase::Thread::sleep(OOBase::timeval_t(5,0));
+			// Give us a chance to read the errors!
+			OOBase::Thread::sleep(OOBase::timeval_t(5,0));
 #endif
-				return EXIT_FAILURE;
-			}
+			return EXIT_FAILURE;
 		}
 	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),EXIT_FAILURE);
-	}
-
+	
 	return EXIT_SUCCESS;
 }
 
 bool Root::Manager::init_database()
 {
 	// Get dir from config
-	OOSvrBase::CmdArgs::resultsType::const_iterator i=m_config_args.find("regdb_path");
-	if (i == m_config_args.end())
+	OOBase::String dir;
+	if (!m_config_args.find("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-	OOBase::string dir = i->second;
-	if (!dir.empty())
-	{
+	int err = 0;
 #if defined(_WIN32)
-		std::replace(dir.begin(),dir.end(),'/','\\');
-		if (*dir.rbegin() != '\\')
-			dir += '\\';
+	dir.replace('/','\\');
+	if (dir.c_str()[dir.length()-1] != '\\')
+		err = dir.append("\\",1);
 #else
-		std::replace(dir.begin(),dir.end(),'\\','/');
-		if (*dir.rbegin() != '/')
-			dir += '/';
+	dir.replace('\\','/');
+	if (dir.c_str()[dir.length()-1] != '/')
+		err = dir.append("/",1);
 #endif
-	}
+
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
 	// Create a new system database
-	m_registry = new (std::nothrow) Registry::Hive(this,dir + "system.regdb");
-	if (!m_registry)
-		LOG_ERROR_RETURN(("Out of memory"),false);
+	OOBase::String dir2 = dir;
+	err = dir2.append("system.regdb");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
+	m_registry = new Registry::Hive(this,dir2.c_str());
 	if (!m_registry->open(SQLITE_OPEN_READWRITE))
 		return false;
 
 	// Create a new System database
-	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir + "sandbox.regdb");
-	if (!m_registry_sandbox)
-		LOG_ERROR_RETURN(("Out of memory"),false);
+	dir2 = dir;
+	err = dir2.append("sandbox.regdb");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
+	m_registry_sandbox = new Registry::Hive(this,dir2.c_str());
+	
 	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }
 
-bool Root::Manager::load_config_file(const OOBase::string& strFile)
+bool Root::Manager::load_config_file(const char* pszFile)
 {
 	// Load simple config file...
-	std::ifstream fs(strFile.c_str());
-	if (!fs.is_open())
-		LOG_ERROR_RETURN(("Failed to open config file: %s",strFile.c_str()),false);
-
-	while (!fs.eof())
+	FILE* f = NULL;
+#if defined(_MSC_VER)
+	int err = fopen_s(&f,pszFile,"r");
+#else
+	int err = 0;
+	f = fopen(pszFile,"r");
+	if (!f)
+		err = errno;
+#endif
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to open file %s: %s",pszFile,OOBase::system_error_text(err)),false);
+	
+	OOBase::LocalString strBuffer;
+	for (bool bEof=false;!bEof && err==0;)
 	{
-		// Read line
-		OOBase::string line;
-		std::getline(fs,line);
-
-		if (!line.empty() && line[0] != '#')
+		// Read some characters
+		char szBuf[256] = {0};
+		size_t r = fread(szBuf,1,sizeof(szBuf),f);
+		if (r != sizeof(szBuf))
 		{
-			// Read line as key=value
-			OOBase::string key,value;
-			size_t pos = line.find('=');
-			if (pos == OOBase::string::npos)
-			{
-				key = line;
-				value = "true";
-			}
+			if (feof(f))
+				bEof = true;
 			else
 			{
-				key = line.substr(0,pos);
-				value = line.substr(pos+1);
+				err = ferror(f);
+				LOG_ERROR(("Failed to read file %s: %s",pszFile,OOBase::system_error_text(err)));
+				break;
 			}
-
-			// Insert into map
-			m_config_args[key] = value;
+		}
+		
+		// Append to buffer
+		err = strBuffer.append(szBuf,r);
+				
+		// Split out individual lines
+		for (size_t start = 0;err==0 && !strBuffer.empty();)
+		{
+			// Skip leading whitespace
+			while (strBuffer[start] == '\t' || strBuffer[start] == ' ')
+				++start;
+			
+			if (start == strBuffer.length())
+			{
+				strBuffer.clear();
+				break;
+			}
+			
+			// Find the next linefeed
+			size_t end = strBuffer.find('\n',start);
+			if (end == OOBase::String::npos && !bEof)
+			{
+				// Incomplete line
+				break;
+			}
+			
+			// Skip everything after #
+			size_t hash = strBuffer.find('#',start);
+							
+			// Trim trailing whitespace
+			size_t valend = (hash < end ? hash : end);
+			while (valend > start && strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' ')
+				--valend;
+			
+			if (valend > start)
+			{
+				OOBase::String strKey, strValue;
+				
+				// Split on first =
+				size_t eq = strBuffer.find('=',start);
+				if (eq != OOBase::String::npos)
+				{
+					// Trim trailing whitespace before =
+					size_t keyend = eq;
+					while (keyend > start && strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' ')
+						--keyend;
+					
+					if (keyend > start)
+					{
+						err = strKey.assign(strBuffer.c_str() + start,keyend-start);
+						if (err != 0)
+						{
+							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
+							break;
+						}
+					
+						// Skip leading whitespace after =
+						size_t valpos = eq+1;
+						while (valpos < valend && strBuffer[valpos] == '\t' || strBuffer[valpos] == ' ')
+							++valpos;
+						
+						if (valpos < valend)
+						{
+							err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos);
+							if (err != 0)
+							{
+								LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
+								break;
+							}
+						}
+					}
+				}
+				else
+				{
+					// Trim trailing whitespace
+					size_t keyend = end;
+					while (keyend > start && strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' ')
+						--keyend;
+					
+					if (keyend > start)
+					{
+						err = strKey.assign(strBuffer.c_str() + start,keyend-start);
+						if (err == 0)
+							err = strValue.assign("true",4);
+						
+						if (err != 0)
+						{
+							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
+							break;
+						}
+					}
+				}
+				
+				// Do something with strKey and strValue
+				if (!strKey.empty())
+				{
+					int err = m_config_args.replace(strKey,strValue);
+					if (err != 0)
+						LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
+				}
+			}
+			
+			if (end == OOBase::LocalString::npos)
+				break;
+			
+			start = end + 1;
 		}
 	}
+	
+	fclose(f);
 
-	return true;
+	return (err == 0);
 }
 
 bool Root::Manager::spawn_sandbox()
 {
-	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-
 	// Get username from config
-	OOBase::string strUName;
-	OOSvrBase::CmdArgs::resultsType::const_iterator i=m_config_args.find("sandbox_uname");
-	if (i != m_config_args.end())
-		strUName = i->second.c_str();
-
+	OOBase::String strUName;
+	m_config_args.find("sandbox_uname",strUName);
+		
 	bool bAgain = false;
 	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
 	{
-		if (!bUnsafe)
+		if (!m_bUnsafe)
 			LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 
-		OOBase::string strOurUName;
+		OOBase::LocalString strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 		
@@ -254,9 +359,9 @@ bool Root::Manager::spawn_sandbox()
 	}
 	else if (!get_sandbox_uid(strUName,uid,bAgain))
 	{
-		if (bAgain && bUnsafe)
+		if (bAgain && m_bUnsafe)
 		{
-			OOBase::string strOurUName;
+			OOBase::LocalString strOurUName;
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
@@ -270,11 +375,11 @@ bool Root::Manager::spawn_sandbox()
 			return false;
 	}
 	
-	OOBase::string strPipe;
+	OOBase::String strPipe;
 	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
-	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
+	if (m_sandbox_channel == 0 && m_bUnsafe && !strUName.empty() && bAgain)
 	{
-		OOBase::string strOurUName;
+		OOBase::LocalString strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
@@ -296,19 +401,19 @@ bool Root::Manager::spawn_sandbox()
 
 bool Root::Manager::wait_to_quit()
 {
-	for (OOBase::string debug = getenv_i("OMEGA_DEBUG");;)
+	for (;;)
 	{
 		switch (wait_for_quit())
 		{
 #if defined (_WIN32)
 			case CTRL_BREAK_EVENT:
-				return (debug=="yes");
+				return getenv_OMEGA_DEBUG();
 
 			default:
 				return true;
 #elif defined(HAVE_UNISTD_H)
 			case SIGHUP:
-				return (debug=="yes");
+				return getenv_OMEGA_DEBUG();
 				
 			case SIGQUIT:
 			case SIGTERM:
@@ -342,13 +447,11 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process)
 {
-	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-
 	for (bool bFirst = true;bFirst;bFirst = false)
 	{
 		// See if we have a process already
-		
-		std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vecDead;
+		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > vecDead;
+		bool bFound = false;
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -356,14 +459,14 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 		{
 			if (!i->second.ptrSpawn->IsRunning())
 			{
-				vecDead.push_back(i->first);
+				vecDead.push(i->first);
 			}
 			else if (i->second.ptrSpawn->IsSameLogin(uid))
 			{
 				user_process = i->second;
-				return true;
+				bFound = true;
 			}
-			else if (i->second.ptrSpawn->IsSameUser(uid))
+			else if (!bFound && i->second.ptrSpawn->IsSameUser(uid))
 			{
 				user_process.ptrRegistry = i->second.ptrRegistry;
 			}
@@ -375,18 +478,22 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 		{
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			for (std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >::const_iterator i=vecDead.begin();i!=vecDead.end();++i)
-				m_mapUserProcesses.erase(*i);
+			Omega::uint32_t i = 0;
+			while (vecDead.pop(&i))
+				m_mapUserProcesses.erase(i);
 		}
+
+		if (bFound)
+			return true;
 
 		// Spawn a new user process
 		bool bAgain = false;
 		if (spawn_user(uid,user_process.ptrRegistry,false,user_process.strPipe,bAgain) != 0)
 			return true;
 
-		if (bFirst && bAgain && bUnsafe)
+		if (bFirst && bAgain && m_bUnsafe)
 		{
-			OOBase::string strOurUName;
+			OOBase::LocalString strOurUName;
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
@@ -401,7 +508,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 	return false;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::string& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
@@ -421,11 +528,15 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	{
 		bOk = false;
 
-		OOBase::string strHive;
-		if (process.ptrSpawn->GetRegistryHive(m_config_args["regdb_path"],m_config_args["users_path"],strHive))
+		OOBase::String strRegPath, strUsersPath;
+		m_config_args.find("regdb_path",strRegPath);
+		m_config_args.find("users_path",strUsersPath);
+
+		OOBase::LocalString strHive;
+		if (process.ptrSpawn->GetRegistryHive(strRegPath,strUsersPath,strHive))
 		{
 			// Create a new database
-			process.ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive);
+			process.ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive.c_str());
 			if (!process.ptrRegistry)
 				LOG_ERROR(("Out of memory"));
 			else
@@ -458,15 +569,15 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	return (ptrMC->read() ? channel_id : 0);
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::string& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
 {
 	OOBase::CDRStream stream;
 	if (!stream.write(m_sandbox_channel))
-		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
 	int err = ptrSocket->send(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err)),0);
 
 	stream.reset();
 
@@ -474,20 +585,25 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptr
 	size_t mark = stream.buffer()->mark_rd_ptr();
 	err = ptrSocket->recv(stream.buffer(),4);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	Omega::uint32_t len = 0;
 	if (!stream.read(len))
-		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
 	err = ptrSocket->recv(stream.buffer(),len);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	// Now reset rd_ptr and read the string
 	stream.buffer()->mark_rd_ptr(mark);
-	if (!stream.read(strPipe))
-		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+	OOBase::LocalString strPipeL;
+	if (!stream.read(strPipeL))
+		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
+
+	err = strPipe.assign(strPipeL.c_str());
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
@@ -505,7 +621,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptr
 	if (!stream.write(channel_id))
 	{
 		ptrMC->close();
-		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error()).c_str()),0);
+		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
 	}
 
 	return (ptrMC->send(stream.buffer()) ? channel_id : 0);
@@ -518,7 +634,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 	if (request.last_error() != 0)
 	{
-		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error())));
 		return;
 	}
 

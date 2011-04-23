@@ -21,6 +21,7 @@
 
 #include "OOCore_precomp.h"
 
+#include <sstream>
 #include <limits.h>
 
 using namespace Omega;
@@ -28,6 +29,9 @@ using namespace OTL;
 
 namespace
 {
+	typedef std::basic_string<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > private_string;
+	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > private_ostringstream;
+
 	class FormattingException :
 			public ExceptionImpl<Formatting::IFormattingException>
 	{
@@ -129,7 +133,7 @@ namespace
 		return true;
 	}
 
-	void do_intl_mon(OOCore::string& str, bool negative)
+	void do_intl_mon(private_string& str, bool negative)
 	{
 #if defined(_WIN32)
 		LCID lcid = GetThreadLocale();
@@ -187,7 +191,7 @@ namespace
 #endif
 
 		size_t pos = str.find('.');
-		if (pos != OOCore::string::npos)
+		if (pos != private_string::npos)
 			str.replace(pos,1,decimal_point);
 		else
 			pos = str.length();
@@ -214,8 +218,8 @@ namespace
 		bool cs_precedes = false;
 		bool sep_by_space = false;
 		int posn = 0;
-		OOCore::string sign;
-		OOCore::string currency;
+		private_string sign;
+		private_string currency;
 
 #if defined(_WIN32)
 		if (negative)
@@ -357,7 +361,7 @@ namespace
 		}
 	}
 
-	size_t do_intl(OOCore::string& str, bool bThou)
+	size_t do_intl(private_string& str, bool bThou)
 	{
 #if defined(_WIN32)
 		LCID lcid = GetThreadLocale();
@@ -420,13 +424,13 @@ namespace
 #endif
 
 		size_t dp = str.find('.');
-		if (dp != OOCore::string::npos)
+		if (dp != private_string::npos)
 			str.replace(dp,1,decimal_point);
 
 		if (bThou)
 		{
 			size_t pos = dp;
-			if (pos == OOCore::string::npos)
+			if (pos == private_string::npos)
 				pos = str.length();
 
 			for (int grp = CHAR_MAX;;)
@@ -452,51 +456,37 @@ namespace
 		return dp;
 	}
 
-	OOCore::string fmt_fixed_i(const double& val, int precision)
+	private_string fmt_fixed_i(const double& val, int precision)
 	{
-		try
-		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
 
-			ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
 
-			ss.precision(precision);
+		ss.precision(precision);
 
-			ss << val;
+		ss << val;
 
-			return ss.str();
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+		return ss.str();
 	}
 
 	template <typename T>
-	OOCore::string fmt_fixed_i(T val, int precision)
+	private_string fmt_fixed_i(T val, int precision)
 	{
-		try
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss << val;
+
+		private_string ret = ss.str();
+
+		if (precision > 0)
 		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
-
-			ss << val;
-
-			OOCore::string ret = ss.str();
-
-			if (precision > 0)
-			{
-				ret += '.';
-				ret.append(precision,'0');
-			}
-
-			return ret;
+			ret += '.';
+			ret.append(precision,'0');
 		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+
+		return ret;
 	}
 
 	template <typename T>
@@ -523,7 +513,7 @@ namespace
 #endif
 		}
 
-		OOCore::string ret = fmt_fixed_i(val,precision);
+		private_string ret = fmt_fixed_i(val,precision);
 		if (!ret.empty() && (ret[0]=='-' || ret[0]=='+'))
 			ret.erase(0,1);
 
@@ -556,7 +546,7 @@ namespace
 #endif
 		}
 
-		OOCore::string ret = fmt_fixed_i(val,precision);
+		private_string ret = fmt_fixed_i(val,precision);
 
 		do_intl(ret,true);
 
@@ -564,53 +554,39 @@ namespace
 	}
 
 	template <typename T>
-	OOCore::string fmt_decimal_i(T val, int width)
+	private_string fmt_decimal_i(T val, int width)
 	{
-		try
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		if (width >= 0)
 		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
-
-			if (width >= 0)
-			{
-				ss.fill('0');
-				ss.width(width);
-			}
-
-			ss << val;
-
-			return ss.str();
+			ss.fill('0');
+			ss.width(width);
 		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+
+		ss << val;
+
+		return ss.str();
 	}
 
-	OOCore::string fmt_decimal_i(const double& val, int width)
+	private_string fmt_decimal_i(const double& val, int width)
 	{
-		try
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+		ss.precision(0);
+
+		if (width >= 0)
 		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
-
-			ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
-			ss.precision(0);
-
-			if (width >= 0)
-			{
-				ss.fill('0');
-				ss.width(width);
-			}
-
-			ss << val;
-
-			return ss.str();
+			ss.fill('0');
+			ss.width(width);
 		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+
+		ss << val;
+
+		return ss.str();
 	}
 
 	template <typename T>
@@ -622,29 +598,22 @@ namespace
 	template <typename T>
 	string_t fmt_hex(T val, bool capital, int precision)
 	{
-		try
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.setf(std::ios_base::hex,std::ios_base::basefield);
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
+
+		if (precision >= 0)
 		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
-
-			ss.setf(std::ios_base::hex,std::ios_base::basefield);
-			if (capital)
-				ss.setf(std::ios_base::uppercase);
-
-			if (precision >= 0)
-			{
-				ss.fill('0');
-				ss.width(precision);
-			}
-
-			ss << val;
-
-			return string_t(ss.str().c_str(),false);
+			ss.fill('0');
+			ss.width(precision);
 		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+
+		ss << val;
+
+		return string_t(ss.str().c_str(),false);
 	}
 
 	template <typename T>
@@ -671,20 +640,20 @@ namespace
 #endif
 		}
 
-		OOCore::string ret = fmt_fixed_i(val,precision);
+		private_string ret = fmt_fixed_i(val,precision);
 
 		do_intl(ret,false);
 
 		return string_t(ret.c_str(),false);
 	}
 
-	OOCore::string exp_strip(const OOCore::string& str, int precision, bool show_plus)
+	private_string exp_strip(const private_string& str, int precision, bool show_plus)
 	{
 		assert(precision >= 0);
 
-		OOCore::string ret = str;
+		private_string ret = str;
 		size_t pos = ret.find_first_of("Ee");
-		if (pos == OOCore::string::npos || pos == ret.length()-1)
+		if (pos == private_string::npos || pos == ret.length()-1)
 			return str;
 
 		// Remove + if !exp_plus
@@ -710,33 +679,26 @@ namespace
 		return ret;
 	}
 
-	OOCore::string fmt_scientific_i(const double& val, bool capital, int precision)
+	private_string fmt_scientific_i(const double& val, bool capital, int precision)
 	{
-		try
-		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
 
-			ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
+		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
 
-			if (precision >= 0)
-				ss.precision(precision);
+		if (precision >= 0)
+			ss.precision(precision);
 
-			if (capital)
-				ss.setf(std::ios_base::uppercase);
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
 
-			ss << val;
+		ss << val;
 
-			return ss.str();
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+		return ss.str();
 	}
 
 	template <typename T>
-	OOCore::string fmt_scientific_i(T val, bool capital, int precision)
+	private_string fmt_scientific_i(T val, bool capital, int precision)
 	{
 		return fmt_scientific_i(static_cast<double>(val),capital,precision);
 	}
@@ -744,7 +706,7 @@ namespace
 	template <typename T>
 	string_t fmt_scientific(T val, bool capital, int precision)
 	{
-		OOCore::string ret = fmt_scientific_i(val,capital,precision);
+		private_string ret = fmt_scientific_i(val,capital,precision);
 
 		do_intl(ret,false);
 		ret = exp_strip(ret,3,true);
@@ -754,42 +716,28 @@ namespace
 
 	string_t fmt_general(const double& val, bool capital, int precision)
 	{
-		try
-		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
 
-			if (capital)
-				ss.setf(std::ios_base::uppercase);
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
 
-			ss.precision(precision);
+		ss.precision(precision);
 
-			ss << val;
+		ss << val;
 
-			return string_t(exp_strip(ss.str(),0,false).c_str(),false);
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+		return string_t(exp_strip(ss.str(),0,false).c_str(),false);
 	}
 
 	template <typename T>
 	string_t fmt_general(T val, bool /*capital*/, int /*precision*/)
 	{
-		try
-		{
-			OOCore::ostringstream ss;
-			ss.imbue(std::locale::classic());
+		private_ostringstream ss;
+		ss.imbue(std::locale::classic());
 
-			ss << val;
+		ss << val;
 
-			return string_t(ss.str().c_str(),false);
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+		return string_t(ss.str().c_str(),false);
 	}
 
 	template <typename T>
@@ -842,7 +790,7 @@ namespace
 		}
 	}
 
-	size_t parse_custom(const string_t& str, std::vector<string_t,Omega::System::stl_allocator<string_t> >& parts)
+	size_t parse_custom(const string_t& str, std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > >& parts)
 	{
 		size_t pos = find_skip_quote(str,0,L";");
 		if (pos == string_t::npos)
@@ -912,7 +860,7 @@ namespace
 			OMEGA_THROW(dwErr);
 		}
 
-		OOCore::string decimal_char(decimal_point);
+		private_string decimal_char(decimal_point);
 		string_t decimal(decimal_point,false);
 
 		char thousands_sep[5] = {0};
@@ -922,11 +870,11 @@ namespace
 			OMEGA_THROW(dwErr);
 		}
 
-		OOCore::string thousands_char(thousands_sep);
+		private_string thousands_char(thousands_sep);
 		string_t thousands(thousands_sep,false);
 #else
-		OOCore::string decimal_char(".");
-		OOCore::string thousands_char(",");
+		private_string decimal_char(".");
+		private_string thousands_char(",");
 
 		const lconv* lc = localeconv();
 		if (lc)
@@ -1015,7 +963,7 @@ namespace
 		}
 
 		// Create the base number string
-		OOCore::string number;
+		private_string number;
 		if (sci != string_t::npos)
 		{
 			number = fmt_scientific_i(abs_val,strFormat[sci] == L'E',precision);
@@ -1030,7 +978,7 @@ namespace
 		{
 			// Add extra leading zero's
 			size_t dp = number.find('.');
-			if (dp == OOCore::string::npos)
+			if (dp == private_string::npos)
 			{
 				dp = number.length();
 				number += '.';
@@ -1078,7 +1026,7 @@ namespace
 						}
 
 						if (numpos + len < dp && --width == 0)
-							len += (dp == OOCore::string::npos ? number.length() : dp) - (numpos + len);
+							len += (dp == private_string::npos ? number.length() : dp) - (numpos + len);
 
 						res += string_t(number.substr(numpos,len).c_str(),false);
 						if (number[numpos] != '0')
@@ -1101,7 +1049,7 @@ namespace
 					}
 
 					if (numpos + len < dp && --width == 0)
-						len += (dp == OOCore::string::npos ? number.length() : dp) - (numpos + len);
+						len += (dp == private_string::npos ? number.length() : dp) - (numpos + len);
 
 					res += string_t(number.substr(numpos,len).c_str(),false);
 					numpos += len;
@@ -1215,7 +1163,7 @@ namespace
 	template <typename T>
 	string_t fmt_custom(T val, const string_t& strFormat, int def_precision)
 	{
-		std::vector<string_t,Omega::System::stl_allocator<string_t> > parts;
+		std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > > parts;
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
@@ -1327,7 +1275,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	if (strFormat.IsEmpty())
 		return (val ? string_t(L"true") : string_t(L"false"));
 
-	std::vector<string_t,Omega::System::stl_allocator<string_t> > parts;
+	std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > > parts;
 	if (parse_custom(strFormat,parts) != 2)
 		throw Formatting::IFormattingException::Create(L"Invalid Omega::bool_t format string: {0}" % strFormat);
 

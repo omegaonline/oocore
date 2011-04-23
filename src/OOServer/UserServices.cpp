@@ -28,6 +28,29 @@ using namespace OTL;
 
 namespace
 {
+	std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > get_description(IException* pE)
+	{
+		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > ret;
+		try
+		{			
+			pE->GetDescription().ToNative(ret);
+			pE->Release();
+		}
+		catch (IException* pE2)
+		{
+			LOG_ERROR(("Second IException thrown trying to get exception description!"));
+			pE2->Release();
+			pE->Release();
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("Second IException thrown trying to get exception description: %s",e.what()));
+			pE->Release();
+		}
+		
+		return ret;
+	}
+
 	class AsyncSocket :
 			public ObjectBase,
 			public Net::IAsyncSocket,
@@ -77,7 +100,7 @@ bool User::Manager::start_services()
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ServicesStart));
 	if (request.last_error() != 0)
-		LOG_ERROR_RETURN(("Failed to write service data: %s",OOBase::system_error_text(request.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write service data: %s",OOBase::system_error_text(request.last_error())),false);
 
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	try
@@ -86,10 +109,8 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		OOBase::local_string s;
-		pE->GetDescription().ToNative(s);
+		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 		LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
-		pE->Release();
 		return false;
 	}
 
@@ -103,15 +124,15 @@ bool User::Manager::start_services()
 	// Loop through returned services, starting each one...
 	for (;count > 0;--count)
 	{
-		OOBase::string strKey;
-		OOBase::string strOid;
+		OOBase::LocalString strKey;
+		OOBase::LocalString strOid;
 		if (!response->read(strKey) ||
 			!response->read(strOid))
 		{
 			LOG_ERROR_RETURN(("Failed to read root response: %d",response->last_error()),false);
 		}
 
-		start_service(strKey,strOid);
+		start_service(strKey.c_str(),strOid.c_str());
 	}
 
 	// Now start all the network services listening...
@@ -131,15 +152,13 @@ bool User::Manager::start_services()
 				if (ptrNS)
 				{
 					// Call the root, asking to start the async stuff, passing the id of the service...
-					listen_service_socket(i->second.strKey,i->first,ptrNS);
+					listen_service_socket(i->second.strKey.c_str(),i->first,ptrNS);
 				}
 			}
 			catch (IException* pE)
 			{
-				OOBase::local_string s;
-				pE->GetDescription().ToNative(s);
+				std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 				LOG_ERROR(("Failed to start network service %s: %s",i->second.strKey.c_str(),s.c_str()));
-				pE->Release();
 			}
 		}
 	}
@@ -149,29 +168,27 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		OOBase::local_string s;
-		pE->GetDescription().ToNative(s);
+		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 		LOG_ERROR(("Failed to start services: %s",s.c_str()));
-		pE->Release();
 	}
 
 
 	return true;
 }
 
-void User::Manager::start_service(const OOBase::string& strKey, const OOBase::string& strOid)
+void User::Manager::start_service(const char* pszKey, const char* pszOid)
 {
 	ObjectPtr<System::IService> ptrService;
 	try
 	{
-		ObjectPtr<System::IService> ptrService(string_t(strOid.c_str(),true),Activation::OutOfProcess);
+		ObjectPtr<System::IService> ptrService(string_t(pszOid,true),Activation::OutOfProcess);
 
 		// Get the service's source channel
 		uint32_t src = Remoting::GetSource(ptrService);
 		if (classify_channel(src) != 2)
 			OMEGA_THROW("Service has activated in an unusual context");
 
-		ObjectPtr<Omega::Registry::IKey> ptrKey = get_service_key(strKey);
+		ObjectPtr<Omega::Registry::IKey> ptrKey = get_service_key(pszKey);
 		ptrService->Start(ptrKey);
 
 		uint32_t nServiceId = 0;
@@ -193,8 +210,11 @@ void User::Manager::start_service(const OOBase::string& strKey, const OOBase::st
 
 			// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
 			Service svc;
-			svc.strKey = strKey;
-
+			
+			int err = svc.strKey.assign(pszKey);
+			if (err != 0)
+				OMEGA_THROW(err);
+			
 			if (pNS)
 				svc.ptrService = pNS;
 			else
@@ -229,22 +249,20 @@ void User::Manager::start_service(const OOBase::string& strKey, const OOBase::st
 	}
 	catch (std::exception& e)
 	{
-		LOG_ERROR(("Failed to start service %s: %s",strKey.c_str(),e.what()));
+		LOG_ERROR(("Failed to start service %s: %s",pszKey,e.what()));
 	}
 	catch (IException* pE)
 	{
-		OOBase::local_string s;
-		pE->GetDescription().ToNative(s);
-		LOG_ERROR(("Failed to start service %s: %s",strKey.c_str(),s.c_str()));
-		pE->Release();
+		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
+		LOG_ERROR(("Failed to start service %s: %s",pszKey,s.c_str()));
 	}
 }
 
-ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::string& strKey)
+ObjectPtr<Registry::IKey> User::Manager::get_service_key(const char* pszKey)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetServiceKey));
-	request.write(strKey);
+	request.write(pszKey);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -260,7 +278,7 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::string& s
 		OMEGA_THROW(err);
 
 	int64_t uKey = 0;
-	OOBase::string strKeyPath;
+	OOBase::LocalString strKeyPath;
 	if (!response->read(uKey) ||
 		!response->read(strKeyPath))
 	{
@@ -309,11 +327,11 @@ void User::Manager::stop_services()
 	}
 }
 
-void User::Manager::listen_service_socket(const OOBase::string& strKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
+void User::Manager::listen_service_socket(const char* pszKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ListenSocket));
-	request.write(strKey);
+	request.write(pszKey);
 	request.write(nServiceId);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -340,7 +358,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 		!request.read(id))
 	{
 		err = response.last_error();
-		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(err)));
 	}
 	else
 	{
@@ -376,10 +394,8 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			}
 			catch (IException* pE)
 			{
-				OOBase::local_string s;
-				pE->GetDescription().ToNative(s);
+				std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 				LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
-				pE->Release();
 				err = EINVAL;
 			}
 		}
@@ -401,7 +417,7 @@ void User::Manager::close_socket(Omega::uint32_t id)
 		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SocketClose));
 		request.write(id);
 		if (request.last_error() != 0)
-			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error()).c_str()));
+			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 		else
 			sendrecv_root(request,TypeInfo::Asynchronous);
 	}
@@ -415,7 +431,7 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 	if (!request.read(id) ||
 		!request.read(err))
 	{
-		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error())));
 	}
 	else
 	{
@@ -433,10 +449,8 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			OOBase::local_string s;
-			pE->GetDescription().ToNative(s);
+			std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 			LOG_ERROR(("on_recv failed: %s",s.c_str()));
-			pE->Release();
 		}
 	}
 }
@@ -449,7 +463,7 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 	if (!request.read(id) ||
 		!request.read(err))
 	{
-		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error())));
 	}
 	else
 	{
@@ -467,10 +481,8 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			OOBase::local_string s;
-			pE->GetDescription().ToNative(s);
+			std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 			LOG_ERROR(("on_sent failed: %s",s.c_str()));
-			pE->Release();
 		}
 	}
 }
@@ -480,7 +492,7 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 	uint32_t id = 0;
 
 	if (!request.read(id))
-		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+		LOG_ERROR(("Failed to read request: %s",OOBase::system_error_text(request.last_error())));
 	else
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
@@ -497,10 +509,8 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 		}
 		catch (IException* pE)
 		{
-			OOBase::local_string s;
-			pE->GetDescription().ToNative(s);
+			std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
 			LOG_ERROR(("on_close failed: %s",s.c_str()));
-			pE->Release();
 		}
 	}
 }

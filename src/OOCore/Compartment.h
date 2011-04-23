@@ -32,13 +32,11 @@ namespace OOCore
 	class UserSession;
 	class Compartment;
 
-	typedef OOBase::SmartPtr<Compartment,OOCore::OmegaDestructor<Compartment> > CompartmentPtr;
-
 	class ComptChannel :
 			public ChannelBase
 	{
 	public:
-		void init(CompartmentPtr ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		void init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void close_compartment();
 		void shutdown();
 		
@@ -47,7 +45,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		CompartmentPtr m_ptrCompt;
+		OOBase::SmartPtr<Compartment> m_ptrCompt;
 
 	public:
 		Omega::bool_t IsConnected();

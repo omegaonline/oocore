@@ -100,20 +100,18 @@ namespace
 	class DLLManagerImpl
 	{
 	public:
-		typedef OOBase::SmartPtr<OOBase::DLL,OOCore::OmegaDestructor<OOBase::DLL> > DLLPtr;
-
 		DLLManagerImpl();
 		~DLLManagerImpl();
 
-		DLLPtr load_dll(const string_t& name);
+		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
 		void unload_unused();
 
 	private:
 		DLLManagerImpl(const DLLManagerImpl&);
 		DLLManagerImpl& operator = (const DLLManagerImpl&);
 
-		OOBase::Mutex             m_lock;
-		std::map<string_t,DLLPtr> m_dll_map;
+		OOBase::Mutex                                     m_lock;
+		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
@@ -134,24 +132,24 @@ namespace
 		{}
 	}
 
-	DLLManagerImpl::DLLPtr DLLManagerImpl::load_dll(const string_t& name)
+	OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 		// See if we have it already
-		std::map<string_t,DLLPtr>::iterator i=m_dll_map.find(name);
+		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
 		if (i != m_dll_map.end())
 			return i->second;
 
 		// Try to unload any unused dlls
 		unload_unused();
 
-		DLLPtr dll = new (std::nothrow) OOBase::DLL();
+		OOBase::SmartPtr<OOBase::DLL> dll = new (std::nothrow) OOBase::DLL();
 		if (!dll)
-			OMEGA_THROW("Out of memory");
+			OOCore::OmegaFailure::fail();
 	
 		// Load the new DLL
-		OOCore::string s;
+		std::string s;
 		name.ToNative(s);
 
 		int err = dll->load(s.c_str());
@@ -159,7 +157,7 @@ namespace
 			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(("Loading library: " + s).c_str()));
 		
 		// Add to the map
-		m_dll_map.insert(std::map<string_t,DLLPtr>::value_type(name,dll));
+		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
 
 		return dll;
 	}
@@ -172,7 +170,7 @@ namespace
 
 		try
 		{
-			for (std::map<string_t,DLLPtr>::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
+			for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin(); i!=m_dll_map.end();)
 			{
 				bool_t erase = false;
 				try
@@ -217,7 +215,7 @@ namespace
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
 		pfnGetLibraryObject pfn = 0;
-		DLLManagerImpl::DLLPtr dll;
+		OOBase::SmartPtr<OOBase::DLL> dll;
 
 		try
 		{
@@ -265,7 +263,11 @@ namespace
 					string_t strErr = L"Relative path \"{0}\" in object library '{1}' activation registry value.";
 					strErr %= strLib;
 					strErr %= oid;
-					OMEGA_THROW(OOBase::to_native(strErr.c_str()).c_str());
+
+					std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > strErrN;
+					strErr.ToNative(strErrN);
+
+					OMEGA_THROW(strErrN.c_str());
 				}
 
 				void* TICKET_89; // Surrogates here?!?

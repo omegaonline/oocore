@@ -30,22 +30,22 @@
 
 static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&);
 
-typedef std::vector<OOBase::string,OOBase::STLAllocator<OOBase::string,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vector_string;
+typedef std::vector<std::string> vector_string;
 
-static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega::string_t& strStart)
+static Omega::string_t canonicalise_key(const OOSvrBase::CmdArgs::result_t& strIn, const Omega::string_t& strStart)
 {
 	// Try to work out where key is...
-	OOBase::string strKey;
+	std::string strKey;
 	if (!strIn.empty() && strIn.at(0) == '/')
 	{
 		// Absolute key...
-		strKey = strIn;
+		strKey = strIn.c_str();
 	}
 	else
 	{
 		// Relative key
 		strStart.ToNative(strKey);
-		strKey += strIn;
+		strKey += strIn.c_str();
 	}
 
 	// Now, make key canonical...
@@ -55,7 +55,7 @@ static Omega::string_t canonicalise_key(const OOBase::string& strIn, const Omega
 		assert(strKey[0] == '/');
 
 		size_t next = strKey.find("/",1);
-		if (next == OOBase::string::npos)
+		if (next == std::string::npos)
 		{
 			key_parts.push_back(strKey.substr(1));
 			break;
@@ -102,7 +102,7 @@ static bool chkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -117,7 +117,7 @@ static bool chkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::results_t::iterator key = args.find("key");
 	if (key == args.end() || key->second.empty())
 	{
 		std::cout << "Missing key argument";
@@ -139,7 +139,7 @@ static bool mkkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -154,7 +154,7 @@ static bool mkkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::results_t::iterator key = args.find("key");
 	if (key == args.end() || key->second.empty())
 	{
 		std::cout << "Missing key argument";
@@ -176,7 +176,7 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -191,7 +191,7 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::results_t::iterator key = args.find("key");
 	if (key == args.end() || key->second.empty())
 	{
 		std::cout << "Missing key argument";
@@ -220,7 +220,7 @@ static bool set(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& p
 	cmd_args.add_argument("value",1);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -235,14 +235,14 @@ static bool set(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& p
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator name = args.find("name");
+	OOSvrBase::CmdArgs::results_t::iterator name = args.find("name");
 	if (name == args.end() || name->second.empty())
 	{
 		std::cout << "Missing name argument";
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator value = args.find("value");
+	OOSvrBase::CmdArgs::results_t::iterator value = args.find("value");
 	
 	ptrKey->SetValue(Omega::string_t(name->second.c_str(),false),Omega::string_t(value->second.c_str(),false));
 
@@ -257,7 +257,7 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	cmd_args.add_argument("name",0);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -272,7 +272,7 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator name = args.find("name");
+	OOSvrBase::CmdArgs::results_t::iterator name = args.find("name");
 	if (name == args.end() || name->second.empty())
 	{
 		std::cout << "Missing name argument";
@@ -281,7 +281,7 @@ static bool print(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 
 	Omega::any_t aVal = ptrKey->GetValue(Omega::string_t(name->second.c_str(),false));
 
-	OOBase::local_string s;
+	std::string s;
 	aVal.cast<Omega::string_t>().ToNative(s);
 
 	std::cout << s << std::endl;
@@ -297,7 +297,7 @@ static bool rm(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& pt
 	cmd_args.add_argument("name",0);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -312,7 +312,7 @@ static bool rm(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& pt
 		return true;
 	}
 
-	OOSvrBase::CmdArgs::resultsType::iterator name = args.find("name");
+	OOSvrBase::CmdArgs::results_t::iterator name = args.find("name");
 	if (name == args.end() || name->second.empty())
 	{
 		std::cout << "Missing name argument";
@@ -332,7 +332,7 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	cmd_args.add_argument("key",0);
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 
@@ -349,7 +349,7 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrLSKey = ptrKey;
 
-	OOSvrBase::CmdArgs::resultsType::iterator key = args.find("key");
+	OOSvrBase::CmdArgs::results_t::iterator key = args.find("key");
 	if (key != args.end() && !key->second.empty())
 	{
 		Omega::string_t strKey = canonicalise_key(key->second,ptrKey->GetName());
@@ -357,7 +357,7 @@ static bool list(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 		ptrLSKey = OTL::ObjectPtr<Omega::Registry::IKey>(strKey);
 	}
 
-	OOBase::local_string s;
+	std::string s;
 	ptrLSKey->GetName().ToNative(s);
 	std::cout << s << std::endl;
 	
@@ -385,7 +385,7 @@ static bool quit(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&)
 	cmd_args.add_option("help",'h');
 		
 	// Parse command line
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return true;
 	
@@ -433,7 +433,7 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 	OOSvrBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 
-	OOSvrBase::CmdArgs::resultsType args;
+	OOSvrBase::CmdArgs::results_t args;
 	if (cmd_args.parse(argc,argv,args) && !args.empty())
 	{
 		if (args.find("help") != args.end())
@@ -445,11 +445,11 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 		{
 			for (size_t i=0;;++i)
 			{
-				OOBase::ostringstream ss;
+				std::ostringstream ss;
 				ss.imbue(std::locale::classic());
 				ss << "$" << i;
 
-				OOSvrBase::CmdArgs::resultsType::const_iterator j=args.find(ss.str());
+				OOSvrBase::CmdArgs::results_t::const_iterator j=args.find(ss.str().c_str());
 				if (j == args.end())
 					break;
 
@@ -457,7 +457,7 @@ static bool help(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>& 
 					std::cout << std::endl;
 
 				vector_string args2;
-				args2.push_back(j->second);
+				args2.push_back(j->second.c_str());
 				args2.push_back("--help");
 				process_command(args2,ptrKey);
 			}

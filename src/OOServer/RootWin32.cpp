@@ -44,7 +44,7 @@
 #define PROTECTED_DACL_SECURITY_INFORMATION  (0x80000000L)
 #endif
 
-/*bool Root::Manager::secure_file(const OOBase::string& strFile, bool bPublicRead)
+/*bool Root::Manager::secure_file(const char* pszFile, bool bPublicRead)
 {
     OOBase::local_wstring strFilename = OOBase::from_utf8(strFile.c_str());
 
@@ -126,146 +126,137 @@
     return true;
 }*/
 
-bool Root::Manager::load_config()
+bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 {
 	// Clear current entries
 	m_config_args.clear();
 
 	// Insert platform defaults
-	wchar_t szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	char szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
-		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+		LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
 
-	if (!PathAppendW(szBuf,L"Omega Online"))
-		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+	if (!PathAppendA(szBuf,"Omega Online"))
+		LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
 
-	if (!PathFileExistsW(szBuf))
-		LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
+	if (!PathFileExistsA(szBuf))
+		LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
 
-	m_config_args["regdb_path"] = OOBase::to_utf8(szBuf).c_str();
+	OOBase::String strKey,strValue;
+	int err = strKey.assign("regdb_path");
+	if (err == 0)
+		err = strValue.assign(szBuf);
+	if (err == 0)
+		err = m_config_args.insert(strKey,strValue);
 
-	OOSvrBase::CmdArgs::resultsType::const_iterator f = m_cmd_args.find("conf-file");
-	if (f != m_cmd_args.end())
-		return load_config_file(f->second);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to add config argument: %s",OOBase::system_error_text(err)),false);
 
 	// Read from registry
 	HKEY hKey = 0;
 	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
-	if (lRes == ERROR_FILE_NOT_FOUND)
-		return true;
-	else if (lRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::system_error_text(lRes).c_str()),false);
-
-	// Loop pulling out registry values
-	for (DWORD dwIndex=0;; ++dwIndex)
+	if (lRes != ERROR_SUCCESS)
+		LOG_ERROR(("Failed to open config registry key: %s",OOBase::system_error_text(lRes)));
+	else
 	{
-		char valName[16383 + 1];
-		DWORD dwNameLen = 16383 + 1;
-		DWORD dwType = 0;
-		DWORD dwValLen = 0;
-		lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
-		if (lRes == ERROR_NO_MORE_ITEMS)
-			break;
-		else if (lRes != ERROR_SUCCESS)
+		// Loop pulling out registry values
+		for (DWORD dwIndex=0;; ++dwIndex)
 		{
-			RegCloseKey(hKey);
-			LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::system_error_text(lRes).c_str()),false);
-		}
-
-		// Skip anything starting with #
-		if (dwValLen>=1 && valName[0]=='#')
-			continue;
-
-		OOBase::string value,key(valName,dwNameLen);
-		++dwNameLen;
-
-		if (dwType == REG_DWORD)
-		{
-			DWORD dwVal = 0;
-			DWORD dwLen = sizeof(dwVal);
-			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
-			if (lRes != ERROR_SUCCESS)
+			char valName[16383 + 1];
+			DWORD dwNameLen = 16383 + 1;
+			DWORD dwType = 0;
+			DWORD dwValLen = 0;
+			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
+			if (lRes == ERROR_NO_MORE_ITEMS)
+				break;
+			else if (lRes != ERROR_SUCCESS)
 			{
-				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes).c_str()));
+				RegCloseKey(hKey);
+				LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::system_error_text(lRes)),false);
+			}
+
+			// Skip anything starting with #
+			if (dwValLen>=1 && valName[0]=='#')
 				continue;
-			}
 
-			try
-			{
-				OOBase::ostringstream os;
-				os.imbue(std::locale::classic());
-				os << dwVal;
-				value = os.str();
-			}
-			catch (std::exception& e)
-			{
-				LOG_ERROR(("std::exception thrown %s",e.what()));
-				continue;
-			}
-		}
-		else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
-		{
-			++dwValLen;
-			OOBase::SmartPtr<char,OOBase::LocalDestructor> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
-			if (!buf)
-			{
-				LOG_ERROR(("Out of memory"));
-				continue;
-			}
+			OOBase::String value,key;
+			lRes = key.assign(valName,dwNameLen);
+			if (lRes != 0)
+				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(lRes)),false);
 
-			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
-			if (lRes != ERROR_SUCCESS)
-			{
-				LOG_ERROR(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes).c_str()));
-				continue;
-			}
+			++dwNameLen;
 
-			if (dwType == REG_EXPAND_SZ)
+			if (dwType == REG_DWORD)
 			{
-				char buf2[1024] = {0};
-				DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1022);
-				if (dwExpLen == 0)
+				DWORD dwVal = 0;
+				DWORD dwLen = sizeof(dwVal);
+				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
+				if (lRes != ERROR_SUCCESS)
+					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
+					
+				lRes = value.printf("%d",static_cast<int>(dwVal));
+				if (lRes != 0)
+					LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(lRes)),false);
+			}
+			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
+			{
+				++dwValLen;
+				OOBase::SmartPtr<char,OOBase::LocalDestructor> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
+				if (!buf)
+					LOG_ERROR_RETURN(("Out of memory"),false);
+					
+				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
+				if (lRes != ERROR_SUCCESS)
+					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
+					
+				if (dwType == REG_EXPAND_SZ)
 				{
-					DWORD dwErr = GetLastError();
-					LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text(dwErr).c_str()));
-					continue;
+					char buf2[1024] = {0};
+					DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1022);
+					if (dwExpLen == 0)
+						LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);
+					else if (dwExpLen <= 1022)
+						lRes = value.assign(buf2,dwExpLen-1);
+					else
+					{
+						OOBase::SmartPtr<char,OOBase::LocalDestructor> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
+						if (!buf3)
+							LOG_ERROR_RETURN(("Out of memory"),false);
+							
+						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
+							LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);
+						
+						lRes = value.assign(buf3,dwExpLen-1);
+					}
+
+					if (lRes != 0)
+						LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(lRes)),false);
 				}
-				else if (dwExpLen <= 1022)
-					value.assign(buf2,dwExpLen-1);
 				else
-				{
-					OOBase::SmartPtr<char,OOBase::LocalDestructor> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
-					if (!buf3)
-					{
-						LOG_ERROR(("Out of memory"));
-						continue;
-					}
-
-					if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
-					{
-						DWORD dwErr = GetLastError();
-						LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text(dwErr).c_str()));
-						continue;
-					}
-
-					value.assign(buf3,dwExpLen-1);
-				}
+					value.assign(buf,dwValLen-1);
 			}
 			else
-				value.assign(buf,dwValLen-1);
-		}
-		else
-		{
-			LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
-			continue;
+			{
+				LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
+				continue;
+			}
+
+			if (!key.empty())
+			{
+				lRes = m_config_args.replace(key,value);
+				if (lRes != 0)
+					LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(lRes)),false);
+			}
 		}
 
-		if (!key.empty())
-			m_config_args[key] = value;
+		RegCloseKey(hKey);
 	}
 
-	RegCloseKey(hKey);
+	// Load any config file now...
+	size_t f = cmd_args.find("conf-file");
+	if (f != cmd_args.npos && !load_config_file(cmd_args.at(f)->c_str()))
+		return false;
 
 	return true;
 }
@@ -275,7 +266,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
 	int err = ptrSocket->get_uid(uid);
 	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
 	else
 	{
 		// Make sure the handle is closed
@@ -285,8 +276,8 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 		if (get_user_process(uid,user_process))
 		{
 			OOBase::CDRStream stream;
-			if (!stream.write(user_process.strPipe))
-				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error()).c_str()));
+			if (!stream.write(user_process.strPipe.c_str()))
+				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
 			else
 				ptrSocket->send(stream.buffer());
 		}
@@ -298,7 +289,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 namespace OOBase
 {
 	// This is the critical failure hook
-	void CriticalFailure(const char* msg)
+	void OnCriticalFailure(const char* msg)
 	{
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
 

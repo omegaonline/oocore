@@ -99,7 +99,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 			src_id = ptrCC->SourceId();
 
 		// Check if we have someone registered already
-		std::vector<uint32_t,System::stl_allocator<uint32_t> > revoke_list;
+		std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > > revoke_list;
 		string_t strOid = oid.cast<string_t>();
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -140,7 +140,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		guard.release();
 
 		// Revoke the revoke_list
-		for (std::vector<uint32_t,System::stl_allocator<uint32_t> >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
+		for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
 		{
 			RevokeObject_i(*i,0);
 		}
@@ -163,7 +163,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	// Strip off the option flags
 	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
-	std::vector<uint32_t,System::stl_allocator<uint32_t> > revoke_list;
+	std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > > revoke_list;
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -193,7 +193,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	guard.release();
 
 	// Revoke the revoke_list
-	for (std::vector<uint32_t,System::stl_allocator<uint32_t> >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
+	for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
 		RevokeObject_i(*i,0);
 	
 	// If we have an object, get out now

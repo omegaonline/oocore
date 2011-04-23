@@ -56,10 +56,10 @@ namespace Root
 			public OOSvrBase::Service
 	{
 	public:
-		Manager(const OOSvrBase::CmdArgs::resultsType& args);
+		Manager();
 		virtual ~Manager();
 
-		int run();
+		int run(const OOSvrBase::CmdArgs::results_t& cmd_args);
 
 		void accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket);
 
@@ -86,15 +86,15 @@ namespace Root
 		Manager& operator = (const Manager&);
 
 		// Init and run members
-		bool load_config();
-		bool load_config_file(const OOBase::string& strFile);
+		bool load_config(const OOSvrBase::CmdArgs::results_t& cmd_args);
+		bool load_config_file(const char* pszFile);
 		bool init_database();
 		bool spawn_sandbox();
 		bool wait_to_quit();
 
 		// Configuration members
-		OOSvrBase::CmdArgs::resultsType m_cmd_args;
-		OOSvrBase::CmdArgs::resultsType m_config_args;
+		OOBase::Table<OOBase::String,OOBase::String,OOBase::HeapAllocator<OOBase::NoFailure> > m_config_args;
+		bool                              m_bUnsafe;
 
 		// I/O members
 		OOBase::RWMutex m_lock;
@@ -104,7 +104,7 @@ namespace Root
 		// Spawned process members
 		struct UserProcess
 		{
-			OOBase::string                   strPipe;
+			OOBase::String                   strPipe;
 			OOBase::SmartPtr<SpawnedProcess> ptrSpawn;
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
@@ -112,12 +112,12 @@ namespace Root
 		typedef std::map<Omega::uint32_t,UserProcess,std::less<Omega::uint32_t>,OOBase::STLAllocator<std::pair<const Omega::uint32_t,UserProcess>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > mapUserProcessesType;
 		mapUserProcessesType m_mapUserProcesses;
 
-		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
-		Omega::uint32_t bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::string& strPipe);
-		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::string& strPipe, bool& bAgain);
+		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
+		Omega::uint32_t bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
+		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process);
-		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::string& strUName);
-		bool get_sandbox_uid(const OOBase::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
+		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName);
+		bool get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
 
 		// Message handling members
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
@@ -128,7 +128,7 @@ namespace Root
 		OOBase::SmartPtr<Registry::Hive> m_registry;
 		OOBase::SmartPtr<Registry::Hive> m_registry_sandbox;
 
-		int registry_access_check(const OOBase::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask);
+		int registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask);
 
 		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey);
 		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
@@ -149,11 +149,11 @@ namespace Root
 
 		// Services members
 		std::map<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > m_mapListeners;
-		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> > m_mapSockets;
-		Omega::uint32_t m_uNextSocketId;
+		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >           m_mapSockets;
+		Omega::uint32_t                                               m_uNextSocketId;
 
 		void stop_services();
-		int create_service_listener(Omega::uint32_t id, const OOBase::string& strProtocol, const OOBase::string& strAddress, const OOBase::string& strPort);
+		int create_service_listener(Omega::uint32_t id, const OOBase::LocalString& strProtocol, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort);
 		void services_start(Omega::uint32_t channel_id, OOBase::CDRStream& response);
 		void get_service_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);

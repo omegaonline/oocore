@@ -31,7 +31,7 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include <OOBase/STLAllocator.h>
+#include <OOBase/String.h>
 
 #if defined(_MSC_VER) && defined(_DEBUG) && !defined(OMEGA_DEBUG)
 #define OMEGA_DEBUG
@@ -184,14 +184,9 @@ namespace
 
 	void PromptForDebugger(DWORD pid)
 	{
-		try
-		{
-			std::ostringstream out;
-			out << "Attach the debugger to process id " << pid << " now if you want!";
-			MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
-		}
-		catch (std::exception&)
-		{}
+		OOBase::LocalString str;
+		if (str.printf("Attach the debugger to process id %ld now if you want!",pid) == 0)
+			MessageBoxA(NULL,str.c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 	}
 }
 

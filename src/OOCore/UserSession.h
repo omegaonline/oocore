@@ -27,8 +27,6 @@
 
 namespace OOCore
 {
-	typedef OOBase::SmartPtr<OOBase::CDRStream,OmegaDestructor<OOBase::CDRStream> > ResponsePtr;
-
 	struct Message
 	{
 		Message(size_t len) : m_payload(len)
@@ -80,12 +78,12 @@ namespace OOCore
 
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
-		ResponsePtr send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
+		OOBase::SmartPtr<OOBase::CDRStream> send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
 		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
 		Omega::uint32_t get_channel_id() const;
 
 		static OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment();
-		CompartmentPtr get_compartment(Omega::uint16_t id);
+		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
 		void remove_compartment(Omega::uint16_t id);
 		Omega::uint16_t update_state(Omega::uint16_t compartment_id, Omega::uint32_t* pTimeout);
 
@@ -155,20 +153,22 @@ namespace OOCore
 		void start(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
 		void term_i();
 		void stop();
-		OOCore::string discover_server_port(bool& bStandalone);
+		void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe);
 
 		// Uninitialise destructors
 		void close_singletons_i();
 		void close_compartments();
 		void add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		void remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_listUninitCalls;
+		
+		typedef std::list<std::pair<void (OMEGA_CALL*)(void*),void*>,OOBase::STLAllocator<std::pair<void (OMEGA_CALL*)(void*),void*>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > UninitCallsType;
+		UninitCallsType m_listUninitCalls;
 
 		// Message pumping
 		int run_read_loop();
 		bool pump_request(const OOBase::timeval_t* deadline = 0);
 		void process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline);
-		ResponsePtr wait_for_response(Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		OOBase::SmartPtr<OOBase::CDRStream> wait_for_response(Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::Atomic<size_t>& usage);
@@ -176,8 +176,8 @@ namespace OOCore
 		static int io_worker_fn(void* pParam);
 
 		// Compartment members
-		Omega::uint16_t                          m_next_compartment;
-		std::map<Omega::uint16_t,CompartmentPtr> m_mapCompartments;
+		Omega::uint16_t                                          m_next_compartment;
+		std::map<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
 
 		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment_i();
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);

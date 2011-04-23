@@ -25,12 +25,16 @@
 #include <uuid/uuid.h>
 #endif
 
+#include <sstream>
 #include <iomanip>
 
 using namespace Omega;
 
 namespace
 {
+	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, OOBase::STLAllocator<wchar_t,OOBase::HeapAllocator<OOCore::OmegaFailure> > > private_wstring;
+	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > private_ostringstream;
+
 	struct StringNode : public Omega::System::ThrowingNew
 	{
 		StringNode(size_t length) : m_buf(0), m_len(0), m_own(true), m_fs(0), m_refcount(1)
@@ -103,12 +107,12 @@ namespace
 			{
 				uint32_t        index;
 				int32_t         alignment;
-				OOCore::wstring format;
-				OOCore::wstring suffix;
+				private_wstring format;
+				private_wstring suffix;
 			};
 			std::list<insert_t> m_listInserts;
 			size_t              m_curr_arg;
-			OOCore::wstring     m_prefix;
+			private_wstring     m_prefix;
 		};
 		format_state_t* m_fs;
 
@@ -125,20 +129,20 @@ namespace
 		}
 
 		size_t find_brace(size_t start, wchar_t brace);
-		void merge_braces(OOCore::wstring& str);
+		void merge_braces(private_wstring& str);
 		void parse_arg(size_t& pos);
 	};
 
-	OOCore::wstring align(const OOCore::wstring& str, int align)
+	private_wstring align(const private_wstring& str, int align)
 	{
 		unsigned width = (align < 0 ? -align : align);
 		if (str.size() >= width)
 			return str;
 
 		if (align < 0)
-			return str + OOCore::wstring(width-str.size(),L' ');
+			return str + private_wstring(width-str.size(),L' ');
 		else
-			return OOCore::wstring(width-str.size(),L' ') + str;
+			return private_wstring(width-str.size(),L' ') + str;
 	}
 
 	template <typename T>
@@ -603,12 +607,12 @@ void StringNode::parse_arg(size_t& pos)
 	pos = end + 1;
 }
 
-void StringNode::merge_braces(OOCore::wstring& str)
+void StringNode::merge_braces(private_wstring& str)
 {
 	for (size_t pos = 0;;)
 	{
 		size_t found = str.find(L'{',pos);
-		if (found == OOCore::wstring::npos)
+		if (found == private_wstring::npos)
 			break;
 
 		str.erase(found,1);
@@ -618,7 +622,7 @@ void StringNode::merge_braces(OOCore::wstring& str)
 	for (size_t pos = 0;;)
 	{
 		size_t found = str.find(L'}',pos);
-		if (found == OOCore::wstring::npos)
+		if (found == private_wstring::npos)
 			break;
 
 		str.erase(found,1);
@@ -661,7 +665,7 @@ void StringNode::parse_format()
 
 		size_t found = find_brace(pos,L'{');
 
-		OOCore::wstring suffix;
+		private_wstring suffix;
 		if (found == string_t::npos)
 			suffix.assign(m_buf+pos);
 		else
@@ -745,7 +749,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	}
 
 	// Now measure how much space we need
-	OOCore::wstring str = s->m_fs->m_prefix;
+	private_wstring str = s->m_fs->m_prefix;
 	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
 	{
 		str += i->format;
@@ -778,7 +782,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1
 		{
 			if (i == s->m_fs->m_listInserts.begin())
 			{
-				OOCore::wstring str;
+				private_wstring str;
 				if (arg)
 					str.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
 
@@ -827,38 +831,31 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-	try
-	{
-		OOCore::ostringstream ss;
-		ss.imbue(std::locale::classic());
+	private_ostringstream ss;
+	ss.imbue(std::locale::classic());
 
-		ss.setf(std::ios_base::hex,std::ios_base::basefield);
-		ss.setf(std::ios_base::uppercase);
-		ss.fill('0');
+	ss.setf(std::ios_base::hex,std::ios_base::basefield);
+	ss.setf(std::ios_base::uppercase);
+	ss.fill('0');
 
-		ss << '{';
-		ss << std::setw(8) << guid.Data1 << '-';
-		ss << std::setw(4) << guid.Data2 << '-';
-		ss << std::setw(4) << guid.Data3 << '-';
+	ss << '{';
+	ss << std::setw(8) << guid.Data1 << '-';
+	ss << std::setw(4) << guid.Data2 << '-';
+	ss << std::setw(4) << guid.Data3 << '-';
 
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[0]);
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[1]);
-		ss << '-';
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[0]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[1]);
+	ss << '-';
 
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[2]);
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[3]);
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[4]);
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[5]);
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[6]);
-		ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[7]);
-		ss << '}';
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[2]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[3]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[4]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[5]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[6]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[7]);
+	ss << '}';
 
-		return string_t(ss.str().c_str(),true);
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	return string_t(ss.str().c_str(),true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))

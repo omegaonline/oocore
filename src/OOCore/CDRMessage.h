@@ -51,6 +51,19 @@ namespace OOCore
 	private:
 		OOBase::CDRStream m_stream;
 
+		class OmegaFailure
+		{
+		public:
+			static void fail()
+			{
+	#if defined(_WIN32)
+				OMEGA_THROW(ERROR_OUTOFMEMORY);
+	#else
+				OMEGA_THROW(ENOMEM);
+	#endif
+			}
+		};
+		
 		template <typename T>
 		T read()
 		{
@@ -162,7 +175,13 @@ namespace OOCore
 			case Omega::TypeInfo::typeFloat8:
 				return read<Omega::float8_t>();
 			case Omega::TypeInfo::typeString:
-				return Omega::string_t(read<std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > >().c_str(),true);
+				{
+					OOBase::LocalString str;
+					if (!m_stream.read(str))
+						OMEGA_THROW(m_stream.last_error());
+
+					return Omega::string_t(str.c_str(),true);
+				}
 
 			case Omega::TypeInfo::typeGuid:
 				{
@@ -218,9 +237,9 @@ namespace OOCore
 				return write(value.cast<Omega::float8_t>());
 			case Omega::TypeInfo::typeString:
 				{
-					std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > s;
+					std::basic_string<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OmegaFailure> > > s;
 					value.cast<Omega::string_t>().ToUTF8(s);
-					return write(s);
+					return write(s.c_str());
 				}
 				break;
 

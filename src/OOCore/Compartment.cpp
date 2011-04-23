@@ -50,8 +50,8 @@ void OOCore::Compartment::shutdown()
 	// Switch state...
 	ComptState compt_state(this);
 
-	std::vector<ChannelInfo> vecChannels;
-	std::vector<ObjectPtr<ObjectImpl<ComptChannel> > > vecCompts;
+	std::vector<ChannelInfo,OOBase::STLAllocator<ChannelInfo,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecChannels;
+	std::vector<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::STLAllocator<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecCompts;
 	
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -77,7 +77,7 @@ void OOCore::Compartment::shutdown()
 
 	guard.release();
 
-	for (std::vector<ChannelInfo>::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
+	for (std::vector<ChannelInfo,OOBase::STLAllocator<ChannelInfo,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
 	{
 		if (j->m_bOpen)
 			j->m_ptrChannel->shutdown(our_channel_id);
@@ -85,7 +85,7 @@ void OOCore::Compartment::shutdown()
 			j->m_ptrChannel->disconnect();
 	}
 	
-	for (std::vector<ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=vecCompts.begin();i!=vecCompts.end();++i)
+	for (std::vector<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::STLAllocator<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator i=vecCompts.begin();i!=vecCompts.end();++i)
 		(*i)->shutdown();	
 }
 
@@ -273,7 +273,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 	if (!ptrChannel)
 	{
 		// Get the compartment
-		CompartmentPtr ptrCompt = m_pSession->get_compartment(compartment_id);
+		OOBase::SmartPtr<Compartment> ptrCompt = m_pSession->get_compartment(compartment_id);
 		if (!ptrCompt)
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment in session"));
 
@@ -344,7 +344,7 @@ Activation::IRunningObjectTable* OOCore::Compartment::get_rot()
 	return m_ptrROT.AddRef();
 }
 
-void OOCore::ComptChannel::init(CompartmentPtr ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::ComptChannel::init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
 	ChannelBase::init(channel_id,Remoting::Compartment,pOM,message_oid);
 

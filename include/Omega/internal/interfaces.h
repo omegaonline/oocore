@@ -183,7 +183,7 @@ namespace Omega
 	{
 		interface IProvideObjectInfo : public IObject
 		{
-			typedef std::set<guid_t,std::less<guid_t>,System::stl_allocator<guid_t> > guid_set_t;
+			typedef std::set<guid_t> guid_set_t;
 
 			virtual guid_set_t EnumInterfaces() = 0;
 		};

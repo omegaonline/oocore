@@ -39,11 +39,12 @@
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
-#include <OOBase/Queue.h>
+#include <OOBase/BoundedQueue.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>
 #include <OOBase/utf8.h>
 #include <OOBase/Socket.h>
+#include <OOBase/String.h>
 
 #include <OOSvrBase/Proactor.h>
 #include <OOSvrBase/Logger.h>

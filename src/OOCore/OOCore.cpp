@@ -101,7 +101,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 {
 	void* p = OOBase::HeapAllocate(bytes);
 	if (!p)
-		OMEGA_THROW(ENOMEM);
+		OOCore::OmegaFailure::fail();
 	
 	return p;
 }

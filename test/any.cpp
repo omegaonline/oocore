@@ -220,8 +220,8 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"false");
 
 		Omega::any_t a(v);
-		TEST(a == true);
-		TEST(a != false);
+		TEST(a != true);
+		TEST(a == false);
 	}
 
 	{

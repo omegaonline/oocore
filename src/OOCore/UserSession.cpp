@@ -168,9 +168,9 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	if (i != args.end() && i->second == L"true")
 		bStandaloneAlways = true;
 
-	OOCore::string strPipe;
+	OOBase::LocalString strPipe;
 	if (!bStandaloneAlways)
-		strPipe = discover_server_port(bStandalone);
+		discover_server_port(bStandalone,strPipe);
 		
 	if (!bStandalone)
 	{
@@ -208,13 +208,13 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	}
 
 	// Create the zero compartment
-	CompartmentPtr ptrZeroCompt = new Compartment(this,0);
+	OOBase::SmartPtr<Compartment> ptrZeroCompt = new Compartment(this,0);
 
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapCompartments.insert(std::map<uint16_t,CompartmentPtr>::value_type(0,ptrZeroCompt));
+		m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(0,ptrZeroCompt));
 	}
 	catch (std::exception& e)
 	{
@@ -263,7 +263,7 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 	m_nIPSCookie = ptrROT->RegisterObject(OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
 }
 
-OOCore::string OOCore::UserSession::discover_server_port(bool& bStandalone)
+void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)
 {
 #if defined(_WIN32)
 	const char* name = "OmegaOnline";
@@ -273,9 +273,9 @@ OOCore::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	if (!local_socket)
 	{
 		if (bStandalone)
-			return OOCore::string();
-		else
-			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
+			return;
+		
+		throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
 
@@ -309,11 +309,8 @@ OOCore::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	// Now reset rd_ptr and read the string
 	stream.buffer()->mark_rd_ptr(mark);
 
-	OOCore::string strPipe;
 	if (!stream.read(strPipe))
 		OMEGA_THROW(stream.last_error());
-
-	return strPipe;
 
 #else
 
@@ -321,7 +318,11 @@ OOCore::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	if (!pszAddr)
 		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
 
-	return OOCore::string(pszAddr);
+	int err = strPipe.assign(pszAddr);
+	if (err != 0)
+		OMEFGA_THROW(err);
+
+	return true;
 	
 #endif
 }
@@ -375,13 +376,13 @@ void OOCore::UserSession::close_singletons_i()
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Copy the list so we can delete outside the lock
-		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_listUninitCalls);
+		UninitCallsType list(m_listUninitCalls);
 
 		m_listUninitCalls.clear();
 	
 		guard.release();
 
-		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
+		for (UninitCallsType::iterator i=list.begin(); i!=list.end(); ++i)
 		{
 			try
 			{
@@ -406,7 +407,7 @@ void OOCore::UserSession::close_compartments()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	vecCompts.reserve(m_mapCompartments.size());
-	for (std::map<uint16_t,CompartmentPtr>::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
+	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::reverse_iterator i = m_mapCompartments.rbegin();i!=m_mapCompartments.rend();++i)
 		vecCompts.push_back(i->first);
 
 	guard.release();
@@ -415,7 +416,7 @@ void OOCore::UserSession::close_compartments()
 	{
 		try
 		{
-			CompartmentPtr ptrCmpt = get_compartment(*i);
+			OOBase::SmartPtr<Compartment> ptrCmpt = get_compartment(*i);
 			if (ptrCmpt)
 				ptrCmpt->shutdown();		
 		}
@@ -452,7 +453,7 @@ void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=m_listUninitCalls.begin(); i!=m_listUninitCalls.end(); ++i)
+	for (UninitCallsType::iterator i=m_listUninitCalls.begin(); i!=m_listUninitCalls.end(); ++i)
 	{
 		if (i->first == pfn_dctor && i->second == param)
 		{
@@ -739,7 +740,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	bool bPulse = false;
-	for (std::map<uint16_t,CompartmentPtr>::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
+	for (std::map<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
 		if (j->second->process_channel_close(closed_channel_id))
 			bPulse = true;
@@ -752,18 +753,18 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	}
 }
 
-OOCore::ResponsePtr OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
-	ResponsePtr response;
+	OOBase::SmartPtr<OOBase::CDRStream> response;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		CompartmentPtr ptrCompt;
-		std::map<uint16_t,CompartmentPtr>::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		OOBase::SmartPtr<Compartment> ptrCompt;
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i != m_mapCompartments.end())
 			ptrCompt = i->second;
 
@@ -861,7 +862,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-OOCore::ResponsePtr OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
+OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -1016,8 +1017,8 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	CompartmentPtr ptrCompt;
-	std::map<uint16_t,CompartmentPtr>::const_iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
+	OOBase::SmartPtr<Compartment> ptrCompt;
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pMsg->m_dest_cmpt_id);
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->second;
 
@@ -1127,10 +1128,10 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	while (m_mapCompartments.find(cmpt_id) != m_mapCompartments.end());
 
 	// Create the new object
-	CompartmentPtr ptrCompt = new Compartment(this,cmpt_id);
+	OOBase::SmartPtr<Compartment> ptrCompt = new Compartment(this,cmpt_id);
 
 	// Add it to the map
-	m_mapCompartments.insert(std::map<uint16_t,CompartmentPtr>::value_type(cmpt_id,ptrCompt));
+	m_mapCompartments.insert(std::map<uint16_t,OOBase::SmartPtr<Compartment> >::value_type(cmpt_id,ptrCompt));
 
 	write_guard.release();
 	
@@ -1139,11 +1140,11 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	return ptrCompt->create_compartment_channel(cmpt_id,guid_t::Null());
 }
 
-OOCore::CompartmentPtr OOCore::UserSession::get_compartment(uint16_t id)
+OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint16_t,CompartmentPtr>::const_iterator i = m_mapCompartments.find(id);
+	std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i = m_mapCompartments.find(id);
 	if (i == m_mapCompartments.end())
 		return 0;
 
@@ -1192,11 +1193,11 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	// Create a channel in the context of the current compartment
 	const ThreadContext* pContext = ThreadContext::instance();
 
-	CompartmentPtr ptrCompt;
+	OOBase::SmartPtr<Compartment> ptrCompt;
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint16_t,CompartmentPtr>::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
+		std::map<uint16_t,OOBase::SmartPtr<Compartment> >::const_iterator i=m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!
@@ -1230,7 +1231,7 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 	if (pContext->m_current_cmpt == 0)
 		return SingletonObjectImpl<ServiceManager>::CreateInstance();
 
-	CompartmentPtr ptrCompt = get_compartment(pContext->m_current_cmpt);
+	OOBase::SmartPtr<Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
 	if (!ptrCompt)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("The current compartment has died"));
 	

@@ -33,52 +33,42 @@ User::Acceptor::Acceptor() :
 {
 }
 
-OOBase::string User::Acceptor::unique_name()
+bool User::Acceptor::unique_name(OOBase::LocalString& name)
 {
 	// Create a new unique pipe
-	try
-	{
-		OOBase::ostringstream ssPipe;
-		ssPipe.imbue(std::locale::classic());
-		ssPipe.setf(std::ios_base::hex,std::ios_base::basefield);
 
 #if defined(_WIN32)
-		ssPipe << "OOU";
+	// Get the current user's Logon SID
+	OOBase::Win32::SmartHandle hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		// Get the current user's Logon SID
-		OOBase::Win32::SmartHandle hProcessToken;
-		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),"");
+	// Get the logon SID of the Token
+	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
+	if (dwRes != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
 
-		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
-		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
-		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),"");
+	char* pszSid;
+	if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+		LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),false);
+	
+	int err = name.printf("OOU%s-%ld",pszSid,GetCurrentProcessId());
 
-		char* pszSid;
-		if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
-		{
-			ssPipe << pszSid;
-			LocalFree(pszSid);
-		}
+	LocalFree(pszSid);
+		
 #elif defined(HAVE_UNISTD_H)
 
-		ssPipe << "/tmp/oo-" << getuid() << "-" << getpid();
+	int err = name.printf("/tmp/oo-%d-%d",getuid(),getpid());
 
 #else
 #error Fix me!
 #endif
 
-		// Add the current time...
-		ssPipe << "-" << OOBase::timeval_t::gettimeofday().tv_usec();
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err)),false);		
 
-		return ssPipe.str();
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),OOBase::string());
-	}
+	return true;
 }
 
 bool User::Acceptor::start(Manager* pManager, const char* pipe_name)
@@ -92,7 +82,7 @@ bool User::Acceptor::start(Manager* pManager, const char* pipe_name)
 	int err = 0;
 	m_pSocket = Proactor::instance().accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
 	return true;
 }
@@ -105,14 +95,14 @@ void User::Acceptor::stop()
 bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* /*strAddress*/, int err)
 {
 	if (err != 0)
-		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("User::Acceptor::on_accept: accept failure: %s",OOBase::system_error_text(err)),false);
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
 	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
-		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOBase::system_error_text(err).c_str()));
+		LOG_WARNING(("User::Acceptor::on_accept: receive failure: %s",OOBase::system_error_text(err)));
 		return true;
 	}
 
@@ -131,7 +121,7 @@ bool User::Acceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const c
 	err = ptrSocket->get_uid(uid);
 	if (err != 0)
 	{
-		LOG_WARNING(("User::Acceptor::on_accept: get_uid failure: %s",OOBase::system_error_text(err).c_str()));
+		LOG_WARNING(("User::Acceptor::on_accept: get_uid failure: %s",OOBase::system_error_text(err)));
 		return true;
 	}
 
@@ -156,13 +146,13 @@ bool User::Acceptor::init_security()
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text(GetLastError()).c_str()),false);
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::HeapDestructor> ptrSIDLogon;
+	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes).c_str()),false);
+		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
 
 	// Set full control for the Logon SID only
 	EXPLICIT_ACCESSW ea = {0};
@@ -176,7 +166,7 @@ bool User::Acceptor::init_security()
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(1,&ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
+		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
 
 	// Create a new security descriptor
 	m_sa.nLength = sizeof(m_sa);

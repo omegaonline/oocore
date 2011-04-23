@@ -36,7 +36,8 @@
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
-#include <OOBase/Queue.h>
+#include <OOBase/BoundedQueue.h>
+#include <OOBase/Stack.h>
 #include <OOBase/Thread.h>
 
 #include <OOSvrBase/Proactor.h>
@@ -53,7 +54,6 @@
 //////////////////////////////////////////////
 
 #include <map>
-#include <list>
 
 #include "MessageConnection.h"
 
@@ -114,7 +114,7 @@ bool OOServer::MessageConnection::read()
 	{
 		--m_async_count;
 		close();
-		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err)),false);
 	}
 
 	return true;
@@ -124,7 +124,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err)));
 		--m_async_count;
 		close();
 		return;
@@ -180,7 +180,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 		err = header.last_error();
 		if (err != 0)
 		{
-			LOG_ERROR(("Corrupt header: %s",OOBase::system_error_text(err).c_str()));
+			LOG_ERROR(("Corrupt header: %s",OOBase::system_error_text(err)));
 			break;
 		}
 
@@ -242,7 +242,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 		if (err != 0)
 		{
 			bSuccess = false;
-			LOG_ERROR(("Out of buffer space: %s",OOBase::system_error_text(err).c_str()));
+			LOG_ERROR(("Out of buffer space: %s",OOBase::system_error_text(err)));
 		}
 		else
 		{
@@ -254,7 +254,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 				--m_async_count;
 
 				bSuccess = false;
-				LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err).c_str()));
+				LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err)));
 			}
 		}
 	}
@@ -277,7 +277,7 @@ bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 	{
 		--m_async_count;
 		close();
-		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err)),false);
 	}
 
 	return true;
@@ -289,7 +289,7 @@ void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
 		close();
 	}
 }
@@ -375,7 +375,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err)),false);
 
 	// Check the destination
 	bool bRoute = true;
@@ -435,7 +435,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		// Did everything make sense?
 		err = input.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err).c_str()),false);
+			LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err)),false);
 
 		// Attach input
 		msg->m_payload = input;
@@ -519,7 +519,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		// Did everything make sense?
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Corrupt message: %s",OOBase::system_error_text(err).c_str()));
+			LOG_ERROR(("Corrupt message: %s",OOBase::system_error_text(err)));
 		else if (type == Message_t::Request)
 		{
 			// Set deadline
@@ -683,7 +683,7 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR(("Corrupt input: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("Corrupt input: %s",OOBase::system_error_text(err)));
 	else
 	{
 		if (input.buffer()->length() > 0)
@@ -717,7 +717,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	
 	if (bReport)
 	{
-		std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > > send_to;
+		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > send_to;
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -728,14 +728,15 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 			if (i->first != src_channel_id && 
 					(i->first == m_uUpstreamChannel || can_route(channel_id,i->first)))
 			{
-				send_to.push_back(i->first);
+				send_to.push(i->first);
 			}
 		}
 
 		guard.release();
 
-		for (std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >::const_iterator i=send_to.begin();i!=send_to.end();++i)
-			send_channel_close(*i,channel_id);
+		Omega::uint32_t i = 0;
+		while (send_to.pop(&i))
+			send_channel_close(i,channel_id);
 				
 		// Inform derived classes that the channel has gone...
 		on_channel_closed(channel_id);
@@ -862,19 +863,21 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 void OOServer::MessageHandler::close_channels()
 {
 	// Copy all the channels away and then close them
-	std::vector<OOBase::SmartPtr<MessageConnection>,OOBase::STLAllocator<OOBase::SmartPtr<MessageConnection>,OOBase::LocalAllocator<OOBase::CriticalFailure> > > vecCopy;
+	OOBase::Stack<OOBase::SmartPtr<MessageConnection>,OOBase::LocalAllocator<OOBase::CriticalFailure> > vecCopy;
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	vecCopy.reserve(m_mapChannelIds.size());
 
 	for (channelMapType::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
-		vecCopy.push_back(i->second);
+		vecCopy.push(i->second);
 
 	guard.release();
 
 	// Close them all
-	std::for_each(vecCopy.begin(),vecCopy.end(),std::mem_fun(&MessageConnection::close));
+	OOBase::SmartPtr<MessageConnection> i;
+	while (vecCopy.pop(&i))
+		i->close();
 
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
@@ -973,7 +976,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
+			LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
 		else
 		{
 			if (type == Message_t::Request)
@@ -1030,7 +1033,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
 		return;
 	}
 
@@ -1040,7 +1043,7 @@ void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& 
 
 void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
-	OOBase::local_string strFn;
+	OOBase::LocalString strFn;
 	msg->m_payload.read(strFn);
 
 	void (*pfnCall)(void*,OOBase::CDRStream&);
@@ -1055,7 +1058,7 @@ void OOServer::MessageHandler::process_async_function(OOBase::SmartPtr<Message>&
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
 		return;
 	}
 
@@ -1080,7 +1083,7 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 	}
 }
 
-bool OOServer::MessageHandler::call_async_function_i(const OOBase::string& strFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
+bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
 {
 	assert(pfnCall);
 	if (!pfnCall)
@@ -1106,7 +1109,7 @@ bool OOServer::MessageHandler::call_async_function_i(const OOBase::string& strFn
 	// 2 Bytes of padding here
 	msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
-	msg->m_payload.write(strFn);
+	msg->m_payload.write(pszFn);
 	msg->m_payload.write(pfnCall);
 	msg->m_payload.write(pParam);
 
@@ -1118,7 +1121,7 @@ bool OOServer::MessageHandler::call_async_function_i(const OOBase::string& strFn
 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err)),false);
 
 	return (queue_message(msg) == io_result::success);
 }
@@ -1277,7 +1280,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
+			LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err)),io_result::failed);
 
 		// Route it correctly...
 		return queue_message(msg);
@@ -1334,7 +1337,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 
 	int err = header.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err).c_str()),io_result::failed);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err)),io_result::failed);
 
 	// Update the total length
 	header.replace(header.buffer()->length(),msg_len_mark);

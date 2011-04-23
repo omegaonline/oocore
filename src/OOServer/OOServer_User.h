@@ -29,7 +29,7 @@
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
-#include <OOBase/Queue.h>
+#include <OOBase/BoundedQueue.h>
 #include <OOBase/Thread.h>
 #include <OOBase/utf8.h>
 
@@ -66,6 +66,19 @@ namespace User
 	struct Module
 	{
 		int unused;
+	};
+
+	class OmegaFailure
+	{
+	public:
+		static void fail()
+		{
+#if defined(_WIN32)
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+#else
+			OMEGA_THROW(ENOMEM);
+#endif
+		}
 	};
 }
 

@@ -101,7 +101,11 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value.";
 		strErr %= strProcess;
 		strErr %= strAppName;
-		OMEGA_THROW(OOBase::to_native(strErr.c_str()).c_str());
+
+		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<User::OmegaFailure> > > strErrN;
+		strErr.ToNative(strErrN);
+
+		OMEGA_THROW(strErrN.c_str());
 	}
 
 	// The timeout needs to be related to the request timeout...

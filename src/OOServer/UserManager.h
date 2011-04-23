@@ -75,7 +75,7 @@ namespace User
 		bool fork_slave(const char* strPipe);
 		bool session_launch(const char* strPipe);
 
-		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::string& strPipe);
+		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const char* pszPipe);
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 
@@ -110,16 +110,16 @@ namespace User
 
 		struct Service
 		{
-			OOBase::string                          strKey;
+			OOBase::String                          strKey;
 			OTL::ObjectPtr<Omega::System::IService> ptrService;
 		};
 		std::map<Omega::uint32_t,Service>               m_mapServices;
 		std::map<Omega::uint32_t,OOSvrBase::IOHandler*> m_mapSockets;
 
 		bool start_services();
-		void start_service(const OOBase::string& strKey, const OOBase::string& strOid);
-		OTL::ObjectPtr<Omega::Registry::IKey> get_service_key(const OOBase::string& strKey);
-		void listen_service_socket(const OOBase::string& strKey, Omega::uint32_t nServiceId, OTL::ObjectPtr<Omega::System::INetworkService> ptrNetService);
+		void start_service(const char* pszKey, const char* pszOid);
+		OTL::ObjectPtr<Omega::Registry::IKey> get_service_key(const char* pszKey);
+		void listen_service_socket(const char* pszKey, Omega::uint32_t nServiceId, OTL::ObjectPtr<Omega::System::INetworkService> ptrNetService);
 		void stop_services();
 
 		void on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStream& response);

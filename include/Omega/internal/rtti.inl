@@ -73,9 +73,7 @@ inline Omega::IInternalException* Omega::IInternalException::Create(int32_t errn
 OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create,4,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 inline Omega::IInternalException* Omega::IInternalException::Create(const std::exception& e, const char* pszFile, size_t nLine, const char* pszFunc)
 {
-	std::basic_string<char, std::char_traits<char>, Omega::System::stl_allocator<char> > str("STL exception: ");
-	str += e.what();
-	return OOCore_IInternalException_Create(str.c_str(),pszFile,nLine,pszFunc);
+	return OOCore_IInternalException_Create(e.what(),pszFile,nLine,pszFunc);
 }
 
 inline Omega::IInternalException* Omega::IInternalException::Create(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc)

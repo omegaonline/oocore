@@ -40,7 +40,7 @@ OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC7
 namespace OOBase
 {
 	// This is the critical failure hook
-	void CriticalFailure(const char* msg)
+	void OnCriticalFailure(const char* msg)
 	{
 		throw OOCore_IInternalException_Create(msg,"OOCore Critical Failure",size_t(-1),0);
 	}
@@ -50,7 +50,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 
-	pExcept->m_strDesc = string_t(OOBase::system_error_text(e).c_str(),false);
+	pExcept->m_strDesc = string_t(OOBase::system_error_text(e),false);
 	pExcept->m_errno = e;
 	pExcept->m_ptrCause = pCause;
 

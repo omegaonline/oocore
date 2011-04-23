@@ -96,7 +96,7 @@ bool User::Manager::fork_slave(const char* strPipe)
 	OOBase::timeval_t wait(20);
 	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe,&err,&wait);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
 #elif defined(HAVE_UNISTD_H)
 	// Use the passed fd
@@ -107,24 +107,24 @@ bool User::Manager::fork_slave(const char* strPipe)
 	if (err != 0)
 	{
 		::close(fd);
-		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
 	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance()->attach_local_socket(fd,&err);
 	if (err != 0)
 	{
 		::close(fd);
-		LOG_ERROR_RETURN(("Failed to attach to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to attach to root pipe: %s",OOBase::system_error_text(err)),false);
 	}
 
 #endif
 
 	// Invent a new pipe name...
-	OOBase::string strNewPipe = Acceptor::unique_name();
-	if (strNewPipe.empty())
+	OOBase::LocalString strNewPipe;
+	if (!Acceptor::unique_name(strNewPipe))
 		return false;
 
-	return handshake_root(local_socket,strNewPipe);
+	return handshake_root(local_socket,strNewPipe.c_str());
 }
 
 bool User::Manager::session_launch(const char* strPipe)
@@ -139,8 +139,8 @@ bool User::Manager::session_launch(const char* strPipe)
 	int fd = atoi(strPipe);
 
 	// Invent a new pipe name...
-	OOBase::string strNewPipe = Acceptor::unique_name();
-	if (strNewPipe.empty())
+	OOBase::LocalString strNewPipe;
+	if (!Acceptor::unique_name(strNewPipe))
 		return false;
 
 	pid_t pid = getpid();
@@ -167,18 +167,18 @@ bool User::Manager::session_launch(const char* strPipe)
 	OOBase::timeval_t wait(20);
 	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance()->connect_local_socket("/tmp/omegaonline",&err,&wait);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 
 	OOBase::CDRStream stream;
 	if (!stream.write(version))
-		LOG_ERROR_RETURN(("Failed to write root data: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write root data: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	err = local_socket->send(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Connect up
 	return handshake_root(local_socket,strNewPipe);
@@ -186,40 +186,40 @@ bool User::Manager::session_launch(const char* strPipe)
 #endif
 }
 
-bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::string& strPipe)
+bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const char* pszPipe)
 {
 	OOBase::CDRStream stream;
 
 	// Read the sandbox channel
 	int err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
 
 	uint32_t sandbox_channel = 0;
 	if (!stream.read(sandbox_channel))
-		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	// Set the sandbox flag
 	m_bIsSandbox = (sandbox_channel == 0);
 
 	// Then send back our port name
 	stream.reset();
-	if (!stream.write(strPipe))
-		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+	if (!stream.write(pszPipe))
+		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	err = local_socket->send(stream.buffer());
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Read our channel id
 	stream.reset();
 	err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
 
 	uint32_t our_channel = 0;
 	if (!stream.read(our_channel))
-		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	// Init our channel id
 	set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
@@ -245,10 +245,10 @@ bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, 
 
 	// Now bootstrap
 	stream.reset();
-	if (!stream.write(sandbox_channel) || !stream.write(strPipe))
+	if (!stream.write(sandbox_channel) || !stream.write(pszPipe))
 	{
 		ptrMC->close();
-		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);
 	}
 
 	if (!call_async_function_i("do_bootstrap",&do_bootstrap,this,&stream))
@@ -265,13 +265,16 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	Manager* pThis = static_cast<Manager*>(pParams);
 
 	bool bQuit = false;
+	
 	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
-	OOBase::local_string strPipe;
+
+	OOBase::LocalString strPipe;
 	input.read(strPipe);
+	
 	if (input.last_error() != 0)
 	{
-		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error()).c_str()));
+		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error())));
 		bQuit = true;
 	}
 	else
@@ -339,7 +342,7 @@ bool User::Manager::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	if (!stream.write(channel_id))
 	{
 		ptrMC->close();
-		LOG_ERROR_RETURN(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error())),false);
 	}
 
 	if (!ptrMC->send(stream.buffer()))
@@ -353,7 +356,7 @@ void User::Manager::on_channel_closed(uint32_t channel)
 {
 	OOBase::CDRStream stream;
 	if (!stream.write(channel))
-		LOG_ERROR(("Failed to write channel_close data: %s",OOBase::system_error_text(stream.last_error()).c_str()));
+		LOG_ERROR(("Failed to write channel_close data: %s",OOBase::system_error_text(stream.last_error())));
 	else
 		call_async_function_i("do_channel_closed",&do_channel_closed,this,&stream);
 }
@@ -362,7 +365,7 @@ void User::Manager::do_channel_closed(void* pParams, OOBase::CDRStream& stream)
 {
 	uint32_t channel_id = 0;
 	if (!stream.read(channel_id))
-		LOG_ERROR(("Failed to read channel_close data: %s",OOBase::system_error_text(stream.last_error()).c_str()));
+		LOG_ERROR(("Failed to read channel_close data: %s",OOBase::system_error_text(stream.last_error())));
 	else
 		static_cast<Manager*>(pParams)->do_channel_closed_i(channel_id);
 }
@@ -494,7 +497,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t se
 	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
 	{
-		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error()).c_str()));
+		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error())));
 		return;
 	}
 

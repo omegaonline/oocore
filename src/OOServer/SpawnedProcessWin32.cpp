@@ -111,7 +111,7 @@ namespace
 		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
 			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 
-		int err = strPipe.printf("OOR%s-%u",pszSid,GetCurrentProcessId());
+		int err = strPipe.printf("OOR%s-%u-%u",pszSid,GetCurrentProcessId(),GetTickCount());
 		::LocalFree(pszSid);
 
 		if (err != 0)
@@ -163,7 +163,7 @@ namespace
 		OOBase::LocalString strFullPipe;
 		err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str());
 		if (err != 0)
-			LOG_ERROR_RETURN(("Faield to concat strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
+			LOG_ERROR_RETURN(("Failed to concat strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
 
 		HANDLE hPipe = CreateNamedPipeA(strFullPipe.c_str(),
 										PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,

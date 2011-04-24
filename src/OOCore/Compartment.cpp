@@ -71,11 +71,11 @@ void OOCore::Compartment::shutdown()
 
 	m_mapCompartments.clear();
 
+	guard.release();
+
 	m_pSession->remove_compartment(m_id);
 	
 	uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
-
-	guard.release();
 
 	for (std::vector<ChannelInfo,OOBase::STLAllocator<ChannelInfo,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
 	{

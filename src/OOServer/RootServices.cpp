@@ -290,22 +290,9 @@ int Root::Manager::create_service_listener(Omega::uint32_t id, const OOBase::Loc
 
 	if (ptrService)
 	{
-		try
-		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			std::pair<std::map<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> >::iterator,bool> p = m_mapListeners.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> >::value_type(id,ptrService));
-			if (!p.second)
-			{
-				LOG_ERROR(("Duplicate service id: %d",id));
-				err = EINVAL;
-			}
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("Exception thrown: %s",e.what()));
-			err = ENOMEM;
-		}
+		err = m_mapListeners.insert(id,ptrService);
 	}
 
 	return err;
@@ -313,49 +300,42 @@ int Root::Manager::create_service_listener(Omega::uint32_t id, const OOBase::Loc
 
 void Root::Manager::stop_services()
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > mapObjects(m_mapListeners);
-		m_mapListeners.clear();
+	OOBase::Stack<OOBase::SmartPtr<ControlledObject>,OOBase::LocalAllocator<OOBase::CriticalFailure> > mapObjects;
 
-		guard.release();
+	OOBase::SmartPtr<ControlledObject> ptrObj;
+	while (m_mapListeners.pop(NULL,&ptrObj))
+		mapObjects.push(ptrObj);
 
-		mapObjects.clear();
+	guard.release();
 
-		guard.acquire();
+	mapObjects.clear();
 
-		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> > mapSockets(m_mapSockets);
-		m_mapSockets.clear();
+	guard.acquire();
 
-		guard.release();
+	OOBase::Stack<OOBase::SmartPtr<Socket>,OOBase::LocalAllocator<OOBase::CriticalFailure> > mapSockets;
+	
+	OOBase::SmartPtr<Socket> ptrSock;
+	while (m_mapSockets.pop(NULL,&ptrSock))
+		mapSockets.push(ptrSock);
 
-		mapSockets.clear();
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("Exception thrown: %s",e.what()));
-	}
+	guard.release();
+
+	mapSockets.clear();
 }
 
 Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* pSocket)
 {
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
 	Omega::uint32_t id = 0;
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	Omega::int32_t err = m_mapSockets.insert(pSocket,id,1,UINT_MAX);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to add socket to table: %s",OOBase::system_error_text(err)),0);
 
-		while (!id || m_mapSockets.find(id) != m_mapSockets.end())
-			id = m_uNextSocketId++;
-
-		m_mapSockets.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::value_type(id,pSocket));
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("Exception thrown: %s",e.what()),0);
-	}
-
+	guard.release();
+	
 	// Send message on to sandbox
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OnSocketAccept));
@@ -375,7 +355,6 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),0);
 	}
 
-	Omega::int32_t err = 0;
 	if (!response->read(err))
 	{
 		remove_socket(id);
@@ -393,38 +372,16 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 
 void Root::Manager::remove_socket(Omega::uint32_t id)
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::SmartPtr<Socket> ptrSocket;
-		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i = m_mapSockets.find(id);
-		if (i != m_mapSockets.end())
-		{
-			ptrSocket = i->second;
-			m_mapSockets.erase(id);
-		}
-
-		guard.release();
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("Exception thrown: %s",e.what()));
-	}
+	m_mapSockets.erase(id);
 }
 
 void Root::Manager::remove_listener(Omega::uint32_t id)
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapListeners.erase(id);
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("Exception thrown: %s",e.what()));
-	}
+	m_mapListeners.erase(id);
 }
 
 void Root::Manager::socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -457,19 +414,11 @@ void Root::Manager::socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& r
 		{
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			try
-			{
-				std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i=m_mapSockets.find(id);
-				if (i == m_mapSockets.end())
-					err = EINVAL;
-				else
-					err = i->second->recv(lenBytes,bRecvAll);
-			}
-			catch (std::exception& e)
-			{
-				LOG_ERROR(("Exception thrown: %s",e.what()));
+			OOBase::SmartPtr<Socket> ptrSock;
+			if (!m_mapSockets.find(id,ptrSock))
 				err = EINVAL;
-			}
+			else
+				err = ptrSock->recv(lenBytes,bRecvAll);
 		}
 	}
 
@@ -504,19 +453,11 @@ void Root::Manager::socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& r
 		{
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			try
-			{
-				std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >::iterator i=m_mapSockets.find(id);
-				if (i == m_mapSockets.end())
-					err = EINVAL;
-				else
-					err = i->second->send(request.buffer(),bReliable);
-			}
-			catch (std::exception& e)
-			{
-				LOG_ERROR(("Exception thrown: %s",e.what()));
+			OOBase::SmartPtr<Socket> ptrSock;
+			if (!m_mapSockets.find(id,ptrSock))
 				err = EINVAL;
-			}
+			else
+				err = ptrSock->send(request.buffer(),bReliable);
 		}
 	}
 

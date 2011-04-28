@@ -34,12 +34,14 @@
 
 //////////////////////////////////////////////
 
+#include <OOBase/Memory.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
 #include <OOBase/BoundedQueue.h>
+#include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>
 #include <OOBase/utf8.h>
@@ -63,12 +65,8 @@
 
 //////////////////////////////////////////////
 
-#include <algorithm>
-#include <map>
-#include <set>
-#include <iostream>
-#include <fstream>
-#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 //////////////////////////////////////////////
 

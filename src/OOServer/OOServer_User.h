@@ -24,12 +24,14 @@
 
 //////////////////////////////////////////////
 
+#include <OOBase/Memory.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
 #include <OOBase/BoundedQueue.h>
+#include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
 #include <OOBase/utf8.h>
 

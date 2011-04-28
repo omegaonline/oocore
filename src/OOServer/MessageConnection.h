@@ -152,8 +152,18 @@ namespace OOServer
 		Omega::uint32_t      m_uNextChannelMask;
 		Omega::uint32_t      m_uNextChannelShift;
 
-		typedef std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,std::less<Omega::uint32_t>,OOBase::STLAllocator<std::pair<const Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >,OOBase::HeapAllocator<OOBase::CriticalFailure> > > channelMapType;
-		channelMapType m_mapChannelIds;
+		struct ChannelHash
+		{
+			const MessageHandler* m_p;
+			size_t hash(Omega::uint32_t v) const
+			{
+				return ((v & ~m_p->m_uChannelId) >> m_p->m_uNextChannelShift);
+			}
+		};
+		friend struct ChannelHash;
+		ChannelHash m_hash;
+
+		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,OOBase::HeapAllocator<OOBase::CriticalFailure>,ChannelHash> m_mapChannelIds;
 
 		struct Message
 		{
@@ -175,17 +185,14 @@ namespace OOServer
 		bool start_thread();
 		static int request_worker_fn(void* pParam);
 
-		typedef std::map<Omega::uint32_t,Omega::uint16_t,std::less<Omega::uint32_t>,OOBase::STLAllocator<std::pair<const Omega::uint32_t,Omega::uint16_t>,OOBase::LocalAllocator<OOBase::CriticalFailure> > > mapChannelThreadsType;
-
 		struct ThreadContext
 		{
 			Omega::uint16_t                                  m_thread_id;
 			OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_msg_queue;
 			MessageHandler*                                  m_pHandler;
 
-			// Transient data
-			OOBase::Atomic<size_t>    m_usage_count;
-			mapChannelThreadsType     m_mapChannelThreads;
+			// 'Private' thread-local data
+			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > m_mapChannelThreads;
 			OOBase::timeval_t         m_deadline;
 			Omega::uint32_t           m_seq_no;
 
@@ -201,9 +208,7 @@ namespace OOServer
 			ThreadContext& operator = (const ThreadContext&);
 		};
 		friend struct ThreadContext;
-
-		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::STLAllocator<std::pair<const Omega::uint16_t,ThreadContext*>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > mapThreadContextsType;
-		mapThreadContextsType m_mapThreadContexts;
+		OOBase::HashTable<Omega::uint16_t,ThreadContext*,OOBase::HeapAllocator<OOBase::CriticalFailure> > m_mapThreadContexts;
 
 		// Accessors for ThreadContext
 		Omega::uint16_t insert_thread_context(ThreadContext* pContext);

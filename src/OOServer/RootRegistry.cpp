@@ -44,8 +44,8 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Find the process info
-	mapUserProcessesType::const_iterator i = m_mapUserProcesses.find(channel_id);
-	if (i == m_mapUserProcesses.end())
+	const UserProcess* pU = m_mapUserProcesses.find(channel_id);
+	if (!pU)
 		return EINVAL;
 
 	bool bRead = (access_mask & Registry::Hive::read_check) == Registry::Hive::read_check;
@@ -53,7 +53,7 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 
 	// Check access
 	bool bAllowed = false;
-	if (!i->second.ptrSpawn->CheckAccess(pszDb,bRead,bWrite,bAllowed))
+	if (!pU->ptrSpawn->CheckAccess(pszDb,bRead,bWrite,bAllowed))
 		return EIO;
 	else if (!bAllowed)
 		return EACCES;
@@ -77,12 +77,12 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Find the process info
-		mapUserProcessesType::const_iterator i = m_mapUserProcesses.find(channel_id);
-		if (i == m_mapUserProcesses.end())
+		const UserProcess* pU = m_mapUserProcesses.find(channel_id);
+		if (!pU)
 			return EINVAL;
 
 		// Get the registry hive
-		ptrHive = i->second.ptrRegistry;
+		ptrHive = pU->ptrRegistry;
 
 		// Clear channel id -  not used for user content
 		channel_id = 0;
@@ -106,8 +106,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 	const char* pszName = NULL;
 	Omega::int64_t uKey;
 
-	mapUserProcessesType::const_iterator i = m_mapUserProcesses.find(channel_id);
-	if (i == m_mapUserProcesses.end())
+	if (!m_mapUserProcesses.exists(channel_id))
 		err = EINVAL;
 	else
 	{

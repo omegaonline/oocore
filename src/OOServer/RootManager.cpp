@@ -64,7 +64,7 @@ namespace
 Root::Manager::Manager() :
 		m_bUnsafe(false),
 		m_sandbox_channel(0),
-		m_uNextSocketId(0)
+		m_mapSockets(1)
 {
 	// Root channel is fixed
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
@@ -455,20 +455,21 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (mapUserProcessesType::const_iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
-			if (!i->second.ptrSpawn->IsRunning())
+			const UserProcess* pU = m_mapUserProcesses.at(i);
+			if (!pU->ptrSpawn->IsRunning())
 			{
-				vecDead.push(i->first);
+				vecDead.push(*m_mapUserProcesses.key_at(i));
 			}
-			else if (i->second.ptrSpawn->IsSameLogin(uid))
+			else if (pU->ptrSpawn->IsSameLogin(uid))
 			{
-				user_process = i->second;
+				user_process = *pU;
 				bFound = true;
 			}
-			else if (!bFound && i->second.ptrSpawn->IsSameUser(uid))
+			else if (!bFound && pU->ptrSpawn->IsSameUser(uid))
 			{
-				user_process.ptrRegistry = i->second.ptrRegistry;
+				user_process.ptrRegistry = pU->ptrRegistry;
 			}
 		}
 
@@ -554,16 +555,21 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Check we haven't created a duplicate while we spawned...
-	for (mapUserProcessesType::iterator i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.end(); ++i)
+	for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 	{
-		if (i->second.ptrSpawn->IsSameLogin(uid))
+		if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid))
 		{
 			ptrMC->close();
-			return i->first;
+			return *m_mapUserProcesses.key_at(i);
 		}
 	}
 
-	m_mapUserProcesses.insert(mapUserProcessesType::value_type(channel_id,process));
+	int err = m_mapUserProcesses.insert(channel_id,process);
+	if (err != 0)
+	{
+		ptrMC->close();
+		LOG_ERROR_RETURN(("Failed to insert into map: %s",OOBase::system_error_text(err)),0);
+	}
 	
 	// Now start the read cycle from ptrMC
 	return (ptrMC->read() ? channel_id : 0);
@@ -731,7 +737,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		send_response(seq_no,src_channel_id,src_thread_id,response,deadline,attribs);
 }
 
-OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs)
+OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs)
 {
 	return send_request(m_sandbox_channel,&request,response,deadline,attribs);
 }

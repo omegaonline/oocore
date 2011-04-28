@@ -45,18 +45,16 @@ namespace
 
 	int Help()
 	{
-		std::cout << APPNAME " - The Omega Online network deamon." << std::endl;
-		std::cout << std::endl;
-		std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl;
-		std::cout << std::endl;
-		std::cout << "Usage: " APPNAME " [options]" << std::endl;
-		std::cout << std::endl;
-		std::cout << "Options:" << std::endl;
-		std::cout << "  --help (-h)      Display this help text" << std::endl;
-		std::cout << "  --version (-v)   Display version information" << std::endl;
-		std::cout << "  --conf-file (-f) <file_path>  Use the specified configuration file" << std::endl;
-		std::cout << "  --pidfile <file_path>         Override the default name and location for the pidfile" << std::endl;
-		std::cout << std::endl;
+		printf(APPNAME " - The Omega Online network deamon.\n\n"
+			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n"
+			"Usage: " APPNAME " [options]\n\n"
+			"Options:\n"
+			"  --help (-h)      Display this help text\n"
+			"  --version (-v)   Display version information\n"
+			"\n"
+			"  --conf-file (-f) <file_path>  Use the specified configuration file\n"
+			"  --pidfile <file_path>         Override the default name and location for the pidfile\n"
+			"\n");
 
 		return EXIT_SUCCESS;
 	}
@@ -100,16 +98,16 @@ namespace
 {
 	int Version()
 	{
-		std::cout << APPNAME " version information:" << std::endl;
-		std::cout << "Version: " << OOCORE_VERSION;
-	#if defined(OMEGA_DEBUG)
-		std::cout << " (Debug build)";
-	#endif
-		std::cout << std::endl;
-		std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
-		std::cout << "SQLite library version: " << sqlite3_libversion() << ", built with " << sqlite3_version << " headers" << std::endl;
-		std::cout << std::endl;
+		printf(APPNAME " version information:\n"
+			"Version: %s",OOCORE_VERSION);
 
+	#if defined(OMEGA_DEBUG)
+		printf(" (Debug build)");
+	#endif
+
+		printf("\nCompiler: %s\n",OMEGA_COMPILER_STRING);
+		printf("\nSQLite library version: %s, built with %s headers\n",sqlite3_libversion(),sqlite3_version);
+		
 		return EXIT_SUCCESS;
 	}
 }

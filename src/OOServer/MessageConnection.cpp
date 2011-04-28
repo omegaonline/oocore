@@ -38,6 +38,8 @@
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/BoundedQueue.h>
+#include <OOBase/HandleTable.h>
+#include <OOBase/HashTable.h>
 #include <OOBase/Stack.h>
 #include <OOBase/Thread.h>
 
@@ -311,8 +313,10 @@ OOServer::MessageHandler::MessageHandler() :
 		m_uNextChannelId(0),
 		m_uNextChannelMask(0),
 		m_uNextChannelShift(0),
+		m_mapChannelIds(m_hash),
 		m_waiting_threads(0)
 {
+	m_hash.m_p = this;
 }
 
 OOServer::MessageHandler::~MessageHandler()
@@ -320,10 +324,8 @@ OOServer::MessageHandler::~MessageHandler()
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Tell every thread context that we have gone...
-	for (mapThreadContextsType::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-	{
-		i->second->m_pHandler = 0;
-	}
+	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
+		(*m_mapThreadContexts.at(i))->m_pHandler = 0;
 }
 
 bool OOServer::MessageHandler::start_request_threads()
@@ -447,21 +449,17 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	}
 	else
 	{
-		// Find the correct channel
-		OOBase::SmartPtr<MessageConnection> ptrMC;
-		
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		channelMapType::const_iterator i=m_mapChannelIds.find(dest_channel_id);
-		if (i == m_mapChannelIds.end())
+		// Find the correct channel
+		OOBase::SmartPtr<MessageConnection> ptrMC;
+		if (!m_mapChannelIds.find(dest_channel_id,ptrMC))
 		{
 			// Send closed message back to sender
 			send_channel_close(src_channel_id,orig_dest_channel_id);
 			return true;
 		}
 
-		ptrMC = i->second;
-		
 		if (deadline <= OOBase::timeval_t::gettimeofday())
 			return true;
 
@@ -555,8 +553,15 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 			else
 			{
 				// Set per channel thread id
-				mapChannelThreadsType::iterator i = pContext->m_mapChannelThreads.insert(mapChannelThreadsType::value_type(msg->m_src_channel_id,msg->m_src_thread_id)).first;
-				i->second = msg->m_src_thread_id;
+				Omega::uint16_t* v = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+				if (v)
+					*v = msg->m_src_thread_id;
+				else
+				{
+					err = pContext->m_mapChannelThreads.insert(msg->m_src_channel_id,msg->m_src_thread_id);
+					if (err != 0)
+						LOG_ERROR(("Failed to update thread channel information: %s",OOBase::system_error_text(err)));
+				}
 
 				// Process the message...
 				process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
@@ -603,7 +608,7 @@ Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<Mess
 
 		if (channel_id != 0)
 		{
-			if (m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end())
+			if (m_mapChannelIds.exists(channel_id))
 				LOG_ERROR_RETURN(("Duplicate fixed channel registered"),0);
 		}
 		else if (m_mapChannelIds.size() >= m_uNextChannelMask - 0xF)
@@ -616,10 +621,12 @@ Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<Mess
 			{
 				channel_id = m_uChannelId | ((++m_uNextChannelId & m_uNextChannelMask) << m_uNextChannelShift);
 			}
-			while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
+			while (channel_id==m_uChannelId || m_mapChannelIds.exists(channel_id));
 		}
 
-		m_mapChannelIds.insert(channelMapType::value_type(channel_id,ptrMC));
+		int err = m_mapChannelIds.insert(channel_id,ptrMC);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to allocate table space: %s",OOBase::system_error_text(err)),0);
 	}
 	
 	ptrMC->set_channel_id(channel_id);
@@ -709,7 +716,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		bPulse = (m_mapChannelIds.erase(channel_id) != 0);
+		bPulse = m_mapChannelIds.erase(channel_id);
 
 		// If src_channel_id == 0 then the underlying connection has closed, check whether we need to report it...
 		if (!bPulse && src_channel_id == 0)
@@ -723,14 +730,12 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Propogate the message to all user processes...
-		for (channelMapType::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
+		for (size_t i=m_mapChannelIds.begin(); i!=m_mapChannelIds.npos; i=m_mapChannelIds.next(i))
 		{
 			// Always route upstream, and/or follow routing rules
-			if (i->first != src_channel_id && 
-					(i->first == m_uUpstreamChannel || can_route(channel_id,i->first)))
-			{
-				send_to.push(i->first);
-			}
+			Omega::uint32_t k = *m_mapChannelIds.key_at(i);
+			if (k != src_channel_id && (k == m_uUpstreamChannel || can_route(channel_id,k)))
+				send_to.push(k);
 		}
 
 		guard.release();
@@ -748,8 +753,8 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Unblock all waiting threads
-		for (mapThreadContextsType::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-			i->second->m_msg_queue.pulse();
+		for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
+			(*m_mapThreadContexts.at(i))->m_msg_queue.pulse();
 	}
 }
 
@@ -784,9 +789,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 		// Find the right queue to send it to...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		mapThreadContextsType::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
-		if (i != m_mapThreadContexts.end())
-			res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+		ThreadContext* tc = NULL;
+		if (m_mapThreadContexts.find(msg->m_dest_thread_id,tc))
+			res = tc->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 	}
 	else
 	{
@@ -824,7 +829,6 @@ OOServer::MessageHandler::ThreadContext* OOServer::MessageHandler::ThreadContext
 OOServer::MessageHandler::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_pHandler(0),
-		m_usage_count(0),
 		m_deadline(OOBase::timeval_t::MaxTime),
 		m_seq_no(0)
 {
@@ -843,9 +847,12 @@ Omega::uint16_t OOServer::MessageHandler::insert_thread_context(OOServer::Messag
 
 	for (Omega::uint16_t i=1; i<=0xFFF; ++i)
 	{
-		if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
+		if (!m_mapThreadContexts.exists(i))
 		{
-			m_mapThreadContexts.insert(mapThreadContextsType::value_type(i,pContext));
+			int err = m_mapThreadContexts.insert(i,pContext);
+			if (err != 0)
+				break;
+
 			return i;
 		}
 	}
@@ -863,6 +870,9 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 
 void OOServer::MessageHandler::close_channels()
 {
+	// This all seems a little iffy...
+	void* TODO; 
+
 	// Copy all the channels away and then close them
 	OOBase::Stack<OOBase::SmartPtr<MessageConnection>,OOBase::LocalAllocator<OOBase::CriticalFailure> > vecCopy;
 
@@ -870,8 +880,8 @@ void OOServer::MessageHandler::close_channels()
 
 	vecCopy.reserve(m_mapChannelIds.size());
 
-	for (channelMapType::const_iterator i=m_mapChannelIds.begin(); i!=m_mapChannelIds.end(); ++i)
-		vecCopy.push(i->second);
+	for (size_t i=m_mapChannelIds.begin(); i!=m_mapChannelIds.npos; i=m_mapChannelIds.next(i))
+		vecCopy.push(*m_mapChannelIds.at(i));
 
 	guard.release();
 
@@ -904,9 +914,9 @@ void OOServer::MessageHandler::stop_request_threads()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	for (mapThreadContextsType::const_iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
-		i->second->m_msg_queue.close();
-	
+	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
+		(*m_mapThreadContexts.at(i))->m_msg_queue.close();
+		
 	guard.release();
 	
 	m_default_msg_queue.close();
@@ -929,17 +939,13 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
-	// Up the usage count on the context
-	++pContext->m_usage_count;
-
 	io_result::type ret = io_result::failed;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		channelMapType::const_iterator i=m_mapChannelIds.find(from_channel_id);
-		if (i == m_mapChannelIds.end())
+		if (!m_mapChannelIds.exists(from_channel_id))
 		{
 			// Channel has gone!
 			ret = io_result::channel_closed;
@@ -991,15 +997,25 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 				Omega::uint16_t old_thread_id = 0;
 
 				// Set per channel thread id
-				mapChannelThreadsType::iterator i = pContext->m_mapChannelThreads.insert(mapChannelThreadsType::value_type(msg->m_src_channel_id,0)).first;
-				old_thread_id = i->second;
-				i->second = msg->m_src_thread_id;
+				Omega::uint16_t* v = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+				if (v)
+				{
+					old_thread_id = *v;
+					*v = msg->m_src_thread_id;
+				}
+				else
+				{
+					err = pContext->m_mapChannelThreads.insert(msg->m_src_channel_id,msg->m_src_thread_id);
+					if (err != 0)
+						LOG_ERROR(("Failed to update thread channel information: %s",OOBase::system_error_text(err)));
+				}
 
 				// Process the message...
 				process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
 				
 				// Restore old per channel thread id
-				i->second = old_thread_id;
+				if (v)
+					*v = old_thread_id;
 				
 				pContext->m_deadline = old_deadline;
 			}
@@ -1019,9 +1035,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			}
 		}
 	}
-
-	// Dec the usage count on the context
-	--pContext->m_usage_count;
 
 	return ret;
 }
@@ -1147,9 +1160,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	{
 		ThreadContext* pContext = ThreadContext::instance(this);
 
-		mapChannelThreadsType::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
-		if (i != pContext->m_mapChannelThreads.end())
-			msg.m_dest_thread_id = i->second;
+		pContext->m_mapChannelThreads.find(dest_channel_id,msg.m_dest_thread_id);
 		
 		msg.m_src_thread_id = pContext->m_thread_id;
 		msg.m_deadline = pContext->m_deadline;
@@ -1343,16 +1354,12 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	// Update the total length
 	header.replace(header.buffer()->length(),msg_len_mark);
 
-	OOBase::SmartPtr<MessageConnection> ptrMC;
-	
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	channelMapType::const_iterator i=m_mapChannelIds.find(actual_dest_channel_id);
-	if (i == m_mapChannelIds.end())
+	OOBase::SmartPtr<MessageConnection> ptrMC;
+	if (!m_mapChannelIds.find(actual_dest_channel_id,ptrMC))
 		return io_result::channel_closed;
 
-	ptrMC = i->second;
-	
 	// Check the timeout
 	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
 		return io_result::timedout;

@@ -108,7 +108,7 @@ namespace Root
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
 
-		typedef std::map<Omega::uint32_t,UserProcess,std::less<Omega::uint32_t>,OOBase::STLAllocator<std::pair<const Omega::uint32_t,UserProcess>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > mapUserProcessesType;
+		typedef OOBase::HashTable<Omega::uint32_t,UserProcess,OOBase::HeapAllocator<OOBase::CriticalFailure> > mapUserProcessesType;
 		mapUserProcessesType m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
@@ -147,10 +147,9 @@ namespace Root
 		void registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 
 		// Services members
-		std::map<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > m_mapListeners;
-		std::map<Omega::uint32_t,OOBase::SmartPtr<Socket> >           m_mapSockets;
-		Omega::uint32_t                                               m_uNextSocketId;
-
+		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket>,OOBase::HeapAllocator<OOBase::CriticalFailure> >         m_mapSockets;
+		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<ControlledObject>,OOBase::HeapAllocator<OOBase::CriticalFailure> > m_mapListeners;
+		
 		void stop_services();
 		int create_service_listener(Omega::uint32_t id, const OOBase::LocalString& strProtocol, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort);
 		void services_start(Omega::uint32_t channel_id, OOBase::CDRStream& response);

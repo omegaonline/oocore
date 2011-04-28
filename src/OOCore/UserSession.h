@@ -167,9 +167,9 @@ namespace OOCore
 		// Message pumping
 		int run_read_loop();
 		bool pump_request(const OOBase::timeval_t* deadline = 0);
-		void process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline);
+		void process_request(ThreadContext* pContext, Message* pMsg, const OOBase::timeval_t* deadline);
 		OOBase::SmartPtr<OOBase::CDRStream> wait_for_response(Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
-		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
+		void build_header(OOBase::CDRStream& header, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::Atomic<size_t>& usage);
 

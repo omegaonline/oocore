@@ -621,7 +621,7 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	// We know we are going to pass this buffer along, so we preallocate the header we use later,
 	// and read the data behind it...
 
-	OOBase::Buffer* buffer = new (std::nothrow) OOBase::Buffer(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
+	OOBase::Buffer* buffer = OOBase::Buffer::create(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
 	if (!buffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 

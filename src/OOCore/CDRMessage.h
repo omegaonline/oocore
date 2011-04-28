@@ -38,7 +38,11 @@ namespace OOCore
 			public Omega::Remoting::IMarshal
 	{
 	public:
-		void init(const OOBase::CDRStream& stream)
+		CDRMessage()
+		{
+		}
+
+		void init(OOBase::CDRStream& stream)
 		{
 			m_stream = stream;
 		}
@@ -81,7 +85,7 @@ namespace OOCore
 		}
 
 	public:
-		const OOBase::CDRStream* GetCDRStream() const
+		OOBase::CDRStream* GetCDRStream()
 		{
 			return &m_stream;
 		}

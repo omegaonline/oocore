@@ -897,7 +897,8 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t d
 	}
 
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
+	OOBase::CDRStream header;
+	build_header(header,seq_no,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
 
 	// Send to the handle
 	OOBase::timeval_t wait = deadline;
@@ -930,7 +931,8 @@ void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t se
 	ThreadContext* pContext = ThreadContext::instance();
 
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
+	OOBase::CDRStream header;
+	build_header(header,seq_no,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
 
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
@@ -951,9 +953,8 @@ void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t se
 	}
 }
 
-OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
+void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
 {
-	OOBase::CDRStream header(48 + (msg ? msg->buffer()->length() : 0));
 	header.write(header.big_endian());
 	header.write(byte_t(1));     // version
 
@@ -992,8 +993,6 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 
 	// Update the total length
 	header.replace(header.buffer()->length(),msg_len_mark);
-
-	return header;
 }
 
 Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
@@ -1013,7 +1012,7 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 	return mflags;
 }
 
-void OOCore::UserSession::process_request(ThreadContext* pContext, const Message* pMsg, const OOBase::timeval_t* deadline)
+void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg, const OOBase::timeval_t* deadline)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 

@@ -76,10 +76,9 @@ namespace Root
 
 		Omega::uint32_t add_socket(Omega::uint32_t acceptor_id, Socket* pSocket);
 		void remove_socket(Omega::uint32_t id);
-
 		void remove_listener(Omega::uint32_t id);
 
-		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
+		io_result::type sendrecv_sandbox(OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
 
 	private:
 		Manager(const Manager&);

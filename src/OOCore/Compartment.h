@@ -66,7 +66,7 @@ namespace OOCore
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_channel_om(Omega::uint32_t src_channel_id);
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
-		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
+		void process_request(Message* pMsg, const OOBase::timeval_t& deadline);
 
 		OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > create_compartment_channel(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);
 		Omega::IException* compartment_message(Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);

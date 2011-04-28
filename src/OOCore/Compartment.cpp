@@ -203,7 +203,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint
 	return ptrChannel;
 }
 
-void OOCore::Compartment::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
+void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t& deadline)
 {
 	assert(pMsg->m_dest_cmpt_id == m_id);
 

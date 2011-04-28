@@ -33,6 +33,7 @@
 
 //////////////////////////////////////////////
 
+#include <OOBase/Memory.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
@@ -101,7 +102,7 @@ void OOServer::MessageConnection::close()
 bool OOServer::MessageConnection::read()
 {
 	// This buffer is reused...
-	OOBase::Buffer* pBuffer = new (std::nothrow) OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment);
+	OOBase::Buffer* pBuffer = OOBase::Buffer::create(m_default_buffer_size,OOBase::CDRStream::MaxAlignment);
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -222,7 +223,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 			// Don't keep oversize buffers alive
 			if (buffer->space() > m_default_buffer_size * 4)
 			{
-				OOBase::Buffer* new_buffer = new (std::nothrow) OOBase::Buffer(m_default_buffer_size,OOBase::CDRStream::MaxAlignment);
+				OOBase::Buffer* new_buffer = OOBase::Buffer::create(m_default_buffer_size,OOBase::CDRStream::MaxAlignment);
 				if (new_buffer)
 				{
 					if (bRelease)
@@ -1126,7 +1127,7 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 	return (queue_message(msg) == io_result::success);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs)
 {
 	// Build a header
 	Message msg;
@@ -1189,7 +1190,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	return wait_for_response(response,seq_no,msg.m_deadline != OOBase::timeval_t::MaxTime ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1225,7 +1226,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, const OOBase::CDRStream& message)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, OOBase::CDRStream& message)
 {
 	// Check the destination
 	bool bRoute = true;

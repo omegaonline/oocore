@@ -86,7 +86,7 @@ ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(O
 	return ptrChannel->GetObjectManager();
 }
 
-void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
+void User::RemoteChannel::send_away(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
 {
 	// Make sure we have the source in the map...
 	if (src_channel_id != 0)

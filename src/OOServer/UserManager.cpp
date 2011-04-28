@@ -534,7 +534,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t se
 	}
 }
 
-void User::Manager::process_user_request(const OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	try
 	{
@@ -635,7 +635,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t s
 	return ptrChannel;
 }
 
-OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::CDRStream& request, TypeInfo::MethodAttributes_t attribs)
+OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(OOBase::CDRStream& request, TypeInfo::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;

@@ -29,7 +29,7 @@
 //
 //  Therefore it needs to be SAFE AS HOUSES!
 //
-//  Do not include anything unecessary
+//  Do not include anything unnecessary
 //
 /////////////////////////////////////////////////////////////
 

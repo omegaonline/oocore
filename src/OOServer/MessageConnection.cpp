@@ -314,7 +314,8 @@ OOServer::MessageHandler::MessageHandler() :
 		m_uNextChannelMask(0),
 		m_uNextChannelShift(0),
 		m_mapChannelIds(m_hash),
-		m_waiting_threads(0)
+		m_waiting_threads(0),
+		m_mapThreadContexts(1)
 {
 	m_hash.m_p = this;
 }
@@ -325,7 +326,7 @@ OOServer::MessageHandler::~MessageHandler()
 
 	// Tell every thread context that we have gone...
 	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
-		(*m_mapThreadContexts.at(i))->m_pHandler = 0;
+		(*m_mapThreadContexts.at(i))->m_pHandler = NULL;
 }
 
 bool OOServer::MessageHandler::start_request_threads()
@@ -789,9 +790,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 		// Find the right queue to send it to...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		ThreadContext* tc = NULL;
-		if (m_mapThreadContexts.find(msg->m_dest_thread_id,tc))
-			res = tc->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+		ThreadContext* pContext = NULL;
+		if (m_mapThreadContexts.find(msg->m_dest_thread_id,pContext))
+			res = pContext->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 	}
 	else
 	{
@@ -845,20 +846,12 @@ Omega::uint16_t OOServer::MessageHandler::insert_thread_context(OOServer::Messag
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (Omega::uint16_t i=1; i<=0xFFF; ++i)
-	{
-		if (!m_mapThreadContexts.exists(i))
-		{
-			int err = m_mapThreadContexts.insert(i,pContext);
-			if (err != 0)
-				break;
+	Omega::uint16_t id = 0;
+	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFF);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to add thread context: %s",OOBase::system_error_text(err)),0);
 
-			return i;
-		}
-	}
-	
-	OOBase_CallCriticalFailure("Too many threads");
-	return 0;
+	return id;
 }
 
 void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::ThreadContext* pContext)
@@ -870,44 +863,17 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 
 void OOServer::MessageHandler::close_channels()
 {
-	// This all seems a little iffy...
-	void* TODO; 
-
-	// Copy all the channels away and then close them
-	OOBase::Stack<OOBase::SmartPtr<MessageConnection>,OOBase::LocalAllocator<OOBase::CriticalFailure> > vecCopy;
-
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	vecCopy.reserve(m_mapChannelIds.size());
-
-	for (size_t i=m_mapChannelIds.begin(); i!=m_mapChannelIds.npos; i=m_mapChannelIds.next(i))
-		vecCopy.push(*m_mapChannelIds.at(i));
-
-	guard.release();
-
-	// Close them all
-	OOBase::SmartPtr<MessageConnection> i;
-	while (vecCopy.pop(&i))
-		i->close();
-
-	// Now spin, waiting for all the channels to close...
-	OOBase::timeval_t wait(30);
-	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::Zero)
+	OOBase::SmartPtr<MessageConnection> ptrConn;
+	while (m_mapChannelIds.pop(NULL,&ptrConn))
 	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		if (m_mapChannelIds.empty())
-			break;
-
 		guard.release();
 
-		OOBase::Thread::yield();
-
-		countdown.update();
+		ptrConn->close();
+		
+		guard.acquire();
 	}
-
-	assert(m_mapChannelIds.empty());
 }
 
 void OOServer::MessageHandler::stop_request_threads()

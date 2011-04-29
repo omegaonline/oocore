@@ -108,7 +108,7 @@ bool OOCore::HostedByOOServer(IInterProcessService* pIPS)
 	return bHosted;
 }
 
-OOCore::ServiceManager::ServiceManager() : m_nNextCookie(1)
+OOCore::ServiceManager::ServiceManager() : m_mapServicesByCookie(1)
 {
 }
 
@@ -117,18 +117,17 @@ OOCore::ServiceManager::~ServiceManager()
 	try
 	{
 		// Because the DLL can be deleted without close being called...
-		for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin(); i!=m_mapServicesByCookie.end(); ++i)
+		Info info;
+		while (m_mapServicesByCookie.pop(NULL,&info))
 		{
 			// Just detach and leak every object...
-			i->second.m_ptrObject.Detach();
+			info.m_ptrObject.Detach();
 		}
 	}
 	catch (IException* pE)
 	{
 		pE->Release();
 	}
-	catch (std::exception&)
-	{}
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
@@ -156,25 +155,33 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	
 	try
 	{
-		std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > > revoke_list;
+		OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > revoke_list;
 		string_t strOid = oid.cast<string_t>();
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check if we have someone registered already
-		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid; ++i)
+		for (size_t i=m_mapServicesByOid.find(strOid,true); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
 		{
-			// Check its still alive...
-			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
-				revoke_list.push_back(i->second->first);
-			else
+			Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
+			if (pInfo)
 			{
-				if (!(i->second->second.m_flags & Activation::MultipleRegistration))
-					DuplicateRegistrationException::Throw(oid);
+				// Check its still alive...
+				if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+				{
+					int err = revoke_list.push(*m_mapServicesByOid.at(i));
+					if (err != 0)
+						OMEGA_THROW(err);
+				}
+				else
+				{
+					if (!(pInfo->m_flags & Activation::MultipleRegistration))
+						DuplicateRegistrationException::Throw(oid);
 
-				if (i->second->second.m_flags == flags)
-					DuplicateRegistrationException::Throw(oid);
-			}			
+					if (pInfo->m_flags == flags)
+						DuplicateRegistrationException::Throw(oid);
+				}			
+			}
 		}
 
 		// Create a new cookie
@@ -183,22 +190,24 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		info.m_flags = flags;
 		info.m_ptrObject = pObject;
 		info.m_rot_cookie = rot_cookie;
-		uint32_t nCookie = m_nNextCookie++;
-		while (nCookie==0 && m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
+		
+		uint32_t nCookie = 0;
+		int err = m_mapServicesByCookie.insert(info,nCookie,1,UINT_MAX);
+		if (err == 0)
 		{
-			nCookie = m_nNextCookie++;
+			err = m_mapServicesByOid.insert(strOid,nCookie);
+			if (err != 0)
+				m_mapServicesByCookie.erase(nCookie);
 		}
-
-		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
-		assert(p.second);
-
-		m_mapServicesByOid.insert(std::multimap<string_t,std::map<uint32_t,Info>::iterator>::value_type(strOid,p.first));
+		if (err != 0)
+			OMEGA_THROW(err);
 
 		guard.release();
 
 		// Revoke the revoke_list
-		for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
-			RevokeObject(*i);
+		uint32_t i = 0;
+		while (revoke_list.pop(&i))
+			RevokeObject(i);
 		
 		// This forces the detection, so cleanup succeeds
 		OOCore::HostedByOOServer();
@@ -221,28 +230,36 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	// Strip off the option flags
 	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
-	std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > > revoke_list;
+	OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > revoke_list;
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::const_iterator i=m_mapServicesByOid.find(strOid); i!=m_mapServicesByOid.end() && i->first==strOid;++i)
+	for (size_t i=m_mapServicesByOid.find(strOid,true); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
 	{
-		if (i->second->second.m_flags & search_flags)
+		Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
+		if (pInfo && (pInfo->m_flags & search_flags))
 		{
 			// Check its still alive...
-			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
-				revoke_list.push_back(i->second->first);
+			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+			{
+				int err = revoke_list.push(*m_mapServicesByOid.at(i));
+				if (err != 0)
+					OMEGA_THROW(err);
+			}
 			else
 			{
-				ptrObject.Attach(i->second->second.m_ptrObject->QueryInterface(iid));
+				ptrObject.Attach(pInfo->m_ptrObject->QueryInterface(iid));
 				if (!ptrObject)
 					throw INoInterfaceException::Create(iid);
 
 				// Remove the entry if Activation::SingleUse
-				if (i->second->second.m_flags & Activation::SingleUse)
-					revoke_list.push_back(i->second->first);
-				
+				if (pInfo->m_flags & Activation::SingleUse)
+				{
+					int err = revoke_list.push(*m_mapServicesByOid.at(i));
+					if (err != 0)
+						OMEGA_THROW(err);
+				}				
 				break;
 			}
 		}
@@ -251,8 +268,9 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	guard.release();
 
 	// Revoke the revoke_list
-	for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
-		RevokeObject(*i);
+	uint32_t i = 0;
+	while (revoke_list.pop(&i))
+		RevokeObject(i);
 	
 	// If we have an object, get out now
 	if (ptrObject)
@@ -282,24 +300,18 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
-	if (i != m_mapServicesByCookie.end())
+	Info info;
+	if (m_mapServicesByCookie.erase(cookie,&info))
 	{
-		uint32_t rot_cookie = i->second.m_rot_cookie;
-
-		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid); j!=m_mapServicesByOid.end() && j->first==i->second.m_oid; ++j)
+		for (size_t i=m_mapServicesByOid.find(info.m_oid,true); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==info.m_oid; ++i)
 		{
-			if (j->second->first == cookie)
-			{
-				m_mapServicesByOid.erase(j);
-				break;
-			}
+			if (*m_mapServicesByOid.at(i) == cookie)
+				m_mapServicesByOid.erase(i);
 		}
-		m_mapServicesByCookie.erase(i);
 
 		guard.release();
 
-		if (rot_cookie)
+		if (info.m_rot_cookie)
 		{
 			// Revoke from ROT
 			ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
@@ -309,7 +321,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 				ptrROT.Attach(ptrIPS->GetRunningObjectTable());
 
 				if (ptrROT)
-					ptrROT->RevokeObject(rot_cookie);
+					ptrROT->RevokeObject(info.m_rot_cookie);
 			}
 		}
 	}

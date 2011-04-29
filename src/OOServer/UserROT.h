@@ -45,8 +45,7 @@ namespace User
 
 		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
 		OOBase::RWMutex                                        m_lock;
-		Omega::uint32_t                                        m_nNextCookie;
-
+		
 		struct Info
 		{
 			Omega::string_t                      m_oid;
@@ -55,8 +54,8 @@ namespace User
 			Omega::Activation::RegisterFlags_t   m_flags;
 			Omega::uint32_t                      m_rot_cookie;
 		};
-		std::map<Omega::uint32_t,Info>                                          m_mapObjectsByCookie;
-		std::multimap<Omega::string_t,std::map<Omega::uint32_t,Info>::iterator> m_mapObjectsByOid;
+		OOBase::HandleTable<Omega::uint32_t,Info>      m_mapObjectsByCookie;
+		OOBase::Table<Omega::string_t,Omega::uint32_t> m_mapObjectsByOid;
 
 		void RevokeObject_i(Omega::uint32_t cookie, Omega::uint32_t src_id);
 

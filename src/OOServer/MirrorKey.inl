@@ -211,32 +211,46 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 
 std::set<Omega::string_t> User::Registry::MirrorKey::EnumSubKeys()
 {
-	std::set<Omega::string_t> ret;
-	if (m_ptrLocal)
-		ret = m_ptrLocal->EnumSubKeys();
-
-	if (m_ptrSystem)
+	try
 	{
-		std::set<Omega::string_t> ret2 = m_ptrSystem->EnumSubKeys();
-		ret.insert(ret2.begin(),ret2.end());
-	}
+		std::set<Omega::string_t> ret;
+		if (m_ptrLocal)
+			ret = m_ptrLocal->EnumSubKeys();
 
-	return ret;
+		if (m_ptrSystem)
+		{
+			std::set<Omega::string_t> ret2 = m_ptrSystem->EnumSubKeys();
+			ret.insert(ret2.begin(),ret2.end());
+		}
+
+		return ret;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }
 
 std::set<Omega::string_t> User::Registry::MirrorKey::EnumValues()
 {
-	std::set<Omega::string_t> ret;
-	if (m_ptrLocal)
-		ret = m_ptrLocal->EnumValues();
-
-	if (m_ptrSystem)
+	try
 	{
-		std::set<Omega::string_t> ret2 = m_ptrSystem->EnumValues();
-		ret.insert(ret2.begin(),ret2.end());
-	}
+		std::set<Omega::string_t> ret;
+		if (m_ptrLocal)
+			ret = m_ptrLocal->EnumValues();
 
-	return ret;
+		if (m_ptrSystem)
+		{
+			std::set<Omega::string_t> ret2 = m_ptrSystem->EnumValues();
+			ret.insert(ret2.begin(),ret2.end());
+		}
+
+		return ret;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }
 
 void User::Registry::MirrorKey::DeleteKey(const string_t& strSubKey)

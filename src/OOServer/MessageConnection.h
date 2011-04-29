@@ -163,7 +163,7 @@ namespace OOServer
 		friend struct ChannelHash;
 		ChannelHash m_hash;
 
-		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,OOBase::HeapAllocator<OOBase::CriticalFailure>,ChannelHash> m_mapChannelIds;
+		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,OOBase::HeapAllocator<OOBase::NoFailure>,ChannelHash> m_mapChannelIds;
 
 		struct Message
 		{
@@ -192,9 +192,10 @@ namespace OOServer
 			MessageHandler*                                  m_pHandler;
 
 			// 'Private' thread-local data
-			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > m_mapChannelThreads;
 			OOBase::timeval_t         m_deadline;
 			Omega::uint32_t           m_seq_no;
+
+			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator<OOBase::NoFailure> > m_mapChannelThreads;
 
 			static ThreadContext* instance(MessageHandler* pHandler);
 
@@ -207,8 +208,7 @@ namespace OOServer
 			ThreadContext(const ThreadContext&);
 			ThreadContext& operator = (const ThreadContext&);
 		};
-		friend struct ThreadContext;
-		OOBase::HashTable<Omega::uint16_t,ThreadContext*,OOBase::HeapAllocator<OOBase::CriticalFailure> > m_mapThreadContexts;
+		OOBase::HandleTable<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
 
 		// Accessors for ThreadContext
 		Omega::uint16_t insert_thread_context(ThreadContext* pContext);

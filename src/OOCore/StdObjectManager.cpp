@@ -225,7 +225,7 @@ Remoting::MarshalFlags_t StdCallContext::SourceType()
 }
 
 OOCore::StdObjectManager::StdObjectManager() :
-		m_uNextStubId(1)
+		m_mapStubIds(1)
 {
 }
 
@@ -242,30 +242,31 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 void OOCore::StdObjectManager::Shutdown()
 {
 	std::vector<ObjectPtr<ObjectImpl<Stub> >,OOBase::STLAllocator<ObjectPtr<ObjectImpl<Stub> >,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecStubs;
-	std::vector<ObjectImpl<Proxy>*,OOBase::STLAllocator<ObjectImpl<Proxy>*,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecProxies;
-
+	
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	// Copy the stub map
-	vecStubs.reserve(m_mapStubObjs.size());
-	for (std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator i=m_mapStubObjs.begin(); i!=m_mapStubObjs.end(); ++i)
-		vecStubs.push_back(i->second);
-
-	m_mapStubIds.clear();
-	m_mapStubObjs.clear();
-
-	// Copy the proxys
-	vecProxies.reserve(m_mapProxyIds.size());
-	for (std::map<uint32_t,ObjectImpl<Proxy>* >::iterator j=m_mapProxyIds.begin(); j!=m_mapProxyIds.end(); ++j)
-		vecProxies.push_back(j->second);
-
+	// Clear the proxys
 	m_mapProxyIds.clear();
 
-	guard.release();
+	// Clear the stub map
+	Omega::uint32_t stub_id = 0;
+	OTL::ObjectPtr<OTL::ObjectImpl<Stub> > ptrStub;
+	while (m_mapStubIds.pop(&stub_id,&ptrStub))
+	{
+		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
+		{
+			if (*m_mapStubObjs.at(i) == stub_id)
+				m_mapStubObjs.erase(*m_mapStubObjs.key_at(i));
+		}
 
-	// Now do the final releases on the stub and proxies
-	vecProxies.clear();
-	vecStubs.clear();
+		guard.release();
+
+		ptrStub.Release();
+
+		guard.acquire();
+	}
+
+	m_mapStubObjs.clear();
 }
 
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
@@ -348,16 +349,13 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			else
 			{
 				// It's a method call on a stub...
-				ObjectPtr<ObjectImpl<Stub> > ptrStub;
-
+				
 				// Look up the stub
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-				std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::const_iterator i=m_mapStubIds.find(stub_id);
-				if (i==m_mapStubIds.end())
+				ObjectPtr<ObjectImpl<Stub> > ptrStub;
+				if (!m_mapStubIds.find(stub_id,ptrStub))
 					OMEGA_THROW("Bad stub id");
-
-				ptrStub = i->second->second;
 
 				guard.release();
 
@@ -571,11 +569,13 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
-	if (i != m_mapStubIds.end())
+	if (m_mapStubIds.erase(stub_id))
 	{
-		m_mapStubObjs.erase(i->second);
-		m_mapStubIds.erase(i);
+		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
+		{
+			if (*m_mapStubObjs.at(i) == stub_id)
+				m_mapStubObjs.erase(*m_mapStubObjs.key_at(i));
+		}
 	}
 }
 
@@ -648,9 +648,9 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::const_iterator i=m_mapStubObjs.find(ptrObj);
-		if (i != m_mapStubObjs.end())
-			ptrStub = i->second;
+		Omega::uint32_t i = 0;
+		if (m_mapStubObjs.find(ptrObj,i))
+			m_mapStubIds.find(i,ptrStub);
 	}
 
 	if (!ptrStub)
@@ -673,21 +673,26 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		// Create a new stub and stub id
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		uint32_t stub_id = m_uNextStubId++;
-		while (stub_id==0 || m_mapStubIds.find(stub_id)!=m_mapStubIds.end())
-		{
-			stub_id = m_uNextStubId++;
-		}
-
-		ptrStub = ObjectImpl<Stub>::CreateInstancePtr();
-		ptrStub->init(ptrObj,stub_id,this);
-
-		// Add to the map...
-		std::pair<std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator,bool> p=m_mapStubObjs.insert(std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::value_type(ptrObj,ptrStub));
-		if (!p.second)
-			ptrStub = p.first->second;
+		uint32_t stub_id;
+		if (m_mapStubObjs.find(ptrObj,stub_id))
+			m_mapStubIds.find(stub_id,ptrStub);
 		else
-			m_mapStubIds.insert(std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::value_type(stub_id,p.first));
+		{
+			// Add to the map...
+			ptrStub = ObjectImpl<Stub>::CreateInstancePtr();
+			
+			int err = m_mapStubIds.insert(ptrStub,stub_id,1,UINT_MAX);
+			if (err == 0)
+			{
+				err = m_mapStubObjs.insert(ptrObj,stub_id);
+				if (err != 0)
+					m_mapStubIds.erase(stub_id);
+			}
+			if (err != 0)
+				OMEGA_THROW(err);
+
+			ptrStub->init(ptrObj,stub_id,this);
+		}	
 	}
 
 	// Write out the data
@@ -721,9 +726,9 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<uint32_t,ObjectImpl<Proxy>*>::const_iterator i=m_mapProxyIds.find(proxy_id);
-			if (i != m_mapProxyIds.end())
-				ptrProxy = i->second;
+			OTL::ObjectImpl<Proxy>* p = NULL;
+			if (m_mapProxyIds.find(proxy_id,p))
+				ptrProxy = p;
 		}
 
 		if (!ptrProxy)
@@ -733,9 +738,11 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			std::pair<std::map<uint32_t,ObjectImpl<Proxy>*>::iterator,bool> p = m_mapProxyIds.insert(std::map<uint32_t,ObjectImpl<Proxy>*>::value_type(proxy_id,ptrProxy));
-			if (!p.second)
-				ptrProxy = p.first->second;
+			int err = m_mapProxyIds.insert(proxy_id,ptrProxy);
+			if (err == EEXIST)
+				ptrProxy = *m_mapProxyIds.find(proxy_id);
+			else if (err != 0)
+				OMEGA_THROW(err);
 		}
 
 		// Unmarshal the object
@@ -788,14 +795,13 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 			ObjectPtr<IObject> ptrObj;
 			ptrObj.Attach(pObj);
 
-			ObjectPtr<ObjectImpl<Stub> > ptrStub;
-
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::const_iterator i=m_mapStubObjs.find(ptrObj);
-			if (i != m_mapStubObjs.end())
-				ptrStub = i->second;
-
+			ObjectPtr<ObjectImpl<Stub> > ptrStub;
+			uint32_t stub_id = 0;
+			if (m_mapStubObjs.find(ptrObj,stub_id))
+				m_mapStubIds.find(stub_id,ptrStub);
+			
 			guard.release();
 
 			// If there is no stub... what are we unmarshalling?

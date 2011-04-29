@@ -49,8 +49,8 @@ namespace User
 		OTL::ObjectPtr<Omega::Remoting::IChannelSink>                        m_ptrUpstream;
 		Omega::guid_t                                                        m_message_oid;
 		Omega::uint32_t                                                      m_nNextChannelId;
-		std::map<Omega::uint32_t,Omega::uint32_t>                            m_mapChannelIds;
-		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
+		OOBase::HashTable<Omega::uint32_t,Omega::uint32_t>                            m_mapChannelIds;
+		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t channel_id);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t channel_id);

@@ -75,11 +75,10 @@ namespace OOCore
 
 		OOBase::RWMutex                           m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
-		Omega::uint32_t                           m_uNextStubId;
-
-		std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >                                     m_mapStubObjs;
-		std::map<Omega::uint32_t,std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >::iterator> m_mapStubIds;
-		std::map<Omega::uint32_t,OTL::ObjectImpl<Proxy>*>                                                     m_mapProxyIds;
+		
+		OOBase::HashTable<Omega::IObject*,Omega::uint32_t>                           m_mapStubObjs;
+		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > > m_mapStubIds;
+		OOBase::HashTable<Omega::uint32_t,OTL::ObjectImpl<Proxy>*>                   m_mapProxyIds;
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);

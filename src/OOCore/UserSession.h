@@ -122,12 +122,13 @@ namespace OOCore
 			Omega::uint16_t                                  m_thread_id;
 			OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_msg_queue;
 
-			// Transient data
+			// 'Private' thread-local data
 			OOBase::Atomic<size_t>                    m_usage_count;
-			std::map<Omega::uint32_t,Omega::uint16_t> m_mapChannelThreads;
 			OOBase::timeval_t                         m_deadline;
 			Omega::uint32_t                           m_seq_no;
 			Omega::uint16_t                           m_current_cmpt;
+
+			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator<OOBase::NoFailure> > m_mapChannelThreads;
 
 			static ThreadContext* instance();
 
@@ -138,11 +139,9 @@ namespace OOCore
 			~ThreadContext();
 		};
 
-		typedef std::map<Omega::uint16_t,ThreadContext*,std::less<Omega::uint16_t>,OOBase::STLAllocator<std::pair<const Omega::uint16_t,ThreadContext*>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > mapThreadContextsType;
-
-		OOBase::Atomic<size_t>                           m_usage_count;		
-		mapThreadContextsType                            m_mapThreadContexts;
-		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
+		OOBase::Atomic<size_t>                              m_usage_count;		
+		OOBase::HandleTable<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >    m_default_msg_queue;
 
 		// Accessors for ThreadContext
 		Omega::uint16_t insert_thread_context(ThreadContext* pContext);
@@ -161,8 +160,17 @@ namespace OOCore
 		void add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		void remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		
-		typedef std::list<std::pair<void (OMEGA_CALL*)(void*),void*>,OOBase::STLAllocator<std::pair<void (OMEGA_CALL*)(void*),void*>,OOBase::HeapAllocator<OOBase::CriticalFailure> > > UninitCallsType;
-		UninitCallsType m_listUninitCalls;
+		struct Uninit
+		{
+			void (OMEGA_CALL* pfn_dctor)(void*);
+			void* param;
+
+			bool operator == (const Uninit& rhs) const
+			{
+				return (pfn_dctor == rhs.pfn_dctor && param == rhs.param);
+			}
+		};
+		OOBase::Stack<Uninit> m_listUninitCalls;
 
 		// Message pumping
 		int run_read_loop();
@@ -176,8 +184,7 @@ namespace OOCore
 		static int io_worker_fn(void* pParam);
 
 		// Compartment members
-		Omega::uint16_t                                          m_next_compartment;
-		std::map<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
+		OOBase::HandleTable<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
 
 		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment_i();
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);

@@ -48,7 +48,7 @@ namespace User
 		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 		Manager*                                              m_pManager;
 
-		std::map<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
+		OOBase::Table<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
 
 	// OOCore::IInterProcessService members
 	public:

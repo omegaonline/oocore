@@ -102,10 +102,17 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		strErr %= strProcess;
 		strErr %= strAppName;
 
-		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<User::OmegaFailure> > > strErrN;
-		strErr.ToNative(strErrN);
+		try
+		{
+			std::string strErrN;
+			strErr.ToNative(strErrN);
 
-		OMEGA_THROW(strErrN.c_str());
+			OMEGA_THROW(strErrN.c_str());
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
 	// The timeout needs to be related to the request timeout...
@@ -131,11 +138,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		std::map<string_t,OOBase::SmartPtr<User::Process> >::iterator i = m_mapInProgress.find(strProcess);
-		if (i != m_mapInProgress.end())
+		if (m_mapInProgress.find(strProcess,ptrProcess))
 		{
-			ptrProcess = i->second;
-
 			if (!ptrProcess->running())
 			{
 				m_mapInProgress.erase(strProcess);
@@ -150,7 +154,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			// Create a new process
 			ptrProcess = User::Process::exec(strProcess.c_str());
 
-			m_mapInProgress.insert(std::map<string_t,OOBase::SmartPtr<User::Process> >::value_type(strProcess,ptrProcess));
+			int err = m_mapInProgress.insert(strProcess,ptrProcess);
+			if (err != 0)
+				OMEGA_THROW(err);
+
 			bStarted = true;
 		}
 

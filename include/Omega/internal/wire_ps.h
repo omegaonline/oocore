@@ -34,9 +34,7 @@ namespace Omega
 			{
 			public:
 				IObject* add(IObject* pProxy, IObject* pObject);
-
 				IObject* find(IObject* pProxy);
-
 				void remove(IObject* pProxy);
 
 			private:

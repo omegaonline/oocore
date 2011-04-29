@@ -28,29 +28,6 @@ using namespace OTL;
 
 namespace
 {
-	std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > get_description(IException* pE)
-	{
-		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > ret;
-		try
-		{			
-			pE->GetDescription().ToNative(ret);
-			pE->Release();
-		}
-		catch (IException* pE2)
-		{
-			LOG_ERROR(("Second IException thrown trying to get exception description!"));
-			pE2->Release();
-			pE->Release();
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("Second IException thrown trying to get exception description: %s",e.what()));
-			pE->Release();
-		}
-		
-		return ret;
-	}
-
 	class AsyncSocket :
 			public ObjectBase,
 			public Net::IAsyncSocket,
@@ -109,8 +86,8 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-		LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
+		LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription()));
+		pE->Release();
 		return false;
 	}
 
@@ -136,49 +113,36 @@ bool User::Manager::start_services()
 	}
 
 	// Now start all the network services listening...
-	try
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		std::map<uint32_t,Service> mapServices = m_mapServices;
+	for (size_t i=m_mapServices.begin();i!=m_mapServices.npos;i=m_mapServices.next(i))
+	{
+		Service* pServ = m_mapServices.at(i);
 
 		guard.release();
 
-		for (std::map<uint32_t,Service>::const_iterator i=mapServices.begin();i!=mapServices.end();++i)
+		try
 		{
-			try
+			ObjectPtr<System::INetworkService> ptrNS = pServ->ptrService;
+			if (ptrNS)
 			{
-				ObjectPtr<System::INetworkService> ptrNS = i->second.ptrService;
-				if (ptrNS)
-				{
-					// Call the root, asking to start the async stuff, passing the id of the service...
-					listen_service_socket(i->second.strKey.c_str(),i->first,ptrNS);
-				}
-			}
-			catch (IException* pE)
-			{
-				std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-				LOG_ERROR(("Failed to start network service %s: %s",i->second.strKey.c_str(),s.c_str()));
+				// Call the root, asking to start the async stuff, passing the id of the service...
+				listen_service_socket(pServ->strKey.c_str(),*m_mapServices.key_at(i),ptrNS);
 			}
 		}
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("Failed to start services: %s",e.what()));
-	}
-	catch (IException* pE)
-	{
-		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-		LOG_ERROR(("Failed to start services: %s",s.c_str()));
-	}
+		catch (IException* pE)
+		{
+			LOG_ERROR(("Failed to start network service %s: %ls",pServ->strKey.c_str(),pE->GetDescription()));
+		}
 
-
+		guard.acquire();
+	}
+	
 	return true;
 }
 
 void User::Manager::start_service(const char* pszKey, const char* pszOid)
 {
-	ObjectPtr<System::IService> ptrService;
 	try
 	{
 		ObjectPtr<System::IService> ptrService(string_t(pszOid,true),Activation::OutOfProcess);
@@ -191,70 +155,35 @@ void User::Manager::start_service(const char* pszKey, const char* pszOid)
 		ObjectPtr<Omega::Registry::IKey> ptrKey = get_service_key(pszKey);
 		ptrService->Start(ptrKey);
 
+		ObjectPtr<System::INetworkService> ptrNetService;
+
+		System::INetworkService* pNS = ptrService.QueryInterface<System::INetworkService>();
+		if (pNS)
+			ptrNetService.Attach(pNS);
+
+		OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
+
+		// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
+		Service svc;
+		
+		int err = svc.strKey.assign(pszKey);
+		if (err != 0)
+			OMEGA_THROW(err);
+		
+		if (pNS)
+			svc.ptrService = pNS;
+		else
+			svc.ptrService = ptrService;
+
 		uint32_t nServiceId = 0;
-		try
-		{
-			ObjectPtr<System::INetworkService> ptrNetService;
-
-			System::INetworkService* pNS = ptrService.QueryInterface<System::INetworkService>();
-			if (pNS)
-				ptrNetService.Attach(pNS);
-
-			OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
-
-			do
-			{
-				nServiceId = (++m_nNextService);
-			}
-			while (!nServiceId && m_mapServices.find(m_nNextService) != m_mapServices.end());
-
-			// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
-			Service svc;
-			
-			int err = svc.strKey.assign(pszKey);
-			if (err != 0)
-				OMEGA_THROW(err);
-			
-			if (pNS)
-				svc.ptrService = pNS;
-			else
-				svc.ptrService = ptrService;
-
-			m_mapServices.insert(std::map<uint32_t,Service>::value_type(nServiceId,svc));
-		}
-		catch (...)
-		{
-			// Try to be nice and stop the service
-			try
-			{
-				ptrService->Stop();
-			}
-			catch (IException* pE)
-			{
-				// ignore stop errors
-				pE->Release();
-			}
-
-			try
-			{
-				OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
-
-				m_mapServices.erase(nServiceId);
-			}
-			catch (std::exception&)
-			{}
-
-			throw;
-		}
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("Failed to start service %s: %s",pszKey,e.what()));
+		err = m_mapServices.insert(svc,nServiceId,1,UINT_MAX);
+		if (err != 0)
+			OMEGA_THROW(err);	
 	}
 	catch (IException* pE)
 	{
-		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-		LOG_ERROR(("Failed to start service %s: %s",pszKey,s.c_str()));
+		LOG_ERROR(("Failed to start service %s: %ls",pszKey,pE->GetDescription().c_str()));
+		pE->Release();
 	}
 }
 
@@ -294,36 +223,25 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const char* pszKey)
 
 void User::Manager::stop_services()
 {
-	try
+	OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
+
+	Service svc;
+	while (m_mapServices.pop(NULL,&svc))
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
-
-		std::map<uint32_t,Service> mapServices = m_mapServices;
-		m_mapServices.clear();
-
 		guard.release();
 
-		for (std::map<uint32_t,Service>::iterator i=mapServices.begin();i!=mapServices.end();++i)
+		try
 		{
-			try
-			{
-				i->second.ptrService->Stop();
-			}
-			catch (IException* pE)
-			{
-				// ignore stop errors
-				pE->Release();
-			}
+			svc.ptrService->Stop();
 		}
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
-	}
-	catch (IException* pE)
-	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
-		pE->Release();
+		catch (IException* pE)
+		{
+			// ignore stop errors
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+			pE->Release();
+		}
+
+		guard.acquire();
 	}
 }
 
@@ -365,37 +283,38 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
 		err = ENOENT;
-		std::map<uint32_t,Service>::iterator i = m_mapServices.find(service_id);
-		if (i != m_mapServices.end())
+		Service svc;
+		if (m_mapServices.find(service_id,svc) && svc.ptrService)
 		{
 			try
 			{
-				ObjectPtr<System::INetworkService> ptrService = i->second.ptrService;
-				if (ptrService)
+				ObjectPtr<System::INetworkService> ptrService = svc.ptrService;
+				
+				guard.release();
+
+				// Create a socket
+				ObjectPtr<ObjectImpl<AsyncSocket> > ptrSocket = ObjectImpl<AsyncSocket>::CreateInstancePtr();
+				ptrSocket->Init(this,id);
+
+				// Add to the map...
+				OOBase::Guard<OOBase::RWMutex> guard2(m_service_lock);
+
+				// Force an overwriting insert
+				err = m_mapSockets.replace(id,ptrSocket);
+				if (err != 0)
+					LOG_ERROR(("Error adding socket: %s",OOBase::system_error_text(err)));
+				else
 				{
-					guard.release();
-
-					// Create a socket
-					ObjectPtr<ObjectImpl<AsyncSocket> > ptrSocket = ObjectImpl<AsyncSocket>::CreateInstancePtr();
-					ptrSocket->Init(this,id);
-
-					// Add to the map...
-					OOBase::Guard<OOBase::RWMutex> guard2(m_service_lock);
-
-					// Force an overwriting insert
-					m_mapSockets[id] = ptrSocket;
-
 					guard2.release();
 
 					// Let the service know...
 					ptrService->OnAccept(ptrSocket);
-					err = 0;
 				}
 			}
 			catch (IException* pE)
 			{
-				std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-				LOG_ERROR(("Sending message to root failed: %s",s.c_str()));
+				LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription().c_str()));
+				pE->Release();
 				err = EINVAL;
 			}
 		}
@@ -408,7 +327,7 @@ void User::Manager::close_socket(Omega::uint32_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
 
-	if (m_mapSockets.erase(id) == 1)
+	if (m_mapSockets.erase(id))
 	{
 		guard.release();
 
@@ -437,20 +356,20 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		try
+		OOSvrBase::IOHandler* handler = NULL;
+		if (m_mapSockets.find(id,handler))
 		{
-			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
-			if (i != m_mapSockets.end())
-				i->second->on_recv(request.buffer(),err);
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("on_recv failed: %s",e.what()));
-		}
-		catch (IException* pE)
-		{
-			std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-			LOG_ERROR(("on_recv failed: %s",s.c_str()));
+			guard.release();
+
+			try
+			{
+				handler->on_recv(request.buffer(),err);
+			}
+			catch (IException* pE)
+			{
+				LOG_ERROR(("on_recv failed: %ls",pE->GetDescription().c_str()));
+				pE->Release();
+			}
 		}
 	}
 }
@@ -469,20 +388,20 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		try
+		OOSvrBase::IOHandler* handler = NULL;
+		if (m_mapSockets.find(id,handler))
 		{
-			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
-			if (i != m_mapSockets.end())
-				i->second->on_sent(request.buffer(),err);
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("on_sent failed: %s",e.what()));
-		}
-		catch (IException* pE)
-		{
-			std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-			LOG_ERROR(("on_sent failed: %s",s.c_str()));
+			guard.release();
+
+			try
+			{
+				handler->on_sent(request.buffer(),err);
+			}
+			catch (IException* pE)
+			{
+				LOG_ERROR(("on_sent failed: %ls",pE->GetDescription().c_str()));
+				pE->Release();
+			}
 		}
 	}
 }
@@ -497,20 +416,20 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		try
+		OOSvrBase::IOHandler* handler = NULL;
+		if (m_mapSockets.find(id,handler))
 		{
-			std::map<Omega::uint32_t,OOSvrBase::IOHandler*>::iterator i = m_mapSockets.find(id);
-			if (i != m_mapSockets.end())
-				i->second->on_closed();
-		}
-		catch (std::exception& e)
-		{
-			LOG_ERROR(("on_close failed: %s",e.what()));
-		}
-		catch (IException* pE)
-		{
-			std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<OOBase::StdFailure> > > s = get_description(pE);
-			LOG_ERROR(("on_close failed: %s",s.c_str()));
+			guard.release();
+
+			try
+			{
+				handler->on_closed();
+			}
+			catch (IException* pE)
+			{
+				LOG_ERROR(("on_close failed: %ls",pE->GetDescription().c_str()));
+				pE->Release();
+			}
 		}
 	}
 }

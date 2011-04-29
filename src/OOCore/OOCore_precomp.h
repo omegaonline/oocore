@@ -30,6 +30,8 @@
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>
 #include <OOBase/BoundedQueue.h>
+#include <OOBase/HandleTable.h>
+#include <OOBase/Table.h>
 #include <OOBase/DLL.h>
 #include <OOBase/Win32.h>
 #include <OOBase/utf8.h>

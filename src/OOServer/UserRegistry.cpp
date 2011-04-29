@@ -37,9 +37,16 @@ namespace
 {
 	void write_utf8(OOBase::CDRStream& request, const Omega::string_t& str)
 	{
-		std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator<User::OmegaFailure> > > s;
-		str.ToUTF8(s);
-		request.write(s.c_str());
+		try
+		{
+			std::string s;
+			str.ToUTF8(s);
+			request.write(s.c_str());
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}		
 	}
 }
 
@@ -456,26 +463,33 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> sub_keys;
-	for (;;)
+	try
 	{
-		OOBase::LocalString strName;
-		if (!response->read(strName))
-			OMEGA_THROW(response->last_error());
-
-		if (strName.empty())
-			break;
-
-		sub_keys.insert(string_t(strName.c_str(),true));
-
-		if (m_key == 0 && m_type == 0)
+		std::set<Omega::string_t> sub_keys;
+		for (;;)
 		{
-			// Add the local user key, although it doesn't really exist...
-			sub_keys.insert(L"Local User");
-		}
-	}
+			OOBase::LocalString strName;
+			if (!response->read(strName))
+				OMEGA_THROW(response->last_error());
 
-	return sub_keys;
+			if (strName.empty())
+				break;
+
+			sub_keys.insert(string_t(strName.c_str(),true));
+
+			if (m_key == 0 && m_type == 0)
+			{
+				// Add the local user key, although it doesn't really exist...
+				sub_keys.insert(L"Local User");
+			}
+		}
+
+		return sub_keys;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }
 
 std::set<Omega::string_t> Key::EnumValues()
@@ -502,20 +516,27 @@ std::set<Omega::string_t> Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> values;
-	for (;;)
+	try
 	{
-		OOBase::LocalString strName;
-		if (!response->read(strName))
-			OMEGA_THROW(response->last_error());
+		std::set<Omega::string_t> values;
+		for (;;)
+		{
+			OOBase::LocalString strName;
+			if (!response->read(strName))
+				OMEGA_THROW(response->last_error());
 
-		if (strName.empty())
-			break;
+			if (strName.empty())
+				break;
 
-		values.insert(string_t(strName.c_str(),true));
+			values.insert(string_t(strName.c_str(),true));
+		}
+
+		return values;
 	}
-
-	return values;
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }
 
 void Key::DeleteKey(const string_t& strSubKey)

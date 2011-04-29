@@ -60,11 +60,11 @@ namespace User
 		Manager(const Manager&);
 		Manager& operator = (const Manager&);
 
-		OOBase::RWMutex                                                      m_lock;
-		Omega::uint32_t                                                      m_nIPSCookie;
-		bool                                                                 m_bIsSandbox;
-		Acceptor                                                             m_acceptor;
-		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
+		OOBase::RWMutex                                                               m_lock;
+		Omega::uint32_t                                                               m_nIPSCookie;
+		bool                                                                          m_bIsSandbox;
+		Acceptor                                                                      m_acceptor;
+		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 		virtual void on_channel_closed(Omega::uint32_t channel);
@@ -90,31 +90,28 @@ namespace User
 
 		// Remote channel handling
 		OOBase::RWMutex m_remote_lock;
-		Omega::uint32_t m_nNextRemoteChannel;
 		struct RemoteChannelEntry
 		{
 			Omega::string_t strEndpoint;
 			OTL::ObjectPtr<OTL::ObjectImpl<RemoteChannel> > ptrRemoteChannel;
 		};
-		std::map<Omega::uint32_t,RemoteChannelEntry>                         m_mapRemoteChannelIds;
-		std::map<Omega::string_t,OTL::ObjectPtr<Omega::Remoting::IChannel> > m_mapRemoteChannels;
+		OOBase::HandleTable<Omega::uint32_t,RemoteChannelEntry>                   m_mapRemoteChannelIds;
+		OOBase::Table<Omega::string_t,OTL::ObjectPtr<Omega::Remoting::IChannel> > m_mapRemoteChannels;
 
 		Omega::Remoting::IChannel* open_remote_channel_i(const Omega::string_t& strEndpoint);
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
-		void local_channel_closed(const std::vector<Omega::uint32_t,OOBase::STLAllocator<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > >& channels);
+		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> >& channels);
 
 		// Service handling
 		OOBase::RWMutex m_service_lock;
-		Omega::uint32_t m_nNextService;
-
 		struct Service
 		{
 			OOBase::String                          strKey;
 			OTL::ObjectPtr<Omega::System::IService> ptrService;
 		};
-		std::map<Omega::uint32_t,Service>               m_mapServices;
-		std::map<Omega::uint32_t,OOSvrBase::IOHandler*> m_mapSockets;
+		OOBase::HandleTable<Omega::uint32_t,Service>             m_mapServices;
+		OOBase::HashTable<Omega::uint32_t,OOSvrBase::IOHandler*> m_mapSockets;
 
 		bool start_services();
 		void start_service(const char* pszKey, const char* pszOid);

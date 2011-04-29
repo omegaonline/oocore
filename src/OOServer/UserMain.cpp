@@ -36,24 +36,21 @@
 
 static int Help()
 {
-	std::cout << APPNAME " - The Omega Online user host process." << std::endl;
-	std::cout << std::endl;
-	std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl;
-	std::cout << std::endl;
-
+	printf(APPNAME " - The Omega Online user host process.\n\n"
+		"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
+	
 	return EXIT_SUCCESS;
 }
 
 static int Version()
 {
-	std::cout << APPNAME " version information:" << std::endl;
-	std::cout << "Version: " << OOCORE_VERSION;
+	printf(APPNAME " version information:\n"
+		"Version: %s",OOCORE_VERSION);
+
 #if defined(OMEGA_DEBUG)
-	std::cout << " (Debug build)";
+	printf(" (Debug build)");
 #endif
-	std::cout << std::endl;
-	std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
-	std::cout << std::endl;
+	printf("\nCompiler: %s\n\n",OMEGA_COMPILER_STRING);
 
 	return EXIT_SUCCESS;
 }
@@ -162,7 +159,8 @@ namespace OOBase
 	// This is the critical failure hook
 	void OnCriticalFailure(const char* msg)
 	{
-		std::cerr << msg << std::endl << std::endl;
+		fprintf(stdout,msg);
+		fprintf(stdout,"\n\n");
 		abort();
 	}
 }

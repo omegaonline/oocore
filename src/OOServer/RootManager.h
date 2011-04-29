@@ -92,7 +92,7 @@ namespace Root
 		bool wait_to_quit();
 
 		// Configuration members
-		OOBase::Table<OOBase::String,OOBase::String,OOBase::HeapAllocator<OOBase::NoFailure> > m_config_args;
+		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
 		bool                              m_bUnsafe;
 
 		// I/O members
@@ -108,7 +108,7 @@ namespace Root
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
 
-		typedef OOBase::HashTable<Omega::uint32_t,UserProcess,OOBase::HeapAllocator<OOBase::CriticalFailure> > mapUserProcessesType;
+		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
 		mapUserProcessesType m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
@@ -147,8 +147,8 @@ namespace Root
 		void registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 
 		// Services members
-		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket>,OOBase::HeapAllocator<OOBase::CriticalFailure> >         m_mapSockets;
-		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<ControlledObject>,OOBase::HeapAllocator<OOBase::CriticalFailure> > m_mapListeners;
+		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket> >         m_mapSockets;
+		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > m_mapListeners;
 		
 		void stop_services();
 		int create_service_listener(Omega::uint32_t id, const OOBase::LocalString& strProtocol, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort);

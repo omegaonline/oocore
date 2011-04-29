@@ -52,10 +52,12 @@ namespace OOCore
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};
 
-	class Compartment : public Omega::System::ThrowingNew
+	class Compartment
 	{
 	public:
-		Compartment(UserSession* pSession, Omega::uint16_t id);
+		Compartment(UserSession* pSession);
+
+		void set_id(Omega::uint16_t id);
 
 		void shutdown();
 		Omega::Activation::IRunningObjectTable* get_rot();
@@ -101,9 +103,9 @@ namespace OOCore
 			bool                                      m_bOpen;
 		};
 
-		std::map<Omega::uint32_t,ChannelInfo>                                     m_mapChannels;
-		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > > m_mapCompartments;
-		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>                    m_ptrROT;
+		OOBase::HashTable<Omega::uint32_t,ChannelInfo>                                     m_mapChannels;
+		OOBase::HashTable<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > > m_mapCompartments;
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>                             m_ptrROT;
 	};
 }
 

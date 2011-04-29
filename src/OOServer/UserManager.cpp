@@ -66,8 +66,8 @@ User::Manager* User::Manager::s_instance = 0;
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
-		m_nNextRemoteChannel(0),
-		m_nNextService(0)
+		m_mapRemoteChannelIds(1),
+		m_mapServices(1)
 {
 	s_instance = this;
 }
@@ -375,24 +375,25 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	// Close the corresponding Object Manager
 	try
 	{
-		std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > > dead_channels;
-
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();)
+		OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > dead_channels;
+		
+		for (size_t i=m_mapChannels.begin(); i!=m_mapChannels.npos;i=m_mapChannels.next(i))
 		{
+			uint32_t k = *m_mapChannels.key_at(i);
 			bool bErase = false;
-			if (i->first == channel_id)
+			if (k == channel_id)
 			{
 				// Close if its an exact match
 				bErase = true;
 			}
-			else if (!(channel_id & 0xFFF) && (i->first & 0xFFFFF000) == channel_id)
+			else if (!(channel_id & 0xFFF) && (k & 0xFFFFF000) == channel_id)
 			{
 				// Close all compartments if 0 cmpt dies
 				bErase = true;
 			}
-			else if (channel_id == m_uUpstreamChannel && classify_channel(i->first) > 2)
+			else if (channel_id == m_uUpstreamChannel && classify_channel(k) > 2)
 			{
 				// If the root channel closes, close all upstream OMs
 				bErase = true;
@@ -400,23 +401,18 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 
 			if (bErase)
 			{
-				i->second->disconnect();
+				(*m_mapChannels.at(i))->disconnect();
 
-				dead_channels.push_back(i->first);
+				dead_channels.push(k);
 
-				m_mapChannels.erase(i++);
+				m_mapChannels.erase(k);
 			}
-			else
-				++i;
 		}
 
 		// Give the remote layer a chance to close channels
 		if (!dead_channels.empty())
 			local_channel_closed(dead_channels);
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
+
 	}
 	catch (IException* pE)
 	{
@@ -613,24 +609,26 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t s
 	assert(classify_channel(src_channel_id) > 1);
 
 	// Lookup existing..
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
-		if (i != m_mapChannels.end())
-			return i->second;
+		if (m_mapChannels.find(src_channel_id,ptrChannel))
+			return ptrChannel;
 	}
 
 	// Create a new channel
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+	ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
 	ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
 
 	// And add to the map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::pair<std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
-	if (!p.second)
-		ptrChannel = p.first->second;
+	int err = m_mapChannels.insert(src_channel_id,ptrChannel);
+	if (err == EEXIST)
+		m_mapChannels.find(src_channel_id,ptrChannel);
+	else if (err != 0)
+		OMEGA_THROW(err);
 
 	return ptrChannel;
 }

@@ -60,7 +60,7 @@ void User::DuplicateRegistrationException::Throw(const any_t& oid)
 	throw static_cast<IDuplicateRegistrationException*>(pRE);
 }
 
-User::RunningObjectTable::RunningObjectTable() : m_nNextCookie(1)
+User::RunningObjectTable::RunningObjectTable() : m_mapObjectsByCookie(1)
 {
 }
 
@@ -99,24 +99,32 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 			src_id = ptrCC->SourceId();
 
 		// Check if we have someone registered already
-		std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > > revoke_list;
+		OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > revoke_list;
 		string_t strOid = oid.cast<string_t>();
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid); i!=m_mapObjectsByOid.end() && i->first==strOid; ++i)
+		for (size_t i=m_mapObjectsByOid.find(strOid,true); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid; ++i)
 		{
 			// Check its still alive...
-			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
-				revoke_list.push_back(i->second->first);
-			else
+			Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
+			if (pInfo)
 			{
-				if (!(i->second->second.m_flags & Activation::MultipleRegistration))
-					DuplicateRegistrationException::Throw(oid);
+				if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+				{
+					int err = revoke_list.push(*m_mapObjectsByOid.at(i));
+					if (err != 0)
+						OMEGA_THROW(err);
+				}
+				else
+				{
+					if (!(pInfo->m_flags & Activation::MultipleRegistration))
+						DuplicateRegistrationException::Throw(oid);
 
-				if (i->second->second.m_flags == flags)
-					DuplicateRegistrationException::Throw(oid);
-			}			
+					if (pInfo->m_flags == flags)
+						DuplicateRegistrationException::Throw(oid);
+				}			
+			}
 		}
 
 		// Create a new cookie
@@ -126,25 +134,25 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		info.m_ptrObject = pObject;
 		info.m_rot_cookie = rot_cookie;
 		info.m_source = src_id;
-		uint32_t nCookie = m_nNextCookie++;
-		while (nCookie==0 && m_mapObjectsByCookie.find(nCookie) != m_mapObjectsByCookie.end())
+		
+		uint32_t nCookie = 0;
+		int err = m_mapObjectsByCookie.insert(info,nCookie,1, UINT_MAX);
+		if (err == 0)
 		{
-			nCookie = m_nNextCookie++;
+			err = m_mapObjectsByOid.insert(strOid,nCookie);
+			if (err != 0)
+				m_mapObjectsByCookie.erase(nCookie);
 		}
-
-		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
-		assert(p.second);
-
-		m_mapObjectsByOid.insert(std::multimap<string_t,std::map<uint32_t,Info>::iterator>::value_type(strOid,p.first));
+		if (err != 0)
+			OMEGA_THROW(err);
 
 		guard.release();
 
 		// Revoke the revoke_list
-		for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
-		{
-			RevokeObject_i(*i,0);
-		}
-
+		uint32_t i = 0;
+		while (revoke_list.pop(&i))
+			RevokeObject_i(i,0);
+		
 		return nCookie;
 	}
 	catch (...)
@@ -163,28 +171,36 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	// Strip off the option flags
 	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
-	std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > > revoke_list;
+	OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > revoke_list;
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(strOid); i!=m_mapObjectsByOid.end() && i->first==strOid;++i)
+	for (size_t i=m_mapObjectsByOid.find(strOid,true); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid;++i)
 	{
-		if (i->second->second.m_flags & search_flags)
+		Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
+		if (pInfo && (pInfo->m_flags & search_flags))
 		{
 			// Check its still alive...
-			if (!Omega::Remoting::IsAlive(i->second->second.m_ptrObject))
-				revoke_list.push_back(i->second->first);
+			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+			{
+				int err = revoke_list.push(*m_mapObjectsByOid.at(i));
+				if (err != 0)
+					OMEGA_THROW(err);
+			}
 			else
 			{
-				ptrObject.Attach(i->second->second.m_ptrObject->QueryInterface(iid));
+				ptrObject.Attach(pInfo->m_ptrObject->QueryInterface(iid));
 				if (!ptrObject)
 					throw INoInterfaceException::Create(iid);
 
 				// Remove the entry if Activation::SingleUse
-				if (i->second->second.m_flags & Activation::SingleUse)
-					revoke_list.push_back(i->second->first);
-				
+				if (pInfo->m_flags & Activation::SingleUse)
+				{
+					int err = revoke_list.push(*m_mapObjectsByOid.at(i));
+					if (err != 0)
+						OMEGA_THROW(err);
+				}	
 				break;
 			}
 		}
@@ -193,8 +209,9 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	guard.release();
 
 	// Revoke the revoke_list
-	for (std::vector<uint32_t,OOBase::STLAllocator<uint32_t,OOBase::LocalAllocator<OmegaFailure> > >::iterator i=revoke_list.begin();i!=revoke_list.end();++i)
-		RevokeObject_i(*i,0);
+	uint32_t i = 0;
+	while (revoke_list.pop(&i))
+		RevokeObject_i(i,0);
 	
 	// If we have an object, get out now
 	if (ptrObject)
@@ -214,21 +231,18 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
-	if (i != m_mapObjectsByCookie.end() && (!src_id || i->second.m_source == src_id))
+	Info* pInfo = m_mapObjectsByCookie.find(cookie);
+	if (pInfo && (!src_id || pInfo->m_source == src_id))
 	{
-		uint32_t rot_cookie = i->second.m_rot_cookie;
+		uint32_t rot_cookie = pInfo->m_rot_cookie;
 
-		for (std::multimap<string_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid); j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid; ++j)
+		for (size_t i=m_mapObjectsByOid.find(pInfo->m_oid,true); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==pInfo->m_oid; ++i)
 		{
-			if (j->second->first == cookie)
-			{
-				m_mapObjectsByOid.erase(j);
-				break;
-			}
+			if (*m_mapObjectsByOid.at(i) == cookie)
+				m_mapObjectsByOid.erase(i);
 		}
 
-		m_mapObjectsByCookie.erase(i);
+		m_mapObjectsByCookie.erase(cookie);
 
 		guard.release();
 

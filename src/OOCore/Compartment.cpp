@@ -28,12 +28,16 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::Compartment::Compartment(UserSession* pSession, uint16_t id) :
+OOCore::Compartment::Compartment(UserSession* pSession) :
 		m_pSession(pSession),
-		m_id(id)
+		m_id(0x1000)
 {
 }
 
+void OOCore::Compartment::set_id(Omega::uint16_t id)
+{
+	m_id = id;
+}
 
 OOCore::Compartment::ComptState::ComptState(Compartment* cmpt, uint32_t* timeout) : m_cmpt(cmpt)
 {
@@ -50,43 +54,37 @@ void OOCore::Compartment::shutdown()
 	// Switch state...
 	ComptState compt_state(this);
 
-	std::vector<ChannelInfo,OOBase::STLAllocator<ChannelInfo,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecChannels;
-	std::vector<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::STLAllocator<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecCompts;
-	
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Done with cached objects
 	m_ptrROT.Release();
 
-	// Shutdown all channels and compartments
-	vecChannels.reserve(m_mapChannels.size());
-	for (std::map<uint32_t,ChannelInfo>::iterator j=m_mapChannels.begin(); j!=m_mapChannels.end(); ++j)
-		vecChannels.push_back(j->second);
-
-	m_mapChannels.clear();
-
-	vecCompts.reserve(m_mapCompartments.size());
-	for (std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.begin(); i!=m_mapCompartments.end(); ++i)
-		vecCompts.push_back(i->second);
-
-	m_mapCompartments.clear();
-
-	guard.release();
-
 	m_pSession->remove_compartment(m_id);
-	
 	uint32_t our_channel_id = m_id | m_pSession->get_channel_id();
 
-	for (std::vector<ChannelInfo,OOBase::STLAllocator<ChannelInfo,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator j=vecChannels.begin();j!=vecChannels.end();++j)
+	// Shutdown all channels and compartments
+	ChannelInfo info;
+	while (m_mapChannels.pop(NULL,&info))
 	{
-		if (j->m_bOpen)
-			j->m_ptrChannel->shutdown(our_channel_id);
+		guard.release();
+
+		if (info.m_bOpen)
+			info.m_ptrChannel->shutdown(our_channel_id);
 		else
-			j->m_ptrChannel->disconnect();
+			info.m_ptrChannel->disconnect();
+
+		guard.acquire();
 	}
-	
-	for (std::vector<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::STLAllocator<ObjectPtr<ObjectImpl<ComptChannel> >,OOBase::LocalAllocator<OOCore::OmegaFailure> > >::iterator i=vecCompts.begin();i!=vecCompts.end();++i)
-		(*i)->shutdown();	
+
+	OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > ptrCompt;
+	while (m_mapCompartments.pop(NULL,&ptrCompt))
+	{
+		guard.release();
+
+		ptrCompt->shutdown();
+
+		guard.acquire();
+	}		
 }
 
 void OOCore::Compartment::process_compartment_close()
@@ -94,21 +92,15 @@ void OOCore::Compartment::process_compartment_close()
 	// Switch state...
 	ComptState compt_state(this);
 
-	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
-
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator i=m_mapCompartments.find(compt_state.id());
-	if (i != m_mapCompartments.end())
-	{
-		ptrCompt = i->second;
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
+	m_mapCompartments.erase(compt_state.id(),&ptrCompt);
 		
-		m_mapCompartments.erase(i);
-	}
-
 	guard.release();
 
-	ptrCompt->disconnect();
+	if (ptrCompt)
+		ptrCompt->disconnect();
 }
 
 bool OOCore::Compartment::process_channel_close(uint32_t closed_channel_id)
@@ -118,18 +110,21 @@ bool OOCore::Compartment::process_channel_close(uint32_t closed_channel_id)
 	
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::map<uint32_t,ChannelInfo>::iterator i=m_mapChannels.begin(); i!=m_mapChannels.end();++i)
+	for (size_t i=m_mapChannels.begin();i!=m_mapChannels.npos;i=m_mapChannels.next(i))
 	{
-		if (i->first == closed_channel_id)
+		uint32_t k = *m_mapChannels.key_at(i);
+		ChannelInfo* pInfo = m_mapChannels.at(i);
+
+		if (k == closed_channel_id)
 		{
 			// Close if its an exact match
-			i->second.m_bOpen = false;
+			pInfo->m_bOpen = false;
 			bRet = true;
 		}
-		else if (!(closed_channel_id & 0xFFF) && (i->first & 0xFFFFF000) == closed_channel_id)
+		else if (!(closed_channel_id & 0xFFF) && (k & 0xFFFFF000) == closed_channel_id)
 		{
 			// Close all compartments on the channel if 0 cmpt closes
-			i->second.m_bOpen = false;
+			pInfo->m_bOpen = false;
 			bRet = true;
 		}
 	}
@@ -141,11 +136,11 @@ bool OOCore::Compartment::is_channel_open(uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint32_t,ChannelInfo>::const_iterator i=m_mapChannels.find(channel_id);
-	if (i == m_mapChannels.end())
+	ChannelInfo info;
+	if (!m_mapChannels.find(channel_id,info))
 		return false;
 
-	if (i->second.m_bOpen)
+	if (info.m_bOpen)
 		return true;
 
 	read_guard.release();
@@ -153,10 +148,8 @@ bool OOCore::Compartment::is_channel_open(uint32_t channel_id)
 	// Now remove the closed channel
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);
 
-	std::map<uint32_t,ChannelInfo>::iterator j=m_mapChannels.find(channel_id);
-
-	if (j != m_mapChannels.end() && !j->second.m_bOpen)
-		m_mapChannels.erase(j);
+	if (m_mapChannels.find(channel_id,info) && !info.m_bOpen)
+		m_mapChannels.erase(channel_id);
 	
 	return false;
 }
@@ -173,11 +166,11 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint
 	// Lookup existing..
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint32_t,ChannelInfo>::const_iterator i=m_mapChannels.find(src_channel_id);
-	if (i != m_mapChannels.end())
+	ChannelInfo info;
+	if (m_mapChannels.find(src_channel_id,info))
 	{
-		assert(i->second.m_bOpen);
-		return i->second.m_ptrChannel;
+		assert(info.m_bOpen);
+		return info.m_ptrChannel;
 	}
 	
 	read_guard.release();
@@ -192,15 +185,16 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint
 	// And add to the map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	ChannelInfo info;
 	info.m_bOpen = true;
 	info.m_ptrChannel = ptrChannel;
 
-	std::pair<std::map<uint32_t,ChannelInfo>::iterator,bool> p = m_mapChannels.insert(std::map<uint32_t,ChannelInfo>::value_type(src_channel_id,info));
-	if (!p.second)
-		ptrChannel = p.first->second.m_ptrChannel;
-
-	return ptrChannel;
+	int err = m_mapChannels.insert(src_channel_id,info);
+	if (err == EEXIST)
+		m_mapChannels.find(src_channel_id,info);
+	else if (err != 0)
+		OMEGA_THROW(err);
+		
+	return info.m_ptrChannel;
 }
 
 void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t& deadline)
@@ -260,14 +254,11 @@ void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t
 ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compartment_channel(uint16_t compartment_id, const guid_t& message_oid)
 {
 	// Lookup existing..
-	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel;
-
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::const_iterator i=m_mapCompartments.find(compartment_id);
-	if (i != m_mapCompartments.end())
-		ptrChannel = i->second;
-
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel;
+	m_mapCompartments.find(compartment_id,ptrChannel);
+	
 	read_guard.release();
 
 	if (!ptrChannel)
@@ -288,9 +279,11 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 		// And add to the map
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::pair<std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::iterator,bool> p = m_mapCompartments.insert(std::map<uint16_t,ObjectPtr<ObjectImpl<ComptChannel> > >::value_type(compartment_id,ptrChannel));
-		if (!p.second)
-			ptrChannel = p.first->second;
+		int err = m_mapCompartments.insert(compartment_id,ptrChannel);
+		if (err == EEXIST)
+			m_mapCompartments.find(compartment_id,ptrChannel);
+		else if (err != 0)
+			OMEGA_THROW(err);
 	}
 
 	return ptrChannel;

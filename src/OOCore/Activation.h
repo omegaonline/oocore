@@ -47,8 +47,7 @@ namespace OOCore
 		ServiceManager& operator = (const ServiceManager&);
 
 		OOBase::RWMutex m_lock;
-		Omega::uint32_t m_nNextCookie;
-
+		
 		struct Info
 		{
 			Omega::string_t                    m_oid;
@@ -56,8 +55,8 @@ namespace OOCore
 			Omega::Activation::RegisterFlags_t m_flags;
 			Omega::uint32_t                    m_rot_cookie;
 		};
-		std::map<Omega::uint32_t,Info>                                          m_mapServicesByCookie;
-		std::multimap<Omega::string_t,std::map<Omega::uint32_t,Info>::iterator> m_mapServicesByOid;
+		OOBase::HandleTable<Omega::uint32_t,Info>      m_mapServicesByCookie;
+		OOBase::Table<Omega::string_t,Omega::uint32_t> m_mapServicesByOid;
 
 	// IRunningObjectTable members
 	public:

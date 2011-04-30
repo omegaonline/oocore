@@ -54,7 +54,7 @@ namespace
 
 		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen));
 		if (!ptrCmdLine)
-			User::OmegaFailure::fail();
+			OMEGA_THROW_NOMEM();
 
 		memcpy(ptrCmdLine,psz,wlen);
 
@@ -78,7 +78,7 @@ namespace
 			{
 				ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate((dwLen+1)*sizeof(wchar_t)));
 				if (!ptrCmdLine)
-					User::OmegaFailure::fail();
+					OMEGA_THROW_NOMEM();
 
 				hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,ptrCmdLine,&dwLen);
 			}
@@ -109,7 +109,7 @@ User::Process* User::Process::exec(const wchar_t* pszExeName)
 	// Do a ShellExecute style lookup for the actual thing to call..
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
 	if (!ptrProcess)
-		User::OmegaFailure::fail();
+		OMEGA_THROW_NOMEM();
 
 	ptrProcess->exec(ShellParse(pszExeName));
 	return ptrProcess.detach();

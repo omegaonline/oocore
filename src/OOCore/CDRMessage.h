@@ -55,19 +55,6 @@ namespace OOCore
 	private:
 		OOBase::CDRStream m_stream;
 
-		class OmegaFailure
-		{
-		public:
-			static void fail()
-			{
-	#if defined(_WIN32)
-				OMEGA_THROW(ERROR_OUTOFMEMORY);
-	#else
-				OMEGA_THROW(ENOMEM);
-	#endif
-			}
-		};
-		
 		template <typename T>
 		T read()
 		{

@@ -45,11 +45,7 @@ namespace
 	public:
 		static void fail()
 		{
-#if defined(_WIN32)
 			OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-			OMEGA_THROW(ENOMEM);
-#endif
 		}
 	};
 
@@ -384,14 +380,14 @@ void RootKey::Init_Once()
 
 	m_system_hive = new (std::nothrow) ::Registry::Hive(this,(get_db_dir(ptrIPS) + "system.regdb").c_str());
 	if (!m_system_hive)
-		OMEGA_THROW("Out of memory");
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 	local_string s;
 	ptrIPS->GetArg(L"user_regdb").ToNative(s);
 
 	m_localuser_hive = new (std::nothrow) ::Registry::Hive(this,s.c_str());
 	if (!m_localuser_hive)
-		OMEGA_THROW("Out of memory");
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");

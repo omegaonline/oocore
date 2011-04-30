@@ -46,7 +46,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
 	void* r = new (std::nothrow) OOBase::Mutex();
 	if (!r)
-		OOCore::OmegaFailure::fail();
+		OMEGA_THROW_NOMEM();
 
 	return r;
 }
@@ -70,7 +70,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
 {
 	void* r = new (std::nothrow) OOBase::RWMutex();
 	if (!r)
-		OOCore::OmegaFailure::fail();
+		OMEGA_THROW_NOMEM();
 
 	return r;
 }

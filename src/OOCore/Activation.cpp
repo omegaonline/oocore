@@ -141,18 +141,25 @@ namespace
 
 		dll = new (std::nothrow) OOBase::DLL();
 		if (!dll)
-			OOCore::OmegaFailure::fail();
+			OMEGA_THROW_NOMEM();
 	
 		// Load the new DLL
-		std::string s;
-		name.ToNative(s);
+		try
+		{
+			std::string s;
+			name.ToNative(s);
 
-		int err = dll->load(s.c_str());
-		if (err != 0)
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(("Loading library: " + s).c_str()));
+			int err = dll->load(s.c_str());
+			if (err != 0)
+				throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(("Loading library: " + s).c_str()));
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 		
 		// Add to the map
-		err = m_dll_map.insert(name,dll);
+		int err = m_dll_map.insert(name,dll);
 		if (err != 0)
 			OMEGA_THROW(err);
 

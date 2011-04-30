@@ -74,6 +74,12 @@
 /////////////////////////////////////////////////
 // Some helpers and globals
 
+#if defined(_WIN32)
+#define OMEGA_THROW_NOMEM() OMEGA_THROW(ERROR_OUTOFMEMORY)
+#else
+#define OMEGA_THROW_NOMEM() OMEGA_THROW(ENOMEM)
+#endif
+
 namespace OOCore
 {
 	bool HostedByOOServer();
@@ -88,11 +94,7 @@ namespace OOCore
 	public:
 		static void fail()
 		{
-#if defined(_WIN32)
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-			OMEGA_THROW(ENOMEM);
-#endif
+			OMEGA_THROW_NOMEM();
 		}
 	};
 }

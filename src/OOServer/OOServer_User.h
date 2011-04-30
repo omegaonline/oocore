@@ -69,19 +69,12 @@ namespace User
 	{
 		int unused;
 	};
-
-	class OmegaFailure
-	{
-	public:
-		static void fail()
-		{
-#if defined(_WIN32)
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-			OMEGA_THROW(ENOMEM);
-#endif
-		}
-	};
 }
+
+#if defined(_WIN32)
+#define OMEGA_THROW_NOMEM() OMEGA_THROW(ERROR_OUTOFMEMORY)
+#else
+#define OMEGA_THROW_NOMEM() OMEGA_THROW(ENOMEM)
+#endif
 
 #endif // OOSERVER_USER_H_INCLUDED_

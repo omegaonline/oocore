@@ -39,8 +39,6 @@ inline Omega::Threading::Mutex::~Mutex()
 	{
 		pE->Release();
 	}
-	catch (...)
-	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,h));
@@ -72,8 +70,6 @@ inline Omega::Threading::ReaderWriterLock::~ReaderWriterLock()
 	{
 		pE->Release();
 	}
-	catch (...)
-	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,h));

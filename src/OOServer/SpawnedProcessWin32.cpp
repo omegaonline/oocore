@@ -86,7 +86,7 @@ namespace
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(const OOBase::String& strSysDir, const OOBase::String& strUsersDir, OOBase::LocalString& strHive);
+		bool GetRegistryHive(const char* pszSysDir, const char* pszUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -862,11 +862,23 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool SpawnedProcessWin32::GetRegistryHive(const OOBase::String& strSysDir, const OOBase::String& strUsersDir, OOBase::LocalString& strHive)
+bool SpawnedProcessWin32::GetRegistryHive(const char* pszSysDir, const char* pszUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
-	if (!strUsersDir.empty())
+	OOBase::LocalString strUsersDir;
+	int err = strUsersDir.assign(pszUsersDir);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+
+	if (strUsersDir[strUsersDir.length()-1] != '\\' && strUsersDir[strUsersDir.length()-1] != '/')
+	{
+		err = strUsersDir.append("\\");
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if (strUsersDir.empty())
 	{
 		char szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
@@ -907,7 +919,18 @@ bool SpawnedProcessWin32::GetRegistryHive(const OOBase::String& strSysDir, const
 	if (!PathFileExistsA(strHive.c_str()))
 	{
 		OOBase::LocalString strFrom;
-		int err = strFrom.concat(strSysDir.c_str(),"default_user.regdb");
+		err = strFrom.assign(pszSysDir);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+
+		if (strFrom[strFrom.length()-1] != '\\' && strFrom[strFrom.length()-1] != '/')
+		{
+			err = strFrom.append("\\");
+			if (err != 0)
+				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+		}
+			
+		err = strFrom.append("default_user.regdb");
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 

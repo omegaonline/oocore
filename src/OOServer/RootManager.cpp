@@ -534,7 +534,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		m_config_args.find("users_path",strUsersPath);
 
 		OOBase::LocalString strHive;
-		if (process.ptrSpawn->GetRegistryHive(strRegPath,strUsersPath,strHive))
+		if (process.ptrSpawn->GetRegistryHive(strRegPath.c_str(),strUsersPath.c_str(),strHive))
 		{
 			// Create a new database
 			process.ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive.c_str());

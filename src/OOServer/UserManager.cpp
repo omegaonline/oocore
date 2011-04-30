@@ -377,8 +377,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > dead_channels;
-		
+		OOBase::Stack<uint32_t,OOBase::LocalAllocator> dead_channels;		
 		for (size_t i=m_mapChannels.begin(); i!=m_mapChannels.npos;i=m_mapChannels.next(i))
 		{
 			uint32_t k = *m_mapChannels.key_at(i);

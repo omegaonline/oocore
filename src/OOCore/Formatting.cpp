@@ -21,6 +21,8 @@
 
 #include "OOCore_precomp.h"
 
+#include <OOBase/STLAllocator.h>
+
 #include <sstream>
 #include <limits.h>
 
@@ -29,8 +31,8 @@ using namespace OTL;
 
 namespace
 {
-	typedef std::basic_string<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > private_string;
-	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > private_ostringstream;
+	typedef std::basic_string<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator,OOCore::OmegaFailure> > private_string;
+	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator,OOCore::OmegaFailure> > private_ostringstream;
 
 	class FormattingException :
 			public ExceptionImpl<Formatting::IFormattingException>
@@ -790,7 +792,7 @@ namespace
 		}
 	}
 
-	size_t parse_custom(const string_t& str, std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > >& parts)
+	size_t parse_custom(const string_t& str, std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator,OOCore::OmegaFailure> >& parts)
 	{
 		size_t pos = find_skip_quote(str,0,L";");
 		if (pos == string_t::npos)
@@ -1163,7 +1165,7 @@ namespace
 	template <typename T>
 	string_t fmt_custom(T val, const string_t& strFormat, int def_precision)
 	{
-		std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > > parts;
+		std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator,OOCore::OmegaFailure> > parts;
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
@@ -1275,7 +1277,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	if (strFormat.IsEmpty())
 		return (val ? string_t(L"true") : string_t(L"false"));
 
-	std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator<OOCore::OmegaFailure> > > parts;
+	std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator,OOCore::OmegaFailure> > parts;
 	if (parse_custom(strFormat,parts) != 2)
 		throw Formatting::IFormattingException::Create(L"Invalid Omega::bool_t format string: {0}" % strFormat);
 

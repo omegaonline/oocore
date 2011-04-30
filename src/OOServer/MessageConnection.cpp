@@ -712,11 +712,10 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	
 	if (bReport)
 	{
-		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > send_to;
-
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Propogate the message to all user processes...
+		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator> send_to;
 		for (size_t i=m_mapChannelIds.begin(); i!=m_mapChannelIds.npos; i=m_mapChannelIds.next(i))
 		{
 			// Always route upstream, and/or follow routing rules

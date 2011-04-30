@@ -128,7 +128,7 @@ namespace OOCore
 			Omega::uint32_t                           m_seq_no;
 			Omega::uint16_t                           m_current_cmpt;
 
-			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator<OOBase::NoFailure> > m_mapChannelThreads;
+			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator> m_mapChannelThreads;
 
 			static ThreadContext* instance();
 

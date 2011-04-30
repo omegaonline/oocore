@@ -21,6 +21,8 @@
 
 #include "OOCore_precomp.h"
 
+#include <OOBase/STLAllocator.h>
+
 #if defined(HAVE_UUID_UUID_H)
 #include <uuid/uuid.h>
 #endif
@@ -32,8 +34,8 @@ using namespace Omega;
 
 namespace
 {
-	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, OOBase::STLAllocator<wchar_t,OOBase::HeapAllocator<OOCore::OmegaFailure> > > private_wstring;
-	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator<OOCore::OmegaFailure> > > private_ostringstream;
+	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, OOBase::STLAllocator<wchar_t,OOBase::HeapAllocator,OOCore::OmegaFailure> > private_wstring;
+	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator,OOCore::OmegaFailure> > private_ostringstream;
 
 	struct StringNode : public Omega::System::ThrowingNew
 	{

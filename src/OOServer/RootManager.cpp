@@ -450,10 +450,10 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 	for (bool bFirst = true;bFirst;bFirst = false)
 	{
 		// See if we have a process already
-		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator<OOBase::CriticalFailure> > vecDead;
-		bool bFound = false;
-
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator> vecDead;
+		bool bFound = false;
 
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{

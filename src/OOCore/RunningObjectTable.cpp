@@ -155,7 +155,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	
 	try
 	{
-		OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > revoke_list;
+		OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
 		string_t strOid = oid.cast<string_t>();
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -230,7 +230,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	// Strip off the option flags
 	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
-	OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> > revoke_list;
+	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);

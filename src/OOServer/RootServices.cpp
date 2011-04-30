@@ -302,27 +302,25 @@ void Root::Manager::stop_services()
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::Stack<OOBase::SmartPtr<ControlledObject>,OOBase::LocalAllocator<OOBase::CriticalFailure> > mapObjects;
-
 	OOBase::SmartPtr<ControlledObject> ptrObj;
 	while (m_mapListeners.pop(NULL,&ptrObj))
-		mapObjects.push(ptrObj);
+	{
+		guard.release();
 
-	guard.release();
+		ptrObj = 0;
 
-	mapObjects.clear();
+		guard.acquire();
+	}
 
-	guard.acquire();
-
-	OOBase::Stack<OOBase::SmartPtr<Socket>,OOBase::LocalAllocator<OOBase::CriticalFailure> > mapSockets;
-	
 	OOBase::SmartPtr<Socket> ptrSock;
 	while (m_mapSockets.pop(NULL,&ptrSock))
-		mapSockets.push(ptrSock);
+	{
+		guard.release();
 
-	guard.release();
+		ptrSock = 0;
 
-	mapSockets.clear();
+		guard.acquire();
+	}
 }
 
 Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* pSocket)

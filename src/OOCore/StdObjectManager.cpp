@@ -241,8 +241,6 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 
 void OOCore::StdObjectManager::Shutdown()
 {
-	std::vector<ObjectPtr<ObjectImpl<Stub> >,OOBase::STLAllocator<ObjectPtr<ObjectImpl<Stub> >,OOBase::LocalAllocator<OOCore::OmegaFailure> > > vecStubs;
-	
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Clear the proxys

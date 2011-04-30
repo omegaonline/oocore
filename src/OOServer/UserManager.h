@@ -101,7 +101,7 @@ namespace User
 		Omega::Remoting::IChannel* open_remote_channel_i(const Omega::string_t& strEndpoint);
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
-		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> >& channels);
+		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator>& channels);
 
 		// Service handling
 		OOBase::RWMutex m_service_lock;

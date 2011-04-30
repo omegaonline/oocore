@@ -836,7 +836,7 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	return channel.ptrRemoteChannel.AddRef();
 }
 
-void User::Manager::local_channel_closed(OOBase::Stack<uint32_t,OOBase::LocalAllocator<OOBase::NoFailure> >& channels)
+void User::Manager::local_channel_closed(OOBase::Stack<uint32_t,OOBase::LocalAllocator>& channels)
 {
 	// Local channels have closed
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);

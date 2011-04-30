@@ -56,7 +56,7 @@ namespace Registry
 
 		bool open(int flags);
 
-		typedef OOBase::Stack<OOBase::String,OOBase::LocalAllocator<OOBase::NoFailure> > registry_set_t;
+		typedef OOBase::Stack<OOBase::String,OOBase::LocalAllocator> registry_set_t;
 
 		int open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
 		int create_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id);

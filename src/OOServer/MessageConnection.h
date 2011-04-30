@@ -218,6 +218,7 @@ namespace OOServer
 		io_result::type queue_message(OOBase::SmartPtr<Message>& msg);
 		io_result::type wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg);
+		bool process_request_context(ThreadContext* pContext, OOBase::SmartPtr<Message> msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline = NULL);
 
 		void process_channel_close(OOBase::SmartPtr<Message>& msg);
 		void process_async_function(OOBase::SmartPtr<Message>& msg);

@@ -698,27 +698,14 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
 			// Its gone... user process has terminated
-			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Default message queue popped unusually"));
+			throw Remoting::IChannelClosedException::Create();
 		}
 
 		if (msg->m_type == Message::Request)
 		{
-			ThreadContext* pContext = ThreadContext::instance();
-
-			try
-			{
-				// Don't confuse the wait deadline with the message processing deadline
-				process_request(pContext,msg,0);
-			}
-			catch (...)
-			{
-				pContext->m_mapChannelThreads.clear();
-				throw;
-			}
-
-			// Clear the channel/threads map
-			pContext->m_mapChannelThreads.clear();
-
+			// Don't confuse the wait deadline with the message processing deadline
+			process_request(ThreadContext::instance(),msg,0);
+			
 			// We processed something
 			return true;
 		}
@@ -1047,6 +1034,8 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	{
 		if (v)
 			*v = old_thread_id;
+		else
+			pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
 
 		pContext->m_deadline = old_deadline;
 		pContext->m_current_cmpt = old_id;
@@ -1056,6 +1045,8 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	// Restore old context
 	if (v)
 		*v = old_thread_id;
+	else
+		pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
 	
 	pContext->m_deadline = old_deadline;
 	pContext->m_current_cmpt = old_id;

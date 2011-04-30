@@ -522,12 +522,12 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 			LOG_ERROR(("Corrupt message: %s",OOBase::system_error_text(err)));
 		else if (type == Message_t::Request)
 		{
-			// Set deadline
-			OOBase::timeval_t old_deadline = pContext->m_deadline;
-			pContext->m_deadline = msg->m_deadline;
-
 			if (msg->m_attribs & Message_t::system_message)
 			{
+				// Set deadline
+				OOBase::timeval_t old_deadline = pContext->m_deadline;
+				pContext->m_deadline = msg->m_deadline;
+
 				if ((msg->m_attribs & Message_t::system_message) == Message_t::async_function)
 					process_async_function(msg);
 				else if ((msg->m_attribs & Message_t::system_message) == Message_t::channel_close)
@@ -550,29 +550,15 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 				}
 				else
 					LOG_ERROR(("Unrecognised system message"));
+
+				// Reset deadline
+				pContext->m_deadline = old_deadline;
 			}
 			else
 			{
-				// Set per channel thread id
-				Omega::uint16_t* v = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-				if (v)
-					*v = msg->m_src_thread_id;
-				else
-				{
-					err = pContext->m_mapChannelThreads.insert(msg->m_src_channel_id,msg->m_src_thread_id);
-					if (err != 0)
-						LOG_ERROR(("Failed to update thread channel information: %s",OOBase::system_error_text(err)));
-				}
-
 				// Process the message...
-				process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-				
-				// Clear the channel/threads map
-				pContext->m_mapChannelThreads.clear();
+				process_request_context(pContext,msg,seq_no);
 			}
-
-			// Reset deadline
-			pContext->m_deadline = old_deadline;
 		}
 		else
 			LOG_ERROR(("Discarding response in message pump"));
@@ -954,36 +940,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		{
 			if (type == Message_t::Request)
 			{
-				// Update deadline
-				OOBase::timeval_t old_deadline = pContext->m_deadline;
-				pContext->m_deadline = msg->m_deadline;
-				if (deadline && *deadline < pContext->m_deadline)
-					pContext->m_deadline = *deadline;
-
-				Omega::uint16_t old_thread_id = 0;
-
-				// Set per channel thread id
-				Omega::uint16_t* v = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-				if (v)
-				{
-					old_thread_id = *v;
-					*v = msg->m_src_thread_id;
-				}
-				else
-				{
-					err = pContext->m_mapChannelThreads.insert(msg->m_src_channel_id,msg->m_src_thread_id);
-					if (err != 0)
-						LOG_ERROR(("Failed to update thread channel information: %s",OOBase::system_error_text(err)));
-				}
-
-				// Process the message...
-				process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-				
-				// Restore old per channel thread id
-				if (v)
-					*v = old_thread_id;
-				
-				pContext->m_deadline = old_deadline;
+				process_request_context(pContext,msg,recv_seq_no,deadline);
 			}
 			else if (type == Message_t::Response && recv_seq_no == seq_no)
 			{
@@ -1003,6 +960,43 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 	}
 
 	return ret;
+}
+
+bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, OOBase::SmartPtr<Message> msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline)
+{
+	// Set per channel thread id
+	Omega::uint16_t old_thread_id = 0;
+	Omega::uint16_t* v = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+	if (v)
+	{
+		old_thread_id = *v;
+		*v = msg->m_src_thread_id;
+	}
+	else
+	{
+		int err = pContext->m_mapChannelThreads.insert(msg->m_src_channel_id,msg->m_src_thread_id);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to update thread channel information: %s",OOBase::system_error_text(err)),false);
+	}
+
+	// Update deadline
+	OOBase::timeval_t old_deadline = pContext->m_deadline;
+	pContext->m_deadline = msg->m_deadline;
+	if (deadline && *deadline < pContext->m_deadline)
+		pContext->m_deadline = *deadline;
+
+	// Process the message...
+	process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+	
+	pContext->m_deadline = old_deadline;
+
+	// Restore old per channel thread id
+	if (v)
+		*v = old_thread_id;
+	else
+		pContext->m_mapChannelThreads.erase(msg->m_src_channel_id);
+	
+	return true;
 }
 
 void OOServer::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)

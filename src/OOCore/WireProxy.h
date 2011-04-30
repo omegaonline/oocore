@@ -95,10 +95,11 @@ namespace OOCore
 		Proxy(const Proxy&);
 		Proxy& operator = (const Proxy&);
 
-		OOBase::SpinLock                   m_lock;
-		Omega::uint32_t                    m_proxy_id;
-		StdObjectManager*                  m_pManager;
-		std::map<Omega::guid_t,bool>       m_iids;
+		OOBase::SpinLock                      m_lock;
+		Omega::uint32_t                       m_proxy_id;
+		StdObjectManager*                     m_pManager;
+
+		OOBase::HashTable<Omega::guid_t,bool,OOBase::HeapAllocator,GuidHash> m_iids;
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
 		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);

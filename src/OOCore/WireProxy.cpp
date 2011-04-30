@@ -69,10 +69,10 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	if (iid == OMEGA_GUIDOF(IObject))
 		return false;
 
-	std::map<Omega::guid_t,bool>::const_iterator i = m_iids.find(iid);
-	if (i != m_iids.end())
-		return i->second;
-
+	bool b;
+	if (m_iids.find(iid,b))
+		return b;
+	
 	guard.release();
 
 	ObjectPtr<Remoting::IMessage> pParamsOut;
@@ -95,7 +95,9 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 
 	guard.acquire();
 
-	m_iids.insert(std::map<Omega::guid_t,bool_t>::value_type(iid,bOk));
+	int err = m_iids.replace(iid,bOk);
+	if (err != 0)
+		OMEGA_THROW(err);
 
 	return bOk;
 }
@@ -130,8 +132,11 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-		m_iids.insert(std::map<Omega::guid_t,bool>::value_type(OMEGA_GUIDOF(IObject),true));
-		m_iids.insert(std::map<Omega::guid_t,bool>::value_type(iid,true));
+		int err = m_iids.replace(OMEGA_GUIDOF(IObject),true);
+		if (err == 0)
+			err = m_iids.replace(iid,true);
+		if (err != 0)
+			OMEGA_THROW(err);
 	}
 
 	// Create a wire_proxy...

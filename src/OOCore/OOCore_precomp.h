@@ -97,6 +97,25 @@ namespace OOCore
 			OMEGA_THROW_NOMEM();
 		}
 	};
+
+	struct GuidHash
+	{
+		static size_t hash(const Omega::guid_base_t& v)
+		{
+			size_t r = v.Data1;
+			r ^= v.Data2;
+			r ^= (v.Data3 << 16);
+			r ^= (v.Data4[0] << 24);
+			r ^= (v.Data4[1] << 16);
+			r ^= (v.Data4[2] << 8);
+			r ^= v.Data4[3];
+			r ^= (v.Data4[4] << 24);
+			r ^= (v.Data4[5] << 16);
+			r ^= (v.Data4[6] << 8);
+			r ^= v.Data4[7];
+			return r;
+		}
+	};
 }
 
 #include "Formatting.h"

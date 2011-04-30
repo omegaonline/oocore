@@ -74,17 +74,17 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// See if we have a stub for this interface already...
-	std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator i=m_iid_map.find(iid);
-	if (i != m_iid_map.end())
-		return i->second;
+	ObjectPtr<Remoting::IStub> ptrStub;
+	if (m_iid_map.find(iid,ptrStub))
+		return ptrStub;
 
 	// See if any known interface supports the new interface
-	ObjectPtr<Remoting::IStub> ptrStub;
-	for (i=m_iid_map.begin(); i!=m_iid_map.end(); ++i)
+	for (size_t i=m_iid_map.begin(); i!=m_iid_map.npos; i=m_iid_map.next(i))
 	{
-		if (i->second && i->second->SupportsInterface(iid))
+		ObjectPtr<Remoting::IStub> ptrStub2 = *m_iid_map.at(i);
+		if (ptrStub2 && ptrStub2->SupportsInterface(iid))
 		{
-			ptrStub = i->second;
+			ptrStub = ptrStub2;
 			break;
 		}
 	}
@@ -93,9 +93,9 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 		ptrStub.Attach(CreateStub(iid));
 
 	// Now add it...
-	std::pair<std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<Remoting::IStub> >::value_type(iid,ptrStub));
-	if (!p.second)
-		ptrStub = p.first->second;
+	int err = m_iid_map.insert(iid,ptrStub);
+	if (err != 0)
+		OMEGA_THROW(err);
 
 	return ptrStub;
 }

@@ -642,7 +642,9 @@ int OOCore::UserSession::run_read_loop()
 				size_t waiting = pContext->m_usage_count;
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+					OOBase_CallCriticalFailure(pContext->m_msg_queue.last_error());
+				else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 				{
 					if (waiting == 0)
 						wait_or_alert(pContext->m_usage_count);
@@ -657,7 +659,9 @@ int OOCore::UserSession::run_read_loop()
 				size_t waiting = m_usage_count;
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+					OOBase_CallCriticalFailure(m_default_msg_queue.last_error());
+				else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 				{
 					if (waiting == 0)
 						wait_or_alert(m_usage_count);
@@ -688,14 +692,15 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
-
+		
 		// Decrement the consumers...
 		--m_usage_count;
 
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+			OOBase_CallCriticalFailure(m_default_msg_queue.last_error());
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
 			return false;
-
-		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
 			// Its gone... user process has terminated
 			throw Remoting::IChannelClosedException::Create();
@@ -762,7 +767,9 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::wait_for_response(uint3
 		// Decrement the usage count
 		--pContext->m_usage_count;
 
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+			OOBase_CallCriticalFailure(pContext->m_msg_queue.last_error());
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
 			if (msg->m_type == Message::Request)
 			{

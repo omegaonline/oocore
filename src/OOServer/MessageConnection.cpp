@@ -488,11 +488,13 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,&wait2);
-
+		
 		// Dec usage count
 		size_t waiters = --m_waiting_threads;
 
-		if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+			LOG_ERROR_RETURN(("Message pump failed: %s",OOBase::system_error_text(m_default_msg_queue.last_error())),0);
+		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 		{
 			// If we have too many threads running, or we were waiting or closed, exit this thread
 			if (wait || res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed || (waiters > 2 && !bOnce))
@@ -778,6 +780,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 		ThreadContext* pContext = NULL;
 		if (m_mapThreadContexts.find(msg->m_dest_thread_id,pContext))
 			res = pContext->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+			LOG_ERROR_RETURN(("Message pump failed: %s",OOBase::system_error_text(pContext->m_msg_queue.last_error())),io_result::failed);
 	}
 	else
 	{
@@ -787,6 +792,8 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 
 		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success && waiting <= 1)
 			start_thread();
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+			LOG_ERROR_RETURN(("Message pump failed: %s",OOBase::system_error_text(m_default_msg_queue.last_error())),io_result::failed);
 	}
 
 	if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
@@ -907,7 +914,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.pop(msg,deadline);
 
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::pulsed)
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+			LOG_ERROR_RETURN(("Message pump failed: %s",OOBase::system_error_text(pContext->m_msg_queue.last_error())),io_result::failed);
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::pulsed)
 			continue;
 		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
 		{

@@ -159,6 +159,9 @@ namespace Omega
 			class safe_holder
 			{
 			public:
+				safe_holder();
+				~safe_holder();
+
 				IObject* add(const SafeShim* shim, IObject* pObject);
 				const SafeShim* add(IObject* pObject, const SafeShim* shim);
 
@@ -168,9 +171,7 @@ namespace Omega
 				void remove(const SafeShim* shim);
 
 			private:
-				Threading::Mutex                   m_lock;
-				std::map<IObject*,const SafeShim*> m_obj_map;
-				std::map<const SafeShim*,IObject*> m_shim_map;
+				void* m_handle;
 			};
 			typedef Threading::Singleton<safe_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_HOLDER;
 

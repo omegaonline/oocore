@@ -22,76 +22,58 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_holder__ctor,0,());
+inline Omega::System::Internal::safe_holder::safe_holder() : m_handle(NULL)
+{
+	m_handle = OOCore_safe_holder__ctor();
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder__dctor,1,((in),void*,handle));
+inline Omega::System::Internal::safe_holder::~safe_holder()
+{
+	OOCore_safe_holder__dctor(m_handle);
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_safe_holder_add1,3,((in),void*,handle,(in),const Omega::System::Internal::SafeShim*,shim,(in),Omega::IObject*,pObject));
 inline Omega::IObject* Omega::System::Internal::safe_holder::add(const SafeShim* shim, IObject* pObject)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
+	IObject* pRet = OOCore_safe_holder_add1(m_handle,shim,pObject);
+	if (pRet)
+		pRet->AddRef();
 
-	std::pair<std::map<const SafeShim*,IObject*>::iterator,bool> p1 = m_shim_map.insert(std::map<const SafeShim*,IObject*>::value_type(shim,pObject));
-	if (!p1.second)
-	{
-		p1.first->second->AddRef();
-		return p1.first->second;
-	}
-
-	std::pair<std::map<IObject*,const SafeShim*>::iterator,bool> p2 = m_obj_map.insert(std::map<IObject*,const SafeShim*>::value_type(pObject,shim));
-	assert(p2.second);
-
-	return 0;
+	return pRet;
 }
 
-inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::add(IObject* pObject, const Omega::System::Internal::SafeShim* shim)
+OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::SafeShim*,OOCore_safe_holder_add2,3,((in),void*,handle,(in),Omega::IObject*,pObject,(in),const Omega::System::Internal::SafeShim*,shim));
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::add(IObject* pObject, const SafeShim* shim)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
+	const SafeShim* pRet = OOCore_safe_holder_add2(m_handle,pObject,shim);
+	if (pRet)
+		addref_safe(pRet);
 
-	std::pair<std::map<IObject*,const SafeShim*>::iterator,bool> p1 = m_obj_map.insert(std::map<IObject*,const SafeShim*>::value_type(pObject,shim));
-	if (!p1.second)
-	{
-		addref_safe(p1.first->second);
-		return p1.first->second;
-	}
-
-	std::pair<std::map<const SafeShim*,IObject*>::iterator,bool> p2 = m_shim_map.insert(std::map<const SafeShim*,IObject*>::value_type(shim,pObject));
-	assert(p2.second);
-
-	return 0;
+	return pRet;
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::SafeShim*,OOCore_safe_holder_find,2,((in),void*,handle,(in),Omega::IObject*,pObject));
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::find(IObject* pObject)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
+	const SafeShim* pRet = OOCore_safe_holder_find(m_handle,pObject);
+	if (pRet)
+		addref_safe(pRet);
 
-	std::map<IObject*,const SafeShim*>::const_iterator i=m_obj_map.find(pObject);
-	if (i != m_obj_map.end())
-	{
-		addref_safe(i->second);
-		return i->second;
-	}
-
-	return 0;
+	return pRet;
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove1,2,((in),void*,handle,(in),Omega::IObject*,pObject))
 inline void Omega::System::Internal::safe_holder::remove(IObject* pObject)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
-
-	std::map<IObject*,const SafeShim*>::iterator i=m_obj_map.find(pObject);
-	if (i != m_obj_map.end())
-	{
-		m_shim_map.erase(i->second);
-		m_obj_map.erase(i);
-	}
+	OOCore_safe_holder_remove1(m_handle,pObject);
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*,handle,(in),const Omega::System::Internal::SafeShim*,shim))
 inline void Omega::System::Internal::safe_holder::remove(const SafeShim* shim)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
-
-	std::map<const SafeShim*,IObject*>::iterator i=m_shim_map.find(shim);
-	if (i != m_shim_map.end())
-	{
-		m_obj_map.erase(i->second);
-		m_shim_map.erase(i);
-	}
+	OOCore_safe_holder_remove2(m_handle,shim);
 }
 
 inline Omega::IObject* Omega::System::Internal::Safe_Proxy_Base::QueryInterface(const guid_t& iid)
@@ -116,7 +98,7 @@ inline Omega::IObject* Omega::System::Internal::Safe_Proxy_Base::QueryInterface(
 	return create_safe_proxy(retval,iid);
 }
 
-inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim* shim, const Omega::guid_t& iid)
+inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim* shim, const guid_t& iid)
 {
 	if (!shim)
 		return 0;
@@ -172,7 +154,7 @@ inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shi
 	create_safe_proxy<IException>(shim)->Rethrow();
 }
 
-inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(Omega::IObject* pObj, const Omega::guid_t& iid)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(IObject* pObj, const guid_t& iid)
 {
 	if (!pObj)
 		return 0;
@@ -215,7 +197,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 	return shim;
 }
 
-inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_safe_exception(Omega::IException* pE)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_safe_exception(IException* pE)
 {
 	auto_iface_ptr<IException> ptrE(pE);
 	return create_safe_stub(pE,pE->GetThrownIID());

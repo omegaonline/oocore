@@ -412,6 +412,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Safe.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\StdObjectManager.cpp"
 				>
 			</File>

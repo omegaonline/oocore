@@ -29,30 +29,33 @@ namespace Omega
 		void* Allocate(size_t bytes);
 		void Free(void* mem);
 
-		class ThrowingNew
+		namespace Internal
 		{
-		public:
-			// Custom new and delete
-			void* operator new(size_t size)
+			class ThrowingNew
 			{
-				return Omega::System::Allocate(size);
-			}
+			public:
+				// Custom new and delete
+				void* operator new(size_t size)
+				{
+					return Omega::System::Allocate(size);
+				}
 
-			void* operator new[](size_t size)
-			{
-				return Omega::System::Allocate(size);
-			}
+				void* operator new[](size_t size)
+				{
+					return Omega::System::Allocate(size);
+				}
 
-			void operator delete(void* p)
-			{
-				Omega::System::Free(p);
-			}
+				void operator delete(void* p)
+				{
+					Omega::System::Free(p);
+				}
 
-			void operator delete[](void* p)
-			{
-				Omega::System::Free(p);
-			}
-		};
+				void operator delete[](void* p)
+				{
+					Omega::System::Free(p);
+				}
+			};
+		}
 	}
 }
 

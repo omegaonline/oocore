@@ -320,7 +320,7 @@ namespace OTL
 	template <>
 	class ObjectPtr<Omega::Registry::IKey>;
 
-	class ObjectBase : public Omega::System::ThrowingNew
+	class ObjectBase : public Omega::System::Internal::ThrowingNew
 	{
 	protected:
 		ObjectBase()

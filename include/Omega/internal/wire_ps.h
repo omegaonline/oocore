@@ -43,7 +43,7 @@ namespace Omega
 			};
 			typedef Threading::Singleton<wire_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_HOLDER;
 
-			class Wire_Proxy_Base : public System::ThrowingNew
+			class Wire_Proxy_Base : public System::Internal::ThrowingNew
 			{
 			protected:
 				Wire_Proxy_Base(Remoting::IProxy* pProxy) :
@@ -324,7 +324,7 @@ namespace Omega
 				}
 			};
 
-			class Wire_Stub_Base : public Remoting::IStub, public System::ThrowingNew
+			class Wire_Stub_Base : public Remoting::IStub, public System::Internal::ThrowingNew
 			{
 			public:
 				template <typename I>

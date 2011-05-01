@@ -175,7 +175,7 @@ namespace Omega
 			};
 			typedef Threading::Singleton<safe_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_HOLDER;
 
-			class Safe_Proxy_Base : public System::ThrowingNew
+			class Safe_Proxy_Base : public System::Internal::ThrowingNew
 			{
 			protected:
 				Safe_Proxy_Base(const SafeShim* shim) :
@@ -425,7 +425,7 @@ namespace Omega
 				}
 			};
 
-			class Safe_Stub_Base : public System::ThrowingNew
+			class Safe_Stub_Base : public System::Internal::ThrowingNew
 			{
 			public:
 				void AddRef()

@@ -22,39 +22,42 @@
 #ifndef OOCORE_WIRE_INL_INCLUDED_
 #define OOCORE_WIRE_INL_INCLUDED_
 
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_holder__ctor,0,());
+inline Omega::System::Internal::wire_holder::wire_holder() : m_handle(NULL)
+{
+	m_handle = OOCore_wire_holder__ctor();
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder__dctor,1,((in),void*,handle));
+inline Omega::System::Internal::wire_holder::~wire_holder()
+{
+	OOCore_wire_holder__dctor(m_handle);
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_add,3,((in),void*,handle,(in),Omega::IObject*,pProxy,(in),Omega::IObject*,pObject));
 inline Omega::IObject* Omega::System::Internal::wire_holder::add(IObject* pProxy, IObject* pObject)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
-
-	std::pair<std::map<IObject*,IObject*>::iterator,bool> p = m_map.insert(std::map<IObject*,IObject*>::value_type(pProxy,pObject));
-	if (!p.second)
-	{
-		p.first->second->AddRef();
-		return p.first->second;
-	}
-
-	return 0;
+	IObject* pRet = OOCore_wire_holder_add(m_handle,pProxy,pObject);
+	if (pRet)
+		pRet->AddRef();
+		
+	return pRet;
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_find,2,((in),void*,handle,(in),Omega::IObject*,pProxy));
 inline Omega::IObject* Omega::System::Internal::wire_holder::find(IObject* pProxy)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
-
-	std::map<IObject*,IObject*>::const_iterator i=m_map.find(pProxy);
-	if (i != m_map.end())
-	{
-		i->second->AddRef();
-		return i->second;
-	}
-
-	return 0;
+	IObject* pRet = OOCore_wire_holder_find(m_handle,pProxy);
+	if (pRet)
+		pRet->AddRef();
+		
+	return pRet;
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder_remove,2,((in),void*,handle,(in),Omega::IObject*,pProxy));
 inline void Omega::System::Internal::wire_holder::remove(IObject* pProxy)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
-
-	m_map.erase(pProxy);
+	OOCore_wire_holder_remove(m_handle,pProxy);
 }
 
 inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::Internal::Wire_Proxy_Base::CreateMessage(const guid_t& iid, uint32_t method_id)

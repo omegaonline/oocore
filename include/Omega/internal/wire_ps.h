@@ -33,13 +33,15 @@ namespace Omega
 			class wire_holder
 			{
 			public:
+				wire_holder();
+				~wire_holder();
+
 				IObject* add(IObject* pProxy, IObject* pObject);
 				IObject* find(IObject* pProxy);
 				void remove(IObject* pProxy);
 
 			private:
-				Threading::Mutex            m_lock;
-				std::map<IObject*,IObject*> m_map;
+				void* m_handle;				
 			};
 			typedef Threading::Singleton<wire_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_HOLDER;
 

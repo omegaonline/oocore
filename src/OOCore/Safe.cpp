@@ -24,8 +24,6 @@
 // These functions are all raw, despite the fact they use non-POD pointers,
 // as the pointers are no manipulated
 
-#include <map>
-
 namespace
 {
 	struct SafeHolder
@@ -122,4 +120,66 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*
 	Omega::IObject* pObject;
 	if (pThis->m_shim_map.erase(shim,&pObject))
 		pThis->m_obj_map.erase(pObject);
+}
+
+namespace
+{
+	struct WireHolder
+	{
+		OOBase::SpinLock m_lock;
+
+		OOBase::HashTable<Omega::IObject*,Omega::IObject*> m_map;
+	};
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_holder__ctor,0,())
+{
+	WireHolder* ret = new (std::nothrow) WireHolder;
+	if (!ret)
+		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+
+	return ret;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder__dctor,1,((in),void*,handle))
+{
+	delete static_cast<WireHolder*>(handle);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_add,3,((in),void*,handle,(in),Omega::IObject*,pProxy,(in),Omega::IObject*,pObject))
+{
+	WireHolder* pThis = static_cast<WireHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	int err = pThis->m_map.insert(pProxy,pObject);
+	if (err == EEXIST)
+		return *pThis->m_map.find(pProxy);
+
+	if (err != 0)
+		OMEGA_THROW(err);
+	
+	return NULL;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_find,2,((in),void*,handle,(in),Omega::IObject*,pProxy))
+{
+	WireHolder* pThis = static_cast<WireHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	Omega::IObject* pObj = NULL;
+
+	pThis->m_map.find(pProxy,pObj);
+	
+	return pObj;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder_remove,2,((in),void*,handle,(in),Omega::IObject*,pProxy))
+{
+	WireHolder* pThis = static_cast<WireHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	pThis->m_map.erase(pProxy);
 }

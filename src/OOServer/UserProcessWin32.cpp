@@ -117,11 +117,14 @@ User::Process* User::Process::exec(const wchar_t* pszExeName)
 
 void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine)
 {
+	DWORD dwFlags = DETACHED_PROCESS;
+
 #if defined(OMEGA_DEBUG)
 	OOBase::Win32::SmartHandle hDebugEvent;
 	if (IsDebuggerPresent())
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Local\\OOCORE_DEBUG_MUTEX");
 
+	dwFlags = CREATE_NEW_CONSOLE;
 #endif // OMEGA_DEBUG
 
 	STARTUPINFOW si = {0};
@@ -129,7 +132,7 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> pt
 
 	// Spawn the process
 	PROCESS_INFORMATION pi = {0};
-	if (!CreateProcessW(NULL,ptrCmdLine,NULL,NULL,FALSE,0,NULL,NULL,&si,&pi))
+	if (!CreateProcessW(NULL,ptrCmdLine,NULL,NULL,FALSE,dwFlags,NULL,NULL,&si,&pi))
 	{
 		DWORD dwErr = GetLastError();
 		OMEGA_THROW(dwErr);

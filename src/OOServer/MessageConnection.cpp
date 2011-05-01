@@ -1000,7 +1000,11 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 
 	// Restore old per channel thread id
 	if (v)
-		*v = old_thread_id;
+	{
+		v = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+		if (v)
+			*v = old_thread_id;
+	}
 	else
 		pContext->m_mapChannelThreads.erase(msg->m_src_channel_id);
 	

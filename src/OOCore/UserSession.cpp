@@ -1040,7 +1040,11 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	catch (...)
 	{
 		if (v)
-			*v = old_thread_id;
+		{
+			v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
+			if (v)
+				*v = old_thread_id;
+		}
 		else
 			pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
 
@@ -1051,7 +1055,11 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 
 	// Restore old context
 	if (v)
-		*v = old_thread_id;
+	{
+		v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
+		if (v)
+			*v = old_thread_id;
+	}
 	else
 		pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
 	

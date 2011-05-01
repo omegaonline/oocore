@@ -22,7 +22,55 @@
 #include "OOCore_precomp.h"
 
 // These functions are all raw, despite the fact they use non-POD pointers,
-// as the pointers are no manipulated
+// as the pointers are not manipulated
+
+namespace
+{
+	struct QIRttiHolder
+	{
+		OOBase::SpinLock m_lock;
+
+		OOBase::HashTable<Omega::guid_t,const Omega::System::Internal::qi_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
+	};
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_qi_rtti_holder__ctor,0,())
+{
+	QIRttiHolder* ret = new (std::nothrow) QIRttiHolder;
+	if (!ret)
+		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+
+	return ret;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder__dctor,1,((in),void*,handle))
+{
+	delete static_cast<QIRttiHolder*>(handle);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::qi_rtti*,OOCore_qi_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid))
+{
+	QIRttiHolder* pThis = static_cast<QIRttiHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	const Omega::System::Internal::qi_rtti* pRet = NULL;
+
+	pThis->m_map.find(*iid,pRet);
+
+	return pRet;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::qi_rtti*,pRtti))
+{
+	QIRttiHolder* pThis = static_cast<QIRttiHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	int err = pThis->m_map.replace(*iid,pRtti);
+	if (err != 0)
+		OOBase_CallCriticalFailure(err);
+}
 
 namespace
 {
@@ -120,6 +168,54 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*
 	Omega::IObject* pObject;
 	if (pThis->m_shim_map.erase(shim,&pObject))
 		pThis->m_obj_map.erase(pObject);
+}
+
+namespace
+{
+	struct WireRttiHolder
+	{
+		OOBase::SpinLock m_lock;
+
+		OOBase::HashTable<Omega::guid_t,const Omega::System::Internal::wire_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
+	};
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_rtti_holder__ctor,0,())
+{
+	WireRttiHolder* ret = new (std::nothrow) WireRttiHolder;
+	if (!ret)
+		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+
+	return ret;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__dctor,1,((in),void*,handle))
+{
+	delete static_cast<WireRttiHolder*>(handle);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid))
+{
+	WireRttiHolder* pThis = static_cast<WireRttiHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	const Omega::System::Internal::wire_rtti* pRet = NULL;
+
+	pThis->m_map.find(*iid,pRet);
+
+	return pRet;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::wire_rtti*,pRtti))
+{
+	WireRttiHolder* pThis = static_cast<WireRttiHolder*>(handle);
+
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
+
+	int err = pThis->m_map.replace(*iid,pRtti);
+	if (err != 0)
+		OOBase_CallCriticalFailure(err);
 }
 
 namespace

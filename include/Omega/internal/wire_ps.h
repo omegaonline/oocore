@@ -481,26 +481,27 @@ namespace Omega
 				Remoting::IStub* (*pfnCreateWireStub)(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI);
 			};
 
-			typedef Threading::Singleton<std::map<guid_t,const wire_rtti*>,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_RTTI_HOLDER;
+			struct wire_rtti_holder
+			{
+				wire_rtti_holder();
+				~wire_rtti_holder();
+
+				const wire_rtti* get_rtti_info(const guid_base_t* iid);
+				void register_rtti_info(const guid_base_t* iid, const wire_rtti* pRtti);
+
+			private:
+				void* m_handle;
+			};
+			typedef Threading::Singleton<wire_rtti_holder,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_RTTI_HOLDER;
 
 			inline static const wire_rtti* get_wire_rtti_info(const guid_t& iid)
 			{
-				try
-				{
-					std::map<guid_t,const wire_rtti*>* iid_map = WIRE_RTTI_HOLDER::instance();
-					std::map<guid_t,const wire_rtti*>::const_iterator i=iid_map->find(iid);
-					if (i != iid_map->end())
-						return i->second;
-				}
-				catch (std::exception&)
-				{}
-
-				return 0;
+				return WIRE_RTTI_HOLDER::instance()->get_rtti_info(&iid);
 			}
 
 			inline static void register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti)
 			{
-				WIRE_RTTI_HOLDER::instance()->insert(std::map<guid_t,const wire_rtti*>::value_type(iid,pRtti));
+				WIRE_RTTI_HOLDER::instance()->register_rtti_info(&iid,pRtti);
 			}
 
 			OMEGA_WIRE_MAGIC(Omega,IObject)

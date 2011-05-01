@@ -24,7 +24,6 @@
 #include <OOBase/STLAllocator.h>
 
 #include <sstream>
-#include <limits.h>
 
 using namespace Omega;
 using namespace OTL;

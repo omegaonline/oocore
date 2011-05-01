@@ -56,8 +56,6 @@
 
 //////////////////////////////////////////////
 
-#include <map>
-
 #include "MessageConnection.h"
 
 OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocketPtr ptrSocket) :

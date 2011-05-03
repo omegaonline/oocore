@@ -239,18 +239,23 @@ bool Root::Manager::load_config_file(const char* pszFile)
 			
 			// Find the next linefeed
 			size_t end = strBuffer.find('\n',start);
-			if (end == OOBase::String::npos && !bEof)
+			if (end == OOBase::String::npos)
 			{
-				// Incomplete line
-				break;
+				if (!bEof)
+				{
+					// Incomplete line
+					break;
+				}
+
+				end = strBuffer.length();
 			}
 			
 			// Skip everything after #
 			size_t hash = strBuffer.find('#',start);
 							
 			// Trim trailing whitespace
-			size_t valend = (hash < end ? hash : end);
-			while (valend > start && strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' ')
+			size_t valend = (hash != OOBase::String::npos ? hash : end);
+			while (valend > start && (strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' '))
 				--valend;
 			
 			if (valend > start)
@@ -263,7 +268,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				{
 					// Trim trailing whitespace before =
 					size_t keyend = eq;
-					while (keyend > start && strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' ')
+					while (keyend > start && (strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' '))
 						--keyend;
 					
 					if (keyend > start)
@@ -277,7 +282,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 					
 						// Skip leading whitespace after =
 						size_t valpos = eq+1;
-						while (valpos < valend && strBuffer[valpos] == '\t' || strBuffer[valpos] == ' ')
+						while (valpos < valend && (strBuffer[valpos] == '\t' || strBuffer[valpos] == ' '))
 							++valpos;
 						
 						if (valpos < valend)
@@ -293,22 +298,14 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				}
 				else
 				{
-					// Trim trailing whitespace
-					size_t keyend = end;
-					while (keyend > start && strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' ')
-						--keyend;
+					err = strKey.assign(strBuffer.c_str() + start,valend-start);
+					if (err == 0)
+						err = strValue.assign("true",4);
 					
-					if (keyend > start)
+					if (err != 0)
 					{
-						err = strKey.assign(strBuffer.c_str() + start,keyend-start);
-						if (err == 0)
-							err = strValue.assign("true",4);
-						
-						if (err != 0)
-						{
-							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-							break;
-						}
+						LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
+						break;
 					}
 				}
 				

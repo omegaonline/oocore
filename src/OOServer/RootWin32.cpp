@@ -46,8 +46,6 @@
 
 /*bool Root::Manager::secure_file(const char* pszFile, bool bPublicRead)
 {
-    OOBase::local_wstring strFilename = OOBase::from_utf8(strFile.c_str());
-
     // Create a SID for the BUILTIN\Users group.
     PSID pSid;
     SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
@@ -111,8 +109,8 @@
     OOBase::SmartPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
 
     // Try to modify the object's DACL.
-    dwErr = SetNamedSecurityInfoW(
-        const_cast<wchar_t*>(strFilename.c_str()), // name of the object
+    dwErr = SetNamedSecurityInfoA(
+        pszFile,                                 // name of the object
         SE_FILE_OBJECT,                          // type of object
         DACL_SECURITY_INFORMATION |              // change only the object's DACL
         PROTECTED_DACL_SECURITY_INFORMATION,     // And don't inherit!
@@ -121,7 +119,7 @@
         NULL);                                   // don't change SACL
 
     if (dwErr != 0)
-        LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
+        LOG_ERROR_RETURN(("SetNamedSecurityInfoA failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
     return true;
 }*/

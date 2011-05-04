@@ -67,7 +67,7 @@ namespace OOCore
 	class UserSession
 	{
 	public:
-		static Omega::IException* init(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
+		static Omega::IException* init(const Omega::string_t& args);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
 		static Omega::Activation::IRunningObjectTable* get_rot();
@@ -148,11 +148,12 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void init_i(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
-		void start(bool bStandalone, const std::map<Omega::string_t,Omega::string_t>& args);
+		void init_i(const Omega::string_t& args);
+		void start(const Omega::string_t& args);
 		void term_i();
 		void stop();
 		void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe);
+		void parse_args(const Omega::string_t& str, OOBase::Table<Omega::string_t,Omega::string_t>& args);
 
 		// Uninitialise destructors
 		void close_singletons_i();

@@ -27,7 +27,7 @@ class InterProcessService :
 		public OOCore::IInterProcessService
 {
 public:
-	void Load(const Omega::init_arg_map_t& args);
+	void Load(const Omega::string_t& args);
 	
 	Omega::string_t GetArg(const Omega::string_t& arg);
 
@@ -37,7 +37,7 @@ protected:
 	END_INTERFACE_MAP()
 
 private:
-	Omega::init_arg_map_t m_args;
+	OOBase::Table<Omega::string_t,Omega::string_t> m_args;
 
 // OOCore::IInterProcessService members
 public:

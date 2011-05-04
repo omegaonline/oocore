@@ -54,11 +54,11 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-IException* OOCore::UserSession::init(bool bStandalone, const std::map<string_t,string_t>& args)
+IException* OOCore::UserSession::init(const string_t& args)
 {
 	try
 	{
-		USER_SESSION::instance().init_i(bStandalone,args);
+		USER_SESSION::instance().init_i(args);
 	}
 	catch (IException* pE)
 	{
@@ -74,7 +74,7 @@ void OOCore::UserSession::term()
 	USER_SESSION::instance().term_i();
 }
 
-void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,string_t>& args)
+void OOCore::UserSession::init_i(const string_t& args)
 {
 #if defined(OMEGA_DEBUG) && defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -99,7 +99,7 @@ void OOCore::UserSession::init_i(bool bStandalone, const std::map<string_t,strin
 				
 				try
 				{
-					start(bStandalone,args);
+					start(args);
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -163,11 +163,86 @@ void OOCore::UserSession::term_i()
 	}
 }
 
-void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string_t>& args)
+void OOCore::UserSession::parse_args(const string_t& str, OOBase::Table<string_t,string_t>& args)
 {
+	// Split out individual args
+	for (size_t start = 0;;)
+	{
+		// Skip leading whitespace
+		while (start < str.Length() && (str[start] == L'\t' || str[start] == L' '))
+			++start;
+		
+		if (start == str.Length())
+			return;
+				
+		// Find the next linefeed
+		size_t end = str.Find(L',',start);
+		
+		// Trim trailing whitespace
+		size_t valend = (end == string_t::npos ? str.Length() : end);
+		while (valend > start && (str[valend-1] == L'\t' || str[valend-1] == L' '))
+			--valend;
+		
+		if (valend > start)
+		{
+			string_t strKey, strValue;
+			
+			// Split on first =
+			size_t eq = str.Find(L'=',start);
+			if (eq != string_t::npos)
+			{
+				// Trim trailing whitespace before =
+				size_t keyend = eq;
+				while (keyend > start && (str[keyend-1] == L'\t' || str[keyend-1] == L' '))
+					--keyend;
+				
+				if (keyend > start)
+				{
+					strKey = str.Mid(start,keyend-start);
+					
+					// Skip leading whitespace after =
+					size_t valpos = eq+1;
+					while (valpos < valend && (str[valpos] == L'\t' || str[valpos] == L' '))
+						++valpos;
+					
+					if (valpos < valend)
+						strValue = str.Mid(valpos,valend-valpos);
+				}
+			}
+			else
+			{
+				strKey = str.Mid(start,valend-start);
+				strValue = L"true";
+			}
+						
+			if (!strKey.IsEmpty())
+			{
+				int err = args.replace(strKey,strValue);
+				if (err != 0)
+					OMEGA_THROW(err);
+			}
+		}
+		
+		if (end == string_t::npos)
+			return;
+		
+		start = end + 1;
+	}
+}
+
+void OOCore::UserSession::start(const string_t& strArgs)
+{
+	OOBase::Table<string_t,string_t> args;
+	parse_args(strArgs,args);
+
+	bool bStandalone = false;
+	size_t i = args.find(L"standalone");
+	if (i != args.npos && *args.at(i) == L"true")
+		bStandalone = true;
+
 	bool bStandaloneAlways = false;
-	std::map<string_t,string_t>::const_iterator i = args.find(L"standalone_always");
-	if (i != args.end() && i->second == L"true")
+	i = args.find(L"standalone_always");
+	if (i != args.npos && *args.at(i) == L"true")
 		bStandaloneAlways = true;
 
 	OOBase::LocalString strPipe;
@@ -246,14 +321,14 @@ void OOCore::UserSession::start(bool bStandalone, const std::map<string_t,string
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		typedef const System::Internal::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::type OOSvrLite_GetIPS_RetVal, System::Internal::marshal_info<const init_arg_map_t&>::safe_type::type args);
+		typedef const System::Internal::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::type OOSvrLite_GetIPS_RetVal, System::Internal::marshal_info<const string_t&>::safe_type::type args);
 
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
 			OMEGA_THROW("Corrupt OOSvrLite");
 
 		IInterProcessService* pIPS = 0;
-		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS),System::Internal::marshal_info<const init_arg_map_t&>::safe_type::coerce(args));
+		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS),System::Internal::marshal_info<const string_t&>::safe_type::coerce(strArgs));
 		if (pSE)
 			System::Internal::throw_correct_exception(pSE);
 

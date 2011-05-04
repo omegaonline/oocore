@@ -24,6 +24,7 @@
 
 #include <OOBase/Mutex.h>
 #include <OOBase/Posix.h>
+#include <OOBase/Table.h>
 
 #include <OOSvrBase/Database.h>
 

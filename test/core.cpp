@@ -23,24 +23,20 @@ void normalise_path(Omega::string_t& strPath)
 
 bool init_standalone_tests()
 {
-	std::map<Omega::string_t,Omega::string_t> args;
-
 #if defined(_MSC_VER)
 	Omega::string_t regdb_path = L"..\\build\\data\\";
 #else
 	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../data/";
 #endif
 
-	Omega::string_t users_path = L".";
-
 	normalise_path(regdb_path);
-	normalise_path(users_path);
+	
+	Omega::string_t args(L"standalone=true");
+	args += L" , regdb_path=" + regdb_path;
+	args += L"\t,user_regdb = " + regdb_path + L"default_user.regdb";
+	args += L",\tstandalone_always\t";
 
-	args[L"regdb_path"] = regdb_path;
-	args[L"user_regdb"] = regdb_path + L"default_user.regdb";
-	args[L"standalone_always"] = L"true";
-
-	Omega::IException* pE = Omega::InitStandalone(args);
+	Omega::IException* pE = Omega::Initialize(args);
 	if (pE)
 	{
 		output("[Omega::IException]\n");

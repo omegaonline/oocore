@@ -47,18 +47,80 @@ namespace OOBase
 	}
 }
 
-void InterProcessService::Load(const init_arg_map_t& args)
+void InterProcessService::Load(const string_t& str)
 {
-	m_args = args;
+	// Split out individual args
+	for (size_t start = 0;;)
+	{
+		// Skip leading whitespace
+		while (start < str.Length() && (str[start] == L'\t' || str[start] == L' '))
+			++start;
+		
+		if (start == str.Length())
+			return;
+				
+		// Find the next linefeed
+		size_t end = str.Find(L',',start);
+		
+		// Trim trailing whitespace
+		size_t valend = (end == string_t::npos ? str.Length() : end);
+		while (valend > start && (str[valend-1] == L'\t' || str[valend-1] == L' '))
+			--valend;
+		
+		if (valend > start)
+		{
+			string_t strKey, strValue;
+			
+			// Split on first =
+			size_t eq = str.Find(L'=',start);
+			if (eq != string_t::npos)
+			{
+				// Trim trailing whitespace before =
+				size_t keyend = eq;
+				while (keyend > start && (str[keyend-1] == L'\t' || str[keyend-1] == L' '))
+					--keyend;
+				
+				if (keyend > start)
+				{
+					strKey = str.Mid(start,keyend-start);
+					
+					// Skip leading whitespace after =
+					size_t valpos = eq+1;
+					while (valpos < valend && (str[valpos] == L'\t' || str[valpos] == L' '))
+						++valpos;
+					
+					if (valpos < valend)
+						strValue = str.Mid(valpos,valend-valpos);
+				}
+			}
+			else
+			{
+				strKey = str.Mid(start,valend-start);
+				strValue = L"true";
+			}
+						
+			if (!strKey.IsEmpty())
+			{
+				int err = m_args.replace(strKey,strValue);
+				if (err != 0)
+					OMEGA_THROW(err);
+			}
+		}
+		
+		if (end == string_t::npos)
+			return;
+		
+		start = end + 1;
+	}
 }
 
 string_t InterProcessService::GetArg(const string_t& arg)
 {
-	const init_arg_map_t::const_iterator i = m_args.find(arg);
-	if (i == m_args.end())
+	size_t i = m_args.find(arg);
+	if (i == m_args.npos)
 		return string_t();
 	
-	return i->second;
+	return *m_args.at(i);
 }
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
@@ -87,7 +149,7 @@ Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remot
 	throw Remoting::IChannelClosedException::Create();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,1,((in),const init_arg_map_t&,args))
+OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,1,((in),const string_t&,args))
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 	ptrIPS->Load(args);

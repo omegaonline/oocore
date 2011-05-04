@@ -98,20 +98,17 @@
 
 namespace Omega
 {
-	IException* Initialize() throw();
+	/* args is a comma separated list of key=value pairs:)
+	 *    standalone -        (Optional) The directory containing the system and sandbox registry files
+	 *      regdb_path -        (Required if standalone=true) The directory containing the system and sandbox registry files
+	 *      user_regdb -        (Required if standalone=true) The path to the current user's registry file, including filename
+	 *      standalone_always - (Optional) If value = "true", ignore any running OOServer and only run standalone
+	 */
+	IException* Initialize(const string_t& args = string_t());
 	void Uninitialize();
 
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	bool_t HandleRequest(uint32_t timeout = 0);
-
-	/* InitStandalone takes a map of key value pairs of type string_t (std::map<string_t,string_t>)
-	 * Keys are:
-	 *    regdb_path -        (Required) The directory containing the system and sandbox registry files
-	 *    user_regdb -        (Required) The path to the current user's registry file, including filename
-	 *    standalone_always - (Optional) If value = "true", ignore any running OOServer and only run standalone
-	 */
-	typedef std::map<string_t,string_t> init_arg_map_t;
-	IException* InitStandalone(const init_arg_map_t& args) throw();
 }
 
 #include "internal/types.inl"
@@ -127,8 +124,8 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,0,())
-inline Omega::IException* Omega::Initialize() throw()
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),const Omega::string_t&,args))
+inline Omega::IException* Omega::Initialize(const string_t& args)
 {
 	try
 	{
@@ -139,28 +136,7 @@ inline Omega::IException* Omega::Initialize() throw()
 			return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
 #endif
 
-		return OOCore_Omega_Initialize();
-	}
-	catch (Omega::IException* pE)
-	{
-		// Just in case...
-		return pE;
-	}
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_InitStandalone,1,((in),const Omega::init_arg_map_t&,args))
-inline Omega::IException* Omega::InitStandalone(const std::map<Omega::string_t,Omega::string_t>& args) throw()
-{
-	try
-	{
-#if !defined(OOCORE_INTERNAL)
-		// Check the versions are correct
-		Omega::uint32_t version = (OOCore::GetMajorVersion() << 24) | (OOCore::GetMinorVersion() << 16) | OOCore::GetPatchVersion();
-		if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-			return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
-#endif
-
-		return OOCore_Omega_InitStandalone(args);
+		return OOCore_Omega_Initialize(args);
 	}
 	catch (Omega::IException* pE)
 	{

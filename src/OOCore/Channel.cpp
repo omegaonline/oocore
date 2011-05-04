@@ -321,7 +321,7 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*
 	pObject = ptrInput->QueryInterface(iid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,())
 {
 	return static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
 }

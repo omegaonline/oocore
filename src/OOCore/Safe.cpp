@@ -24,13 +24,15 @@
 // These functions are all raw, despite the fact they use non-POD pointers,
 // as the pointers are not manipulated
 
+using namespace Omega;
+
 namespace
 {
 	struct QIRttiHolder
 	{
 		OOBase::SpinLock m_lock;
 
-		OOBase::HashTable<Omega::guid_t,const Omega::System::Internal::qi_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
+		OOBase::HashTable<guid_t,const System::Internal::qi_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
 	};
 }
 
@@ -48,20 +50,20 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder__dctor,1,((in),voi
 	delete static_cast<QIRttiHolder*>(handle);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::qi_rtti*,OOCore_qi_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::qi_rtti*,OOCore_qi_rtti_holder_find,2,((in),void*,handle,(in),const guid_base_t*,iid))
 {
 	QIRttiHolder* pThis = static_cast<QIRttiHolder*>(handle);
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	const Omega::System::Internal::qi_rtti* pRet = NULL;
+	const System::Internal::qi_rtti* pRet = NULL;
 
 	pThis->m_map.find(*iid,pRet);
 
 	return pRet;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::qi_rtti*,pRtti))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder_insert,3,((in),void*,handle,(in),const guid_base_t*,iid,(in),const System::Internal::qi_rtti*,pRtti))
 {
 	QIRttiHolder* pThis = static_cast<QIRttiHolder*>(handle);
 
@@ -78,8 +80,8 @@ namespace
 	{
 		OOBase::SpinLock m_lock;
 
-		OOBase::HashTable<Omega::IObject*,const Omega::System::Internal::SafeShim*> m_obj_map;
-		OOBase::HashTable<const Omega::System::Internal::SafeShim*,Omega::IObject*> m_shim_map;
+		OOBase::HashTable<IObject*,const System::Internal::SafeShim*> m_obj_map;
+		OOBase::HashTable<const System::Internal::SafeShim*,IObject*> m_shim_map;
 	};
 }
 
@@ -97,7 +99,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder__dctor,1,((in),void*,
 	delete static_cast<SafeHolder*>(handle);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_safe_holder_add1,3,((in),void*,handle,(in),const Omega::System::Internal::SafeShim*,shim,(in),Omega::IObject*,pObject))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_safe_holder_add1,3,((in),void*,handle,(in),const System::Internal::SafeShim*,shim,(in),IObject*,pObject))
 {
 	SafeHolder* pThis = static_cast<SafeHolder*>(handle);
 
@@ -116,7 +118,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_safe_holder_add1,3,((i
 	return NULL;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::SafeShim*,OOCore_safe_holder_add2,3,((in),void*,handle,(in),Omega::IObject*,pObject,(in),const Omega::System::Internal::SafeShim*,shim))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::SafeShim*,OOCore_safe_holder_add2,3,((in),void*,handle,(in),IObject*,pObject,(in),const System::Internal::SafeShim*,shim))
 {
 	SafeHolder* pThis = static_cast<SafeHolder*>(handle);
 
@@ -135,37 +137,37 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::SafeShim*,OOCo
 	return NULL;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::SafeShim*,OOCore_safe_holder_find,2,((in),void*,handle,(in),Omega::IObject*,pObject))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::SafeShim*,OOCore_safe_holder_find,2,((in),void*,handle,(in),IObject*,pObject))
 {
 	SafeHolder* pThis = static_cast<SafeHolder*>(handle);
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	const Omega::System::Internal::SafeShim* ret = NULL;
+	const System::Internal::SafeShim* ret = NULL;
 	
 	pThis->m_obj_map.find(pObject,ret);
 	
 	return ret;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove1,2,((in),void*,handle,(in),Omega::IObject*,pObject))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove1,2,((in),void*,handle,(in),IObject*,pObject))
 {
 	SafeHolder* pThis = static_cast<SafeHolder*>(handle);
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	const Omega::System::Internal::SafeShim* shim;
+	const System::Internal::SafeShim* shim;
 	if (pThis->m_obj_map.erase(pObject,&shim))
 		pThis->m_shim_map.erase(shim);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*,handle,(in),const Omega::System::Internal::SafeShim*,shim))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*,handle,(in),const System::Internal::SafeShim*,shim))
 {
 	SafeHolder* pThis = static_cast<SafeHolder*>(handle);
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	Omega::IObject* pObject;
+	IObject* pObject;
 	if (pThis->m_shim_map.erase(shim,&pObject))
 		pThis->m_obj_map.erase(pObject);
 }
@@ -176,7 +178,7 @@ namespace
 	{
 		OOBase::SpinLock m_lock;
 
-		OOBase::HashTable<Omega::guid_t,const Omega::System::Internal::wire_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
+		OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
 	};
 }
 
@@ -194,20 +196,20 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__dctor,1,((in),v
 	delete static_cast<WireRttiHolder*>(handle);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,2,((in),void*,handle,(in),const guid_base_t*,iid))
 {
 	WireRttiHolder* pThis = static_cast<WireRttiHolder*>(handle);
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	const Omega::System::Internal::wire_rtti* pRet = NULL;
+	const System::Internal::wire_rtti* pRet = NULL;
 
 	pThis->m_map.find(*iid,pRet);
 
 	return pRet;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::wire_rtti*,pRtti))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),void*,handle,(in),const guid_base_t*,iid,(in),const System::Internal::wire_rtti*,pRtti))
 {
 	WireRttiHolder* pThis = static_cast<WireRttiHolder*>(handle);
 
@@ -224,7 +226,7 @@ namespace
 	{
 		OOBase::SpinLock m_lock;
 
-		OOBase::HashTable<Omega::IObject*,Omega::IObject*> m_map;
+		OOBase::HashTable<IObject*,IObject*> m_map;
 	};
 }
 
@@ -242,7 +244,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder__dctor,1,((in),void*,
 	delete static_cast<WireHolder*>(handle);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_add,3,((in),void*,handle,(in),Omega::IObject*,pProxy,(in),Omega::IObject*,pObject))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_wire_holder_add,3,((in),void*,handle,(in),IObject*,pProxy,(in),IObject*,pObject))
 {
 	WireHolder* pThis = static_cast<WireHolder*>(handle);
 
@@ -258,20 +260,20 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_add,3,((in
 	return NULL;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(Omega::IObject*,OOCore_wire_holder_find,2,((in),void*,handle,(in),Omega::IObject*,pProxy))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_wire_holder_find,2,((in),void*,handle,(in),IObject*,pProxy))
 {
 	WireHolder* pThis = static_cast<WireHolder*>(handle);
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	Omega::IObject* pObj = NULL;
+	IObject* pObj = NULL;
 
 	pThis->m_map.find(pProxy,pObj);
 	
 	return pObj;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder_remove,2,((in),void*,handle,(in),Omega::IObject*,pProxy))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder_remove,2,((in),void*,handle,(in),IObject*,pProxy))
 {
 	WireHolder* pThis = static_cast<WireHolder*>(handle);
 

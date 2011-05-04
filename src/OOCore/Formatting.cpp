@@ -1193,7 +1193,7 @@ namespace
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,1,((in),const Omega::string_t&,msg))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Formatting::IFormattingException*,OOCore_IFormattingException_Create,1,((in),const string_t&,msg))
 {
 	ObjectImpl<FormattingException>* pNew = ObjectImpl<FormattingException>::CreateInstance();
 	pNew->m_strDesc = msg;
@@ -1334,7 +1334,7 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 	return ::wcstod(sz,const_cast<wchar_t**>(&endptr));
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcsto64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_wcsto64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;
@@ -1347,7 +1347,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcsto64,3,((in),const Omega
 	return v;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstou64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_wcstou64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;
@@ -1360,7 +1360,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstou64,3,((in),const Ome
 	return v;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_wcstod,2,((in),const Omega::string_t&,str,(out),size_t&,end_pos))
+OMEGA_DEFINE_EXPORTED_FUNCTION(float8_t,OOCore_wcstod,2,((in),const string_t&,str,(out),size_t&,end_pos))
 {
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;

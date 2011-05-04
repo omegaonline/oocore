@@ -992,7 +992,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 #endif
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs))
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_any_t_equal,2,((in),const any_t&,lhs,(in),const any_t&,rhs))
 {
 	// void comparison
 	if (lhs.GetType() == TypeInfo::typeVoid || rhs.GetType() == TypeInfo::typeVoid)

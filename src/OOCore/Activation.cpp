@@ -405,7 +405,7 @@ void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 	throw static_cast<IOidNotFoundException*>(pNew);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
 {
 	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
 	pNew->m_strDesc = L"Object does not support aggregation.";
@@ -413,7 +413,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCor
 	return pNew;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
 {
 	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
 	pNew->m_strDesc = L"The identified object could not be found: {0}";
@@ -496,7 +496,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))
 {
 	return static_cast<Activation::IObjectFactory*>(OOCore::GetInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
 }

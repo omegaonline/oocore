@@ -64,12 +64,10 @@ inline void Omega::any_t::swap(const any_t& rhs)
 		u.fl8Val = rhs.u.fl8Val;
 		break;
 	case TypeInfo::typeString:
-		u.pstrVal = new string_t(*rhs.u.pstrVal);
+		strVal = rhs.strVal;
 		break;
 	case TypeInfo::typeGuid:
-		u.pgVal = 0;
-		if (rhs.u.pgVal)
-			u.pgVal = new guid_t(*rhs.u.pgVal);
+		u.gVal = rhs.u.gVal;
 		break;
 	case TypeInfo::typeVoid:
 		break;
@@ -157,28 +155,25 @@ inline Omega::any_t::any_t(const float8_t& val) :
 inline Omega::any_t::any_t(const guid_t& val) :
 		m_type(TypeInfo::typeGuid)
 {
-	if (val != guid_t::Null())
-		u.pgVal = new guid_t(val);
-	else
-		u.pgVal = 0;
+	u.gVal = val;
 }
 
 inline Omega::any_t::any_t(const string_t& val) :
 		m_type(TypeInfo::typeString)
 {
-	u.pstrVal = new string_t(val);
+	strVal = val;
 }
 
 inline Omega::any_t::any_t(const wchar_t* wsz, size_t length, bool copy) :
 		m_type(TypeInfo::typeString)
 {
-	u.pstrVal = new string_t(wsz,length,copy);
+	strVal = string_t(wsz,length,copy);
 }
 
 inline Omega::any_t::any_t(const char* sz, bool bUTF8, size_t length) :
 		m_type(TypeInfo::typeString)
 {
-	u.pstrVal = new string_t(sz,bUTF8,length);
+	strVal = string_t(sz,bUTF8,length);
 }
 
 inline Omega::any_t::~any_t()
@@ -188,10 +183,6 @@ inline Omega::any_t::~any_t()
 
 inline void Omega::any_t::clear()
 {
-	if (m_type == TypeInfo::typeGuid)
-		delete u.pgVal;
-	else if (m_type == TypeInfo::typeString)
-		delete u.pstrVal;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs));
@@ -229,9 +220,9 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 	case TypeInfo::typeFloat8:
 		return (u.fl8Val == rhs.u.fl8Val);
 	case TypeInfo::typeGuid:
-		return (u.pgVal ? *u.pgVal : guid_t::Null()) == (rhs.u.pgVal ? *rhs.u.pgVal : guid_t::Null());
+		return (guid_t(u.gVal) == guid_t(rhs.u.gVal));
 	case TypeInfo::typeString:
-		return (*u.pstrVal == *rhs.u.pstrVal);
+		return (strVal == rhs.strVal);
 	default:
 		// Never going to happen ;)
 		return false;
@@ -509,7 +500,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 	case TypeInfo::typeFloat8:
 		return System::Internal::converter<T,float8_t>::cast(v,u.fl8Val);
 	case TypeInfo::typeString:
-		return System::Internal::scanner_t<T>::type::ToNumber(v,*u.pstrVal);
+		return System::Internal::scanner_t<T>::type::ToNumber(v,strVal);
 
 	case TypeInfo::typeVoid:
 	case TypeInfo::typeGuid:
@@ -522,12 +513,12 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(guid_t& v) const
 {
 	if (m_type == TypeInfo::typeGuid)
 	{
-		v = (u.pgVal ? *u.pgVal : guid_t::Null());
+		v = u.gVal;
 		return any_t::castValid;
 	}
 	else if (m_type == TypeInfo::typeString)
 	{
-		if (guid_t::FromString(*u.pstrVal,v))
+		if (guid_t::FromString(strVal,v))
 			return any_t::castValid;
 	}
 
@@ -569,13 +560,10 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v, const string
 		v = Formatting::ToString(u.fl8Val,strFormat.IsEmpty() ? L"R" : strFormat);
 		break;
 	case TypeInfo::typeGuid:
-		if (u.pgVal)
-			v = u.pgVal->ToString(strFormat);
-		else
-			v = guid_t::Null().ToString(strFormat);
+		v = guid_t(u.gVal).ToString(strFormat);
 		break;
 	case TypeInfo::typeString:
-		v = *u.pstrVal;
+		v = strVal;
 		break;
 
 	case TypeInfo::typeVoid:
@@ -627,9 +615,9 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 			string_t f(L"{0}");
 			t %= true;
 			f %= false;
-			if (*u.pstrVal == t)
+			if (strVal == t)
 				v = true;
-			else if (*u.pstrVal == f)
+			else if (strVal == f)
 				v = false;
 			else
 				return any_t::castUnrelated;

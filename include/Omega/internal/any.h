@@ -111,9 +111,9 @@ namespace Omega
 			uint64_t         ui64Val;
 			float4_t         fl4Val;
 			float8_t         fl8Val;
-			guid_t*          pgVal;
-			string_t*        pstrVal;
+			guid_base_t      gVal;
 		} u;
+		string_t  strVal;
 
 		// Helpers
 		void swap(const any_t& rhs);

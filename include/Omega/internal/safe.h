@@ -931,10 +931,10 @@ namespace Omega
 						ret.u.fl8Val = val.u.fl8Val;
 						break;
 					case TypeInfo::typeString:
-						ret.u.pstrVal = string_t_safe_type::addref(*val.u.pstrVal,true);
+						ret.u.pstrVal = string_t_safe_type::addref(val.strVal,true);
 						break;
 					case TypeInfo::typeGuid:
-						ret.u.gVal = (val.u.pgVal ? *val.u.pgVal : guid_t::Null());
+						ret.u.gVal = val.u.gVal;
 						break;
 
 					default:

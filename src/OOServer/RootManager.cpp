@@ -173,7 +173,10 @@ bool Root::Manager::init_database()
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
-	m_registry = new Registry::Hive(this,dir2.c_str());
+	m_registry = new (std::nothrow) Registry::Hive(this,dir2.c_str());
+	if (!m_registry)
+		LOG_ERROR_RETURN(("Out of memory"),false);
+
 	if (!m_registry->open(SQLITE_OPEN_READWRITE))
 		return false;
 
@@ -183,7 +186,9 @@ bool Root::Manager::init_database()
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
-	m_registry_sandbox = new Registry::Hive(this,dir2.c_str());
+	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir2.c_str());
+	if (!m_registry_sandbox)
+		LOG_ERROR_RETURN(("Out of memory"),false);
 	
 	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }

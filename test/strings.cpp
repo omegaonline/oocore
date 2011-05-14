@@ -187,9 +187,9 @@ bool string_tests_format()
 			TEST(Omega::string_t(L"{0:F6}") % 12345.6789 == L"12345.678900");
 			TEST(Omega::string_t(L"{0:G}") % 12345.6789 == L"12345.6789");
 			TEST(Omega::string_t(L"{0:G7}") % 12345.6789 == L"12345.68");
-			TEST(Omega::string_t(L"{0:G}") % 0.0000023 == L"2.3E-6");
+			TEST(Omega::string_t(L"{0:G}") % 0.0000023 == L"2.3E-06");
 			TEST(Omega::string_t(L"{0:G}") % 0.0023 == L"0.0023");
-			TEST(Omega::string_t(L"{0:G2}") % 1234.0 == L"1.2E3");
+			TEST(Omega::string_t(L"{0:G2}") % 1234.0 == L"1.2E+03");
 			TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12,345.68");
 		}
 

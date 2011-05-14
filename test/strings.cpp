@@ -325,6 +325,14 @@ bool string_tests_utf8()
 	std::string s;
 	str.ToUTF8(s);
 
+#if 0
+	FILE* pOutUTF8 = fopen("UTF-8-out.txt","wb");
+
+	fputs(s.c_str(),pOutUTF8);
+	fclose(pOutUTF8);
+
+#endif
+
 	TEST(s == strUTF8);
 
 	return true;

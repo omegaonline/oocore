@@ -21,8 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OOBase/STLAllocator.h>
-
 #if !defined(PRId64)
 #if defined(__MINGW32__)
 #define PRId64 "I64d"
@@ -599,8 +597,12 @@ namespace
 			
 		if (precision > 0)
 		{
-			void* TODO; // Use locale specific '.'
-			err = str.append(".");
+			const char* decimal_point = ".";
+			const lconv* lc = localeconv();
+			if (lc)
+				decimal_point = lc->decimal_point;
+			
+			err = str.append(decimal_point);
 			if (err != 0)
 				OMEGA_THROW(err);
 				
@@ -621,8 +623,12 @@ namespace
 			
 		if (precision > 0)
 		{
-			void* TODO; // Use locale specific '.'
-			err = str.append(".");
+			const char* decimal_point = ".";
+			const lconv* lc = localeconv();
+			if (lc)
+				decimal_point = lc->decimal_point;
+
+			err = str.append(decimal_point);
 			if (err != 0)
 				OMEGA_THROW(err);
 				
@@ -735,9 +741,9 @@ namespace
 			OMEGA_THROW(err);		
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& /*str*/, const double& /*val*/, int /*precision*/)
+	void fmt_decimal_i(OOBase::LocalString& str, const double& val, int precision)
 	{
-		void* TODO; // throw a formatting exception
+		fmt_decimal_i(str,static_cast<int64_t>(val),precision);
 	}
 
 	template <typename T>
@@ -765,9 +771,9 @@ namespace
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
 	
-	void fmt_hex_i(OOBase::LocalString& /*str*/, const double& /*val*/, bool /*capital*/, int /*precision*/)
+	void fmt_hex_i(OOBase::LocalString& str, const double& val, bool capital, int precision)
 	{
-		void* TODO; // Throw correct exception
+		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}		
 
 	template <typename T>
@@ -986,21 +992,21 @@ namespace
 		}
 	}
 
-	size_t parse_custom(const string_t& str, std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator,OOCore::OmegaFailure> >& parts)
+	size_t parse_custom(const string_t& str, OOBase::Stack<string_t,OOBase::LocalAllocator>& parts)
 	{
 		size_t pos = find_skip_quote(str,0,L";");
 		if (pos == string_t::npos)
-			parts.push_back(str);
+			parts.push(str);
 		else
 		{
-			parts.push_back(string_t(str.c_str(),pos++));
+			parts.push(string_t(str.c_str(),pos++));
 			size_t pos2 = find_skip_quote(str,pos,L";");
 			if (pos2 == string_t::npos)
-				parts.push_back(string_t(str.c_str()+pos,string_t::npos));
+				parts.push(string_t(str.c_str()+pos,string_t::npos));
 			else
 			{
-				parts.push_back(string_t(str.c_str()+pos,pos2-pos));
-				parts.push_back(string_t(str.c_str()+pos2+1,string_t::npos));
+				parts.push(string_t(str.c_str()+pos,pos2-pos));
+				parts.push(string_t(str.c_str()+pos2+1,string_t::npos));
 			}
 		}
 		return parts.size();
@@ -1375,12 +1381,12 @@ namespace
 	template <typename T>
 	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision)
 	{
-		std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator,OOCore::OmegaFailure> > parts;
+		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
 			if (val == 0)
-				return fmt_recurse(val,parts[2],def_precision,false);
+				return fmt_recurse(val,*parts.at(2),def_precision,false);
 
 		case 2:
 #if defined(__clang__)
@@ -1392,10 +1398,10 @@ namespace
 			if (val < 0)
  			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),parts[1],def_precision,false);
+				return fmt_recurse(quick_abs(val,neg),*parts.at(1),def_precision,false);
  			}
 			else
-				return fmt_recurse(val,parts[0],def_precision,false);
+				return fmt_recurse(val,*parts.at(0),def_precision,false);
 #endif
 			
 		default:
@@ -1487,11 +1493,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	if (strFormat.IsEmpty())
 		return (val ? string_t(L"true") : string_t(L"false"));
 
-	std::vector<string_t,OOBase::STLAllocator<string_t,OOBase::LocalAllocator,OOCore::OmegaFailure> > parts;
+	OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 	if (parse_custom(strFormat,parts) != 2)
 		throw Formatting::IFormattingException::Create(L"Invalid Omega::bool_t format string: {0}" % strFormat);
 
-	return val ? parts[0] : parts[1];
+	return val ? *parts.at(0) : *parts.at(1);
 }
 
 int32_t OOCore::wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)

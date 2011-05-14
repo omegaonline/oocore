@@ -224,6 +224,8 @@ bool string_tests_format()
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
+			Omega::string_t t = Omega::string_t(L"{0:#.##}") % 1.2;
+
 			TEST(Omega::string_t(L"{0:#.##}") % 1.2 == L"1.2");
 			TEST(Omega::string_t(L"{0:0.00}") % 1.2 == L"1.20");
 			TEST(Omega::string_t(L"{0:00.00}") % 1.2 == L"01.20");
@@ -236,8 +238,8 @@ bool string_tests_format()
 	}
 
 	TEST(Omega::string_t(L"{0:[##-##-##]}") % 123456 == L"[12-34-56]");
-	TEST(Omega::string_t(L"{0:##;(##)}") % 1234 == L"1234");
-	TEST(Omega::string_t(L"{0:##;(##)}") % -1234 == L"(1234)");
+	TEST(Omega::string_t(L"{0:##;(##)}") % 12 == L"12");
+	TEST(Omega::string_t(L"{0:##;(##)}") % -12 == L"(12)");
 
 	TEST(Omega::string_t(L"{0:yes;no}") % true == L"yes");
 	TEST(Omega::string_t(L"{0:yes;no}") % false == L"no");

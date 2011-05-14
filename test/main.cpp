@@ -186,11 +186,6 @@ bool run_test(pfnTest t, const char* pszName)
 		output_exception(pE);
 		pE->Release();
 	}
-	catch (std::exception& e)
-	{
-		++exception_count;
-		output("[std::exception]\nWhat:\t%s\n",e.what());
-	}
 	catch (...)
 	{
 		++exception_count;

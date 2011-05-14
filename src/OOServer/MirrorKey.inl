@@ -227,7 +227,7 @@ std::set<Omega::string_t> User::Registry::MirrorKey::EnumSubKeys()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e);
+		OMEGA_THROW(e.what());
 	}
 }
 
@@ -249,7 +249,7 @@ std::set<Omega::string_t> User::Registry::MirrorKey::EnumValues()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e);
+		OMEGA_THROW(e.what());
 	}
 }
 

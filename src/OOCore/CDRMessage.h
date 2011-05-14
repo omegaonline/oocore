@@ -236,7 +236,7 @@ namespace OOCore
 					}
 					catch (std::exception& e)
 					{
-						OMEGA_THROW(e);
+						OMEGA_THROW(e.what());
 					}
 				}
 				break;

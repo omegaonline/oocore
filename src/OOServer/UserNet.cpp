@@ -285,9 +285,9 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
 		pE->Release();
 	}
-	catch (std::exception& e)
+	catch (...)
 	{
-		LOG_ERROR(("std::exception thrown %s",e.what()));
+		LOG_ERROR(("Unhandled exception thrown"));
 	}
 	
 	pThis->Release();

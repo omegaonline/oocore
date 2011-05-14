@@ -45,7 +45,7 @@ namespace
 		}
 		catch (std::exception& e)
 		{
-			OMEGA_THROW(e);
+			OMEGA_THROW(e.what());
 		}		
 	}
 }
@@ -488,7 +488,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e);
+		OMEGA_THROW(e.what());
 	}
 }
 
@@ -535,7 +535,7 @@ std::set<Omega::string_t> Key::EnumValues()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e);
+		OMEGA_THROW(e.what());
 	}
 }
 

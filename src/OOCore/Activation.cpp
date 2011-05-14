@@ -155,7 +155,7 @@ namespace
 		}
 		catch (std::exception& e)
 		{
-			OMEGA_THROW(e);
+			OMEGA_THROW(e.what());
 		}
 		
 		// Add to the map
@@ -279,7 +279,7 @@ namespace
 					}
 					catch (std::exception& e)
 					{
-						OMEGA_THROW(e);
+						OMEGA_THROW(e.what());
 					}
 				}
 

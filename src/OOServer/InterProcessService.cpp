@@ -111,7 +111,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		}
 		catch (std::exception& e)
 		{
-			OMEGA_THROW(e);
+			OMEGA_THROW(e.what());
 		}
 	}
 

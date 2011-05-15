@@ -109,3 +109,88 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),size_t*,v))
 {
 	return (OOBase::Atomic<size_t>::Decrement(*v) == 0) ? 1 : 0;
 }
+
+namespace
+{
+	struct destruct_entry_t
+	{
+		void (OMEGA_CALL* pfn_dctor)(void*);
+		void* param;
+
+		bool operator == (const destruct_entry_t& rhs) const
+		{
+			return (pfn_dctor == rhs.pfn_dctor && param == rhs.param);
+		}
+	};
+
+	struct mod_destruct_t
+	{
+		OOBase::SpinLock                m_lock;
+		OOBase::Stack<destruct_entry_t> m_list;
+	};
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_mod_destruct__ctor,0,())
+{
+	mod_destruct_t* h = new (std::nothrow) mod_destruct_t();
+	if (!h)
+		OMEGA_THROW_NOMEM();
+
+	return h;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*,handle))
+{
+	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
+	if (h)
+	{
+		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
+
+		destruct_entry_t e;
+		while (h->m_list.pop(&e))
+		{
+			guard.release();
+
+			try
+			{
+				(*e.pfn_dctor)(e.param);
+			}
+			catch (Omega::IException* pE)
+			{
+				pE->Release();
+			}
+			catch (...)
+			{}
+
+			guard.acquire();
+		}
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param))
+{
+	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
+	if (h)
+	{
+		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
+
+		destruct_entry_t e = { static_cast<void (OMEGA_CALL*)(void*)>(pfn_dctor), param };
+
+		int err = h->m_list.push(e);
+		if (err != 0)
+			OMEGA_THROW(err);
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param))
+{
+	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
+	if (h)
+	{
+		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
+
+		destruct_entry_t e = { static_cast<void (OMEGA_CALL*)(void*)>(pfn_dctor), param };
+
+		h->m_list.erase(e);
+	}
+}

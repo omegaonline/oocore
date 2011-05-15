@@ -96,60 +96,41 @@ inline void Omega::Threading::ReaderWriterLock::Release()
 	OOCore_rw_lock_unlockwrite(m_handle);
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_mod_destruct__ctor,0,());
 template <typename DLL>
-inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+inline Omega::Threading::ModuleDestructor<DLL>::ModuleDestructor() : m_handle(static_cast<handle_t*>(OOCore_mod_destruct__ctor()))
 {
-	ModuleDestructor& inst = instance();
-	Guard<Mutex> guard(inst.m_lock);
-	inst.m_list.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
 }
 
-template <typename DLL>
-inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
-{
-	ModuleDestructor& inst = instance();
-	Guard<Mutex> guard(inst.m_lock);
-
-	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=inst.m_list.begin(); i!=inst.m_list.end(); ++i)
-	{
-		if (i->first == pfn_dctor && i->second == param)
-		{
-			inst.m_list.erase(i);
-			break;
-		}
-	}
-}
-
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*,handle));
 template <typename DLL>
 inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 {
-	Guard<Mutex> guard(m_lock);
-
 	try
 	{
-		// Copy the list outside the lock
-		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_list);
-
-		m_list.clear();
-
-		guard.Release();
-
-		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin(); i!=list.end(); ++i)
-		{
-			try
-			{
-				(*(i->first))(i->second);
-			}
-			catch (IException* pE)
-			{
-				pE->Release();
-			}
-			catch (...)
-			{}
-		}
+		OOCore_mod_destruct__dctor(m_handle);
 	}
-	catch (std::exception&)
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
 	{}
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param));
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param));
+
+template <typename DLL>
+inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+{
+	OOCore_mod_destruct_add(m_handle,pfn_dctor,param);
+}
+
+template <typename DLL>
+inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+{
+	OOCore_mod_destruct_remove(m_handle,pfn_dctor,param);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
@@ -158,20 +139,19 @@ OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,pfn_dc
 template <typename DLL>
 inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	multi_dctor* p = new multi_dctor(pfn_dctor,param);
+	multi_dctor* p = new (std::nothrow) multi_dctor(pfn_dctor,param);
+	if (!p)
+	{
+#if defined(_WIN32)
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
+#else
+		OMEGA_THROW(ENOMEM);
+#endif
+	}
 
 	try
 	{
 		OOCore_add_uninit_call((void*)destruct,p);
-	}
-	catch (...)
-	{
-		delete p;
-		throw;
-	}
-
-	try
-	{
 		ModuleDestructor<DLL>::add_destructor(destruct,p);
 	}
 	catch (...)
@@ -185,9 +165,11 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OM
 template <typename DLL>
 inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 {
+	OOCore_remove_uninit_call((void*)destruct,param);
+	
 	try
 	{
-		OOCore_remove_uninit_call((void*)destruct,param);
+		ModuleDestructor<DLL>::remove_destructor(destruct,param);
 	}
 	catch (Omega::IException* pE)
 	{
@@ -195,14 +177,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	}
 	catch (...)
 	{}
-
-	try
-	{
-		ModuleDestructor<DLL>::remove_destructor(destruct,param);
-	}
-	catch (std::exception&)
-	{}
-
+	
 	multi_dctor* p = static_cast<multi_dctor*>(param);
 
 	try
@@ -257,8 +232,6 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 	try
 	{
 		delete static_cast<T*>(s_instance);
-
-		s_instance = 0;
 	}
 	catch (Omega::IException* pE)
 	{
@@ -266,6 +239,8 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 	}
 	catch (...)
 	{}
+
+	s_instance = 0;
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),size_t*,v));

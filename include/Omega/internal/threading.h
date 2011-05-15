@@ -180,21 +180,30 @@ namespace Omega
 		class ModuleDestructor
 		{
 		public:
-			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-			static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+			{
+				instance().add_destructor_i(pfn_dctor,param);
+			}
+
+			static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+			{
+				instance().remove_destructor_i(pfn_dctor,param);
+			}
 
 		private:
 			ModuleDestructor(const ModuleDestructor&);
 			ModuleDestructor& operator = (const ModuleDestructor&);
 
-			ModuleDestructor()
-			{
-			}
-
+			ModuleDestructor();
 			~ModuleDestructor();
 
-			Mutex                                                  m_lock;
-			std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_list;
+			void add_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			void remove_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+
+			struct handle_t
+			{
+				int unused;
+			}* m_handle;
 
 			static ModuleDestructor& instance()
 			{
@@ -210,7 +219,7 @@ namespace Omega
 			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 
 		private:
-			struct multi_dctor : public Omega::System::Internal::ThrowingNew
+			struct multi_dctor
 			{
 				multi_dctor(void (OMEGA_CALL *fn)(void*), void* p) :
 					pfn_dctor(fn), param(p)

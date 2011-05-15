@@ -201,9 +201,6 @@ namespace Omega
 				int unused;
 			}* m_handle;
 
-			explicit formatter_t(handle_t* h) : m_handle(h)
-			{}
-
 			static handle_t* clone_handle(const formatter_t& rhs);
 			static void free_handle(handle_t* h);
 		};

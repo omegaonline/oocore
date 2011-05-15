@@ -632,9 +632,8 @@ inline Omega::guid_t Omega::guid_t::Create()
 // Formatting starts here
 
 OOCORE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Omega::string_t&,format));
-inline Omega::Formatting::formatter_t::formatter_t(const string_t& format) : m_handle(NULL)
+inline Omega::Formatting::formatter_t::formatter_t(const string_t& format) : m_handle(static_cast<handle_t*>(OOCore_formatter_t__ctor1(format)))
 {
-	m_handle = static_cast<Omega::Formatting::formatter_t::handle_t*>(OOCore_formatter_t__ctor1(format));
 }
 
 inline Omega::Formatting::formatter_t::~formatter_t()
@@ -654,11 +653,11 @@ inline Omega::Formatting::formatter_t::~formatter_t()
 OOCORE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle));
 inline Omega::Formatting::formatter_t::handle_t* Omega::Formatting::formatter_t::clone_handle(const formatter_t& rhs)
 {
-	return static_cast<Omega::Formatting::formatter_t::handle_t*>(OOCore_formatter_t__ctor2(rhs.m_handle));
+	return static_cast<handle_t*>(OOCore_formatter_t__ctor2(rhs.m_handle));
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,handle));
-inline void Omega::Formatting::formatter_t::free_handle(Omega::Formatting::formatter_t::handle_t* h)
+inline void Omega::Formatting::formatter_t::free_handle(handle_t* h)
 {
 	OOCore_formatter_t__dctor(h);
 }

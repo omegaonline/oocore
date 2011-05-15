@@ -446,11 +446,6 @@ inline Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs)
 	return (Omega::string_t(lhs) %= rhs);
 }
 
-inline Omega::string_t operator % (const wchar_t* lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs,Omega::string_t::npos,false) %= rhs);
-}
-
 OOCORE_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),Omega::string_t&,fmt));
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),const Omega::string_t&,arg));
 

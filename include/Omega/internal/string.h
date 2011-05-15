@@ -161,6 +161,4 @@ Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs);
 template <typename T>
 Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs);
 
-Omega::string_t operator % (const wchar_t* lhs, const Omega::string_t& rhs);
-
 #endif // OMEGA_STRING_H_INCLUDED_

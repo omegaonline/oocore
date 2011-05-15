@@ -26,12 +26,12 @@
 // string_t starts here
 
 #ifdef OMEGA_DEBUG
-#define OMEGA_DEBUG_STASH_STRING()  m_debug_value = (m_handle ? OOCore_string_t_cast(m_handle) : L"")
+#define OMEGA_DEBUG_STASH_STRING()  m_debug_value = (m_handle ? OOCore_string_t_cast_w(m_handle) : L"")
 #else
 #define OMEGA_DEBUG_STASH_STRING()  (void)0
 #endif
 
-OOCORE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,h));
+OOCORE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast_w,1,((in),const void*,h));
 
 inline Omega::string_t::string_t(handle_t* h, bool bAddref) :
 		m_handle(bAddref ? addref(h,false) : h)
@@ -127,12 +127,12 @@ inline Omega::string_t& Omega::string_t::operator = (const string_t& s)
 	return *this;
 }
 
-inline const wchar_t* Omega::string_t::c_str() const
+inline const wchar_t* Omega::string_t::c_wstr() const
 {
 	if (!m_handle)
 		return L"";
 
-	return OOCore_string_t_cast(m_handle);
+	return OOCore_string_t_cast_w(m_handle);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
@@ -397,7 +397,7 @@ inline Omega::string_t Omega::string_t::TrimLeft(const string_t& str) const
 
 inline Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
 {
-	const wchar_t* s = c_str();
+	const wchar_t* s = c_wstr();
 	const wchar_t* p = s + Length()-1;
 	while (p>=s && *p == c)
 		--p;
@@ -407,7 +407,7 @@ inline Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
 
 inline Omega::string_t Omega::string_t::TrimRight(const string_t& str) const
 {
-	const wchar_t* s = c_str();
+	const wchar_t* s = c_wstr();
 	const wchar_t* p = s + Length()-1;
 	while (p>=s && str.Find(*p) != string_t::npos)
 		--p;

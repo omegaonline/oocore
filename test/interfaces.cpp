@@ -310,7 +310,7 @@ namespace
 static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkipped)
 {
 	// Register the library
-	output("  %-45ls ",strLibName.c_str());
+	output("  %-45ls ",strLibName.c_wstr());
 
 	// Register the library
 	TEST(register_library(strLibName,bSkipped));
@@ -434,7 +434,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 
 static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bSkipped)
 {
-	output("  %-45ls ",strModulePath.c_str());
+	output("  %-45ls ",strModulePath.c_wstr());
 
 	// Register the exe
 	TEST(register_process(strModulePath,bSkipped));
@@ -632,7 +632,7 @@ bool interface_process_tests()
 static bool do_library_test(const Omega::string_t& strLibName, const wchar_t* pszEndpoint, bool& bSkipped)
 {
 	// Register the library ready for local loopback stuff
-	output("  %-45ls ",strLibName.c_str());
+	output("  %-45ls ",strLibName.c_wstr());
 
 	// Register the library
 	TEST(register_library(strLibName,bSkipped));
@@ -648,7 +648,7 @@ static bool do_library_test(const Omega::string_t& strLibName, const wchar_t* ps
 
 static bool do_process_test(const Omega::string_t& strModulePath, const wchar_t* pszEndpoint, bool& bSkipped)
 {
-	output("  %-45ls ",strModulePath.c_str());
+	output("  %-45ls ",strModulePath.c_wstr());
 
 	// Register the exe
 	TEST(register_process(strModulePath,bSkipped));

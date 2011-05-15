@@ -13,7 +13,7 @@ bool unregister_process();
 
 static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipped)
 {
-	output("  %-45ls ",strLibName.c_str());
+	output("  %-45ls ",strLibName.c_wstr());
 
 	// Register the library
 	TEST(register_library(strLibName,bSkipped));
@@ -63,7 +63,7 @@ bool compartment_dll_tests()
 
 static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSkipped)
 {
-	output("  %-45ls ",strModulePath.c_str());
+	output("  %-45ls ",strModulePath.c_wstr());
 
 	// Register the process
 	TEST(register_process(strModulePath,bSkipped));

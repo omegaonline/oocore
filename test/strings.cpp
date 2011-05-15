@@ -31,7 +31,7 @@ bool string_tests()
 
 	s3 = s2;
 	TEST(s3 == s2);
-	TEST(wcscmp(s3.c_str(),sz2) == 0);
+	TEST(wcscmp(s3.c_wstr(),sz2) == 0);
 
 	s3.Clear();
 	TEST(s3.IsEmpty());

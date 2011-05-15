@@ -63,10 +63,10 @@ namespace Omega
 		string_t& operator += (const wchar_t* wsz);
 		string_t& operator += (wchar_t c);
 
-		const wchar_t* c_str() const;
+		const wchar_t* c_wstr() const;
 		const wchar_t operator[](size_t i) const
 		{
-			return c_str()[i];
+			return c_wstr()[i];
 		}
 
 		template <typename Traits, typename Alloc>

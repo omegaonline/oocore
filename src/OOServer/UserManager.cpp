@@ -315,7 +315,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 		pE->Release();
 
 		return false;
@@ -415,7 +415,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 		pE->Release();
 	}
 	
@@ -463,7 +463,7 @@ void User::Manager::do_quit_i()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 			pE->Release();
 		}
 		

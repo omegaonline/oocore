@@ -282,7 +282,7 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 		pE->Release();
 	}
 	catch (...)
@@ -756,7 +756,7 @@ void User::Manager::close_all_remotes()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 			pE->Release();
 		}
 
@@ -796,7 +796,7 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 		pE->Release();
 		return OOServer::MessageHandler::io_result::failed;
 	}

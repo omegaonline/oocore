@@ -182,7 +182,7 @@ void User::Manager::start_service(const char* pszKey, const char* pszOid)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Failed to start service %s: %ls",pszKey,pE->GetDescription().c_str()));
+		LOG_ERROR(("Failed to start service %s: %ls",pszKey,pE->GetDescription().c_wstr()));
 		pE->Release();
 	}
 }
@@ -237,7 +237,7 @@ void User::Manager::stop_services()
 		catch (IException* pE)
 		{
 			// ignore stop errors
-			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_str()));
+			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 			pE->Release();
 		}
 
@@ -313,7 +313,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription().c_str()));
+				LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
 				err = EINVAL;
 			}
@@ -367,7 +367,7 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("on_recv failed: %ls",pE->GetDescription().c_str()));
+				LOG_ERROR(("on_recv failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
 			}
 		}
@@ -399,7 +399,7 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("on_sent failed: %ls",pE->GetDescription().c_str()));
+				LOG_ERROR(("on_sent failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
 			}
 		}
@@ -427,7 +427,7 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("on_close failed: %ls",pE->GetDescription().c_str()));
+				LOG_ERROR(("on_close failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
 			}
 		}

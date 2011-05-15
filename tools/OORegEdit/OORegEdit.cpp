@@ -14,7 +14,7 @@ bool OORegEditApp::OnInit()
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		wxString strText = wxString::Format(_("Exception: %ls."),pE->GetDescription().c_str());
+		wxString strText = wxString::Format(_("Exception: %ls."),pE->GetDescription().c_wstr());
 
 		while (pE)
 		{
@@ -23,7 +23,7 @@ bool OORegEditApp::OnInit()
 
 			pE = pE2;
 			if (pE)
-				strText += wxString::Format(_("\nCause: %ls."),pE->GetDescription().c_str());
+				strText += wxString::Format(_("\nCause: %ls."),pE->GetDescription().c_wstr());
 		}
 
 		wxMessageDialog dlg(NULL,strText,_("Critical Error!"),wxOK | wxICON_EXCLAMATION);

@@ -20,7 +20,7 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey = m_ptrKey.OpenSubKey(*i);
 
 		TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-		wxTreeItemId itemId = pTree->AppendItem(id,wxString(i->c_str()),2,3,pNewItem);
+		wxTreeItemId itemId = pTree->AppendItem(id,wxString(i->c_wstr()),2,3,pNewItem);
 
 		if (m_nDepth==0)
 		{
@@ -50,15 +50,15 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		wxLongLong_t iv;
 		if (val.GetType() != Omega::TypeInfo::typeString && val.Coerce(iv) != Omega::any_t::castUnrelated)
 		{
-			long item = pList->InsertItem(i,wxString(it->c_str()),5);
+			long item = pList->InsertItem(i,wxString(it->c_wstr()),5);
 			pList->SetItem(item,1,_("Integer"));
 			pList->SetItem(item,2,wxString::Format(wxT("%lld"),iv));
 		}
 		else
 		{
-			long item = pList->InsertItem(i,wxString(it->c_str()),4);
+			long item = pList->InsertItem(i,wxString(it->c_wstr()),4);
 			pList->SetItem(item,1,_("String"));
-			pList->SetItem(item,2,wxString(val.cast<Omega::string_t>().c_str()));
+			pList->SetItem(item,2,wxString(val.cast<Omega::string_t>().c_wstr()));
 		}
 		/*else
 		{
@@ -168,7 +168,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	}
 
 	TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-	wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem);
+	wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_wstr()),2,3,pNewItem);
 
 	if (m_nDepth==0)
 	{
@@ -200,7 +200,7 @@ void TreeItemData::NewString(wxListCtrl* pList)
 
 	m_ptrKey->SetValue(strName,Omega::string_t());
 
-	long item = pList->InsertItem(-1,wxString(strName.c_str()),4);
+	long item = pList->InsertItem(-1,wxString(strName.c_wstr()),4);
 	pList->SetItem(item,1,_("String"));
 
 	pList->EnsureVisible(item);
@@ -222,7 +222,7 @@ void TreeItemData::NewUInt(wxListCtrl* pList)
 
 	m_ptrKey->SetValue(strName,0);
 
-	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
+	long item = pList->InsertItem(-1,wxString(strName.c_wstr()),5);
 	pList->SetItem(item,1,_("Integer"));
 	pList->SetItem(item,2,wxT("0x0000000000000000 (0)"));
 
@@ -245,7 +245,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 
 	m_ptrKey->SetValue(strName,0);
 
-	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
+	long item = pList->InsertItem(-1,wxString(strName.c_wstr()),5);
 	pList->SetItem(item,1,_("Binary"));
 	pList->SetItem(item,2,_("(Zero length binary value)"));
 
@@ -266,7 +266,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 		EditUIntDlg dialog(NULL,-1,wxT(""));
 
 		dialog.m_nBase = 0;
-		dialog.m_strName = wxString(strName.c_str());
+		dialog.m_strName = wxString(strName.c_wstr());
 		dialog.m_strValue = wxString::Format(wxT("%lld"),iv);
 
 		if (dialog.ShowModal() == wxID_OK)
@@ -282,8 +282,8 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 	{
 		EditStringDlg dialog(NULL,-1,wxT(""));
 
-		dialog.m_strName = wxString(strName.c_str());
-		dialog.m_strValue = wxString(m_ptrKey->GetValue(strName).cast<Omega::string_t>().c_str());
+		dialog.m_strName = wxString(strName.c_wstr());
+		dialog.m_strValue = wxString(m_ptrKey->GetValue(strName).cast<Omega::string_t>().c_wstr());
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
@@ -336,12 +336,12 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 			size_t pos = strFoundPos.Find('/');
 			if (pos != Omega::string_t::npos)
 			{
-				strSubKey = strFoundPos.Left(pos).c_str();
+				strSubKey = strFoundPos.Left(pos).c_wstr();
 				strFoundPos = strFoundPos.Mid(pos+1);
 			}
 			else
 			{
-				strSubKey = strFoundPos.c_str();
+				strSubKey = strFoundPos.c_wstr();
 				strFoundPos.Clear();
 
 				if (!bKey)
@@ -501,10 +501,10 @@ bool TreeItemData::MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Ome
 
 wxString TreeItemData::GetDesc()
 {
-	return m_ptrKey->GetDescription().c_str();
+	return m_ptrKey->GetDescription().c_wstr();
 }
 
 wxString TreeItemData::GetValueDesc(const wxString& strVal)
 {
-	return m_ptrKey->GetValueDescription(Omega::string_t(strVal.wc_str(),Omega::string_t::npos)).c_str();
+	return m_ptrKey->GetValueDescription(Omega::string_t(strVal.wc_str(),Omega::string_t::npos)).c_wstr();
 }

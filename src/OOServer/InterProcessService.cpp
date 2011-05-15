@@ -96,7 +96,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	string_t strProcess = ptrServer->GetValue(L"Path").cast<string_t>();
 
-	if (User::Process::is_relative_path(strProcess.c_str()))
+	if (User::Process::is_relative_path(strProcess.c_wstr()))
 	{
 		string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value." % strProcess % strAppName;
 
@@ -147,10 +147,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		if (!ptrProcess)
 		{
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Executing process %ls",strProcess.c_str());
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Executing process %ls",strProcess.c_wstr());
 
 			// Create a new process
-			ptrProcess = User::Process::exec(strProcess.c_str());
+			ptrProcess = User::Process::exec(strProcess.c_wstr());
 
 			int err = m_mapInProgress.insert(strProcess,ptrProcess);
 			if (err != 0)

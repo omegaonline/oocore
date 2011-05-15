@@ -133,7 +133,7 @@ namespace
 			if (iswdigit(str[1]))
 			{
 				const wchar_t* endp = 0;
-				precision = OOCore::wcsto32(str.c_str()+1,endp,10);
+				precision = OOCore::wcsto32(str.c_wstr()+1,endp,10);
 				if (*endp != L'\0')
 					return false;
 			}
@@ -939,7 +939,7 @@ namespace
 			s = fmt_general(val,false,precision+i);
 
 			const wchar_t* end = 0;
-			p = OOCore::wcstod(s.c_str(),end);
+			p = OOCore::wcstod(s.c_wstr(),end);
 		}
 
 		return s;
@@ -1000,17 +1000,17 @@ namespace
 			err = parts.push(str);
 		else
 		{
-			err = parts.push(string_t(str.c_str(),pos++));
+			err = parts.push(str.Left(pos++));
 			if (err == 0)
 			{
 				size_t pos2 = find_skip_quote(str,pos,L";");
 				if (pos2 == string_t::npos)
-					err = parts.push(string_t(str.c_str()+pos,string_t::npos));
+					err = parts.push(str.Mid(pos));
 				else
 				{
-					err = parts.push(string_t(str.c_str()+pos,pos2-pos));
+					err = parts.push(str.Mid(pos,pos2-pos));
 					if (err == 0)
-						err = parts.push(string_t(str.c_str()+pos2+1,string_t::npos));
+						err = parts.push(str.Mid(pos2+1));
 				}
 			}
 		}
@@ -1561,7 +1561,7 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_wcsto64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
-	const wchar_t* start = str.c_str();
+	const wchar_t* start = str.c_wstr();
 	const wchar_t* end = start;
 	int64_t v = OOCore::wcsto64(start,end,base);
 
@@ -1574,7 +1574,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_wcsto64,3,((in),const string_t&,st
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_wcstou64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
-	const wchar_t* start = str.c_str();
+	const wchar_t* start = str.c_wstr();
 	const wchar_t* end = start;
 	uint64_t v = OOCore::wcstou64(start,end,base);
 
@@ -1587,7 +1587,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_wcstou64,3,((in),const string_t&,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(float8_t,OOCore_wcstod,2,((in),const string_t&,str,(out),size_t&,end_pos))
 {
-	const wchar_t* start = str.c_str();
+	const wchar_t* start = str.c_wstr();
 	const wchar_t* end = start;
 	float8_t v = OOCore::wcstod(start,end);
 
@@ -1663,18 +1663,18 @@ namespace
 			throw Formatting::IFormattingException::Create(L"Missing index in format string: {0}" % strIn);
 
 		const wchar_t* endp = 0;
-		ins.index = OOCore::wcstou32(strIn.c_str()+pos,endp,10);
+		ins.index = OOCore::wcstou32(strIn.c_wstr()+pos,endp,10);
 		
 		ins.alignment = 0;
 		if (comma < end && comma < colon)
 		{
 			pos = comma++;
-			ins.alignment = OOCore::wcsto32(strIn.c_str()+comma,endp,10);
+			ins.alignment = OOCore::wcsto32(strIn.c_wstr()+comma,endp,10);
 		}
 
 		if (colon < end)
 		{
-			ins.strFormat = string_t(strIn.c_str()+colon+1,end-colon-1);
+			ins.strFormat = strIn.Mid(colon+1,end-colon-1);
 			merge_braces(ins.strFormat);
 		}
 

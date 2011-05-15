@@ -194,9 +194,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s
 	return static_cast<const StringNode*>(s2)->AddRef();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,s1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast_w,1,((in),const void*,s1))
 {
-	assert(s1);
+	if (!s1)
+		return L"";
 
 	return static_cast<const StringNode*>(s1)->m_buf;
 }
@@ -593,7 +594,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))
 {
-	const wchar_t* sz = str.c_str();
+	const wchar_t* sz = str.c_wstr();
 
 	// Do this manually...
 	result.Data1 = 0;

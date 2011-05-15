@@ -352,7 +352,7 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 	MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
 	assert(mi);
 
-	strName = string_t(mi->strName.c_str(),string_t::npos);
+	strName = mi->strName;
 	attribs = mi->attribs;
 	timeout = mi->timeout;
 	param_count = mi->params ? static_cast<byte_t>(mi->params->size()) : 0;
@@ -376,7 +376,7 @@ void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t&
 	ParamInfo* pi = mi->params->at(param_idx);
 	assert(pi);
 
-	strName = string_t(pi->strName.c_str(),string_t::npos);
+	strName = pi->strName;
 	type = pi->type;
 	attribs = pi->attribs;
 	type = pi->type.AddRef();

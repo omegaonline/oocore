@@ -451,8 +451,8 @@ inline Omega::string_t operator % (const wchar_t* lhs, const Omega::string_t& rh
 	return (Omega::string_t(lhs,Omega::string_t::npos,false) %= rhs);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),void**,fmt));
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),void*,arg));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),Omega::string_t&,fmt));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),const Omega::string_t&,arg));
 
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_int_t,3,((in),Omega::int64_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_uint_t,3,((in),Omega::uint64_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
@@ -589,16 +589,15 @@ inline Omega::string_t& Omega::string_t::operator %= (T val)
 {
 	for (size_t index = 0;; ++index)
 	{
-		void* format = 0;
+		string_t strFormat;
 		void* h = m_handle;
 
-		if (!OOCore_string_t_get_arg(index,&h,&format))
+		if (!OOCore_string_t_get_arg(index,&h,strFormat))
 			break;
 
 		m_handle = static_cast<handle_t*>(h);
 
-		string_t strVal = Formatting::ToString(val,string_t(static_cast<handle_t*>(format),false));
-		OOCore_string_t_set_arg(m_handle,strVal.m_handle);
+		OOCore_string_t_set_arg(m_handle,Formatting::ToString(val,strFormat));
 	}
 
 	OMEGA_DEBUG_STASH_STRING();

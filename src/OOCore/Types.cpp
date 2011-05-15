@@ -34,12 +34,11 @@ using namespace Omega;
 
 namespace
 {
-	typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, OOBase::STLAllocator<wchar_t,OOBase::HeapAllocator,OOCore::OmegaFailure> > private_wstring;
 	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator,OOCore::OmegaFailure> > private_ostringstream;
 
 	struct StringNode
 	{
-		StringNode(size_t length) : m_buf(0), m_len(0), m_own(true), m_fs(0), m_refcount(1)
+		StringNode(size_t length) : m_buf(NULL), m_len(0), m_own(true), m_fs(NULL), m_refcount(1)
 		{
 			assert(length);
 
@@ -48,7 +47,7 @@ namespace
 			m_len = length;
 		}
 
-		StringNode(const wchar_t* sz, size_t length, bool own) : m_buf(0), m_len(0), m_own(own), m_fs(0), m_refcount(1)
+		StringNode(const wchar_t* sz, size_t length, bool own) : m_buf(NULL), m_len(0), m_own(own), m_fs(NULL), m_refcount(1)
 		{
 			assert(sz);
 			assert(length);
@@ -65,7 +64,7 @@ namespace
 			m_len = length;
 		}
 
-		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(0), m_len(0), m_own(true), m_fs(0), m_refcount(1)
+		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(NULL), m_len(0), m_own(true), m_fs(NULL), m_refcount(1)
 		{
 			assert(sz1);
 			assert(len1);
@@ -113,12 +112,12 @@ namespace
 			{
 				uint32_t        index;
 				int32_t         alignment;
-				private_wstring format;
-				private_wstring suffix;
+				string_t        format;
+				string_t        suffix;
 			};
-			std::list<insert_t> m_listInserts;
-			size_t              m_curr_arg;
-			private_wstring     m_prefix;
+			OOBase::Stack<insert_t>* m_listInserts;
+			size_t                   m_curr_arg;
+			string_t                 m_prefix;
 		};
 		format_state_t* m_fs;
 
@@ -131,24 +130,33 @@ namespace
 		{
 			if (m_own)
 				OOBase::HeapFree(m_buf);
-			delete m_fs;
+
+			if (m_fs)
+			{
+				delete m_fs->m_listInserts;
+				delete m_fs;
+			}
 		}
 
 		size_t find_brace(size_t start, wchar_t brace);
-		void merge_braces(private_wstring& str);
+		void merge_braces(string_t& str);
 		void parse_arg(size_t& pos);
 	};
 
-	private_wstring align(const private_wstring& str, int align)
+	string_t align(const string_t& str, int align)
 	{
 		unsigned width = (align < 0 ? -align : align);
-		if (str.size() >= width)
+		if (str.Length() >= width)
 			return str;
 
+		string_t strFill;
+		for (size_t i=0;i<width-str.Length();++i)
+			strFill += L' ';
+
 		if (align < 0)
-			return str + private_wstring(width-str.size(),L' ');
+			return str + strFill;
 		else
-			return private_wstring(width-str.size(),L' ') + str;
+			return strFill + str;
 	}
 
 	template <typename T>
@@ -631,35 +639,33 @@ void StringNode::parse_arg(size_t& pos)
 
 	if (colon < end)
 	{
-		ins.format.assign(m_buf+colon+1,end-colon-1);
+		ins.format = string_t(m_buf+colon+1,end-colon-1);
 		merge_braces(ins.format);
 	}
 
-	m_fs->m_listInserts.push_back(ins);
+	m_fs->m_listInserts->push(ins);
 
 	pos = end + 1;
 }
 
-void StringNode::merge_braces(private_wstring& str)
+void StringNode::merge_braces(string_t& str)
 {
 	for (size_t pos = 0;;)
 	{
-		size_t found = str.find(L'{',pos);
-		if (found == private_wstring::npos)
+		pos = str.Find(L'{',pos);
+		if (pos == string_t::npos)
 			break;
 
-		str.erase(found,1);
-		pos = found + 1;
+		str = str.Left(pos) + str.Mid(pos+1);
 	}
 
 	for (size_t pos = 0;;)
 	{
-		size_t found = str.find(L'}',pos);
-		if (found == private_wstring::npos)
+		pos = str.Find(L'}',pos);
+		if (pos == string_t::npos)
 			break;
 
-		str.erase(found,1);
-		pos = found + 1;
+		str = str.Left(pos) + str.Mid(pos+1);
 	}
 }
 
@@ -690,8 +696,12 @@ void StringNode::parse_format()
 	if (!m_fs)
 		OMEGA_THROW_NOMEM();
 
+	m_fs->m_listInserts = new (std::nothrow) OOBase::Stack<format_state_t::insert_t>();
+	if (!m_fs->m_listInserts)
+		OMEGA_THROW_NOMEM();
+
 	m_fs->m_curr_arg = (size_t)-1;
-	m_fs->m_prefix.assign(m_buf,pos++);
+	m_fs->m_prefix = string_t(m_buf,pos++);
 	merge_braces(m_fs->m_prefix);
 
 	// Parse args
@@ -701,15 +711,15 @@ void StringNode::parse_format()
 
 		size_t found = find_brace(pos,L'{');
 
-		private_wstring suffix;
+		string_t suffix;
 		if (found == string_t::npos)
-			suffix.assign(m_buf+pos);
+			suffix = string_t(m_buf+pos,size_t(-1));
 		else
-			suffix.assign(m_buf+pos,found-pos);
+			suffix = string_t(m_buf+pos,found-pos);
 
 		merge_braces(suffix);
 
-		m_fs->m_listInserts.back().suffix = suffix;
+		m_fs->m_listInserts->at(m_fs->m_listInserts->size()-1)->suffix = suffix;
 
 		if (found == string_t::npos)
 			break;
@@ -721,12 +731,14 @@ void StringNode::parse_format()
 	{
 		size_t count = 0;
 		bool bFound = false;
-		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=m_fs->m_listInserts.begin(); i!=m_fs->m_listInserts.end(); ++i)
+		for (size_t i = 0;i<m_fs->m_listInserts->size(); ++i)
 		{
-			if (i->index <= idx)
+			format_state_t::insert_t* ins = m_fs->m_listInserts->at(i);
+
+			if (ins->index <= idx)
 				++count;
 
-			if (i->index == idx)
+			if (ins->index == idx)
 			{
 				bFound = true;
 				++idx;
@@ -736,14 +748,14 @@ void StringNode::parse_format()
 
 		if (!bFound)
 		{
-			if (count < m_fs->m_listInserts.size())
+			if (count < m_fs->m_listInserts->size())
 				throw Formatting::IFormattingException::Create(L"Index gap in format string: {0}" % string_t(m_buf,m_len));
 			break;
 		}
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),void**,fmt))
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),Omega::string_t&,fmt))
 {
 	StringNode* s = static_cast<StringNode*>(*s1);
 	if (!s)
@@ -762,6 +774,16 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 			pNewNode->m_fs = new (std::nothrow) StringNode::format_state_t(*s->m_fs);
 			if (!pNewNode->m_fs)
 				OMEGA_THROW_NOMEM();
+
+			if (s->m_fs->m_listInserts)
+			{
+				pNewNode->m_fs->m_listInserts = new (std::nothrow) OOBase::Stack<StringNode::format_state_t::insert_t>();
+				if (!pNewNode->m_fs->m_listInserts)
+					OMEGA_THROW_NOMEM();
+				
+				for (size_t i=0;i<s->m_fs->m_listInserts->size();++i)
+					pNewNode->m_fs->m_listInserts->push(*s->m_fs->m_listInserts->at(i));
+			}
 		}
 		
 		s->Release();
@@ -776,85 +798,88 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	else
 	{
 		assert(s->m_fs);
+		assert(s->m_fs->m_listInserts);
+
 		arg = s->m_fs->m_curr_arg-1;
 	}
 
 	assert(s->m_own);
 
-	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
+	for (size_t i=0; i!=s->m_fs->m_listInserts->size(); ++i)
 	{
-		if (i->index == arg)
+		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(i);
+
+		if (ins->index == arg)
 		{
-			*fmt = OOCore_string_t__ctor2_Impl(i->format.data(),i->format.size(),1);
+			fmt = ins->format;
 			return 1;
 		}
 	}
 
 	// Now measure how much space we need
-	private_wstring str = s->m_fs->m_prefix;
-	for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
+	string_t str = s->m_fs->m_prefix;
+	for (size_t i=0; i!=s->m_fs->m_listInserts->size(); ++i)
 	{
-		str += i->format;
-		str += i->suffix;
+		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(i);
+
+		str += ins->format;
+		str += ins->suffix;
 	}
 
-	if (str.size() > s->m_len)
+	size_t len = str.Length();
+	if (len > s->m_len)
 	{
-		wchar_t* buf_new = static_cast<wchar_t*>(OOBase::HeapAllocate((str.size()+1)*sizeof(wchar_t)));
-		buf_new[str.size()] = L'\0';
+		wchar_t* buf_new = static_cast<wchar_t*>(OOBase::HeapAllocate((len+1)*sizeof(wchar_t)));
+		buf_new[len] = L'\0';
 
 		OOBase::HeapFree(s->m_buf);
 		s->m_buf = buf_new;
 	}
 
-	memcpy(s->m_buf,str.data(),str.size()*sizeof(wchar_t));
-	s->m_buf[str.size()] = L'\0';
-	s->m_len = str.size();
-
+	memcpy(s->m_buf,str.c_str(),len*sizeof(wchar_t));
+	s->m_buf[len] = L'\0';
+	s->m_len = len;
+	
 	return 0;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),void*,arg))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),const Omega::string_t&,arg))
 {
 	StringNode* s = static_cast<StringNode*>(s1);
 
-	for (std::list<StringNode::format_state_t::insert_t>::iterator i=s->m_fs->m_listInserts.begin(); i!=s->m_fs->m_listInserts.end(); ++i)
+	for (size_t i=0;i<s->m_fs->m_listInserts->size();++i)
 	{
-		if (i->index == s->m_fs->m_curr_arg-1)
+		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(i);
+
+		if (ins->index == s->m_fs->m_curr_arg-1)
 		{
-			if (i == s->m_fs->m_listInserts.begin())
-			{
-				private_wstring str;
-				if (arg)
-					str.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
-
-				s->m_fs->m_prefix += align(str,i->alignment);
-				s->m_fs->m_prefix += i->suffix;
-				s->m_fs->m_listInserts.pop_front();
-
-				while (!s->m_fs->m_listInserts.empty())
-				{
-					i = s->m_fs->m_listInserts.begin();
-					if (i->index == (unsigned int)-1)
-					{
-						s->m_fs->m_prefix += align(i->format,i->alignment);
-						s->m_fs->m_prefix += i->suffix;
-						s->m_fs->m_listInserts.pop_front();
-					}
-					else
-						break;
-				}
-			}
-			else
-			{
-				i->format.empty();
-				if (arg)
-					i->format.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
-
-				i->index = (unsigned int)-1;
-			}
+			ins->index = unsigned int(-1);
+			ins->format = arg;
 			break;
 		}
+	}
+
+	while (!s->m_fs->m_listInserts->empty())
+	{
+		size_t end = s->m_fs->m_listInserts->size()-1;
+
+		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(end);
+
+		if (ins->index != unsigned int(-1))
+			break;
+
+		string_t txt = align(ins->format,ins->alignment) + ins->suffix;
+
+		if (end > 0)
+		{
+			StringNode::format_state_t::insert_t* prev = s->m_fs->m_listInserts->at(end-1);
+
+			prev->suffix += txt;
+		}
+		else
+			s->m_fs->m_prefix += txt;
+
+		s->m_fs->m_listInserts->pop();
 	}
 }
 

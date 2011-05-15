@@ -37,8 +37,10 @@ namespace
 		{
 			assert(length);
 
-			m_buf = static_cast<wchar_t*>(OOBase::HeapAllocate((length+1)*sizeof(wchar_t)));
-			m_buf[length] = L'\0';
+			wchar_t* buf = static_cast<wchar_t*>(OOBase::HeapAllocate((length+1)*sizeof(wchar_t)));
+			buf[length] = L'\0';
+			
+			m_buf = buf;			
 			m_len = length;
 		}
 
@@ -49,9 +51,11 @@ namespace
 
 			if (m_own)
 			{
-				m_buf = static_cast<wchar_t*>(OOBase::HeapAllocate((length+1)*sizeof(wchar_t)));
-				memcpy(m_buf,sz,length*sizeof(wchar_t));
-				m_buf[length] = L'\0';
+				wchar_t* buf = static_cast<wchar_t*>(OOBase::HeapAllocate((length+1)*sizeof(wchar_t)));
+				memcpy(buf,sz,length*sizeof(wchar_t));
+				buf[length] = L'\0';
+
+				m_buf = buf;
 			}
 			else
 				m_buf = const_cast<wchar_t*>(sz);
@@ -66,10 +70,12 @@ namespace
 			assert(sz2);
 			assert(len2);
 
-			m_buf = static_cast<wchar_t*>(OOBase::HeapAllocate((len1+len2+1)*sizeof(wchar_t)));
-			memcpy(m_buf,sz1,len1*sizeof(wchar_t));
-			memcpy(m_buf+len1,sz2,len2*sizeof(wchar_t));
-			m_buf[len1+len2] = L'\0';
+			wchar_t* buf = static_cast<wchar_t*>(OOBase::HeapAllocate((len1+len2+1)*sizeof(wchar_t)));
+			memcpy(buf,sz1,len1*sizeof(wchar_t));
+			memcpy(buf+len1,sz2,len2*sizeof(wchar_t));
+			buf[len1+len2] = L'\0';
+			
+			m_buf = buf;
 			m_len = len1+len2;
 		}
 
@@ -97,9 +103,9 @@ namespace
 				delete this;
 		}
 
-		wchar_t* m_buf;
-		size_t   m_len;
-		bool     m_own;
+		wchar_t const* m_buf;
+		size_t         m_len;
+		bool           m_own;
 
 	private:
 		OOBase::Atomic<size_t> m_refcount;
@@ -107,7 +113,7 @@ namespace
 		~StringNode()
 		{
 			if (m_own)
-				OOBase::HeapFree(m_buf);
+				OOBase::HeapFree(const_cast<wchar_t*>(m_buf));
 		}
 	};
 
@@ -145,9 +151,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const ch
 		OMEGA_THROW_NOMEM();
 
 	if (bUTF8)
-		OOBase::from_utf8(pNode->m_buf,pNode->m_len+1,sz,len);
+		OOBase::from_utf8(const_cast<wchar_t*>(pNode->m_buf),pNode->m_len+1,sz,len);
 	else
-		OOBase::from_native(pNode->m_buf,pNode->m_len+1,sz,len);
+		OOBase::from_native(const_cast<wchar_t*>(pNode->m_buf),pNode->m_len+1,sz,len);
 	return pNode;
 }
 
@@ -354,7 +360,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const v
 	if (!s2)
 		OMEGA_THROW_NOMEM();
 
-	for (wchar_t* p=s2->m_buf; size_t(p-s2->m_buf) < s2->m_len; ++p)
+	for (wchar_t* p=const_cast<wchar_t*>(s2->m_buf); size_t(p-s2->m_buf) < s2->m_len; ++p)
 		*p = towlower(*p);
 
 	return s2;
@@ -369,7 +375,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const v
 	if (!s2)
 		OMEGA_THROW_NOMEM();
 
-	for (wchar_t* p=s2->m_buf; size_t(p-s2->m_buf) < s2->m_len; ++p)
+	for (wchar_t* p=const_cast<wchar_t*>(s2->m_buf); size_t(p-s2->m_buf) < s2->m_len; ++p)
 		*p = towupper(*p);
 
 	return s2;

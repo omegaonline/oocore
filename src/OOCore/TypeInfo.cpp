@@ -97,7 +97,7 @@ namespace
 			const System::Internal::typeinfo_rtti* type_info;
 		};
 
-		std::multimap<guid_t,ti_t> m_ti_map;
+		OOBase::Table<guid_t,ti_t> m_ti_map;
 	};
 	typedef OOBase::Singleton<TIMapImpl,OOCore::DLL> TIMap;
 
@@ -417,17 +417,19 @@ void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::
 
 	ti_t ti = { pszName, type_info };
 
-	m_ti_map.insert(std::multimap<guid_t,ti_t>::value_type(iid,ti));
+	int err = m_ti_map.insert(iid,ti);
+	if (err != 0)
+		OMEGA_THROW(err);
 }
 
 void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid); i!=m_ti_map.end() && i->first==iid;)
+	for (size_t i=m_ti_map.find(iid,true); i < m_ti_map.size() && *m_ti_map.key_at(i)==iid;)
 	{
-		if (i->second.type_info == type_info)
-			m_ti_map.erase(i++);
+		if (m_ti_map.at(i)->type_info == type_info)
+			m_ti_map.erase(i);
 		else
 			++i;
 	}
@@ -437,11 +439,11 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	std::multimap<guid_t,ti_t>::const_iterator i=m_ti_map.find(iid);
-	if (i != m_ti_map.end())
+	ti_t ti;
+	if (m_ti_map.find(iid,ti))
 	{
 		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstancePtr();
-		ptrTI->init(iid,i->second.pszName,i->second.type_info);
+		ptrTI->init(iid,ti.pszName,ti.type_info);
 		return ptrTI.AddRef();
 	}
 

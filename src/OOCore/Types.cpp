@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor
+// Copyright (C) 2007,2011 Rick Taylor
 //
 // This file is part of OOCore, the Omega Online Core library.
 //
@@ -27,15 +27,10 @@
 #include <uuid/uuid.h>
 #endif
 
-#include <sstream>
-#include <iomanip>
-
 using namespace Omega;
 
 namespace
 {
-	typedef std::basic_ostringstream<char, std::char_traits<char>, OOBase::STLAllocator<char,OOBase::LocalAllocator,OOCore::OmegaFailure> > private_ostringstream;
-
 	struct StringNode
 	{
 		StringNode(size_t length) : m_buf(NULL), m_len(0), m_own(true), m_fs(NULL), m_refcount(1)
@@ -898,31 +893,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-	private_ostringstream ss;
-	ss.imbue(std::locale::classic());
+	OOBase::LocalString str;
+	int err = str.printf("{%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X}",
+		guid.Data1,guid.Data2,guid.Data3,
+		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
+		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);
 
-	ss.setf(std::ios_base::hex,std::ios_base::basefield);
-	ss.setf(std::ios_base::uppercase);
-	ss.fill('0');
+	if (err != 0)
+		OMEGA_THROW(err);
 
-	ss << '{';
-	ss << std::setw(8) << guid.Data1 << '-';
-	ss << std::setw(4) << guid.Data2 << '-';
-	ss << std::setw(4) << guid.Data3 << '-';
-
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[0]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[1]);
-	ss << '-';
-
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[2]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[3]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[4]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[5]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[6]);
-	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[7]);
-	ss << '}';
-
-	return string_t(ss.str().c_str(),true);
+	return string_t(str.c_str(),false);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))

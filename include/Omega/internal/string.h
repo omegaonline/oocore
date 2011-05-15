@@ -74,30 +74,12 @@ namespace Omega
 
 		size_t ToNative(char* sz, size_t size) const;
 
-		template <typename T> bool operator == (T v) const
-		{
-			return Compare(v) == 0;
-		}
-		template <typename T> bool operator != (T v) const
-		{
-			return Compare(v) != 0;
-		}
-		template <typename T> bool operator < (T v) const
-		{
-			return Compare(v) < 0;
-		}
-		template <typename T> bool operator <= (T v) const
-		{
-			return Compare(v) <= 0;
-		}
-		template <typename T> bool operator > (T v) const
-		{
-			return Compare(v) > 0;
-		}
-		template <typename T> bool operator >= (T v) const
-		{
-			return Compare(v) >= 0;
-		}
+		template <typename T> bool operator == (T v) const { return Compare(v) == 0; }
+		template <typename T> bool operator != (T v) const { return Compare(v) != 0; }
+		template <typename T> bool operator < (T v) const  { return Compare(v) < 0;  }
+		template <typename T> bool operator <= (T v) const { return Compare(v) <= 0; }
+		template <typename T> bool operator > (T v) const  { return Compare(v) > 0;  }
+		template <typename T> bool operator >= (T v) const { return Compare(v) >= 0; }
 
 		int Compare(const string_t& s) const;
 		int Compare(const string_t& s, size_t pos, size_t length = npos, bool bIgnoreCase = false) const;

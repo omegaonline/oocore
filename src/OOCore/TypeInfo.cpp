@@ -545,7 +545,7 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 	}
 
 	ObjectImpl<CastException>* pNew = ObjectImpl<CastException>::CreateInstance();
-	pNew->m_strDesc = string_t(L"Failed to convert from {0} to {1}: {2}") % strSource % strDest % strReason;
+	pNew->m_strDesc = L"Failed to convert from {0} to {1}: {2}" % strSource % strDest % strReason;
 	pNew->m_value = value;
 	pNew->m_reason = reason;
 	pNew->m_type.Attach(Remoting::CreateMemoryMessage());

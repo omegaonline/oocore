@@ -66,8 +66,7 @@ namespace User
 			{
 				ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"Invalid name for registry key or value: '{0}'.";
-				pRE->m_strDesc %= name;
+				pRE->m_strDesc = L"Invalid name for registry key or value: '{0}'." % name;
 				throw static_cast<IBadNameException*>(pRE);
 			}
 		};
@@ -92,8 +91,7 @@ namespace User
 			{
 				ObjectImpl<NotFoundException>* pRE = ObjectImpl<NotFoundException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"'{0}' not found.";
-				pRE->m_strDesc %= name;
+				pRE->m_strDesc = L"'{0}' not found." % name;
 				throw static_cast<INotFoundException*>(pRE);
 			}
 		};
@@ -118,8 +116,7 @@ namespace User
 			{
 				ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"Key '{0}' already exists.";
-				pRE->m_strDesc %= name;
+				pRE->m_strDesc = L"Key '{0}' already exists." % name;
 				throw static_cast<IAlreadyExistsException*>(pRE);
 			}
 		};
@@ -144,8 +141,7 @@ namespace User
 			{
 				ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"Write attempt illegal for '{0}'.";
-				pRE->m_strDesc %= name;
+				pRE->m_strDesc = L"Write attempt illegal for '{0}'." % name;
 				throw static_cast<IAccessDeniedException*>(pRE);
 			}
 		};

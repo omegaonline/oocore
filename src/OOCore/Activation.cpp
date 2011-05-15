@@ -211,8 +211,7 @@ namespace
 	{
 		ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
 		pRE->m_ptrCause.Attach(pE);
-		pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed.";
-		pRE->m_strDesc %= strName;
+		pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed." % strName;
 		pRE->m_dll_name = strName;
 		throw static_cast<ILibraryNotFoundException*>(pRE);
 	}
@@ -266,9 +265,7 @@ namespace
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
 				if (IsRelativePath(strLib))
 				{
-					string_t strErr = L"Relative path \"{0}\" in object library '{1}' activation registry value.";
-					strErr %= strLib;
-					strErr %= oid;
+					string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
 
 					try
 					{
@@ -398,8 +395,7 @@ namespace
 void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 {
 	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: {0}";
-	pNew->m_strDesc %= oid;
+	pNew->m_strDesc = L"The identified object could not be found: {0}" % oid;
 	pNew->m_ptrCause.Attach(pE);
 	pNew->m_oid = oid;
 	throw static_cast<IOidNotFoundException*>(pNew);
@@ -416,8 +412,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activ
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
 {
 	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: {0}";
-	pNew->m_strDesc %= oid;
+	pNew->m_strDesc = L"The identified object could not be found: {0}" % oid;
 	pNew->m_oid = oid;
 	return pNew;
 }

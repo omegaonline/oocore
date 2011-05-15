@@ -610,18 +610,12 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 		v = (u.fl8Val ? true : false);
 		break;
 	case TypeInfo::typeString:
-		{
-			string_t t(L"{0}");
-			string_t f(L"{0}");
-			t %= true;
-			f %= false;
-			if (strVal == t)
-				v = true;
-			else if (strVal == f)
-				v = false;
-			else
-				return any_t::castUnrelated;
-		}
+		if (strVal == Formatting::ToString(true))
+			v = true;
+		else if (strVal == Formatting::ToString(false))
+			v = false;
+		else
+			return any_t::castUnrelated;
 		break;
 
 	case TypeInfo::typeVoid:

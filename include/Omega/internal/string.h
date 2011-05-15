@@ -35,6 +35,11 @@ namespace Omega
 		}
 	}
 
+	namespace Formatting
+	{
+		class formatter_t;
+	}
+
 	class string_t
 	{
 	public:
@@ -114,10 +119,13 @@ namespace Omega
 		string_t TrimRight(const string_t& str) const;
 
 		template <typename T>
-		string_t& operator %= (T val);
+		T ToNumber() const;
 
 		template <typename T>
-		T ToNumber() const;
+		string_t& operator %= (const T& rhs)
+		{
+			return (*this = (*this % rhs));
+		}
 
 		static int64_t wcsto64(const string_t& str, size_t& end_pos, unsigned int base);
 		static uint64_t wcstou64(const string_t& str, size_t& end_pos, unsigned int base);
@@ -149,6 +157,56 @@ namespace Omega
 
 		template <typename T>
 		string_t ToString(T val, const string_t& strFormat = string_t());
+
+		class formatter_t
+		{
+		public:
+			formatter_t(const string_t& format);
+
+			formatter_t(const formatter_t& rhs) : m_handle(clone_handle(rhs))
+			{ }
+
+			formatter_t& operator = (const formatter_t& rhs)
+			{
+				if (this != &rhs)
+				{
+					free_handle(m_handle);
+					m_handle = clone_handle(rhs);
+				}
+				return *this;
+			}
+
+			~formatter_t();
+
+			template <typename T>
+			formatter_t& operator % (const T& rhs);
+
+			template <typename T>
+			formatter_t operator % (const T& rhs) const
+			{
+				return formatter_t(*this) % rhs;
+			}
+
+			operator string_t() const;
+
+			template <typename T>
+			bool operator == (const T& v) const
+			{
+				return (static_cast<const string_t&>(*this) == v);
+			}
+
+		private:
+			struct handle_t
+			{
+				int unused;
+			}* m_handle;
+
+			explicit formatter_t(handle_t* h) : m_handle(h)
+			{}
+
+			static handle_t* clone_handle(const formatter_t& rhs);
+			static void free_handle(handle_t* h);
+		};
 	}
 }
 
@@ -159,6 +217,7 @@ Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs);
 Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs);
 
 template <typename T>
-Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs);
+Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, const T& rhs);
+Omega::Formatting::formatter_t operator % (const wchar_t* lhs, const Omega::string_t& rhs);
 
 #endif // OMEGA_STRING_H_INCLUDED_

@@ -113,7 +113,8 @@ static unsigned long fail_count = 0;
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
-	add_failure((L"Assertion '{0}' failed at {1}:{2}\n" % Omega::string_t(pszExpr,false) % Omega::string_t(pszSrc,false) % nLine).c_str());
+	Omega::string_t err(L"Assertion '{0}' failed at {1}:{2}\n" % Omega::string_t(pszExpr,false) % Omega::string_t(pszSrc,false) % nLine);
+	add_failure(err.c_str());
 	return false;
 }
 

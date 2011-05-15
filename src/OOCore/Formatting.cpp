@@ -994,21 +994,29 @@ namespace
 
 	size_t parse_custom(const string_t& str, OOBase::Stack<string_t,OOBase::LocalAllocator>& parts)
 	{
+		int err = 0;
 		size_t pos = find_skip_quote(str,0,L";");
 		if (pos == string_t::npos)
-			parts.push(str);
+			err = parts.push(str);
 		else
 		{
-			parts.push(string_t(str.c_str(),pos++));
-			size_t pos2 = find_skip_quote(str,pos,L";");
-			if (pos2 == string_t::npos)
-				parts.push(string_t(str.c_str()+pos,string_t::npos));
-			else
+			err = parts.push(string_t(str.c_str(),pos++));
+			if (err == 0)
 			{
-				parts.push(string_t(str.c_str()+pos,pos2-pos));
-				parts.push(string_t(str.c_str()+pos2+1,string_t::npos));
+				size_t pos2 = find_skip_quote(str,pos,L";");
+				if (pos2 == string_t::npos)
+					err = parts.push(string_t(str.c_str()+pos,string_t::npos));
+				else
+				{
+					err = parts.push(string_t(str.c_str()+pos,pos2-pos));
+					if (err == 0)
+						err = parts.push(string_t(str.c_str()+pos2+1,string_t::npos));
+				}
 			}
 		}
+		if (err != 0)
+			OMEGA_THROW(err);
+
 		return parts.size();
 	}
 
@@ -1588,4 +1596,281 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(float8_t,OOCore_wcstod,2,((in),const string_t&,st
 		end_pos = string_t::npos;
 
 	return v;
+}
+
+namespace
+{
+	struct insert_t
+	{
+		uint32_t        index;
+		int32_t         alignment;
+		string_t        strFormat;
+		string_t        strSuffix;
+	};
+
+	struct format_state_t
+	{
+		OOBase::Stack<insert_t>* m_listInserts;
+		string_t                 m_strPrefix;
+	};
+
+	size_t find_brace(const string_t& strIn, size_t start, wchar_t brace)
+	{
+		for (;;)
+		{
+			size_t found = strIn.Find(brace,start);
+			if (found == string_t::npos)
+				return string_t::npos;
+
+			if (found < strIn.Length() && strIn[found+1] != brace)
+				return found;
+
+			// Skip {{
+			start = found + 2;
+		}
+	}
+
+	void merge_braces(string_t& str)
+	{
+		for (size_t pos = 0;;)
+		{
+			pos = str.Find(L'{',pos);
+			if (pos == string_t::npos)
+				break;
+
+			str = str.Left(pos) + str.Mid(pos+1);
+		}
+
+		for (size_t pos = 0;;)
+		{
+			pos = str.Find(L'}',pos);
+			if (pos == string_t::npos)
+				break;
+
+			str = str.Left(pos) + str.Mid(pos+1);
+		}
+	}
+	
+	void parse_arg(const string_t& strIn, size_t& pos, insert_t& ins)
+	{
+		size_t end = find_brace(strIn,pos,L'}');
+		if (end == string_t::npos)
+			throw Formatting::IFormattingException::Create(L"Missing matching '}' in format string: {0}" % strIn);
+
+		size_t comma = strIn.Find(L',',pos,0);
+		size_t colon = strIn.Find(L':',pos,0);
+		if (comma == pos || colon == pos)
+			throw Formatting::IFormattingException::Create(L"Missing index in format string: {0}" % strIn);
+
+		const wchar_t* endp = 0;
+		ins.index = OOCore::wcstou32(strIn.c_str()+pos,endp,10);
+		
+		ins.alignment = 0;
+		if (comma < end && comma < colon)
+		{
+			pos = comma++;
+			ins.alignment = OOCore::wcsto32(strIn.c_str()+comma,endp,10);
+		}
+
+		if (colon < end)
+		{
+			ins.strFormat = string_t(strIn.c_str()+colon+1,end-colon-1);
+			merge_braces(ins.strFormat);
+		}
+
+		pos = end + 1;
+	}
+
+	void parse_format(const string_t& strIn, string_t& strPrefix, OOBase::Stack<insert_t>& listInserts)
+	{
+		// Prefix first
+		size_t pos = find_brace(strIn,0,L'{');
+		if (pos == string_t::npos)
+			return;
+
+		strPrefix = strIn.Left(pos++);
+		merge_braces(strPrefix);
+
+		// Parse args
+		for (;;)
+		{
+			insert_t ins;
+			parse_arg(strIn,pos,ins);
+
+			size_t found = find_brace(strIn,pos,L'{');
+
+			if (found == string_t::npos)
+				ins.strSuffix = strIn.Mid(pos);
+			else
+				ins.strSuffix = strIn.Mid(pos,found-pos);
+
+			merge_braces(ins.strSuffix);
+
+			int err = listInserts.push(ins);
+			if (err != 0)
+				OMEGA_THROW(err);
+
+			if (found == string_t::npos)
+				break;
+
+			pos = found + 1;
+		}
+	}
+
+	string_t align(const string_t& str, int align)
+	{
+		unsigned width = (align < 0 ? -align : align);
+		if (str.Length() >= width)
+			return str;
+
+		string_t strFill;
+		for (size_t i=0;i<width-str.Length();++i)
+			strFill += L' ';
+
+		if (align < 0)
+			return str + strFill;
+		else
+			return strFill + str;
+	}
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Omega::string_t&,format))
+{
+	format_state_t* s = new (std::nothrow) format_state_t();
+	if (!s)
+		OMEGA_THROW_NOMEM();
+
+	s->m_listInserts = new (std::nothrow) OOBase::Stack<insert_t>();
+	if (!s->m_listInserts)
+	{
+		delete s;
+		OMEGA_THROW_NOMEM();
+	}
+
+	// Split up the string
+	parse_format(format,s->m_strPrefix,*s->m_listInserts);
+	
+	return s;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle))
+{
+	const format_state_t* s = static_cast<const format_state_t*>(handle);
+	if (!s || !s->m_listInserts)
+		return NULL;
+
+	format_state_t* s_new = new (std::nothrow) format_state_t();
+	if (!s_new)
+		OMEGA_THROW_NOMEM();
+
+	s_new->m_listInserts = new (std::nothrow) OOBase::Stack<insert_t>();
+	if (!s_new->m_listInserts)
+	{
+		delete s_new;
+		OMEGA_THROW_NOMEM();
+	}
+
+	s_new->m_strPrefix = s->m_strPrefix;
+
+	bool pushed = false;
+	for (size_t i=0; i!=s->m_listInserts->size(); ++i)
+	{
+		insert_t* ins = s->m_listInserts->at(i);
+		if (!pushed && ins->index == uint32_t(-1))
+		{
+			s_new->m_strPrefix += ins->strFormat + ins->strSuffix;
+		}
+		else
+		{
+			int err = s_new->m_listInserts->push(*ins);
+			if (err != 0)
+			{
+				delete s_new->m_listInserts;
+				delete s_new;
+				OMEGA_THROW(err);
+			}
+			pushed = true;
+		}
+	}
+	
+	return s_new;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,handle))
+{
+	format_state_t* s = static_cast<format_state_t*>(handle);
+	if (s)
+		delete s->m_listInserts;
+
+	delete s;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),Omega::uint32_t&,index,(out),Omega::string_t&,fmt))
+{
+	const format_state_t* s = static_cast<const format_state_t*>(handle);
+	if (!s || !s->m_listInserts)
+		return 0;
+
+	// Find the lowest index (from left to right)
+	index = uint32_t(-1);
+	for (size_t i=0; i!=s->m_listInserts->size(); ++i)
+	{
+		insert_t* ins = s->m_listInserts->at(i);
+		if (ins->index < index)
+		{
+			index = ins->index;
+			fmt = ins->strFormat;
+		}
+	}
+
+	return (index == uint32_t(-1) ? 0 : 1);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),Omega::uint32_t,index,(in),const Omega::string_t&,arg))
+{
+	const format_state_t* s = static_cast<const format_state_t*>(handle);
+	if (s && s->m_listInserts)
+	{	
+		// Update 'index'
+		for (size_t i=0;i<s->m_listInserts->size();++i)
+		{
+			insert_t* ins = s->m_listInserts->at(i);
+			if (ins->index == index)
+			{
+				ins->strFormat = align(arg,ins->alignment);
+				ins->index = uint32_t(-1);
+				break;
+			}
+		}
+	}	
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),const void*,handle))
+{
+	string_t strPrefix;
+
+	const format_state_t* s = static_cast<const format_state_t*>(handle);
+	if (s && s->m_listInserts)
+	{
+		strPrefix += s->m_strPrefix;
+
+		for (size_t i=0;i<s->m_listInserts->size();++i)
+		{
+			insert_t* ins = s->m_listInserts->at(i);
+			if (ins->index != uint32_t(-1))
+			{
+				strPrefix += L"{" + Formatting::ToString(ins->index);
+				if (ins->alignment != 0)
+					strPrefix += L"," + Formatting::ToString(ins->alignment);
+
+				strPrefix += ins->strFormat + L"}";
+			}
+			else
+			{
+				strPrefix += ins->strFormat + ins->strSuffix;
+			}
+		}
+	}
+
+	return strPrefix;
 }

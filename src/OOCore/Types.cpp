@@ -33,7 +33,7 @@ namespace
 {
 	struct StringNode
 	{
-		StringNode(size_t length) : m_buf(NULL), m_len(0), m_own(true), m_fs(NULL), m_refcount(1)
+		StringNode(size_t length) : m_buf(NULL), m_len(0), m_own(true), m_refcount(1)
 		{
 			assert(length);
 
@@ -42,7 +42,7 @@ namespace
 			m_len = length;
 		}
 
-		StringNode(const wchar_t* sz, size_t length, bool own) : m_buf(NULL), m_len(0), m_own(own), m_fs(NULL), m_refcount(1)
+		StringNode(const wchar_t* sz, size_t length, bool own) : m_buf(NULL), m_len(0), m_own(own), m_refcount(1)
 		{
 			assert(sz);
 			assert(length);
@@ -59,7 +59,7 @@ namespace
 			m_len = length;
 		}
 
-		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(NULL), m_len(0), m_own(true), m_fs(NULL), m_refcount(1)
+		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(NULL), m_len(0), m_own(true), m_refcount(1)
 		{
 			assert(sz1);
 			assert(len1);
@@ -101,23 +101,6 @@ namespace
 		size_t   m_len;
 		bool     m_own;
 
-		struct format_state_t
-		{
-			struct insert_t
-			{
-				uint32_t        index;
-				int32_t         alignment;
-				string_t        format;
-				string_t        suffix;
-			};
-			OOBase::Stack<insert_t>* m_listInserts;
-			size_t                   m_curr_arg;
-			string_t                 m_prefix;
-		};
-		format_state_t* m_fs;
-
-		void parse_format();
-
 	private:
 		OOBase::Atomic<size_t> m_refcount;
 
@@ -125,34 +108,8 @@ namespace
 		{
 			if (m_own)
 				OOBase::HeapFree(m_buf);
-
-			if (m_fs)
-			{
-				delete m_fs->m_listInserts;
-				delete m_fs;
-			}
 		}
-
-		size_t find_brace(size_t start, wchar_t brace);
-		void merge_braces(string_t& str);
-		void parse_arg(size_t& pos);
 	};
-
-	string_t align(const string_t& str, int align)
-	{
-		unsigned width = (align < 0 ? -align : align);
-		if (str.Length() >= width)
-			return str;
-
-		string_t strFill;
-		for (size_t i=0;i<width-str.Length();++i)
-			strFill += L' ';
-
-		if (align < 0)
-			return str + strFill;
-		else
-			return strFill + str;
-	}
 
 	template <typename T>
 	bool any_compare(const any_t& lhs, const any_t& rhs)
@@ -605,277 +562,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const voi
 		OMEGA_THROW_NOMEM();
 
 	return r;
-}
-
-void StringNode::parse_arg(size_t& pos)
-{
-	size_t end = find_brace(pos,L'}');
-	if (end == string_t::npos)
-		throw Formatting::IFormattingException::Create(L"Missing matching '}' in format string: {0}" % string_t(m_buf,m_len));
-
-	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
-	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
-	if (comma == pos || colon == pos)
-		throw Formatting::IFormattingException::Create(L"Missing index in format string: {0}" % string_t(m_buf,m_len));
-
-	format_state_t::insert_t ins;
-	ins.alignment = 0;
-
-	const wchar_t* endp = 0;
-	ins.index = OOCore::wcstou32(m_buf+pos,endp,10);
-	if (ins.index < m_fs->m_curr_arg)
-		m_fs->m_curr_arg = ins.index;
-
-	if (comma < end && comma < colon)
-	{
-		pos = comma++;
-		ins.alignment = OOCore::wcsto32(m_buf+comma,endp,10);
-	}
-
-	if (colon < end)
-	{
-		ins.format = string_t(m_buf+colon+1,end-colon-1);
-		merge_braces(ins.format);
-	}
-
-	m_fs->m_listInserts->push(ins);
-
-	pos = end + 1;
-}
-
-void StringNode::merge_braces(string_t& str)
-{
-	for (size_t pos = 0;;)
-	{
-		pos = str.Find(L'{',pos);
-		if (pos == string_t::npos)
-			break;
-
-		str = str.Left(pos) + str.Mid(pos+1);
-	}
-
-	for (size_t pos = 0;;)
-	{
-		pos = str.Find(L'}',pos);
-		if (pos == string_t::npos)
-			break;
-
-		str = str.Left(pos) + str.Mid(pos+1);
-	}
-}
-
-size_t StringNode::find_brace(size_t start, wchar_t brace)
-{
-	for (;;)
-	{
-		size_t found = OOCore_string_t_find1_Impl(this,brace,start,0);
-		if (found == string_t::npos)
-			return string_t::npos;
-
-		if (found < m_len && m_buf[found+1] != brace)
-			return found;
-
-		// Skip {{
-		start = found + 2;
-	}
-}
-
-void StringNode::parse_format()
-{
-	// Prefix first
-	size_t pos = find_brace(0,L'{');
-	if (pos == string_t::npos)
-		throw Formatting::IFormattingException::Create(L"No inserts in format string: {0}" % string_t(m_buf,m_len));
-
-	m_fs = new (std::nothrow) format_state_t;
-	if (!m_fs)
-		OMEGA_THROW_NOMEM();
-
-	m_fs->m_listInserts = new (std::nothrow) OOBase::Stack<format_state_t::insert_t>();
-	if (!m_fs->m_listInserts)
-		OMEGA_THROW_NOMEM();
-
-	m_fs->m_curr_arg = (size_t)-1;
-	m_fs->m_prefix = string_t(m_buf,pos++);
-	merge_braces(m_fs->m_prefix);
-
-	// Parse args
-	for (;;)
-	{
-		parse_arg(pos);
-
-		size_t found = find_brace(pos,L'{');
-
-		string_t suffix;
-		if (found == string_t::npos)
-			suffix = string_t(m_buf+pos,size_t(-1));
-		else
-			suffix = string_t(m_buf+pos,found-pos);
-
-		merge_braces(suffix);
-
-		m_fs->m_listInserts->at(m_fs->m_listInserts->size()-1)->suffix = suffix;
-
-		if (found == string_t::npos)
-			break;
-
-		pos = found + 1;
-	}
-
-	for (size_t idx = m_fs->m_curr_arg;;)
-	{
-		size_t count = 0;
-		bool bFound = false;
-		for (size_t i = 0;i<m_fs->m_listInserts->size(); ++i)
-		{
-			format_state_t::insert_t* ins = m_fs->m_listInserts->at(i);
-
-			if (ins->index <= idx)
-				++count;
-
-			if (ins->index == idx)
-			{
-				bFound = true;
-				++idx;
-				break;
-			}
-		}
-
-		if (!bFound)
-		{
-			if (count < m_fs->m_listInserts->size())
-				throw Formatting::IFormattingException::Create(L"Index gap in format string: {0}" % string_t(m_buf,m_len));
-			break;
-		}
-	}
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),Omega::string_t&,fmt))
-{
-	StringNode* s = static_cast<StringNode*>(*s1);
-	if (!s)
-		throw Formatting::IFormattingException::Create(L"Empty format string");
-
-	size_t arg;
-	if (!idx)
-	{
-		// Clone s
-		StringNode* pNewNode = new (std::nothrow) StringNode(s->m_buf,s->m_len,true);
-		if (!pNewNode)
-			OMEGA_THROW_NOMEM();
-
-		if (s->m_fs)
-		{
-			pNewNode->m_fs = new (std::nothrow) StringNode::format_state_t(*s->m_fs);
-			if (!pNewNode->m_fs)
-				OMEGA_THROW_NOMEM();
-
-			if (s->m_fs->m_listInserts)
-			{
-				pNewNode->m_fs->m_listInserts = new (std::nothrow) OOBase::Stack<StringNode::format_state_t::insert_t>();
-				if (!pNewNode->m_fs->m_listInserts)
-					OMEGA_THROW_NOMEM();
-				
-				for (size_t i=0;i<s->m_fs->m_listInserts->size();++i)
-					pNewNode->m_fs->m_listInserts->push(*s->m_fs->m_listInserts->at(i));
-			}
-		}
-		
-		s->Release();
-		s = pNewNode;
-		*s1 = s;
-
-		if (!s->m_fs)
-			s->parse_format();
-
-		arg = s->m_fs->m_curr_arg++;
-	}
-	else
-	{
-		assert(s->m_fs);
-		assert(s->m_fs->m_listInserts);
-
-		arg = s->m_fs->m_curr_arg-1;
-	}
-
-	assert(s->m_own);
-
-	for (size_t i=0; i!=s->m_fs->m_listInserts->size(); ++i)
-	{
-		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(i);
-
-		if (ins->index == arg)
-		{
-			fmt = ins->format;
-			return 1;
-		}
-	}
-
-	// Now measure how much space we need
-	string_t str = s->m_fs->m_prefix;
-	for (size_t i=0; i!=s->m_fs->m_listInserts->size(); ++i)
-	{
-		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(i);
-
-		str += ins->format;
-		str += ins->suffix;
-	}
-
-	size_t len = str.Length();
-	if (len > s->m_len)
-	{
-		wchar_t* buf_new = static_cast<wchar_t*>(OOBase::HeapAllocate((len+1)*sizeof(wchar_t)));
-		buf_new[len] = L'\0';
-
-		OOBase::HeapFree(s->m_buf);
-		s->m_buf = buf_new;
-	}
-
-	memcpy(s->m_buf,str.c_str(),len*sizeof(wchar_t));
-	s->m_buf[len] = L'\0';
-	s->m_len = len;
-	
-	return 0;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),const Omega::string_t&,arg))
-{
-	StringNode* s = static_cast<StringNode*>(s1);
-
-	for (size_t i=0;i<s->m_fs->m_listInserts->size();++i)
-	{
-		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(i);
-
-		if (ins->index == s->m_fs->m_curr_arg-1)
-		{
-			ins->index = unsigned int(-1);
-			ins->format = arg;
-			break;
-		}
-	}
-
-	while (!s->m_fs->m_listInserts->empty())
-	{
-		size_t end = s->m_fs->m_listInserts->size()-1;
-
-		StringNode::format_state_t::insert_t* ins = s->m_fs->m_listInserts->at(end);
-
-		if (ins->index != unsigned int(-1))
-			break;
-
-		string_t txt = align(ins->format,ins->alignment) + ins->suffix;
-
-		if (end > 0)
-		{
-			StringNode::format_state_t::insert_t* prev = s->m_fs->m_listInserts->at(end-1);
-
-			prev->suffix += txt;
-		}
-		else
-			s->m_fs->m_prefix += txt;
-
-		s->m_fs->m_listInserts->pop();
-	}
 }
 
 #if !defined(_WIN32)

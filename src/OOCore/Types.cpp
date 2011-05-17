@@ -79,16 +79,16 @@ namespace
 			m_len = len1+len2;
 		}
 
-		void* AddRef() const
+		void* AddRef()
 		{
-			++const_cast<StringNode*>(this)->m_refcount;
-			return const_cast<StringNode*>(this);
+			++m_refcount;
+			return this;
 		}
 
 		void* Own() const
 		{
 			if (m_own)
-				return AddRef();
+				return const_cast<StringNode*>(this)->AddRef();
 
 			void* r = new (std::nothrow) StringNode(m_buf,m_len,true);
 			if (!r)
@@ -99,7 +99,7 @@ namespace
 
 		void Release()
 		{
-			if (--m_refcount==0)
+			if (--m_refcount == 0)
 				delete this;
 		}
 
@@ -197,7 +197,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s
 	if (!s2)
 		return 0;
 
-	return static_cast<const StringNode*>(s2)->AddRef();
+	return static_cast<const StringNode*>(s2)->Own();
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast_w,1,((in),const void*,s1))

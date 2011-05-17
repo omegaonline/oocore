@@ -71,6 +71,12 @@ namespace OOCore
 				OMEGA_THROW(m_stream.last_error());
 		}
 
+		void write(const char* pszText, size_t len)
+		{
+			if (!m_stream.write(pszText,len))
+				OMEGA_THROW(m_stream.last_error());
+		}
+
 	public:
 		OOBase::CDRStream* GetCDRStream()
 		{
@@ -228,16 +234,9 @@ namespace OOCore
 				return write(value.cast<Omega::float8_t>());
 			case Omega::TypeInfo::typeString:
 				{
-					try
-					{
-						std::string s;
-						value.cast<Omega::string_t>().ToUTF8(s);
-						return write(s.c_str());
-					}
-					catch (std::exception& e)
-					{
-						OMEGA_THROW(e.what());
-					}
+					size_t len = 0;
+					const char* sz = value.cast<Omega::string_t>().ToUTF8(&len);
+					return write(sz,len);
 				}
 				break;
 

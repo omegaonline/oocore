@@ -69,15 +69,8 @@ namespace Omega
 			return c_wstr()[i];
 		}
 
-		template <typename Traits, typename Alloc>
-		void ToUTF8(std::basic_string<char,Traits,Alloc>& str) const;
-		
-		size_t ToUTF8(char* sz, size_t size) const;
-
-		template <typename Traits, typename Alloc>
-		void ToNative(std::basic_string<char,Traits,Alloc>& str) const;
-
-		size_t ToNative(char* sz, size_t size) const;
+		const char* ToUTF8(size_t* len = NULL) const;
+		const char* ToNative(size_t* len = NULL) const;
 
 		template <typename T> bool operator == (T v) const { return Compare(v) == 0; }
 		template <typename T> bool operator != (T v) const { return Compare(v) != 0; }

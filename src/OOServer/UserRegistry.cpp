@@ -33,23 +33,6 @@ using namespace OTL;
 using namespace User;
 using namespace User::Registry;
 
-namespace
-{
-	void write_utf8(OOBase::CDRStream& request, const Omega::string_t& str)
-	{
-		try
-		{
-			std::string s;
-			str.ToUTF8(s);
-			request.write(s.c_str());
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e.what());
-		}		
-	}
-}
-
 void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type)
 {
 	m_pManager = pManager;
@@ -85,7 +68,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::KeyExists));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strSubKey);
+	request.write(strSubKey.ToUTF8());
 	
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -116,7 +99,7 @@ bool_t Key::IsValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueExists));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strName);
+	request.write(strName.ToUTF8());
 	
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -147,7 +130,7 @@ any_t Key::GetValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValue));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strName);
+	request.write(strName.ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -182,8 +165,8 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValue));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strName);
-	write_utf8(request,value.cast<string_t>());
+	request.write(strName.ToUTF8());
+	request.write(value.cast<string_t>().ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -243,7 +226,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strName);
+	request.write(strName.ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -276,7 +259,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetDescription));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strDesc);
+	request.write(strDesc.ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -303,8 +286,8 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValueDescription));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strValue);
-	write_utf8(request,strDesc);
+	request.write(strValue.ToUTF8());
+	request.write(strDesc.ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -405,7 +388,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::CreateKey));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strSubKey);
+	request.write(strSubKey.ToUTF8());
 
 	request.write(flags);
 	if (request.last_error() != 0)
@@ -561,7 +544,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteKey));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strSubKey);
+	request.write(strSubKey.ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -590,7 +573,7 @@ void Key::DeleteValue(const string_t& strName)
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteValue));
 	request.write(m_key);
 	request.write(m_type);
-	write_utf8(request,strName);
+	request.write(strName.ToUTF8());
 
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());

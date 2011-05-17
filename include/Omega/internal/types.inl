@@ -135,64 +135,16 @@ inline const wchar_t* Omega::string_t::c_wstr() const
 	return OOCore_string_t_cast_w(m_handle);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
-inline size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
+OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_toutf8,2,((in),const void*,h,(out),size_t*,len));
+inline const char* Omega::string_t::ToUTF8(size_t* len) const
 {
-	return OOCore_string_t_toutf8(m_handle,sz,size);
+	return OOCore_string_t_toutf8(m_handle,len);
 }
 
-template <typename Traits, typename Alloc>
-inline void Omega::string_t::ToUTF8(std::basic_string<char,Traits,Alloc>& str) const
+OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_tonative,2,((in),const void*,h,(out),size_t*,len));
+inline const char* Omega::string_t::ToNative(size_t* len) const
 {
-	char szBuf[256];
-	size_t len = ToUTF8(szBuf,sizeof(szBuf));
-	if (len > sizeof(szBuf))
-	{
-		char* pszBuf = static_cast<char*>(System::Allocate(len));
-		try
-		{
-			ToUTF8(pszBuf,len);
-			str.assign(pszBuf,len-1);
-		}
-		catch (...)
-		{
-			System::Free(pszBuf);
-			throw;
-		}
-		System::Free(pszBuf);
-	}
-	else
-		str.assign(szBuf,len-1);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_tonative,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
-inline size_t Omega::string_t::ToNative(char* sz, size_t size) const
-{
-	return OOCore_string_t_tonative(m_handle,sz,size);
-}
-
-template <typename Traits, typename Alloc>
-inline void Omega::string_t::ToNative(std::basic_string<char,Traits,Alloc>& str) const
-{
-	char szBuf[256];
-	size_t len = ToNative(szBuf,sizeof(szBuf));
-	if (len > sizeof(szBuf))
-	{
-		char* pszBuf = static_cast<char*>(System::Allocate(len));
-		try
-		{
-			ToNative(pszBuf,len);
-			str.assign(pszBuf,len-1);
-		}
-		catch (...)
-		{
-			System::Free(pszBuf);
-			throw;
-		}
-		System::Free(pszBuf);
-	}
-	else
-		str.assign(szBuf,len-1);
+	return OOCore_string_t_tonative(m_handle,len);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,h,(in),const void*,h2));

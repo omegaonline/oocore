@@ -38,8 +38,6 @@ using namespace OTL;
 
 #include "RegistryCmn.h"
 
-#include <OOBase/STLAllocator.h>
-
 namespace
 {
 	class OmegaFailure
@@ -50,8 +48,6 @@ namespace
 			OMEGA_THROW(ERROR_OUTOFMEMORY);
 		}
 	};
-
-	typedef std::basic_string<char,std::char_traits<char>,OOBase::STLAllocator<char,OOBase::LocalAllocator,OmegaFailure> > local_string;
 
 	class RootKey;
 

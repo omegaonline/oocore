@@ -21,8 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OOBase/STLAllocator.h>
-
 #if defined(HAVE_UUID_UUID_H)
 #include <uuid/uuid.h>
 #endif

@@ -235,7 +235,7 @@ namespace OOCore
 			case Omega::TypeInfo::typeString:
 				{
 					size_t len = 0;
-					const char* sz = value.cast<Omega::string_t>().ToUTF8(&len);
+					const char* sz = value.cast<Omega::string_t>().c_ustr(&len);
 					return write(sz,len);
 				}
 				break;

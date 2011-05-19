@@ -141,7 +141,7 @@ namespace
 
 	static void get_db_dir(InterProcessService* pIPS, OOBase::LocalString& dir)
 	{
-		int err = dir.assign(pIPS->GetArg(L"regdb_path").ToNative());
+		int err = dir.assign(pIPS->GetArg(L"regdb_path").c_nstr());
 		if (err != 0)
 			OMEGA_THROW(err);
 		
@@ -180,7 +180,7 @@ bool_t HiveKey::IsSubKey(const string_t& strSubKey)
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
 	int64_t uSubKey = 0;
-	int err = m_pHive->open_key(m_key,uSubKey,strSubKey.ToUTF8(),0);
+	int err = m_pHive->open_key(m_key,uSubKey,strSubKey.c_ustr(),0);
 	if (err == ENOENT)
 		return false;
 	else if (err==EACCES)
@@ -195,7 +195,7 @@ bool_t HiveKey::IsValue(const string_t& strName)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	int err = m_pHive->value_exists(m_key,strName.ToUTF8(),0);
+	int err = m_pHive->value_exists(m_key,strName.c_ustr(),0);
 	if (err==ENOENT)
 		return false;
 	else if (err==EACCES)
@@ -211,7 +211,7 @@ any_t HiveKey::GetValue(const string_t& strName)
 	User::Registry::BadNameException::ValidateValue(strName);
 
 	OOBase::LocalString strValue;
-	int err = m_pHive->get_value(m_key,strName.ToUTF8(),0,strValue);
+	int err = m_pHive->get_value(m_key,strName.c_ustr(),0,strValue);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
@@ -226,7 +226,7 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	int err = m_pHive->set_value(m_key,strName.ToUTF8(),0,value.cast<string_t>().ToUTF8());
+	int err = m_pHive->set_value(m_key,strName.c_ustr(),0,value.cast<string_t>().c_ustr());
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
@@ -254,7 +254,7 @@ string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
 	User::Registry::BadNameException::ValidateValue(strName);
 
 	OOBase::LocalString strValue;
-	int err = m_pHive->get_value_description(m_key,strName.ToUTF8(),0,strValue);
+	int err = m_pHive->get_value_description(m_key,strName.c_ustr(),0,strValue);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
@@ -267,7 +267,7 @@ string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
 
 void HiveKey::SetDescription(const Omega::string_t& strDesc)
 {
-	int err = m_pHive->set_description(m_key,0,strDesc.ToUTF8());
+	int err = m_pHive->set_description(m_key,0,strDesc.c_ustr());
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(GetName());
 	else if (err==EACCES)
@@ -278,7 +278,7 @@ void HiveKey::SetDescription(const Omega::string_t& strDesc)
 
 void HiveKey::SetValueDescription(const Omega::string_t& strValue, const Omega::string_t& strDesc)
 {
-	int err = m_pHive->set_value_description(m_key,strValue.ToUTF8(),0,strDesc.ToUTF8());
+	int err = m_pHive->set_value_description(m_key,strValue.c_ustr(),0,strDesc.c_ustr());
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strValue);
 	else if (err==EACCES)
@@ -292,7 +292,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
 	int64_t key;
-	int err = m_pHive->create_key(m_key,key,strSubKey.ToUTF8(),flags,::Registry::Hive::inherit_checks,0);
+	int err = m_pHive->create_key(m_key,key,strSubKey.c_ustr(),flags,::Registry::Hive::inherit_checks,0);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==EEXIST)
@@ -352,7 +352,7 @@ void HiveKey::DeleteKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
-	int err = m_pHive->delete_key(m_key,strSubKey.ToUTF8(),0);
+	int err = m_pHive->delete_key(m_key,strSubKey.c_ustr(),0);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 	else if (err==EACCES)
@@ -365,7 +365,7 @@ void HiveKey::DeleteValue(const string_t& strName)
 {
 	User::Registry::BadNameException::ValidateValue(strName);
 
-	int err = m_pHive->delete_value(m_key,strName.ToUTF8(),0);
+	int err = m_pHive->delete_value(m_key,strName.c_ustr(),0);
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
@@ -392,7 +392,7 @@ void RootKey::Init_Once()
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");
 
-	m_localuser_hive = new (std::nothrow) ::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").ToNative());
+	m_localuser_hive = new (std::nothrow) ::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").c_nstr());
 	if (!m_localuser_hive)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 

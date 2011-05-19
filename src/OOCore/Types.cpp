@@ -232,7 +232,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast_w,1,((in)
 	return static_cast<const StringNode*>(s1)->m_wbuf;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_toutf8,2,((in),const void*,h,(out),size_t*,len))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_to_char,3,((in),const void*,h,(in),int,utf8,(out),size_t*,len))
 {
 	if (!h)
 	{
@@ -241,54 +241,17 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_toutf8,2,((in),co
 		return "";
 	}
 
+	unsigned int flags = (utf8 ? StringNode::eUTF8 : StringNode::eNative);
+
 	StringNode* s = const_cast<StringNode*>(static_cast<const StringNode*>(h));
-	if (!(s->m_flags & StringNode::eUTF8))
+	if (!(s->m_flags & flags))
 	{
 		char szBuf[256] = {0};
-		size_t clen = OOBase::to_utf8(szBuf,sizeof(szBuf),s->m_wbuf,s->m_wlen);
-		
-		char* cbuf = static_cast<char*>(OOBase::HeapAllocate(clen+1));
-		if (!cbuf)
-			OMEGA_THROW_NOMEM();
-
-		if (clen < sizeof(szBuf))
-			memcpy(cbuf,szBuf,clen+1);
+		size_t clen = 0;
+		if (utf8)
+			clen = OOBase::to_utf8(szBuf,sizeof(szBuf),s->m_wbuf,s->m_wlen);
 		else
-			OOBase::to_utf8(cbuf,clen+1,s->m_wbuf,s->m_wlen);
-
-		cbuf[clen] = '\0';
-
-		if (s->m_flags & StringNode::eNative)
-		{
-			OOBase::HeapFree(const_cast<char*>(s->m_cbuf));
-			s->m_flags &= ~StringNode::eNative;
-		}
-
-		s->m_cbuf = cbuf;
-		s->m_clen = clen;
-		s->m_flags |= StringNode::eUTF8;
-	}
-		
-	if (len)
-		*len = s->m_clen;
-
-	return s->m_cbuf;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_tonative,2,((in),const void*,h,(out),size_t*,len))
-{
-	if (!h)
-	{
-		if (len)
-			*len = 1;
-		return "";
-	}
-
-	StringNode* s = const_cast<StringNode*>(static_cast<const StringNode*>(h));
-	if (!(s->m_flags & StringNode::eNative))
-	{
-		char szBuf[256] = {0};
-		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),s->m_wbuf,s->m_wlen);
+			clen = OOBase::to_native(szBuf,sizeof(szBuf),s->m_wbuf,s->m_wlen);
 		
 		char* cbuf = static_cast<char*>(OOBase::HeapAllocate(clen+1));
 		if (!cbuf)
@@ -296,20 +259,22 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_tonative,2,((in),
 
 		if (clen < sizeof(szBuf))
 			memcpy(cbuf,szBuf,clen+1);
+		else if (utf8)
+			OOBase::to_utf8(cbuf,clen+1,s->m_wbuf,s->m_wlen);
 		else
 			OOBase::to_native(cbuf,clen+1,s->m_wbuf,s->m_wlen);
 
 		cbuf[clen] = '\0';
 
-		if (s->m_flags & StringNode::eUTF8)
+		if (s->m_flags & (StringNode::eNative | StringNode::eUTF8))
 		{
 			OOBase::HeapFree(const_cast<char*>(s->m_cbuf));
-			s->m_flags &= ~StringNode::eUTF8;
+			s->m_flags &= ~(StringNode::eNative | StringNode::eUTF8);
 		}
 
 		s->m_cbuf = cbuf;
 		s->m_clen = clen;
-		s->m_flags |= StringNode::eNative;
+		s->m_flags |= flags;
 	}
 		
 	if (len)

@@ -135,16 +135,15 @@ inline const wchar_t* Omega::string_t::c_wstr() const
 	return OOCore_string_t_cast_w(m_handle);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_toutf8,2,((in),const void*,h,(out),size_t*,len));
-inline const char* Omega::string_t::ToUTF8(size_t* len) const
+OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_to_char,3,((in),const void*,h,(in),int,utf8,(out),size_t*,len));
+inline const char* Omega::string_t::c_ustr(size_t* len) const
 {
-	return OOCore_string_t_toutf8(m_handle,len);
+	return OOCore_string_t_to_char(m_handle,1,len);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_tonative,2,((in),const void*,h,(out),size_t*,len));
-inline const char* Omega::string_t::ToNative(size_t* len) const
+inline const char* Omega::string_t::c_nstr(size_t* len) const
 {
-	return OOCore_string_t_tonative(m_handle,len);
+	return OOCore_string_t_to_char(m_handle,0,len);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,h,(in),const void*,h2));

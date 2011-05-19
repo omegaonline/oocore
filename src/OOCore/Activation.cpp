@@ -144,9 +144,9 @@ namespace
 			OMEGA_THROW_NOMEM();
 	
 		// Load the new DLL
-		int err = dll->load(name.ToNative());
+		int err = dll->load(name.c_nstr());
 		if (err != 0)
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL((L"Loading library: " + name).ToNative()));
+			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL((L"Loading library: " + name).c_nstr()));
 				
 		// Add to the map
 		err = m_dll_map.insert(name,dll);
@@ -256,7 +256,7 @@ namespace
 				if (IsRelativePath(strLib))
 				{
 					string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
-					OMEGA_THROW(strErr.ToNative());
+					OMEGA_THROW(strErr.c_nstr());
 				}
 
 				void* TICKET_89; // Surrogates here?!?

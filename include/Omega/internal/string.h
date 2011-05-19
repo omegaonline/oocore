@@ -64,13 +64,13 @@ namespace Omega
 		string_t& operator += (wchar_t c);
 
 		const wchar_t* c_wstr() const;
+		const char* c_ustr(size_t* len = NULL) const;
+		const char* c_nstr(size_t* len = NULL) const;
+
 		const wchar_t operator[](size_t i) const
 		{
 			return c_wstr()[i];
 		}
-
-		const char* ToUTF8(size_t* len = NULL) const;
-		const char* ToNative(size_t* len = NULL) const;
 
 		template <typename T> bool operator == (T v) const { return Compare(v) == 0; }
 		template <typename T> bool operator != (T v) const { return Compare(v) != 0; }

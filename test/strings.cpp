@@ -324,7 +324,7 @@ bool string_tests_utf8()
 	Omega::string_t str(strUTF8.c_str(),true);
 
 	//TEST(str == strUTF16.c_str());
-	const char* s = str.ToUTF8();
+	const char* s = str.c_ustr();
 
 #if 0
 	FILE* pOutUTF8 = fopen("UTF-8-out.txt","wb");

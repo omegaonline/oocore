@@ -99,7 +99,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (User::Process::is_relative_path(strProcess.c_wstr()))
 	{
 		string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value." % strProcess % strAppName;
-		OMEGA_THROW(strErr.ToNative());
+		OMEGA_THROW(strErr.c_nstr());
 	}
 
 	// The timeout needs to be related to the request timeout...

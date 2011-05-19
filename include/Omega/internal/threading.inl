@@ -118,28 +118,28 @@ inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 	{}
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param));
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param));
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
 
 template <typename DLL>
-inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor_i(DestructorCallback pfn, void* param)
 {
-	OOCore_mod_destruct_add(m_handle,pfn_dctor,param);
+	OOCore_mod_destruct_add(m_handle,pfn,param);
 }
 
 template <typename DLL>
-inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor_i(DestructorCallback pfn, void* param)
 {
-	OOCore_mod_destruct_remove(m_handle,pfn_dctor,param);
+	OOCore_mod_destruct_remove(m_handle,pfn,param);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
 
 template <typename DLL>
-inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(DestructorCallback pfn, void* param)
 {
-	multi_dctor* p = new (std::nothrow) multi_dctor(pfn_dctor,param);
+	multi_dctor* p = new (std::nothrow) multi_dctor(pfn,param);
 	if (!p)
 	{
 #if defined(_WIN32)
@@ -151,12 +151,12 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OM
 
 	try
 	{
-		OOCore_add_uninit_call((void*)destruct,p);
+		OOCore_add_uninit_call(destruct,p);
 		ModuleDestructor<DLL>::add_destructor(destruct,p);
 	}
 	catch (...)
 	{
-		OOCore_remove_uninit_call((void*)destruct,p);
+		OOCore_remove_uninit_call(destruct,p);
 		delete p;
 		throw;
 	}
@@ -165,7 +165,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OM
 template <typename DLL>
 inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 {
-	OOCore_remove_uninit_call((void*)destruct,param);
+	OOCore_remove_uninit_call(destruct,param);
 	
 	try
 	{

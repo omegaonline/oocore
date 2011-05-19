@@ -264,8 +264,13 @@ namespace
 		if (!bRes)
 			dwErr = GetLastError();
 
+#if defined(_MSC_VER)
 		SecureZeroMemory(ptrPwd,pszVal->Length + sizeof(wchar_t));
 		SecureZeroMemory(pszVal->Buffer,pszVal->Length);
+#else
+		memset(ptrPwd,0,pszVal->Length + sizeof(wchar_t));
+		memset(pszVal->Buffer,0,pszVal->Length);
+#endif
 		LsaFreeMemory(pszVal);
 		LsaClose(hPolicy);
 

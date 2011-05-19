@@ -114,8 +114,8 @@ namespace
 {
 	struct destruct_entry_t
 	{
-		void (OMEGA_CALL* pfn_dctor)(void*);
-		void* param;
+		Omega::Threading::DestructorCallback pfn_dctor;
+		void*                                param;
 
 		bool operator == (const destruct_entry_t& rhs) const
 		{
@@ -167,14 +167,14 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
 {
 	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
 	if (h)
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
 
-		destruct_entry_t e = { static_cast<void (OMEGA_CALL*)(void*)>(pfn_dctor), param };
+		destruct_entry_t e = { pfn_dctor, param };
 
 		int err = h->m_list.push(e);
 		if (err != 0)
@@ -182,14 +182,14 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,ha
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),void*,pfn_dctor,(in),void*,param))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
 {
 	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
 	if (h)
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
 
-		destruct_entry_t e = { static_cast<void (OMEGA_CALL*)(void*)>(pfn_dctor), param };
+		destruct_entry_t e = { pfn_dctor, param };
 
 		h->m_list.erase(e);
 	}

@@ -73,8 +73,8 @@ namespace OOCore
 		static Omega::Activation::IRunningObjectTable* get_rot();
 
 		static void close_singletons();
-		static void add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-		static void remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+		static void add_uninit_call(Omega::Threading::DestructorCallback pfn, void* param);
+		static void remove_uninit_call(Omega::Threading::DestructorCallback pfn, void* param);
 
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
@@ -158,13 +158,13 @@ namespace OOCore
 		// Uninitialise destructors
 		void close_singletons_i();
 		void close_compartments();
-		void add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-		void remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+		void add_uninit_call_i(Omega::Threading::DestructorCallback pfn, void* param);
+		void remove_uninit_call_i(Omega::Threading::DestructorCallback pfn, void* param);
 		
 		struct Uninit
 		{
-			void (OMEGA_CALL* pfn_dctor)(void*);
-			void* param;
+			Omega::Threading::DestructorCallback pfn_dctor;
+			void*                                param;
 
 			bool operator == (const Uninit& rhs) const
 			{

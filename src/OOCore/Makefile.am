@@ -26,6 +26,7 @@ common = \
 	OOCore_precomp.h \
 	Registry.cpp \
 	RunningObjectTable.cpp \
+	Safe.cpp \
 	Server.h \
 	StdObjectManager.cpp \
 	StdObjectManager.h \

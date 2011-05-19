@@ -1,1 +1,1 @@
-SUBDIRS = OOReg OOLaunch
+SUBDIRS = OOLaunch

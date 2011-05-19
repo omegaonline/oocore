@@ -328,7 +328,7 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	Omega::uint32_t id = 0;
-	Omega::int32_t err = m_mapSockets.insert(pSocket,id,1,UINT_MAX);
+	Omega::int32_t err = m_mapSockets.insert(pSocket,id,1,0xFFFFFFFF);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to add socket to table: %s",OOBase::system_error_text(err)),0);
 

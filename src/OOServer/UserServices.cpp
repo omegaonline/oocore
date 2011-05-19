@@ -86,7 +86,7 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription()));
+		LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription().c_wstr()));
 		pE->Release();
 		return false;
 	}
@@ -132,7 +132,7 @@ bool User::Manager::start_services()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("Failed to start network service %s: %ls",pServ->strKey.c_str(),pE->GetDescription()));
+			LOG_ERROR(("Failed to start network service %s: %ls",pServ->strKey.c_str(),pE->GetDescription().c_wstr()));
 		}
 
 		guard.acquire();

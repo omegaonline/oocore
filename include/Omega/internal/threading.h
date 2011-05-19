@@ -176,18 +176,20 @@ namespace Omega
 			size_t m_value;
 		};
 
+		typedef void (OMEGA_CALL *DestructorCallback)(void*);
+
 		template <typename DLL>
 		class ModuleDestructor
 		{
 		public:
-			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+			static void add_destructor(DestructorCallback pfn, void* param)
 			{
-				instance().add_destructor_i(pfn_dctor,param);
+				instance().add_destructor_i(pfn,param);
 			}
 
-			static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+			static void remove_destructor(DestructorCallback pfn, void* param)
 			{
-				instance().remove_destructor_i(pfn_dctor,param);
+				instance().remove_destructor_i(pfn,param);
 			}
 
 		private:
@@ -197,8 +199,8 @@ namespace Omega
 			ModuleDestructor();
 			~ModuleDestructor();
 
-			void add_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-			void remove_destructor_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			void add_destructor_i(DestructorCallback pfn, void* param);
+			void remove_destructor_i(DestructorCallback pfn, void* param);
 
 			struct handle_t
 			{
@@ -216,17 +218,17 @@ namespace Omega
 		class InitialiseDestructor
 		{
 		public:
-			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			static void add_destructor(DestructorCallback pfn, void* param);
 
 		private:
 			struct multi_dctor
 			{
-				multi_dctor(void (OMEGA_CALL *fn)(void*), void* p) :
-					pfn_dctor(fn), param(p)
+				multi_dctor(DestructorCallback pfn, void* p) :
+					pfn_dctor(pfn), param(p)
 				{}
 
-				void (OMEGA_CALL *pfn_dctor)(void*);
-				void*                         param;
+				DestructorCallback pfn_dctor;
+				void*              param;
 			};
 
 			static void OMEGA_CALL destruct(void* param);

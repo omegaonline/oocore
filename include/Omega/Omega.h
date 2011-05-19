@@ -68,6 +68,7 @@
 // Include STL components
 
 #include <limits>
+#include <cmath>
 #include <vector>
 #include <deque>
 #include <list>

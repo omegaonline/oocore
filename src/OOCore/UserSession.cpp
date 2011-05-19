@@ -501,32 +501,32 @@ Omega::uint32_t OOCore::UserSession::get_channel_id() const
 	return m_channel_id;
 }
 
-void OOCore::UserSession::add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+void OOCore::UserSession::add_uninit_call(Threading::DestructorCallback pfn, void* param)
 {
-	USER_SESSION::instance().add_uninit_call_i(pfn_dctor,param);
+	USER_SESSION::instance().add_uninit_call_i(pfn,param);
 }
 
-void OOCore::UserSession::add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+void OOCore::UserSession::add_uninit_call_i(Threading::DestructorCallback pfn, void* param)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	Uninit uninit = { pfn_dctor, param };
+	Uninit uninit = { pfn, param };
 	
 	int err = m_listUninitCalls.push(uninit);
 	if (err != 0)
 		OMEGA_THROW(err);
 }
 
-void OOCore::UserSession::remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+void OOCore::UserSession::remove_uninit_call(Threading::DestructorCallback pfn, void* param)
 {
-	USER_SESSION::instance().remove_uninit_call_i(pfn_dctor,param);
+	USER_SESSION::instance().remove_uninit_call_i(pfn,param);
 }
 
-void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+void OOCore::UserSession::remove_uninit_call_i(Threading::DestructorCallback pfn, void* param)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	Uninit uninit = { pfn_dctor, param };
+	Uninit uninit = { pfn, param };
 
 	m_listUninitCalls.erase(uninit);
 }

@@ -389,7 +389,7 @@ namespace Omega
 					if (frac_part != 0)
 						return any_t::castPrecisionLoss;
 
-					return int_conv<To,From>::cast(to,from);
+					return int_conv<To,From>::cast(to,int_part);
 				}
 			};
 
@@ -673,14 +673,9 @@ namespace Omega
 				}
 			};
 
+			// Do not attempt to cast any_t to a reference type
 			template <typename C>
-			struct cast_helper<C&>
-			{
-				static const C cast(const any_t& a)
-				{
-					static_assert(false,"Do not attempt to cast any_t to a reference type");
-				}
-			};
+			struct cast_helper<C&>;
 		}
 	}
 }

@@ -339,14 +339,15 @@ bool Root::Manager::spawn_sandbox()
 {
 	// Get username from config
 	OOBase::String strUName;
-	m_config_args.find("sandbox_uname",strUName);
+	if (!m_config_args.find("sandbox_uname",strUName))
+		LOG_ERROR(("Failed to find the 'sandbox_uname' setting in the config"));
 		
 	bool bAgain = false;
 	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
 	{
 		if (!m_bUnsafe)
-			LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
+			LOG_ERROR_RETURN(("'sandbox_uname' setting in the config is empty!"),false);
 
 		OOBase::LocalString strOurUName;
 		if (!get_our_uid(uid,strOurUName))
@@ -354,7 +355,6 @@ bool Root::Manager::spawn_sandbox()
 		
 		// Warn!
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
-			"Failed to find the 'sandbox_uname' setting in the config.\n\n"
 			"Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 			strOurUName.c_str());		

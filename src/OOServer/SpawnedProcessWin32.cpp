@@ -560,10 +560,22 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 	else
 	{
 		int err = strModule.assign(strAppPath.c_str());
+		if (err == 0)
+		{
+			if (strModule.length() < 4)
+				err = strModule.append(".exe");
+			else
+			{
+				const char* ext = strModule.c_str()+strModule.length()-4;
+				bool ok = (ext[0]=='.' && (ext[1]=='e' || ext[1]=='E') && (ext[2]=='x' || ext[2]=='X') && (ext[3]=='e' || ext[3]=='E'));
+				if (!ok)
+					err = strModule.append(".exe");
+			}
+		}
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
 		
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strModule.c_str());
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using oosvruser: %s",strModule.c_str());
 
 		if (strModule.length() >= MAX_PATH)
 		{
@@ -595,7 +607,11 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 		err = strCmdLine.assign(strModule.c_str());
 
 	if (err == 0)
-		err = strCmdLine.concat(" --fork-slave=",strPipe.c_str());
+	{
+		err = strCmdLine.append(" --fork-slave=");
+		if (err == 0)
+			err = strCmdLine.append(strPipe.c_str());
+	}
 
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to build command line: %s",OOBase::system_error_text(err)),err);
@@ -611,7 +627,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 	STARTUPINFOA startup_info = {0};
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
-	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
+	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	OOBase::LocalString strTitle;
@@ -675,7 +691,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 	}
 	else
 	{
-		dwFlags |= DETACHED_PROCESS;
+		dwFlags |= DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
 
 		if (bSandbox)
 			OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
@@ -726,19 +742,17 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 			goto Cleanup;
 		}
 	}
+	m_hProcess = process_info.hProcess;
 
 	// Stash handles to close on end...
 	m_hProfile = hProfile;
-	m_hProcess = process_info.hProcess;
+	hProfile = NULL;
 
 	// Duplicate the impersonated token...
 	DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
 
 	// And close any others
 	CloseHandle(process_info.hThread);
-
-	// Don't want to close this one now...
-	hProfile = NULL;
 
 Cleanup:
 	// Done with hPriToken

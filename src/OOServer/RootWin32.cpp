@@ -155,7 +155,12 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 	HKEY hKey = 0;
 	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
 	if (lRes != ERROR_SUCCESS)
-		LOG_ERROR(("Failed to open config registry key: %s",OOBase::system_error_text(lRes)));
+	{
+		if (lRes == ERROR_FILE_NOT_FOUND)
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Missing registry key: HKEY_LOCAL_MACHINE\\Software\\Omega Online\\OOServer");
+		else
+			LOG_ERROR(("Failed to open config registry key: %s",OOBase::system_error_text(lRes)));
+	}
 	else
 	{
 		// Loop pulling out registry values
@@ -253,8 +258,13 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 
 	// Load any config file now...
 	size_t f = cmd_args.find("conf-file");
-	if (f != cmd_args.npos && !load_config_file(cmd_args.at(f)->c_str()))
-		return false;
+	if (f != cmd_args.npos)
+	{
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",cmd_args.at(f)->c_str());
+		
+		if (!load_config_file(cmd_args.at(f)->c_str()))
+			return false;
+	}
 
 	return true;
 }

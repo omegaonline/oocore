@@ -86,7 +86,7 @@ namespace
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(const char* pszSysDir, const char* pszUsersDir, OOBase::LocalString& strHive);
+		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -116,7 +116,7 @@ namespace
 
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to compose pipe name: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
-		
+
 		// Create security descriptor
 		PSID pSID;
 		SID_IDENTIFIER_AUTHORITY SIDAuthCreator = {SECURITY_CREATOR_SID_AUTHORITY};
@@ -276,7 +276,7 @@ namespace
 
 		if (!bRes)
 			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::system_error_text(dwErr)),dwErr);
-		
+
 		// Control handle lifetime
 		OOBase::Win32::SmartHandle tok(hToken);
 
@@ -574,7 +574,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 		}
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
-		
+
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using oosvruser: %s",strModule.c_str());
 
 		if (strModule.length() >= MAX_PATH)
@@ -642,7 +642,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 		else if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::system_error_text(dwRes)),dwRes);
 	}
-	
+
 	// Load the users environment vars
 	LPVOID lpEnv = NULL;
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
@@ -684,7 +684,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 				err = strTitle.printf("%s - %ls\\%ls [Sandbox]",strModule.c_str(),static_cast<const wchar_t*>(strDomainName),static_cast<const wchar_t*>(strUserName));
 			else
 				err = strTitle.printf("%s - %ls\\%ls",strModule.c_str(),static_cast<const wchar_t*>(strDomainName),static_cast<const wchar_t*>(strUserName));
-		
+
 			if (err == 0)
 				startup_info.lpTitle = const_cast<LPSTR>(strTitle.c_str());
 		}
@@ -784,7 +784,7 @@ bool SpawnedProcessWin32::Spawn(const OOBase::LocalString& strAppPath, HANDLE hT
 	DWORD dwRes = SpawnFromToken(strAppPath,hToken,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
-		
+
 	return (dwRes == ERROR_SUCCESS);
 }
 
@@ -799,17 +799,17 @@ bool SpawnedProcessWin32::IsRunning() const
 bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
-	
+
 	OOBase::SmartPtr<void,OOBase::LocalDestructor> pSD;
 	for (DWORD cbNeeded = 512;;)
 	{
 		pSD = OOBase::LocalAllocate(cbNeeded);
 		if (!pSD)
 			LOG_ERROR_RETURN(("Out of memory"),false);
-	
+
 		if (GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,cbNeeded,&cbNeeded))
 			break;
-		
+
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
 			LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::system_error_text()),false);
 	}
@@ -881,20 +881,26 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool SpawnedProcessWin32::GetRegistryHive(const char* pszSysDir, const char* pszUsersDir, OOBase::LocalString& strHive)
+bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
-	OOBase::LocalString strUsersDir;
-	int err = strUsersDir.assign(pszUsersDir);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-
-	if (strUsersDir[strUsersDir.length()-1] != '\\' && strUsersDir[strUsersDir.length()-1] != '/')
+	if (strSysDir.empty())
 	{
-		err = strUsersDir.append("\\");
+		char szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathAppendA(szBuf,"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathFileExistsA(szBuf))
+			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
+
+		int err = strSysDir.assign(szBuf);
 		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
 	if (strUsersDir.empty())
@@ -916,6 +922,13 @@ bool SpawnedProcessWin32::GetRegistryHive(const char* pszSysDir, const char* psz
 	}
 	else
 	{
+		if (strUsersDir[strUsersDir.length()-1] != '\\' && strUsersDir[strUsersDir.length()-1] != '/')
+		{
+			int err = strUsersDir.append("\\");
+			if (err != 0)
+				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+		}
+
 		// Get the names associated with the user SID
 		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strUserName;
 		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strDomainName;
@@ -937,24 +950,19 @@ bool SpawnedProcessWin32::GetRegistryHive(const char* pszSysDir, const char* psz
 	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
 	if (!PathFileExistsA(strHive.c_str()))
 	{
-		OOBase::LocalString strFrom;
-		err = strFrom.assign(pszSysDir);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-
-		if (strFrom[strFrom.length()-1] != '\\' && strFrom[strFrom.length()-1] != '/')
+		if (strSysDir[strSysDir.length()-1] != '\\' && strSysDir[strSysDir.length()-1] != '/')
 		{
-			err = strFrom.append("\\");
+			err = strSysDir.append("\\");
 			if (err != 0)
 				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 		}
-			
-		err = strFrom.append("default_user.regdb");
+
+		err = strSysDir.append("default_user.regdb");
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
-		if (!CopyFileA(strFrom.c_str(),strHive.c_str(),TRUE))
-			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strFrom.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
+		if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))
+			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
 		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
 
@@ -977,7 +985,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Spawn the process
 	OOBase::LocalString strAppName;
 	getenv_i("OMEGA_USER_BINARY",strAppName);
-	
+
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
 		return 0;
@@ -1029,7 +1037,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	{
 		CloseHandle(uid);
 		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(dwRes)),false);
-	}	
+	}
 
 	// Restrict the Token
 	dwRes = OOSvrBase::Win32::RestrictToken(uid);

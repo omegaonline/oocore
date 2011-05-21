@@ -93,10 +93,6 @@
 	#error <unistd.h> is not POSIX compliant?
 	#endif
 
-	// Check pthreads
-	#if defined (HAVE_PTHREADS_H) && !defined(_POSIX_THREADS)
-	#error Your pthreads does not appears to be POSIX compliant?
-	#endif
 #endif
 
 #endif // OOCORE_CONFIG_H_INCLUDED_

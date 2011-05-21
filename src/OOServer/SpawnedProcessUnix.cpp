@@ -52,13 +52,13 @@ namespace
 		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(std::string strAppPath, int pass_fd, bool& bAgain);
+		bool Spawn(OOBase::LocalString& strAppPath, int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
+		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		bool    m_bSandbox;
@@ -130,7 +130,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 
 		if (!(pdir = opendir(str)))
 		{
-			LOG_ERROR(("opendir failed for %s %s",str,OOBase::system_error_text(errno).c_str()));
+			LOG_ERROR(("opendir failed for %s %s",str,OOBase::system_error_text()));
 			return;
 		}
 
@@ -146,10 +146,14 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain)
+bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, bool& bAgain)
 {
 	if (strAppPath.empty())
-		strAppPath = LIBEXEC_DIR "/oosvruser";
+	{
+		int err = strAppPath.assign(LIBEXEC_DIR "/oosvruser");
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+	}
 	else
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppPath.c_str());
 
@@ -165,7 +169,7 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 
 	pid_t child_id = fork();
 	if (child_id == -1)
-		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text(errno).c_str()),false);
+		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text()),false);
 
 	if (child_id != 0)
 	{
@@ -182,58 +186,67 @@ bool SpawnedProcessUnix::Spawn(std::string strAppPath, int pass_fd, bool& bAgain
 	// Change dir to a known location
 	if (chdir(LIBEXEC_DIR) != 0)
 	{
-		LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text(errno).c_str()));
+		LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
 		exit(errno);
 	}
 
 	if (bChangeUid)
 	{
 		// get our pw_info
-		OOSvrBase::pw_info pw(m_uid);
+		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
 		{
-			LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()));
+			LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text()));
 			exit(errno);
 		}
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
 		{
-			LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text(errno).c_str()));
+			LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text()));
 			exit(errno);
 		}
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 		{
-			LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text(errno).c_str()));
+			LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text()));
 			exit(errno);
 		}
 
 		// Stop being priviledged!
 		if (setuid(m_uid) != 0)
 		{
-			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text(errno).c_str()));
+			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text()));
 			exit(errno);
 		}
 	}
 
 	// Exec the user process
-	std::ostringstream os;
-	os.imbue(std::locale::classic());
-	os << "--fork-slave=" << pass_fd;
+	OOBase::LocalString strPipe;
+	int err = strPipe.printf("--fork-slave=%u",pass_fd);
+	if (err != 0)
+	{
+		LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
+		_exit(127);
+	}
 
 	const char* debug = getenv("OMEGA_DEBUG");
 	const char* display = getenv("DISPLAY");
 	if (debug && strcmp(debug,"yes")==0 && display)
 	{
-		std::string strExec = strAppPath + " ";
-		strExec += os.str();
+		OOBase::LocalString strExec;
+		err = strExec.printf("%s %s",strAppPath.c_str(),strPipe.c_str());
+		if (err != 0)
+		{
+			LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
+			_exit(127);
+		}
 
 		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strExec.c_str(),(char*)0);
 	}
 
-	execlp(strAppPath.c_str(),strAppPath.c_str(),os.str().c_str(),(char*)0);
+	execlp(strAppPath.c_str(),strAppPath.c_str(),strPipe.c_str(),(char*)0);
 
 	LOG_ERROR(("Failed to launch %s",strAppPath.c_str()));
 
@@ -256,7 +269,7 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	// Get file info
 	struct stat sb;
 	if (stat(pszFName,&sb) != 0)
-		LOG_ERROR_RETURN(("stat() failed!",OOBase::system_error_text(errno).c_str()),false);
+		LOG_ERROR_RETURN(("stat() failed!",OOBase::system_error_text()),false);
 
 	int mode = -1;
 	if (bRead && !bWrite)
@@ -287,9 +300,9 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 		void* POSIX_TODO; // Enumerate all the users groups!
 
 		// Get the suppied user's group see if that is the same as the file's group
-		OOSvrBase::pw_info pw(m_uid);
+		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed!",OOBase::system_error_text(errno).c_str()),false);
+			LOG_ERROR_RETURN(("getpwuid() failed!",OOBase::system_error_text()),false);
 
 		// Is the file's gid the same as the specified user's
 		if (pw->pw_gid == sb.st_gid)
@@ -321,26 +334,48 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
 	return (m_uid == uid);
 }
 
-bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
+bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
-	OOSvrBase::pw_info pw(m_uid);
-	if (!pw)
-		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()),false);
-
-	if (strUsersDir.empty())
-		strHive = strSysDir + "users/";
-	else
+	if (strSysDir.empty())
 	{
-		strHive = strUsersDir;
-
-		if (*strHive.rbegin() != '/')
-			strHive += '/';
+		int err = strSysDir.assign("/var/lib/omegaonline/");
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	strHive += pw->pw_name;
-	strHive += ".regdb";
+	if (strSysDir[strSysDir.length()-1] != '/')
+	{
+		int err = strSysDir.append("/");
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if (strUsersDir.empty())
+	{
+		int err = strUsersDir.concat(strSysDir.c_str(),"users/");
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if (strUsersDir[strUsersDir.length()-1] != '/')
+	{
+		int err = strUsersDir.append("/");
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	OOBase::POSIX::pw_info pw(m_uid);
+	if (!pw)
+		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
+
+	int err = strHive.append(pw->pw_name);
+	if (err == 0)
+		err = strHive.append(".regdb");
+
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
 	void* TODO;
@@ -348,12 +383,12 @@ bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(errno).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
 
 	// Add FD_CLOEXEC to fd[0]
 	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
@@ -361,12 +396,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),(SpawnedProcess*)0);
 	}
 
 	// Alloc a new SpawnedProcess
-	SpawnedProcessUnix* pSpawnUnix;
-	OOBASE_NEW_T(SpawnedProcessUnix,pSpawnUnix,SpawnedProcessUnix(uid,bSandbox));
+	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid,bSandbox);
 	if (!pSpawnUnix)
 	{
 		::close(fd[0]);
@@ -376,10 +410,14 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	std::string strAppName;
+	OOBase::LocalString strAppName;
 	const char* user_host = getenv("OMEGA_USER_BINARY");
 	if (user_host)
-		strAppName = user_host;
+	{
+		err = strAppName.assign(user_host);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
+	}
 
 	if (!pSpawnUnix->Spawn(strAppName,fd[1],bAgain))
 	{
@@ -392,11 +430,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	::close(fd[1]);
 
 	// Create an async socket wrapper
-	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance()->attach_local_socket(fd[0],&err);
+	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance().attach_local_socket(fd[0],&err);
 	if (err != 0)
 	{
 		::close(fd[0]);
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)0);
 	}
 
 	// Bootstrap the user process...
@@ -414,25 +452,21 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
 	int err = ptrSocket->get_uid(uid);
 	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err).c_str()));
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
 	else
 	{
 		// Make sure we have a user process
 		UserProcess user_process;
 		if (get_user_process(uid,user_process))
 		{
-			// Alloc a new SpawnedProcess
-			SpawnedProcessUnix* pSpawnUnix;
-			OOBASE_NEW_T(SpawnedProcessUnix,pSpawnUnix,SpawnedProcessUnix(uid,false));
-			if (!pSpawnUnix)
+			UserProcess new_process;
+			new_process.ptrRegistry = user_process.ptrRegistry;
+			new_process.ptrSpawn = new (std::nothrow) SpawnedProcessUnix(uid,false);
+			if (!new_process.ptrSpawn)
 			{
 				LOG_ERROR(("Out of memory"));
 				return;
 			}
-
-			UserProcess new_process;
-			new_process.ptrRegistry = user_process.ptrRegistry;
-			new_process.ptrSpawn = pSpawnUnix;
 
 			// Bootstrap the user process...
 			OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
@@ -440,16 +474,14 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 			if (channel_id)
 			{
 				// Insert the data into the process map...
-				try
-				{
-					OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-					m_mapUserProcesses.insert(std::map<Omega::uint32_t,UserProcess>::value_type(channel_id,new_process));
-				}
-				catch (std::exception& e)
+				int err = m_mapUserProcesses.insert(channel_id,new_process);
+				if (err != 0)
 				{
 					ptrMC->close();
-					LOG_ERROR(("std::exception thrown %s",e.what()));
+					LOG_ERROR(("Failed to insert into map: %s",OOBase::system_error_text(err)));
+					return;
 				}
 
 				// Now start the read cycle from ptrMC
@@ -459,33 +491,36 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	}
 }
 
-bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, std::string& strUName)
+bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
 {
 	uid = getuid();
 
-	OOSvrBase::pw_info pw(uid);
+	OOBase::POSIX::pw_info pw(uid);
 	if (!pw)
 	{
 		if (errno)
-			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(errno).c_str()),false);
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 		else
 			LOG_ERROR_RETURN(("There is no account for uid %d",uid),false);
 	}
 
-	strUName = pw->pw_name;
+	int err = strUName.assign(pw->pw_name);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),false);
+
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const std::string& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
 {
 	bAgain = false;
 
 	// Resolve to uid
-	OOSvrBase::pw_info pw(strUName.c_str());
+	OOBase::POSIX::pw_info pw(strUName.c_str());
 	if (!pw)
 	{
 		if (errno)
-			LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOBase::system_error_text(errno).c_str()),false);
+			LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOBase::system_error_text()),false);
 		else
 			LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),false);
 	}

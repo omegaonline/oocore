@@ -45,7 +45,7 @@ namespace Root
 		virtual bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
 		virtual bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
 		virtual bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
-		virtual bool GetRegistryHive(const char* pszSysDir, const char* pszUsersDir, OOBase::LocalString& strHive) = 0;
+		virtual bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive) = 0;
 
 	protected:
 		SpawnedProcess() {}

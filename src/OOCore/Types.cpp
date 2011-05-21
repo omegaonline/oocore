@@ -25,6 +25,8 @@
 #include <uuid/uuid.h>
 #endif
 
+#include <wctype.h>
+
 using namespace Omega;
 
 namespace
@@ -44,8 +46,8 @@ namespace
 
 			wchar_t* buf = static_cast<wchar_t*>(OOBase::HeapAllocate((length+1)*sizeof(wchar_t)));
 			buf[length] = L'\0';
-			
-			m_wbuf = buf;			
+
+			m_wbuf = buf;
 			m_wlen = length;
 		}
 
@@ -79,7 +81,7 @@ namespace
 			memcpy(buf,sz1,len1*sizeof(wchar_t));
 			memcpy(buf+len1,sz2,len2*sizeof(wchar_t));
 			buf[len1+len2] = L'\0';
-			
+
 			m_wbuf = buf;
 			m_wlen = len1+len2;
 		}
@@ -157,7 +159,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const ch
 	StringNode* pNode = NULL;
 	if (wlen == 0)
 		return pNode;
-	
+
 	if (wlen <= sizeof(wszBuf)/sizeof(wchar_t))
 	{
 		pNode = new (std::nothrow) StringNode(wszBuf,wlen,true);
@@ -250,7 +252,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_to_char,3,((in),c
 			clen = OOBase::to_utf8(szBuf,sizeof(szBuf),s->m_wbuf,s->m_wlen);
 		else
 			clen = OOBase::to_native(szBuf,sizeof(szBuf),s->m_wbuf,s->m_wlen);
-		
+
 		char* cbuf = static_cast<char*>(OOBase::HeapAllocate(clen+1));
 		if (!cbuf)
 			OMEGA_THROW_NOMEM();
@@ -274,7 +276,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_to_char,3,((in),c
 		s->m_clen = clen;
 		s->m_flags |= flags;
 	}
-		
+
 	if (len)
 		*len = s->m_clen;
 

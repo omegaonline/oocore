@@ -52,29 +52,23 @@
     return true;
 }*/
 
-bool Root::Manager::load_config()
+bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 {
 	// Clear current entries
 	m_config_args.clear();
 
-	// Insert platform defaults
-	m_config_args["regdb_path"] = "/var/lib/omegaonline/";
-	m_config_args["users_path"] = m_config_args["regdb_path"] + "users/";
-
 	// Determine conf file
-	std::string strFile("/etc/omegaonline.conf");
+	OOBase::String strFile;
+	if (cmd_args.find("conf-file",strFile))
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",strFile.c_str());
 
-	std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("conf-file");
-	if (f != m_cmd_args.end())
-		strFile = f->second;
-
-	return load_config_file(strFile);
+	return load_config_file(strFile.empty() ? "/etc/omegaonline.conf" : strFile.c_str());
 }
 
 namespace OOBase
 {
 	// This is the critical failure hook
-	void CriticalFailure(const char* msg)
+	void OnCriticalFailure(const char* msg)
 	{
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
 

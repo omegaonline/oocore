@@ -289,7 +289,7 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 	{
 		LOG_ERROR(("Unhandled exception thrown"));
 	}
-	
+
 	pThis->Release();
 }
 
@@ -629,7 +629,7 @@ void User::RemoteChannel::Close()
 		ObjectPtr<ObjectImpl<Channel> > ptrChannel;
 		while (m_mapChannels.pop(NULL,&ptrChannel))
 			ptrChannel->disconnect();
-		
+
 		if (m_ptrUpstream)
 		{
 			ptrUpstream = m_ptrUpstream;
@@ -690,10 +690,10 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 	// Create the factory
 	ObjectPtr<Remoting::IEndpoint> ptrEndpoint(strHandler);
-	
+
 	// Create a new unique, upstream channel...
 	RemoteChannelEntry channel;
-	channel.strEndpoint = ptrEndpoint->Canonicalise(strEndpoint);	
+	channel.strEndpoint = ptrEndpoint->Canonicalise(strEndpoint);
 
 	// Check for duplicates
 	{
@@ -711,10 +711,10 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
 
 	uint32_t channel_id = 0;
-	int err = m_mapRemoteChannelIds.insert(channel,channel_id,1,INT_MAX);
+	int err = m_mapRemoteChannelIds.insert(channel,channel_id,1,0x7fFFFFFF);
 	if (err != 0)
 		OMEGA_THROW(err);
-	
+
 	// Init the sink
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
 	try
@@ -818,7 +818,7 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 
 	// Create a new unique, upstream channel...
 	uint32_t channel_id = 0;
-	int err = m_mapRemoteChannelIds.insert(channel,channel_id,1,INT_MAX);
+	int err = m_mapRemoteChannelIds.insert(channel,channel_id,1,0x7fFFFFFF);
 	if (err != 0)
 		OMEGA_THROW(err);
 

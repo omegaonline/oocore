@@ -53,7 +53,7 @@ namespace User
 
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
-		
+
 		Manager();
 		virtual ~Manager();
 
@@ -75,7 +75,7 @@ namespace User
 		bool fork_slave(const char* strPipe);
 		bool session_launch(const char* strPipe);
 
-		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const char* pszPipe);
+		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::LocalString& strPipe);
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 

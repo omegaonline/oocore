@@ -83,11 +83,12 @@ int Root::Manager::run(const OOSvrBase::CmdArgs::results_t& cmd_args)
 	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno)));
 
-	OOBase::String strPidfile = "/var/run/ooserverd.pid";
-	cmd_args.find("pidfile",strPidFile);
-	
-	if (!pid_file(strPidfile.c_str()))
+	OOBase::String strPidfile;
+	cmd_args.find("pidfile",strPidfile);
+
+	if (!pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str()))
 		return EXIT_FAILURE;
+
 #endif
 
 	// Loop until we quit
@@ -142,7 +143,7 @@ int Root::Manager::run(const OOSvrBase::CmdArgs::results_t& cmd_args)
 			return EXIT_FAILURE;
 		}
 	}
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -189,7 +190,7 @@ bool Root::Manager::init_database()
 	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir2.c_str());
 	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
-	
+
 	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }
 
@@ -207,7 +208,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 #endif
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to open file %s: %s",pszFile,OOBase::system_error_text(err)),false);
-	
+
 	OOBase::LocalString strBuffer;
 	for (bool bEof=false;!bEof && err==0;)
 	{
@@ -225,23 +226,23 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				break;
 			}
 		}
-		
+
 		// Append to buffer
 		err = strBuffer.append(szBuf,r);
-				
+
 		// Split out individual lines
 		for (size_t start = 0;err==0 && !strBuffer.empty();)
 		{
 			// Skip leading whitespace
 			while (strBuffer[start] == '\t' || strBuffer[start] == ' ')
 				++start;
-			
+
 			if (start == strBuffer.length())
 			{
 				strBuffer.clear();
 				break;
 			}
-			
+
 			// Find the next linefeed
 			size_t end = strBuffer.find('\n',start);
 			if (end == OOBase::String::npos)
@@ -254,19 +255,19 @@ bool Root::Manager::load_config_file(const char* pszFile)
 
 				end = strBuffer.length();
 			}
-			
+
 			// Skip everything after #
 			size_t hash = strBuffer.find('#',start);
-							
+
 			// Trim trailing whitespace
 			size_t valend = (hash != OOBase::String::npos ? hash : end);
 			while (valend > start && (strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' '))
 				--valend;
-			
+
 			if (valend > start)
 			{
 				OOBase::String strKey, strValue;
-				
+
 				// Split on first =
 				size_t eq = strBuffer.find('=',start);
 				if (eq != OOBase::String::npos)
@@ -275,7 +276,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 					size_t keyend = eq;
 					while (keyend > start && (strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' '))
 						--keyend;
-					
+
 					if (keyend > start)
 					{
 						err = strKey.assign(strBuffer.c_str() + start,keyend-start);
@@ -284,12 +285,12 @@ bool Root::Manager::load_config_file(const char* pszFile)
 							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
 							break;
 						}
-					
+
 						// Skip leading whitespace after =
 						size_t valpos = eq+1;
 						while (valpos < valend && (strBuffer[valpos] == '\t' || strBuffer[valpos] == ' '))
 							++valpos;
-						
+
 						if (valpos < valend)
 						{
 							err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos);
@@ -306,14 +307,14 @@ bool Root::Manager::load_config_file(const char* pszFile)
 					err = strKey.assign(strBuffer.c_str() + start,valend-start);
 					if (err == 0)
 						err = strValue.assign("true",4);
-					
+
 					if (err != 0)
 					{
 						LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
 						break;
 					}
 				}
-				
+
 				// Do something with strKey and strValue
 				if (!strKey.empty())
 				{
@@ -322,14 +323,14 @@ bool Root::Manager::load_config_file(const char* pszFile)
 						LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
 				}
 			}
-			
+
 			if (end == OOBase::LocalString::npos)
 				break;
-			
+
 			start = end + 1;
 		}
 	}
-	
+
 	fclose(f);
 
 	return (err == 0);
@@ -341,7 +342,7 @@ bool Root::Manager::spawn_sandbox()
 	OOBase::String strUName;
 	if (!m_config_args.find("sandbox_uname",strUName))
 		LOG_ERROR(("Failed to find the 'sandbox_uname' setting in the config"));
-		
+
 	bool bAgain = false;
 	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
@@ -352,12 +353,12 @@ bool Root::Manager::spawn_sandbox()
 		OOBase::LocalString strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
-		
+
 		// Warn!
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
 			"Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-			strOurUName.c_str());		
+			strOurUName.c_str());
 	}
 	else if (!get_sandbox_uid(strUName,uid,bAgain))
 	{
@@ -376,7 +377,7 @@ bool Root::Manager::spawn_sandbox()
 		else
 			return false;
 	}
-	
+
 	OOBase::String strPipe;
 	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
 	if (m_sandbox_channel == 0 && m_bUnsafe && !strUName.empty() && bAgain)
@@ -397,8 +398,8 @@ bool Root::Manager::spawn_sandbox()
 #if defined(_WIN32)
 	CloseHandle(uid);
 #endif
-	
-	return (m_sandbox_channel != 0);	
+
+	return (m_sandbox_channel != 0);
 }
 
 bool Root::Manager::wait_to_quit()
@@ -416,7 +417,7 @@ bool Root::Manager::wait_to_quit()
 #elif defined(HAVE_UNISTD_H)
 			case SIGHUP:
 				return getenv_OMEGA_DEBUG();
-				
+
 			case SIGQUIT:
 			case SIGTERM:
 				return true;
@@ -536,7 +537,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		m_config_args.find("users_path",strUsersPath);
 
 		OOBase::LocalString strHive;
-		if (process.ptrSpawn->GetRegistryHive(strRegPath.c_str(),strUsersPath.c_str(),strHive))
+		if (process.ptrSpawn->GetRegistryHive(strRegPath,strUsersPath,strHive))
 		{
 			// Create a new database
 			process.ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive.c_str());
@@ -572,7 +573,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		ptrMC->close();
 		LOG_ERROR_RETURN(("Failed to insert into map: %s",OOBase::system_error_text(err)),0);
 	}
-	
+
 	// Now start the read cycle from ptrMC
 	return (ptrMC->read() ? channel_id : 0);
 }

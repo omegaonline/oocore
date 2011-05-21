@@ -55,22 +55,22 @@ void InterProcessService::Load(const string_t& str)
 		// Skip leading whitespace
 		while (start < str.Length() && (str[start] == L'\t' || str[start] == L' '))
 			++start;
-		
+
 		if (start == str.Length())
 			return;
-				
+
 		// Find the next linefeed
 		size_t end = str.Find(L',',start);
-		
+
 		// Trim trailing whitespace
 		size_t valend = (end == string_t::npos ? str.Length() : end);
 		while (valend > start && (str[valend-1] == L'\t' || str[valend-1] == L' '))
 			--valend;
-		
+
 		if (valend > start)
 		{
 			string_t strKey, strValue;
-			
+
 			// Split on first =
 			size_t eq = str.Find(L'=',start);
 			if (eq != string_t::npos)
@@ -79,16 +79,16 @@ void InterProcessService::Load(const string_t& str)
 				size_t keyend = eq;
 				while (keyend > start && (str[keyend-1] == L'\t' || str[keyend-1] == L' '))
 					--keyend;
-				
+
 				if (keyend > start)
 				{
 					strKey = str.Mid(start,keyend-start);
-					
+
 					// Skip leading whitespace after =
 					size_t valpos = eq+1;
 					while (valpos < valend && (str[valpos] == L'\t' || str[valpos] == L' '))
 						++valpos;
-					
+
 					if (valpos < valend)
 						strValue = str.Mid(valpos,valend-valpos);
 				}
@@ -98,7 +98,7 @@ void InterProcessService::Load(const string_t& str)
 				strKey = str.Mid(start,valend-start);
 				strValue = L"true";
 			}
-						
+
 			if (!strKey.IsEmpty())
 			{
 				int err = m_args.replace(strKey,strValue);
@@ -106,10 +106,10 @@ void InterProcessService::Load(const string_t& str)
 					OMEGA_THROW(err);
 			}
 		}
-		
+
 		if (end == string_t::npos)
 			return;
-		
+
 		start = end + 1;
 	}
 }
@@ -119,7 +119,7 @@ string_t InterProcessService::GetArg(const string_t& arg)
 	size_t i = m_args.find(arg);
 	if (i == m_args.npos)
 		return string_t();
-	
+
 	return *m_args.at(i);
 }
 

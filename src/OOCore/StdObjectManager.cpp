@@ -347,7 +347,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			else
 			{
 				// It's a method call on a stub...
-				
+
 				// Look up the stub
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -678,8 +678,8 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		{
 			// Add to the map...
 			ptrStub = ObjectImpl<Stub>::CreateInstancePtr();
-			
-			int err = m_mapStubIds.insert(ptrStub,stub_id,1,UINT_MAX);
+
+			int err = m_mapStubIds.insert(ptrStub,stub_id,1,0xFFFFFFFF);
 			if (err == 0)
 			{
 				err = m_mapStubObjs.insert(ptrObj,stub_id);
@@ -690,7 +690,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 				OMEGA_THROW(err);
 
 			ptrStub->init(ptrObj,stub_id,this);
-		}	
+		}
 	}
 
 	// Write out the data
@@ -799,7 +799,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 			uint32_t stub_id = 0;
 			if (m_mapStubObjs.find(ptrObj,stub_id))
 				m_mapStubIds.find(stub_id,ptrStub);
-			
+
 			guard.release();
 
 			// If there is no stub... what are we unmarshalling?
@@ -930,7 +930,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_Remoting_GetSource,1,((in),IObjec
 		{
 			ObjectPtr<Remoting::IMarshaller> ptrMarshaller;
 			ptrMarshaller.Attach(ptrProxy->GetMarshaller());
-			
+
 			ret = ptrMarshaller->GetSource();
 		}
 	}

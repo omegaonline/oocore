@@ -50,7 +50,7 @@ static int version()
 	std::cout << " (Debug build)";
 #endif
 	std::cout << " " << OMEGA_COMPILER_STRING << std::endl;
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -66,7 +66,7 @@ static int help()
 	std::cout << "  --help (-h)              Display this help text" << std::endl;
 	std::cout << "  --version (-v)           Display version information" << std::endl;
 	std::cout << "  --non-interactive (-n)   Do not prompt between commands" << std::endl;
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -87,7 +87,7 @@ static bool parse_args(const std::string& line, vector_string& line_args, bool& 
 				line_args.push_back(line.substr(start));
 			return true;
 		}
-		
+
 		if (pos != start)
 		{
 			if (bAppend && !line_args.empty())
@@ -95,7 +95,7 @@ static bool parse_args(const std::string& line, vector_string& line_args, bool& 
 			else
 				line_args.push_back(line.substr(start,pos-start));
 		}
-		
+
 		switch (line[pos])
 		{
 		case '\\':
@@ -121,7 +121,7 @@ static bool parse_args(const std::string& line, vector_string& line_args, bool& 
 				std::cerr << "Unrecognized control code " << line.substr(pos,2) << " at character " << pos+1 << std::endl;
 				return false;
 			}
-			bAppend = true;	
+			bAppend = true;
 			start = pos + 2;
 			break;
 
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("non-interactive",'n');
-	
+
 	// Parse command line
 	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
@@ -180,13 +180,13 @@ int main(int argc, char* argv[])
 		report_exception(pE);
 		return EXIT_FAILURE;
 	}
-	
+
 	int result = EXIT_FAILURE;
 	try
 	{
-		// Open root key	
+		// Open root key
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/");
-	
+
 		// Now loop processing commands
 		vector_string line_args;
 		for (bool bCont = false;!std::cin.eof();)
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
 
 			// Read a line...
 			std::string line;
-			std::getline(std::cin,line);	
+			std::getline(std::cin,line);
 
 			// Parse it...
 			if (parse_args(line,line_args,bCont))

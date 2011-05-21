@@ -122,7 +122,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 
 					if (pInfo->m_flags == flags)
 						DuplicateRegistrationException::Throw(oid);
-				}			
+				}
 			}
 		}
 
@@ -133,9 +133,9 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		info.m_ptrObject = pObject;
 		info.m_rot_cookie = rot_cookie;
 		info.m_source = src_id;
-		
+
 		uint32_t nCookie = 0;
-		int err = m_mapObjectsByCookie.insert(info,nCookie,1, UINT_MAX);
+		int err = m_mapObjectsByCookie.insert(info,nCookie,1,0xFFFFFFFF);
 		if (err == 0)
 		{
 			err = m_mapObjectsByOid.insert(strOid,nCookie);
@@ -151,7 +151,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		uint32_t i = 0;
 		while (revoke_list.pop(&i))
 			RevokeObject_i(i,0);
-		
+
 		return nCookie;
 	}
 	catch (...)
@@ -199,7 +199,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 					int err = revoke_list.push(*m_mapObjectsByOid.at(i));
 					if (err != 0)
 						OMEGA_THROW(err);
-				}	
+				}
 				break;
 			}
 		}
@@ -211,7 +211,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	uint32_t i = 0;
 	while (revoke_list.pop(&i))
 		RevokeObject_i(i,0);
-	
+
 	// If we have an object, get out now
 	if (ptrObject)
 	{

@@ -66,7 +66,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 
 	IObject* pIPS = 0;
 	ptrROT->GetObject(OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(IInterProcessService),pIPS);
-			
+
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
 	ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	return ptrIPS;
@@ -83,7 +83,7 @@ bool OOCore::HostedByOOServer()
 		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 		if (ptrIPS)
 			bHosted = HostedByOOServer(ptrIPS);
-				
+
 		bChecked = true;
 	}
 
@@ -93,7 +93,7 @@ bool OOCore::HostedByOOServer()
 bool OOCore::HostedByOOServer(IInterProcessService* pIPS)
 {
 	bool bHosted = false;
-	
+
 	ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(pIPS);
 	if (ptrSProxy)
 	{
@@ -103,7 +103,7 @@ bool OOCore::HostedByOOServer(IInterProcessService* pIPS)
 			bHosted = !pIPS->IsStandalone();
 		}
 	}
-	
+
 	return bHosted;
 }
 
@@ -133,7 +133,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 {
 	if (oid == OID_ServiceManager)
 		DuplicateRegistrationException::Throw(oid);
-	
+
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	uint32_t rot_cookie = 0;
 
@@ -151,7 +151,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 			}
 		}
 	}
-	
+
 	try
 	{
 		OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
@@ -179,7 +179,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 
 					if (pInfo->m_flags == flags)
 						DuplicateRegistrationException::Throw(oid);
-				}			
+				}
 			}
 		}
 
@@ -189,9 +189,9 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		info.m_flags = flags;
 		info.m_ptrObject = pObject;
 		info.m_rot_cookie = rot_cookie;
-		
+
 		uint32_t nCookie = 0;
-		int err = m_mapServicesByCookie.insert(info,nCookie,1,UINT_MAX);
+		int err = m_mapServicesByCookie.insert(info,nCookie,1,0xFFFFFFFF);
 		if (err == 0)
 		{
 			err = m_mapServicesByOid.insert(strOid,nCookie);
@@ -207,7 +207,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		uint32_t i = 0;
 		while (revoke_list.pop(&i))
 			RevokeObject(i);
-		
+
 		// This forces the detection, so cleanup succeeds
 		OOCore::HostedByOOServer();
 
@@ -258,7 +258,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 					int err = revoke_list.push(*m_mapServicesByOid.at(i));
 					if (err != 0)
 						OMEGA_THROW(err);
-				}				
+				}
 				break;
 			}
 		}
@@ -270,7 +270,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	uint32_t i = 0;
 	while (revoke_list.pop(&i))
 		RevokeObject(i);
-	
+
 	// If we have an object, get out now
 	if (ptrObject)
 	{

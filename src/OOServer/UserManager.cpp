@@ -110,7 +110,7 @@ bool User::Manager::fork_slave(const char* strPipe)
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance()->attach_local_socket(fd,&err);
+	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().attach_local_socket(fd,&err);
 	if (err != 0)
 	{
 		::close(fd);
@@ -124,7 +124,7 @@ bool User::Manager::fork_slave(const char* strPipe)
 	if (!Acceptor::unique_name(strNewPipe))
 		return false;
 
-	return handshake_root(local_socket,strNewPipe.c_str());
+	return handshake_root(local_socket,strNewPipe);
 }
 
 bool User::Manager::session_launch(const char* strPipe)
@@ -145,19 +145,19 @@ bool User::Manager::session_launch(const char* strPipe)
 
 	pid_t pid = getpid();
 	if (write(fd,&pid,sizeof(pid)) != sizeof(pid))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
 	if (write(fd,&uLen,sizeof(uLen)) != sizeof(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
 
 	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
 
 	// Make sure we set our OMEGA_SESSION_ADDRESS
 	if (setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1) != 0)
-		LOG_ERROR_RETURN(("Failed to set OMEGA_SESSION_ADDRESS: %s",OOBase::system_error_text(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to set OMEGA_SESSION_ADDRESS: %s",OOBase::system_error_text()),false);
 
 	// Done with the port...
 	close(fd);
@@ -165,7 +165,7 @@ bool User::Manager::session_launch(const char* strPipe)
 	// Now connect to ooserverd
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance()->connect_local_socket("/tmp/omegaonline",&err,&wait);
+	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket("/tmp/omegaonline",&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -186,7 +186,7 @@ bool User::Manager::session_launch(const char* strPipe)
 #endif
 }
 
-bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const char* pszPipe)
+bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::LocalString& strPipe)
 {
 	OOBase::CDRStream stream;
 
@@ -204,7 +204,7 @@ bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, 
 
 	// Then send back our port name
 	stream.reset();
-	if (!stream.write(pszPipe))
+	if (!stream.write(strPipe.c_str()))
 		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	err = local_socket->send(stream.buffer());
@@ -245,7 +245,7 @@ bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, 
 
 	// Now bootstrap
 	stream.reset();
-	if (!stream.write(sandbox_channel) || !stream.write(pszPipe))
+	if (!stream.write(sandbox_channel) || !stream.write(strPipe.c_str()))
 	{
 		ptrMC->close();
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);
@@ -265,13 +265,13 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	Manager* pThis = static_cast<Manager*>(pParams);
 
 	bool bQuit = false;
-	
+
 	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
 
 	OOBase::LocalString strPipe;
 	input.read(strPipe);
-	
+
 	if (input.last_error() != 0)
 	{
 		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error())));
@@ -377,7 +377,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::Stack<uint32_t,OOBase::LocalAllocator> dead_channels;		
+		OOBase::Stack<uint32_t,OOBase::LocalAllocator> dead_channels;
 		for (size_t i=m_mapChannels.begin(); i!=m_mapChannels.npos;i=m_mapChannels.next(i))
 		{
 			uint32_t k = *m_mapChannels.key_at(i);
@@ -418,7 +418,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 		pE->Release();
 	}
-	
+
 	// If the root closes, we should end!
 	if (channel_id == m_uUpstreamChannel)
 		do_quit_i();
@@ -466,7 +466,7 @@ void User::Manager::do_quit_i()
 			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
 			pE->Release();
 		}
-		
+
 		// Close the OOCore
 		Uninitialize();
 	}

@@ -137,7 +137,7 @@ bool User::Manager::start_services()
 
 		guard.acquire();
 	}
-	
+
 	return true;
 }
 
@@ -165,20 +165,20 @@ void User::Manager::start_service(const char* pszKey, const char* pszOid)
 
 		// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
 		Service svc;
-		
+
 		int err = svc.strKey.assign(pszKey);
 		if (err != 0)
 			OMEGA_THROW(err);
-		
+
 		if (pNS)
 			svc.ptrService = pNS;
 		else
 			svc.ptrService = ptrService;
 
 		uint32_t nServiceId = 0;
-		err = m_mapServices.insert(svc,nServiceId,1,UINT_MAX);
+		err = m_mapServices.insert(svc,nServiceId,1,0xFFFFFFFF);
 		if (err != 0)
-			OMEGA_THROW(err);	
+			OMEGA_THROW(err);
 	}
 	catch (IException* pE)
 	{
@@ -289,7 +289,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			try
 			{
 				ObjectPtr<System::INetworkService> ptrService = svc.ptrService;
-				
+
 				guard.release();
 
 				// Create a socket

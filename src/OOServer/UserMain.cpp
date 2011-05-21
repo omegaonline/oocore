@@ -38,7 +38,7 @@ static int Help()
 {
 	printf(APPNAME " - The Omega Online user host process.\n\n"
 		"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -97,11 +97,11 @@ int main(int argc, char* argv[])
 #if defined(HAVE_UNISTD_H)
 	// Ignore SIGPIPE
 	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno).c_str()));
+		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text()));
 
 	// Ignore SIGCHLD
 	if (signal(SIGCHLD,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text(errno).c_str()));
+		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text()));
 #endif
 
 	OOBase::String strPipe;
@@ -159,8 +159,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void OnCriticalFailure(const char* msg)
 	{
-		fprintf(stdout,msg);
-		fprintf(stdout,"\n\n");
+		fprintf(stdout,"%s\n\n",msg);
 		abort();
 	}
 }

@@ -38,40 +38,58 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
 
-		void exec(const std::wstring& strExeName);
+		void exec(const wchar_t* pszExeName);
 
 	private:
 		pid_t m_pid;
 	};
 }
 
-bool User::Process::is_relative_path(const std::wstring& strPath)
+bool User::Process::is_relative_path(const wchar_t* pszPath)
 {
-	return (strPath[0] != L'/');
+	return (pszPath[0] != L'/');
 }
 
-User::Process* User::Process::exec(const std::wstring& strExeName)
+User::Process* User::Process::exec(const wchar_t* pszExeName)
 {
-	OOBase::SmartPtr<UserProcessUnix> ptrProcess;
-	OOBASE_NEW_T(UserProcessUnix,ptrProcess,UserProcessUnix());
+	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
-		OMEGA_THROW(ENOMEM);
+		OMEGA_THROW_NOMEM();
 
-	ptrProcess->exec(strExeName);
+	ptrProcess->exec(pszExeName);
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const std::wstring& strExeName)
+void UserProcessUnix::exec(const wchar_t* pszExeName)
 {
+	char szBuf[512] = {0};
+	char* pszBuf = szBuf;
+	size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
+	if (clen >= sizeof(szBuf))
+	{
+		pszBuf = static_cast<char*>(OOBase::LocalAllocate(clen));
+		if (!pszBuf)
+			OMEGA_THROW_NOMEM();
+
+		OOBase::to_native(pszBuf,clen,pszExeName,size_t(-1));
+	}
+	else
+		szBuf[clen] = '\0';
+
 	pid_t pid = fork();
 	if (pid < 0)
-		OMEGA_THROW(errno);
+	{
+		int err = errno;
+
+		if (pszBuf != szBuf)
+			OOBase::LocalFree(pszBuf);
+
+		OMEGA_THROW(err);
+	}
 	else if (pid == 0)
 	{
 		// We are the child
 
-		std::string strApp = OOBase::to_native(strExeName.c_str());
-		
 		// Check whether we need to control signals here...
 		// Not sure what we should do about stdin/out/err
 		void* POSIX_TODO;
@@ -79,12 +97,15 @@ void UserProcessUnix::exec(const std::wstring& strExeName)
 		const char* debug = getenv("OMEGA_DEBUG");
 		const char* display = getenv("DISPLAY");
 		if (debug && strcmp(debug,"yes")==0 && display)
-			execlp("xterm","xterm","-e",strApp.c_str(),(char*)0);
-		
-		execlp("sh","sh","-c",strApp.c_str(),(char*)0);
+			execlp("xterm","xterm","-e",pszBuf,(char*)0);
+
+		execlp("sh","sh","-c",pszBuf,(char*)0);
 
 		_exit(127);
 	}
+
+	if (pszBuf != szBuf)
+		OOBase::LocalFree(pszBuf);
 
 	m_pid = pid;
 }

@@ -129,28 +129,6 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 	// Clear current entries
 	m_config_args.clear();
 
-	// Insert platform defaults
-	char szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-	if FAILED(hr)
-		LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
-
-	if (!PathAppendA(szBuf,"Omega Online"))
-		LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
-
-	if (!PathFileExistsA(szBuf))
-		LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
-
-	OOBase::String strKey,strValue;
-	int err = strKey.assign("regdb_path");
-	if (err == 0)
-		err = strValue.assign(szBuf);
-	if (err == 0)
-		err = m_config_args.insert(strKey,strValue);
-
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to add config argument: %s",OOBase::system_error_text(err)),false);
-
 	// Read from registry
 	HKEY hKey = 0;
 	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
@@ -197,7 +175,7 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
 				if (lRes != ERROR_SUCCESS)
 					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
-					
+
 				lRes = value.printf("%d",static_cast<int>(dwVal));
 				if (lRes != 0)
 					LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(lRes)),false);
@@ -208,11 +186,11 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 				OOBase::SmartPtr<char,OOBase::LocalDestructor> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
 				if (!buf)
 					LOG_ERROR_RETURN(("Out of memory"),false);
-					
+
 				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
 				if (lRes != ERROR_SUCCESS)
 					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
-					
+
 				if (dwType == REG_EXPAND_SZ)
 				{
 					char buf2[1024] = {0};
@@ -226,10 +204,10 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 						OOBase::SmartPtr<char,OOBase::LocalDestructor> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
 						if (!buf3)
 							LOG_ERROR_RETURN(("Out of memory"),false);
-							
+
 						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
 							LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);
-						
+
 						lRes = value.assign(buf3,dwExpLen-1);
 					}
 
@@ -261,7 +239,7 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 	if (f != cmd_args.npos)
 	{
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",cmd_args.at(f)->c_str());
-		
+
 		if (!load_config_file(cmd_args.at(f)->c_str()))
 			return false;
 	}

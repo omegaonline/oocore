@@ -96,7 +96,7 @@ void OOCore::UserSession::init_i(const string_t& args)
 			{
 				m_init_state = eStarting;
 				guard.release();
-				
+
 				try
 				{
 					start(args);
@@ -142,7 +142,7 @@ void OOCore::UserSession::term_i()
 			{
 				m_init_state = eStopping;
 				guard.release();
-				
+
 				stop();
 
 				guard.acquire();
@@ -171,22 +171,22 @@ void OOCore::UserSession::parse_args(const string_t& str, OOBase::Table<string_t
 		// Skip leading whitespace
 		while (start < str.Length() && (str[start] == L'\t' || str[start] == L' '))
 			++start;
-		
+
 		if (start == str.Length())
 			return;
-				
+
 		// Find the next linefeed
 		size_t end = str.Find(L',',start);
-		
+
 		// Trim trailing whitespace
 		size_t valend = (end == string_t::npos ? str.Length() : end);
 		while (valend > start && (str[valend-1] == L'\t' || str[valend-1] == L' '))
 			--valend;
-		
+
 		if (valend > start)
 		{
 			string_t strKey, strValue;
-			
+
 			// Split on first =
 			size_t eq = str.Find(L'=',start);
 			if (eq != string_t::npos)
@@ -195,16 +195,16 @@ void OOCore::UserSession::parse_args(const string_t& str, OOBase::Table<string_t
 				size_t keyend = eq;
 				while (keyend > start && (str[keyend-1] == L'\t' || str[keyend-1] == L' '))
 					--keyend;
-				
+
 				if (keyend > start)
 				{
 					strKey = str.Mid(start,keyend-start);
-					
+
 					// Skip leading whitespace after =
 					size_t valpos = eq+1;
 					while (valpos < valend && (str[valpos] == L'\t' || str[valpos] == L' '))
 						++valpos;
-					
+
 					if (valpos < valend)
 						strValue = str.Mid(valpos,valend-valpos);
 				}
@@ -214,7 +214,7 @@ void OOCore::UserSession::parse_args(const string_t& str, OOBase::Table<string_t
 				strKey = str.Mid(start,valend-start);
 				strValue = L"true";
 			}
-						
+
 			if (!strKey.IsEmpty())
 			{
 				int err = args.replace(strKey,strValue);
@@ -222,10 +222,10 @@ void OOCore::UserSession::parse_args(const string_t& str, OOBase::Table<string_t
 					OMEGA_THROW(err);
 			}
 		}
-		
+
 		if (end == string_t::npos)
 			return;
-		
+
 		start = end + 1;
 	}
 }
@@ -248,7 +248,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	OOBase::LocalString strPipe;
 	if (!bStandaloneAlways)
 		discover_server_port(bStandalone,strPipe);
-		
+
 	if (!bStandalone)
 	{
 		// Connect up to the root process...
@@ -297,7 +297,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 			OMEGA_THROW(err);
 
 		ptrZeroCompt->set_id(0);
-	}	
+	}
 
 	// Remove standalone support eventually...
 	void* TODO;
@@ -352,7 +352,7 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	{
 		if (bStandalone)
 			return;
-		
+
 		throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize");
 	}
 	bStandalone = false;
@@ -389,7 +389,6 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 
 	if (!stream.read(strPipe))
 		OMEGA_THROW(stream.last_error());
-
 #else
 
 	const char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
@@ -398,10 +397,8 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 
 	int err = strPipe.assign(pszAddr);
 	if (err != 0)
-		OMEFGA_THROW(err);
+		OMEGA_THROW(err);
 
-	return true;
-	
 #endif
 }
 
@@ -421,7 +418,7 @@ void OOCore::UserSession::stop()
 		{
 			pE->Release();
 		}
-		
+
 		m_nIPSCookie = 0;
 	}
 
@@ -430,7 +427,7 @@ void OOCore::UserSession::stop()
 
 	// Close compartments
 	close_compartments();
-	
+
 	// Shutdown the socket...
 	if (m_stream)
 		m_stream->shutdown(true,true);
@@ -479,7 +476,7 @@ void OOCore::UserSession::close_compartments()
 	OOBase::Stack<OOBase::SmartPtr<Compartment>,OOBase::LocalAllocator> vecCompts;
 	for (size_t i = m_mapCompartments.begin();i!=m_mapCompartments.npos;i=m_mapCompartments.next(i))
 		vecCompts.push(*m_mapCompartments.at(i));
-	
+
 	guard.release();
 
 	OOBase::SmartPtr<Compartment> ptrCmpt;
@@ -487,13 +484,13 @@ void OOCore::UserSession::close_compartments()
 	{
 		try
 		{
-			ptrCmpt->shutdown();		
+			ptrCmpt->shutdown();
 		}
 		catch (IException* pE)
 		{
 			pE->Release();
 		}
-	}	
+	}
 }
 
 Omega::uint32_t OOCore::UserSession::get_channel_id() const
@@ -511,7 +508,7 @@ void OOCore::UserSession::add_uninit_call_i(Threading::DestructorCallback pfn, v
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	Uninit uninit = { pfn, param };
-	
+
 	int err = m_listUninitCalls.push(uninit);
 	if (err != 0)
 		OMEGA_THROW(err);
@@ -617,7 +614,7 @@ int OOCore::UserSession::run_read_loop()
 
 		// Create a new Message struct
 		OOBase::SmartPtr<Message> msg = new (OOBase::critical) Message(nReadLen);
-		
+
 		// Issue another read for the rest of the data
 		recvd = m_stream->recv(msg->m_payload.buffer(),nReadLen,&err);
 		if (err != 0 || recvd != nReadLen)
@@ -750,7 +747,7 @@ int OOCore::UserSession::run_read_loop()
 	// Tell all worker threads that we are done with them...
 	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
 		(*m_mapThreadContexts.at(i))->m_msg_queue.close();
-	
+
 	// Stop the default message queue
 	m_default_msg_queue.close();
 
@@ -767,7 +764,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
-		
+
 		// Decrement the consumers...
 		--m_usage_count;
 
@@ -785,7 +782,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		{
 			// Don't confuse the wait deadline with the message processing deadline
 			process_request(ThreadContext::instance(),msg,0);
-			
+
 			// We processed something
 			return true;
 		}
@@ -823,7 +820,7 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::wait_for_response(uint3
 
 		OOBase::SmartPtr<Compartment> ptrCompt;
 		m_mapCompartments.find(pContext->m_current_cmpt,ptrCompt);
-		
+
 		guard.release();
 
 		if (!ptrCompt || !ptrCompt->is_channel_open(from_channel_id))
@@ -904,7 +901,7 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFF);
 	if (err != 0)
 		OMEGA_THROW(err);
-	
+
 	return id;
 }
 
@@ -930,7 +927,7 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t d
 	{
 		// Determine dest_thread_id
 		pContext->m_mapChannelThreads.find(dest_channel_id,dest_thread_id);
-		
+
 		src_thread_id = pContext->m_thread_id;
 		deadline = pContext->m_deadline;
 
@@ -969,7 +966,7 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t d
 		ptrE.Attach(ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer")));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
-					
+
 	if (attribs & TypeInfo::Asynchronous)
 		return 0;
 	else
@@ -1069,7 +1066,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 
 	OOBase::SmartPtr<Compartment> ptrCompt;
 	m_mapCompartments.find(pMsg->m_dest_cmpt_id,ptrCompt);
-	
+
 	guard.release();
 
 	if (!ptrCompt)
@@ -1137,7 +1134,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	}
 	else
 		pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
-	
+
 	pContext->m_deadline = old_deadline;
 	pContext->m_current_cmpt = old_id;
 }
@@ -1196,7 +1193,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	ptrCompt->set_id(cmpt_id);
 
 	write_guard.release();
-	
+
 	// Now a new ComptChannel for the new compartment connecting to this cmpt
 	ptrCompt = get_compartment(ThreadContext::instance()->m_current_cmpt);
 	return ptrCompt->create_compartment_channel(cmpt_id,guid_t::Null());
@@ -1208,7 +1205,7 @@ OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint1
 
 	OOBase::SmartPtr<OOCore::Compartment> ptrCompt;
 	m_mapCompartments.find(id,ptrCompt);
-	
+
 	return ptrCompt;
 }
 
@@ -1293,7 +1290,7 @@ Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
 	OOBase::SmartPtr<Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
 	if (!ptrCompt)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("The current compartment has died"));
-	
+
 	return ptrCompt->get_rot();
 }
 

@@ -21,6 +21,9 @@
 
 #include "OOCore_precomp.h"
 
+#include <limits.h>
+#include <wctype.h>
+
 #if !defined(PRId64)
 #if defined(__MINGW32__)
 #define PRId64 "I64d"
@@ -188,7 +191,7 @@ namespace
 	{
 		OOBase::LocalString str2;
 		int err = str2.assign(str.c_str(),pos);
-		
+
 		while (count-- > 0 && err == 0)
 			err = str2.append(&c,1);
 
@@ -198,7 +201,7 @@ namespace
 			if (err == 0)
 				err = str.assign(str2.c_str());
 		}
-		
+
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
@@ -213,7 +216,7 @@ namespace
 			if (err == 0)
 				err = str.assign(str2.c_str());
 		}
-		
+
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
@@ -221,14 +224,14 @@ namespace
 	string_t do_intl_mon(OOBase::LocalString& str, bool negative)
 	{
 		const lconv* lc = localeconv();
-		
+
 		const char* src_decimal_point = ".";
 		if (lc)
 			src_decimal_point = lc->decimal_point;
-				
+
 #if defined(_WIN32)
 		LCID lcid = GetThreadLocale();
-				
+
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SMONDECIMALSEP,decimal_point,sizeof(decimal_point)))
 		{
@@ -276,7 +279,7 @@ namespace
 		{
 			if (*lc->mon_decimal_point == '\0')
 				decimal_point = lc->mon_decimal_point;
-			
+
 			grouping = lc->mon_grouping;
 			thousands_sep = lc->mon_thousands_sep;
 		}
@@ -308,7 +311,7 @@ namespace
 		bool cs_precedes = false;
 		bool sep_by_space = false;
 		int posn = 0;
-		
+
 #if defined(_WIN32)
 		char sign[6];
 
@@ -381,6 +384,7 @@ namespace
 		}
 
 #else
+		const char* sign;
 		if (negative)
 		{
 			cs_precedes = (lc->n_cs_precedes == 1);
@@ -395,7 +399,7 @@ namespace
 			posn = lc->p_sign_posn;
 			sign = lc->positive_sign;
 		}
-		currency = lc->currency_symbol;
+		const char* currency = lc->currency_symbol;
 #endif
 
 		string_t ret;
@@ -492,23 +496,23 @@ namespace
 	size_t do_intl(OOBase::LocalString& str, bool bThou)
 	{
 		const lconv* lc = localeconv();
-				
+
 #if defined(_WIN32)
 		LCID lcid = GetThreadLocale();
-		
+
 		const char* src_decimal_point = ".";
 		if (lc)
 			src_decimal_point = lc->decimal_point;
-		
+
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
 		{
 			DWORD dwErr = GetLastError();
 			OMEGA_THROW(dwErr);
 		}
-		
+
 		size_t dp = replace(str,src_decimal_point,decimal_point);
-		
+
 		char thousands_sep[5] = {0};
 		char trans_grouping[128] = {0};
 		const char* grouping = trans_grouping;
@@ -556,9 +560,9 @@ namespace
 			grouping = lc->grouping;
 			thousands_sep = lc->thousands_sep;
 		}
-		
+
 		size_t dp = str.find(decimal_point);
-		
+
 #endif
 		if (bThou)
 		{
@@ -588,39 +592,13 @@ namespace
 
 		return dp;
 	}
-	
+
 	void fmt_fixed_i(OOBase::LocalString& str, const int64_t& val, int precision)
 	{
 		int err = str.printf("%" PRId64,val);
 		if (err != 0)
 			OMEGA_THROW(err);
-			
-		if (precision > 0)
-		{
-			const char* decimal_point = ".";
-			const lconv* lc = localeconv();
-			if (lc)
-				decimal_point = lc->decimal_point;
-			
-			err = str.append(decimal_point);
-			if (err != 0)
-				OMEGA_THROW(err);
-				
-			while (precision-- > 0)
-			{
-				err = str.append("0");
-				if (err != 0)
-					OMEGA_THROW(err);
-			}
-		}
-	}
-	
-	void fmt_fixed_i(OOBase::LocalString& str, const uint64_t& val, int precision)
-	{
-		int err = str.printf("%" PRIu64,val);
-		if (err != 0)
-			OMEGA_THROW(err);
-			
+
 		if (precision > 0)
 		{
 			const char* decimal_point = ".";
@@ -631,7 +609,33 @@ namespace
 			err = str.append(decimal_point);
 			if (err != 0)
 				OMEGA_THROW(err);
-				
+
+			while (precision-- > 0)
+			{
+				err = str.append("0");
+				if (err != 0)
+					OMEGA_THROW(err);
+			}
+		}
+	}
+
+	void fmt_fixed_i(OOBase::LocalString& str, const uint64_t& val, int precision)
+	{
+		int err = str.printf("%" PRIu64,val);
+		if (err != 0)
+			OMEGA_THROW(err);
+
+		if (precision > 0)
+		{
+			const char* decimal_point = ".";
+			const lconv* lc = localeconv();
+			if (lc)
+				decimal_point = lc->decimal_point;
+
+			err = str.append(decimal_point);
+			if (err != 0)
+				OMEGA_THROW(err);
+
 			while (precision-- > 0)
 			{
 				err = str.append("0");
@@ -681,7 +685,7 @@ namespace
 		fmt_fixed_i(ret,val,precision);
 		if (!ret.empty() && (ret[0]=='-' || ret[0]=='+'))
 			erase(ret,0,1);
-			
+
 		return do_intl_mon(ret,val < 0.0);
 	}
 
@@ -726,9 +730,9 @@ namespace
 			err = str.printf("%" PRId64,val);
 
 		if (err != 0)
-			OMEGA_THROW(err);		
+			OMEGA_THROW(err);
 	}
-	
+
 	void fmt_decimal_i(OOBase::LocalString& str, const uint64_t& val, int precision)
 	{
 		int err;
@@ -738,7 +742,7 @@ namespace
 			err = str.printf("%" PRIu64,val);
 
 		if (err != 0)
-			OMEGA_THROW(err);		
+			OMEGA_THROW(err);
 	}
 
 	void fmt_decimal_i(OOBase::LocalString& str, const double& val, int precision)
@@ -753,7 +757,7 @@ namespace
 		fmt_decimal_i(str,val,precision);
 		return string_t(str.c_str(),false);
 	}
-	
+
 	void fmt_hex_i(OOBase::LocalString& str, const uint64_t& val, bool capital, int precision)
 	{
 		int err;
@@ -765,16 +769,16 @@ namespace
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
-	
+
 	void fmt_hex_i(OOBase::LocalString& str, const int64_t& val, bool capital, int precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
-	
+
 	void fmt_hex_i(OOBase::LocalString& str, const double& val, bool capital, int precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
-	}		
+	}
 
 	template <typename T>
 	string_t fmt_hex(const T& val, bool capital, int precision)
@@ -886,9 +890,9 @@ namespace
 			err = str.printf("%" PRId64,val);
 
 		if (err != 0)
-			OMEGA_THROW(err);		
+			OMEGA_THROW(err);
 	}
-	
+
 	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, int precision)
 	{
 		int err;
@@ -898,9 +902,9 @@ namespace
 			err = str.printf("%" PRIu64,val);
 
 		if (err != 0)
-			OMEGA_THROW(err);		
+			OMEGA_THROW(err);
 	}
-	
+
 	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, int precision)
 	{
 		int err;
@@ -908,7 +912,7 @@ namespace
 			err = str.printf((capital ? "%.*G" : "%.*g"),precision,val);
 		else
 			err = str.printf((capital ? "%G" : "%g"),val);
-			
+
 		if (err != 0)
 			OMEGA_THROW(err);
 
@@ -920,7 +924,7 @@ namespace
 	string_t fmt_general(const T& val, bool capital, int precision)
 	{
 		OOBase::LocalString str;
-		fmt_general_i(str,val,capital,precision);		
+		fmt_general_i(str,val,capital,precision);
 		return string_t(str.c_str(),false);
 	}
 
@@ -1135,7 +1139,7 @@ namespace
 					}
 				}
 				break;
-				
+
 			case L'#':
 			case L'0':
 				if (seen_decimal)
@@ -1143,7 +1147,7 @@ namespace
 				else
 					++width;
 				break;
-				
+
 			case L'.':
 				seen_decimal = true;
 				break;
@@ -1151,7 +1155,7 @@ namespace
 			case L',':
 				group = true;
 				break;
-							
+
 			default:
 				break;
 			}
@@ -1199,7 +1203,7 @@ namespace
 		bool sig_zero = false;
 		size_t numpos = 0;
 		seen_decimal = false;
-		
+
 		for (size_t pos = 0; pos < strFormat.Length(); ++pos)
 		{
 			wchar_t wc = strFormat[pos];
@@ -1248,7 +1252,7 @@ namespace
 				{
 					if (sig_zero)
 						res += string_t(strNumber.c_str()+numpos,false,1);
-									
+
 					++numpos;
 				}
 
@@ -1256,7 +1260,7 @@ namespace
 				{
 					res += string_t(strNumber.c_str()+numpos,false,1);
 					sig_zero = !seen_decimal;
-				}					
+				}
 				++numpos;
 				break;
 
@@ -1268,7 +1272,7 @@ namespace
 				}
 
 				res += string_t(strNumber.c_str()+numpos,false,1);
-				++numpos;		
+				++numpos;
 				sig_zero = !seen_decimal;
 				break;
 
@@ -1282,7 +1286,7 @@ namespace
 
 					if (strNumber[numpos+1] == L'-' || strFormat[numpos+1] == L'+')
 						++len;
-					
+
 					len += exp_digits;
 					pos += exp_digits;
 
@@ -1310,7 +1314,7 @@ namespace
 				else
 					res += wc;
 				break;
-				
+
 			case L',':
 				if (!seen_decimal &&
 						pos > 0 && pos < strFormat.Length()-1 &&
@@ -1320,9 +1324,9 @@ namespace
 					// Already added
 				}
 				else
-					res += wc;						
+					res += wc;
 				break;
-				
+
 			default:
 				res += wc;
 				break;
@@ -1411,7 +1415,7 @@ namespace
 			else
 				return fmt_recurse(val,*parts.at(0),def_precision,false);
 #endif
-			
+
 		default:
 			return fmt_custom_i(val,strFormat);
 		}
@@ -1650,7 +1654,7 @@ namespace
 			str = str.Left(pos) + str.Mid(pos+1);
 		}
 	}
-	
+
 	void parse_arg(const string_t& strIn, size_t& pos, insert_t& ins)
 	{
 		size_t end = find_brace(strIn,pos,L'}');
@@ -1664,7 +1668,7 @@ namespace
 
 		const wchar_t* endp = 0;
 		ins.index = OOCore::wcstou32(strIn.c_wstr()+pos,endp,10);
-		
+
 		ins.alignment = 0;
 		if (comma < end && comma < colon)
 		{
@@ -1749,7 +1753,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Ome
 
 	// Split up the string
 	parse_format(format,s->m_strPrefix,*s->m_listInserts);
-	
+
 	return s;
 }
 
@@ -1792,7 +1796,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 			pushed = true;
 		}
 	}
-	
+
 	return s_new;
 }
 
@@ -1830,7 +1834,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 {
 	const format_state_t* s = static_cast<const format_state_t*>(handle);
 	if (s && s->m_listInserts)
-	{	
+	{
 		// Update 'index'
 		for (size_t i=0;i<s->m_listInserts->size();++i)
 		{
@@ -1842,7 +1846,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 				break;
 			}
 		}
-	}	
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),const void*,handle))

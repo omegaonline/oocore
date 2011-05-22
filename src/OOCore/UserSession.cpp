@@ -455,6 +455,8 @@ void OOCore::UserSession::close_singletons_i()
 
 		try
 		{
+			OOBase::Guard<OOBase::SpinLock> guard(OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>::instance());
+
 			(*uninit.pfn_dctor)(uninit.param);
 		}
 		catch (IException* pE)

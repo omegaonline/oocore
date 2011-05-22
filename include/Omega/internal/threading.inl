@@ -195,25 +195,23 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	delete p;
 }
 
-template <typename T, typename Lifetime>
-void* Omega::Threading::Singleton<T,Lifetime>::s_instance = 0;
-
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init));
 template <typename T, typename Lifetime>
 inline T* Omega::Threading::Singleton<T,Lifetime>::instance()
 {
-	OOCore_sngtn_once(&s_instance,&do_init);
-	return static_cast<T*>(s_instance);
+	static void* instance = NULL;
+	OOCore_sngtn_once(&instance,&do_init);
+	return static_cast<T*>(instance);
 }
 
 template <typename T, typename Lifetime>
-inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Lifetime>::do_init()
+inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Lifetime>::do_init(void** param)
 {
 	try
 	{
-		s_instance = new T();
+		*param = new T();
 
-		Lifetime::add_destructor(do_term,0);
+		Lifetime::add_destructor(do_term,param);
 		return 0;
 	}
 	catch (Omega::IException* pE)
@@ -227,11 +225,13 @@ inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Li
 }
 
 template <typename T, typename Lifetime>
-inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
+inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void* param)
 {
 	try
 	{
-		delete static_cast<T*>(s_instance);
+		T** p = static_cast<T**>(param);
+		delete *p;
+		*p = NULL;
 	}
 	catch (Omega::IException* pE)
 	{
@@ -239,8 +239,6 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 	}
 	catch (...)
 	{}
-
-	s_instance = 0;
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),size_t*,v));

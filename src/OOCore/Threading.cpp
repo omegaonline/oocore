@@ -35,7 +35,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 		if (!pVal)
 		{
 			// Call the init function
-			const Omega::System::Internal::SafeShim* pE = (*pfn_init)();
+			const Omega::System::Internal::SafeShim* pE = (*pfn_init)(val);
 			if (pE)
 				Omega::System::Internal::throw_correct_exception(pE);
 		}

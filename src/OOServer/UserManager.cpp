@@ -61,7 +61,7 @@ using namespace OTL;
 
 // UserManager
 
-User::Manager* User::Manager::s_instance = 0;
+User::Manager* User::Manager::s_instance = NULL;
 
 User::Manager::Manager() :
 		m_nIPSCookie(0),
@@ -74,7 +74,7 @@ User::Manager::Manager() :
 
 User::Manager::~Manager()
 {
-	s_instance = 0;
+	s_instance = NULL;
 }
 
 void User::Manager::run()

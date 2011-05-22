@@ -234,7 +234,7 @@ namespace Omega
 			static void OMEGA_CALL destruct(void* param);
 		};
 
-		typedef const System::Internal::SafeShim* (OMEGA_CALL *SingletonCallback)();
+		typedef const System::Internal::SafeShim* (OMEGA_CALL *SingletonCallback)(void** param);
 		
 		// Lifetime should be either ModuleDestructor<> or InitialiseDestructor
 		template <typename T, typename Lifetime>
@@ -244,9 +244,7 @@ namespace Omega
 			static T* instance();
 
 		private:
-			static void* s_instance;
-
-			static const System::Internal::SafeShim* OMEGA_CALL do_init();
+			static const System::Internal::SafeShim* OMEGA_CALL do_init(void** param);
 			static void OMEGA_CALL do_term(void*);
 		};
 	}

@@ -952,12 +952,12 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 	{
 		if (strSysDir[strSysDir.length()-1] != '\\' && strSysDir[strSysDir.length()-1] != '/')
 		{
-			err = strSysDir.append("\\");
+			int err = strSysDir.append("\\");
 			if (err != 0)
 				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 		}
 
-		err = strSysDir.append("default_user.regdb");
+		int err = strSysDir.append("default_user.regdb");
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 

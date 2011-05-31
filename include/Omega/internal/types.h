@@ -45,6 +45,7 @@ namespace Omega
 		guid_t(const guid_base_t& rhs = guid_t::Null()) : guid_base_t(rhs)
 		{}
 
+		guid_t(const wchar_t* wsz);
 		guid_t(const string_t& str);
 
 		bool operator == (const guid_t& rhs) const

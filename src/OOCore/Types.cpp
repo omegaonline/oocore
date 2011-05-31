@@ -649,6 +649,54 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 	return string_t(str.c_str(),false);
 }
 
+namespace
+{
+	uint64_t parse_digits(const wchar_t* wsz, size_t offset, size_t len)
+	{
+		uint64_t v = 0;
+		for (size_t i = offset;i < offset+len; ++i)
+		{
+			v <<= 8;
+			if (wsz[i] >= L'0' && wsz[i] <= L'9')
+				v |= static_cast<byte_t>(wsz[i] - L'0');
+			else if (wsz[i] >= L'A' && wsz[i] <= L'F')
+				v |= static_cast<byte_t>(wsz[i] - L'A');
+			else if (wsz[i] >= L'a' && wsz[i] <= L'f')
+				v |= static_cast<byte_t>(wsz[i] - L'a');
+		}
+		return v;
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(guid_base_t,OOCore_guid_t__ctor,1,((in),const wchar_t*,wsz))
+{
+	// Of the form: {13EC66A0-D266-4682-9A47-6E2F178C40BD}
+
+	guid_base_t result = {0,0,0,{0,0,0,0,0,0,0,0}};
+	if (wsz[0] == L'{' && wsz[9] == L'-' && wsz[14] == L'-' && wsz[19] == L'-' && wsz[24] == L'-' && wsz[37] == L'}' && wsz[38] == L'\0')
+	{
+		result.Data1 = static_cast<uint32_t>(parse_digits(wsz,1,8));
+		result.Data2 = static_cast<uint16_t>(parse_digits(wsz,10,4));
+		result.Data3 = static_cast<uint16_t>(parse_digits(wsz,15,4));
+		
+		uint64_t v1 = parse_digits(wsz,20,4);	
+					
+		result.Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);	
+		result.Data4[1] = static_cast<byte_t>(v1 & 0xFF);
+		
+		v1 = parse_digits(wsz,25,12);
+						
+		result.Data4[2] = static_cast<byte_t>(((v1 >> 32) >> 8) & 0xFF);	
+		result.Data4[3] = static_cast<byte_t>((v1 >> 32) & 0xFF);
+		result.Data4[4] = static_cast<byte_t>((v1 >> 24) & 0xFF);
+		result.Data4[5] = static_cast<byte_t>((v1 >> 16) & 0xFF);
+		result.Data4[6] = static_cast<byte_t>((v1 >> 8) & 0xFF);	
+		result.Data4[7] = static_cast<byte_t>(v1 & 0xFF);
+	}
+
+	return result;
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))
 {
 	const wchar_t* sz = str.c_wstr();

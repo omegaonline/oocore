@@ -483,26 +483,15 @@ namespace Omega
 
 			struct wire_rtti_holder
 			{
-				wire_rtti_holder();
-				~wire_rtti_holder();
+				static void* handle();
 
-				const wire_rtti* get_rtti_info(const guid_base_t* iid);
-				void register_rtti_info(const guid_base_t* iid, const wire_rtti* pRtti);
-
-			private:
-				void* m_handle;
+			private:				
+				static const System::Internal::SafeShim* OMEGA_CALL init(void**);
+				static void destroy(void*);
 			};
-			typedef Threading::Singleton<wire_rtti_holder,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_RTTI_HOLDER;
-
-			inline static const wire_rtti* get_wire_rtti_info(const guid_t& iid)
-			{
-				return WIRE_RTTI_HOLDER::instance()->get_rtti_info(&iid);
-			}
-
-			inline static void register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti)
-			{
-				WIRE_RTTI_HOLDER::instance()->register_rtti_info(&iid,pRtti);
-			}
+			
+			inline static const wire_rtti* get_wire_rtti_info(const guid_t& iid);
+			inline static void register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti);
 
 			OMEGA_WIRE_MAGIC(Omega,IObject)
 

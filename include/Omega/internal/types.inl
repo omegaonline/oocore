@@ -561,6 +561,12 @@ inline Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat)
 	return OOCore_guid_t_to_string(*this,strFormat);
 }
 
+OOCORE_RAW_EXPORTED_FUNCTION(Omega::guid_base_t,OOCore_guid_t__ctor,1,((in),const wchar_t*,wsz));
+inline Omega::guid_t::guid_t(const wchar_t* wsz)
+{
+	*this = OOCore_guid_t__ctor(wsz);
+}
+
 OOCORE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const Omega::string_t&,str,(out),Omega::guid_t&,guid));
 inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 {

@@ -179,6 +179,12 @@ AC_DEFUN([OO_LIB_SQLITE3],
 	
 	# Check for pkg-config
 	PKG_PROG_PKG_CONFIG
-
-	PKG_CHECK_MODULES([SQLITE3],[sqlite3 >= $sqlite3_version_req],[AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have the SQLite3 library])],[AX_LIB_SQLITE3([$1])])
+	
+	AS_IF([test -n "$PKG_CONFIG"],
+		PKG_CHECK_MODULES([SQLITE3],
+			[sqlite3 >= $sqlite3_version_req],
+			[AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have the SQLite3 library]) AC_SUBST([SQLITE3_CFLAGS]) AC_SUBST([SQLITE3_LIBS])],[])
+	)
+	
+	AS_IF([test -z "$SQLITE3_CFLAGS"],[AX_LIB_SQLITE3([$1])])
 ])

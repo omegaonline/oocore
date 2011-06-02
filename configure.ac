@@ -53,7 +53,7 @@ OO_MULTI_THREAD
 
 # Find sqlite3
 OO_LIB_SQLITE3([3.5.0])
-AS_IF([test -z "$SQLITE3_CFLAGS"],[AC_MSG_ERROR([Need a valid sqlite3 library or source, try --with-sqlite3])])
+AS_IF([test -z "$SQLITE3_LIBS"],[AC_MSG_ERROR([Need a valid sqlite3 library])])
 
 # Check for the headers we use
 AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h])
@@ -78,6 +78,10 @@ AS_IF([test "x$oo_test_CFLAGS" != "xset"],
   [
     AX_CFLAGS_GCC_OPTION([-O2])
   ])
+  
+  AX_CFLAGS_GCC_OPTION([-pipe])
+    
+  AS_CASE([$host_os],[mingw*],[CFLAGS="$CFLAGS -march=i686 -mtune=native"])
 ])
 
 # Set sensible default CXXFLAGS if necessary
@@ -98,6 +102,10 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
     AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
     AX_CXXFLAGS_GCC_OPTION([-O2])
   ])
+  
+  AX_CXXFLAGS_GCC_OPTION([-pipe])
+  
+  AS_CASE([$host_os],[mingw*],[CXXFLAGS="$CXXFLAGS -march=i686 -mtune=native"])
 ])
 
 # Add debug defines

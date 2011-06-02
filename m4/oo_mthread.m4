@@ -16,7 +16,7 @@ AC_DEFUN([OO_MULTI_THREAD],
         AC_SUBST(PTHREAD_CFLAGS)
 	    ;;
       *)
-        ACX_PTHREAD ;;
+        AX_PTHREAD ;;
     esac
   ]
 )

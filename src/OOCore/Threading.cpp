@@ -132,17 +132,9 @@ namespace
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**,phandle))
 {
-	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)0xf);
+	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
 	if (!pCur)
-	{
-		void* p = OOBase::HeapAllocate(sizeof(mod_destruct_t));
-		if (!p)
-			OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
-
-		new (p) mod_destruct_t();
-
-		*phandle = p;
-	}
+		*phandle = new (OOBase::critical) mod_destruct_t();
 
 	while (pCur == (void*)1)
 	{

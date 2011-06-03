@@ -2,11 +2,12 @@
 
 RCCOMPILE = $(RC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS)
+  
 LTRCCOMPILE = $(LIBTOOL) --mode=compile --tag=RC $(RCCOMPILE)
 
 .rc.lo:
-	$(LTRCCOMPILE) -i "$<" -o "$@"
+	$(AM_V_GEN)$(LTRCCOMPILE) -i "$<" -o "$@"
 
 .rc.o:
-	$(RCCOMPILE) -i "$<" -o "$@"
+	$(AM_V_GEN)$(RCCOMPILE) -i "$<" -o "$@"
 

@@ -1,8 +1,8 @@
 include $(top_srcdir)/m4/ltrc.inc
 
 AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
-AM_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-AM_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+AM_CFLAGS = $(PTHREAD_CFLAGS)
+AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
 noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
@@ -16,12 +16,14 @@ liboosvrcmn_la_SOURCES = \
 liboosvrdb_la_SOURCES = \
 	RegistryHive.h \
 	RegistryHive.cpp
+	
+liboosvrdb_la_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) 
 
 oolibexecdir = @libexecdir@/omegaonline
 oolibexec_LTLIBRARIES = oosvrlite.la
 
 oosvrlite_la_LDFLAGS = -module -no-undefined
-oosvrlite_la_LIBADD = $(SQLITE3_LIBS) liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+oosvrlite_la_LIBADD = liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32
 oosvrlite_la_LIBADD += ../OOCore/OOCore.la
@@ -45,8 +47,8 @@ endif
 
 bin_PROGRAMS = ooserverd
 
-ooserverd_CPPFLAGS = $(AM_CPPFLAGS) -DLIBEXEC_DIR=\"@libexecdir@/omegaonline\"
-ooserverd_LDADD = $(SQLITE3_LIBS) liboosvrcmn.la liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) -DLIBEXEC_DIR=\"@libexecdir@/omegaonline\"
+ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \
@@ -69,7 +71,7 @@ endif
 
 libexec_PROGRAMS = oosvruser
 
-oosvruser_LDADD = $(SQLITE3_LIBS) liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32
 oosvruser_LDADD += ../OOCore/OOCore.la

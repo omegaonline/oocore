@@ -10,9 +10,6 @@ EXTRA_DIST = \
 ####################################
 # Some helper targets
 
-gitbundle:
-	git bundle create oocore.git --all
-
 astyle:
 	astyle -A1 -T4 -K -N -w -U -c -n -R @srcdir@/*.h
 	astyle -A1 -T4 -K -N -w -U -c -n -R @srcdir@/*.inl

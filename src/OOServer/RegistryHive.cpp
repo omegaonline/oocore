@@ -199,7 +199,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 	err = ptrStmt->step();
 	if (err == SQLITE_DONE)
-		uKey = sqlite3_last_insert_rowid(m_db->database());
+		uKey = m_db->last_insert_rowid();
 
 	return err;
 }

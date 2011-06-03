@@ -561,16 +561,21 @@ inline Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat)
 	return OOCore_guid_t_to_string(*this,strFormat);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(Omega::guid_base_t,OOCore_guid_t__ctor,1,((in),const wchar_t*,wsz));
-inline Omega::guid_t::guid_t(const wchar_t* wsz)
+OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(in_out),Omega::guid_base_t*,result));
+inline bool Omega::guid_t::FromString(const wchar_t* wsz, Omega::guid_t& guid)
 {
-	*this = OOCore_guid_t__ctor(wsz);
+	return (OOCore_guid_t_from_string(wsz,&guid) != 0);
 }
 
-OOCORE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const Omega::string_t&,str,(out),Omega::guid_t&,guid));
 inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 {
-	return (OOCore_guid_t_from_string(str,guid) != 0);
+	return (str.Length() == 38 && FromString(str.c_wstr(),guid));
+}
+
+inline Omega::guid_t::guid_t(const wchar_t* sz)
+{
+	if (!guid_t::FromString(sz,*this))
+		throw Formatting::IFormattingException::Create(string_t(L"{0} is not an Omega::guid_t string representation") % sz);
 }
 
 inline Omega::guid_t::guid_t(const string_t& str)

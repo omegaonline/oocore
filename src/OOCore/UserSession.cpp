@@ -287,7 +287,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (std::nothrow) Compartment(this);
 	if (!ptrZeroCompt)
-		OMEGA_THROW("Out of memory");
+		OMEGA_THROW_NOMEM();
 	else
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -853,7 +853,7 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::wait_for_response(uint3
 			{
 				response = new (std::nothrow) OOBase::CDRStream(msg->m_payload);
 				if (!response)
-					OMEGA_THROW("Out of memory");
+					OMEGA_THROW_NOMEM();
 
 				break;
 			}
@@ -1181,7 +1181,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	// Create the new object
 	OOBase::SmartPtr<Compartment> ptrCompt = new (std::nothrow) Compartment(this);
 	if (!ptrCompt)
-		OMEGA_THROW("Out of memory");
+		OMEGA_THROW_NOMEM();
 
 	// Create a new Compartment object
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);

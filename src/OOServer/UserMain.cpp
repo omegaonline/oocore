@@ -23,6 +23,7 @@
 #include "UserManager.h"
 
 #include <signal.h>
+#include <stdio.h>
 
 #ifdef HAVE_VLD_H
 #include <vld.h>

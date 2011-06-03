@@ -132,8 +132,6 @@ namespace
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**,phandle))
 {
-	printf("OOCore_mod_destruct__ctor %p\n",*phandle);
-
 	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)0xf);
 	if (!pCur)
 	{
@@ -143,7 +141,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**
 
 		new (p) mod_destruct_t();
 
-		*phandle = p;		
+		*phandle = p;
 	}
 
 	while (pCur == (void*)1)
@@ -151,8 +149,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**
 		OOBase::Thread::yield();
 		pCur = *phandle;
 	}
-
-	printf("OOCore_mod_destruct__ctor now %p\n",*phandle);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*,handle))

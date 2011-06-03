@@ -111,8 +111,6 @@ inline void* Omega::Threading::ModuleDestructor<DLL>::handle()
 
 		~auto_destructor()
 		{
-			printf("Boom!\n");
-
 			OOCore_mod_destruct__dctor(m_h);
 		}
 

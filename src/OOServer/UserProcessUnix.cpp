@@ -62,37 +62,34 @@ User::Process* User::Process::exec(const wchar_t* pszExeName)
 
 void UserProcessUnix::exec(const wchar_t* pszExeName)
 {
-	char szBuf[512] = {0};
-	char* pszBuf = szBuf;
-	size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
-	if (clen >= sizeof(szBuf))
-	{
-		pszBuf = static_cast<char*>(OOBase::LocalAllocate(clen));
-		if (!pszBuf)
-			OMEGA_THROW_NOMEM();
-
-		OOBase::to_native(pszBuf,clen,pszExeName,size_t(-1));
-	}
-	else
-		szBuf[clen] = '\0';
-
 	pid_t pid = fork();
 	if (pid < 0)
-	{
-		int err = errno;
+		OMEGA_THROW(errno);
 
-		if (pszBuf != szBuf)
-			OOBase::LocalFree(pszBuf);
-
-		OMEGA_THROW(err);
-	}
-	else if (pid == 0)
+	if (pid == 0)
 	{
 		// We are the child
 
 		// Check whether we need to control signals here...
 		// Not sure what we should do about stdin/out/err
 		void* POSIX_TODO;
+
+		char szBuf[512] = {0};
+		char* pszBuf = szBuf;
+		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
+		if (clen >= sizeof(szBuf))
+		{
+			pszBuf = static_cast<char*>(malloc(clen));
+			if (!pszBuf)
+			{
+				fputs("Out of memory\n",stderr);
+				_exit(127);
+			}
+
+			OOBase::to_native(pszBuf,clen,pszExeName,size_t(-1));
+		}
+		else
+			szBuf[clen] = '\0';
 
 		const char* debug = getenv("OMEGA_DEBUG");
 		const char* display = getenv("DISPLAY");
@@ -103,9 +100,6 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 
 		_exit(127);
 	}
-
-	if (pszBuf != szBuf)
-		OOBase::LocalFree(pszBuf);
 
 	m_pid = pid;
 }

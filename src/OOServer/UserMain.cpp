@@ -118,7 +118,8 @@ int main(int argc, char* argv[])
 		if (!args.find("launch-session",strPipe))
 		{
 			// Ooops...
-			LOG_ERROR_RETURN((APPNAME " - Invalid or missing arguments."),EXIT_FAILURE);
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
+			return EXIT_FAILURE;
 		}
 	}
 

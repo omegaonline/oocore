@@ -2,8 +2,14 @@ include $(top_srcdir)/m4/ltrc.inc
 
 AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
 AM_CFLAGS = $(PTHREAD_CFLAGS)
-AM_CXXFLAGS = $(PTHREAD_CFLAGS)
+AM_CXXFLAGS = $(PTHREAD_CFLAGS) -Winvalid-pch
 AM_LDFLAGS = $(PTHREAD_LIBS)
+
+BUILT_SOURCES = OOCore_precomp.h.gch
+CLEANFILES = $(srcdir)/OOCore_precomp.h.gch
+
+OOCore_precomp.h.gch: OOCore_precomp.h
+	$(CXXCOMPILE) -fPIC -DPIC -c $<
 
 common = \
 	md5.c \
@@ -55,7 +61,7 @@ else
 
 lib_LTLIBRARIES = liboocore.la
 
-liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la $(UUID_LIBS) 
+liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la $(UUID_LIBS)
 liboocore_la_LDFLAGS = -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \

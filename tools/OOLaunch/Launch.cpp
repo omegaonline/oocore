@@ -19,6 +19,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <iostream>
+#include <sstream>
+
+#include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -184,26 +188,26 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("exit-with-session");
 
 	// Parse command line
-	std::map<std::string,std::string> args;
-	if (!cmd_args.parse(argc,argv,args))
+	OOSvrBase::CmdArgs::results_t args;
+	if (cmd_args.parse(argc,argv,args) != 0)
 		return EXIT_FAILURE;
 
-	if (args.find("help") != args.end())
+	if (args.find("help") != args.npos)
 		return Help();
 
-	if (args.find("version") != args.end())
+	if (args.find("version") != args.npos)
 		return Version();
 
-	if (args.find("csh-syntax") != args.end() && args.find("sh-syntax") != args.end())
+	if (args.find("csh-syntax") != args.npos && args.find("sh-syntax") != args.npos)
 	{
 		std::cerr << "Either --sh-syntax or --csh-syntax allowed" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	bool bCsh = false;
-	if (args.find("csh-syntax") != args.end())
+	if (args.find("csh-syntax") != args.npos)
 		bCsh = true;
-	else if (args.find("sh-syntax") != args.end())
+	else if (args.find("sh-syntax") != args.npos)
 		bCsh = false;
 	else
 	{
@@ -213,7 +217,7 @@ int main(int argc, char* argv[])
 			bCsh = true;
 	}
 
-	bool bExit = (args.find("exit-with-session") != args.end());
+	bool bExit = (args.find("exit-with-session") != args.npos);
 
 	// Now do the fork and exec dance...
 	int p = run_oosvruser();
@@ -290,7 +294,7 @@ int main(int argc, char* argv[])
 namespace OOBase
 {
 	// This is the critical failure hook
-	void CriticalFailure(const char* msg)
+	void OnCriticalFailure(const char* msg)
 	{
 		std::cerr << msg << std::endl << std::endl;
 		abort();

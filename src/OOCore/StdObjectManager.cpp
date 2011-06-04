@@ -551,7 +551,7 @@ void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParam
 	// Get the type info
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
 	ptrII.Attach(OOCore::GetInterfaceInfo(iid));
-
+	
 	// Write it out and return
 	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),ptrII);
 }

@@ -36,6 +36,7 @@
 #include "RootManager.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef HAVE_VLD_H
 #include <vld.h>
@@ -109,7 +110,7 @@ namespace
 
 		printf("\nCompiler: %s\n",OMEGA_COMPILER_STRING);
 		printf("\nSQLite library version: %s, built with %s headers\n",sqlite3_libversion(),sqlite3_version);
-		
+
 		return EXIT_SUCCESS;
 	}
 }

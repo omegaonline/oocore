@@ -40,6 +40,8 @@
 #include <signal.h>
 #endif
 
+#include <stdlib.h>
+
 /*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
     // Make sure the file is owned by root (0)

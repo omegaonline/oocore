@@ -24,6 +24,7 @@
 
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef HAVE_VLD_H
 #include <vld.h>

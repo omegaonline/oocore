@@ -40,6 +40,7 @@
 #include <grp.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include <sys/stat.h>
 #include <sys/wait.h>

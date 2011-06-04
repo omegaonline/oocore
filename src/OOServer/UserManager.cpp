@@ -24,6 +24,8 @@
 #include "InterProcessService.h"
 #include "Channel.h"
 
+#include <stdlib.h>
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP

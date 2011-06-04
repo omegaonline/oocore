@@ -25,6 +25,7 @@
 #if defined(HAVE_UNISTD_H)
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/wait.h>
 
 namespace

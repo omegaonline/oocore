@@ -45,36 +45,20 @@ namespace Omega
 		guid_t(const guid_base_t& rhs = guid_t::Null()) : guid_base_t(rhs)
 		{}
 
+		guid_t(const wchar_t* wsz);
 		guid_t(const string_t& str);
 
-		bool operator == (const guid_t& rhs) const
-		{
-			return Compare(rhs) == 0;
-		}
-		bool operator != (const guid_t& rhs) const
-		{
-			return Compare(rhs) != 0;
-		}
-		bool operator < (const guid_t& rhs) const
-		{
-			return Compare(rhs) < 0;
-		}
-		bool operator <= (const guid_t& rhs) const
-		{
-			return Compare(rhs) <= 0;
-		}
-		bool operator > (const guid_t& rhs) const
-		{
-			return Compare(rhs) > 0;
-		}
-		bool operator >= (const guid_t& rhs) const
-		{
-			return Compare(rhs) >= 0;
-		}
+		bool operator == (const guid_t& rhs) const { return Compare(rhs) == 0; }
+		bool operator != (const guid_t& rhs) const { return Compare(rhs) != 0; }
+		bool operator < (const guid_t& rhs) const { return Compare(rhs) < 0; }
+		bool operator <= (const guid_t& rhs) const { return Compare(rhs) <= 0; }
+		bool operator > (const guid_t& rhs) const { return Compare(rhs) > 0; }
+		bool operator >= (const guid_t& rhs) const { return Compare(rhs) >= 0; }
 		int Compare(const guid_t& rhs) const;
 
 		static guid_t Create();
 
+		static bool FromString(const wchar_t* wsz, guid_t& guid);
 		static bool FromString(const string_t& str, guid_t& guid);
 
 		static const guid_t& Null()

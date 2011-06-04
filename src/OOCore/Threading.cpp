@@ -130,13 +130,17 @@ namespace
 	};
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_mod_destruct__ctor,0,())
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**,phandle))
 {
-	mod_destruct_t* h = new (std::nothrow) mod_destruct_t();
-	if (!h)
-		OMEGA_THROW_NOMEM();
+	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
+	if (!pCur)
+		*phandle = new (OOBase::critical) mod_destruct_t();
 
-	return h;
+	while (pCur == (void*)1)
+	{
+		OOBase::Thread::yield();
+		pCur = *phandle;
+	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*,handle))
@@ -165,6 +169,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 			guard.acquire();
 		}
 	}
+
+	delete h;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))

@@ -677,26 +677,15 @@ namespace Omega
 
 			struct qi_rtti_holder
 			{
-				qi_rtti_holder();
-				~qi_rtti_holder();
-
-				const qi_rtti* get_rtti_info(const guid_base_t* iid);
-				void register_rtti_info(const guid_base_t* iid, const qi_rtti* pRtti);
-
-			private:
-				void* m_handle;
+				static void* handle();
+				
+			private:				
+				static const System::Internal::SafeShim* OMEGA_CALL init(void**);
+				static void destroy(void*);
 			};
-			typedef Threading::Singleton<qi_rtti_holder,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > RTTI_HOLDER;
-
-			static const qi_rtti* get_qi_rtti_info(const guid_t& iid)
-			{
-				return RTTI_HOLDER::instance()->get_rtti_info(&iid);
-			}
-
-			static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
-			{
-				RTTI_HOLDER::instance()->register_rtti_info(&iid,pRtti);
-			}
+			
+			static const qi_rtti* get_qi_rtti_info(const guid_t& iid);
+			static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti);
 
 			template <typename I> struct vtable_info;
 

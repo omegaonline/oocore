@@ -215,9 +215,12 @@ namespace
 
 		case TypeInfo::typeObject:
 			{
+				string_t strIID = string_t(L"Unknown interface {0}") % guid_t(*(const guid_base_t*)(th->next)).ToString();
 				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF;
 				ptrIF.Attach(OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next)));
-				return ptrIF->GetName();
+				if (ptrIF)
+					strIID = ptrIF->GetName();
+				return strIID;
 			}
 
 		case TypeInfo::typeSTLVector:
@@ -447,7 +450,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 		return ptrTI.AddRef();
 	}
 
-	throw INoInterfaceException::Create(iid);
+	return NULL;
 }
 
 TypeInfo::IInterfaceInfo* OOCore::GetInterfaceInfo(const guid_t& iid)

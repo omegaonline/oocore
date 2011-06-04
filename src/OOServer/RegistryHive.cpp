@@ -199,7 +199,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 	err = ptrStmt->step();
 	if (err == SQLITE_DONE)
-		uKey = sqlite3_last_insert_rowid(m_db->database());
+		uKey = m_db->last_insert_rowid();
 
 	return err;
 }
@@ -232,10 +232,6 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, con
 	if (flags == 2 /*CreateNew*/ && err != ENOENT)
 		return (err == 0 ? EEXIST : err);
 
-	// Start inserting
-	OOBase::SmartPtr<OOSvrBase::Db::Transaction> ptrTrans;
-
-	// Need to add more...
 	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
@@ -252,6 +248,7 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, con
 	}
 
 	// Start a transaction..
+	OOBase::SmartPtr<OOSvrBase::Db::Transaction> ptrTrans;
 	if (m_db->begin_transaction(ptrTrans) != SQLITE_OK)
 		return EIO;
 

@@ -95,6 +95,8 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 		return false;
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -126,6 +128,8 @@ bool_t Key::IsValue(const string_t& strName)
 		return false;
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -157,6 +161,8 @@ any_t Key::GetValue(const string_t& strName)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -193,6 +199,8 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -218,6 +226,8 @@ string_t Key::GetDescription()
 		NotFoundException::Throw(GetName());
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -253,6 +263,8 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -286,6 +298,8 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 		NotFoundException::Throw(GetName());
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -314,6 +328,8 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 		NotFoundException::Throw(strValue);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -418,6 +434,8 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 		AlreadyExistsException::Throw(GetName() + strSubKey);
 	else if (err==ENOENT)
 		NotFoundException::Throw(GetName() + strSubKey);
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -453,6 +471,8 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 		AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
 		NotFoundException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -506,6 +526,8 @@ std::set<Omega::string_t> Key::EnumValues()
 		AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
 		NotFoundException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -571,6 +593,8 @@ void Key::DeleteKey(const string_t& strSubKey)
 		NotFoundException::Throw(GetName() + strSubKey);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName() + strSubKey);
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -600,6 +624,8 @@ void Key::DeleteValue(const string_t& strName)
 		NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }

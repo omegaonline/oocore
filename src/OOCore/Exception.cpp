@@ -99,7 +99,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
-	string_t strIID(L"Unknown");
+	string_t strIID = string_t(L"Unknown interface {0}") % iid.ToString();
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
 	ptrII.Attach(OOCore::GetInterfaceInfo(iid));

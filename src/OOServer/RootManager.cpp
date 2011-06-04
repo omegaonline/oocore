@@ -39,6 +39,7 @@
 #include "Protocol.h"
 
 #include <signal.h>
+#include <stdio.h>
 
 namespace
 {

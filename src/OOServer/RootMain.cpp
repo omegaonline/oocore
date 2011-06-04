@@ -35,6 +35,8 @@
 
 #include "RootManager.h"
 
+#include <stdio.h>
+
 #ifdef HAVE_VLD_H
 #include <vld.h>
 #endif

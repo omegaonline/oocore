@@ -22,28 +22,44 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_qi_rtti_holder__ctor,0,());
-inline Omega::System::Internal::qi_rtti_holder::qi_rtti_holder() : m_handle(NULL)
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder__ctor,2,((in),void**,phandle,(in),Omega::Threading::SingletonCallback,pfn_init));
+inline void* Omega::System::Internal::qi_rtti_holder::handle()
 {
-	m_handle = OOCore_qi_rtti_holder__ctor();
+	static void* s_handle = NULL;
+	OOCore_qi_rtti_holder__ctor(&s_handle,&init);
+	return s_handle;
+}
+
+inline const Omega::System::Internal::SafeShim* OMEGA_CALL Omega::System::Internal::qi_rtti_holder::init(void** param)
+{
+	const SafeShim* except = NULL;
+	try
+	{
+		Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)>::add_destructor(destroy,*param);
+	}
+	catch (IException* pE)
+	{
+		except = return_safe_exception(pE);
+	}
+	return except;
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder__dctor,1,((in),void*,handle));
-inline Omega::System::Internal::qi_rtti_holder::~qi_rtti_holder()
+inline void Omega::System::Internal::qi_rtti_holder::destroy(void* param)
 {
-	OOCore_qi_rtti_holder__dctor(m_handle);
+	OOCore_qi_rtti_holder__dctor(param);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::qi_rtti*,OOCore_qi_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid));
-inline const Omega::System::Internal::qi_rtti* Omega::System::Internal::qi_rtti_holder::get_rtti_info(const Omega::guid_base_t* iid)
+inline const Omega::System::Internal::qi_rtti* Omega::System::Internal::get_qi_rtti_info(const Omega::guid_t& iid)
 {
-	return OOCore_qi_rtti_holder_find(m_handle,iid);
+	return OOCore_qi_rtti_holder_find(qi_rtti_holder::handle(),&iid);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::qi_rtti*,pRtti));
-inline void Omega::System::Internal::qi_rtti_holder::register_rtti_info(const Omega::guid_base_t* iid, const Omega::System::Internal::qi_rtti* pRtti)
+inline void Omega::System::Internal::register_rtti_info(const Omega::guid_t& iid, const Omega::System::Internal::qi_rtti* pRtti)
 {
-	OOCore_qi_rtti_holder_insert(m_handle,iid,pRtti);
+	OOCore_qi_rtti_holder_insert(qi_rtti_holder::handle(),&iid,pRtti);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_holder__ctor,0,());

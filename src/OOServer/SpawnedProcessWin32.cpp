@@ -459,7 +459,8 @@ namespace
 		}
 
 		// Try for the desktop
-		hDesktop = OpenDesktopW(L"default",0,FALSE,DESKTOP_CREATEWINDOW);
+		wchar_t szDesktop[] = L"default";
+		hDesktop = OpenDesktopW(szDesktop,0,FALSE,DESKTOP_CREATEWINDOW);
 		if (!hDesktop)
 		{
 			// See if just doesn't exist yet...

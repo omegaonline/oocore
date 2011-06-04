@@ -96,41 +96,49 @@ inline void Omega::Threading::ReaderWriterLock::Release()
 	OOCore_rw_lock_unlockwrite(m_handle);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_mod_destruct__ctor,0,());
-template <typename DLL>
-inline Omega::Threading::ModuleDestructor<DLL>::ModuleDestructor() : m_handle(static_cast<handle_t*>(OOCore_mod_destruct__ctor()))
-{
-}
-
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**,phandle));
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*,handle));
+
 template <typename DLL>
-inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
+inline void* Omega::Threading::ModuleDestructor<DLL>::handle()
 {
-	try
+	static void* s_handle = NULL;
+
+	static struct auto_destructor
 	{
-		OOCore_mod_destruct__dctor(m_handle);
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-	catch (...)
-	{}
+		auto_destructor(void*& h) : m_h(h)
+		{}
+
+		~auto_destructor()
+		{
+			OOCore_mod_destruct__dctor(m_h);
+		}
+
+		void*& m_h;
+
+	private:
+		auto_destructor(const auto_destructor& rhs) : m_h(rhs.m_h) {}
+		auto_destructor& operator = (const auto_destructor&) { return *this; }
+
+	} s_i(s_handle);
+	
+	OOCore_mod_destruct__ctor(&s_handle);
+	return s_handle;
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
 
 template <typename DLL>
-inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor_i(DestructorCallback pfn, void* param)
+inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor(DestructorCallback pfn, void* param)
 {
-	OOCore_mod_destruct_add(m_handle,pfn,param);
+	OOCore_mod_destruct_add(handle(),pfn,param);
 }
 
 template <typename DLL>
-inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor_i(DestructorCallback pfn, void* param)
+inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor(DestructorCallback pfn, void* param)
 {
-	OOCore_mod_destruct_remove(m_handle,pfn,param);
+	OOCore_mod_destruct_remove(handle(),pfn,param);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));

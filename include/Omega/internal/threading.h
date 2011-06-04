@@ -182,36 +182,17 @@ namespace Omega
 		class ModuleDestructor
 		{
 		public:
-			static void add_destructor(DestructorCallback pfn, void* param)
-			{
-				instance().add_destructor_i(pfn,param);
-			}
-
-			static void remove_destructor(DestructorCallback pfn, void* param)
-			{
-				instance().remove_destructor_i(pfn,param);
-			}
+			static void add_destructor(DestructorCallback pfn, void* param);
+			static void remove_destructor(DestructorCallback pfn, void* param);
 
 		private:
+			ModuleDestructor();
 			ModuleDestructor(const ModuleDestructor&);
 			ModuleDestructor& operator = (const ModuleDestructor&);
-
-			ModuleDestructor();
+			
 			~ModuleDestructor();
 
-			void add_destructor_i(DestructorCallback pfn, void* param);
-			void remove_destructor_i(DestructorCallback pfn, void* param);
-
-			struct handle_t
-			{
-				int unused;
-			}* m_handle;
-
-			static ModuleDestructor& instance()
-			{
-				static ModuleDestructor inst;
-				return inst;
-			}
+			static void* handle();
 		};
 
 		template <typename DLL>

@@ -649,32 +649,30 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 	return string_t(str.c_str(),false);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(in_out),guid_base_t*,result))
 {
-	const wchar_t* sz = str.c_wstr();
-
 	// Do this manually...
-	result.Data1 = 0;
-	result.Data2 = 0;
-	result.Data3 = 0;
-	memset(result.Data4,sizeof(result.Data4),0);
-
-	if (sz[0] != L'{' || !iswxdigit(sz[1]))
+	result->Data1 = 0;
+	result->Data2 = 0;
+	result->Data3 = 0;
+	memset(result->Data4,sizeof(result->Data4),0);
+	
+	if (!sz || sz[0] != L'{' || !iswxdigit(sz[1]))
 		return 0;
 
 	const wchar_t* endp = 0;
-	result.Data1 = OOCore::wcstou32(sz+1,endp,16);
+	result->Data1 = OOCore::wcstou32(sz+1,endp,16);
 	if (endp != sz+9)
 		return 0;
 
 	if (sz[9] != L'-' || !iswxdigit(sz[10]))
 		return 0;
 
-	result.Data2 = static_cast<uint16_t>(OOCore::wcstou32(sz+10,endp,16));
+	result->Data2 = static_cast<uint16_t>(OOCore::wcstou32(sz+10,endp,16));
 	if (endp != sz+14 || sz[14] != L'-' || !iswxdigit(sz[15]))
 		return 0;
 
-	result.Data3 = static_cast<uint16_t>(OOCore::wcstou32(sz+15,endp,16));
+	result->Data3 = static_cast<uint16_t>(OOCore::wcstou32(sz+15,endp,16));
 	if (endp != sz+19 || sz[19] != L'-' || !iswxdigit(sz[20]))
 		return 0;
 
@@ -682,8 +680,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const strin
 	if (endp != sz+24)
 		return 0;
 
-	result.Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
-	result.Data4[1] = static_cast<byte_t>(v1 & 0xFF);
+	result->Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
+	result->Data4[1] = static_cast<byte_t>(v1 & 0xFF);
 
 	if (sz[24] != L'-' || !iswxdigit(sz[25]))
 		return 0;
@@ -692,12 +690,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const strin
 	if (endp != sz+37)
 		return 0;
 
-	result.Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
-	result.Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
-	result.Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
-	result.Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
-	result.Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
-	result.Data4[7] = static_cast<byte_t>(v2 & 0xFF);
+	result->Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
+	result->Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
+	result->Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
+	result->Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
+	result->Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
+	result->Data4[7] = static_cast<byte_t>(v2 & 0xFF);
 
 	if (sz[37] != L'}' || sz[38] != L'\0')
 		return 0;

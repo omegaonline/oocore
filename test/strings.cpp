@@ -345,12 +345,12 @@ bool guid_tests()
 	TEST(guid == Omega::guid_t::Null());
 	TEST(guid.ToString() == L"{00000000-0000-0000-0000-000000000000}");
 
-	const wchar_t sz[] = L"{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
+	const wchar_t sz[] = L"{BCB02DAE-998A-4FC1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2(sz);
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
-
+	
 	TEST(guid2.ToString().Compare(sz,0,Omega::string_t::npos,true)==0);
 	TEST(Omega::guid_t::FromString(sz,guid2));
 
@@ -359,7 +359,7 @@ bool guid_tests()
 	for (size_t i=0; i<sizeof(arr)/sizeof(arr[0]); ++i)
 		arr[i] = Omega::guid_t::Create();
 
-	// Make sure they are unique!
+	// Make sure they are unique! (This might catch time based uuids )
 	bool bTest = true;
 	for (size_t j=0; j<sizeof(arr)/sizeof(arr[0]) && bTest; ++j)
 	{

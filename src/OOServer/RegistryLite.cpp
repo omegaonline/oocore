@@ -181,6 +181,8 @@ bool_t HiveKey::IsSubKey(const string_t& strSubKey)
 		return false;
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -196,6 +198,8 @@ bool_t HiveKey::IsValue(const string_t& strName)
 		return false;
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -212,6 +216,8 @@ any_t HiveKey::GetValue(const string_t& strName)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -227,6 +233,8 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -239,6 +247,8 @@ string_t HiveKey::GetDescription()
 		User::Registry::NotFoundException::Throw(GetName());
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -255,6 +265,8 @@ string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -268,6 +280,8 @@ void HiveKey::SetDescription(const Omega::string_t& strDesc)
 		User::Registry::NotFoundException::Throw(GetName());
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -279,6 +293,8 @@ void HiveKey::SetValueDescription(const Omega::string_t& strValue, const Omega::
 		User::Registry::NotFoundException::Throw(strValue);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -295,6 +311,8 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		User::Registry::AlreadyExistsException::Throw(GetName() + strSubKey);
 	else if (err==ENOENT)
 		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -312,6 +330,8 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
 		User::Registry::NotFoundException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -332,6 +352,8 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
 		User::Registry::NotFoundException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
@@ -353,6 +375,8 @@ void HiveKey::DeleteKey(const string_t& strSubKey)
 		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName() + strSubKey);
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -366,6 +390,8 @@ void HiveKey::DeleteValue(const string_t& strName)
 		User::Registry::NotFoundException::Throw(strName);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
+	else if (err==EIO)
+		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }

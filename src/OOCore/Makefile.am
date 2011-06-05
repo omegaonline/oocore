@@ -9,7 +9,7 @@ BUILT_SOURCES = OOCore_precomp.h.gch
 CLEANFILES = $(srcdir)/OOCore_precomp.h.gch
 
 OOCore_precomp.h.gch: OOCore_precomp.h
-	$(CXXCOMPILE) -fPIC -DPIC -c $<
+	$(AM_V_GEN)$(CXXCOMPILE) -fPIC -DPIC -c $<
 
 common = \
 	md5.c \

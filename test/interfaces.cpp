@@ -112,7 +112,7 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 		TEST(ptrSimpleTest->BoolNot1(true) == false);
 		TEST(ptrSimpleTest->BoolNot1(false) == true);
 
-		Omega::bool_t r;
+		Omega::bool_t r = true;
 		ptrSimpleTest->BoolNot2(true,r);
 		TEST(r == false);
 		ptrSimpleTest->BoolNot2(false,r);

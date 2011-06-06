@@ -36,10 +36,7 @@
 
 #if !defined(_WIN32)
 
-#if defined(HAVE_SIGNAL_H)
 #include <signal.h>
-#endif
-
 #include <stdlib.h>
 
 /*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)

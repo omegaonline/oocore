@@ -96,13 +96,13 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-#if defined(HAVE_UNISTD_H)
+#if !defined(_WIN32)
 	// Ignore SIGPIPE
-	if (signal(SIGPIPE,SIG_IGN) == SIG_ERR)
+	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text()));
 
 	// Ignore SIGCHLD
-	if (signal(SIGCHLD,SIG_IGN) == SIG_ERR)
+	if (::signal(SIGCHLD,SIG_IGN) == SIG_ERR)
 		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text()));
 #endif
 

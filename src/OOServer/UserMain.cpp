@@ -52,7 +52,7 @@ static int Version()
 #if defined(OMEGA_DEBUG)
 	printf(" (Debug build)");
 #endif
-	printf("\nCompiler: %s\n\n",OMEGA_COMPILER_STRING);
+	printf("\n\tCompiler: %s\n\n",OMEGA_COMPILER_STRING);
 
 	return EXIT_SUCCESS;
 }

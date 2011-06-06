@@ -1,19 +1,32 @@
 #!/bin/sh
 
 cd ../src/OOCore
-echo Starting ooserverd...
-
-# Kill any running ooserverd
 
 # This forces libtool to link the correct dlls under Win32...
-../OOServer/ooserverd --version > /dev/null
-../OOServer/oosvruser --version > /dev/null
+../OOServer/ooserverd --version
+../OOServer/oosvruser --version
 
-if test "$OMEGA_DEBUG" = "yes" && test -n "$DISPLAY"; then
-	xterm -e ../OOServer/ooserverd --unsafe --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
-else
-	../OOServer/ooserverd --unsafe --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
+server_launch="../OOServer/ooserverd"
+
+if test "x$OMEGA_DEBUG" = "xyes" && test -n "$TERM"; then
+	#Try to do something sensible with $TERM
+	case $TERM in
+		cygwin)
+			# Mingw needs a load of help here...
+			server_launch="$COMSPEC //Q //c start ../OOServer/.libs/ooserverd"
+			;;
+		*)
+			if test -n "$COLORTERM"; then
+				server_launch=$COLORTERM
+			else
+				server_launch=$TERM
+			fi
+			server_launch="$server_launch -e ../OOServer/ooserverd"
+			;;	
+	esac
 fi
+
+$server_launch --unsafe --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
 
 echo Giving ooserverd a chance to start...
 sleep 3s

@@ -108,8 +108,8 @@ namespace
 		printf(" (Debug build)");
 	#endif
 
-		printf("\nCompiler: %s\n",OMEGA_COMPILER_STRING);
-		printf("\nSQLite library version: %s, built with %s headers\n",sqlite3_libversion(),sqlite3_version);
+		printf("\n\tCompiler: %s\n",OMEGA_COMPILER_STRING);
+		printf("\tSQLite library version: %s, built with %s headers\n",sqlite3_libversion(),sqlite3_version);
 
 		return EXIT_SUCCESS;
 	}

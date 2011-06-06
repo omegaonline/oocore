@@ -36,6 +36,7 @@ oobase/
 *.lai
 lt-*.c
 *_ltshwrapper
+*.gch
 
 # Windows stuff
 OOServer_msgs.h

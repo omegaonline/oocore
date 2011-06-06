@@ -13,7 +13,7 @@ if test "x$OMEGA_DEBUG" = "xyes" && test -n "$TERM"; then
 	case $TERM in
 		cygwin)
 			# Mingw needs a load of help here...
-			server_launch="$COMSPEC //Q //c start ../OOServer/.libs/ooserverd"
+			server_launch="$COMSPEC //Q //c start ../OOServer/ooserverd.exe"
 			;;
 		*)
 			if test -n "$COLORTERM"; then

@@ -85,9 +85,20 @@ namespace Registry
 		OOBase::SmartPtr<OOSvrBase::Db::Database> m_db;
 
 		// Stashed prepared statements...
-		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrCheckKey_Stmt;
-		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrGetKeyInfo_Stmt;
-		OOBase::SmartPtr<OOSvrBase::Db::Statement> m_ptrGetValue_Stmt;
+		OOSvrBase::Db::Statement m_InsertKey_Stmt;
+		OOSvrBase::Db::Statement m_InsertValue_Stmt;
+		OOSvrBase::Db::Statement m_UpdateValue_Stmt;
+		OOSvrBase::Db::Statement m_UpdateDesc_Stmt;
+		OOSvrBase::Db::Statement m_UpdateValueDesc_Stmt;
+		OOSvrBase::Db::Statement m_CheckKey_Stmt;
+		OOSvrBase::Db::Statement m_GetKeyInfo_Stmt;
+		OOSvrBase::Db::Statement m_EnumKeyIds_Stmt;
+		OOSvrBase::Db::Statement m_EnumKeys_Stmt;
+		OOSvrBase::Db::Statement m_EnumValues_Stmt;
+		OOSvrBase::Db::Statement m_GetValue_Stmt;
+		OOSvrBase::Db::Statement m_DeleteKeys_Stmt;
+		OOSvrBase::Db::Statement m_DeleteKey_Stmt;
+		OOSvrBase::Db::Statement m_DeleteValue_Stmt;
 
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
@@ -98,6 +109,7 @@ namespace Registry
 		int check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
 		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
 		int value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
+		bool prepare_statement(OOSvrBase::Db::Statement& stmt, const char* pszSql);
 	};
 
 	class Manager

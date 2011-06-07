@@ -376,7 +376,7 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::uint32_t len = 0;
+	uint32_t len = 0;
 	if (!stream.read(len))
 		OMEGA_THROW(stream.last_error());
 
@@ -495,7 +495,7 @@ void OOCore::UserSession::close_compartments()
 	}
 }
 
-Omega::uint32_t OOCore::UserSession::get_channel_id() const
+uint32_t OOCore::UserSession::get_channel_id() const
 {
 	return m_channel_id;
 }
@@ -681,10 +681,7 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(msg->m_src_channel_id))
 					err = response.last_error();
 				else
-				{
-					void* TODO; // send_response can throw!
-					send_response(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
-				}
+					send_response_catch(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
 			}
 			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
 			{
@@ -699,10 +696,7 @@ int OOCore::UserSession::run_read_loop()
 				if (!response.write(res))
 					err = response.last_error();
 				else
-				{
-					void* TODO; // send_response can throw!
-					send_response(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
-				}
+					send_response_catch(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
 			}
 		}
 		else if (msg->m_dest_thread_id != 0)
@@ -899,7 +893,7 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	Omega::uint16_t id = 0;
+	uint16_t id = 0;
 	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFF);
 	if (err != 0)
 		OMEGA_THROW(err);
@@ -971,12 +965,25 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t d
 
 	if (attribs & TypeInfo::Asynchronous)
 		return 0;
-	else
-		// Wait for response...
-		return wait_for_response(seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+	
+	// Wait for response...
+	return wait_for_response(seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
 }
 
-void OOCore::UserSession::send_response(Omega::uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+{
+	try
+	{
+		send_response(src_cmpt_id,seq_no,dest_channel_id,dest_thread_id,response,deadline,attribs);
+	}
+	catch (IException* pE)
+	{
+		// Just ignore the error
+		pE->Release();
+	}
+}
+
+void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -1084,7 +1091,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	// Set per channel thread id
 	uint16_t old_thread_id = 0;
 
-	Omega::uint16_t* v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
+	uint16_t* v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
 	if (v)
 	{
 		old_thread_id = *v;
@@ -1158,8 +1165,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_
 
 		return ptrIPS->HandleRequest(timeout);
 	}
-	else
-		return OOCore::UserSession::handle_request(timeout);
+	
+	return OOCore::UserSession::handle_request(timeout);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))

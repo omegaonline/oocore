@@ -34,7 +34,7 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/Memory.h>
+#include <OOBase/CustomNew.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>

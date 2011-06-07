@@ -33,7 +33,7 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/Memory.h>
+#include <OOBase/CustomNew.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>

@@ -259,7 +259,7 @@ namespace
 					OMEGA_THROW(strErr.c_nstr());
 				}
 
-				void* TICKET_89; // Surrogates here?!?
+				void* ISSUE_8; // Surrogates here?!?
 
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
@@ -334,7 +334,7 @@ namespace
 		if (pObject)
 			return pObject;
 
-		void* TODO; // Allow injection of callback
+		void* TICKET_10; // Allow injection of callback
 
 		// See if we are allowed to load...
 		if (!(flags & Activation::DontLaunch))

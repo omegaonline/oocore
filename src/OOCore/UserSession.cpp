@@ -300,7 +300,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	}
 
 	// Remove standalone support eventually...
-	void* TODO;
+	void* TICKET_4;
 
 	ObjectPtr<IInterProcessService> ptrIPS;
 	if (!bStandalone)
@@ -567,7 +567,7 @@ void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 	if (usage == 0)
 	{
 		// This incoming request may not be processed for some time...
-		void* TICKET_91;    // Alert!
+		void* ISSUE_9;    // Alert!
 	}
 }
 

@@ -160,9 +160,9 @@ int main(int argc, char* argv[])
 namespace OOBase
 {
 	// This is the critical failure hook
-	void OnCriticalFailure(const char* msg)
+	bool OnCriticalFailure(const char* msg)
 	{
-		fprintf(stdout,"%s\n\n",msg);
-		abort();
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+		return true;
 	}
 }

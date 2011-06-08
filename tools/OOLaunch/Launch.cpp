@@ -290,13 +290,3 @@ int main(int argc, char* argv[])
 
 	return EXIT_SUCCESS;
 }
-
-namespace OOBase
-{
-	// This is the critical failure hook
-	void OnCriticalFailure(const char* msg)
-	{
-		std::cerr << msg << std::endl << std::endl;
-		abort();
-	}
-}

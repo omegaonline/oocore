@@ -91,6 +91,16 @@ int main(int argc, char* argv[])
 	return Root::Manager().run(args);
 }
 
+namespace OOBase
+{
+	// This is the critical failure hook
+	bool OnCriticalFailure(const char* msg)
+	{
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+		return true;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last because we includes a lot of headers, which might be dangerous!
 

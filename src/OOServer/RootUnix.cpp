@@ -64,16 +64,4 @@ bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
 	return load_config_file(strFile.empty() ? "/etc/omegaonline.conf" : strFile.c_str());
 }
 
-namespace OOBase
-{
-	// This is the critical failure hook
-	void OnCriticalFailure(const char* msg)
-	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
-
-		// Die horribly now!
-		abort();
-	}
-}
-
 #endif

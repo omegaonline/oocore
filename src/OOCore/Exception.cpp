@@ -37,15 +37,6 @@ OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
 OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
 
-namespace OOBase
-{
-	// This is the critical failure hook
-	void OnCriticalFailure(const char* msg)
-	{
-		throw OOCore_IInternalException_Create(msg,"OOCore Critical Failure",size_t(-1),0);
-	}
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),IException*,pCause))
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();

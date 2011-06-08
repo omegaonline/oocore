@@ -38,15 +38,6 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD /*reason*/, LPVOID /*l
 
 #endif
 
-namespace OOBase
-{
-	// This is the critical failure hook
-	void OnCriticalFailure(const char* msg)
-	{
-		throw IInternalException::Create(msg,"Critical Failure");
-	}
-}
-
 void InterProcessService::Load(const string_t& str)
 {
 	// Split out individual args

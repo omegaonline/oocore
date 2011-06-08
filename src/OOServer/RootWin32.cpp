@@ -272,17 +272,4 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	}
 }
 
-namespace OOBase
-{
-	// This is the critical failure hook
-	void OnCriticalFailure(const char* msg)
-	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
-
-		// Die horribly now!
-		abort();
-		TerminateProcess(GetCurrentProcess(),EXIT_FAILURE);
-	}
-}
-
 #endif // _WIN32

@@ -10,7 +10,6 @@ AC_DEFUN([OO_MULTI_THREAD],
 
     case $host_os in
       *mingw*)
-	    PTHREAD_LIBS=-mthreads
 	    PTHREAD_CFLAGS=-mthreads
         AC_SUBST(PTHREAD_LIBS)
         AC_SUBST(PTHREAD_CFLAGS)

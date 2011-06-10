@@ -149,7 +149,7 @@ namespace
 		{
 			BuildTypeDetail(td,th->next);
 		}
-		else
+		else if (th->type != TypeInfo::typeVoid)
 		{
 			// Add terminating void if not already written...
 			td->WriteValue(L"type",TypeInfo::Type_t(TypeInfo::typeVoid));

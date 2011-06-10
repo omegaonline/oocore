@@ -67,6 +67,7 @@ ooserverd_SOURCES = \
 
 if WIN32
 ooserverd_SOURCES += OOServer.rc
+ooserverd_LDADD += -lshlwapi
 endif
 
 libexec_PROGRAMS = oosvruser

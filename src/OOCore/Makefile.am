@@ -9,7 +9,7 @@ BUILT_SOURCES = OOCore_precomp.h.gch
 CLEANFILES = $(srcdir)/OOCore_precomp.h.gch
 
 OOCore_precomp.h.gch: OOCore_precomp.h
-	$(AM_V_GEN)$(CXXCOMPILE) -fPIC -DPIC -c $<
+	$(AM_V_GEN)$(CXXCOMPILE) @lt_cv_prog_compiler_pic_CXX@ -c $<
 
 common = \
 	md5.c \
@@ -45,7 +45,7 @@ common = \
 	WireProxy.h \
 	WireStub.cpp \
 	WireStub.h
-
+	
 if WIN32
 
 lib_LTLIBRARIES = OOCore.la

@@ -16,8 +16,8 @@ AC_CONFIG_FILES([
 	src/OOServer/Makefile
 	data/Makefile
 	tools/Makefile
-	tools/OOReg/Makefile
 	tools/OOLaunch/Makefile
+	tools/OOReg/Makefile
 	test/Makefile
 	test/TestLibrary/Makefile
 	test/TestProcess/Makefile
@@ -85,6 +85,8 @@ AS_IF([test "x$oo_test_CFLAGS" != "xset"],
   [
     AX_CFLAGS_GCC_OPTION([-march=i686])
     AX_CFLAGS_GCC_OPTION([-mtune=native])
+	
+	AX_CFLAGS_GCC_OPTION([-static-libgcc])	
   ])
 ])
 
@@ -96,6 +98,7 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
 
   # Always try to hide symbols
   AX_CXXFLAGS_GCC_OPTION([-fvisibility=hidden])
+  AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
   
   AS_IF([test "x$debug" = "xtrue"],
   [
@@ -103,7 +106,6 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
   	AX_CXXFLAGS_GCC_OPTION([-O0])
   ],
   [
-    AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
     AX_CXXFLAGS_GCC_OPTION([-O2])
   ])
   
@@ -113,6 +115,9 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
   [
     AX_CXXFLAGS_GCC_OPTION([-march=i686])
     AX_CXXFLAGS_GCC_OPTION([-mtune=native])
+	
+	AX_CXXFLAGS_GCC_OPTION([-static-libgcc])
+	AX_CXXFLAGS_GCC_OPTION([-static-libstdc++])
   ])
 ])
 
@@ -124,6 +129,8 @@ m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])
 LT_PREREQ([2.2.6])
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
+
+AC_SUBST([lt_cv_prog_compiler_pic_CXX])
 
 AC_PATH_PROG([SQLITE3],[sqlite3],[AC_MSG_ERROR([Need sqlite3 command])])
 

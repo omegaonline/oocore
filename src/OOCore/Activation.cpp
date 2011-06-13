@@ -36,10 +36,10 @@
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
+	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl)

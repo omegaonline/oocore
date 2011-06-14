@@ -148,8 +148,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		guard.release();
 
 		// Revoke the revoke_list
-		uint32_t i = 0;
-		while (revoke_list.pop(&i))
+		for (uint32_t i = 0;revoke_list.pop(&i);)
 			RevokeObject_i(i,0);
 
 		return nCookie;
@@ -208,8 +207,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	guard.release();
 
 	// Revoke the revoke_list
-	uint32_t i = 0;
-	while (revoke_list.pop(&i))
+	for (uint32_t i = 0;revoke_list.pop(&i);)
 		RevokeObject_i(i,0);
 
 	// If we have an object, get out now

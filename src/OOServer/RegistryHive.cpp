@@ -357,8 +357,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	
 	if (!ids.empty())
 	{
-		Omega::int64_t id;
-		while (ids.pop(&id))
+		for (Omega::int64_t id;ids.pop(&id);)
 		{
 			int res = delete_key_i(id,channel_id);
 			if (res != 0)

@@ -113,8 +113,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 				LOG_ERROR(("Failed to enum subkeys of /System/Services key: %d",err));
 			else
 			{
-				OOBase::String i;
-				while (setSubKeys.pop(&i))
+				for (OOBase::String i;setSubKeys.pop(&i);)
 				{
 					// Open the subkey
 					Omega::int64_t uSubKey = 0;

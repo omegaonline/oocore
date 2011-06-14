@@ -337,8 +337,7 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 
 	std::set<Omega::string_t> setOutSubKeys;
 
-	OOBase::String i;
-	while (setSubKeys.pop(&i))
+	for (OOBase::String i;setSubKeys.pop(&i);)
 		setOutSubKeys.insert(string_t(i.c_str(),true));
 
 	return setOutSubKeys;
@@ -359,8 +358,7 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 
 	std::set<Omega::string_t> setOutValues;
 
-	OOBase::String i;
-	while (setValues.pop(&i))
+	for (OOBase::String i;setValues.pop(&i);)
 		setOutValues.insert(string_t(i.c_str(),true));
 
 	return setOutValues;

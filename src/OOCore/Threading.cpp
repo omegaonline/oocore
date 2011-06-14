@@ -150,8 +150,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
 
-		destruct_entry_t e;
-		while (h->m_list.pop(&e))
+		for (destruct_entry_t e;h->m_list.pop(&e);)
 		{
 			guard.release();
 

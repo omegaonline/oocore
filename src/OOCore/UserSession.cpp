@@ -448,8 +448,7 @@ void OOCore::UserSession::close_singletons_i()
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	Uninit uninit;
-	while (m_listUninitCalls.pop(&uninit))
+	for (Uninit uninit;m_listUninitCalls.pop(&uninit);)
 	{
 		guard.release();
 
@@ -481,8 +480,7 @@ void OOCore::UserSession::close_compartments()
 
 	guard.release();
 
-	OOBase::SmartPtr<Compartment> ptrCmpt;
-	while (vecCompts.pop(&ptrCmpt))
+	for (OOBase::SmartPtr<Compartment> ptrCmpt;vecCompts.pop(&ptrCmpt);)
 	{
 		try
 		{

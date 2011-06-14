@@ -484,8 +484,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 		{
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			Omega::uint32_t i = 0;
-			while (vecDead.pop(&i))
+			for (Omega::uint32_t i = 0;vecDead.pop(&i);)
 				m_mapUserProcesses.erase(i);
 		}
 

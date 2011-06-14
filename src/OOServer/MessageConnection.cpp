@@ -726,8 +726,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 
 		guard.release();
 
-		Omega::uint32_t i = 0;
-		while (send_to.pop(&i))
+		for (Omega::uint32_t i = 0;send_to.pop(&i);)
 			send_channel_close(i,channel_id);
 				
 		// Inform derived classes that the channel has gone...

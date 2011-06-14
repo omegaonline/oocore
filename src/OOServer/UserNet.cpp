@@ -841,8 +841,7 @@ void User::Manager::local_channel_closed(OOBase::Stack<uint32_t,OOBase::LocalAll
 	// Local channels have closed
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
-	uint32_t j = 0;
-	while (channels.pop(&j))
+	for (uint32_t j = 0;channels.pop(&j);)
 	{
 		for (size_t i=m_mapRemoteChannelIds.begin(); i!=m_mapRemoteChannelIds.npos;i=m_mapRemoteChannelIds.next(i))
 		{

@@ -204,8 +204,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		guard.release();
 
 		// Revoke the revoke_list
-		uint32_t i = 0;
-		while (revoke_list.pop(&i))
+		for (uint32_t i = 0;revoke_list.pop(&i);)
 			RevokeObject(i);
 
 		// This forces the detection, so cleanup succeeds
@@ -267,8 +266,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	guard.release();
 
 	// Revoke the revoke_list
-	uint32_t i = 0;
-	while (revoke_list.pop(&i))
+	for (uint32_t i = 0;revoke_list.pop(&i);)
 		RevokeObject(i);
 
 	// If we have an object, get out now

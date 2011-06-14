@@ -272,8 +272,7 @@ TypeInfoImpl::TypeInfoImpl() :
 
 TypeInfoImpl::~TypeInfoImpl()
 {
-	MethodInfo mi;
-	while (m_methods.pop(&mi))
+	for (MethodInfo mi;m_methods.pop(&mi);)
 		delete mi.params;
 }
 

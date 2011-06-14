@@ -300,7 +300,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	}
 
 	// Remove standalone support eventually...
-	void* TICKET_4;
+	void* ISSUE_4;
 
 	ObjectPtr<IInterProcessService> ptrIPS;
 	if (!bStandalone)

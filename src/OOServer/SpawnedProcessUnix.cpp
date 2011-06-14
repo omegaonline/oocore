@@ -379,7 +379,7 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-	void* TICKET_11;
+	void* ISSUE_11;
 
 	return true;
 }

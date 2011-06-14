@@ -968,7 +968,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
 
 		// Secure the file if (strUsersDir.empty())
-		void* TICKET_11;
+		void* ISSUE_11;
 	}
 
 	return true;

@@ -334,7 +334,7 @@ namespace
 		if (pObject)
 			return pObject;
 
-		void* TICKET_10; // Allow injection of callback
+		void* ISSUE_10; // Allow injection of callback
 
 		// See if we are allowed to load...
 		if (!(flags & Activation::DontLaunch))

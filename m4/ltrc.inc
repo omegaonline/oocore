@@ -12,7 +12,7 @@ RCCOMPILE = $(RC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 LTRCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=RC --mode=compile $(RCCOMPILE)
 
 .rc.lo:
-	$(LTRCCOMPILE) -i "$<" -o "$@"
+	$(AM_V_RC)$(LTRCCOMPILE) -i "$<" -o "$@"
 
 .rc.o:
 	$(AM_V_RC)$(RCCOMPILE) -i "$<" -o "$@"

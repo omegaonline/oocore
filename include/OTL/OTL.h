@@ -101,6 +101,9 @@
 
 #define OBJECT_MAP_ENTRY(obj) \
 		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj::ObjectFactoryClass>::Create, 0 },
+		
+#define OBJECT_MAP_FACTORY_ENTRY(obj) \
+		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj>::Create, 0 },
 
 #define END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
 		{ 0,0,0,0 } }; return CreatorEntries; } \
@@ -750,9 +753,30 @@ namespace OTL
 			return this->Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 	};
+	
+	template <const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
+	class ObjectFactoryBase : 
+		public OTL::ObjectBase,
+		public Omega::Activation::IObjectFactory
+	{
+	public:		
+		static const Omega::guid_t* GetOid()
+		{
+			return pOID;
+		}
+
+		static const Omega::Activation::RegisterFlags_t GetRegistrationFlags()
+		{
+			return flags;
+		}
+		
+		BEGIN_INTERFACE_MAP(ObjectFactoryBase)
+			INTERFACE_ENTRY(Omega::Activation::IObjectFactory)
+		END_INTERFACE_MAP()
+	};
 
 	template <typename T, const Omega::guid_t* pOID>
-	class ObjectFactoryCallCreate
+	class AutoObjectFactoryCallCreate
 	{
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
@@ -778,7 +802,7 @@ namespace OTL
 	};
 
 	template <const Omega::guid_t* pOID>
-	class ObjectFactoryCallCreateThrow
+	class AutoObjectFactoryCallCreateThrow
 	{
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject*, const Omega::guid_t&)
@@ -788,12 +812,12 @@ namespace OTL
 	};
 
 	template <typename T1, typename T2>
-	class ObjectFactoryImpl :
+	class AutoObjectFactoryImpl :
 			public ObjectBase,
 			public Omega::Activation::IObjectFactory
 	{
 	public:
-		BEGIN_INTERFACE_MAP(ObjectFactoryImpl)
+		BEGIN_INTERFACE_MAP(AutoObjectFactoryImpl)
 			INTERFACE_ENTRY(Omega::Activation::IObjectFactory)
 		END_INTERFACE_MAP()
 
@@ -812,7 +836,7 @@ namespace OTL
 	class AutoObjectFactory
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,AutoObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 		static const Omega::guid_t* GetOid()
 		{
@@ -829,14 +853,14 @@ namespace OTL
 	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreateThrow<pOID>,AutoObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
 	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreateThrow<pOID>,AutoObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 	protected:
 		virtual ~AutoObjectFactorySingleton() {}
@@ -937,7 +961,6 @@ namespace OTL
 				OMEGA_THROW(e.what());
 			}
 		}
-
 
 	// IProvideObjectInfo members
 	public:

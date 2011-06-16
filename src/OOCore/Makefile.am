@@ -5,16 +5,6 @@ AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS) -Winvalid-pch
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
-BUILT_SOURCES = OOCore_precomp.h.gch
-
-CLEANFILES = $(srcdir)/OOCore_precomp.h.gch \
-	./$(DEPDIR)/OOCore_precomp.Gcho
-
-OOCore_precomp.h.gch: OOCore_precomp.h
-	$(AM_V_CXX)$(CXXCOMPILE) @lt_cv_prog_compiler_pic_CXX@ -MT $@ -MD -MP -MF $(DEPDIR)/OOCore_precomp.Gcho -c $<
-	
-include ./$(DEPDIR)/OOCore_precomp.Gcho
-	
 common = \
 	md5.c \
 	Activation.cpp \

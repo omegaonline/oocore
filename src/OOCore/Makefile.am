@@ -19,7 +19,6 @@ common = \
 	Formatting.cpp \
 	Formatting.h \
 	IO.cpp \
-	IPS.h \
 	LoopChannel.cpp \
 	LoopChannel.h \
 	OOCore.cpp \

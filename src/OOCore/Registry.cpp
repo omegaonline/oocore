@@ -21,7 +21,7 @@
 
 #include "OOCore_precomp.h"
 
-#include "IPS.h"
+#include "Activation.h"
 
 #if defined(_WIN32)
 // For the Windows path functions

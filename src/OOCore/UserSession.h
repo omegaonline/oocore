@@ -70,8 +70,7 @@ namespace OOCore
 		static Omega::IException* init(const Omega::string_t& args);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
-		static Omega::Activation::IRunningObjectTable* get_rot();
-
+		
 		static void close_singletons();
 		static void add_uninit_call(Omega::Threading::DestructorCallback pfn, void* param);
 		static void remove_uninit_call(Omega::Threading::DestructorCallback pfn, void* param);
@@ -190,8 +189,6 @@ namespace OOCore
 
 		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::ComptChannel> > create_compartment_i();
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
-
-		Omega::Activation::IRunningObjectTable* get_rot_i();
 	};
 }
 

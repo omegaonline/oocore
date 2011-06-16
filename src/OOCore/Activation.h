@@ -22,10 +22,11 @@
 #ifndef OOCORE_ACTIVATION_H_INCLUDED_
 #define OOCORE_ACTIVATION_H_INCLUDED_
 
+#include "Server.h"
+
 namespace OOCore
 {
-	// {60B09DE7-609E-4b82-BA35-270A9544BE29}
-	extern "C" const Omega::guid_t OID_ServiceManager;
+	OTL::ObjectPtr<IInterProcessService> GetInterProcessService();
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
@@ -34,10 +35,13 @@ namespace OOCore
 		public OTL::ObjectBase,
 		public Omega::Activation::IRunningObjectTable
 	{
+	public:
+		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS();
+		
 	protected:
 		ServiceManager();
 		virtual ~ServiceManager();
-
+	
 		BEGIN_INTERFACE_MAP(ServiceManager)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
 		END_INTERFACE_MAP()
@@ -108,9 +112,17 @@ namespace OOCore
 	};
 
 	class OidNotFoundExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<OidNotFoundExceptionMarshalFactoryImpl,&OOCore::OID_OidNotFoundExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<OidNotFoundExceptionMarshalFactoryImpl,&OID_OidNotFoundExceptionMarshalFactory,Omega::Activation::InProcess>,
 			public OTL::ExceptionMarshalFactoryImpl<OidNotFoundException>
 	{
+	};
+		
+	class RunningObjectTableFactory : 
+		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTableFactory,Omega::Activation::InProcess>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }
 

@@ -108,9 +108,10 @@ namespace Omega
 			virtual uint32_t RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
 			virtual void RevokeObject(uint32_t cookie) = 0;
 			virtual void GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject) = 0;
-
-			static IRunningObjectTable* GetRunningObjectTable();
 		};
+		
+		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
+		OOCORE_DECLARE_OID(OID_RunningObjectTableFactory);
 	}
 
 	namespace TypeInfo
@@ -360,12 +361,6 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(Omega::TypeInfo::IProvideObjectInfo::guid_set_t,EnumInterfaces,0,())
 )
-
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
-inline Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
-{
-	return OOCore_Activation_GetRunningObjectTable();
-}
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const Omega::any_t&,oid));
 inline Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::any_t& oid)

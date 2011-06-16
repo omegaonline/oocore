@@ -57,8 +57,7 @@ inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t&
 
 inline void OTL::ProcessModule::RegisterObjectFactories()
 {
-	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT;
-	ptrROT.Attach(Omega::Activation::IRunningObjectTable::GetRunningObjectTable());
+	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT(Omega::Activation::OID_RunningObjectTableFactory);
 
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0; g[i].pfnOid!=0; ++i)
@@ -72,8 +71,7 @@ inline void OTL::ProcessModule::RegisterObjectFactories()
 
 inline void OTL::ProcessModule::UnregisterObjectFactories()
 {
-	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT;
-	ptrROT.Attach(Omega::Activation::IRunningObjectTable::GetRunningObjectTable());
+	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT(Omega::Activation::OID_RunningObjectTableFactory);
 
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0; g[i].pfnOid!=0; ++i)

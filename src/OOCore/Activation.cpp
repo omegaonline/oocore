@@ -26,7 +26,6 @@
 #include "Channel.h"
 #include "Exception.h"
 #include "Activation.h"
-#include "IPS.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
@@ -39,6 +38,7 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
+	OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
@@ -53,7 +53,6 @@ END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
 using namespace Omega;
 using namespace OTL;
 
-OMEGA_DEFINE_OID(OOCore,OID_ServiceManager,"{60B09DE7-609E-4b82-BA35-270A9544BE29}");
 OMEGA_DEFINE_OID(OOCore,OID_OidNotFoundExceptionMarshalFactory, "{0CA3037F-08C0-442a-B4EC-84A9156839CD}");
 
 namespace
@@ -290,14 +289,6 @@ namespace
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
-			if (oid == OOCore::OID_ServiceManager)
-			{
-				pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
-				if (!pObject)
-					throw INoInterfaceException::Create(iid);
-				return pObject;
-			}
-
 			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 			if (pObject)
 				return pObject;
@@ -326,10 +317,8 @@ namespace
 		if (flags & Activation::RemoteActivation)
 			reg_mask |= Activation::Anywhere;
 
-		// See if we have it registered ion the ROT
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
+		// See if we have it registered in the ROT
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
 		ptrROT->GetObject(oid,reg_mask,iid,pObject);
 		if (pObject)
 			return pObject;
@@ -407,6 +396,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
 			if (!pObject)
 				OidNotFoundException::Throw(oid);
+			
 			return pObject;
 		}
 
@@ -431,6 +421,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
 			if (!pObject)
 				OidNotFoundException::Throw(oid);
+			
 			return pObject;
 		}
 
@@ -451,7 +442,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
 		if (!pObject)
 			OidNotFoundException::Throw(oid);
-
+		
 		return pObject;
 	}
 	catch (Activation::IOidNotFoundException* pE)

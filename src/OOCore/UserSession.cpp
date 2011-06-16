@@ -24,7 +24,6 @@
 #include "UserSession.h"
 #include "Activation.h"
 #include "StdObjectManager.h"
-#include "IPS.h"
 #include "LoopChannel.h"
 
 #include <signal.h>
@@ -336,9 +335,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	}
 
 	// Register locally...
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-	ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-	m_nIPSCookie = ptrROT->RegisterObject(OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
+	m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
 }
 
 void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)
@@ -405,21 +402,14 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 void OOCore::UserSession::stop()
 {
 	// Unregister InterProcessService
-	if (m_nIPSCookie)
+	try
 	{
-		try
-		{
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-			ptrROT->RevokeObject(m_nIPSCookie);
-		}
-		catch (IException* pE)
-		{
-			pE->Release();
-		}
-
+		OOCore_RevokeIPS(m_nIPSCookie);
 		m_nIPSCookie = 0;
+	}
+	catch (IException* pE)
+	{
+		pE->Release();
 	}
 
 	// Close all singletons
@@ -1200,10 +1190,12 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 	ptrCompt->set_id(cmpt_id);
 
 	write_guard.release();
+	
+	return ptrCompt->create_compartment_channel(0,guid_t::Null());
 
 	// Now a new ComptChannel for the new compartment connecting to this cmpt
-	ptrCompt = get_compartment(ThreadContext::instance()->m_current_cmpt);
-	return ptrCompt->create_compartment_channel(cmpt_id,guid_t::Null());
+	//ptrCompt = get_compartment(ThreadContext::instance()->m_current_cmpt);
+	//return ptrCompt->create_compartment_channel(cmpt_id,guid_t::Null());
 }
 
 OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
@@ -1280,57 +1272,4 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	default:
 		return ptrCompt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
 	}
-}
-
-Activation::IRunningObjectTable* OOCore::UserSession::get_rot()
-{
-	return USER_SESSION::instance().get_rot_i();
-}
-
-Activation::IRunningObjectTable* OOCore::UserSession::get_rot_i()
-{
-	const ThreadContext* pContext = ThreadContext::instance();
-
-	if (pContext->m_current_cmpt == 0)
-		return SingletonObjectImpl<ServiceManager>::CreateInstance();
-
-	OOBase::SmartPtr<Compartment> ptrCompt = get_compartment(pContext->m_current_cmpt);
-	if (!ptrCompt)
-		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("The current compartment has died"));
-
-	return ptrCompt->get_rot();
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
-{
-	// We need to do a little song and dance here because the IPS may not be registered yet,
-	// But we need to check if we are hosted or not
-
-	// There is no harm in racing
-	static bool bChecked = false;
-	static bool bHosted = false;
-
-	if (!bChecked)
-	{
-		// Get the zero cmpt service manager...
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance());
-
-		// Manually get the ROT
-		IObject* pIPS = 0;
-		ptrROT->GetObject(OOCore::OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
-		if (!pIPS)
-			return ptrROT;
-
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
-
-		bHosted = OOCore::HostedByOOServer(ptrIPS);
-		bChecked = true;
-	}
-
-	if (bHosted)
-		return OTL::SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
-
-	return OOCore::UserSession::get_rot();
 }

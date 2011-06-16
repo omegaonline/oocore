@@ -304,12 +304,9 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
-		// Register our interprocess service InProcess so we can react to activation requests
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-		m_nIPSCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,ptrIPS,Activation::ProcessLocal | Activation::MultipleUse);
-
+		// Register our interprocess service so we can react to activation requests
+		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
+		
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();
 
@@ -450,18 +447,8 @@ void User::Manager::do_quit_i()
 			GetModule()->UnregisterObjectFactories();
 
 			// Unregister InterProcessService
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-			uint32_t nIPSCookie = m_nIPSCookie;
+			OOCore_RevokeIPS(m_nIPSCookie);
 			m_nIPSCookie = 0;
-			guard.release();
-
-			if (nIPSCookie)
-			{
-				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-				ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-				ptrROT->RevokeObject(nIPSCookie);
-			}
 		}
 		catch (IException* pE)
 		{

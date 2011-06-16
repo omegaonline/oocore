@@ -293,7 +293,7 @@ IException* OOCore::Compartment::compartment_message(Remoting::IMessage* pSend, 
 {
 	// Switch state...
 	ComptState compt_state(this);
-
+	
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(compt_state.id(),guid_t::Null());
 	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
@@ -310,31 +310,6 @@ IException* OOCore::Compartment::compartment_message(Remoting::IMessage* pSend, 
 	}
 
 	return pRet;
-}
-
-Activation::IRunningObjectTable* OOCore::Compartment::get_rot()
-{
-	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
-
-	if (!m_ptrROT)
-	{
-		read_guard.release();
-
-		ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(0,guid_t::Null());
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
-
-		IObject* pObject = 0;
-		ptrOM->GetRemoteInstance(OID_ServiceManager,Activation::ProcessLocal,OMEGA_GUIDOF(Activation::IRunningObjectTable),pObject);
-
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		if (!m_ptrROT)
-			m_ptrROT.Attach(static_cast<Activation::IRunningObjectTable*>(pObject));
-		else
-			pObject->Release();
-	}
-
-	return m_ptrROT.AddRef();
 }
 
 void OOCore::ComptChannel::init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)

@@ -358,7 +358,7 @@ bool guid_tests()
 	Omega::guid_t arr[100];
 	for (size_t i=0; i<sizeof(arr)/sizeof(arr[0]); ++i)
 		arr[i] = Omega::guid_t::Create();
-
+	
 	// Make sure they are unique! (This might catch time based uuids )
 	bool bTest = true;
 	for (size_t j=0; j<sizeof(arr)/sizeof(arr[0]) && bTest; ++j)

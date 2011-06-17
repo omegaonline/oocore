@@ -425,14 +425,9 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 			return pObject;
 		}
 
-		// Get IPS
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		if (!ptrIPS)
-			throw IInternalException::Create("Omega::Initialize not called","OOCore");
-
 		// Open a remote channel
 		ObjectPtr<Remoting::IChannel> ptrChannel;
-		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
+		ptrChannel.Attach(OOCore::GetInterProcessService()->OpenRemoteChannel(strEndpoint));
 
 		// Get the ObjectManager
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();

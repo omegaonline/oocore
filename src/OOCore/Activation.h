@@ -118,7 +118,7 @@ namespace OOCore
 	};
 		
 	class RunningObjectTableFactory : 
-		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTableFactory,Omega::Activation::InProcess>
+		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTable,Omega::Activation::InProcess>
 	{
 	// IObjectFactory members
 	public:

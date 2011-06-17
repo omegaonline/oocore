@@ -137,6 +137,9 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::ServiceManager::GetIPS()
 {
 	IObject* pIPS = NULL;
 	GetObject(OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(IInterProcessService),pIPS);
+	
+	if (!pIPS)
+		throw IInternalException::Create("Omega::Initialize not called","OOCore");
 
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
 	ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
@@ -333,12 +336,12 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 }
 
 // {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
-OMEGA_DEFINE_OID(Activation,OID_RunningObjectTableFactory,"{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}");
+OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable,"{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}");
 
 void OOCore::RunningObjectTableFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
-		throw Omega::Activation::INoAggregationException::Create(Activation::OID_RunningObjectTableFactory);
+		throw Omega::Activation::INoAggregationException::Create(Activation::OID_RunningObjectTable);
 	
 	pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
 }

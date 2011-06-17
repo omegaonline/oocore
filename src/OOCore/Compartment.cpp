@@ -381,6 +381,9 @@ void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > 
 
 void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
+	if (pOuter && iid != OMEGA_GUIDOF(Omega::IObject))
+		throw Omega::IInternalException::Create("Aggregation must use iid of OMEGA_GUIDOF(Omega::IObject)","Omega::ICompartment::CreateInstance");
+	
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
 	// Get the remote instance IObjectFactory

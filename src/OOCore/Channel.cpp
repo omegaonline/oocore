@@ -82,7 +82,7 @@ Remoting::IMessage* OOCore::ChannelBase::CreateMessage()
 	{
 		// Create a fresh one
 		IObject* pObject = 0;
-		m_ptrOF->CreateInstance(0,OMEGA_GUIDOF(Remoting::IMessage),pObject);
+		m_ptrOF->CreateInstance(NULL,OMEGA_GUIDOF(Remoting::IMessage),pObject);
 		return static_cast<Remoting::IMessage*>(pObject);
 	}
 }

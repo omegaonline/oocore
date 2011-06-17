@@ -44,13 +44,10 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	ptrSimpleTest2.Release();
 	
 	// Test aggregation
-	// Doesn't work yet!
-	void* ISSUE_12; // Fix me!!
-	
-/*	Aggregator* pAgg = new Aggregator();
+	Aggregator* pAgg = new Aggregator();
 	
 	pObj = 0;
-	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
 	TEST(pObj);
 
 	pAgg->SetInner(pObj);
@@ -60,7 +57,7 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
 	TEST(ptrSimpleTest);
-	interface_tests(ptrSimpleTest); */
+	interface_tests(ptrSimpleTest); 
 
 	return true;
 }
@@ -115,15 +112,14 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 	
-//	ptrSimpleTest.Release();
-//	ptrSimpleTest2.Release();
+	ptrSimpleTest.Release();
+	ptrSimpleTest2.Release();
 	
 	// Test aggregation
-	void* ISSUE_12; // Aggregation doesn't work!
-/*	Aggregator* pAgg = new Aggregator();
+	Aggregator* pAgg = new Aggregator();
 	
 	pObj = NULL;
-	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
 	TEST(pObj);
 
 	pAgg->SetInner(pObj);
@@ -135,7 +131,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	ptrSimpleTest2.Release(); */
+	ptrSimpleTest2.Release(); 
 	
 	// Kill the running version
 	try

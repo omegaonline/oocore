@@ -28,7 +28,7 @@ void User::Registry::MirrorKey::Init(const string_t& strKey, IKey* pLocal, IKey*
 
 string_t User::Registry::MirrorKey::GetName()
 {
-	return m_strKey + L"/";
+	return m_strKey;
 }
 
 bool_t User::Registry::MirrorKey::IsSubKey(const string_t& strSubKey)
@@ -76,7 +76,7 @@ any_t User::Registry::MirrorKey::GetValue(const string_t& strName)
 void User::Registry::MirrorKey::SetValue(const string_t& strName, const any_t& value)
 {
 	if (!m_ptrLocal)
-		m_ptrLocal = IKey::OpenKey(m_strKey,IKey::OpenCreate);
+		m_ptrLocal = ObjectPtr<IKey>(m_strKey,IKey::OpenCreate);
 
 	m_ptrLocal->SetValue(strName,value);
 }
@@ -200,12 +200,17 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 			pE->Release();
 		}
 	}
+	
+	string_t strFullKey = GetName();
+	if (!strFullKey.IsEmpty())
+		strFullKey += L"/";
+	strFullKey += strSubKey;
 
 	if (!ptrNewLocal && !ptrNewSystem)
-		User::Registry::NotFoundException::Throw(GetName() + strSubKey);
+		User::Registry::NotFoundException::Throw(strFullKey);
 
 	ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
-	ptrNew->Init(GetName() + strSubKey,ptrNewLocal,ptrNewSystem);
+	ptrNew->Init(strFullKey,ptrNewLocal,ptrNewSystem);
 	return ptrNew.AddRef();
 }
 

@@ -124,6 +124,14 @@ namespace OOCore
 	public:
 		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
+	
+	class RegistryFactory : 
+		public OTL::ObjectFactoryBase<&Omega::Registry::OID_Registry,Omega::Activation::InProcess>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
+	};
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

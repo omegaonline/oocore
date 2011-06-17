@@ -155,8 +155,6 @@ namespace Omega
 
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
-
-			static IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
 
 		interface INotFoundException : public IException
@@ -178,6 +176,9 @@ namespace Omega
 		{
 			virtual string_t GetKeyName() = 0;
 		};
+		
+		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
+		OOCORE_DECLARE_OID(OID_Registry);
 	}
 
 	namespace TypeInfo
@@ -372,12 +373,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_Activa
 inline Omega::Activation::IOidNotFoundException* Omega::Activation::IOidNotFoundException::Create(const Omega::any_t& oid)
 {
 	return OOCore_Activation_IOidNotFoundException_Create(oid);
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IKey::OpenFlags_t,flags));
-inline Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
-{
-	return OOCore_IRegistryKey_OpenKey(key,flags);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInterfaceInfo,2,((in),const Omega::guid_t&,iid,(in),Omega::IObject*,pObject));

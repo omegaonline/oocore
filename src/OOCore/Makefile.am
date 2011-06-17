@@ -23,7 +23,6 @@ common = \
 	LoopChannel.h \
 	OOCore.cpp \
 	OOCore_precomp.h \
-	Registry.cpp \
 	RunningObjectTable.cpp \
 	Safe.cpp \
 	Server.h \

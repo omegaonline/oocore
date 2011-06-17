@@ -39,6 +39,7 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
 	OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
+	OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
@@ -248,7 +249,7 @@ namespace
 		if (flags & Activation::InProcess)
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/OIDs/" + oid.ToString());
+			ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/OIDs/" + oid.ToString());
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
@@ -343,7 +344,7 @@ namespace
 		{
 			try
 			{
-				ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/" + strCurName);
+				ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/" + strCurName);
 				if (ptrOidKey->IsValue(L"CurrentVersion"))
 				{
 					strCurName = ptrOidKey->GetValue(L"CurrentVersion").cast<string_t>();
@@ -459,4 +460,20 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))
 {
 	return static_cast<Activation::IObjectFactory*>(OOCore::GetInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+}
+
+// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
+OMEGA_DEFINE_OID(Registry,OID_Registry,"{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}");
+
+void OOCore::RegistryFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
+{
+	if (pOuter)
+		throw Omega::Activation::INoAggregationException::Create(Registry::OID_Registry);
+		
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	
+	ObjectPtr<Registry::IKey> ptrKey;
+	ptrKey.Attach(static_cast<Registry::IKey*>(ptrIPS->GetRegistry()));
+	
+	pObject = ptrKey->QueryInterface(iid);
 }

@@ -162,10 +162,11 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
-		if (strKey != L"/")
+		if (!strKey.IsEmpty())
 			TEST(pE->GetKeyName() == strKey + L"/" + strTestKey);
 		else
-			TEST(pE->GetKeyName() == strKey + strTestKey);
+			TEST(pE->GetKeyName() == strTestKey);
+		
 		pE->Release();
 	}
 
@@ -179,10 +180,11 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		if (strKey != L"/")
+		if (!strKey.IsEmpty())
 			TEST(pE->GetName() == strKey + L"/" + strTestKey);
 		else
-			TEST(pE->GetName() == strKey + strTestKey);
+			TEST(pE->GetName() == strTestKey);
+		
 		pE->Release();
 	}
 
@@ -194,7 +196,13 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 static bool test_key(const Omega::string_t& strKey)
 {
-	Omega::Registry::IKey* pKey = Omega::Registry::IKey::OpenKey(strKey);
+	Omega::IObject* pObj = Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey));
+	TEST(pObj);
+	
+	Omega::Registry::IKey* pRootKey = static_cast<Omega::Registry::IKey*>(pObj);
+	pObj = NULL;
+	
+	Omega::Registry::IKey* pKey = pRootKey->OpenSubKey(strKey);
 	TEST(pKey);
 
 	bool bTest;
@@ -223,7 +231,7 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetKeyName() == L"/" + strSubKey);
+		TEST(pE->GetKeyName() == strSubKey);
 		pE->Release();
 	}
 
@@ -259,7 +267,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	{
 		TEST_VOID(pKey->DeleteValue(strTestValue));
 
-		if (!test_key2(pKey,L"/"))
+		if (!test_key2(pKey,L""))
 			return false;
 	}
 
@@ -279,9 +287,12 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 
 bool registry_tests()
 {
-	Omega::Registry::IKey* pRootKey = Omega::Registry::IKey::OpenKey(L"/");
-	TEST(pRootKey);
-
+	Omega::IObject* pObj = Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey));
+	TEST(pObj);
+	
+	Omega::Registry::IKey* pRootKey = static_cast<Omega::Registry::IKey*>(pObj);
+	pObj = NULL;
+	
 	bool bTest;
 	try
 	{
@@ -296,10 +307,10 @@ bool registry_tests()
 	if (!bTest)
 		return false;
 
-	if (!test_key(L"/System"))
+	if (!test_key(L"System"))
 		return false;
 
-	if (!test_key(L"/Local User"))
+	if (!test_key(L"Local User"))
 		return false;
 
 	return true;

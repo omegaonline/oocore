@@ -60,7 +60,7 @@ namespace OTL
 		{
 			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
 			if (key)
-				Attach(this->m_ptr->OpenSubKey(Omega::string_t(key,-1,false),flags));
+				Attach(this->m_ptr->OpenSubKey(Omega::string_t(key,size_t(-1),false),flags));
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :

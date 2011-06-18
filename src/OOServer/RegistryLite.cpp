@@ -422,7 +422,7 @@ void RootKey::Init_Once()
 	if (!m_system_hive)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
+	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) && !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");
 
 	m_localuser_hive = new (std::nothrow) ::Registry::Hive(this,ptrIPS->GetArg(L"user_regdb").c_nstr());

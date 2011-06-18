@@ -2,14 +2,8 @@ include $(top_srcdir)/m4/ltrc.inc
 
 AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
 AM_CFLAGS = $(PTHREAD_CFLAGS)
-AM_CXXFLAGS = $(PTHREAD_CFLAGS) -Winvalid-pch
+AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
-
-#BUILT_SOURCES = OOCore_precomp.h.gch
-#CLEANFILES = $(srcdir)/OOCore_precomp.h.gch
-
-#OOCore_precomp.h.gch: OOCore_precomp.h
-#	$(AM_V_GEN)$(CXXCOMPILE) @lt_cv_prog_compiler_pic_CXX@ -c $<
 
 common = \
 	md5.c \
@@ -25,12 +19,10 @@ common = \
 	Formatting.cpp \
 	Formatting.h \
 	IO.cpp \
-	IPS.h \
 	LoopChannel.cpp \
 	LoopChannel.h \
 	OOCore.cpp \
 	OOCore_precomp.h \
-	Registry.cpp \
 	RunningObjectTable.cpp \
 	Safe.cpp \
 	Server.h \

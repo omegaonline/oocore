@@ -25,7 +25,6 @@
 #include "Activation.h"
 #include "WireProxy.h"
 #include "WireStub.h"
-#include "IPS.h"
 
 // This is all the SEH guff - needs to go into the surrogate project
 #if 0
@@ -442,7 +441,7 @@ bool OOCore::StdObjectManager::IsAlive()
 {
 	if (!m_ptrChannel)
 		return false;
-
+	
 	return m_ptrChannel->IsConnected();
 }
 

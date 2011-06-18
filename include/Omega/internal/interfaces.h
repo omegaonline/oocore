@@ -108,9 +108,10 @@ namespace Omega
 			virtual uint32_t RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
 			virtual void RevokeObject(uint32_t cookie) = 0;
 			virtual void GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject) = 0;
-
-			static IRunningObjectTable* GetRunningObjectTable();
 		};
+		
+		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
+		OOCORE_DECLARE_OID(OID_RunningObjectTable);
 	}
 
 	namespace TypeInfo
@@ -154,8 +155,6 @@ namespace Omega
 
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
-
-			static IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
 
 		interface INotFoundException : public IException
@@ -177,6 +176,9 @@ namespace Omega
 		{
 			virtual string_t GetKeyName() = 0;
 		};
+		
+		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
+		OOCORE_DECLARE_OID(OID_Registry);
 	}
 
 	namespace TypeInfo
@@ -361,12 +363,6 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Omega::TypeInfo::IProvideObjectInfo::guid_set_t,EnumInterfaces,0,())
 )
 
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
-inline Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
-{
-	return OOCore_Activation_GetRunningObjectTable();
-}
-
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const Omega::any_t&,oid));
 inline Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::any_t& oid)
 {
@@ -377,12 +373,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_Activa
 inline Omega::Activation::IOidNotFoundException* Omega::Activation::IOidNotFoundException::Create(const Omega::any_t& oid)
 {
 	return OOCore_Activation_IOidNotFoundException_Create(oid);
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IKey::OpenFlags_t,flags));
-inline Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
-{
-	return OOCore_IRegistryKey_OpenKey(key,flags);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInterfaceInfo,2,((in),const Omega::guid_t&,iid,(in),Omega::IObject*,pObject));

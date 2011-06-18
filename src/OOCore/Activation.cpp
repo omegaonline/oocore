@@ -26,7 +26,6 @@
 #include "Channel.h"
 #include "Exception.h"
 #include "Activation.h"
-#include "IPS.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
@@ -36,9 +35,11 @@
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
-	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
+	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
+	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
+	OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
+	OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
@@ -53,7 +54,6 @@ END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
 using namespace Omega;
 using namespace OTL;
 
-OMEGA_DEFINE_OID(OOCore,OID_ServiceManager,"{60B09DE7-609E-4b82-BA35-270A9544BE29}");
 OMEGA_DEFINE_OID(OOCore,OID_OidNotFoundExceptionMarshalFactory, "{0CA3037F-08C0-442a-B4EC-84A9156839CD}");
 
 namespace
@@ -249,7 +249,7 @@ namespace
 		if (flags & Activation::InProcess)
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/OIDs/" + oid.ToString());
+			ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/OIDs/" + oid.ToString());
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
@@ -290,14 +290,6 @@ namespace
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
-			if (oid == OOCore::OID_ServiceManager)
-			{
-				pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
-				if (!pObject)
-					throw INoInterfaceException::Create(iid);
-				return pObject;
-			}
-
 			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 			if (pObject)
 				return pObject;
@@ -326,10 +318,8 @@ namespace
 		if (flags & Activation::RemoteActivation)
 			reg_mask |= Activation::Anywhere;
 
-		// See if we have it registered ion the ROT
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
+		// See if we have it registered in the ROT
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
 		ptrROT->GetObject(oid,reg_mask,iid,pObject);
 		if (pObject)
 			return pObject;
@@ -354,7 +344,7 @@ namespace
 		{
 			try
 			{
-				ObjectPtr<Registry::IKey> ptrOidKey(L"/Local User/Objects/" + strCurName);
+				ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/" + strCurName);
 				if (ptrOidKey->IsValue(L"CurrentVersion"))
 				{
 					strCurName = ptrOidKey->GetValue(L"CurrentVersion").cast<string_t>();
@@ -407,6 +397,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
 			if (!pObject)
 				OidNotFoundException::Throw(oid);
+			
 			return pObject;
 		}
 
@@ -431,17 +422,13 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
 			if (!pObject)
 				OidNotFoundException::Throw(oid);
+			
 			return pObject;
 		}
 
-		// Get IPS
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		if (!ptrIPS)
-			throw IInternalException::Create("Omega::Initialize not called","OOCore");
-
 		// Open a remote channel
 		ObjectPtr<Remoting::IChannel> ptrChannel;
-		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
+		ptrChannel.Attach(OOCore::GetInterProcessService()->OpenRemoteChannel(strEndpoint));
 
 		// Get the ObjectManager
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
@@ -451,7 +438,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
 		if (!pObject)
 			OidNotFoundException::Throw(oid);
-
+		
 		return pObject;
 	}
 	catch (Activation::IOidNotFoundException* pE)
@@ -473,4 +460,20 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))
 {
 	return static_cast<Activation::IObjectFactory*>(OOCore::GetInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+}
+
+// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
+OMEGA_DEFINE_OID(Registry,OID_Registry,"{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}");
+
+void OOCore::RegistryFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
+{
+	if (pOuter)
+		throw Omega::Activation::INoAggregationException::Create(Registry::OID_Registry);
+		
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	
+	ObjectPtr<Registry::IKey> ptrKey;
+	ptrKey.Attach(static_cast<Registry::IKey*>(ptrIPS->GetRegistry()));
+	
+	pObject = ptrKey->QueryInterface(iid);
 }

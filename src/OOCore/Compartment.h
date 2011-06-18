@@ -58,10 +58,7 @@ namespace OOCore
 		Compartment(UserSession* pSession);
 
 		void set_id(Omega::uint16_t id);
-
-		void shutdown();
-		Omega::Activation::IRunningObjectTable* get_rot();
-		
+		void shutdown();	
 		bool process_channel_close(Omega::uint32_t closed_channel_id);
 		void process_compartment_close();
 		bool is_channel_open(Omega::uint32_t channel_id);

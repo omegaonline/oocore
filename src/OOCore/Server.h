@@ -54,4 +54,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 )
 
+OOCORE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_RegisterIPS,1,((in),Omega::IObject*,pIPS));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),Omega::uint32_t,nCookie));
+
 #endif // OOCORE_SERVER_H_INCLUDED_

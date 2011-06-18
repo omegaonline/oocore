@@ -198,7 +198,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Applications/OORegEdit/Layout");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Applications/OORegEdit/Layout");
 
 		wxPoint ptPos;
 		ptPos.x = ptrKey->GetValue(L"Left").cast<int>();
@@ -300,7 +300,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// Open the registry root
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"");
 
 		// Init the tree
 		TreeItemData* pItem = new TreeItemData(ptrKey,5);
@@ -320,9 +320,6 @@ void MainFrame::CreateChildWindows(void)
 void MainFrame::SelectItem(Omega::string_t strSelection)
 {
 	SetCursor(*wxHOURGLASS_CURSOR);
-
-	if (strSelection.Left(1) == L"/")
-		strSelection = strSelection.Mid(1);
 
 	// Expand the tree to strSelection
 	wxTreeItemId tree_id = m_pTree->GetRootItem();
@@ -446,7 +443,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	// Set some defaults...
 	try
 	{
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Applications/OORegEdit/Layout",Omega::Registry::IKey::OpenCreate);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Applications/OORegEdit/Layout",Omega::Registry::IKey::OpenCreate);
 
 		wxPoint pt = GetPosition();
 		ptrKey->SetValue(L"Top",pt.y);

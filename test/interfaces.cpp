@@ -1,6 +1,7 @@
 #include "../include/Omega/Remoting.h"
 #include "../include/OTL/Registry.h"
 #include "interfaces.h"
+#include "aggregator.h"
 
 #include <limits.h>
 
@@ -35,7 +36,7 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
 	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
@@ -46,7 +47,7 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 
 bool unregister_library()
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects");
 
 	if (ptrKey->IsSubKey(L"Test.Library"))
 		ptrKey->DeleteKey(L"Test.Library");
@@ -74,13 +75,13 @@ bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Process",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
 	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Application",L"CoreTests.TestProcess");
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"/Local User/Applications",Omega::Registry::IKey::OpenCreate);
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"Local User/Applications",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess/Activation",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Path",strExeName);
 
@@ -89,7 +90,7 @@ bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 
 bool unregister_process()
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects");
 
 	if (ptrKey->IsSubKey(L"Test.Process"))
 		ptrKey->DeleteKey(L"Test.Process");
@@ -99,7 +100,7 @@ bool unregister_process()
 	if (ptrKey->IsSubKey(L"OIDs/" + strOid))
 		ptrKey->DeleteKey(L"OIDs/" + strOid);
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"/Local User/Applications",Omega::Registry::IKey::OpenCreate);
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"Local User/Applications",Omega::Registry::IKey::OpenCreate);
 	if (ptrKey->IsSubKey(L"CoreTests.TestProcess"))
 		ptrKey->DeleteKey(L"CoreTests.TestProcess");
 
@@ -236,71 +237,6 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	return true;
 }
 
-namespace
-{
-	class Aggregator :
-			public Omega::TestSuite::ISimpleTest2
-	{
-	public:
-		Aggregator() : m_pInner(0)
-		{
-			AddRef();
-		}
-
-		void SetInner(Omega::IObject* pInner)
-		{
-			m_pInner = pInner;
-		}
-
-		void AddRef()
-		{
-			m_refcount.AddRef();
-		}
-
-		void Release()
-		{
-			assert(!m_refcount.IsZero());
-
-			if (m_refcount.Release())
-				delete this;
-		}
-
-		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
-		{
-			if (iid == OMEGA_GUIDOF(Omega::IObject) ||
-					iid == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest2))
-			{
-				AddRef();
-				return this;
-			}
-
-			if (m_pInner)
-			{
-				Omega::IObject* pObj = m_pInner->QueryInterface(iid);
-				if (pObj)
-					return pObj;
-			}
-
-			return 0;
-		}
-
-		Omega::string_t WhereAmI()
-		{
-			return Omega::string_t(L"Outer");
-		}
-
-	private:
-		virtual ~Aggregator()
-		{
-			if (m_pInner)
-				m_pInner->Release();
-		}
-
-		Omega::Threading::AtomicRefCount m_refcount;
-		Omega::IObject*   m_pInner;
-	};
-}
-
 static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkipped)
 {
 	// Register the library
@@ -333,17 +269,6 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
-
-	// Check QI rules (again)
-	OTL::ObjectPtr<Omega::IObject> ptrO1;
-	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-	OTL::ObjectPtr<Omega::IObject> ptrO2;
-	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-
-	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
-
-	ptrO1.Release();
-	ptrO2.Release();
 
 	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();
@@ -380,7 +305,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	interface_tests(ptrSimpleTest);
 
 	// Test redirecting the registration
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/Local User/Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"CurrentVersion",L"Test.Library");
 
@@ -457,17 +382,6 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
-
-	// Check QI rules (again)
-	OTL::ObjectPtr<Omega::IObject> ptrO1;
-	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-	OTL::ObjectPtr<Omega::IObject> ptrO2;
-	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-
-	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
-
-	ptrO1.Release();
-	ptrO2.Release();
 
 	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();

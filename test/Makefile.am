@@ -16,6 +16,7 @@ coretests_LDADD = ../src/OOCore/liboocore.la
 endif
 
 coretests_SOURCES = \
+	aggregator.h \
 	any.cpp \
 	compartment.cpp \
 	core.cpp \

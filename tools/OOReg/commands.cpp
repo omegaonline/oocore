@@ -204,7 +204,7 @@ static bool rmkey(int argc, char* argv[], OTL::ObjectPtr<Omega::Registry::IKey>&
 	// And to ck up to the parent.
 	void* TODO;
 
-	OTL::ObjectPtr<Omega::Registry::IKey>(L"/")->DeleteKey(strKey);
+	OTL::ObjectPtr<Omega::Registry::IKey>(L"")->DeleteKey(strKey);
 
 	std::cout << "Removed value '" << key->second << "'." << std::endl;
 

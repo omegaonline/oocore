@@ -31,13 +31,13 @@ namespace OTL
 	class ObjectPtr<Omega::Registry::IKey> : public ObjectPtrBase<Omega::Registry::IKey>
 	{
 	public:
-		ObjectPtr(Omega::Registry::IKey* pKey = 0) :
+		ObjectPtr(Omega::Registry::IKey* pKey = NULL) :
 				ObjectPtrBase<Omega::Registry::IKey>(pKey)
 		{ }
 
 		template <typename I>
 		ObjectPtr(I* pObject) :
-				ObjectPtrBase<Omega::Registry::IKey>(0)
+				ObjectPtrBase<Omega::Registry::IKey>(NULL)
 		{
 			if (pObject)
 				this->m_ptr = static_cast<Omega::Registry::IKey*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::Registry::IKey)));
@@ -49,22 +49,26 @@ namespace OTL
 
 		template <typename I>
 		ObjectPtr(const ObjectPtr<I>& rhs) :
-				ObjectPtrBase<Omega::Registry::IKey>(0)
+				ObjectPtrBase<Omega::Registry::IKey>(NULL)
 		{
 			if (rhs)
 				this->m_ptr = static_cast<Omega::Registry::IKey*>(rhs->QueryInterface(OMEGA_GUIDOF(Omega::Registry::IKey)));
 		}
-
+		
 		ObjectPtr(const wchar_t* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
-				ObjectPtrBase<Omega::Registry::IKey>(0)
+				ObjectPtrBase<Omega::Registry::IKey>(NULL)
 		{
-			Attach(Omega::Registry::IKey::OpenKey(Omega::string_t(key,Omega::string_t::npos),flags));
+			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
+			if (key)
+				Attach(this->m_ptr->OpenSubKey(Omega::string_t(key,-1,false),flags));
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
-				ObjectPtrBase<Omega::Registry::IKey>(0)
+				ObjectPtrBase<Omega::Registry::IKey>(NULL)
 		{
-			Attach(Omega::Registry::IKey::OpenKey(key,flags));
+			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
+			if (!key.IsEmpty())
+				Attach(this->m_ptr->OpenSubKey(key,flags));
 		}
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::Registry::IKey>& rhs)

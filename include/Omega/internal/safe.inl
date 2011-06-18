@@ -141,8 +141,8 @@ inline Omega::IObject* Omega::System::Internal::Safe_Proxy_Base::QueryInterface(
 inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim* shim, const guid_t& iid)
 {
 	if (!shim)
-		return 0;
-
+		return NULL;
+	
 	// See if we are a Wire Proxy
 	if (static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 	{
@@ -161,18 +161,20 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		return create_wire_proxy(ptrProxy,iid);
 	}
 	
+	// Check for special case of IObject
 	if (guid_t(*shim->m_iid) == OMEGA_GUIDOF(IObject))
 	{
 		// Shims should always be 'complete'
 		assert(iid == OMEGA_GUIDOF(IObject));
+		
 		return Safe_Proxy_IObject::bind(shim);
 	}
-	
+		
 	// Find the rtti info...
 	const qi_rtti* rtti = get_qi_rtti_info(*shim->m_iid);
 	if (!rtti && guid_t(*shim->m_iid) != iid)
 		rtti = get_qi_rtti_info(iid);
-
+	
 	// Fall back to IObject for completely unknown interfaces
 	if (!rtti)
 		rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
@@ -197,14 +199,12 @@ inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shi
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(IObject* pObj, const guid_t& iid)
 {
 	if (!pObj)
-		return 0;
-
-	const SafeShim* shim = 0;
-
+		return NULL;
+	
 	// See if we have it cached...
 	if (iid == OMEGA_GUIDOF(IObject))
 	{
-		shim = SAFE_HOLDER::instance()->find(pObj);
+		const SafeShim* shim = SAFE_HOLDER::instance()->find(pObj);
 		if (shim)
 			return shim;
 	}
@@ -213,24 +213,21 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 	auto_iface_ptr<ISafeProxy> ptrProxy = static_cast<ISafeProxy*>(pObj->QueryInterface(OMEGA_GUIDOF(ISafeProxy)));
 	if (ptrProxy)
 	{
-		shim = ptrProxy->GetShim(iid);
+		const SafeShim* shim = ptrProxy->GetShim(iid);
 		if (shim)
 			return shim;
 	}
-
-	// Return the special case for IObject
+	
+	// Check for special case of IObject
 	if (iid == OMEGA_GUIDOF(IObject))
-		shim = Safe_Stub_IObject::create(pObj);
-	else
-	{
-		// Find the rtti info...
-		const qi_rtti* rtti = get_qi_rtti_info(iid);
-		if (!rtti)
-			OMEGA_THROW("Failed to create stub for interface - missing rtti");
-
-		shim = (*rtti->pfnCreateSafeStub)(pObj);
-	}
-
+		return Safe_Stub_IObject::create(pObj);
+	
+	// Find the rtti info...
+	const qi_rtti* rtti = get_qi_rtti_info(iid);
+	if (!rtti)
+		OMEGA_THROW("Failed to create stub for interface - missing rtti");
+		
+	const SafeShim* shim = (*rtti->pfnCreateSafeStub)(pObj);
 	if (!shim)
 		OMEGA_THROW("Failed to create safe stub");
 

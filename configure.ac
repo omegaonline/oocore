@@ -130,8 +130,6 @@ LT_PREREQ([2.2.6])
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
-AC_SUBST([lt_cv_prog_compiler_pic_CXX])
-
 AC_PATH_PROG([SQLITE3],[sqlite3],[AC_MSG_ERROR([Need sqlite3 command])])
 
 AC_OUTPUT()

@@ -58,16 +58,13 @@ namespace
 
 void LoopMarshaller::init(OOCore::LoopChannel* pChannel)
 {
-	// We write pointers in uint64_ts
-	static_assert(sizeof(Omega::IObject*) <= sizeof(uint64_t),"How wide are your pointers?");
-
 	m_pChannel = pChannel;
 }
 
 void LoopMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
 	pMessage->WriteStructStart(strName,L"$loop_marshal");
-	pMessage->WriteValue(L"ptr64",reinterpret_cast<uint64_t>(pObject));
+	pMessage->WriteValue(L"ptr",reinterpret_cast<ptrdiff_t>(pObject));
 	pMessage->WriteStructEnd();
 
 	// Make sure we AddRef()
@@ -80,7 +77,7 @@ void LoopMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMess
 	pObject->Release();
 
 	pMessage->ReadStructStart(strName,L"$loop_marshal");
-	pMessage->ReadValue(L"ptr64");
+	pMessage->ReadValue(L"ptr");
 	pMessage->ReadStructEnd();
 }
 
@@ -88,7 +85,7 @@ void LoopMarshaller::UnmarshalInterface(const string_t& strName, Remoting::IMess
 {
 	pMessage->ReadStructStart(strName,L"$loop_marshal");
 
-	pObject = reinterpret_cast<IObject*>(pMessage->ReadValue(L"ptr64").cast<uint64_t>());
+	pObject = reinterpret_cast<IObject*>(pMessage->ReadValue(L"ptr").cast<ptrdiff_t>());
 
 	pMessage->ReadStructEnd();
 }

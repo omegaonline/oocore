@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 	try
 	{
 		// Open root key
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"/");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"");
 
 		// Now loop processing commands
 		vector_string line_args;

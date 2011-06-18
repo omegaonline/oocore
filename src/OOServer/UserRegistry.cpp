@@ -53,7 +53,7 @@ void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::in
 
 string_t Key::GetName()
 {
-	return m_strKey + L"/";
+	return m_strKey;
 }
 
 bool_t Key::IsSubKey(const string_t& strSubKey)
@@ -395,13 +395,13 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 		}
 
 		ObjectPtr<ObjectImpl<Key> > ptrLocal = ObjectImpl<Key>::CreateInstancePtr();
-		ptrLocal->Init(m_pManager,L"/Local User",0,local_type);
+		ptrLocal->Init(m_pManager,L"Local User",0,local_type);
 
 		ObjectPtr<ObjectImpl<Key> > ptrMirror = ObjectImpl<Key>::CreateInstancePtr();
 		ptrMirror->Init(m_pManager,string_t(strName.c_str(),true),mirror_key,0);
 
 		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
-		ptrNew->Init(L"/Local User",ptrLocal,ptrMirror);
+		ptrNew->Init(L"Local User",ptrLocal,ptrMirror);
 		return ptrNew.AddRef();
 	}
 
@@ -428,12 +428,17 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
+	string_t strFullKey = GetName();
+	if (!strFullKey.IsEmpty())
+		strFullKey += L"/";
+	strFullKey += strSubKey;
+	
 	if (err==EACCES)
-		AccessDeniedException::Throw(GetName());
+		AccessDeniedException::Throw(strFullKey);
 	else if (err==EEXIST)
-		AlreadyExistsException::Throw(GetName() + strSubKey);
+		AlreadyExistsException::Throw(strFullKey);
 	else if (err==ENOENT)
-		NotFoundException::Throw(GetName() + strSubKey);
+		NotFoundException::Throw(strFullKey);
 	else if (err==EIO)
 		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
@@ -446,7 +451,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
-	ptrNew->Init(m_pManager,GetName() + strSubKey,key,type);
+	ptrNew->Init(m_pManager,strFullKey,key,type);
 	return ptrNew;
 }
 
@@ -566,7 +571,14 @@ void Key::DeleteKey(const string_t& strSubKey)
 		if (ptrKey)
 		{
 			if (strSub.IsEmpty())
-				AccessDeniedException::Throw(GetName() + strSubKey);
+			{
+				string_t strFullKey = GetName();
+				if (!strFullKey.IsEmpty())
+					strFullKey += L"/";
+				strFullKey += strSubKey;
+				
+				AccessDeniedException::Throw(strFullKey);
+			}
 
 			return ptrKey->DeleteKey(strSub);
 		}
@@ -589,14 +601,22 @@ void Key::DeleteKey(const string_t& strSubKey)
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
-	if (err == ENOENT)
-		NotFoundException::Throw(GetName() + strSubKey);
-	else if (err==EACCES)
-		AccessDeniedException::Throw(GetName() + strSubKey);
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	if (err != 0)
+	{
+		string_t strFullKey = GetName();
+		if (!strFullKey.IsEmpty())
+			strFullKey += L"/";
+		strFullKey += strSubKey;
+
+		if (err == ENOENT)
+			NotFoundException::Throw(strFullKey);
+		else if (err==EACCES)
+			AccessDeniedException::Throw(strFullKey);
+		else if (err==EIO)
+			OMEGA_THROW("Unexpected registry error");
+		else
+			OMEGA_THROW(err);
+	}
 }
 
 void Key::DeleteValue(const string_t& strName)

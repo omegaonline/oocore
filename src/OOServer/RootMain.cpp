@@ -61,12 +61,21 @@ namespace
 
 		return EXIT_SUCCESS;
 	}
+
+	bool CriticalFailure(const char* msg)
+	{
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+		return true;
+	}
 }
 
 int main(int argc, char* argv[])
 {
 	// Start the logger
 	OOSvrBase::Logger::open("OOServer");
+
+	// Set critical failure handler
+	OOBase::SetCriticalFailure(&CriticalFailure);
 
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
@@ -89,16 +98,6 @@ int main(int argc, char* argv[])
 
 	// Run the one and only Root::Manager instance
 	return Root::Manager().run(args);
-}
-
-namespace OOBase
-{
-	// This is the critical failure hook
-	bool OnCriticalFailure(const char* msg)
-	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
-		return true;
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

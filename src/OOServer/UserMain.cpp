@@ -36,31 +36,43 @@
 #define APPNAME "oosvruser"
 #endif
 
-static int Help()
+namespace
 {
-	printf(APPNAME " - The Omega Online user host process.\n\n"
-		"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
+	int Help()
+	{
+		printf(APPNAME " - The Omega Online user host process.\n\n"
+			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
 
-	return EXIT_SUCCESS;
-}
+		return EXIT_SUCCESS;
+	}
 
-static int Version()
-{
-	printf(APPNAME " version information:\n"
-		"Version: %s",OOCORE_VERSION);
+	int Version()
+	{
+		printf(APPNAME " version information:\n"
+			"Version: %s",OOCORE_VERSION);
 
-#if defined(OMEGA_DEBUG)
-	printf(" (Debug build)");
-#endif
-	printf("\n\tCompiler: %s\n\n",OMEGA_COMPILER_STRING);
+	#if defined(OMEGA_DEBUG)
+		printf(" (Debug build)");
+	#endif
+		printf("\n\tCompiler: %s\n\n",OMEGA_COMPILER_STRING);
 
-	return EXIT_SUCCESS;
+		return EXIT_SUCCESS;
+	}
+
+	bool CriticalFailure(const char* msg)
+	{
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+		return true;
+	}
 }
 
 int main(int argc, char* argv[])
 {
 	// Start the logger - use OOServer again...
 	OOSvrBase::Logger::open("OOServer");
+
+	// Set critical failure handler
+	OOBase::SetCriticalFailure(&CriticalFailure);
 
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
@@ -155,14 +167,4 @@ int main(int argc, char* argv[])
 	}
 
 	return EXIT_SUCCESS;
-}
-
-namespace OOBase
-{
-	// This is the critical failure hook
-	bool OnCriticalFailure(const char* msg)
-	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
-		return true;
-	}
 }

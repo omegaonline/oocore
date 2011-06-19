@@ -16,13 +16,8 @@ if test "x$OMEGA_DEBUG" = "xyes" && test -n "$TERM"; then
 			server_launch="$COMSPEC //Q //c start ../OOServer/ooserverd.exe"
 			;;
 		*)
-			if test -n "$COLORTERM"; then
-				server_launch=$COLORTERM
-			else
-				server_launch=$TERM
-			fi
-			server_launch="$server_launch -e ../OOServer/ooserverd"
-			;;	
+			server_launch="$TERM -e ../OOServer/ooserverd"
+			;;
 	esac
 fi
 
@@ -45,7 +40,7 @@ ret=$?
 
 # Close our ooserver
 if test -f ./ooserverd.pid; then
-	pid=$(cat "./ooserverd.pid") 
+	pid=$(cat "./ooserverd.pid")
 	kill $pid
 fi
 

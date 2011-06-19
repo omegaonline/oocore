@@ -1181,7 +1181,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compart
 
 	write_guard.release();
 	
-	return ptrCompt->create_compartment_channel(0,guid_t::Null());
+	return ptrCompt->create_compartment_channel(ThreadContext::instance()->m_current_cmpt,guid_t::Null());
 
 	// Now a new ComptChannel for the new compartment connecting to this cmpt
 	//ptrCompt = get_compartment(ThreadContext::instance()->m_current_cmpt);

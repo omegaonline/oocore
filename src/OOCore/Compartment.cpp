@@ -87,7 +87,7 @@ void OOCore::Compartment::shutdown()
 	}		
 }
 
-void OOCore::Compartment::process_compartment_close()
+void OOCore::Compartment::process_compartment_close(uint16_t src_compt_id)
 {
 	// Switch state...
 	ComptState compt_state(this);
@@ -95,7 +95,7 @@ void OOCore::Compartment::process_compartment_close()
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
-	m_mapCompartments.erase(compt_state.id(),&ptrCompt);
+	m_mapCompartments.erase(src_compt_id,&ptrCompt);
 		
 	guard.release();
 
@@ -274,7 +274,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 		// Create a new channel
 		ptrChannel = ObjectImpl<ComptChannel>::CreateInstancePtr();
 
-		ptrChannel->init(ptrCompt,compartment_id | m_pSession->get_channel_id(),ptrOM,message_oid);
+		ptrChannel->init(m_id,ptrCompt,compartment_id | m_pSession->get_channel_id(),ptrOM,message_oid);
 
 		// And add to the map
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -289,13 +289,13 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 	return ptrChannel;
 }
 
-IException* OOCore::Compartment::compartment_message(Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	// Switch state...
 	ComptState compt_state(this);
 	
 	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(compt_state.id(),guid_t::Null());
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(src_cmpt_id,guid_t::Null());
 	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 	
 	// Make the call
@@ -312,11 +312,12 @@ IException* OOCore::Compartment::compartment_message(Remoting::IMessage* pSend, 
 	return pRet;
 }
 
-void OOCore::ComptChannel::init(OOBase::SmartPtr<Compartment> ptrCompt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::ComptChannel::init(uint16_t src_compt_id, OOBase::SmartPtr<Compartment> ptrCompt, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
 	ChannelBase::init(channel_id,Remoting::Compartment,pOM,message_oid);
 
-	m_ptrCompt = ptrCompt;
+	m_src_compt_id = src_compt_id;
+	m_ptrCompt = ptrCompt;	
 }
 
 void OOCore::ComptChannel::close_compartment()
@@ -327,7 +328,7 @@ void OOCore::ComptChannel::close_compartment()
 
 void OOCore::ComptChannel::shutdown()
 {
-	m_ptrCompt->process_compartment_close();
+	m_ptrCompt->process_compartment_close(m_src_compt_id);
 
 	disconnect();
 }
@@ -339,7 +340,7 @@ Omega::bool_t OOCore::ComptChannel::IsConnected()
 
 IException* OOCore::ComptChannel::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
-	return m_ptrCompt->compartment_message(pSend,pRecv,timeout);
+	return m_ptrCompt->compartment_message(m_src_compt_id,pSend,pRecv,timeout);
 }
 
 namespace OOCore

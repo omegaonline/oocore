@@ -850,13 +850,6 @@ namespace OTL
 	};
 
 	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
-	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags>
-	{
-	public:
-		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreateThrow<pOID>,AutoObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
-	};
-
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:

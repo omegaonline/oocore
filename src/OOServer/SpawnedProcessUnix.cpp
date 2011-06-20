@@ -341,49 +341,125 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
 bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
+	
+	OOBase::POSIX::pw_info pw(m_uid);
+	if (!pw)
+		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
+	int err = 0;
 	if (strSysDir.empty())
 	{
-		int err = strSysDir.assign("/var/lib/omegaonline/");
-		if (err != 0)
+		if ((err = strSysDir.assign("/var/lib/omegaonline/")) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
 	if (strSysDir[strSysDir.length()-1] != '/')
 	{
-		int err = strSysDir.append("/");
-		if (err != 0)
+		if ((err = strSysDir.append("/")) != 0)
 			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 	}
+	
+	if ((err = strSysDir.append("default_user.regdb")) != 0)
+		LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
+	bool bAddDot = false;
 	if (strUsersDir.empty())
 	{
-		int err = strUsersDir.concat(strSysDir.c_str(),"users/");
+		const char* pszHome = getenv("HOME");
+		if (pszHome)
+		{
+			bAddDot = true;
+			err = strUsersDir.assign(pszHome);
+		}
+		else	
+			err = strUsersDir.concat(strSysDir.c_str(),"users/");
+			
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
 	if (strUsersDir[strUsersDir.length()-1] != '/')
 	{
-		int err = strUsersDir.append("/");
-		if (err != 0)
+		if ((err = strUsersDir.append("/")) != 0)
 			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 	}
-
-	OOBase::POSIX::pw_info pw(m_uid);
-	if (!pw)
-		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
-
-	int err = strHive.append(pw->pw_name);
-	if (err == 0)
-		err = strHive.append(".regdb");
-
-	if (err != 0)
+	
+	if (bAddDot)
+	{
+		if ((err = strUsersDir.append(".omegaonline")) != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+	else
+	{
+		if ((err = strHive.append(pw->pw_name)) != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+	
+	if ((err = strHive.append(".regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-
+		
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-	void* ISSUE_11;
-
+	int fd_to = ::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY | S_IRUSR | S_IWUSR);
+	if (fd_to!= -1)
+	{
+		// If we get here, then we have a brand new file...
+		int fd_from = ::open(strSysDir.c_str(),O_RDONLY);
+		if (fd_from == -1)
+		{
+			err = errno;
+			::close(fd_to);
+			::unlink(strHive.c_str());
+			LOG_ERROR_RETURN(("Failed to open %s: %s",strSysDir.c_str(),OOBase::system_error_text(err)),false);
+		}
+		
+		char buffer[1024] = {0};
+		ssize_t r = 0;
+		do
+		{			
+			do
+			{
+				r = read(fd_from,buffer,sizeof(buffer));
+			} while (r==-1 && errno==EINTR);
+			
+			if (r == -1)
+			{
+				err = errno;
+				::close(fd_from);	
+				::close(fd_to);
+				::unlink(strHive.c_str());
+				LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
+			}
+		
+			if (r > 0)
+			{
+				ssize_t s = 0;
+				do
+				{
+					s = write(fd_to,buffer,r);
+				} while (s==-1 && errno==EINTR);
+		
+				if (s != r)
+				{
+					err = errno;
+					::close(fd_from);	
+					::close(fd_to);
+					::unlink(strHive.c_str());
+					LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
+				}
+			}
+		} while (r != 0);	
+		
+		::close(fd_from);	
+		::close(fd_to);
+		
+		if (chown(strHive.c_str(),m_uid,pw->pw_gid) == -1)
+		{
+			err = errno;
+			::unlink(strHive.c_str());
+			LOG_ERROR_RETURN(("Failed to set file owner: %s",OOBase::system_error_text(err)),false);
+		}
+	}
+	
 	return true;
 }
 

@@ -97,7 +97,7 @@ namespace
 		DWORD SpawnFromToken(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
-	static HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
+	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
 	{
 		// Create a new unique pipe
 
@@ -180,7 +180,7 @@ namespace
 		return hPipe;
 	}
 
-	static bool WaitForConnect(HANDLE hPipe)
+	bool WaitForConnect(HANDLE hPipe)
 	{
 		OVERLAPPED ov = {0};
 		ov.hEvent = CreateEventW(NULL,TRUE,TRUE,NULL);
@@ -222,7 +222,7 @@ namespace
 		return (dwErr == 0);
 	}
 
-	static DWORD LogonSandboxUser(const OOBase::String& strUName, HANDLE& hToken)
+	DWORD LogonSandboxUser(const OOBase::String& strUName, HANDLE& hToken)
 	{
 		// Convert UName to wide
 		size_t wlen = OOBase::from_native(NULL,0,strUName.c_str());
@@ -294,7 +294,7 @@ namespace
 		return ERROR_SUCCESS;
 	}
 
-	static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 3;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
@@ -333,7 +333,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -365,7 +365,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static bool OpenCorrectWindowStation(HANDLE hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	bool OpenCorrectWindowStation(HANDLE hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
 	{
 		// Service window stations are created with the name "Service-0xZ1-Z2$",
 		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
@@ -886,6 +886,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 {
 	assert(!m_bSandbox);
 
+	int err = 0;
 	if (strSysDir.empty())
 	{
 		char szBuf[MAX_PATH] = {0};
@@ -899,9 +900,14 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if (!PathFileExistsA(szBuf))
 			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
 
-		int err = strSysDir.assign(szBuf);
-		if (err != 0)
+		if ((err = strSysDir.assign(szBuf)) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+	}
+	
+	if (strSysDir[strSysDir.length()-1] != '\\' && strSysDir[strSysDir.length()-1] != '/')
+	{
+		if ((err = strSysDir.append("\\")) != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 	}
 
 	if (strUsersDir.empty())
@@ -917,16 +923,14 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if (!PathFileExistsA(szBuf) && !CreateDirectoryA(szBuf,NULL))
 			LOG_ERROR_RETURN(("CreateDirectoryA %s failed: %s",szBuf,OOBase::system_error_text()),false);
 
-		int err = strHive.concat(szBuf,"\\user.regdb");
-		if (err != 0)
+		if ((err = strHive.concat(szBuf,"\\user.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 	}
 	else
 	{
 		if (strUsersDir[strUsersDir.length()-1] != '\\' && strUsersDir[strUsersDir.length()-1] != '/')
 		{
-			int err = strUsersDir.append("\\");
-			if (err != 0)
+			if ((err = strUsersDir.append("\\")) != 0)
 				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 		}
 
@@ -938,7 +942,6 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
 
-		int err = 0;
 		if (!strDomainName)
 			err = strHive.printf("%s%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName));
 		else
@@ -951,23 +954,14 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
 	if (!PathFileExistsA(strHive.c_str()))
 	{
-		if (strSysDir[strSysDir.length()-1] != '\\' && strSysDir[strSysDir.length()-1] != '/')
-		{
-			int err = strSysDir.append("\\");
-			if (err != 0)
-				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-		}
-
-		int err = strSysDir.append("default_user.regdb");
-		if (err != 0)
+		if ((err = strSysDir.append("default_user.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
 		if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))
 			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
 		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
-
-		// Secure the file if (strUsersDir.empty())
+		
 		void* ISSUE_11;
 	}
 

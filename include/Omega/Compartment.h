@@ -31,9 +31,10 @@ namespace Omega
 		interface ICompartment : public IObject
 		{
 			virtual void CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
-
-			static ICompartment* Create();
 		};
+		
+		// {3BE419D7-52D9-4873-95E7-836D33523C51}
+		OOCORE_DECLARE_OID(OID_Compartment);
 	}
 }
 
@@ -45,12 +46,6 @@ OMEGA_DEFINE_INTERFACE
 
 	OMEGA_METHOD_VOID(CreateInstance,5,((in),const any_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
-
-OOCORE_EXPORTED_FUNCTION(Omega::Compartment::ICompartment*,OOCore_ICompartment_Create,0,());
-inline Omega::Compartment::ICompartment* Omega::Compartment::ICompartment::Create()
-{
-	return OOCore_ICompartment_Create();
-}
 
 #endif // !defined(DOXYGEN)
 

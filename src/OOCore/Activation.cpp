@@ -26,6 +26,7 @@
 #include "Channel.h"
 #include "Exception.h"
 #include "Activation.h"
+#include "Compartment.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
@@ -40,6 +41,7 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
 	OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
 	OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
+	OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)

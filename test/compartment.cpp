@@ -22,8 +22,7 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 		return true;
 		
 	// Create an compartment
-	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment;
-	ptrCompartment.Attach(Omega::Compartment::ICompartment::Create());
+	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment(Omega::Compartment::OID_Compartment);
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = 0;
@@ -94,8 +93,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 		return true;
 		
 	// Create an compartment
-	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment;
-	ptrCompartment.Attach(Omega::Compartment::ICompartment::Create());
+	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment(Omega::Compartment::OID_Compartment);
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = 0;

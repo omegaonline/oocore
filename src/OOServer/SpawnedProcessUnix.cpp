@@ -124,26 +124,29 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 		/* based on lsof style walk of proc filesystem so should
 		 * work on anything with a proc filesystem i.e. a OSx/BSD */
 		/* walk proc, closing all descriptors from stderr onwards for our pid */
-		DIR *pdir;
-		char str[1024] = {0};
-
-		snprintf(str,sizeof(str)-1,"/proc/%u/fd/",getpid());
-
-		if (!(pdir = opendir(str)))
+			
+		OOBase::LocalString str;
+		int err = str.printf("/proc/%u/fd/",getpid());
+		if (err != 0)
+			LOG_ERROR(("Failed to format string: %s",OOBase::system_error_text(err)));
+		else 
 		{
-			LOG_ERROR(("opendir failed for %s %s",str,OOBase::system_error_text()));
-			return;
+			DIR* pdir = NULL;
+			if (!(pdir = opendir(str.c_str())))
+				LOG_ERROR(("opendir failed for %s %s",str.c_str(),OOBase::system_error_text()));
+			else
+			{
+				/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
+				for (dirent* pfile; (pfile = readdir(pdir));)
+				{
+					int fd;
+					if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
+						close(fd);
+				}
+			}
+			
+			closedir(pdir);
 		}
-
-		/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
-		for (dirent* pfile; (pfile = readdir(pdir));)
-		{
-			int fd;
-			if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
-				close(fd);
-		}
-
-		closedir(pdir);
 	}
 }
 

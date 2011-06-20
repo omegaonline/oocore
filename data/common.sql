@@ -24,7 +24,6 @@ BEGIN TRANSACTION;
 	);
 	
 	CREATE INDEX idx_RegistryValues ON RegistryValues(Parent);
-	
 	CREATE INDEX idx_RegistryValues2 ON RegistryValues(Name,Parent);
 	
 	CREATE TRIGGER trg_RegistryKeys AFTER DELETE ON RegistryKeys

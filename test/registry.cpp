@@ -306,6 +306,11 @@ bool registry_tests()
 	pRootKey->Release();
 	if (!bTest)
 		return false;
+		
+	// Check we can use the textual OID
+	pObj = Omega::CreateInstance(L"Omega.Registry",Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey));
+	TEST(pObj);
+	pObj->Release();
 
 	if (!test_key(L"System"))
 		return false;

@@ -2,7 +2,7 @@
 
 .sql.regdb:
 	@rm -f $@
-	$(AM_V_GEN)$(SQLITE3) $@ < $(srcdir)/common.sql
+	@$(SQLITE3) $@ < $(srcdir)/common.sql
 	$(AM_V_GEN)$(SQLITE3) $@ < $<
 	
 localstate_DATA = \

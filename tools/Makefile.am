@@ -1,1 +1,1 @@
-SUBDIRS = OOLaunch
+SUBDIRS = OOLaunch OOUuidgen

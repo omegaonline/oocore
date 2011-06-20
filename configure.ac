@@ -18,6 +18,7 @@ AC_CONFIG_FILES([
 	tools/Makefile
 	tools/OOLaunch/Makefile
 	tools/OOReg/Makefile
+	tools/OOUuidgen/Makefile
 	test/Makefile
 	test/TestLibrary/Makefile
 	test/TestProcess/Makefile

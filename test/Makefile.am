@@ -2,6 +2,8 @@ include $(top_srcdir)/m4/ltrc.inc
 
 SUBDIRS = TestLibrary TestProcess .
 
+CLEANFILES = *.regdb
+
 check_PROGRAMS = coretests
 
 coretests_CPPFLAGS = -DBUILD_DIR=$(abs_builddir) -DTOP_SRC_DIR=$(abs_top_srcdir)

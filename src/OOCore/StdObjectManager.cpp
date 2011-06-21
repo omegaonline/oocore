@@ -175,23 +175,7 @@ namespace
 	ObjectPtr<Remoting::IProxy> GetWireProxy(IObject* pObject)
 	{
 		ObjectPtr<Remoting::IProxy> ptrProxy;
-
-		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(pObject);
-		if (ptrSProxy)
-		{
-			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
-			if (shim && static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
-			{
-				// Retrieve the underlying wire proxy
-				System::Internal::auto_safe_shim proxy;
-				const System::Internal::SafeShim* pE = static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
-				if (pE)
-					System::Internal::throw_correct_exception(pE);
-
-				ptrProxy.Attach(System::Internal::create_safe_proxy<Remoting::IProxy>(proxy));
-			}
-		}
-
+		ptrProxy.Attach(Remoting::GetProxy(pObject));
 		return ptrProxy;
 	}
 }
@@ -962,6 +946,27 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInte
 	}
 
 	return pInfo;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in),IObject*,pObject))
+{
+	ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(pObject);
+	if (ptrSProxy)
+	{
+		System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
+		if (shim && static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+		{
+			// Retrieve the underlying wire proxy
+			System::Internal::auto_safe_shim proxy;
+			const System::Internal::SafeShim* pE = static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
+			if (pE)
+				System::Internal::throw_correct_exception(pE);
+
+			return System::Internal::create_safe_proxy<Remoting::IProxy>(proxy);
+		}
+	}
+
+	return NULL;
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");

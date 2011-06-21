@@ -222,12 +222,12 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(ptrPOI);
 
 	// Try to get the first interface
-	Omega::TypeInfo::IProvideObjectInfo::guid_set_t interfaces = ptrPOI->EnumInterfaces();
+	Omega::TypeInfo::IProvideObjectInfo::iid_list_t interfaces = ptrPOI->EnumInterfaces();
 	TEST(!interfaces.empty());
-	TEST(*interfaces.begin() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII;
-	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(*interfaces.begin(),ptrSimpleTest));
+	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(interfaces.front(),ptrSimpleTest));
 	TEST(ptrII);
 
 	TEST(ptrII->GetName() == L"Omega::TestSuite::ISimpleTest");

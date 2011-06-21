@@ -910,24 +910,24 @@ namespace OTL
 			public Omega::TypeInfo::IProvideObjectInfo
 	{
 	private:
-		Omega::TypeInfo::IProvideObjectInfo::guid_set_t WalkEntries(const ObjectBase::QIEntry* pEntries)
+		Omega::TypeInfo::IProvideObjectInfo::iid_list_t WalkEntries(const ObjectBase::QIEntry* pEntries)
 		{
 			try
 			{
-				Omega::TypeInfo::IProvideObjectInfo::guid_set_t retval;
+				Omega::TypeInfo::IProvideObjectInfo::iid_list_t retval;
 
 				for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 				{
 					if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
 					{
 						if (!pEntries[i].pfnMemQI)
-							retval.insert(*(pEntries[i].pGuid));
+							retval.push_back(*(pEntries[i].pGuid));
 						else
 						{
 							ObjectPtr<Omega::IObject> ptrObj;
 							ptrObj.Attach(pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
 							if (ptrObj)
-								retval.insert(*(pEntries[i].pGuid));							
+								retval.push_back(*(pEntries[i].pGuid));							
 						}
 					}
 					else if (pEntries[i].offset != 0)
@@ -936,14 +936,14 @@ namespace OTL
 						ptrAgg.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI)));
 						if (ptrAgg)
 						{
-							Omega::TypeInfo::IProvideObjectInfo::guid_set_t agg = ptrAgg->EnumInterfaces();
-							retval.insert(agg.begin(),agg.end());
+							Omega::TypeInfo::IProvideObjectInfo::iid_list_t agg = ptrAgg->EnumInterfaces();
+							retval.insert(retval.end(),agg.begin(),agg.end());
 						}
 					}
 					else if (pEntries[i].baseEntries)
 					{
-						Omega::TypeInfo::IProvideObjectInfo::guid_set_t base = WalkEntries(pEntries[i].baseEntries);
-						retval.insert(base.begin(),base.end());
+						Omega::TypeInfo::IProvideObjectInfo::iid_list_t base = WalkEntries(pEntries[i].baseEntries);
+						retval.insert(retval.end(),base.begin(),base.end());
 					}
 				}
 
@@ -957,7 +957,7 @@ namespace OTL
 
 	// IProvideObjectInfo members
 	public:
-		virtual Omega::TypeInfo::IProvideObjectInfo::guid_set_t EnumInterfaces()
+		virtual Omega::TypeInfo::IProvideObjectInfo::iid_list_t EnumInterfaces()
 		{
 			return WalkEntries(ROOT::getQIEntries());
 		}

@@ -185,9 +185,9 @@ namespace Omega
 	{
 		interface IProvideObjectInfo : public IObject
 		{
-			typedef std::set<guid_t> guid_set_t;
+			typedef std::vector<guid_t> iid_list_t;
 
-			virtual guid_set_t EnumInterfaces() = 0;
+			virtual iid_list_t EnumInterfaces() = 0;
 		};
 
 		static IInterfaceInfo* GetInterfaceInfo(const guid_t& iid, IObject* pObject = 0);
@@ -360,7 +360,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::TypeInfo, IProvideObjectInfo, "{F66A857D-C474-4c9e-B08B-68135AC8459E}",
 
 	// Methods
-	OMEGA_METHOD(Omega::TypeInfo::IProvideObjectInfo::guid_set_t,EnumInterfaces,0,())
+	OMEGA_METHOD(Omega::TypeInfo::IProvideObjectInfo::iid_list_t,EnumInterfaces,0,())
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const Omega::any_t&,oid));

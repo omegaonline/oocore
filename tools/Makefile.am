@@ -1,1 +1,1 @@
-SUBDIRS = OOLaunch OOGuidgen
+SUBDIRS = OOCOMLite OOLaunch OOGuidgen

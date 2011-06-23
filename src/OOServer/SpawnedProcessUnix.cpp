@@ -354,11 +354,8 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	if (strSysDir[strSysDir.length()-1] != '/')
-	{
-		if ((err = strSysDir.append("/")) != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-	}
+	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
+		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 	
 	if ((err = strSysDir.append("default_user.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
@@ -380,11 +377,8 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	if (strUsersDir[strUsersDir.length()-1] != '/')
-	{
-		if ((err = strUsersDir.append("/")) != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-	}
+	if ((err = OOBase::AppendDirSeparator(strUsersDir)) != 0)
+		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 	
 	if (bAddDot)
 	{

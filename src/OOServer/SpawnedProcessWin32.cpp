@@ -882,11 +882,8 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 	
-	if (strSysDir[strSysDir.length()-1] != '\\' && strSysDir[strSysDir.length()-1] != '/')
-	{
-		if ((err = strSysDir.append("\\")) != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-	}
+	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
+		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	if (strUsersDir.empty())
 	{
@@ -906,11 +903,8 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 	}
 	else
 	{
-		if (strUsersDir[strUsersDir.length()-1] != '\\' && strUsersDir[strUsersDir.length()-1] != '/')
-		{
-			if ((err = strUsersDir.append("\\")) != 0)
-				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-		}
+		if ((err = OOBase::AppendDirSeparator(strUsersDir)) != 0)
+			LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 		// Get the names associated with the user SID
 		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strUserName;

@@ -145,13 +145,10 @@ namespace
 		{
 		#if defined(_WIN32)
 			dir.replace('/','\\');
-			if (dir.c_str()[dir.length()-1] != '\\')
-				err = dir.append("\\",1);
 		#else
 			dir.replace('\\','/');
-			if (dir.c_str()[dir.length()-1] != '/')
-				err = dir.append("/",1);
 		#endif
+			err = OOBase::AppendDirSeparator(dir);
 		}
 
 		if (err != 0)

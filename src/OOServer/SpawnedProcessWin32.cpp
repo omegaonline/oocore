@@ -973,34 +973,37 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = new (std::nothrow) SpawnedProcessWin32();
 	if (!pSpawn32)
-		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)NULL);
 
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
 	OOBase::LocalString strAppName;
 	getenv_i("OMEGA_USER_BINARY",strAppName);
+	
+	int err = strAppName.append("oosvruser");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),(SpawnedProcess*)NULL);
 
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
-		return 0;
+		return NULL;
 
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
-		return 0;
+		return NULL;
 
 	// Connect up
-	int err = 0;
 	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)NULL);
 
 	hPipe.detach();
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
-		return 0;
+		return NULL;
 
 	return pSpawn;
 }

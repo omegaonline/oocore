@@ -494,7 +494,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	const char* user_host = getenv("OMEGA_USER_BINARY");
 	if (user_host)
 	{
-		err = strAppName.assign(user_host);
+		err = strAppName.concat(user_host,"oosvruser");
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
 	}

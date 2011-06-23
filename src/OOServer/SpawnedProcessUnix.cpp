@@ -53,7 +53,7 @@ namespace
 		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalString& strAppPath, int pass_fd, bool& bAgain);
+		bool Spawn(int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -150,8 +150,10 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, bool& bAgain)
+bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 {
+	OOBase::LocalString strAppName;
+	strAppName.getenv("OOSERVER_BINARY_PATH");
 	if (strAppPath.empty())
 	{
 		int err = strAppPath.assign(LIBEXEC_DIR "/oosvruser");
@@ -159,7 +161,18 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 	else
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppPath.c_str());
+	{
+		strModule.replace('/','\\');
+		int err = OOBase::AppendDirSeparator(strAppName);
+			
+		if (err == 0)
+			err = strAppName.append("oosvruser");
+			
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+	
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
+	}
 
 	// Check our uid
 	uid_t our_uid = getuid();
@@ -241,7 +254,7 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 	if (debug == "yes" && !display.empty())
 	{
 		OOBase::LocalString strExec;
-		err = strExec.printf("%s %s",strAppPath.c_str(),strPipe.c_str());
+		err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str());
 		if (err != 0)
 		{
 			LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
@@ -486,15 +499,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	OOBase::LocalString strAppName;
-	strAppName.getenv("OMEGA_USER_BINARY");
-	if (!strAppName.empty())
-	{
-		err = strAppName.append("oosvruser");
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
-	}
-
 	if (!pSpawnUnix->Spawn(strAppName,fd[1],bAgain))
 	{
 		::close(fd[0]);

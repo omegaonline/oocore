@@ -39,7 +39,7 @@ EXTRA_DIST = \
 if DEBUG
 TESTS_ENVIRONMENT = \
 	OMEGA_DEBUG=yes \
-	OMEGA_USER_BINARY=$(abs_top_builddir)/src/OOServer/ 
+	OOSERVER_BINARY_PATH=$(abs_top_builddir)/src/OOServer/ 
 endif
 
 TESTS = \

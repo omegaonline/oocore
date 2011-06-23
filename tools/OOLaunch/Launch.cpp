@@ -157,7 +157,7 @@ static int run_oosvruser()
 				exit(EXIT_FAILURE);
 		}
 
-		const char* run = getenv("OMEGA_USER_BINARY");
+		const char* run = getenv("OOSERVER_BINARY_PATH");
 		if (run)
 			do_exec(run,pipes[WRITE_END]);
 

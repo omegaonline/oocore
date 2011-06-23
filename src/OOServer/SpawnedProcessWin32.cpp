@@ -60,7 +60,7 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool IsRunning() const;
-		bool Spawn(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		bool Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
@@ -72,7 +72,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
 	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
@@ -510,10 +510,11 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	OOBase::LocalString strModule;
-	if (strAppPath.empty())
+	strModule.getenv("OOSERVER_BINARY_PATH");
+	if (strModule.empty())
 	{
 		// Get our module name
 		char szPath[MAX_PATH];
@@ -538,24 +539,15 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 	}
 	else
 	{
-		int err = strModule.assign(strAppPath.c_str());
+		strModule.replace('/','\\');
+		int err = OOBase::AppendDirSeparator(strModule);
+			
 		if (err == 0)
-		{
-			if (strModule.length() < 4)
-				err = strModule.append(".exe");
-			else
-			{
-				const char* ext = strModule.c_str()+strModule.length()-4;
-				bool ok = (ext[0]=='.' && (ext[1]=='e' || ext[1]=='E') && (ext[2]=='x' || ext[2]=='X') && (ext[3]=='e' || ext[3]=='E'));
-				if (!ok)
-					err = strModule.append(".exe");
-			}
-		}
+			err = strModule.append("OOSvrUser.exe");
+			
 		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
-
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using oosvruser: %s",strModule.c_str());
-
+			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
+	
 		if (strModule.length() >= MAX_PATH)
 		{
 			// Prefix with '\\?\'
@@ -563,6 +555,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 			if (err != 0)
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
 		}
+		
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 	}
 
 	// Create the named pipe
@@ -756,11 +750,11 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+bool SpawnedProcessWin32::Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
-	DWORD dwRes = SpawnFromToken(strAppPath,hToken,hPipe,bSandbox);
+	DWORD dwRes = SpawnFromToken(hToken,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
 
@@ -950,15 +944,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	OOBase::LocalString strAppName;
-	strAppName.getenv("OMEGA_USER_BINARY");
-	
-	int err = strAppName.append("oosvruser");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),(SpawnedProcess*)NULL);
-
 	OOBase::Win32::SmartHandle hPipe;
-	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
+	if (!pSpawn32->Spawn(uid,hPipe,bSandbox,bAgain))
 		return NULL;
 
 	// Wait for the connect attempt
@@ -966,6 +953,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 		return NULL;
 
 	// Connect up
+	int err = 0;
 	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)NULL);

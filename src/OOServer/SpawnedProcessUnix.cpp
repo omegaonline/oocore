@@ -235,9 +235,10 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 		_exit(127);
 	}
 
-	const char* debug = getenv("OMEGA_DEBUG");
-	const char* display = getenv("DISPLAY");
-	if (debug && strcmp(debug,"yes")==0 && display)
+	OOBase::LocalString debug,display;
+	debug.getenv("OMEGA_DEBUG");
+	display.getenv("DISPLAY");
+	if (debug == "yes" && !display.empty())
 	{
 		OOBase::LocalString strExec;
 		err = strExec.printf("%s %s",strAppPath.c_str(),strPipe.c_str());
@@ -365,11 +366,12 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 	bool bAddDot = false;
 	if (strUsersDir.empty())
 	{
-		const char* pszHome = getenv("HOME");
-		if (pszHome)
+		OOBase::LocalString strHome;
+		strHome.getenv("HOME");
+		if (!strHome.empty())
 		{
 			bAddDot = true;
-			err = strUsersDir.assign(pszHome);
+			err = strUsersDir.assign(strHome.c_str());
 		}
 		else	
 			err = strUsersDir.concat(strSysDir.c_str(),"users/");
@@ -491,10 +493,10 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	// Spawn the process
 	OOBase::LocalString strAppName;
-	const char* user_host = getenv("OMEGA_USER_BINARY");
-	if (user_host)
+	strAppName.getenv("OMEGA_USER_BINARY");
+	if (!strAppName.empty())
 	{
-		err = strAppName.concat(user_host,"oosvruser");
+		err = strAppName.append("oosvruser");
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
 	}

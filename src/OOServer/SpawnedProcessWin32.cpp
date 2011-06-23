@@ -46,32 +46,10 @@ void AttachDebugger(DWORD pid);
 
 namespace
 {
-	int getenv_i(const char* val, OOBase::LocalString& str)
-	{
-		int ret = 0;
-
-	#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
-		char* buf = 0;
-		size_t len = 0;
-		if (!_dupenv_s(&buf,&len,val))
-		{
-			if (len)
-				ret = str.assign(buf,len-1);
-			free(buf);
-		}
-	#else
-		ret = str.assign(getenv(val));
-	#endif
-
-		return ret;
-	}
-
 	bool getenv_OMEGA_DEBUG()
 	{
 		OOBase::LocalString str;
-		if (getenv_i("OMEGA_DEBUG",str) != 0)
-			return false;
-
+		str.getenv("OMEGA_DEBUG");
 		return (str == "yes");
 	}
 
@@ -979,7 +957,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	// Spawn the process
 	OOBase::LocalString strAppName;
-	getenv_i("OMEGA_USER_BINARY",strAppName);
+	strAppName.getenv("OMEGA_USER_BINARY");
 	
 	int err = strAppName.append("oosvruser");
 	if (err != 0)

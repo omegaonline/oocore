@@ -92,9 +92,10 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		else
 			szBuf[clen] = '\0';
 
-		const char* debug = getenv("OMEGA_DEBUG");
-		const char* display = getenv("DISPLAY");
-		if (debug && strcmp(debug,"yes")==0 && display)
+		OOBase::LocalString debug,display;
+		debug.getenv("OMEGA_DEBUG");
+		display.getenv("DISPLAY");
+		if (debug == "yes" && !display.empty())
 			execlp("xterm","xterm","-e",pszBuf,(char*)0);
 
 		execlp("sh","sh","-c",pszBuf,(char*)0);

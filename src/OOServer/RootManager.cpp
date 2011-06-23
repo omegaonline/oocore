@@ -46,20 +46,9 @@ namespace
 {
 	bool getenv_OMEGA_DEBUG()
 	{
-	#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
-		bool ret = false;
-		char* buf = 0;
-		size_t len = 0;
-		if (!_dupenv_s(&buf,&len,"OMEGA_DEBUG"))
-		{
-			if (len)
-				ret = (strncmp(buf,"yes",len-1) == 0);
-			free(buf);
-		}
-		return ret;
-	#else
-		return (strcmp(getenv("OMEGA_DEBUG"),"yes") == 0);
-	#endif
+		OOBase::LocalString str;
+		str.getenv("OMEGA_DEBUG");
+		return (str == "yes");
 	}
 }
 

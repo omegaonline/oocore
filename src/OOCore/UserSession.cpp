@@ -388,13 +388,12 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 		OMEGA_THROW(stream.last_error());
 #else
 
-	const char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
-	if (!pszAddr)
-		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
-
-	int err = strPipe.assign(pszAddr);
+	int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
 	if (err != 0)
 		OMEGA_THROW(err);
+		
+	if (strPipe.empty())
+		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
 
 #endif
 }

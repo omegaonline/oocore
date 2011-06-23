@@ -110,8 +110,7 @@ namespace
 {
 	int Version()
 	{
-		printf(APPNAME " version information:\n"
-			"Version: %s",OOCORE_VERSION);
+		printf(APPNAME " version %s",OOCORE_VERSION);
 
 	#if defined(OMEGA_DEBUG)
 		printf(" (Debug build)");

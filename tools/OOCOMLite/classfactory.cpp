@@ -44,6 +44,22 @@ namespace
 				Omega::Uninitialize();
 		}
 	}
+	
+	Omega::string_t GetDesc(Omega::IException* pE)
+	{
+		Omega::string_t desc = pE->GetDescription();
+		
+		OTL::ObjectPtr<Omega::IInternalException> ptrInternal = pE;
+		if (ptrInternal)
+			desc += L" at " + ptrInternal->GetSource();
+		
+		OTL::ObjectPtr<Omega::IException> ptrCause;
+		ptrCause.Attach(pE->GetCause());
+		if (ptrCause)
+			desc += L". Cause: " + GetDesc(ptrCause);
+			
+		return desc;
+	}	
 }
 
 class ClassFactory : public IClassFactory
@@ -305,12 +321,15 @@ HRESULT FillExcepInfo(const wchar_t* wszSource, Omega::IException* pE, EXCEPINFO
 	pExcepInfo->pvReserved = NULL;
 	pExcepInfo->pfnDeferredFillIn = NULL;
 	pExcepInfo->scode = 0;
+	pExcepInfo->bstrSource = SysAllocString(wszSource);
+	pExcepInfo->bstrDescription = SysAllocString(L"Omega exception thrown");
 	
 	try
 	{
-		// Fill in exception information
-		pExcepInfo->bstrSource = SysAllocString(wszSource);
-		pExcepInfo->bstrDescription = SysAllocString(pE->GetDescription().c_wstr());
+		Omega::string_t desc = GetDesc(pE);
+		
+		SysFreeString(pExcepInfo->bstrDescription);
+		pExcepInfo->bstrDescription = SysAllocString(desc.c_wstr());
 	}
 	catch (Omega::IException* pE2)
 	{

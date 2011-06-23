@@ -75,7 +75,7 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		// Not sure what we should do about stdin/out/err
 		void* POSIX_TODO;
 
-		char szBuf[512] = {0};
+		char szBuf[MAX_PATH] = {0};
 		char* pszBuf = szBuf;
 		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
 		if (clen >= sizeof(szBuf))
@@ -96,9 +96,9 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		debug.getenv("OMEGA_DEBUG");
 		display.getenv("DISPLAY");
 		if (debug == "yes" && !display.empty())
-			execlp("xterm","xterm","-e",pszBuf,(char*)0);
+			execlp("xterm","xterm","-e",pszBuf,(char*)NULL);
 
-		execlp("sh","sh","-c",pszBuf,(char*)0);
+		execlp("sh","sh","-c",pszBuf,(char*)NULL);
 
 		_exit(127);
 	}

@@ -196,6 +196,22 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	}
 
 	// We are the child...
+	
+	// Set stdin/out/err to /dev/null
+	int fd = open("/dev/null",O_RDWR);
+	if (fd == -1)
+	{
+		LOG_ERROR(("open(/dev/null) failed: %s",OOBase::system_error_text()));
+		_exit(127);
+	}
+
+	// Check this session stuff with the Stevens book! umask? etc...
+	void* TODO;
+
+	dup2(fd,STDIN_FILENO);
+	dup2(fd,STDOUT_FILENO);
+	dup2(fd,STDERR_FILENO);
+	close(fd);
 
 	// Close all open handles - not that we should have any ;)
 	close_all_fds(pass_fd);
@@ -204,7 +220,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	if (chdir(LIBEXEC_DIR) != 0)
 	{
 		LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
-		exit(errno);
+		_exit(127);
 	}
 
 	if (bChangeUid)
@@ -214,28 +230,28 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 		if (!pw)
 		{
 			LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
 		{
 			LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 		{
 			LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 
 		// Stop being priviledged!
 		if (setuid(m_uid) != 0)
 		{
 			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 	}
 

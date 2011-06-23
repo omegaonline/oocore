@@ -235,14 +235,18 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	parse_args(strArgs,args);
 
 	bool bStandalone = false;
-	size_t i = args.find(L"standalone");
-	if (i != args.npos && *args.at(i) == L"true")
-		bStandalone = true;
-
 	bool bStandaloneAlways = false;
-	i = args.find(L"standalone_always");
-	if (i != args.npos && *args.at(i) == L"true")
-		bStandaloneAlways = true;
+	size_t i = args.find(L"standalone");
+	if (i != args.npos)
+	{
+		if (*args.at(i) == L"true")
+			bStandalone = true;
+		else if (*args.at(i) == L"always")
+		{
+			bStandalone = true;
+			bStandaloneAlways = true;
+		}
+	}
 
 	OOBase::LocalString strPipe;
 	if (!bStandaloneAlways)
@@ -250,7 +254,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 	if (!bStandalone)
 	{
-		// Connect up to the root process...
+		// Connect up to the user process...
 		OOBase::timeval_t wait(5);
 		OOBase::Countdown countdown(&wait);
 		int err = 0;

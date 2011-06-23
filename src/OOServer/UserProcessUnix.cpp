@@ -76,30 +76,28 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		void* POSIX_TODO;
 
 		char szBuf[MAX_PATH] = {0};
-		char* pszBuf = szBuf;
 		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
 		if (clen >= sizeof(szBuf))
 		{
-			pszBuf = static_cast<char*>(malloc(clen));
-			if (!pszBuf)
-			{
-				fputs("Out of memory\n",stderr);
-				_exit(127);
-			}
-
-			OOBase::to_native(pszBuf,clen,pszExeName,size_t(-1));
+			fputs("exec filename > MAX_PATH\n",stderr);
+			_exit(127);
 		}
-		else
-			szBuf[clen] = '\0';
+		szBuf[clen] = '\0';
 
-		OOBase::LocalString debug,display;
-		debug.getenv("OMEGA_DEBUG");
-		display.getenv("DISPLAY");
-		if (debug == "yes" && !display.empty())
-			execlp("xterm","xterm","-e",pszBuf,(char*)NULL);
+		const char* debug = getenv("OMEGA_DEBUG");
+-		const char* term = getenv("TERM");
+-		if (debug && strcmp(debug,"yes")==0 && term)
+			execlp(term,term,"-e",szBuf,(char*)NULL);
 
-		execlp("sh","sh","-c",pszBuf,(char*)NULL);
-
+		const char* shell = getenv("SHELL");
+		if (shell)
+			execlp(shell,shell,"-c",szBuf,(char*)NULL);
+			
+		execlp("sh","sh","-c",szBuf,(char*)NULL);
+		
+		execlp(szBuf,szBuf,(char*)NULL);
+		
+		fputs("Failed to launch process\n",stderr);
 		_exit(127);
 	}
 

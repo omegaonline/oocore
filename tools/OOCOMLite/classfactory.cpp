@@ -247,10 +247,26 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	
 	Omega::IObject* pObj = NULL;
 	m_ptrCompt->CreateInstance(values[0],values[1].cast<Omega::Activation::Flags_t>(),NULL,OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObj);
-	
+		
 	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
 	ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pObj));
+	if (!ptrPOI)
+	{
+		pExcepInfo->wCode = 1002;
+		pExcepInfo->wReserved = 0;
+		pExcepInfo->bstrSource = NULL;
+		pExcepInfo->bstrDescription = NULL;
+		pExcepInfo->bstrHelpFile = NULL;
+		pExcepInfo->dwHelpContext = 0;
+		pExcepInfo->pvReserved = NULL;
+		pExcepInfo->pfnDeferredFillIn = NULL;
+		pExcepInfo->scode = 0;
+		pExcepInfo->bstrSource = SysAllocString(L"CreateInstance");
+		pExcepInfo->bstrDescription = SysAllocString(L"Created object is not suitable for scripting");
 		
+		return DISP_E_EXCEPTION;
+	}
+	
 	Omega::TypeInfo::IProvideObjectInfo::iid_list_t iids = ptrPOI->EnumInterfaces();
 	if (iids.empty())
 		return E_NOINTERFACE;

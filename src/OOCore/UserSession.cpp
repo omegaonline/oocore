@@ -313,7 +313,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 
 		ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	}

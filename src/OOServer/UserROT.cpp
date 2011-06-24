@@ -69,7 +69,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the global interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
 		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 
@@ -83,7 +83,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	uint32_t rot_cookie = 0;
 
 	// Check for public registration...
-	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Anywhere)))
+	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Global)))
 	{
 		// Register in sandbox ROT
 		rot_cookie = m_ptrROT->RegisterObject(oid,pObject,flags);
@@ -217,7 +217,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 		return;
 	}
 
-	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Anywhere)))
+	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Global)))
 	{
 		// Route to global rot
 		m_ptrROT->GetObject(oid,flags,iid,pObject);

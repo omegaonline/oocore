@@ -65,7 +65,7 @@ namespace OOCore
 	};
 
 	class SystemExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::ProcessLocal>,
 			public OTL::ExceptionMarshalFactoryImpl<SystemException>
 	{
 	};
@@ -111,7 +111,7 @@ namespace OOCore
 	};
 
 	class InternalExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<InternalExceptionMarshalFactoryImpl,&OOCore::OID_InternalExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<InternalExceptionMarshalFactoryImpl,&OOCore::OID_InternalExceptionMarshalFactory,Omega::Activation::ProcessLocal>,
 			public OTL::ExceptionMarshalFactoryImpl<InternalException>
 	{
 	};
@@ -157,7 +157,7 @@ namespace OOCore
 	};
 
 	class NoInterfaceExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::ProcessLocal>,
 			public OTL::ExceptionMarshalFactoryImpl<NoInterfaceException>
 	{
 	};
@@ -176,7 +176,7 @@ namespace OOCore
 	};
 
 	class TimeoutExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::ProcessLocal>,
 			public OTL::ExceptionMarshalFactoryImpl<TimeoutException>
 	{
 	};
@@ -195,7 +195,7 @@ namespace OOCore
 	};
 
 	class ChannelClosedExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::ProcessLocal>,
 			public OTL::ExceptionMarshalFactoryImpl<ChannelClosedException>
 	{
 	};

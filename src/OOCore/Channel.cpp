@@ -40,7 +40,7 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::InProcess));
+		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::Library));
 	
 	// Connect the OM to us
 	m_ptrOM = pOM;
@@ -286,7 +286,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pM
 	{
 		// This must match OOServer::User::OID_ChannelMarshalFactory
 		static const guid_t oid(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
-		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess | Activation::DontLaunch);
+		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::Library | Activation::DontLaunch);
 
 		// If we have a pointer by now then we are actually running in the OOServer.exe,
 		// and can therefore do our specialized unmarshalling...

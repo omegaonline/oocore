@@ -43,10 +43,10 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::InProcess));
+		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::Library));
 
 	// Create a new OM
-	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess | Activation::DontLaunch);
+	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::Library | Activation::DontLaunch);
 
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM;

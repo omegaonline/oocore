@@ -148,7 +148,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 			if (m_message_oid == guid_t::Null())
 				ptrPayload.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 			else
-				ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+				ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
 			if ((attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect)
 			{
@@ -203,7 +203,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	if (m_message_oid == guid_t::Null())
 		ptrMessage.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 	else
-		ptrMessage = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+		ptrMessage = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
 	// Write the mesage struct
 	ptrMessage->WriteStructStart(L"message",L"$rpc_msg");
@@ -423,7 +423,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					if (m_message_oid == guid_t::Null())
 						ptrResult.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 					else
-						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
 					// Send back the src_channel_id
 					ptrResult->WriteValue(L"channel_id",src_channel_id | m_channel_id);
@@ -436,7 +436,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					if (m_message_oid == guid_t::Null())
 						ptrResult.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 					else
-						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
 					// Send back the pong
 					ptrResult->WriteValue(L"pong",byte_t(1));
@@ -608,7 +608,7 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 		if (m_message_oid == guid_t::Null())
 			ptrMsg.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 		else
-			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
+			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
 		// Send back the src_channel_id
 		ptrMsg->WriteValue(L"channel_id",i);

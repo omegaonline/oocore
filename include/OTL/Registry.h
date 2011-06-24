@@ -58,15 +58,15 @@ namespace OTL
 		ObjectPtr(const wchar_t* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(NULL)
 		{
-			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
-			if (key)
+			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
+			if (key && key[0] != L'\0')
 				Attach(this->m_ptr->OpenSubKey(Omega::string_t(key,size_t(-1),false),flags));
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(NULL)
 		{
-			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Any,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
+			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
 			if (!key.IsEmpty())
 				Attach(this->m_ptr->OpenSubKey(key,flags));
 		}

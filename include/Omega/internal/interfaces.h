@@ -47,20 +47,14 @@ namespace Omega
 		};
 
 		enum Flags
-		{
-			InProcess = 1,                         ///< Use dll/so if available
-			OutOfProcess = 2,                      ///< Use exe if available
-			Any = (InProcess | OutOfProcess),
-						
-			// Only one of the following...
-			Surrogate = 8,                         ///< Launch dll/so in a surrogate wrapper
-			PrivateSurrogate = (0x10 | Surrogate), ///< Launch dll/so in its own surrogate wrapper
-			Sandbox = 0x20,                        ///< Launch as the sandbox user - implies surrogate if dll/so
-			VM = 0x40,                             ///< Launch in the virtual machine - implies surrogate if dll/so
-
-			// Add this for CreateInstance() if you want...
-			RemoteActivation = 0x4000,             ///< Request is from a remote machine
-			DontLaunch = 0x8000                    ///< Do not launch exe/dll/so if not already running		
+		{	
+			Default = 0,                         ///< Use a dll/so or executeable as available
+			Library = 1,                         ///< Only use dll/so
+			Process = 2,                         ///< Launch as current user - implies surrogate if dll/so
+			Sandbox = 8,                         ///< Launch as the sandbox user - implies surrogate if dll/so
+			OwnSurrogate = 0x10,                 ///< Launch dll/so in its own surrogate wrapper
+			RemoteActivation = 0x20,             ///< Request is from a remote machine
+			DontLaunch = 0x40                    ///< Do not launch exe/dll/so if not already running		
 		};
 		typedef uint16_t Flags_t;
 
@@ -71,7 +65,7 @@ namespace Omega
 			ProcessLocal = 1,    // Register for this process only
 			UserLocal = 2,       // Register for this user only
 			MachineLocal = 4,    // Register for this machine only
-			Anywhere = 8,        // Register publicly
+			Global = 8,          // Register publicly
 
 			MultipleUse = 0x0,
 			SingleUse = 0x10,            // Auto Revoke after 1st GetObject

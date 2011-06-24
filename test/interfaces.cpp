@@ -248,7 +248,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 		return true;
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Library);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -261,7 +261,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	// Test aggregation
 	Aggregator* pAgg = new Aggregator();
 
-	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Library,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -276,7 +276,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::OutOfProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -361,7 +361,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 		return true;
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -374,7 +374,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	// Test aggregation
 	Aggregator* pAgg = new Aggregator();
 
-	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -389,7 +389,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{

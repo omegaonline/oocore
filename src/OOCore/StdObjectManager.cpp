@@ -740,7 +740,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		guid_t oid = pMessage->ReadValue(L"$oid").cast<guid_t>();
 
 		// Create an instance of Oid
-		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
+		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::Library);
 		if (!ptrMarshalFactory)
 			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshalFactory));
 

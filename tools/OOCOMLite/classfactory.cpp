@@ -203,7 +203,7 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	//             unnamed args processed before named args
 	
 	Omega::any_t values[2];
-	values[1] = Omega::Activation::Any;	
+	values[1] = Omega::Activation::Default;	
 	
 	UINT arg = pDispParams->cArgs;
 	for (;arg > pDispParams->cNamedArgs;--arg)

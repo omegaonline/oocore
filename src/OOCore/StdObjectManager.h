@@ -50,7 +50,7 @@ namespace OOCore
 {
 	class StdObjectManager :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactory<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactory<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::ProcessLocal>,
 			public IStdObjectManager,
 			public Omega::Remoting::IMarshaller
 	{

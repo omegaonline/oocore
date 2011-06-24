@@ -26,7 +26,7 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = 0;
-	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::Library,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
 	TEST(pObj);
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
@@ -46,7 +46,7 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	Aggregator* pAgg = new Aggregator();
 	
 	pObj = 0;
-	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
+	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::Library,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
 	TEST(pObj);
 
 	pAgg->SetInner(pObj);
@@ -97,7 +97,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = 0;
-	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::Process,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
 	TEST(pObj);
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
@@ -117,7 +117,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	Aggregator* pAgg = new Aggregator();
 	
 	pObj = NULL;
-	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
+	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::Process,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
 	TEST(pObj);
 
 	pAgg->SetInner(pObj);

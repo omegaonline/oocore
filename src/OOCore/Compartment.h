@@ -102,7 +102,7 @@ namespace OOCore
 	};
 	
 	class CompartmentFactory : 
-		public OTL::ObjectFactoryBase<&Omega::Compartment::OID_Compartment,Omega::Activation::InProcess>
+		public OTL::ObjectFactoryBase<&Omega::Compartment::OID_Compartment,Omega::Activation::ProcessLocal>
 	{
 	// IObjectFactory members
 	public:

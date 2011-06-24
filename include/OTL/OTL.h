@@ -192,7 +192,7 @@ namespace OTL
 
 		void Detach()
 		{
-			m_ptr = 0;
+			m_ptr = NULL;
 		}
 
 		OBJECT* AddRef()
@@ -216,7 +216,7 @@ namespace OTL
 
 		OBJECT* operator ->() const
 		{
-			assert(m_ptr != 0);
+			assert(m_ptr != NULL);
 
 			return m_ptr;
 		}
@@ -237,7 +237,7 @@ namespace OTL
 	class ObjectPtr : public ObjectPtrBase<OBJECT>
 	{
 	public:
-		ObjectPtr(OBJECT* obj = 0) :
+		ObjectPtr(OBJECT* obj = NULL) :
 				ObjectPtrBase<OBJECT>(obj)
 		{ }
 
@@ -261,11 +261,11 @@ namespace OTL
 				this->m_ptr = static_cast<OBJECT*>(rhs->QueryInterface(OMEGA_GUIDOF(OBJECT)));
 		}
 
-		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<OBJECT>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
@@ -288,7 +288,7 @@ namespace OTL
 	class ObjectPtr<Omega::IObject> : public ObjectPtrBase<Omega::IObject>
 	{
 	public:
-		ObjectPtr(Omega::IObject* obj = 0) :
+		ObjectPtr(Omega::IObject* obj = NULL) :
 				ObjectPtrBase<Omega::IObject>(obj)
 		{ }
 
@@ -296,11 +296,11 @@ namespace OTL
 				ObjectPtrBase<Omega::IObject>(rhs)
 		{ }
 
-		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<Omega::IObject>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<Omega::IObject>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
@@ -781,7 +781,7 @@ namespace OTL
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
 		{
-			Omega::IObject* ret = 0;
+			Omega::IObject* ret = NULL;
 			ObjectPtr<T> ptr = T::CreateInstancePtr(pOuter);
 			if (iid != OMEGA_GUIDOF(Omega::IObject))
 				ret = ptr->QueryInterface(iid);

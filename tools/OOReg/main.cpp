@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 	
 	// Parse command line
 	OOSvrBase::CmdArgs::results_t args;
-	if (!cmd_args.parse(argc,argv,args))
+	if (cmd_args.parse(argc,argv,args) != 0)
 		return EXIT_FAILURE;
 
 	if (args.find("help") != args.npos)

@@ -53,7 +53,6 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IInternalException* pE)
 	{
-		fputs("Omega::IInternalException - ",stderr);
 		fputs(pE->GetDescription().c_nstr(),stderr);
 		
 		Omega::string_t strSource = pE->GetSource();
@@ -98,13 +97,16 @@ static int help()
 	printf("\nMode, one of:\n");
 	printf("  get <value_path>         Display the value of <value_path>\n");
 	printf("  set <value_path> <value> Set the value of <value_path> to <value>\n");
-	printf("  delete <key_path>        Delete the key <key_path> and all sub-items");
+	printf("  delete <key_path>        Delete the key <key_path> and all sub-items\n");
 	printf("  delete <value_path>      Delete the value <value_path>\n");
-	printf("  list <key_path>          List the subkeys and values of the key <key_path>");
-	printf("  exists <key_path>        Exit with code EXIT_SUCCESS if the key <key_path> exists, EXIT_FAILURE if not");
-	printf("  exists <value_path>      Exit with code EXIT_SUCCESS if the value <value_path> exists, EXIT_FAILURE if not\n");
+	printf("  list <key_path>          List the subkeys and values of the key <key_path>\n");
+	printf("  exists <key_path>        Exit with code EXIT_SUCCESS if the key <key_path>\n");
+	printf("                            exists, EXIT_FAILURE if not\n");
+	printf("  exists <value_path>      Exit with code EXIT_SUCCESS if the value <value_path>\n");
+	printf("	                        exists, EXIT_FAILURE if not\n");
 	printf("\nArguments:\n");
-	printf("  <key_path>     The full path to a key, separated by /, and ending with /, e.g. \"All Users/Objects/\"\n");
+	printf("  <key_path>     The full path to a key, separated by /, and ending with /,\n");
+	printf("                  e.g. \"All Users/Objects/\"\n");
 	printf("  <value_path>   The full path to the value of a key, not ending with /\n");
 	
 	return EXIT_SUCCESS;
@@ -146,7 +148,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("args",0,true);
-	
+			
 	// Parse command line
 	OOSvrBase::CmdArgs::results_t args;
 	if (cmd_args.parse(argc,argv,args) != 0)
@@ -161,11 +163,29 @@ int main(int argc, char* argv[])
 	OOBase::String oo_args;
 	args.find("args",oo_args);
 	
-	OOBase::String method,params[3];
-	args.find("@0",method);
-	args.find("@1",params[0]);
+	OOBase::String method;
+	if (!args.find("@0",method))
+	{
+		fputs("Mode expected, use --help for information.",stderr);
+		return EXIT_FAILURE;
+	}
+	
+	OOBase::String params[2];	
+	if (!args.find("@1",params[0]))
+	{
+		fputs("Too few arguments to '",stderr);
+		fputs(method.c_str(),stderr);
+		fputs("', use --help for information.",stderr);
+		return EXIT_FAILURE;
+	}
+	else if (args.find("@3") != args.npos)
+	{
+		fputs("Too many arguments to '",stderr);
+		fputs(method.c_str(),stderr);
+		fputs("', use --help for information.",stderr);
+		return EXIT_FAILURE;
+	}
 	args.find("@2",params[1]);
-	args.find("@3",params[2]);
 		
 	Omega::IException* pE = Omega::Initialize(Omega::string_t(oo_args.c_str(),false));
 	if (pE)
@@ -179,21 +199,7 @@ int main(int argc, char* argv[])
 	{
 		Omega::string_t key,value;
 		
-		if (method.empty())
-			fputs("Mode expected, use --help for information.",stderr);
-		else if (params[0].empty())
-		{
-			fputs("Too few arguments to '",stderr);
-			fputs(method.c_str(),stderr);
-			fputs("', use --help for information.",stderr);
-		}
-		else if (!params[2].empty())
-		{
-			fputs("Too few arguments to '",stderr);
-			fputs(method.c_str(),stderr);
-			fputs("', use --help for information.",stderr);
-		}
-		else if (method == "set")
+		if (method == "set")
 		{
 			if (!value_path(params[0],key,value))
 				fputs("set requires a value_path, use --help for information.",stderr);
@@ -205,7 +211,7 @@ int main(int argc, char* argv[])
 		}		
 		else if (!params[1].empty())
 		{
-			fputs("Too few arguments to '",stderr);
+			fputs("Too many arguments to '",stderr);
 			fputs(method.c_str(),stderr);
 			fputs("', use --help for information.",stderr);
 		}

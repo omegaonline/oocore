@@ -19,13 +19,50 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <OOSvrBase/CmdArgs.h>
+
 #include "../../include/Omega/Omega.h"
 
 #include <stdio.h>
 
-int main(int /*argc*/, char* /*argv*/[])
+static int version()
 {
+	printf("ooguidgen version %s",OOCORE_VERSION);
+
+#if defined(OMEGA_DEBUG)
+	printf(" (Debug build)");
+#endif
+		
+	return EXIT_SUCCESS;
+}
+
+static int help()
+{
+	printf("ooguidgen - The Omega Online GUID generator.\n\n");
+	printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n");
+	
+	return EXIT_SUCCESS;
+}
+
+int main(int argc, char* argv[])
+{
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("help",'h');
+	cmd_args.add_option("version",'v');
+	
+	// Parse command line
+	OOSvrBase::CmdArgs::results_t args;
+	if (!cmd_args.parse(argc,argv,args))
+		return EXIT_FAILURE;
+		
+	if (args.find("help") != args.npos)
+		return help();
+
+	if (args.find("version") != args.npos)
+		return version();
+		
 	printf("%s",Omega::guid_t::Create().ToString().c_nstr());
 	
-	return 0;
+	return EXIT_SUCCESS;
 }

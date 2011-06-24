@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2010 Rick Taylor
+// Copyright (C) 2011 Rick Taylor
 //
 // This file is part of OOReg, the Omega Online Registry editor application.
 //
@@ -25,132 +25,118 @@
 #include "../../include/Omega/OOCore_version.h"
 #include "../../include/OTL/Registry.h"
 
-#include <iostream>
+#include <stdio.h>
 
-#ifdef HAVE_VLD_H
-#include <vld.h>
-#endif
+static void exception_details(Omega::IException* pE);
 
-// Manual externs
-typedef std::vector<std::string> vector_string;
+static void report_cause(Omega::IException* pE)
+{
+	Omega::IException* pCause = pE->GetCause();
+	if (pCause)
+	{
+		fputs("\nCause: ",stderr);
+		exception_details(pCause);
+	}
+}
 
-extern void report_exception(Omega::IException* pE);
-extern bool process_command(const vector_string& line_args, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey);
+static void report_exception(Omega::IException* pE)
+{
+	fputs("Exception: ",stderr);
+	exception_details(pE);
+}
 
-#if defined(_WIN32) && !defined(__MINGW32__)
-#define APPNAME "OOReg"
-#else
-#define APPNAME "ooreg"
-#endif
+static void exception_details(Omega::IException* pOrig)
+{
+	try
+	{
+		pOrig->Rethrow();
+	}
+	catch (Omega::IInternalException* pE)
+	{
+		fputs("Omega::IInternalException - ",stderr);
+		fputs(pE->GetDescription().c_nstr(),stderr);
+		
+		Omega::string_t strSource = pE->GetSource();
+		if (!strSource.IsEmpty())
+		{
+			fputs("\nAt: ",stderr);
+			fputs(strSource.c_nstr(),stderr);
+		}		
+
+		report_cause(pE);
+		pE->Release();
+	}
+	catch (Omega::IException* pE)
+	{
+		fputs(pE->GetDescription().c_nstr(),stderr);
+				
+		report_cause(pE);
+		pE->Release();
+	}
+}
 
 static int version()
 {
-	std::cout << OOCORE_VERSION;
-#if defined(OMEGA_DEBUG)
-	std::cout << " (Debug build)";
-#endif
-	std::cout << " " << OMEGA_COMPILER_STRING << std::endl;
+	printf("ooreg version %s",OOCORE_VERSION);
 
+#if defined(OMEGA_DEBUG)
+	printf(" (Debug build)");
+#endif
+		
 	return EXIT_SUCCESS;
 }
 
 static int help()
 {
-	std::cout << APPNAME " - The Omega Online registry editor." << std::endl;
-	std::cout << std::endl;
-	std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl;
-	std::cout << std::endl;
-	std::cout << "Usage: " APPNAME " [options]" << std::endl;
-	std::cout << std::endl;
-	std::cout << "Options:" << std::endl;
-	std::cout << "  --help (-h)              Display this help text" << std::endl;
-	std::cout << "  --version (-v)           Display version information" << std::endl;
-	std::cout << "  --non-interactive (-n)   Do not prompt between commands" << std::endl;
-
+	printf("ooreg - The Omega Online registry editor.\n\n");
+	printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
+	printf("Usage: ooreg [options] <mode> <arguments> ... <arguments> \n");
+	printf("\nOptions:\n");
+	printf("  --help (-h)              Display this help text\n");
+	printf("  --version (-v)           Display version information\n");
+	printf("  --args=<args>            Pass <args> to Omega::Initialize\n");
+	printf("\nMode, one of:\n");
+	printf("  get <value_path>         Display the value of <value_path>\n");
+	printf("  set <value_path> <value> Set the value of <value_path> to <value>\n");
+	printf("  delete <key_path>        Delete the key <key_path> and all sub-items");
+	printf("  delete <value_path>      Delete the value <value_path>\n");
+	printf("  list <key_path>          List the subkeys and values of the key <key_path>");
+	printf("  exists <key_path>        Exit with code EXIT_SUCCESS if the key <key_path> exists, EXIT_FAILURE if not");
+	printf("  exists <value_path>      Exit with code EXIT_SUCCESS if the value <value_path> exists, EXIT_FAILURE if not\n");
+	printf("\nArguments:\n");
+	printf("  <key_path>     The full path to a key, separated by /, and ending with /, e.g. \"All Users/Objects/\"\n");
+	printf("  <value_path>   The full path to the value of a key, not ending with /\n");
+	
 	return EXIT_SUCCESS;
 }
 
-static bool parse_args(const std::string& line, vector_string& line_args, bool& bCont)
+static bool key_path(const OOBase::String& str, Omega::string_t& key)
 {
-	bCont = false;
+	if (str.empty() || str[str.length()-1] != '/')
+		return false;
+		
+	key = Omega::string_t(str.c_str(),false,str.length()-1);
+	return true;
+}
 
-	bool bQuote = false;
-	bool bAppend = false;
-	for (size_t start = 0;start < line.length();)
+static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::string_t& value)
+{
+	if (str.empty() || str[str.length()-1] == '/')
+		return false;
+		
+	const char* r = strrchr(str.c_str(),'/');
+	if (r)
 	{
-		size_t pos = line.find_first_of(" \t\"\\",start);
-		if (pos == OOSvrBase::CmdArgs::result_t::npos)
-		{
-			if (bAppend && !line_args.empty())
-				line_args.back() += line.substr(start);
-			else
-				line_args.push_back(line.substr(start));
-			return true;
-		}
-
-		if (pos != start)
-		{
-			if (bAppend && !line_args.empty())
-				line_args.back() += line.substr(start,pos-start);
-			else
-				line_args.push_back(line.substr(start,pos-start));
-		}
-
-		switch (line[pos])
-		{
-		case '\\':
-			if (line.length() <= pos + 1)
-			{
-				bCont = true;
-				return false;
-			}
-
-			switch (line[pos+1])
-			{
-			case '\"':
-			case ' ':
-			case '\t':
-			case '\\':
-				if (bAppend && !line_args.empty())
-					line_args.back() += line[pos+1];
-				else
-					line_args.push_back(line.substr(pos+1,1));
-				break;
-
-			default:
-				std::cerr << "Unrecognized control code " << line.substr(pos,2) << " at character " << pos+1 << std::endl;
-				return false;
-			}
-			bAppend = true;
-			start = pos + 2;
-			break;
-
-		case '\"':
-			bQuote = !bQuote;
-			if (bQuote && pos == start)
-				line_args.push_back(std::string());
-
-			bAppend = bQuote;
-			start = pos + 1;
-			break;
-
-		case ' ':
-		case '\t':
-		default:
-			start = line.find_first_not_of(" \t",pos);
-			if (bQuote)
-			{
-				if (bAppend && !line_args.empty())
-					line_args.back() += line.substr(pos,start-pos);
-				else
-					line_args.push_back(line.substr(pos,start-pos));
-			}
-			bAppend = bQuote;
-			break;
-		}
+		key = Omega::string_t(str.c_str(),false,r-str.c_str());
+		value = Omega::string_t(r+1,false);
 	}
-
-	return !line_args.empty();
+	else
+	{
+		key.Clear();
+		value = Omega::string_t(str.c_str(),false);
+	}
+	
+	return true;
 }
 
 int main(int argc, char* argv[])
@@ -159,22 +145,29 @@ int main(int argc, char* argv[])
 	OOSvrBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
-	cmd_args.add_option("non-interactive",'n');
-
+	cmd_args.add_option("args",0,true);
+	
 	// Parse command line
 	OOSvrBase::CmdArgs::results_t args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
 
-	if (args.find("help") != args.end())
+	if (args.find("help") != args.npos)
 		return help();
 
-	if (args.find("version") != args.end())
+	if (args.find("version") != args.npos)
 		return version();
-
-	bool bPrompt = (args.find("non-interactive") == args.end());
-
-	Omega::IException* pE = Omega::Initialize();
+	
+	OOBase::String oo_args;
+	args.find("args",oo_args);
+	
+	OOBase::String method,params[3];
+	args.find("@0",method);
+	args.find("@1",params[0]);
+	args.find("@2",params[1]);
+	args.find("@3",params[2]);
+		
+	Omega::IException* pE = Omega::Initialize(Omega::string_t(oo_args.c_str(),false));
 	if (pE)
 	{
 		report_exception(pE);
@@ -184,50 +177,105 @@ int main(int argc, char* argv[])
 	int result = EXIT_FAILURE;
 	try
 	{
-		// Open root key
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"");
-
-		// Now loop processing commands
-		vector_string line_args;
-		for (bool bCont = false;!std::cin.eof();)
+		Omega::string_t key,value;
+		
+		if (method.empty())
+			fputs("Mode expected, use --help for information.",stderr);
+		else if (params[0].empty())
 		{
-			if (!bCont)
-			{
-				line_args.clear();
-
-				if (bPrompt)
-				{
-					std::string s;
-					ptrKey->GetName().ToNative(s);
-					std::cout << s << "> ";
-				}
-			}
-
-			// Read a line...
-			std::string line;
-			std::getline(std::cin,line);
-
-			// Parse it...
-			if (parse_args(line,line_args,bCont))
-			{
-				try
-				{
-					// Process it...
-					if (!process_command(line_args,ptrKey))
-					{
-						result = EXIT_SUCCESS;
-						break;
-					}
-				}
-				catch (Omega::IException* pE)
-				{
-					report_exception(pE);
-				}
-
-				if (bPrompt)
-					std::cout << std::endl;
-			}
+			fputs("Too few arguments to '",stderr);
+			fputs(method.c_str(),stderr);
+			fputs("', use --help for information.",stderr);
 		}
+		else if (!params[2].empty())
+		{
+			fputs("Too few arguments to '",stderr);
+			fputs(method.c_str(),stderr);
+			fputs("', use --help for information.",stderr);
+		}
+		else if (method == "set")
+		{
+			if (!value_path(params[0],key,value))
+				fputs("set requires a value_path, use --help for information.",stderr);
+			else
+			{
+				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,Omega::string_t(params[1].c_str(),false));
+				result = EXIT_SUCCESS;
+			}
+		}		
+		else if (!params[1].empty())
+		{
+			fputs("Too few arguments to '",stderr);
+			fputs(method.c_str(),stderr);
+			fputs("', use --help for information.",stderr);
+		}
+		else if (method == "get")
+		{
+			if (!value_path(params[0],key,value))
+				fputs("get requires a value_path, use --help for information.",stderr);
+			else
+			{
+				printf("%s",OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr());
+				result = EXIT_SUCCESS;
+			}
+		}	
+		else if (method == "delete")
+		{
+			if (key_path(params[0],key))
+			{
+				OTL::ObjectPtr<Omega::Registry::IKey>(L"")->DeleteKey(key);
+				result = EXIT_SUCCESS;
+			}
+			if (value_path(params[0],key,value))
+			{
+				OTL::ObjectPtr<Omega::Registry::IKey>(key)->DeleteValue(value);
+				result = EXIT_SUCCESS;
+			}
+			else
+				fputs("delete requires a key_path or a value_path, use --help for information.",stderr);
+		}
+		else if (method == "exists")
+		{
+			if (key_path(params[0],key))
+				result = (OTL::ObjectPtr<Omega::Registry::IKey>(L"")->IsSubKey(key) ? EXIT_SUCCESS : EXIT_FAILURE);
+			if (value_path(params[0],key,value))
+				result = (OTL::ObjectPtr<Omega::Registry::IKey>(key)->IsValue(value) ? EXIT_SUCCESS : EXIT_FAILURE);
+			else
+				fputs("exists requires a key_path or a value_path, use --help for information.",stderr);
+		}
+		else if (method == "list")
+		{
+			if (!key_path(params[0],key))
+				fputs("list requires a key_path, use --help for information.",stderr);
+			else
+			{
+				OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(key);
+				if (ptrKey)
+				{
+					std::set<Omega::string_t> v = ptrKey->EnumSubKeys();
+					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
+					{
+						if (i != v.begin())
+							printf("\n");
+						printf("%s/",i->c_nstr());
+					}
+					v = ptrKey->EnumValues();
+					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
+					{
+						if (i != v.begin())
+							printf("\n");
+						printf("%s",i->c_nstr());
+					}
+					result = EXIT_SUCCESS;
+				}
+			}
+		}		
+		else 
+		{
+			fputs("Unknown mode '",stderr);
+			fputs(method.c_str(),stderr);
+			fputs("', use --help for information.",stderr);
+		}		
 	}
 	catch (Omega::IException* pE)
 	{

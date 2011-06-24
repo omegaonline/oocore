@@ -47,10 +47,10 @@
 #include <OOBase/utf8.h>
 #include <OOBase/Socket.h>
 #include <OOBase/String.h>
+#include <OOBase/CmdArgs.h>
 
 #include <OOSvrBase/Proactor.h>
 #include <OOSvrBase/Logger.h>
-#include <OOSvrBase/CmdArgs.h>
 #include <OOSvrBase/Database.h>
 #include <OOSvrBase/SecurityWin32.h>
 #include <OOSvrBase/Service.h>

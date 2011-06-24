@@ -25,6 +25,7 @@
 //////////////////////////////////////////////
 
 #include <OOBase/CustomNew.h>
+#include <OOBase/CmdArgs.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
@@ -37,7 +38,6 @@
 
 #include <OOSvrBase/Proactor.h>
 #include <OOSvrBase/Logger.h>
-#include <OOSvrBase/CmdArgs.h>
 #include <OOSvrBase/SecurityWin32.h>
 #include <OOSvrBase/Service.h>
 

@@ -124,7 +124,7 @@
     return true;
 }*/
 
-bool Root::Manager::load_config(const OOSvrBase::CmdArgs::results_t& cmd_args)
+bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	// Clear current entries
 	m_config_args.clear();

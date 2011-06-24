@@ -65,7 +65,7 @@ Root::Manager::~Manager()
 {
 }
 
-int Root::Manager::run(const OOSvrBase::CmdArgs::results_t& cmd_args)
+int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	m_bUnsafe = (cmd_args.find("unsafe") != cmd_args.npos);
 

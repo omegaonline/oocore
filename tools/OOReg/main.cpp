@@ -19,7 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include <OOSvrBase/CmdArgs.h>
+#include <OOBase/CmdArgs.h>
 
 #include "../../include/Omega/Omega.h"
 #include "../../include/Omega/OOCore_version.h"
@@ -144,15 +144,34 @@ static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::s
 int main(int argc, char* argv[])
 {
 	// Set up the command line args
-	OOSvrBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("args",0,true);
 			
 	// Parse command line
-	OOSvrBase::CmdArgs::results_t args;
-	if (cmd_args.parse(argc,argv,args) != 0)
+	OOBase::CmdArgs::results_t args;
+	int err = cmd_args.parse(argc,argv,args);
+	if (err	!= 0)
+	{
+		OOBase::String strErr;
+		if (args.find("missing",strErr))
+		{
+			fputs("Missing value for option ",stderr);
+			fputs(strErr.c_str(),stderr);
+		}
+		else if (args.find("unknown",strErr))
+		{
+			fputs("Unknown option ",stderr);
+			fputs(strErr.c_str(),stderr);
+		}
+		else
+		{
+			fputs("Failed to parse comand line: ",stderr);
+			fputs(OOBase::system_error_text(err),stderr);
+		}			
 		return EXIT_FAILURE;
+	}
 
 	if (args.find("help") != args.npos)
 		return help();
@@ -221,7 +240,7 @@ int main(int argc, char* argv[])
 				fputs("get requires a value_path, use --help for information.",stderr);
 			else
 			{
-				printf("%s",OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr());
+				printf(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr());
 				result = EXIT_SUCCESS;
 			}
 		}	
@@ -270,7 +289,7 @@ int main(int argc, char* argv[])
 					{
 						if (i != v.begin())
 							printf("\n");
-						printf("%s",i->c_nstr());
+						printf(i->c_nstr());
 					}
 					result = EXIT_SUCCESS;
 				}

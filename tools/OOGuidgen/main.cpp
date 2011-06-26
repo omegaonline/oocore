@@ -24,6 +24,7 @@
 #include "../../include/Omega/Omega.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static int version()
 {
@@ -32,7 +33,7 @@ static int version()
 #if defined(OMEGA_DEBUG)
 	printf(" (Debug build)");
 #endif
-		
+
 	return EXIT_SUCCESS;
 }
 
@@ -40,7 +41,7 @@ static int help()
 {
 	printf("ooguidgen - The Omega Online GUID generator.\n\n");
 	printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n");
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -50,7 +51,7 @@ int main(int argc, char* argv[])
 	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
-	
+
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
@@ -71,17 +72,17 @@ int main(int argc, char* argv[])
 		{
 			fputs("Failed to parse comand line: ",stderr);
 			fputs(OOBase::system_error_text(err),stderr);
-		}	
+		}
 		return EXIT_FAILURE;
 	}
-		
+
 	if (args.find("help") != args.npos)
 		return help();
 
 	if (args.find("version") != args.npos)
 		return version();
-		
-	printf(Omega::guid_t::Create().ToString().c_nstr());
-	
+
+	fputs(Omega::guid_t::Create().ToString().c_nstr(),stdout);
+
 	return EXIT_SUCCESS;
 }

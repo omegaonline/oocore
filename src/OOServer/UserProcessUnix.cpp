@@ -75,28 +75,28 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		// Not sure what we should do about stdin/out/err
 		void* POSIX_TODO;
 
-		char szBuf[MAX_PATH] = {0};
+		char szBuf[512] = {0};
 		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
 		if (clen >= sizeof(szBuf))
 		{
-			fputs("exec filename > MAX_PATH\n",stderr);
+			fputs("exec filename > 512\n",stderr);
 			_exit(127);
 		}
 		szBuf[clen] = '\0';
 
 		const char* debug = getenv("OMEGA_DEBUG");
--		const char* term = getenv("TERM");
--		if (debug && strcmp(debug,"yes")==0 && term)
+		const char* term = ::getenv("TERM");
+		if (debug && strcmp(debug,"yes")==0 && term)
 			execlp(term,term,"-e",szBuf,(char*)NULL);
 
 		const char* shell = getenv("SHELL");
 		if (shell)
 			execlp(shell,shell,"-c",szBuf,(char*)NULL);
-			
+
 		execlp("sh","sh","-c",szBuf,(char*)NULL);
-		
+
 		execlp(szBuf,szBuf,(char*)NULL);
-		
+
 		fputs("Failed to launch process\n",stderr);
 		_exit(127);
 	}

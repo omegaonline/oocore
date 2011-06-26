@@ -26,6 +26,7 @@
 #include "../../include/OTL/Registry.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static void exception_details(Omega::IException* pE);
 
@@ -54,13 +55,13 @@ static void exception_details(Omega::IException* pOrig)
 	catch (Omega::IInternalException* pE)
 	{
 		fputs(pE->GetDescription().c_nstr(),stderr);
-		
+
 		Omega::string_t strSource = pE->GetSource();
 		if (!strSource.IsEmpty())
 		{
 			fputs("\nAt: ",stderr);
 			fputs(strSource.c_nstr(),stderr);
-		}		
+		}
 
 		report_cause(pE);
 		pE->Release();
@@ -68,7 +69,7 @@ static void exception_details(Omega::IException* pOrig)
 	catch (Omega::IException* pE)
 	{
 		fputs(pE->GetDescription().c_nstr(),stderr);
-				
+
 		report_cause(pE);
 		pE->Release();
 	}
@@ -81,7 +82,7 @@ static int version()
 #if defined(OMEGA_DEBUG)
 	printf(" (Debug build)");
 #endif
-		
+
 	return EXIT_SUCCESS;
 }
 
@@ -108,7 +109,7 @@ static int help()
 	printf("  <key_path>     The full path to a key, separated by /, and ending with /,\n");
 	printf("                  e.g. \"All Users/Objects/\"\n");
 	printf("  <value_path>   The full path to the value of a key, not ending with /\n");
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -116,7 +117,7 @@ static bool key_path(const OOBase::String& str, Omega::string_t& key)
 {
 	if (str.empty() || str[str.length()-1] != '/')
 		return false;
-		
+
 	key = Omega::string_t(str.c_str(),false,str.length()-1);
 	return true;
 }
@@ -125,7 +126,7 @@ static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::s
 {
 	if (str.empty() || str[str.length()-1] == '/')
 		return false;
-		
+
 	const char* r = strrchr(str.c_str(),'/');
 	if (r)
 	{
@@ -137,7 +138,7 @@ static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::s
 		key.Clear();
 		value = Omega::string_t(str.c_str(),false);
 	}
-	
+
 	return true;
 }
 
@@ -148,7 +149,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("args",0,true);
-			
+
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
@@ -169,7 +170,7 @@ int main(int argc, char* argv[])
 		{
 			fputs("Failed to parse comand line: ",stderr);
 			fputs(OOBase::system_error_text(err),stderr);
-		}			
+		}
 		return EXIT_FAILURE;
 	}
 
@@ -178,18 +179,18 @@ int main(int argc, char* argv[])
 
 	if (args.find("version") != args.npos)
 		return version();
-	
+
 	OOBase::String oo_args;
 	args.find("args",oo_args);
-	
+
 	OOBase::String method;
 	if (!args.find("@0",method))
 	{
 		fputs("Mode expected, use --help for information.",stderr);
 		return EXIT_FAILURE;
 	}
-	
-	OOBase::String params[2];	
+
+	OOBase::String params[2];
 	if (!args.find("@1",params[0]))
 	{
 		fputs("Too few arguments to '",stderr);
@@ -205,7 +206,7 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 	args.find("@2",params[1]);
-		
+
 	Omega::IException* pE = Omega::Initialize(Omega::string_t(oo_args.c_str(),false));
 	if (pE)
 	{
@@ -217,7 +218,7 @@ int main(int argc, char* argv[])
 	try
 	{
 		Omega::string_t key,value;
-		
+
 		if (method == "set")
 		{
 			if (!value_path(params[0],key,value))
@@ -227,7 +228,7 @@ int main(int argc, char* argv[])
 				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,Omega::string_t(params[1].c_str(),false));
 				result = EXIT_SUCCESS;
 			}
-		}		
+		}
 		else if (!params[1].empty())
 		{
 			fputs("Too many arguments to '",stderr);
@@ -240,10 +241,10 @@ int main(int argc, char* argv[])
 				fputs("get requires a value_path, use --help for information.",stderr);
 			else
 			{
-				printf(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr());
+				fputs(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr(),stdout);
 				result = EXIT_SUCCESS;
 			}
-		}	
+		}
 		else if (method == "delete")
 		{
 			if (key_path(params[0],key))
@@ -281,26 +282,27 @@ int main(int argc, char* argv[])
 					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
 					{
 						if (i != v.begin())
-							printf("\n");
-						printf("%s/",i->c_nstr());
+							fputs("\n",stdout);
+						fputs(i->c_nstr(),stdout);
+						fputs("/",stdout);
 					}
 					v = ptrKey->EnumValues();
 					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
 					{
 						if (i != v.begin())
-							printf("\n");
-						printf(i->c_nstr());
+							fputs("\n",stdout);
+						fputs(i->c_nstr(),stdout);
 					}
 					result = EXIT_SUCCESS;
 				}
 			}
-		}		
-		else 
+		}
+		else
 		{
 			fputs("Unknown mode '",stderr);
 			fputs(method.c_str(),stderr);
 			fputs("', use --help for information.",stderr);
-		}		
+		}
 	}
 	catch (Omega::IException* pE)
 	{

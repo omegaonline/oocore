@@ -112,13 +112,13 @@ namespace OOCore
 	};
 
 	class OidNotFoundExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<OidNotFoundExceptionMarshalFactoryImpl,&OID_OidNotFoundExceptionMarshalFactory,Omega::Activation::ProcessLocal>,
+			public OTL::AutoObjectFactorySingleton<OidNotFoundExceptionMarshalFactoryImpl,&OID_OidNotFoundExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<OidNotFoundException>
 	{
 	};
 		
 	class RunningObjectTableFactory : 
-		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTable,Omega::Activation::ProcessLocal>
+		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTable,Omega::Activation::ProcessScope>
 	{
 	// IObjectFactory members
 	public:
@@ -126,7 +126,7 @@ namespace OOCore
 	};
 	
 	class RegistryFactory : 
-		public OTL::ObjectFactoryBase<&Omega::Registry::OID_Registry,Omega::Activation::ProcessLocal>
+		public OTL::ObjectFactoryBase<&Omega::Registry::OID_Registry,Omega::Activation::ProcessScope>
 	{
 	// IObjectFactory members
 	public:

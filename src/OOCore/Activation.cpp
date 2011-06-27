@@ -245,17 +245,19 @@ namespace
 #endif
 	}
 
-	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, Activation::RegisterFlags_t reg_mask, const guid_t& iid)
+	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
+		unsigned int sub_type = (flags & 0xF);
+		
 		// Try to load a library, if allowed
-		if (reg_mask & Activation::ProcessLocal)
+		if (sub_type == Activation::Default || sub_type == Activation::Library)
 		{
 			// Use the registry
 			ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/OIDs/" + oid.ToString());
 			if (ptrOidKey->IsValue(L"Library"))
 			{
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
-				if (IsRelativePath(strLib))
+				if (strLib.IsEmpty() || IsRelativePath(strLib))
 				{
 					string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
 					OMEGA_THROW(strErr.c_nstr());
@@ -267,49 +269,44 @@ namespace
 			}
 		}
 		
-		// Ask the IPS to run it...
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		if (ptrIPS)
+		// See if we can run it out of process
+		if (sub_type != Activation::Library)
 		{
-			IObject* pObject = 0;
-			ptrIPS->LaunchObjectApp(oid,iid,flags,pObject);
-			return pObject;
+			// Ask the IPS to run it...
+			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+			if (ptrIPS)
+			{
+				IObject* pObject = NULL;
+				ptrIPS->LaunchObjectApp(oid,iid,flags,pObject);
+				return pObject;
+			}
 		}
 
-		return 0;
+		return NULL;
 	}
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
-		IObject* pObject = 0;
-
-		// Build RegisterFlags
-		Activation::RegisterFlags_t reg_mask = Activation::ProcessLocal | Activation::UserLocal | Activation::MachineLocal | Activation::Global;
-		
-		if (flags & Activation::Library)
-			reg_mask &= ~(Activation::MachineLocal | Activation::UserLocal | Activation::Global);
-
-		if (flags & Activation::Process)
-			reg_mask &= ~Activation::ProcessLocal;
-
-		// Sandbox must be not be UserLocal or ProcessLocal
-		if (flags & Activation::Sandbox)
-			reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
-		
-		// Remote activation
-		if (flags & Activation::RemoteActivation)
-			reg_mask &= ~(Activation::MachineLocal | Activation::UserLocal | Activation::ProcessLocal);
+		unsigned int sub_type = (flags & 0xF);
 				
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
-		if (reg_mask & Activation::ProcessLocal)
+		if (sub_type == Activation::Default || sub_type == Activation::Library)
 		{
-			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
+			IObject* pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 			if (pObject)
 				return pObject;
 		}
+		
+		// Build RegisterFlags
+		Activation::RegisterFlags_t reg_mask = Activation::PublicScope;
+		
+		// Remote activation, add ExternalPublic flag
+		if (flags & Activation::RemoteActivation)
+			reg_mask |= Activation::ExternalPublic;
 			
 		// See if we have it registered in the ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
+		IObject* pObject = NULL;
 		ptrROT->GetObject(oid,reg_mask,iid,pObject);
 		if (pObject)
 			return pObject;
@@ -319,12 +316,12 @@ namespace
 		// See if we are allowed to load...
 		if (!(flags & Activation::DontLaunch))
 		{
-			pObject = LoadObject(oid,flags,reg_mask,iid);
+			pObject = LoadObject(oid,flags,iid);
 			if (pObject)
 				return pObject;
 		}
 
-		return 0;
+		return NULL;
 	}
 
 	guid_t NameToOid(const string_t& strObjectName)

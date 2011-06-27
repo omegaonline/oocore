@@ -51,7 +51,8 @@ namespace Omega
 			Default = 0,                         ///< Use a dll/so or executeable as available
 			Library = 1,                         ///< Only use dll/so
 			Process = 2,                         ///< Launch as current user - implies surrogate if dll/so
-			Sandbox = 8,                         ///< Launch as the sandbox user - implies surrogate if dll/so
+			Sandbox = 3,                         ///< Launch as the sandbox user - implies surrogate if dll/so
+			
 			OwnSurrogate = 0x10,                 ///< Launch dll/so in its own surrogate wrapper
 			RemoteActivation = 0x20,             ///< Request is from a remote machine
 			DontLaunch = 0x40                    ///< Do not launch exe/dll/so if not already running		
@@ -62,14 +63,14 @@ namespace Omega
 
 		enum RegisterFlags
 		{
-			ProcessLocal = 1,    // Register for this process only
-			UserLocal = 2,       // Register for this user only
-			MachineLocal = 4,    // Register for this machine only
-			Global = 8,          // Register publicly
-
-			MultipleUse = 0x0,
-			SingleUse = 0x10,            // Auto Revoke after 1st GetObject
-			MultipleRegistration = 0x20  // Allow multiple calls to Register with different flags
+			ProcessScope = 1,    // Register for calling process only
+			UserScope = 3,       // Register for calling user only
+			PublicScope = 7,     // Register for all users
+			ExternalPublic = 8,  // Register as externally accessible
+			
+			MultipleUse = 0,
+			SingleUse = 0x10,           // Auto Revoke after 1st GetObject
+			MultipleRegistration = 0x20 // Allow multiple calls to Register with different flags
 		};
 		typedef uint16_t RegisterFlags_t;
 

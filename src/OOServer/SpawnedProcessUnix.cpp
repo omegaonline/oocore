@@ -270,8 +270,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	if (debug == "yes" && !display.empty())
 	{
 		OOBase::LocalString strExec;
-		err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str());
-		if (err != 0)
+		if ((err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str())) != 0)
 		{
 			LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
 			_exit(127);
@@ -572,7 +571,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket, cons
 				// Insert the data into the process map...
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-				int err = m_mapUserProcesses.insert(channel_id,new_process);
+				err = m_mapUserProcesses.insert(channel_id,new_process);
 				if (err != 0)
 				{
 					ptrMC->close();

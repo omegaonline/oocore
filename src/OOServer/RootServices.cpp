@@ -108,8 +108,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 		else
 		{
 			Registry::Hive::registry_set_t setSubKeys;
-			err = m_registry->enum_subkeys(uKey,0,setSubKeys);
-			if (err != 0)
+			if ((err = m_registry->enum_subkeys(uKey,0,setSubKeys)) != 0)
 				LOG_ERROR(("Failed to enum subkeys of /System/Services key: %d",err));
 			else
 			{
@@ -117,8 +116,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 				{
 					// Open the subkey
 					Omega::int64_t uSubKey = 0;
-					err = m_registry->open_key(uKey,uSubKey,i.c_str(),0);
-					if (err != 0)
+					if ((err = m_registry->open_key(uKey,uSubKey,i.c_str(),0)) != 0)
 					{
 						--count;
 						LOG_ERROR(("Failed to open /System/Services/%s: %d",i.c_str(),err));
@@ -126,8 +124,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 					}
 
 					OOBase::LocalString strOid;
-					err = m_registry->get_value(uSubKey,"OID",0,strOid);
-					if (err != 0)
+					if ((err = m_registry->get_value(uSubKey,"OID",0,strOid)) != 0)
 					{
 						--count;
 						LOG_ERROR(("Failed to get /System/Services/%s value OID: %d",i.c_str(),err));
@@ -168,15 +165,13 @@ void Root::Manager::get_service_key(Omega::uint32_t channel_id, OOBase::CDRStrea
 		else
 		{
 			OOBase::LocalString strKey;
-			err = strKey.concat("System/Services/",strKeyEnd.c_str());
-			if (err != 0)
+			if ((err = strKey.concat("System/Services/",strKeyEnd.c_str())) != 0)
 				LOG_ERROR(("Failed to construct string: %s",OOBase::system_error_text(err)));
 			
 			if (!strKey.empty())
 			{
 				Omega::int64_t uKey = 0;
-				err = m_registry->open_key(0,uKey,strKey.c_str(),0);
-				if (err != 0)
+				if ((err = m_registry->open_key(0,uKey,strKey.c_str(),0)) != 0)
 					LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
 				else
 				{
@@ -223,27 +218,23 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 		else
 		{
 			OOBase::LocalString strKey;
-			err = strKey.concat("System/Services/",strKeyEnd.c_str());			
-			if (err != 0)
+			if ((err = strKey.concat("System/Services/",strKeyEnd.c_str())) != 0)
 				LOG_ERROR(("Failed to construct string: %s",OOBase::system_error_text(err)));
 
 			if (!strKey.empty())
 			{
 				Omega::int64_t uKey = 0;
-				err = m_registry->open_key(0,uKey,strKey.c_str(),0);
-				if (err != 0)
+				if ((err = m_registry->open_key(0,uKey,strKey.c_str(),0)) != 0)
 					LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
 				else
 				{
 					// Now we want to get the networking key
-					err = m_registry->open_key(uKey,uKey,"Network",0);
-					if (err != 0)
+					if ((err = m_registry->open_key(uKey,uKey,"Network",0)) != 0)
 						LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
 					else
 					{
 						OOBase::LocalString strProtocol;
-						err = m_registry->get_value(uKey,"Protocol",0,strProtocol);
-						if (err != 0)
+						if ((err = m_registry->get_value(uKey,"Protocol",0,strProtocol)) != 0)
 							LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
 						else if (strProtocol.empty())
 						{

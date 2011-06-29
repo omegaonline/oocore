@@ -178,8 +178,7 @@ bool User::Manager::session_launch(const char* strPipe)
 	if (!stream.write(version))
 		LOG_ERROR_RETURN(("Failed to write root data: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	err = local_socket->send(stream.buffer());
-	if (err != 0)
+	if ((err = local_socket->send(stream.buffer())) != 0)
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Connect up
@@ -209,14 +208,12 @@ bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, 
 	if (!stream.write(strPipe.c_str()))
 		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	err = local_socket->send(stream.buffer());
-	if (err != 0)
+	if ((err = local_socket->send(stream.buffer())) != 0)
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Read our channel id
 	stream.reset();
-	err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
-	if (err != 0)
+	if ((err = local_socket->recv(stream.buffer(),sizeof(uint32_t))) != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
 
 	uint32_t our_channel = 0;

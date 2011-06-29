@@ -151,8 +151,7 @@ namespace
 			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL((L"Loading library: " + name).c_nstr()));
 				
 		// Add to the map
-		err = m_dll_map.insert(name,dll);
-		if (err != 0)
+		if ((err = m_dll_map.insert(name,dll) != 0))
 			OMEGA_THROW(err);
 
 		return dll;

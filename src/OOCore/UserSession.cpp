@@ -274,13 +274,11 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 		// Send version information
 		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-		err = m_stream->send(version);
-		if (err)
+		if ((err = m_stream->send(version)) != 0)
 			OMEGA_THROW(err);
 
 		// Read our channel id
-		err = m_stream->recv(m_channel_id);
-		if (err != 0)
+		if ((err = m_stream->recv(m_channel_id)) != 0)
 			OMEGA_THROW(err);
 
 		// Spawn off the io worker thread
@@ -598,8 +596,7 @@ int OOCore::UserSession::run_read_loop()
 		// If we add anything extra here to the header,
 		// it must be padded to 8 bytes.
 
-		err = header.last_error();
-		if (err != 0)
+		if ((err = header.last_error()) != 0)
 			break;
 
 		// Subtract what we have already read
@@ -643,8 +640,7 @@ int OOCore::UserSession::run_read_loop()
 		}
 
 		// Did everything make sense?
-		err = msg->m_payload.last_error();
-		if (err != 0)
+		if ((err = msg->m_payload.last_error()) != 0)
 			OOBase_CallCriticalFailure(err);
 
 		// Just skip any misdirected packets

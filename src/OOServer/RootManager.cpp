@@ -157,8 +157,7 @@ bool Root::Manager::init_database()
 
 	// Create a new system database
 	OOBase::String dir2 = dir;
-	err = dir2.append("system.regdb");
-	if (err != 0)
+	if ((err = dir2.append("system.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
 	m_registry = new (std::nothrow) Registry::Hive(this,dir2.c_str());
@@ -170,8 +169,7 @@ bool Root::Manager::init_database()
 
 	// Create a new System database
 	dir2 = dir;
-	err = dir2.append("sandbox.regdb");
-	if (err != 0)
+	if ((err = dir2.append("sandbox.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
 	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir2.c_str());
@@ -266,8 +264,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 
 					if (keyend > start)
 					{
-						err = strKey.assign(strBuffer.c_str() + start,keyend-start);
-						if (err != 0)
+						if ((err = strKey.assign(strBuffer.c_str() + start,keyend-start)) != 0)
 						{
 							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
 							break;
@@ -280,8 +277,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 
 						if (valpos < valend)
 						{
-							err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos);
-							if (err != 0)
+							if ((err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos)) != 0)
 							{
 								LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
 								break;
@@ -303,12 +299,8 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				}
 
 				// Do something with strKey and strValue
-				if (!strKey.empty())
-				{
-					int err = m_config_args.replace(strKey,strValue);
-					if (err != 0)
-						LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
-				}
+				if (!strKey.empty() && (err = m_config_args.replace(strKey,strValue)) != 0)
+					LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
 			}
 
 			if (end == OOBase::LocalString::npos)
@@ -581,16 +573,14 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptr
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
 	size_t mark = stream.buffer()->mark_rd_ptr();
-	err = ptrSocket->recv(stream.buffer(),4);
-	if (err != 0)
+	if ((err = ptrSocket->recv(stream.buffer(),4)) != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	Omega::uint32_t len = 0;
 	if (!stream.read(len))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
-	err = ptrSocket->recv(stream.buffer(),len);
-	if (err != 0)
+	if ((err = ptrSocket->recv(stream.buffer(),len)) != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	// Now reset rd_ptr and read the string
@@ -599,8 +589,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptr
 	if (!stream.read(strPipeL))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
-	err = strPipe.assign(strPipeL.c_str());
-	if (err != 0)
+	if ((err = strPipe.assign(strPipeL.c_str())) != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);

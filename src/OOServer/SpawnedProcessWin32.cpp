@@ -139,8 +139,7 @@ namespace
 
 		// Create the named pipe instance
 		OOBase::LocalString strFullPipe;
-		err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str());
-		if (err != 0)
+		if ((err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str())) != 0)
 			LOG_ERROR_RETURN(("Failed to concat strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
 
 		HANDLE hPipe = CreateNamedPipeA(strFullPipe.c_str(),
@@ -477,8 +476,7 @@ namespace
 		// Revert our Window Station
 		SetProcessWindowStation(hOldWinsta);
 
-		err = strWindowStation.append("\\default");
-		if (err != 0)
+		if ((err = strWindowStation.append("\\default")) != 0)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
 
 		return true;
@@ -551,8 +549,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 		if (strModule.length() >= MAX_PATH)
 		{
 			// Prefix with '\\?\'
-			err = strModule.concat("\\\\?\\",strModule.c_str());
-			if (err != 0)
+			if ((err = strModule.concat("\\\\?\\",strModule.c_str())) != 0)
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
 		}
 		
@@ -590,8 +587,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 		LOG_ERROR_RETURN(("Failed to build command line: %s",OOBase::system_error_text(err)),err);
 
 	OOBase::LocalString strWindowStation;
-	err = strWindowStation.assign("WinSta0\\default");
-	if (err != 0)
+	if ((err = strWindowStation.assign("WinSta0\\default")) != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
 
 	// Forward declare these because of goto's

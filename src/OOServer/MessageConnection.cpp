@@ -178,8 +178,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 		// it must be padded to 8 bytes.
 		// And update header_len above!
 
-		err = header.last_error();
-		if (err != 0)
+		if ((err = header.last_error()) != 0)
 		{
 			LOG_ERROR(("Corrupt header: %s",OOBase::system_error_text(err)));
 			break;
@@ -239,8 +238,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 
 	if (bSuccess)
 	{
-		err = buffer->space(read_more);
-		if (err != 0)
+		if ((err = buffer->space(read_more)) != 0)
 		{
 			bSuccess = false;
 			LOG_ERROR(("Out of buffer space: %s",OOBase::system_error_text(err)));
@@ -249,8 +247,7 @@ void OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err)
 		{
 			++m_async_count;
 
-			err = m_ptrSocket->async_recv(buffer);
-			if (err != 0)
+			if ((err = m_ptrSocket->async_recv(buffer)) != 0)
 			{
 				--m_async_count;
 
@@ -435,8 +432,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		input.read(msg->m_src_thread_id);
 
 		// Did everything make sense?
-		err = input.last_error();
-		if (err != 0)
+		if ((err = input.last_error()) != 0)
 			LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err)),false);
 
 		// Attach input

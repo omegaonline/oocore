@@ -72,7 +72,7 @@ namespace
 int main(int argc, char* argv[])
 {
 	// Start the logger
-	OOSvrBase::Logger::open("OOServer");
+	OOSvrBase::Logger::open("OOServer",__FILE__);
 
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);

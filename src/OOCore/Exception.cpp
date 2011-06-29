@@ -59,15 +59,33 @@ namespace OOCore
 
 		pExcept->m_strDesc = string_t(desc,false);
 
-		if (nLine != size_t(-1))
+		if (pszFile)
 		{
-			if (pszFunc)
-				pExcept->m_strSource = (L"{0}({1}): {2}" % Omega::string_t(pszFile,false) % nLine % Omega::string_t(pszFunc,false));
+			static const char szOurFile[] = __FILE__;
+			size_t s=0;
+			for (;;)
+			{
+				size_t s1 = s;
+				while (szOurFile[s1] == pszFile[s1] && szOurFile[s1] != '\\' && szOurFile[s1] != '/')
+					++s1;
+
+				if (szOurFile[s1] == '\\' || szOurFile[s1] == '/')
+					s = s1+1;
+				else
+					break;
+			}
+			pszFile += s;
+
+			if (nLine != size_t(-1))
+			{
+				if (pszFunc)
+					pExcept->m_strSource = (L"{0}({1}): {2}" % Omega::string_t(pszFile,false) % nLine % Omega::string_t(pszFunc,false));
+				else
+					pExcept->m_strSource = (L"{0}({1})" % Omega::string_t(pszFile,false) % nLine);
+			}
 			else
-				pExcept->m_strSource = (L"{0}({1})" % Omega::string_t(pszFile,false) % nLine);
+				pExcept->m_strSource = (L"{0}" % Omega::string_t(pszFile,false));
 		}
-		else
-			pExcept->m_strSource = (L"{0}" % Omega::string_t(pszFile,false));
 
 		return pExcept;
 	}

@@ -59,7 +59,7 @@ namespace Root
 		Manager();
 		virtual ~Manager();
 
-		int run(const OOSvrBase::CmdArgs::results_t& cmd_args);
+		int run(const OOBase::CmdArgs::results_t& cmd_args);
 
 		void accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket);
 
@@ -85,7 +85,7 @@ namespace Root
 		Manager& operator = (const Manager&);
 
 		// Init and run members
-		bool load_config(const OOSvrBase::CmdArgs::results_t& cmd_args);
+		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_file(const char* pszFile);
 		bool init_database();
 		bool spawn_sandbox();

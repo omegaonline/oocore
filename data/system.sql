@@ -54,13 +54,41 @@ BEGIN TRANSACTION;
 	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(
 		8,
+		'Omega.Activation.RunningObjectTable',
+		'',
+		7,6
+	);
+	INSERT INTO RegistryValues ( Name,Description,Parent,Value) VALUES 
+	(
+		'OID',
+		'Omega::Activation::OID_RunningObjectTable',
+		8,
+		'{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}'
+	);
+	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
+	(
+		9,
+		'Omega.Registry',
+		'',
+		7,6
+	);
+	INSERT INTO RegistryValues ( Name,Description,Parent,Value) VALUES 
+	(
+		'OID',
+		'Omega::Registry::OID_Registry',
+		9,
+		'{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}'
+	);
+	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
+	(
+		10,
 		'OIDs',
 		'',
 		7,6
 	);
 	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(
-		9,
+		11,
 		'Applications',
 		'Applications store their configuration beneath this key',
 		6,6
@@ -68,7 +96,7 @@ BEGIN TRANSACTION;
 	
 	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(
-		10,
+		12,
 		'Services',
 		'System services run at startup',
 		1,7

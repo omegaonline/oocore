@@ -235,14 +235,18 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	parse_args(strArgs,args);
 
 	bool bStandalone = false;
-	size_t i = args.find(L"standalone");
-	if (i != args.npos && *args.at(i) == L"true")
-		bStandalone = true;
-
 	bool bStandaloneAlways = false;
-	i = args.find(L"standalone_always");
-	if (i != args.npos && *args.at(i) == L"true")
-		bStandaloneAlways = true;
+	size_t i = args.find(L"standalone");
+	if (i != args.npos)
+	{
+		if (*args.at(i) == L"true")
+			bStandalone = true;
+		else if (*args.at(i) == L"always")
+		{
+			bStandalone = true;
+			bStandaloneAlways = true;
+		}
+	}
 
 	OOBase::LocalString strPipe;
 	if (!bStandaloneAlways)
@@ -250,7 +254,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 	if (!bStandalone)
 	{
-		// Connect up to the root process...
+		// Connect up to the user process...
 		OOBase::timeval_t wait(5);
 		OOBase::Countdown countdown(&wait);
 		int err = 0;
@@ -309,7 +313,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 
 		ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	}
@@ -388,13 +392,12 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 		OMEGA_THROW(stream.last_error());
 #else
 
-	const char* pszAddr = getenv("OMEGA_SESSION_ADDRESS");
-	if (!pszAddr)
-		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
-
-	int err = strPipe.assign(pszAddr);
+	int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
 	if (err != 0)
 		OMEGA_THROW(err);
+		
+	if (strPipe.empty())
+		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
 
 #endif
 }

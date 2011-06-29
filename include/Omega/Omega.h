@@ -100,10 +100,10 @@
 namespace Omega
 {
 	/* args is a comma separated list of key=value pairs:)
-	 *    standalone -        (Optional) The directory containing the system and sandbox registry files
-	 *      regdb_path -        (Required if standalone=true) The directory containing the system and sandbox registry files
-	 *      user_regdb -        (Required if standalone=true) The path to the current user's registry file, including filename
-	 *      standalone_always - (Optional) If value = "true", ignore any running OOServer and only run standalone
+	 *    standalone         (Optional) The directory containing the system and sandbox registry files
+	 *                           If value = "always", ignore any running OOServer and only run standalone
+	 *    regdb_path         (Required if standalone=true) The directory containing the system and sandbox registry files
+	 *    user_regdb         (Required if standalone=true) The path to the current user's registry file, including filename
 	 */
 	IException* Initialize(const string_t& args = string_t());
 	void Uninitialize();

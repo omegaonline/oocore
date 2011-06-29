@@ -53,6 +53,7 @@ namespace
 
 	class HiveKey :
 			public ObjectBase,
+			public IProvideObjectInfoImpl<HiveKey>,
 			public IKey
 	{
 	public:
@@ -60,6 +61,7 @@ namespace
 
 		BEGIN_INTERFACE_MAP(HiveKey)
 			INTERFACE_ENTRY(IKey)
+			INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 		END_INTERFACE_MAP()
 
 	private:
@@ -98,6 +100,7 @@ namespace
 	class RootKey :
 			public ObjectBase,
 			public ::Registry::Manager,
+			public IProvideObjectInfoImpl<HiveKey>,
 			public IKey
 	{
 	protected:
@@ -105,6 +108,7 @@ namespace
 
 		BEGIN_INTERFACE_MAP(RootKey)
 			INTERFACE_ENTRY(IKey)
+			INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 		END_INTERFACE_MAP()
 
 	private:
@@ -145,13 +149,10 @@ namespace
 		{
 		#if defined(_WIN32)
 			dir.replace('/','\\');
-			if (dir.c_str()[dir.length()-1] != '\\')
-				err = dir.append("\\",1);
 		#else
 			dir.replace('\\','/');
-			if (dir.c_str()[dir.length()-1] != '/')
-				err = dir.append("/",1);
 		#endif
+			err = OOBase::AppendDirSeparator(dir);
 		}
 
 		if (err != 0)

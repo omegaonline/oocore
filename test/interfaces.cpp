@@ -222,12 +222,12 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(ptrPOI);
 
 	// Try to get the first interface
-	Omega::TypeInfo::IProvideObjectInfo::guid_set_t interfaces = ptrPOI->EnumInterfaces();
+	Omega::TypeInfo::IProvideObjectInfo::iid_list_t interfaces = ptrPOI->EnumInterfaces();
 	TEST(!interfaces.empty());
-	TEST(*interfaces.begin() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII;
-	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(*interfaces.begin(),ptrSimpleTest));
+	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(interfaces.front(),ptrSimpleTest));
 	TEST(ptrII);
 
 	TEST(ptrII->GetName() == L"Omega::TestSuite::ISimpleTest");
@@ -248,7 +248,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 		return true;
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Library);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -261,7 +261,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	// Test aggregation
 	Aggregator* pAgg = new Aggregator();
 
-	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Library,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -276,7 +276,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::OutOfProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -361,7 +361,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 		return true;
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -374,7 +374,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	// Test aggregation
 	Aggregator* pAgg = new Aggregator();
 
-	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -389,7 +389,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{

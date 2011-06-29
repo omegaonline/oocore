@@ -192,7 +192,7 @@ namespace OTL
 
 		void Detach()
 		{
-			m_ptr = 0;
+			m_ptr = NULL;
 		}
 
 		OBJECT* AddRef()
@@ -216,7 +216,7 @@ namespace OTL
 
 		OBJECT* operator ->() const
 		{
-			assert(m_ptr != 0);
+			assert(m_ptr != NULL);
 
 			return m_ptr;
 		}
@@ -237,7 +237,7 @@ namespace OTL
 	class ObjectPtr : public ObjectPtrBase<OBJECT>
 	{
 	public:
-		ObjectPtr(OBJECT* obj = 0) :
+		ObjectPtr(OBJECT* obj = NULL) :
 				ObjectPtrBase<OBJECT>(obj)
 		{ }
 
@@ -261,11 +261,11 @@ namespace OTL
 				this->m_ptr = static_cast<OBJECT*>(rhs->QueryInterface(OMEGA_GUIDOF(OBJECT)));
 		}
 
-		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<OBJECT>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
@@ -288,7 +288,7 @@ namespace OTL
 	class ObjectPtr<Omega::IObject> : public ObjectPtrBase<Omega::IObject>
 	{
 	public:
-		ObjectPtr(Omega::IObject* obj = 0) :
+		ObjectPtr(Omega::IObject* obj = NULL) :
 				ObjectPtrBase<Omega::IObject>(obj)
 		{ }
 
@@ -296,11 +296,11 @@ namespace OTL
 				ObjectPtrBase<Omega::IObject>(rhs)
 		{ }
 
-		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<Omega::IObject>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<Omega::IObject>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
@@ -781,7 +781,7 @@ namespace OTL
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
 		{
-			Omega::IObject* ret = 0;
+			Omega::IObject* ret = NULL;
 			ObjectPtr<T> ptr = T::CreateInstancePtr(pOuter);
 			if (iid != OMEGA_GUIDOF(Omega::IObject))
 				ret = ptr->QueryInterface(iid);
@@ -850,13 +850,6 @@ namespace OTL
 	};
 
 	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
-	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags>
-	{
-	public:
-		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreateThrow<pOID>,AutoObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
-	};
-
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:
@@ -917,24 +910,24 @@ namespace OTL
 			public Omega::TypeInfo::IProvideObjectInfo
 	{
 	private:
-		Omega::TypeInfo::IProvideObjectInfo::guid_set_t WalkEntries(const ObjectBase::QIEntry* pEntries)
+		Omega::TypeInfo::IProvideObjectInfo::iid_list_t WalkEntries(const ObjectBase::QIEntry* pEntries)
 		{
 			try
 			{
-				Omega::TypeInfo::IProvideObjectInfo::guid_set_t retval;
+				Omega::TypeInfo::IProvideObjectInfo::iid_list_t retval;
 
 				for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
 				{
 					if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
 					{
 						if (!pEntries[i].pfnMemQI)
-							retval.insert(*(pEntries[i].pGuid));
+							retval.push_back(*(pEntries[i].pGuid));
 						else
 						{
 							ObjectPtr<Omega::IObject> ptrObj;
 							ptrObj.Attach(pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
 							if (ptrObj)
-								retval.insert(*(pEntries[i].pGuid));							
+								retval.push_back(*(pEntries[i].pGuid));							
 						}
 					}
 					else if (pEntries[i].offset != 0)
@@ -943,14 +936,14 @@ namespace OTL
 						ptrAgg.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI)));
 						if (ptrAgg)
 						{
-							Omega::TypeInfo::IProvideObjectInfo::guid_set_t agg = ptrAgg->EnumInterfaces();
-							retval.insert(agg.begin(),agg.end());
+							Omega::TypeInfo::IProvideObjectInfo::iid_list_t agg = ptrAgg->EnumInterfaces();
+							retval.insert(retval.end(),agg.begin(),agg.end());
 						}
 					}
 					else if (pEntries[i].baseEntries)
 					{
-						Omega::TypeInfo::IProvideObjectInfo::guid_set_t base = WalkEntries(pEntries[i].baseEntries);
-						retval.insert(base.begin(),base.end());
+						Omega::TypeInfo::IProvideObjectInfo::iid_list_t base = WalkEntries(pEntries[i].baseEntries);
+						retval.insert(retval.end(),base.begin(),base.end());
 					}
 				}
 
@@ -964,7 +957,7 @@ namespace OTL
 
 	// IProvideObjectInfo members
 	public:
-		virtual Omega::TypeInfo::IProvideObjectInfo::guid_set_t EnumInterfaces()
+		virtual Omega::TypeInfo::IProvideObjectInfo::iid_list_t EnumInterfaces()
 		{
 			return WalkEntries(ROOT::getQIEntries());
 		}

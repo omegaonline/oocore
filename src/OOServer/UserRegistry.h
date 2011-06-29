@@ -30,6 +30,7 @@ namespace User
 	{
 		class Key :
 				public OTL::ObjectBase,
+				public OTL::IProvideObjectInfoImpl<Key>,
 				public Omega::Registry::IKey
 		{
 		public:
@@ -37,6 +38,7 @@ namespace User
 
 			BEGIN_INTERFACE_MAP(Key)
 				INTERFACE_ENTRY(Omega::Registry::IKey)
+				INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 			END_INTERFACE_MAP()
 
 		private:

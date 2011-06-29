@@ -53,7 +53,7 @@ namespace
 		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalString& strAppPath, int pass_fd, bool& bAgain);
+		bool Spawn(int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -124,39 +124,55 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 		/* based on lsof style walk of proc filesystem so should
 		 * work on anything with a proc filesystem i.e. a OSx/BSD */
 		/* walk proc, closing all descriptors from stderr onwards for our pid */
-		DIR *pdir;
-		char str[1024] = {0};
 
-		snprintf(str,sizeof(str)-1,"/proc/%u/fd/",getpid());
-
-		if (!(pdir = opendir(str)))
+		OOBase::LocalString str;
+		int err = str.printf("/proc/%u/fd/",getpid());
+		if (err != 0)
+			LOG_ERROR(("Failed to format string: %s",OOBase::system_error_text(err)));
+		else
 		{
-			LOG_ERROR(("opendir failed for %s %s",str,OOBase::system_error_text()));
-			return;
-		}
+			DIR* pdir = NULL;
+			if (!(pdir = opendir(str.c_str())))
+				LOG_ERROR(("opendir failed for %s %s",str.c_str(),OOBase::system_error_text()));
+			else
+			{
+				/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
+				for (dirent* pfile; (pfile = readdir(pdir));)
+				{
+					int fd;
+					if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
+						close(fd);
+				}
+			}
 
-		/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
-		for (dirent* pfile; (pfile = readdir(pdir));)
-		{
-			int fd;
-			if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
-				close(fd);
+			closedir(pdir);
 		}
-
-		closedir(pdir);
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, bool& bAgain)
+bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 {
-	if (strAppPath.empty())
+	OOBase::LocalString strAppName;
+	strAppName.getenv("OOSERVER_BINARY_PATH");
+	if (strAppName.empty())
 	{
-		int err = strAppPath.assign(LIBEXEC_DIR "/oosvruser");
+		int err = strAppName.assign(LIBEXEC_DIR "/oosvruser");
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 	else
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppPath.c_str());
+	{
+		strAppName.replace('/','\\');
+		int err = OOBase::AppendDirSeparator(strAppName);
+
+		if (err == 0)
+			err = strAppName.append("oosvruser");
+
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
+	}
 
 	// Check our uid
 	uid_t our_uid = getuid();
@@ -181,6 +197,22 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 
 	// We are the child...
 
+	// Set stdin/out/err to /dev/null
+	int fd = open("/dev/null",O_RDWR);
+	if (fd == -1)
+	{
+		LOG_ERROR(("open(/dev/null) failed: %s",OOBase::system_error_text()));
+		_exit(127);
+	}
+
+	// Check this session stuff with the Stevens book! umask? etc...
+	void* TODO;
+
+	dup2(fd,STDIN_FILENO);
+	dup2(fd,STDOUT_FILENO);
+	dup2(fd,STDERR_FILENO);
+	close(fd);
+
 	// Close all open handles - not that we should have any ;)
 	close_all_fds(pass_fd);
 
@@ -188,7 +220,7 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 	if (chdir(LIBEXEC_DIR) != 0)
 	{
 		LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
-		exit(errno);
+		_exit(127);
 	}
 
 	if (bChangeUid)
@@ -198,28 +230,28 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 		if (!pw)
 		{
 			LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
 		{
 			LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 		{
 			LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 
 		// Stop being priviledged!
 		if (setuid(m_uid) != 0)
 		{
 			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text()));
-			exit(errno);
+			_exit(127);
 		}
 	}
 
@@ -232,12 +264,13 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 		_exit(127);
 	}
 
-	const char* debug = getenv("OMEGA_DEBUG");
-	const char* display = getenv("DISPLAY");
-	if (debug && strcmp(debug,"yes")==0 && display)
+	OOBase::LocalString debug,display;
+	debug.getenv("OMEGA_DEBUG");
+	display.getenv("DISPLAY");
+	if (debug == "yes" && !display.empty())
 	{
 		OOBase::LocalString strExec;
-		err = strExec.printf("%s %s",strAppPath.c_str(),strPipe.c_str());
+		err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str());
 		if (err != 0)
 		{
 			LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
@@ -247,9 +280,9 @@ bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppPath, int pass_fd, boo
 		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strExec.c_str(),(char*)0);
 	}
 
-	execlp(strAppPath.c_str(),strAppPath.c_str(),strPipe.c_str(),(char*)0);
+	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
 
-	LOG_ERROR(("Failed to launch %s",strAppPath.c_str()));
+	LOG_ERROR(("Failed to launch %s",strAppName.c_str()));
 
 	_exit(127);
 }
@@ -339,47 +372,118 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 {
 	assert(!m_bSandbox);
 
-	if (strSysDir.empty())
-	{
-		int err = strSysDir.assign("/var/lib/omegaonline/");
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if (strSysDir[strSysDir.length()-1] != '/')
-	{
-		int err = strSysDir.append("/");
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if (strUsersDir.empty())
-	{
-		int err = strUsersDir.concat(strSysDir.c_str(),"users/");
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if (strUsersDir[strUsersDir.length()-1] != '/')
-	{
-		int err = strUsersDir.append("/");
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-	}
-
 	OOBase::POSIX::pw_info pw(m_uid);
 	if (!pw)
 		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
-	int err = strHive.append(pw->pw_name);
-	if (err == 0)
-		err = strHive.append(".regdb");
+	int err = 0;
+	if (strSysDir.empty())
+	{
+		if ((err = strSysDir.assign("/var/lib/omegaonline/")) != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+	}
 
-	if (err != 0)
+	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
+		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
+
+	if ((err = strSysDir.append("default_user.regdb")) != 0)
+		LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+
+	bool bAddDot = false;
+	if (strUsersDir.empty())
+	{
+		OOBase::LocalString strHome;
+		strHome.getenv("HOME");
+		if (!strHome.empty())
+		{
+			bAddDot = true;
+			err = strUsersDir.assign(strHome.c_str());
+		}
+		else
+			err = strUsersDir.concat(strSysDir.c_str(),"users/");
+
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if ((err = OOBase::AppendDirSeparator(strUsersDir)) != 0)
+		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
+
+	if (bAddDot)
+	{
+		if ((err = strUsersDir.append(".omegaonline")) != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+	else
+	{
+		if ((err = strHive.append(pw->pw_name)) != 0)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if ((err = strHive.append(".regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-	void* ISSUE_11;
+	int fd_to = ::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY | S_IRUSR | S_IWUSR);
+	if (fd_to!= -1)
+	{
+		// If we get here, then we have a brand new file...
+		int fd_from = ::open(strSysDir.c_str(),O_RDONLY);
+		if (fd_from == -1)
+		{
+			err = errno;
+			::close(fd_to);
+			::unlink(strHive.c_str());
+			LOG_ERROR_RETURN(("Failed to open %s: %s",strSysDir.c_str(),OOBase::system_error_text(err)),false);
+		}
+
+		char buffer[1024] = {0};
+		ssize_t r = 0;
+		do
+		{
+			do
+			{
+				r = read(fd_from,buffer,sizeof(buffer));
+			} while (r==-1 && errno==EINTR);
+
+			if (r == -1)
+			{
+				err = errno;
+				::close(fd_from);
+				::close(fd_to);
+				::unlink(strHive.c_str());
+				LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
+			}
+
+			if (r > 0)
+			{
+				ssize_t s = 0;
+				do
+				{
+					s = write(fd_to,buffer,r);
+				} while (s==-1 && errno==EINTR);
+
+				if (s != r)
+				{
+					err = errno;
+					::close(fd_from);
+					::close(fd_to);
+					::unlink(strHive.c_str());
+					LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
+				}
+			}
+		} while (r != 0);
+
+		::close(fd_from);
+		::close(fd_to);
+
+		if (chown(strHive.c_str(),m_uid,pw->pw_gid) == -1)
+		{
+			err = errno;
+			::unlink(strHive.c_str());
+			LOG_ERROR_RETURN(("Failed to set file owner: %s",OOBase::system_error_text(err)),false);
+		}
+	}
 
 	return true;
 }
@@ -411,16 +515,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	OOBase::LocalString strAppName;
-	const char* user_host = getenv("OMEGA_USER_BINARY");
-	if (user_host)
-	{
-		err = strAppName.assign(user_host);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
-	}
-
-	if (!pSpawnUnix->Spawn(strAppName,fd[1],bAgain))
+	if (!pSpawnUnix->Spawn(fd[1],bAgain))
 	{
 		::close(fd[0]);
 		::close(fd[1]);

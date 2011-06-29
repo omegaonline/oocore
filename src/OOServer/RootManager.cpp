@@ -46,20 +46,9 @@ namespace
 {
 	bool getenv_OMEGA_DEBUG()
 	{
-	#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
-		bool ret = false;
-		char* buf = 0;
-		size_t len = 0;
-		if (!_dupenv_s(&buf,&len,"OMEGA_DEBUG"))
-		{
-			if (len)
-				ret = (strncmp(buf,"yes",len-1) == 0);
-			free(buf);
-		}
-		return ret;
-	#else
-		return (strcmp(getenv("OMEGA_DEBUG"),"yes") == 0);
-	#endif
+		OOBase::LocalString str;
+		str.getenv("OMEGA_DEBUG");
+		return (str == "yes");
 	}
 }
 
@@ -76,7 +65,7 @@ Root::Manager::~Manager()
 {
 }
 
-int Root::Manager::run(const OOSvrBase::CmdArgs::results_t& cmd_args)
+int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	m_bUnsafe = (cmd_args.find("unsafe") != cmd_args.npos);
 
@@ -156,17 +145,13 @@ bool Root::Manager::init_database()
 	if (!m_config_args.find("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-	int err = 0;
 #if defined(_WIN32)
 	dir.replace('/','\\');
-	if (dir.c_str()[dir.length()-1] != '\\')
-		err = dir.append("\\",1);
 #else
 	dir.replace('\\','/');
-	if (dir.c_str()[dir.length()-1] != '/')
-		err = dir.append("/",1);
 #endif
 
+	int err = OOBase::AppendDirSeparator(dir);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 

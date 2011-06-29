@@ -399,17 +399,34 @@ void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Compartment::ICompartment*,OOCore_ICompartment_Create,0,())
+// {3BE419D7-52D9-4873-95E7-836D33523C51}
+OMEGA_DEFINE_OID(Compartment,OID_Compartment,"{3BE419D7-52D9-4873-95E7-836D33523C51}");
+
+void OOCore::CompartmentFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	// Compartments are not supported in the OOSvrUser process!
-	assert(!OOCore::HostedByOOServer());
+	if (OOCore::HostedByOOServer())
+		OMEGA_THROW("Compartments are not supported by the user service");
 
 	// Create a new compartment and get the channel to it...
 	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment();
 
 	// Create a CompartmentImpl
-	ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstancePtr();
-	ptrCompt->init(ptrChannel);
-
-	return ptrCompt.AddRef();
+	if (!pOuter)
+	{
+		ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt;
+		ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstancePtr();
+		ptrCompt->init(ptrChannel);
+		pObject = ptrCompt->QueryInterface(iid);
+	}
+	else
+	{
+		ObjectPtr<AggregatedObjectImpl<OOCore::CompartmentImpl> > ptrCompt;
+		ptrCompt = AggregatedObjectImpl<OOCore::CompartmentImpl>::CreateInstancePtr(pOuter);
+		ptrCompt->ContainedObject()->init(ptrChannel);
+		if (iid == OMEGA_GUIDOF(IObject))
+			pObject = ptrCompt.AddRef();
+		else
+			pObject = ptrCompt->QueryInterface(iid);
+	}
 }

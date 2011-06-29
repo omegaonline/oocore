@@ -16,10 +16,8 @@ ooreg_LDADD += ../../src/OOCore/liboocore.la
 endif
 
 ooreg_SOURCES = \
-	commands.cpp \
-	exception.cpp \
 	main.cpp
 
 if WIN32
-ooreg_SOURCES += OOReg.rc
+ooreg_SOURCES += ooreg.rc
 endif

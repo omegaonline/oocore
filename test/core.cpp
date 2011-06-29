@@ -31,11 +31,10 @@ bool init_standalone_tests()
 
 	normalise_path(regdb_path);
 	
-	Omega::string_t args(L"standalone=true");
+	Omega::string_t args(L"standalone=always");
 	args += L" , regdb_path=" + regdb_path;
 	args += L"\t,user_regdb = " + regdb_path + L"default_user.regdb";
-	args += L",\tstandalone_always\t";
-
+	
 	Omega::IException* pE = Omega::Initialize(args);
 	if (pE)
 	{

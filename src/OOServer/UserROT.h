@@ -28,6 +28,7 @@ namespace User
 {
 	class RunningObjectTable :
 			public OTL::ObjectBase,
+			public OTL::IProvideObjectInfoImpl<RunningObjectTable>,
 			public Omega::Activation::IRunningObjectTable
 	{
 	public:
@@ -37,6 +38,7 @@ namespace User
 
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
+			INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 		END_INTERFACE_MAP()
 
 	private:

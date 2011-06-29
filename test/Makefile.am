@@ -2,6 +2,8 @@ include $(top_srcdir)/m4/ltrc.inc
 
 SUBDIRS = TestLibrary TestProcess .
 
+CLEANFILES = *.regdb
+
 check_PROGRAMS = coretests
 
 coretests_CPPFLAGS = -DBUILD_DIR=$(abs_builddir) -DTOP_SRC_DIR=$(abs_top_srcdir)
@@ -37,7 +39,7 @@ EXTRA_DIST = \
 if DEBUG
 TESTS_ENVIRONMENT = \
 	OMEGA_DEBUG=yes \
-	OMEGA_USER_BINARY=$(abs_top_builddir)/src/OOServer/oosvruser 
+	OOSERVER_BINARY_PATH=$(abs_top_builddir)/src/OOServer/ 
 endif
 
 TESTS = \

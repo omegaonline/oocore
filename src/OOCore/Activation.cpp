@@ -26,6 +26,7 @@
 #include "Channel.h"
 #include "Exception.h"
 #include "Activation.h"
+#include "Compartment.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
@@ -40,6 +41,7 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
 	OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
 	OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
+	OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
@@ -243,14 +245,14 @@ namespace
 #endif
 	}
 
-	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, Activation::RegisterFlags_t reg_mask, const guid_t& iid)
 	{
 		// Try to load a library, if allowed
-		if (flags & Activation::InProcess)
+		if (reg_mask & Activation::ProcessLocal)
 		{
 			// Use the registry
 			ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/OIDs/" + oid.ToString());
-			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
+			if (ptrOidKey->IsValue(L"Library"))
 			{
 				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
 				if (IsRelativePath(strLib))
@@ -259,25 +261,19 @@ namespace
 					OMEGA_THROW(strErr.c_nstr());
 				}
 
-				void* ISSUE_8; // Surrogates here?!?
-
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
 					return pObject;
 			}
 		}
-
-		// Try out-of-process...
-		if (flags & Activation::OutOfProcess)
+		
+		// Ask the IPS to run it...
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (ptrIPS)
 		{
-			// Ask the IPS to run it...
-			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-			if (ptrIPS)
-			{
-				IObject* pObject = 0;
-				ptrIPS->LaunchObjectApp(oid,iid,pObject);
-				return pObject;
-			}
+			IObject* pObject = 0;
+			ptrIPS->LaunchObjectApp(oid,iid,flags,pObject);
+			return pObject;
 		}
 
 		return 0;
@@ -287,37 +283,31 @@ namespace
 	{
 		IObject* pObject = 0;
 
+		// Build RegisterFlags
+		Activation::RegisterFlags_t reg_mask = Activation::ProcessLocal | Activation::UserLocal | Activation::MachineLocal | Activation::Global;
+		
+		if (flags & Activation::Library)
+			reg_mask &= ~(Activation::MachineLocal | Activation::UserLocal | Activation::Global);
+
+		if (flags & Activation::Process)
+			reg_mask &= ~Activation::ProcessLocal;
+
+		// Sandbox must be not be UserLocal or ProcessLocal
+		if (flags & Activation::Sandbox)
+			reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
+		
+		// Remote activation
+		if (flags & Activation::RemoteActivation)
+			reg_mask &= ~(Activation::MachineLocal | Activation::UserLocal | Activation::ProcessLocal);
+				
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
-		if (flags & Activation::InProcess)
+		if (reg_mask & Activation::ProcessLocal)
 		{
 			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
 			if (pObject)
 				return pObject;
 		}
-
-		// Build RegisterFlags
-		Activation::RegisterFlags_t reg_mask = 0;
-		if (flags & Activation::InProcess)
-			reg_mask |= Activation::ProcessLocal;
-
-		if (flags & Activation::OutOfProcess)
-			reg_mask |= Activation::UserLocal | Activation::MachineLocal;
-
-		// Surrogates must not be ProcessLocal
-		if (flags & (Activation::Surrogate | Activation::PrivateSurrogate))
-		{
-			reg_mask |= Activation::UserLocal;
-			reg_mask &= ~Activation::ProcessLocal;
-		}
-
-		// Sandbox must be not be UserLocal
-		if (flags & (Activation::Sandbox | Activation::VM))
-			reg_mask &= ~(Activation::UserLocal | Activation::ProcessLocal);
-
-		// Remote activation
-		if (flags & Activation::RemoteActivation)
-			reg_mask |= Activation::Anywhere;
-
+			
 		// See if we have it registered in the ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
 		ptrROT->GetObject(oid,reg_mask,iid,pObject);
@@ -329,7 +319,7 @@ namespace
 		// See if we are allowed to load...
 		if (!(flags & Activation::DontLaunch))
 		{
-			pObject = LoadObject(oid,flags,iid);
+			pObject = LoadObject(oid,flags,reg_mask,iid);
 			if (pObject)
 				return pObject;
 		}

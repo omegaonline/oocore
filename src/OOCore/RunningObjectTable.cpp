@@ -152,7 +152,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	uint32_t rot_cookie = 0;
 
 	// Check for user registration
-	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
+	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Global))
 	{
 		// Register in ROT
 		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
@@ -287,7 +287,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 		return;
 	}
 
-	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Anywhere))
+	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Global))
 	{
 		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
 		if (ptrIPS)

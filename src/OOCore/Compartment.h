@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_APARTMENT_IMPL_H_INCLUDED_
-#define OOCORE_APARTMENT_IMPL_H_INCLUDED_
+#ifndef OOCORE_COMPARTMENT_IMPL_H_INCLUDED_
+#define OOCORE_COMPARTMENT_IMPL_H_INCLUDED_
 
 #include "../../include/Omega/Compartment.h"
 
@@ -100,6 +100,14 @@ namespace OOCore
 		OOBase::HashTable<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > > m_mapCompartments;
 		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>                             m_ptrROT;
 	};
+	
+	class CompartmentFactory : 
+		public OTL::ObjectFactoryBase<&Omega::Compartment::OID_Compartment,Omega::Activation::ProcessLocal>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
+	};
 }
 
-#endif // OOCORE_APARTMENT_IMPL_H_INCLUDED_
+#endif // OOCORE_COMPARTMENT_IMPL_H_INCLUDED_

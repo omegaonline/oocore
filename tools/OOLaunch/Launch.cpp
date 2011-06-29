@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <OOSvrBase/CmdArgs.h>
+#include <OOBase/CmdArgs.h>
 
 #include "../include/Omega/OOCore_version.h"
 
@@ -157,7 +157,7 @@ static int run_oosvruser()
 				exit(EXIT_FAILURE);
 		}
 
-		const char* run = getenv("OMEGA_USER_BINARY");
+		const char* run = getenv("OOSERVER_BINARY_PATH");
 		if (run)
 			do_exec(run,pipes[WRITE_END]);
 
@@ -180,7 +180,7 @@ static int run_oosvruser()
 int main(int argc, char* argv[])
 {
 	// Set up the command line args
-	OOSvrBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("sh-syntax");
@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("exit-with-session");
 
 	// Parse command line
-	OOSvrBase::CmdArgs::results_t args;
+	OOBase::CmdArgs::results_t args;
 	if (cmd_args.parse(argc,argv,args) != 0)
 		return EXIT_FAILURE;
 

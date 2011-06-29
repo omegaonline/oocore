@@ -46,32 +46,10 @@ void AttachDebugger(DWORD pid);
 
 namespace
 {
-	int getenv_i(const char* val, OOBase::LocalString& str)
-	{
-		int ret = 0;
-
-	#if defined(_MSC_VER) && defined(_CRT_INSECURE_DEPRECATE)
-		char* buf = 0;
-		size_t len = 0;
-		if (!_dupenv_s(&buf,&len,val))
-		{
-			if (len)
-				ret = str.assign(buf,len-1);
-			free(buf);
-		}
-	#else
-		ret = str.assign(getenv(val));
-	#endif
-
-		return ret;
-	}
-
 	bool getenv_OMEGA_DEBUG()
 	{
 		OOBase::LocalString str;
-		if (getenv_i("OMEGA_DEBUG",str) != 0)
-			return false;
-
+		str.getenv("OMEGA_DEBUG");
 		return (str == "yes");
 	}
 
@@ -82,7 +60,7 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool IsRunning() const;
-		bool Spawn(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		bool Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
@@ -94,10 +72,10 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
-	static HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
+	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
 	{
 		// Create a new unique pipe
 
@@ -180,7 +158,7 @@ namespace
 		return hPipe;
 	}
 
-	static bool WaitForConnect(HANDLE hPipe)
+	bool WaitForConnect(HANDLE hPipe)
 	{
 		OVERLAPPED ov = {0};
 		ov.hEvent = CreateEventW(NULL,TRUE,TRUE,NULL);
@@ -222,7 +200,7 @@ namespace
 		return (dwErr == 0);
 	}
 
-	static DWORD LogonSandboxUser(const OOBase::String& strUName, HANDLE& hToken)
+	DWORD LogonSandboxUser(const OOBase::String& strUName, HANDLE& hToken)
 	{
 		// Convert UName to wide
 		size_t wlen = OOBase::from_native(NULL,0,strUName.c_str());
@@ -294,7 +272,7 @@ namespace
 		return ERROR_SUCCESS;
 	}
 
-	static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 3;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
@@ -333,7 +311,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -365,7 +343,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	static bool OpenCorrectWindowStation(HANDLE hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	bool OpenCorrectWindowStation(HANDLE hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
 	{
 		// Service window stations are created with the name "Service-0xZ1-Z2$",
 		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
@@ -532,10 +510,11 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	OOBase::LocalString strModule;
-	if (strAppPath.empty())
+	strModule.getenv("OOSERVER_BINARY_PATH");
+	if (strModule.empty())
 	{
 		// Get our module name
 		char szPath[MAX_PATH];
@@ -560,24 +539,15 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 	}
 	else
 	{
-		int err = strModule.assign(strAppPath.c_str());
+		strModule.replace('/','\\');
+		int err = OOBase::AppendDirSeparator(strModule);
+			
 		if (err == 0)
-		{
-			if (strModule.length() < 4)
-				err = strModule.append(".exe");
-			else
-			{
-				const char* ext = strModule.c_str()+strModule.length()-4;
-				bool ok = (ext[0]=='.' && (ext[1]=='e' || ext[1]=='E') && (ext[2]=='x' || ext[2]=='X') && (ext[3]=='e' || ext[3]=='E'));
-				if (!ok)
-					err = strModule.append(".exe");
-			}
-		}
+			err = strModule.append("OOSvrUser.exe");
+			
 		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
-
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using oosvruser: %s",strModule.c_str());
-
+			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
+	
 		if (strModule.length() >= MAX_PATH)
 		{
 			// Prefix with '\\?\'
@@ -585,6 +555,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(const OOBase::LocalString& strAppPath,
 			if (err != 0)
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
 		}
+		
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 	}
 
 	// Create the named pipe
@@ -778,11 +750,11 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(const OOBase::LocalString& strAppPath, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+bool SpawnedProcessWin32::Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
-	DWORD dwRes = SpawnFromToken(strAppPath,hToken,hPipe,bSandbox);
+	DWORD dwRes = SpawnFromToken(hToken,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
 
@@ -886,6 +858,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 {
 	assert(!m_bSandbox);
 
+	int err = 0;
 	if (strSysDir.empty())
 	{
 		char szBuf[MAX_PATH] = {0};
@@ -899,10 +872,12 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if (!PathFileExistsA(szBuf))
 			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
 
-		int err = strSysDir.assign(szBuf);
-		if (err != 0)
+		if ((err = strSysDir.assign(szBuf)) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
+	
+	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
+		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	if (strUsersDir.empty())
 	{
@@ -917,18 +892,13 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if (!PathFileExistsA(szBuf) && !CreateDirectoryA(szBuf,NULL))
 			LOG_ERROR_RETURN(("CreateDirectoryA %s failed: %s",szBuf,OOBase::system_error_text()),false);
 
-		int err = strHive.concat(szBuf,"\\user.regdb");
-		if (err != 0)
+		if ((err = strHive.concat(szBuf,"\\user.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 	}
 	else
 	{
-		if (strUsersDir[strUsersDir.length()-1] != '\\' && strUsersDir[strUsersDir.length()-1] != '/')
-		{
-			int err = strUsersDir.append("\\");
-			if (err != 0)
-				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-		}
+		if ((err = OOBase::AppendDirSeparator(strUsersDir)) != 0)
+			LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 		// Get the names associated with the user SID
 		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strUserName;
@@ -938,7 +908,6 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
 
-		int err = 0;
 		if (!strDomainName)
 			err = strHive.printf("%s%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName));
 		else
@@ -951,23 +920,14 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
 	if (!PathFileExistsA(strHive.c_str()))
 	{
-		if (strSysDir[strSysDir.length()-1] != '\\' && strSysDir[strSysDir.length()-1] != '/')
-		{
-			int err = strSysDir.append("\\");
-			if (err != 0)
-				LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-		}
-
-		int err = strSysDir.append("default_user.regdb");
-		if (err != 0)
+		if ((err = strSysDir.append("default_user.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
 		if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))
 			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
 		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
-
-		// Secure the file if (strUsersDir.empty())
+		
 		void* ISSUE_11;
 	}
 
@@ -979,34 +939,31 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = new (std::nothrow) SpawnedProcessWin32();
 	if (!pSpawn32)
-		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)NULL);
 
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	OOBase::LocalString strAppName;
-	getenv_i("OMEGA_USER_BINARY",strAppName);
-
 	OOBase::Win32::SmartHandle hPipe;
-	if (!pSpawn32->Spawn(strAppName,uid,hPipe,bSandbox,bAgain))
-		return 0;
+	if (!pSpawn32->Spawn(uid,hPipe,bSandbox,bAgain))
+		return NULL;
 
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
-		return 0;
+		return NULL;
 
 	// Connect up
 	int err = 0;
 	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,&err);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)NULL);
 
 	hPipe.detach();
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
-		return 0;
+		return NULL;
 
 	return pSpawn;
 }

@@ -119,7 +119,7 @@ Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 	return 0;
 }
 
-void InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&, IObject*& pObject)
+void InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&, Activation::Flags_t, IObject*& pObject)
 {
 	pObject = 0;
 	throw Activation::IOidNotFoundException::Create(oid);

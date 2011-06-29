@@ -61,6 +61,7 @@ namespace Omega
 		ICallContext* GetCallContext();
 		bool_t IsAlive(IObject* pObject);
 		uint32_t GetSource(IObject* pObject);
+		IProxy* GetProxy(IObject* pObject);
 
 		interface IObjectManager : public IObject
 		{
@@ -184,6 +185,12 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(guid_t,MessageOid,0,())
 	OMEGA_METHOD(Remoting::IChannelSink*,Open,2,((in),const string_t&,strEndpoint,(in),Remoting::IChannelSink*,pSink))
 )
+
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in),Omega::IObject*,pObject));
+inline Omega::Remoting::IProxy* Omega::Remoting::GetProxy(IObject* pObject)
+{
+	return OOCore_Remoting_GetProxy(pObject);
+}
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,1,((in),Omega::IException*,pCause))
 inline Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create(Omega::IException* pCause)

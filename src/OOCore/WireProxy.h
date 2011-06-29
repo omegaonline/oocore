@@ -33,7 +33,7 @@ namespace OOCore
 
 	class ProxyMarshalFactory :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactorySingleton<ProxyMarshalFactory,&OID_ProxyMarshalFactory,Omega::Activation::InProcess>,
+			public OTL::AutoObjectFactorySingleton<ProxyMarshalFactory,&OID_ProxyMarshalFactory,Omega::Activation::ProcessLocal>,
 			public Omega::Remoting::IMarshalFactory
 	{
 	public:

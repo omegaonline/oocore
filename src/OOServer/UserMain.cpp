@@ -48,8 +48,7 @@ namespace
 
 	int Version()
 	{
-		printf(APPNAME " version information:\n"
-			"Version: %s",OOCORE_VERSION);
+		printf(APPNAME " version %s",OOCORE_VERSION);
 
 	#if defined(OMEGA_DEBUG)
 		printf(" (Debug build)");
@@ -75,7 +74,7 @@ int main(int argc, char* argv[])
 	OOBase::SetCriticalFailure(&CriticalFailure);
 
 	// Set up the command line args
-	OOSvrBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("fork-slave",0,true);
@@ -85,10 +84,21 @@ int main(int argc, char* argv[])
 #endif
 
 	// Parse command line
-	OOSvrBase::CmdArgs::results_t args;
-	if (cmd_args.parse(argc,argv,args) != 0)
-		LOG_ERROR_RETURN(("Failed to parse command line arguments."),EXIT_FAILURE);
-
+	OOBase::CmdArgs::results_t args;
+	int err = cmd_args.parse(argc,argv,args);
+	if (err	!= 0)
+	{
+		OOBase::String strErr;
+		if (args.find("missing",strErr))
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Missing value for option %s",strErr.c_str());
+		else if (args.find("unknown",strErr))
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Unknown option %s",strErr.c_str());
+		else
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
+			
+		return EXIT_FAILURE;
+	}
+	
 	if (args.find("help") != args.npos)
 		return Help();
 

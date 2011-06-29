@@ -149,16 +149,22 @@ int main(int argc, char* argv[])
 
 	User::Manager manager;
 
-	// Start the handler
-	if (!manager.start_request_threads())
+	if (!manager.start_proactor_threads())
 		return EXIT_FAILURE;
+
+	// Start the handler
+	if (!manager.start_request_threads(2))
+	{
+		manager.stop_request_threads();
+		return EXIT_FAILURE;
+	}
 
 	// Do the correct init
 	bool bRun = false;
 	if (bForkSlave)
-		bRun = manager.fork_slave(strPipe.c_str());
+		bRun = manager.fork_slave(strPipe);
 	else
-		bRun = manager.session_launch(strPipe.c_str());
+		bRun = manager.session_launch(strPipe);
 
 	// Now run...
 	if (bRun)
@@ -166,6 +172,8 @@ int main(int argc, char* argv[])
 
 	// Stop the MessageHandler
 	manager.stop_request_threads();
+
+	manager.m_proactor_pool.join();
 
 	if (!bRun)
 	{

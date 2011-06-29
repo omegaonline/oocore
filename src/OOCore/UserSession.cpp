@@ -31,6 +31,11 @@
 using namespace Omega;
 using namespace OTL;
 
+namespace
+{
+	static const size_t s_header_len = sizeof(uint32_t) * 2;
+}
+
 OOCore::UserSession::UserSession() :
 		m_worker_thread(false),
 		m_channel_id(0),
@@ -260,7 +265,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 		int err = 0;
 		do
 		{
-			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),&err,&wait);
+			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,&wait);
 			if (!err || err != ENOENT)
 				break;
 
@@ -348,8 +353,8 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	const char* name = "OmegaOnline";
 
 	int err = 0;
-	OOBase::SmartPtr<OOBase::Socket> local_socket = OOBase::Socket::connect_local(name,&err);
-	if (!local_socket)
+	OOBase::SmartPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(name,err);
+	if (!root_socket)
 	{
 		if (bStandalone)
 			return;
@@ -358,14 +363,14 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	}
 	bStandalone = false;
 
+	// Send version information
 	OOBase::CDRStream stream;
 
-	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 	if (!stream.write(version))
 		OMEGA_THROW(stream.last_error());
 
-	err = local_socket->send(stream.buffer());
+	err = root_socket->send(stream.buffer());
 	if (err)
 		OMEGA_THROW(err);
 
@@ -373,7 +378,7 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
 	size_t mark = stream.buffer()->mark_rd_ptr();
-	local_socket->recv(stream.buffer(),4,&err);
+	err = root_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
 		OMEGA_THROW(err);
 
@@ -381,7 +386,7 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	if (!stream.read(len))
 		OMEGA_THROW(stream.last_error());
 
-	local_socket->recv(stream.buffer(),len,&err);
+	err = root_socket->recv(stream.buffer(),len);
 	if (err != 0)
 		OMEGA_THROW(err);
 
@@ -564,16 +569,15 @@ void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 
 int OOCore::UserSession::run_read_loop()
 {
-	static const size_t s_initial_read = sizeof(uint32_t) * 2;
-	OOBase::CDRStream header(s_initial_read);
+	OOBase::CDRStream header(s_header_len);
 
 	int err = 0;
 	for (;;)
 	{
 		// Read the header
 		header.reset();
-		size_t recvd = m_stream->recv(header.buffer(),s_initial_read,&err);
-		if (err != 0 || recvd != s_initial_read)
+		err = m_stream->recv(header.buffer(),s_header_len);
+		if (err != 0)
 			break;
 
 		// Read the payload specific data
@@ -602,15 +606,21 @@ int OOCore::UserSession::run_read_loop()
 		if (err != 0)
 			break;
 
-		// Subtract what we have already read
-		nReadLen -= s_initial_read;
+		// Check for tiny data
+		if (nReadLen == 0)
+			continue;
 
 		// Create a new Message struct
-		OOBase::SmartPtr<Message> msg = new (OOBase::critical) Message(nReadLen);
+		OOBase::SmartPtr<Message> msg = new (std::nothrow) Message(nReadLen);
+		if (!msg)
+		{
+			err = ERROR_OUTOFMEMORY;
+			break;
+		}
 
 		// Issue another read for the rest of the data
-		recvd = m_stream->recv(msg->m_payload.buffer(),nReadLen,&err);
-		if (err != 0 || recvd != nReadLen)
+		err = m_stream->recv(msg->m_payload.buffer(),nReadLen);
+		if (err != 0)
 			break;
 
 		// Reset the byte order
@@ -645,7 +655,7 @@ int OOCore::UserSession::run_read_loop()
 		// Did everything make sense?
 		err = msg->m_payload.last_error();
 		if (err != 0)
-			OOBase_CallCriticalFailure(err);
+			break;
 
 		// Just skip any misdirected packets
 		if ((dest_channel_id & 0xFFFFF000) != m_channel_id)
@@ -661,7 +671,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				uint32_t closed_channel_id;
 				if (!msg->m_payload.read(closed_channel_id))
-					err = msg->m_payload.last_error();
+					msg->m_payload.last_error();
 				else
 					process_channel_close(closed_channel_id);
 			}
@@ -669,9 +679,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				// Send back the src_channel_id
 				OOBase::CDRStream response(sizeof(msg->m_src_channel_id));
-				if (!response.write(msg->m_src_channel_id))
-					err = response.last_error();
-				else
+				if (response.write(msg->m_src_channel_id))
 					send_response_catch(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
 			}
 			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
@@ -684,9 +692,7 @@ int OOCore::UserSession::run_read_loop()
 				guard.release();
 
 				OOBase::CDRStream response(sizeof(byte_t));
-				if (!response.write(res))
-					err = response.last_error();
-				else
+				if (response.write(res))
 					send_response_catch(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
 			}
 		}
@@ -702,7 +708,10 @@ int OOCore::UserSession::run_read_loop()
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
-					OOBase_CallCriticalFailure(pContext->m_msg_queue.last_error());
+				{
+					err = pContext->m_msg_queue.last_error();
+					break;
+				}
 				else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 				{
 					if (waiting == 0)
@@ -719,7 +728,10 @@ int OOCore::UserSession::run_read_loop()
 
 				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
-					OOBase_CallCriticalFailure(m_default_msg_queue.last_error());
+				{
+					err = m_default_msg_queue.last_error();
+					break;
+				}
 				else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
 				{
 					if (waiting == 0)
@@ -946,7 +958,7 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t d
 		wait = deadline - now;
 	}
 
-	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
+	int err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE;
@@ -992,7 +1004,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, u
 		wait = deadline - now;
 	}
 
-	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
+	int err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE;
@@ -1005,6 +1017,8 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 {
 	header.write(header.big_endian());
 	header.write(byte_t(1));     // version
+	header.write(byte_t('o'));   // signature
+	header.write(byte_t('c'));   // signature
 
 	// Write out the header length and remember where we wrote it
 	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
@@ -1040,7 +1054,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 	}
 
 	// Update the total length
-	header.replace(header.buffer()->length(),msg_len_mark);
+	header.replace(header.buffer()->length() - s_header_len,msg_len_mark);
 }
 
 Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)

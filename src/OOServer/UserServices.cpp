@@ -30,8 +30,7 @@ namespace
 {
 	class AsyncSocket :
 			public ObjectBase,
-			public Net::IAsyncSocket,
-			public OOSvrBase::IOHandler
+			public Net::IAsyncSocket
 	{
 	public:
 		AsyncSocket();
@@ -47,7 +46,7 @@ namespace
 	private:
 		OOBase::SpinLock m_lock;
 		User::Manager*   m_pManager;
-		uint32_t         m_id;
+		uint32_t  m_id;
 
 		ObjectPtr<Net::IAsyncSocketNotify> m_ptrNotify;
 		Net::IAsyncSocket::BindFlags_t     m_flags;
@@ -109,7 +108,7 @@ bool User::Manager::start_services()
 			LOG_ERROR_RETURN(("Failed to read root response: %d",response->last_error()),false);
 		}
 
-		start_service(strKey.c_str(),strOid.c_str());
+		start_service(strKey,strOid);
 	}
 
 	// Now start all the network services listening...
@@ -127,7 +126,7 @@ bool User::Manager::start_services()
 			if (ptrNS)
 			{
 				// Call the root, asking to start the async stuff, passing the id of the service...
-				listen_service_socket(pServ->strKey.c_str(),*m_mapServices.key_at(i),ptrNS);
+				listen_service_socket(pServ->strKey,*m_mapServices.key_at(i),ptrNS);
 			}
 		}
 		catch (IException* pE)
@@ -141,7 +140,7 @@ bool User::Manager::start_services()
 	return true;
 }
 
-void User::Manager::start_service(const char* pszKey, const char* pszOid)
+void User::Manager::start_service(const OOBase::LocalString& strKey, const OOBase::LocalString& strOid)
 {
 	try
 	{
@@ -152,7 +151,7 @@ void User::Manager::start_service(const char* pszKey, const char* pszOid)
 		if (classify_channel(src) != 2)
 			OMEGA_THROW("Service has activated in an unusual context");
 
-		ObjectPtr<Omega::Registry::IKey> ptrKey = get_service_key(pszKey);
+		ObjectPtr<Omega::Registry::IKey> ptrKey = get_service_key(strKey);
 		ptrService->Start(ptrKey);
 
 		ObjectPtr<System::INetworkService> ptrNetService;
@@ -166,7 +165,7 @@ void User::Manager::start_service(const char* pszKey, const char* pszOid)
 		// If we add the derived interface then the proxy QI will be *much* quicker elsewhere
 		Service svc;
 
-		int err = svc.strKey.assign(pszKey);
+		int err = svc.strKey.assign(strKey.c_str());
 		if (err != 0)
 			OMEGA_THROW(err);
 
@@ -182,16 +181,16 @@ void User::Manager::start_service(const char* pszKey, const char* pszOid)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Failed to start service %s: %ls",pszKey,pE->GetDescription().c_wstr()));
+		LOG_ERROR(("Failed to start service %s: %ls",strKey.c_str(),pE->GetDescription().c_wstr()));
 		pE->Release();
 	}
 }
 
-ObjectPtr<Registry::IKey> User::Manager::get_service_key(const char* pszKey)
+ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::LocalString& strKey)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetServiceKey));
-	request.write(pszKey);
+	request.write(strKey.c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -245,11 +244,11 @@ void User::Manager::stop_services()
 	}
 }
 
-void User::Manager::listen_service_socket(const char* pszKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
+void User::Manager::listen_service_socket(const OOBase::String& strKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ListenSocket));
-	request.write(pszKey);
+	request.write(strKey.c_str());
 	request.write(nServiceId);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -323,7 +322,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 	response.write(err);
 }
 
-void User::Manager::close_socket(Omega::uint32_t id)
+void User::Manager::close_socket(uint32_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
 
@@ -356,20 +355,23 @@ void User::Manager::on_socket_recv(OOBase::CDRStream& request)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		OOSvrBase::IOHandler* handler = NULL;
-		if (m_mapSockets.find(id,handler))
+		ObjectPtr<Net::IAsyncSocket> ptrSocket;
+		if (m_mapSockets.find(id,ptrSocket))
 		{
 			guard.release();
 
-			try
+			void* ISSUE_13;
+
+			/*try
 			{
-				handler->on_recv(request.buffer(),err);
+				
+				ptrSocket->on_recv(request.buffer(),err);
 			}
 			catch (IException* pE)
 			{
 				LOG_ERROR(("on_recv failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
-			}
+			}*/
 		}
 	}
 }
@@ -388,20 +390,20 @@ void User::Manager::on_socket_sent(OOBase::CDRStream& request)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		OOSvrBase::IOHandler* handler = NULL;
-		if (m_mapSockets.find(id,handler))
+		ObjectPtr<Net::IAsyncSocket> ptrSocket;
+		if (m_mapSockets.find(id,ptrSocket))
 		{
 			guard.release();
 
-			try
+/*			try
 			{
-				handler->on_sent(request.buffer(),err);
+				ptrSocket->on_sent(request.buffer(),err);
 			}
 			catch (IException* pE)
 			{
 				LOG_ERROR(("on_sent failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
-			}
+			}*/
 		}
 	}
 }
@@ -416,20 +418,20 @@ void User::Manager::on_socket_close(OOBase::CDRStream& request)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_service_lock);
 
-		OOSvrBase::IOHandler* handler = NULL;
-		if (m_mapSockets.find(id,handler))
+		ObjectPtr<Net::IAsyncSocket> ptrSocket;
+		if (m_mapSockets.find(id,ptrSocket))
 		{
 			guard.release();
 
-			try
+/*			try
 			{
-				handler->on_closed();
+				ptrSocket->on_closed();
 			}
 			catch (IException* pE)
 			{
 				LOG_ERROR(("on_close failed: %ls",pE->GetDescription().c_wstr()));
 				pE->Release();
-			}
+			}*/
 		}
 	}
 }
@@ -448,7 +450,7 @@ AsyncSocket::~AsyncSocket()
 		if (m_pManager && m_id)
 			m_pManager->close_socket(m_id);
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		pE->Release();
 	}
@@ -480,7 +482,7 @@ void AsyncSocket::Recv(uint32_t lenBytes, bool_t bRecvAll)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 
@@ -513,7 +515,7 @@ void AsyncSocket::Send(uint32_t lenBytes, const byte_t* bytes, bool_t bReliable)
 	if (!response)
 		OMEGA_THROW("No response from root");
 
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response->read(err))
 		OMEGA_THROW(response->last_error());
 

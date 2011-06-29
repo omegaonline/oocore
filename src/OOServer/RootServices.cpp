@@ -35,14 +35,17 @@
 #include "RootManager.h"
 #include "Protocol.h"
 
+#if defined(_WIN32)
+#include <Ws2tcpip.h>
+#endif
+
 namespace
 {
 	class TcpAcceptor :
-		public OOSvrBase::Acceptor<OOSvrBase::AsyncSocket>,
 		public Root::Manager::ControlledObject
 	{
 	public:
-		static TcpAcceptor* create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort, int* perr);
+		static TcpAcceptor* create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort, int& err);
 
 		virtual ~TcpAcceptor() {}
 
@@ -52,15 +55,14 @@ namespace
 
 		TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id);
 
-		Root::Manager* const             m_pManager;
-		const Omega::uint32_t            m_id;
-		OOBase::SmartPtr<OOBase::Socket> m_ptrSocket;
+		Root::Manager* const                  m_pManager;
+		const Omega::uint32_t                 m_id;
+		OOBase::SmartPtr<OOSvrBase::Acceptor> m_ptrAcceptor;
 
-		bool on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* strAddress, int err);
+		void on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* addr, size_t addr_len, int err);
 	};
 
 	class AsyncSocket :
-			public OOSvrBase::IOHandler,
 			public Root::Manager::Socket
 	{
 		friend class TcpAcceptor;
@@ -83,7 +85,7 @@ namespace
 
 		Root::Manager* const      m_pManager;
 		Omega::uint32_t           m_id;
-		OOSvrBase::AsyncSocketPtr m_ptrSocket;
+		OOBase::SmartPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
 	};
 }
 
@@ -276,7 +278,7 @@ int Root::Manager::create_service_listener(Omega::uint32_t id, const OOBase::Loc
 
 	// This is where we have a list of supported protocols...
 	if (strProtocol == "tcp")
-		ptrService = TcpAcceptor::create(this,id,strAddress,strPort,&err);
+		ptrService = TcpAcceptor::create(this,id,strAddress,strPort,err);
 
 	/*else if (strProtocol == "udp")
 	{
@@ -492,52 +494,72 @@ TcpAcceptor::TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id) :
 	assert(m_id);
 }
 
-TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort, int* perr)
+TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort, int& err)
 {
+	err = 0;
+
+	// Resolve the passed in addresses...
+	addrinfo hints = {0};
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	addrinfo* pResults = NULL;
+	if (getaddrinfo(strAddress.c_str(),strPort.c_str(),&hints,&pResults) != 0)
+	{
+		err = WSAGetLastError();
+		return NULL;
+	}
+
+	sockaddr_storage addr = {0};
+	size_t addr_len = pResults->ai_addrlen;
+	memcpy(&addr,pResults->ai_addr,addr_len);
+	
+	// Done with address info
+	freeaddrinfo(pResults);
+
 	TcpAcceptor* pService = new (std::nothrow) TcpAcceptor(pManager,id);
 	if (!pService)
 	{
-		*perr = ENOMEM;
+		err = ENOMEM;
 		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)0);
 	}
 
-	pService->m_ptrSocket = Root::Proactor::instance().accept_remote(pService,strAddress.c_str(),strPort.c_str(),perr);
-	if (*perr != 0)
+	pService->m_ptrAcceptor = Root::Proactor::instance().accept_remote(pService,&TcpAcceptor::on_accept,(sockaddr*)&addr,addr_len,err);
+	if (err != 0)
 	{
 		delete pService;
-		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(*perr)),(TcpAcceptor*)0);
+		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(err)),(TcpAcceptor*)0);
 	}
 
 	OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Listening on %s:%s",strAddress.empty() ? "localhost" : strAddress.c_str(),strPort.c_str());
 
-	*perr = 0;
 	return pService;
 }
 
-bool TcpAcceptor::on_accept(OOSvrBase::AsyncSocketPtr ptrSocket, const char* /*strAddress*/, int err)
+void TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*addr*/, size_t /*addr_len*/, int err)
 {
 	if (err)
 	{
 		LOG_ERROR(("on_accept failed: %s",OOBase::system_error_text(err)));
 		m_pManager->remove_listener(m_id);
-		return false;
+		delete pSocket;
+		return;
 	}
 
-	AsyncSocket* pAsyncSocket = new (std::nothrow) AsyncSocket(m_pManager,ptrSocket);
+	AsyncSocket* pAsyncSocket = new (std::nothrow) AsyncSocket(m_pManager,pSocket);
 	if (!pAsyncSocket)
-		LOG_ERROR_RETURN(("Out of memory"),true);
+	{
+		LOG_ERROR(("Out of memory"));
+		delete pSocket;
+		return;
+	}
 	
-	ptrSocket.detach();
-
 	pAsyncSocket->m_id = m_pManager->add_socket(m_id,pAsyncSocket);
 	if (!pAsyncSocket->m_id)
 	{
 		delete pAsyncSocket;
 		m_pManager->remove_listener(m_id);
-		return false;
 	}
-
-	return true;
 }
 
 AsyncSocket::AsyncSocket(Root::Manager* pManager, OOSvrBase::AsyncSocket* pSocket) :
@@ -545,7 +567,6 @@ AsyncSocket::AsyncSocket(Root::Manager* pManager, OOSvrBase::AsyncSocket* pSocke
 		m_id(0),
 		m_ptrSocket(pSocket)
 {
-	m_ptrSocket->bind_handler(this);
 }
 
 AsyncSocket::~AsyncSocket()
@@ -567,12 +588,12 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	buffer->rd_ptr(12);
 	buffer->wr_ptr(12);
 
-	int err = m_ptrSocket->async_recv(buffer,bRecvAll ? lenBytes : 0);
+	int err = m_ptrSocket->recv(this,&AsyncSocket::on_recv,buffer,bRecvAll ? lenBytes : 0);
 
 	buffer->release();
 
 	if (err != 0)
-		LOG_ERROR(("async_recv failed: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("recv failed: %s",OOBase::system_error_text(err)));
 
 	return err;
 }
@@ -626,7 +647,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 
 int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
 {
-	int err = m_ptrSocket->async_send(buffer);
+	int err = m_ptrSocket->send(this,&AsyncSocket::on_sent,buffer);
 	if (err != 0)
 		LOG_ERROR(("async_send failed: %s",OOBase::system_error_text(err)));
 

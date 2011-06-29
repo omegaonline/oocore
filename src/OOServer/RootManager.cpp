@@ -93,9 +93,21 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!init_database())
 			return EXIT_FAILURE;
 
-		// Start the handler
-		if (!start_request_threads())
+		// Start the proactor pool
+		int err = m_proactor_pool.run(run_proactor,NULL,2);
+		if (err != 0)
+		{
+			m_proactor_pool.join();
+			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 			return EXIT_FAILURE;
+		}
+
+		// Start the handler
+		if (!start_request_threads(2))
+		{
+			stop_request_threads();
+			return EXIT_FAILURE;
+		}
 
 		// Just so we can exit cleanly...
 		bool bOk = false;
@@ -104,7 +116,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		if (spawn_sandbox())
 		{
 			// Start listening for clients
-			if (m_client_acceptor.start(this))
+			if (start_client_acceptor())
 			{
 				bOk = true;
 
@@ -112,7 +124,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 				bQuit = wait_to_quit();
 
 				// Stop accepting new clients
-				m_client_acceptor.stop();
+				m_client_acceptor->stop();
 			}
 
 			// Stop services
@@ -124,6 +136,9 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 		// Stop the MessageHandler
 		stop_request_threads();
+
+		// Stop any proactor threads
+		m_proactor_pool.join();
 
 		if (!bOk)
 		{
@@ -321,6 +336,12 @@ bool Root::Manager::load_config_file(const char* pszFile)
 	fclose(f);
 
 	return (err == 0);
+}
+
+int Root::Manager::run_proactor(void*)
+{
+	int err = 0;
+	return Proactor::instance().run(err);
 }
 
 bool Root::Manager::spawn_sandbox()
@@ -564,7 +585,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	return (ptrMC->read() ? channel_id : 0);
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
 {
 	OOBase::CDRStream stream;
 	if (!stream.write(m_sandbox_channel))

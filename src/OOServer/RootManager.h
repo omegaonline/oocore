@@ -36,7 +36,6 @@
 
 #include "OOServer_Root.h"
 #include "MessageConnection.h"
-#include "ClientAcceptor.h"
 #include "RegistryHive.h"
 #include "SpawnedProcess.h"
 
@@ -61,28 +60,12 @@ namespace Root
 
 		int run(const OOBase::CmdArgs::results_t& cmd_args);
 
-		void accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket);
-
-		struct ControlledObject
-		{
-			virtual ~ControlledObject() {}
-		};
-
-		struct Socket : public ControlledObject
-		{
-			virtual int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll) = 0;
-			virtual int send(OOBase::Buffer* buffer, Omega::bool_t bReliable) = 0;
-		};
-
-		Omega::uint32_t add_socket(Omega::uint32_t acceptor_id, Socket* pSocket);
-		void remove_socket(Omega::uint32_t id);
-		void remove_listener(Omega::uint32_t id);
-
-		io_result::type sendrecv_sandbox(OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
-
 	private:
 		Manager(const Manager&);
 		Manager& operator = (const Manager&);
+
+		OOBase::RWMutex                       m_lock;
+		OOBase::ThreadPool                    m_proactor_pool;
 
 		// Init and run members
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
@@ -90,15 +73,20 @@ namespace Root
 		bool init_database();
 		bool spawn_sandbox();
 		bool wait_to_quit();
+		static int run_proactor(void* param);
 
 		// Configuration members
 		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
-		bool                              m_bUnsafe;
+		bool                                         m_bUnsafe;
 
-		// I/O members
-		OOBase::RWMutex m_lock;
-		Omega::uint32_t m_sandbox_channel;
-		ClientAcceptor  m_client_acceptor;
+		// Client handling members
+		SECURITY_ATTRIBUTES                   m_sa;
+		OOBase::SmartPtr<OOSvrBase::Acceptor> m_client_acceptor;
+#if defined(_WIN32)
+		OOSvrBase::Win32::sec_descript_t m_sd;
+#endif
+		bool start_client_acceptor();
+		void accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err);
 
 		// Spawned process members
 		struct UserProcess
@@ -107,12 +95,13 @@ namespace Root
 			OOBase::SmartPtr<SpawnedProcess> ptrSpawn;
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
+		Omega::uint32_t                       m_sandbox_channel;
 
 		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
 		mapUserProcessesType m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
-		Omega::uint32_t bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
+		Omega::uint32_t bootstrap_user(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
 		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process);
 		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName);
@@ -147,6 +136,25 @@ namespace Root
 		void registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 
 		// Services members
+	public:
+		struct ControlledObject
+		{
+			virtual ~ControlledObject() {}
+		};
+
+		struct Socket : public ControlledObject
+		{
+			virtual int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll) = 0;
+			virtual int send(OOBase::Buffer* buffer, Omega::bool_t bReliable) = 0;
+		};
+
+		Omega::uint32_t add_socket(Omega::uint32_t acceptor_id, Socket* pSocket);
+		void remove_socket(Omega::uint32_t id);
+		void remove_listener(Omega::uint32_t id);
+
+		io_result::type sendrecv_sandbox(OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
+
+	private:
 		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket> >         m_mapSockets;
 		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > m_mapListeners;
 		

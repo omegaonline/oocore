@@ -38,10 +38,10 @@ namespace OOServer
 {
 	class MessageHandler;
 
-	class MessageConnection : public OOSvrBase::IOHandler
+	class MessageConnection
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocketPtr ptrSocket);
+		MessageConnection(MessageHandler* pHandler, OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket);
 		virtual ~MessageConnection();
 
 		void set_channel_id(Omega::uint32_t channel_id);
@@ -56,15 +56,15 @@ namespace OOServer
 
 		OOBase::SpinLock               m_lock;
 		MessageHandler*                m_pHandler;
-		OOSvrBase::AsyncLocalSocketPtr m_ptrSocket;
+		OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
 		Omega::uint32_t                m_channel_id;
 		OOBase::Atomic<size_t>         m_async_count;
 
-		static const size_t     m_default_buffer_size = 1024;
-
-		virtual void on_recv(OOBase::Buffer* buffer, int err);
-		virtual void on_sent(OOBase::Buffer* buffer, int err);
-		virtual void on_closed();
+		void on_recv1(OOBase::Buffer* buffer, int err);
+		void on_recv2(OOBase::Buffer* buffer, int err);
+		bool on_recv(OOBase::Buffer* buffer, int err, int part);
+		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_closed();
 	};
 
 	struct Message_t
@@ -124,7 +124,7 @@ namespace OOServer
 	protected:
 		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 
-		bool start_request_threads();
+		bool start_request_threads(size_t threads);
 		void close_channels();
 		void stop_request_threads();
 
@@ -151,6 +151,7 @@ namespace OOServer
 		Omega::uint32_t      m_uNextChannelId;
 		Omega::uint32_t      m_uNextChannelMask;
 		Omega::uint32_t      m_uNextChannelShift;
+		OOBase::ThreadPool   m_threadpool;
 
 		struct ChannelHash
 		{
@@ -182,7 +183,6 @@ namespace OOServer
 		OOBase::Atomic<size_t>                           m_waiting_threads;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
-		bool start_thread();
 		static int request_worker_fn(void* pParam);
 
 		struct ThreadContext
@@ -209,7 +209,7 @@ namespace OOServer
 			ThreadContext& operator = (const ThreadContext&);
 		};
 		OOBase::HandleTable<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
-
+		
 		// Accessors for ThreadContext
 		Omega::uint16_t insert_thread_context(ThreadContext* pContext);
 		void remove_thread_context(ThreadContext* pContext);

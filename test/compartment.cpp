@@ -50,7 +50,7 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	TEST(pObj);
 
 	pAgg->SetInner(pObj);
-
+	
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 

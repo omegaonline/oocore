@@ -70,6 +70,7 @@
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
+				FixedBaseAddress="2"
 				DataExecutionPrevention="1"
 			/>
 			<Tool
@@ -429,10 +430,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UserAcceptor.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\UserMain.cpp"
 				>
 				<FileConfiguration
@@ -528,10 +525,6 @@
 			</File>
 			<File
 				RelativePath="..\OOCore\Server.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserAcceptor.h"
 				>
 			</File>
 			<File

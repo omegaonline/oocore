@@ -23,7 +23,6 @@
 #define OOSERVER_USER_MANAGER_H_INCLUDED_
 
 #include "MessageConnection.h"
-#include "UserAcceptor.h"
 #include "Protocol.h"
 #include "Channel.h"
 #include "UserNet.h"
@@ -48,9 +47,8 @@ namespace User
 
 		OOBase::SmartPtr<OOBase::CDRStream> sendrecv_root(OOBase::CDRStream& request, Omega::TypeInfo::MethodAttributes_t attribs);
 
-		bool on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket);
 		void close_socket(Omega::uint32_t id);
-
+		
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
 
@@ -61,9 +59,10 @@ namespace User
 		Manager& operator = (const Manager&);
 
 		OOBase::RWMutex                                                               m_lock;
+		OOBase::ThreadPool                                                            m_proactor_pool;
 		Omega::uint32_t                                                               m_nIPSCookie;
 		bool                                                                          m_bIsSandbox;
-		Acceptor                                                                      m_acceptor;
+		OOBase::SmartPtr<OOSvrBase::Acceptor>                                         m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
@@ -72,12 +71,21 @@ namespace User
 		void do_channel_closed_i(Omega::uint32_t channel_id);
 
 		void run();
-		bool fork_slave(const char* strPipe);
-		bool session_launch(const char* strPipe);
+		bool fork_slave(const OOBase::String& strPipe);
+		bool session_launch(const OOBase::String& strPipe);
+		bool start_proactor_threads();
+		static int run_proactor(void*);
 
-		bool handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::LocalString& strPipe);
+		void on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		SECURITY_ATTRIBUTES              m_sa;
+#if defined(_WIN32)
+		OOSvrBase::Win32::sec_descript_t m_sd;
+#endif
+
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
+		bool handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
+		bool start_acceptor(const OOBase::LocalString& strPipe);
 
 		static void do_quit(void* pParams, OOBase::CDRStream& input);
 		void do_quit_i();
@@ -110,13 +118,13 @@ namespace User
 			OOBase::String                          strKey;
 			OTL::ObjectPtr<Omega::System::IService> ptrService;
 		};
-		OOBase::HandleTable<Omega::uint32_t,Service>             m_mapServices;
-		OOBase::HashTable<Omega::uint32_t,OOSvrBase::IOHandler*> m_mapSockets;
+		OOBase::HandleTable<Omega::uint32_t,Service>                                 m_mapServices;
+		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Net::IAsyncSocket> > m_mapSockets;
 
 		bool start_services();
-		void start_service(const char* pszKey, const char* pszOid);
-		OTL::ObjectPtr<Omega::Registry::IKey> get_service_key(const char* pszKey);
-		void listen_service_socket(const char* pszKey, Omega::uint32_t nServiceId, OTL::ObjectPtr<Omega::System::INetworkService> ptrNetService);
+		void start_service(const OOBase::LocalString& strKey, const OOBase::LocalString& strOid);
+		OTL::ObjectPtr<Omega::Registry::IKey> get_service_key(const OOBase::LocalString& strKey);
+		void listen_service_socket(const OOBase::String& strKey, Omega::uint32_t nServiceId, OTL::ObjectPtr<Omega::System::INetworkService> ptrNetService);
 		void stop_services();
 
 		void on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStream& response);

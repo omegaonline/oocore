@@ -32,9 +32,12 @@
 /////////////////////////////////////////////////////////////
 
 #include "OOServer_Root.h"
-#include "RootManager.h"
 
 #if defined(_WIN32)
+
+#include "RootManager.h"
+
+#include "../../include/Omega/OOCore_version.h"
 
 #include <ntsecapi.h>
 #include <shlwapi.h>
@@ -247,10 +250,133 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	return true;
 }
 
-void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
+bool Root::Manager::start_client_acceptor()
 {
+	const int NUM_ACES = 3;
+	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
+
+	PSID pSID;
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
+								  SECURITY_LOCAL_SYSTEM_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
+	}
+
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDSystem(pSID);
+
+	// Set full control for the creating process SID
+	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
+	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfInheritance = NO_INHERITANCE;
+	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDSystem;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+		
+	// Get the current user's Logon SID
+	OOBase::Win32::SmartHandle hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
+
+	// Get the logon SID of the Token
+	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+	if (OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
+	{
+		// Use logon sid instead...
+		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+	}
+
+	// Create a SID for the EVERYONE group.
+	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = {SECURITY_WORLD_SID_AUTHORITY};
+	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1,
+								  SECURITY_WORLD_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
+	}
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDEveryone(pSID);
+
+	// Set read/write access for EVERYONE
+	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDEveryone;
+
+	// Create a SID for the Network group.
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
+								  SECURITY_NETWORK_RID,
+								  0, 0, 0, 0, 0, 0, 0,
+								  &pSID))
+	{
+		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
+	}
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDNetwork(pSID);
+
+	// Deny all to NETWORK
+	ea[2].grfAccessPermissions = FILE_ALL_ACCESS;
+	ea[2].grfAccessMode = DENY_ACCESS;
+	ea[2].grfInheritance = NO_INHERITANCE;
+	ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[2].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[2].Trustee.ptstrName = (LPWSTR)pSIDNetwork;
+
+	// Create a new ACL
+	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+	if (dwErr != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
+
+	// Create a new security descriptor
+	m_sa.nLength = sizeof(m_sa);
+	m_sa.bInheritHandle = FALSE;
+	m_sa.lpSecurityDescriptor = m_sd.descriptor();
+
+	const char* pipe_name = "OmegaOnline";
+	int err = 0;
+	m_client_acceptor = Proactor::instance().accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
+
+	err = m_client_acceptor->listen(2);
+	if (err != 0)
+		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
+
+	return true;
+}
+
+void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+{
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(pSocket);
+
+	if (err != 0)
+	{
+		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	// Read 4 bytes - This forces credential passing
+	OOBase::CDRStream stream;
+	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	if (err != 0)
+	{
+		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	// Check the versions are correct
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	{
+		LOG_WARNING(("Unsupported version received: %u",version));
+		return;
+	}
+
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	int err = ptrSocket->get_uid(uid);
+	err = ptrSocket->get_uid(uid);
 	if (err != 0)
 		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
 	else
@@ -261,7 +387,8 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 		UserProcess user_process;
 		if (get_user_process(uid,user_process))
 		{
-			OOBase::CDRStream stream;
+			stream.reset();
+
 			if (!stream.write(user_process.strPipe.c_str()))
 				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
 			else

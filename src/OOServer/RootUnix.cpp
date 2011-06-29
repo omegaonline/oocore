@@ -32,9 +32,10 @@
 /////////////////////////////////////////////////////////////
 
 #include "OOServer_Root.h"
-#include "RootManager.h"
 
 #if !defined(_WIN32)
+
+#include "RootManager.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -63,5 +64,77 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 
 	return load_config_file(strFile.empty() ? "/etc/omegaonline.conf" : strFile.c_str());
 }
+
+bool Root::Manager::start_client_acceptor()
+{
+	const char* pipe_name = "/tmp/omegaonline";
+
+	m_sa.mode = 0777;
+
+	int err = 0;
+	m_client_acceptor = Proactor::instance().accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
+
+	err = m_client_acceptor->listen();
+	if (err != 0)
+		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
+
+	return true;
+}
+
+void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+{
+	void* TODO; // this might need adjusting
+
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(pSocket);
+
+	if (err != 0)
+	{
+		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	// Read 4 bytes - This forces credential passing
+	OOBase::CDRStream stream;
+	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	if (err != 0)
+	{
+		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	// Check the versions are correct
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	{
+		LOG_WARNING(("Unsupported version received: %u",version));
+		return;
+	}
+
+	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	err = ptrSocket->get_uid(uid);
+	if (err != 0)
+		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
+	else
+	{
+		// Make sure the handle is closed
+		OOBase::Win32::SmartHandle hUidToken(uid);
+
+		UserProcess user_process;
+		if (get_user_process(uid,user_process))
+		{
+			stream.reset();
+
+			if (!stream.write(user_process.strPipe.c_str()))
+				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
+			else
+				ptrSocket->send(stream.buffer());
+		}
+
+		// Socket will be closed when it drops out of scope
+	}
+}
+
 
 #endif

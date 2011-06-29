@@ -26,6 +26,11 @@
 
 #include <stdlib.h>
 
+#if defined(_WIN32)
+#include <aclapi.h>
+#include <sddl.h>
+#endif
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -61,6 +66,47 @@ namespace OTL
 using namespace Omega;
 using namespace OTL;
 
+namespace
+{
+	bool unique_name(OOBase::LocalString& name)
+	{
+		// Create a new unique pipe
+
+	#if defined(_WIN32)
+		// Get the current user's Logon SID
+		OOBase::Win32::SmartHandle hProcessToken;
+		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
+
+		// Get the logon SID of the Token
+		OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
+		if (dwRes != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
+
+		char* pszSid;
+		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),false);
+		
+		int err = name.printf("OOU%s-%ld",pszSid,GetCurrentProcessId());
+
+		LocalFree(pszSid);
+			
+	#elif defined(HAVE_UNISTD_H)
+
+		int err = name.printf("/tmp/oo-%d-%d",getuid(),getpid());
+
+	#else
+	#error Fix me!
+	#endif
+
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err)),false);		
+
+		return true;
+	}
+}
+
 // UserManager
 
 User::Manager* User::Manager::s_instance = NULL;
@@ -88,7 +134,7 @@ void User::Manager::run()
 	close_channels();
 }
 
-bool User::Manager::fork_slave(const char* strPipe)
+bool User::Manager::fork_slave(const OOBase::String& strPipe)
 {
 	// Connect to the root
 
@@ -96,7 +142,7 @@ bool User::Manager::fork_slave(const char* strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket(strPipe,&err,&wait);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().connect_local_socket(strPipe.c_str(),err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -112,7 +158,7 @@ bool User::Manager::fork_slave(const char* strPipe)
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().attach_local_socket(fd,&err);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().attach_local_socket(fd,&err);
 	if (err != 0)
 	{
 		::close(fd);
@@ -123,13 +169,13 @@ bool User::Manager::fork_slave(const char* strPipe)
 
 	// Invent a new pipe name...
 	OOBase::LocalString strNewPipe;
-	if (!Acceptor::unique_name(strNewPipe))
+	if (!unique_name(strNewPipe))
 		return false;
 
 	return handshake_root(local_socket,strNewPipe);
 }
 
-bool User::Manager::session_launch(const char* strPipe)
+bool User::Manager::session_launch(const OOBase::String& strPipe)
 {
 #if defined(_WIN32)
 	OMEGA_UNUSED_ARG(strPipe);
@@ -142,7 +188,7 @@ bool User::Manager::session_launch(const char* strPipe)
 
 	// Invent a new pipe name...
 	OOBase::LocalString strNewPipe;
-	if (!Acceptor::unique_name(strNewPipe))
+	if (!unique_name(strNewPipe))
 		return false;
 
 	pid_t pid = getpid();
@@ -167,7 +213,7 @@ bool User::Manager::session_launch(const char* strPipe)
 	// Now connect to ooserverd
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOSvrBase::AsyncLocalSocketPtr local_socket = Proactor::instance().connect_local_socket("/tmp/omegaonline",&err,&wait);
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().connect_local_socket("/tmp/omegaonline",&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -188,7 +234,25 @@ bool User::Manager::session_launch(const char* strPipe)
 #endif
 }
 
-bool User::Manager::handshake_root(OOSvrBase::AsyncLocalSocketPtr local_socket, const OOBase::LocalString& strPipe)
+bool User::Manager::start_proactor_threads()
+{
+	int err = m_proactor_pool.run(run_proactor,NULL,2);
+	if (err != 0)
+	{
+		m_proactor_pool.join();
+		LOG_ERROR_RETURN(("Thread pool create failed: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
+int User::Manager::run_proactor(void*)
+{
+	int err = 0;
+	return Proactor::instance().run(err);
+}
+
+bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket, const OOBase::LocalString& strPipe)
 {
 	OOBase::CDRStream stream;
 
@@ -282,7 +346,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	else
 	{
 		bQuit = !pThis->bootstrap(sandbox_channel) ||
-			!pThis->m_acceptor.start(pThis,strPipe.c_str()) ||
+			!pThis->start_acceptor(strPipe) ||
 			!pThis->start_services();
 	}
 
@@ -306,7 +370,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 
 		// Register our interprocess service so we can react to activation requests
 		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
-		
+
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();
 
@@ -321,34 +385,141 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	}
 }
 
-bool User::Manager::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
+bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 {
+#if defined(_WIN32)
+
+	// Get the current user's Logon SID
+	OOBase::Win32::SmartHandle hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
+
+	// Get the logon SID of the Token
+	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
+	if (dwRes != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
+
+	// Set full control for the Logon SID only
+	EXPLICIT_ACCESSW ea = {0};
+	ea.grfAccessPermissions = FILE_ALL_ACCESS;
+	ea.grfAccessMode = SET_ACCESS;
+	ea.grfInheritance = NO_INHERITANCE;
+	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea.Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
+
+	// Create a new ACL
+	DWORD dwErr = m_sd.SetEntriesInAcl(1,&ea,NULL);
+	if (dwErr != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
+
+	// Create a new security descriptor
+	m_sa.nLength = sizeof(m_sa);
+	m_sa.bInheritHandle = FALSE;
+	m_sa.lpSecurityDescriptor = m_sd.descriptor();
+
+#elif defined(HAVE_UNISTD_H)
+
+	m_sa.mode = 0700;
+
+#else
+#error set security on pipe_name
+#endif
+
+	int err = 0;
+	m_ptrAcceptor = Proactor::instance().accept_local(this,&Manager::on_accept,strPipe.c_str(),err,&m_sa);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
+
+	err = m_ptrAcceptor->listen();
+	if (err != 0)
+	{
+		m_ptrAcceptor = NULL;
+		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
+void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+{
+	LOG_DEBUG(("on_accept"));
+
+	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
+
+	if (err != 0)
+	{
+		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	// Read 4 bytes - This forces credential passing
+	OOBase::CDRStream stream;
+	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	if (err != 0)
+	{
+		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	// Check the versions are correct
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+	{
+		LOG_WARNING(("Version received too early: %u",version));
+		return;
+	}
+
+#if defined(HAVE_UNISTD_H)
+
+	// Check to see if the connection came from a process with our uid
+	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	err = ptrSocket->get_uid(uid);
+	if (err != 0)
+	{
+		LOG_WARNING(("get_uid failure: %s",OOBase::system_error_text(err)));
+		return;
+	}
+
+	if (getuid() != uid)
+	{
+		LOG_WARNING(("Attempt to connect by invalid user"));
+		return;
+	}
+
+#endif
+
 	// Create a new MessageConnection
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
-		LOG_ERROR_RETURN(("Out of memory"),false);
+	{
+		LOG_ERROR(("Out of memory"));
+		return;
+	}
 
 	// Attach it to ourselves
 	uint32_t channel_id = register_channel(ptrMC,0);
 	if (channel_id == 0)
 	{
 		ptrMC->close();
-		return false;
+		return;
 	}
 
 	// Send the channel id...
-	OOBase::CDRStream stream;
+	stream.reset();
 	if (!stream.write(channel_id))
 	{
 		ptrMC->close();
-		LOG_ERROR_RETURN(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error())),false);
+		LOG_ERROR(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error())));
+		return;
 	}
 
 	if (!ptrMC->send(stream.buffer()))
-		return false;
+		return;
 
 	// Start I/O
-	return ptrMC->read();
+	ptrMC->read();
 }
 
 void User::Manager::on_channel_closed(uint32_t channel)
@@ -433,7 +604,7 @@ void User::Manager::do_quit_i()
 	try
 	{
 		// Stop accepting new clients
-		m_acceptor.stop();
+		m_ptrAcceptor->stop();
 
 		// Close all the sinks
 		close_all_remotes();

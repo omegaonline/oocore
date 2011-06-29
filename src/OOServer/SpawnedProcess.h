@@ -43,7 +43,7 @@ namespace Root
 
 		virtual bool IsRunning() const = 0;
 		virtual bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
-		virtual bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
+		virtual bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const = 0;
 		virtual bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
 		virtual bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive) = 0;
 

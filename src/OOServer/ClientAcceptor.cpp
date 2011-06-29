@@ -96,8 +96,8 @@ bool Root::ClientAcceptor::on_accept(OOSvrBase::AsyncLocalSocketPtr ptrSocket, c
 		LOG_WARNING(("Root::ClientAcceptor::on_accept: unsupported version received: %u",version));
 		return true;
 	}
-
-	m_pManager->accept_client(ptrSocket);
+	
+	m_pManager->accept_client(ptrSocket,"session_id");
 
 	return true;
 }

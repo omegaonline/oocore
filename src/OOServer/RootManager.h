@@ -61,7 +61,7 @@ namespace Root
 
 		int run(const OOBase::CmdArgs::results_t& cmd_args);
 
-		void accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket);
+		void accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* session_id);
 
 		struct ControlledObject
 		{
@@ -111,10 +111,10 @@ namespace Root
 		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
 		mapUserProcessesType m_mapUserProcesses;
 
-		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
+		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOSvrBase::AsyncLocalSocketPtr ptrSocket, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
-		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain);
-		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process);
+		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Registry::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain);
+		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const char* session_id, UserProcess& user_process);
 		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName);
 		bool get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
 

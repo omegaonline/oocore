@@ -364,11 +364,11 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 	if (!stream.write(version))
 		OMEGA_THROW(stream.last_error());
-
+	
 	err = local_socket->send(stream.buffer());
 	if (err)
 		OMEGA_THROW(err);
-
+		
 	stream.reset();
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data

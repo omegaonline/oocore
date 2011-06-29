@@ -366,7 +366,7 @@ bool Root::Manager::spawn_sandbox()
 	}
 
 	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
+	m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
 	if (m_sandbox_channel == 0 && m_bUnsafe && !strUName.empty() && bAgain)
 	{
 		OOBase::LocalString strOurUName;
@@ -379,7 +379,7 @@ bool Root::Manager::spawn_sandbox()
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
+		m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
 	}
 
 #if defined(_WIN32)
@@ -435,7 +435,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	m_mapUserProcesses.erase(channel);
 }
 
-bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process)
+bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const char* session_id, UserProcess& user_process)
 {
 	for (bool bFirst = true;bFirst;bFirst = false)
 	{
@@ -452,7 +452,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 			{
 				vecDead.push(*m_mapUserProcesses.key_at(i));
 			}
-			else if (pU->ptrSpawn->IsSameLogin(uid))
+			else if (pU->ptrSpawn->IsSameLogin(uid,session_id))
 			{
 				user_process = *pU;
 				bFound = true;
@@ -478,7 +478,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 		// Spawn a new user process
 		bool bAgain = false;
-		if (spawn_user(uid,user_process.ptrRegistry,false,user_process.strPipe,bAgain) != 0)
+		if (spawn_user(uid,session_id,user_process.ptrRegistry,user_process.strPipe,bAgain) != 0)
 			return true;
 
 		if (bFirst && bAgain && m_bUnsafe)
@@ -498,14 +498,14 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 	return false;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Registry::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
 	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
-	process.ptrSpawn = platform_spawn(uid,bSandbox,strPipe,channel_id,ptrMC,bAgain);
+	process.ptrSpawn = platform_spawn(uid,session_id,strPipe,channel_id,ptrMC,bAgain);
 	if (!process.ptrSpawn)
 		return 0;
 
@@ -544,12 +544,15 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Check we haven't created a duplicate while we spawned...
-	for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
+	if (session_id)
 	{
-		if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid))
+		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
-			ptrMC->close();
-			return *m_mapUserProcesses.key_at(i);
+			if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid,session_id))
+			{
+				ptrMC->close();
+				return *m_mapUserProcesses.key_at(i);
+			}
 		}
 	}
 

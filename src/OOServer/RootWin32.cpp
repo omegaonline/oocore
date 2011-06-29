@@ -247,7 +247,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	return true;
 }
 
-void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
+void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* session_id)
 {
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
 	int err = ptrSocket->get_uid(uid);
@@ -259,7 +259,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 		OOBase::Win32::SmartHandle hUidToken(uid);
 
 		UserProcess user_process;
-		if (get_user_process(uid,user_process))
+		if (get_user_process(uid,session_id,user_process))
 		{
 			OOBase::CDRStream stream;
 			if (!stream.write(user_process.strPipe.c_str()))

@@ -488,7 +488,7 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
@@ -541,7 +541,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	return pSpawn;
 }
 
-void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
+void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket, const char* session_id)
 {
 	// Socket will close when it drops out of scope
 
@@ -553,7 +553,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 	{
 		// Make sure we have a user process
 		UserProcess user_process;
-		if (get_user_process(uid,user_process))
+		if (get_user_process(uid,session_id,user_process))
 		{
 			UserProcess new_process;
 			new_process.ptrRegistry = user_process.ptrRegistry;

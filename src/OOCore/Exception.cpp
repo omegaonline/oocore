@@ -50,7 +50,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 
 namespace OOCore
 {
-	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc)
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc, IException* pCause)
 	{
 		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstancePtr();
 
@@ -58,6 +58,7 @@ namespace OOCore
 		void* ISSUE_6;
 
 		pExcept->m_strDesc = string_t(desc,false);
+		pExcept->m_ptrCause = pCause;
 
 		if (pszFile)
 		{
@@ -93,15 +94,14 @@ namespace OOCore
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 {
-	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc);
-	ptrExcept->m_ptrCause.Attach(OOCore_ISystemException_Create_errno(e,0));
-
-	return ptrExcept.AddRef();
+	ObjectPtr<IException> ptrE;
+	ptrE.Attach(OOCore_ISystemException_Create_errno(e,0));
+	return OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc,ptrE).AddRef();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,4,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,5,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
 {
-	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc).AddRef();
+	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).AddRef();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,1,((in),const guid_t&,iid))

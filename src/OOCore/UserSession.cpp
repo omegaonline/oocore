@@ -338,14 +338,36 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 	// Register locally...
 	m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
+	
+	// Now set our pipe name as an env var
+	if (!strPipe.empty())
+	{
+#if defined(_WIN32)
+		if (strPipe.printf("OMEGA_SESSION_ADDRESS=%s",strPipe.c_str()) == 0)
+			_putenv(strPipe.c_str());
+#else
+		setenv("OMEGA_SESSION_ADDRESS",strPipe.c_str(),1);
+#endif
+	}
 }
 
 void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)
 {
+	int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
+	if (err != 0)
+		OMEGA_THROW(err);
+		
+	if (!strPipe.empty())
+		return;
+		
 #if defined(_WIN32)
 	const char* name = "OmegaOnline";
+#else
+	void* TODO;
+	
+	const char* name = "/tmp/nowhere";
+#endif
 
-	int err = 0;
 	OOBase::SmartPtr<OOBase::Socket> local_socket = OOBase::Socket::connect_local(name,&err);
 	if (!local_socket)
 	{
@@ -388,16 +410,6 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 
 	if (!stream.read(strPipe))
 		OMEGA_THROW(stream.last_error());
-#else
-
-	int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
-	if (err != 0)
-		OMEGA_THROW(err);
-		
-	if (strPipe.empty())
-		throw IInternalException::Create("Failed to find Omega session. Use oo-launch","Omega::Initialize");
-
-#endif
 }
 
 void OOCore::UserSession::stop()
@@ -428,6 +440,13 @@ void OOCore::UserSession::stop()
 
 	// Unload the OOSvrLite dll if loaded
 	m_lite_dll.unload();
+	
+	// Clear our environment variable
+#if defined(_WIN32)
+	_putenv("OMEGA_SESSION_ADDRESS=");
+#else
+	unsetenv("OMEGA_SESSION_ADDRESS");
+#endif
 }
 
 void OOCore::UserSession::close_singletons()

@@ -125,6 +125,15 @@ bool User::Manager::fork_slave(const char* strPipe)
 	OOBase::LocalString strNewPipe;
 	if (!Acceptor::unique_name(strNewPipe))
 		return false;
+		
+	// Set our pipe name
+#if defined(_WIN32)
+	OOBase::LocalString strPipe2;
+	if (strPipe2.printf("OMEGA_SESSION_ADDRESS=%s",strNewPipe.c_str()) == 0)
+		_putenv(strPipe2.c_str());
+#else
+	setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1);
+#endif
 
 	return handshake_root(local_socket,strNewPipe);
 }

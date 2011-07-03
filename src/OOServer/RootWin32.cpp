@@ -186,7 +186,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
 			{
 				++dwValLen;
-				OOBase::SmartPtr<char,OOBase::LocalDestructor> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
+				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
 				if (!buf)
 					LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -204,7 +204,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 						lRes = value.assign(buf2,dwExpLen-1);
 					else
 					{
-						OOBase::SmartPtr<char,OOBase::LocalDestructor> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
+						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
 						if (!buf3)
 							LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -265,7 +265,7 @@ bool Root::Manager::start_client_acceptor()
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDSystem(pSID);
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDSystem(pSID);
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -281,7 +281,7 @@ bool Root::Manager::start_client_acceptor()
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+	OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
 	if (OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
 	{
 		// Use logon sid instead...
@@ -297,7 +297,7 @@ bool Root::Manager::start_client_acceptor()
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDEveryone(pSID);
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDEveryone(pSID);
 
 	// Set read/write access for EVERYONE
 	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
@@ -315,7 +315,7 @@ bool Root::Manager::start_client_acceptor()
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDNetwork(pSID);
+	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDNetwork(pSID);
 
 	// Deny all to NETWORK
 	ea[2].grfAccessPermissions = FILE_ALL_ACCESS;

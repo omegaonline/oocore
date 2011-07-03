@@ -79,7 +79,7 @@ namespace
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
@@ -392,7 +392,7 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+	OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);

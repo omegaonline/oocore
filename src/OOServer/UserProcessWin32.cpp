@@ -42,17 +42,17 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
 
-		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine);
+		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
 	};
 
-	static OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> CopyCmdLine(const wchar_t* psz)
+	static OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> CopyCmdLine(const wchar_t* psz)
 	{
 		size_t wlen = (wcslen(psz)+1)*sizeof(wchar_t);
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen));
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen));
 		if (!ptrCmdLine)
 			OMEGA_THROW_NOMEM();
 
@@ -61,9 +61,9 @@ namespace
 		return ptrCmdLine;
 	}
 
-	static OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ShellParse(const wchar_t* pszFile)
+	static OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ShellParse(const wchar_t* pszFile)
 	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine = CopyCmdLine(pszFile);
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine = CopyCmdLine(pszFile);
 		
 		const wchar_t* pszExt = PathFindExtensionW(pszFile);
 		if (pszExt && wcsicmp(pszExt,L".exe")!=0)
@@ -115,7 +115,7 @@ User::Process* User::Process::exec(const wchar_t* pszExeName)
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrCmdLine)
+void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine)
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 

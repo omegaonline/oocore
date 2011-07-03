@@ -87,16 +87,6 @@ namespace
 		void DeleteValue(const string_t& strName);
 	};
 
-	template <typename T>
-	class OmegaDestructor
-	{
-	public:
-		static void destroy(T* ptr)
-		{
-			delete ptr;
-		}
-	};
-
 	class RootKey :
 			public ObjectBase,
 			public ::Registry::Manager,
@@ -112,8 +102,8 @@ namespace
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SmartPtr< ::Registry::Hive,OmegaDestructor< ::Registry::Hive> > m_system_hive;
-		OOBase::SmartPtr< ::Registry::Hive,OmegaDestructor< ::Registry::Hive> > m_localuser_hive;
+		OOBase::SmartPtr< ::Registry::Hive> m_system_hive;
+		OOBase::SmartPtr< ::Registry::Hive> m_localuser_hive;
 
 		ObjectPtr<IKey> m_ptrSystemKey;
 		ObjectPtr<IKey> m_ptrLocalUserKey;

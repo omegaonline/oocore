@@ -80,7 +80,7 @@ namespace
 		// Create a new unique pipe
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),INVALID_HANDLE_VALUE);
@@ -105,7 +105,7 @@ namespace
 		{
 			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 		}
-		OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDOwner(pSID);
+		OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDOwner(pSID);
 
 		static const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -204,7 +204,7 @@ namespace
 	{
 		// Convert UName to wide
 		size_t wlen = OOBase::from_native(NULL,0,strUName.c_str());
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrUName = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen*sizeof(wchar_t)));
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen*sizeof(wchar_t)));
 		if (!ptrUName)
 			LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
 
@@ -231,7 +231,7 @@ namespace
 			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 		}
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrPwd = static_cast<wchar_t*>(OOBase::LocalAllocate(pszVal->Length + sizeof(wchar_t)));
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrPwd = static_cast<wchar_t*>(OOBase::LocalAllocate(pszVal->Length + sizeof(wchar_t)));
 		if (ptrPwd)
 		{
 			memcpy(ptrPwd,pszVal->Buffer,pszVal->Length);
@@ -350,7 +350,7 @@ namespace
 		// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::LocalDestructor> ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
@@ -390,7 +390,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapDestructor> ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrProcessUser)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
 
@@ -648,8 +648,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 		dwFlags |= CREATE_NEW_CONSOLE;
 
 		// Get the names associated with the user SID
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strUserName;
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strDomainName;
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
 
 		if (OOSvrBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
 		{
@@ -773,7 +773,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 {
 	bAllowed = false;
 
-	OOBase::SmartPtr<void,OOBase::LocalDestructor> pSD;
+	OOBase::SmartPtr<void,OOBase::LocalAllocator> pSD;
 	for (DWORD cbNeeded = 512;;)
 	{
 		pSD = OOBase::LocalAllocate(cbNeeded);
@@ -823,8 +823,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken) const
 {
 	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapDestructor> pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapDestructor> pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
 
 	if (!pStats1 || !pStats2)
 		return false;
@@ -843,11 +843,11 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	if (m_bSandbox)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapDestructor> ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
 	if (!ptrUserInfo1)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapDestructor> ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
 	if (!ptrUserInfo2)
 		return false;
 
@@ -901,8 +901,8 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 			LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 		// Get the names associated with the user SID
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strUserName;
-		OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> strDomainName;
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
 
 		DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
 		if (dwErr != ERROR_SUCCESS)
@@ -977,8 +977,8 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the names associated with the user SID
-	OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrUserName;
-	OOBase::SmartPtr<wchar_t,OOBase::LocalDestructor> ptrDomainName;
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUserName;
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrDomainName;
 
 	DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,ptrUserName,ptrDomainName);
 	if (dwRes != ERROR_SUCCESS)

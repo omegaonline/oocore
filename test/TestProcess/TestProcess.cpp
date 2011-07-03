@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef HAVE_VLD_H
+#include <vld.h>
+#endif
+
 namespace Omega
 {
 	namespace TestSuite

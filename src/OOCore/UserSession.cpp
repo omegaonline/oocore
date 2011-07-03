@@ -424,9 +424,9 @@ void OOCore::UserSession::stop()
 	// Close compartments
 	close_compartments();
 
-	// Shutdown the socket...
+	// Stop the io thread...
 	if (m_stream)
-		m_stream->shutdown(true,true);
+		m_stream->close();
 
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();
@@ -747,6 +747,8 @@ int OOCore::UserSession::run_read_loop()
 
 	// Stop the default message queue
 	m_default_msg_queue.close();
+
+	m_stream = NULL;
 
 	return err;
 }

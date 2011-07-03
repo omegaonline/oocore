@@ -38,12 +38,11 @@ namespace OOServer
 {
 	class MessageHandler;
 
-	class MessageConnection
+	class MessageConnection : public OOBase::RefCounted
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket);
-		virtual ~MessageConnection();
-
+		MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocket* pSocket);
+		
 		void set_channel_id(Omega::uint32_t channel_id);
 
 		void close();
@@ -53,18 +52,17 @@ namespace OOServer
 	private:
 		MessageConnection(const MessageConnection&);
 		MessageConnection& operator = (const MessageConnection&);
+		virtual ~MessageConnection();
 
-		OOBase::SpinLock               m_lock;
-		MessageHandler*                m_pHandler;
-		OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
-		Omega::uint32_t                m_channel_id;
-		OOBase::Atomic<size_t>         m_async_count;
-
+		OOBase::SpinLock                            m_lock;
+		MessageHandler*                             m_pHandler;
+		OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
+		Omega::uint32_t                             m_channel_id;
+		
 		void on_recv1(OOBase::Buffer* buffer, int err);
 		void on_recv2(OOBase::Buffer* buffer, int err);
 		bool on_recv(OOBase::Buffer* buffer, int err, int part);
 		void on_sent(OOBase::Buffer* buffer, int err);
-		void on_closed();
 	};
 
 	struct Message_t
@@ -128,7 +126,7 @@ namespace OOServer
 		void close_channels();
 		void stop_request_threads();
 
-		Omega::uint32_t register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
+		Omega::uint32_t register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
 
 		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs) = 0;
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
@@ -164,7 +162,7 @@ namespace OOServer
 		friend struct ChannelHash;
 		ChannelHash m_hash;
 
-		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<MessageConnection>,OOBase::HeapAllocator,ChannelHash> m_mapChannelIds;
+		OOBase::HashTable<Omega::uint32_t,OOBase::RefPtr<MessageConnection>,OOBase::HeapAllocator,ChannelHash> m_mapChannelIds;
 
 		struct Message
 		{

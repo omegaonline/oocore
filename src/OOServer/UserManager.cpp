@@ -137,12 +137,13 @@ void User::Manager::run()
 bool User::Manager::fork_slave(const OOBase::String& strPipe)
 {
 	// Connect to the root
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket;
 
 #if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().connect_local_socket(strPipe.c_str(),err,&wait);
+	local_socket.attach(Proactor::instance().connect_local_socket(strPipe.c_str(),err,&wait));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -158,7 +159,7 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().attach_local_socket(fd,&err);
+	local_socket.attach(Proactor::instance().attach_local_socket(fd,&err));
 	if (err != 0)
 	{
 		::close(fd);
@@ -213,7 +214,8 @@ bool User::Manager::session_launch(const OOBase::String& strPipe)
 	// Now connect to ooserverd
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().connect_local_socket("/tmp/omegaonline",&err,&wait);
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket;
+	local_socket.attach(Proactor::instance().connect_local_socket("/tmp/omegaonline",&err,&wait));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -252,7 +254,7 @@ int User::Manager::run_proactor(void*)
 	return Proactor::instance().run(err);
 }
 
-bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> local_socket, const OOBase::LocalString& strPipe)
+bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket, const OOBase::LocalString& strPipe)
 {
 	OOBase::CDRStream stream;
 
@@ -289,7 +291,7 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 	set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
 
 	// Create a new MessageConnection
-	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
+	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -441,8 +443,6 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 
 void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
-
 	if (err != 0)
 	{
 		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
@@ -451,7 +451,7 @@ void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
-	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	err = pSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
 		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
@@ -470,7 +470,7 @@ void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 
 	// Check to see if the connection came from a process with our uid
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	err = ptrSocket->get_uid(uid);
+	err = pSocket->get_uid(uid);
 	if (err != 0)
 	{
 		LOG_WARNING(("get_uid failure: %s",OOBase::system_error_text(err)));
@@ -486,7 +486,7 @@ void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 #endif
 
 	// Create a new MessageConnection
-	OOBase::SmartPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
+	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,pSocket);
 	if (!ptrMC)
 	{
 		LOG_ERROR(("Out of memory"));

@@ -83,8 +83,8 @@ namespace
 		void on_sent(OOBase::Buffer* buffer, int err);
 		void on_closed();
 
-		Root::Manager* const      m_pManager;
-		Omega::uint32_t           m_id;
+		Root::Manager* const                   m_pManager;
+		Omega::uint32_t                        m_id;
 		OOBase::RefPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
 	};
 }

@@ -64,22 +64,17 @@ namespace
 	static const size_t     s_header_len = 2 * sizeof(Omega::uint32_t);
 }
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocket* pSocket) :
+		OOBase::RefCounted(),
 		m_pHandler(pHandler),
-		m_ptrSocket(ptrSocket),
-		m_channel_id(0),
-		m_async_count(0)
+		m_ptrSocket(pSocket),
+		m_channel_id(0)
 {
 	assert(m_ptrSocket);
 }
 
 OOServer::MessageConnection::~MessageConnection()
 {
-	if (m_async_count > 0)
-		m_ptrSocket->shutdown(true,true);
-
-	while (m_async_count > 0)
-		OOBase::Thread::yield();
 }
 
 void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
@@ -92,8 +87,6 @@ void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 void OOServer::MessageConnection::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	m_ptrSocket->shutdown(true,false);
 
 	Omega::uint32_t channel_id = m_channel_id;
 	m_channel_id = 0;
@@ -109,15 +102,18 @@ bool OOServer::MessageConnection::read()
 	// This buffer is reused...
 	OOBase::RefPtr<OOBase::Buffer> pBuffer = OOBase::Buffer::create(s_default_buffer_size,OOBase::CDRStream::MaxAlignment);
 	if (!pBuffer)
+	{
+		close();
 		LOG_ERROR_RETURN(("Out of memory"),false);
+	}
 
-	++m_async_count;
+	addref();
 
 	int err = m_ptrSocket->recv(this,&MessageConnection::on_recv1,pBuffer,s_header_len);
 	if (err != 0)
 	{
-		--m_async_count;
 		close();
+		release();
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err)),false);
 	}
 
@@ -128,17 +124,17 @@ void OOServer::MessageConnection::on_recv1(OOBase::Buffer* buffer, int err)
 {
 	if (!on_recv(buffer,err,1))
 	{
-		--m_async_count;
 		close();
+		release();
 	}
 }
 
 void OOServer::MessageConnection::on_recv2(OOBase::Buffer* buffer, int err)
 {
-	--m_async_count;
-
 	if (!on_recv(buffer,err,2))
 		close();
+
+	release();
 }
 
 bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int part)
@@ -207,13 +203,13 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 
 bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
-	++m_async_count;
+	addref();
 
 	int err = m_ptrSocket->send(this,&MessageConnection::on_sent,pBuffer);
 	if (err != 0)
 	{
-		--m_async_count;
 		close();
+		release();
 		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err)),false);
 	}
 
@@ -222,21 +218,13 @@ bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 
 void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
-	--m_async_count;
-
 	if (err != 0)
 	{
 		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
 		close();
 	}
-}
 
-void OOServer::MessageConnection::on_closed()
-{
-	if (m_async_count-- == 0)
-		++m_async_count;
-
-	close();
+	release();
 }
 
 OOServer::MessageHandler::MessageHandler() :
@@ -372,7 +360,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Find the correct channel
-		OOBase::SmartPtr<MessageConnection> ptrMC;
+		OOBase::RefPtr<MessageConnection> ptrMC;
 		if (!m_mapChannelIds.find(dest_channel_id,ptrMC))
 		{
 			// Send closed message back to sender
@@ -508,7 +496,7 @@ void OOServer::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::ui
 	}
 }
 
-Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id)
+Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id)
 {
 	// Scope the lock
 	{
@@ -624,7 +612,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::SmartPtr<MessageConnection> ptrConn;
+		OOBase::RefPtr<MessageConnection> ptrConn;
 		bPulse = m_mapChannelIds.erase(channel_id,&ptrConn);
 
 		guard.release();
@@ -778,8 +766,7 @@ void OOServer::MessageHandler::close_channels()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::SmartPtr<MessageConnection> ptrConn;
-	while (m_mapChannelIds.pop(NULL,&ptrConn))
+	for (OOBase::RefPtr<MessageConnection> ptrConn;m_mapChannelIds.pop(NULL,&ptrConn);)
 	{
 		guard.release();
 
@@ -1242,7 +1229,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::SmartPtr<MessageConnection> ptrMC;
+	OOBase::RefPtr<MessageConnection> ptrMC;
 	if (!m_mapChannelIds.find(actual_dest_channel_id,ptrMC))
 		return io_result::channel_closed;
 

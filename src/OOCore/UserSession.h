@@ -103,7 +103,7 @@ namespace OOCore
 		Omega::uint32_t                  m_channel_id;
 		Omega::uint32_t                  m_nIPSCookie;
 		OOBase::DLL                      m_lite_dll;
-
+		
 		// Startup/shutdown data
 		OOBase::Condition                m_cond;
 		OOBase::Condition::Mutex         m_cond_mutex;

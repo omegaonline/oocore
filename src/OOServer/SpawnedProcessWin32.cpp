@@ -539,20 +539,20 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	{
 		strModule.replace('/','\\');
 		int err = OOBase::AppendDirSeparator(strModule);
-			
+
 		if (err == 0)
 			err = strModule.append("OOSvrUser.exe");
-			
+
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
-	
+
 		if (strModule.length() >= MAX_PATH)
 		{
 			// Prefix with '\\?\'
 			if ((err = strModule.concat("\\\\?\\",strModule.c_str())) != 0)
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
 		}
-		
+
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 	}
 
@@ -818,6 +818,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 
 bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const
 {
+	assert(!IsSameUser(hToken));
+
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapDestructor> pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapDestructor> pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
@@ -871,7 +873,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if ((err = strSysDir.assign(szBuf)) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
-	
+
 	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
@@ -923,7 +925,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
 		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
-		
+
 		void* ISSUE_11;
 	}
 

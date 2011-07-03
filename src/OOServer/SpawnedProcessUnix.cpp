@@ -57,7 +57,7 @@ namespace
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
 
@@ -206,7 +206,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	}
 
 	// Check this session stuff with the Stevens book! umask? etc...
-	void* TODO;
+	void* POSIX_TODO;
 
 	dup2(fd,STDIN_FILENO);
 	dup2(fd,STDOUT_FILENO);
@@ -352,8 +352,13 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	return true;
 }
 
-bool SpawnedProcessUnix::IsSameLogin(uid_t uid) const
+bool SpawnedProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 {
+	assert(!IsSameUser(uid));
+
+	// Sort out the session handling
+	void* ISSUE_5;
+
 	// All POSIX sessions are assumed unique...
 	return false;
 }
@@ -504,7 +509,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	}
 
 	// Alloc a new SpawnedProcess
-	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid,bSandbox);
+	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid,session_id == NULL);
 	if (!pSpawnUnix)
 	{
 		::close(fd[0]);

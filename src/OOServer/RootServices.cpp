@@ -55,9 +55,9 @@ namespace
 
 		TcpAcceptor(Root::Manager* pManager, Omega::uint32_t id);
 
-		Root::Manager* const                  m_pManager;
-		const Omega::uint32_t                 m_id;
-		OOBase::SmartPtr<OOSvrBase::Acceptor> m_ptrAcceptor;
+		Root::Manager* const                m_pManager;
+		const Omega::uint32_t               m_id;
+		OOBase::RefPtr<OOSvrBase::Acceptor> m_ptrAcceptor;
 
 		void on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* addr, size_t addr_len, int err);
 	};
@@ -85,7 +85,7 @@ namespace
 
 		Root::Manager* const      m_pManager;
 		Omega::uint32_t           m_id;
-		OOBase::SmartPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
+		OOBase::RefPtr<OOSvrBase::AsyncSocket> m_ptrSocket;
 	};
 }
 
@@ -542,7 +542,6 @@ void TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*a
 	{
 		LOG_ERROR(("on_accept failed: %s",OOBase::system_error_text(err)));
 		m_pManager->remove_listener(m_id);
-		delete pSocket;
 		return;
 	}
 
@@ -550,7 +549,6 @@ void TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*a
 	if (!pAsyncSocket)
 	{
 		LOG_ERROR(("Out of memory"));
-		delete pSocket;
 		return;
 	}
 	
@@ -580,7 +578,7 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	// We know we are going to pass this buffer along, so we preallocate the header we use later,
 	// and read the data behind it...
 
-	OOBase::Buffer* buffer = OOBase::Buffer::create(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
+	OOBase::RefPtr<OOBase::Buffer> buffer = OOBase::Buffer::create(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
 	if (!buffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -589,9 +587,6 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	buffer->wr_ptr(12);
 
 	int err = m_ptrSocket->recv(this,&AsyncSocket::on_recv,buffer,bRecvAll ? lenBytes : 0);
-
-	buffer->release();
-
 	if (err != 0)
 		LOG_ERROR(("recv failed: %s",OOBase::system_error_text(err)));
 

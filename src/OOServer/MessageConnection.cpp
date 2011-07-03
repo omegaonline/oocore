@@ -33,7 +33,7 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/CustomNew.h>
+#include <OOBase/GlobalNew.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
@@ -75,7 +75,8 @@ OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase:
 
 OOServer::MessageConnection::~MessageConnection()
 {
-	m_ptrSocket->shutdown(true,true);
+	if (m_async_count > 0)
+		m_ptrSocket->shutdown(true,true);
 
 	while (m_async_count > 0)
 		OOBase::Thread::yield();
@@ -106,15 +107,13 @@ void OOServer::MessageConnection::close()
 bool OOServer::MessageConnection::read()
 {
 	// This buffer is reused...
-	OOBase::Buffer* pBuffer = OOBase::Buffer::create(s_default_buffer_size,OOBase::CDRStream::MaxAlignment);
+	OOBase::RefPtr<OOBase::Buffer> pBuffer = OOBase::Buffer::create(s_default_buffer_size,OOBase::CDRStream::MaxAlignment);
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
 	++m_async_count;
 
 	int err = m_ptrSocket->recv(this,&MessageConnection::on_recv1,pBuffer,s_header_len);
-	pBuffer->release();
-
 	if (err != 0)
 	{
 		--m_async_count;
@@ -136,17 +135,18 @@ void OOServer::MessageConnection::on_recv1(OOBase::Buffer* buffer, int err)
 
 void OOServer::MessageConnection::on_recv2(OOBase::Buffer* buffer, int err)
 {
+	--m_async_count;
+
 	if (!on_recv(buffer,err,2))
-	{
-		--m_async_count;
 		close();
-	}
 }
 
 bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int part)
 {
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err)),false);
+	else if (buffer->length() == 0)
+		return false;
 		
 	OOBase::CDRStream input(buffer);
 
@@ -624,7 +624,10 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		bPulse = m_mapChannelIds.erase(channel_id);
+		OOBase::SmartPtr<MessageConnection> ptrConn;
+		bPulse = m_mapChannelIds.erase(channel_id,&ptrConn);
+
+		guard.release();
 
 		// If src_channel_id == 0 then the underlying connection has closed, check whether we need to report it...
 		if (!bPulse && src_channel_id == 0)
@@ -816,6 +819,8 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			ret = io_result::channel_closed;
 			break;
 		}
+
+		guard.release();
 		
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;

@@ -387,8 +387,6 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 		UserProcess user_process;
 		if (get_user_process(uid,user_process))
 		{
-			stream.reset();
-
 			if (!stream.write(user_process.strPipe.c_str()))
 				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
 			else

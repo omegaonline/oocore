@@ -144,7 +144,7 @@ void User::Manager::start_service(const OOBase::LocalString& strKey, const OOBas
 {
 	try
 	{
-		ObjectPtr<System::IService> ptrService(string_t(pszOid,true),Activation::Process);
+		ObjectPtr<System::IService> ptrService(string_t(strOid.c_str(),true),Activation::Process);
 
 		// Get the service's source channel
 		uint32_t src = Remoting::GetSource(ptrService);

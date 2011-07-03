@@ -34,7 +34,7 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/CustomNew.h>
+#include <OOBase/GlobalNew.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>

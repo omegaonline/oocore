@@ -62,7 +62,7 @@ namespace User
 		OOBase::ThreadPool                                                            m_proactor_pool;
 		Omega::uint32_t                                                               m_nIPSCookie;
 		bool                                                                          m_bIsSandbox;
-		OOBase::SmartPtr<OOSvrBase::Acceptor>                                         m_ptrAcceptor;
+		OOBase::RefPtr<OOSvrBase::Acceptor>                                           m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);

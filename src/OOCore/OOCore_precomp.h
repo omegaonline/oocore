@@ -22,7 +22,7 @@
 #ifndef OOCORE_LOCAL_MACROS_H_INCLUDED_
 #define OOCORE_LOCAL_MACROS_H_INCLUDED_
 
-#include <OOBase/CustomNew.h>
+#include <OOBase/GlobalNew.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/SmartPtr.h>

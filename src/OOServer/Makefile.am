@@ -52,8 +52,6 @@ ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la @top_builddir@/oobase/liboosvrbas
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \
-	ClientAcceptor.h \
-	ClientAcceptor.cpp \
 	RootMain.cpp \
 	RootManager.h \
 	RootManager.cpp \
@@ -88,8 +86,6 @@ oosvruser_SOURCES = \
 	InterProcessService.cpp \
 	MirrorKey.inl \
 	RegistryCmn.h \
-	UserAcceptor.h \
-	UserAcceptor.cpp \
 	UserMain.cpp \
 	UserManager.h \
 	UserManager.cpp \

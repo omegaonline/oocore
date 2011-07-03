@@ -374,8 +374,6 @@ void OOCore::UserSession::discover_server_port(bool& bStandalone, OOBase::LocalS
 	if (err)
 		OMEGA_THROW(err);
 
-	stream.reset();
-
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
 	size_t mark = stream.buffer()->mark_rd_ptr();
 	err = root_socket->recv(stream.buffer(),sizeof(uint32_t));

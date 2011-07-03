@@ -269,7 +269,6 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 	m_bIsSandbox = (sandbox_channel == 0);
 
 	// Then send back our port name
-	stream.reset();
 	if (!stream.write(strPipe.c_str()))
 		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -278,7 +277,6 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Read our channel id
-	stream.reset();
 	err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
@@ -310,7 +308,6 @@ bool User::Manager::handshake_root(OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket>
 	}
 
 	// Now bootstrap
-	stream.reset();
 	if (!stream.write(sandbox_channel) || !stream.write(strPipe.c_str()))
 	{
 		ptrMC->close();
@@ -444,8 +441,6 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 
 void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
-	LOG_DEBUG(("on_accept"));
-
 	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
 
 	if (err != 0)
@@ -507,7 +502,6 @@ void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 	}
 
 	// Send the channel id...
-	stream.reset();
 	if (!stream.write(channel_id))
 	{
 		ptrMC->close();
@@ -604,7 +598,8 @@ void User::Manager::do_quit_i()
 	try
 	{
 		// Stop accepting new clients
-		m_ptrAcceptor->stop();
+		if (m_ptrAcceptor)
+			m_ptrAcceptor->stop();
 
 		// Close all the sinks
 		close_all_remotes();

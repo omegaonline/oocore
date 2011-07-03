@@ -80,10 +80,10 @@ namespace Root
 		bool                                         m_bUnsafe;
 
 		// Client handling members
-		SECURITY_ATTRIBUTES                   m_sa;
-		OOBase::SmartPtr<OOSvrBase::Acceptor> m_client_acceptor;
+		SECURITY_ATTRIBUTES                 m_sa;
+		OOBase::RefPtr<OOSvrBase::Acceptor> m_client_acceptor;
 #if defined(_WIN32)
-		OOSvrBase::Win32::sec_descript_t m_sd;
+		OOSvrBase::Win32::sec_descript_t    m_sd;
 #endif
 		bool start_client_acceptor();
 		void accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err);

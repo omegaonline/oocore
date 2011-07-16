@@ -162,7 +162,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	}
 	else
 	{
-		strAppName.replace('/','\\');
+		strAppName.replace('\\','/');
 		int err = OOBase::AppendDirSeparator(strAppName);
 
 		if (err == 0)
@@ -173,6 +173,10 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
 	}
+
+	// Check the file exists
+	if (access(strAppName.c_str(),X_OK) != 0)
+		LOG_ERROR_RETURN(("User process %s is not valid: %s",strAppName.c_str(),OOBase::system_error_text()),false);
 
 	// Check our uid
 	uid_t our_uid = getuid();

@@ -211,7 +211,7 @@ namespace OTL
 		template <typename Q>
 		Q* QueryInterface() const
 		{
-			return (m_ptr ? static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q))) : 0);
+			return (m_ptr ? static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q))) : NULL);
 		}
 
 		OBJECT* operator ->() const

@@ -35,12 +35,21 @@ namespace Omega
 			class auto_iface_ptr
 			{
 			public:
-				auto_iface_ptr(I* pI = 0) : m_pI(pI)
+				auto_iface_ptr(I* pI = NULL) : m_pI(pI)
 				{}
 
 				auto_iface_ptr(const auto_iface_ptr& rhs) : m_pI(rhs.m_pI)
 				{
 					AddRef();
+				}
+
+				auto_iface_ptr& operator = (I* pI)
+				{
+					Release();
+
+					m_pI = pI;
+
+					return *this;
 				}
 
 				auto_iface_ptr& operator = (const auto_iface_ptr& rhs)
@@ -92,12 +101,21 @@ namespace Omega
 			class auto_safe_shim
 			{
 			public:
-				auto_safe_shim(const SafeShim* pS = 0) : m_pS(pS)
+				auto_safe_shim(const SafeShim* pS = NULL) : m_pS(pS)
 				{}
 
 				auto_safe_shim(const auto_safe_shim& rhs) : m_pS(rhs.m_pS)
 				{
 					AddRef();
+				}
+
+				auto_safe_shim& operator = (const SafeShim* pS)
+				{
+					Release();
+
+					m_pS = pS;
+
+					return *this;
 				}
 
 				auto_safe_shim& operator = (const auto_safe_shim& rhs)

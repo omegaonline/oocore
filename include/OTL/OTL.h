@@ -162,7 +162,7 @@ namespace OTL
 
 		virtual ~ObjectPtrBase()
 		{
-			Attach(0);
+			Attach(NULL);
 		}
 
 		ObjectPtrBase& operator = (OBJECT* ptr)

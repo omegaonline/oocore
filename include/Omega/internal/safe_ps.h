@@ -66,7 +66,7 @@ namespace Omega
 					return m_pI;
 				}
 
-				I* operator ->() const
+				I* operator ->()
 				{
 					assert(m_pI != 0);
 
@@ -128,7 +128,7 @@ namespace Omega
 					return &m_pS;
 				}
 
-				const SafeShim* operator ->()
+				const SafeShim* operator ->() const
 				{
 					assert(m_pS != 0);
 
@@ -182,7 +182,8 @@ namespace Omega
 						m_shim(shim)
 				{
 					m_internal.m_pProxy = this;
-					AddRef();
+					addref_safe(m_shim);
+					m_refcount.AddRef();
 				}
 
 				virtual ~Safe_Proxy_Base()
@@ -197,7 +198,6 @@ namespace Omega
 				virtual void AddRef()
 				{
 					m_refcount.AddRef();
-					addref_safe(m_shim);
 				}
 
 				virtual void Release()
@@ -431,7 +431,6 @@ namespace Omega
 				void AddRef()
 				{
 					m_refcount.AddRef();
-					m_pI->AddRef();
 				}
 
 				void Release()
@@ -459,7 +458,8 @@ namespace Omega
 				Safe_Stub_Base(IObject* pI) :
 						m_pI(pI)
 				{
-					AddRef();
+					m_pI->AddRef();
+					m_refcount.AddRef();				
 				}
 
 				virtual ~Safe_Stub_Base()

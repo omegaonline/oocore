@@ -350,7 +350,7 @@ namespace Omega
 					m_ptrMarshaller->AddRef();
 					m_ptrI->AddRef();
 
-					AddRef();
+					m_refcount.AddRef();
 				}
 
 				virtual ~Wire_Stub_Base()

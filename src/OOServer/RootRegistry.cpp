@@ -77,7 +77,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Find the process info
-		const UserProcess* pU = m_mapUserProcesses.find(channel_id);
+		UserProcess* pU = m_mapUserProcesses.find(channel_id);
 		if (!pU)
 			return EINVAL;
 

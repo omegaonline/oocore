@@ -86,7 +86,8 @@ namespace Root
 		OOSvrBase::Win32::sec_descript_t    m_sd;
 #endif
 		bool start_client_acceptor();
-		void accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		static void accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		void accept_client_i(OOSvrBase::AsyncLocalSocket* pSocket, int err);
 
 		// Spawned process members
 		struct UserProcess
@@ -101,8 +102,8 @@ namespace Root
 		mapUserProcessesType m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
-		Omega::uint32_t bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
-		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain);
+		Omega::uint32_t bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
+		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const OOBase::SmartPtr<Registry::Hive>& ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process);
 		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName);
 		bool get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
@@ -152,7 +153,7 @@ namespace Root
 		void remove_socket(Omega::uint32_t id);
 		void remove_listener(Omega::uint32_t id);
 
-		io_result::type sendrecv_sandbox(OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
+		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
 
 	private:
 		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket> >         m_mapSockets;

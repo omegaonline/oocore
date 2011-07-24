@@ -99,14 +99,14 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
-	OOBase::SmartPtr<OOBase::CDRStream> response;
+	OOBase::CDRStream response;
 	try
 	{
 		OOBase::timeval_t deadline;
 		if (timeout > 0)
 			deadline = OOBase::timeval_t::deadline(timeout);
 
-		OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),response,timeout ? &deadline : 0,attribs);
+		OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,timeout ? &deadline : 0,attribs);
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (res == OOServer::MessageHandler::io_result::timedout)
@@ -127,13 +127,13 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		throw;
 	}
 
-	if (response)
+	if (!(attribs & TypeInfo::Asynchronous))
 	{
 		try
 		{
 			// Wrap the response
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrRecv = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
-			ptrRecv->init(*response);
+			ptrRecv->init(response);
 
 			// Unwrap the payload...
 			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
@@ -143,6 +143,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			return pE;
 		}
 	}
+
 	return 0;
 }
 
@@ -165,15 +166,15 @@ bool_t User::Channel::IsConnected()
 {
 	bool connected = true;
 	
-	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
+	OOBase::CDRStream response;
+	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,NULL,&response,0,OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
 	if (res != OOServer::MessageHandler::io_result::success)
 		connected = false;
 
 	if (connected)
 	{
 		byte_t pong = 0;
-		if (!response || !response->read(pong))
+		if (!response.read(pong))
 			connected = false;
 		else if (pong != 1)
 			connected = false;
@@ -190,8 +191,8 @@ bool_t User::Channel::IsConnected()
 
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
-	OOBase::SmartPtr<OOBase::CDRStream> response;
-	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
+	OOBase::CDRStream response;
+	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,NULL,&response,0,OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)
@@ -206,12 +207,9 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		OMEGA_THROW("Internal server exception");
 	}
 
-	if (!response)
-		OMEGA_THROW("No response received");
-
 	Omega::uint32_t other_end = 0;
-	if (!response->read(other_end))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(other_end))
+		OMEGA_THROW(response.last_error());
 
 	// Return in the same format as we marshal
 	pMessage->WriteValue(L"m_channel_id",other_end);

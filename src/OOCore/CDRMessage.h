@@ -38,13 +38,13 @@ namespace OOCore
 			public Omega::Remoting::IMarshal
 	{
 	public:
-		CDRMessage()
-		{
-		}
-
-		void init(OOBase::CDRStream& stream)
+		void init(const OOBase::CDRStream& stream)
 		{
 			m_stream = stream;
+		}
+
+		virtual ~CDRMessage()
+		{
 		}
 
 		BEGIN_INTERFACE_MAP(CDRMessage)

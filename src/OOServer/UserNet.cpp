@@ -345,7 +345,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	ObjectPtr<Remoting::IMessage> ptrResult;
 	ptrResult.Attach(ptrOM->Invoke(ptrPayload,timeout));
 
-	if (!(ex_attribs & TypeInfo::Asynchronous))
+	if (!(ex_attribs & OOServer::Message_t::asynchronous))
 	{
 		if (deadline != OOBase::timeval_t::MaxTime)
 		{
@@ -446,7 +446,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				else
 					OMEGA_THROW("Invalid system message");
 
-				if (!(out_attribs & TypeInfo::Asynchronous))
+				if (!(out_attribs & OOServer::Message_t::asynchronous))
 				{
 					// Send it back...
 					send_away_i(ptrResult,dest_channel_id,src_channel_id,deadline,out_attribs,src_thread_id,dest_thread_id,OOServer::Message_t::Response,seq_no);

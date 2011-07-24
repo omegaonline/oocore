@@ -115,12 +115,12 @@ namespace OOServer
 		};
 
 		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, OOBase::CDRStream& message);
-		io_result::type send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs);
+		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs);
 
 		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
 
 	protected:
-		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
+		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 
 		bool start_request_threads(size_t threads);
 		void close_channels();
@@ -166,8 +166,10 @@ namespace OOServer
 
 		struct Message
 		{
-			Message() {}
+			Message() : m_payload(size_t(0)) {}
+			Message(const OOBase::CDRStream& payload) : m_payload(payload) {}
 			Message(size_t len) : m_payload(len) {}
+			~Message() {}
 
 			Omega::uint16_t   m_dest_thread_id;
 			Omega::uint16_t   m_src_thread_id;
@@ -178,16 +180,16 @@ namespace OOServer
 		};
 
 		// Pooled queued members
-		OOBase::Atomic<size_t>                           m_waiting_threads;
-		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
+		OOBase::Atomic<size_t>        m_waiting_threads;
+		OOBase::BoundedQueue<Message> m_default_msg_queue;
 
 		static int request_worker_fn(void* pParam);
 
 		struct ThreadContext
 		{
-			Omega::uint16_t                                  m_thread_id;
-			OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_msg_queue;
-			MessageHandler*                                  m_pHandler;
+			Omega::uint16_t               m_thread_id;
+			OOBase::BoundedQueue<Message> m_msg_queue;
+			MessageHandler*               m_pHandler;
 
 			// 'Private' thread-local data
 			OOBase::timeval_t         m_deadline;
@@ -213,13 +215,13 @@ namespace OOServer
 		void remove_thread_context(ThreadContext* pContext);
 
 		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
-		io_result::type queue_message(OOBase::SmartPtr<Message>& msg);
-		io_result::type wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		io_result::type queue_message(const Message& msg);
+		io_result::type wait_for_response(OOBase::CDRStream& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg);
-		bool process_request_context(ThreadContext* pContext, OOBase::SmartPtr<Message> msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline = NULL);
+		bool process_request_context(ThreadContext* pContext, Message& msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline = NULL);
 
-		void process_channel_close(OOBase::SmartPtr<Message>& msg);
-		void process_async_function(OOBase::SmartPtr<Message>& msg);
+		void process_channel_close(Message& msg);
+		void process_async_function(Message& msg);
 
 		static void do_route_off(void* pParam, OOBase::CDRStream& input);
 	};

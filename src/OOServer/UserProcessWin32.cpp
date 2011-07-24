@@ -52,7 +52,7 @@ namespace
 	{
 		size_t wlen = (wcslen(psz)+1)*sizeof(wchar_t);
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen));
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine(static_cast<wchar_t*>(OOBase::LocalAllocate(wlen)));
 		if (!ptrCmdLine)
 			OMEGA_THROW_NOMEM();
 

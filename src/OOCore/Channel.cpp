@@ -161,7 +161,7 @@ void OOCore::Channel::shutdown(uint32_t closed_channel_id)
 	// Send a channel close back to the sender
 	OOBase::CDRStream msg;
 	if (msg.write(closed_channel_id))
-		m_pSession->send_request(m_channel_id,&msg,0,Message::asynchronous | Message::channel_close);
+		m_pSession->send_request(m_channel_id,&msg,NULL,0,Message::asynchronous | Message::channel_close);
 
 	disconnect();
 }
@@ -185,10 +185,10 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
 	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
-	OOBase::SmartPtr<OOBase::CDRStream> response;
+	OOBase::CDRStream response;
 	try
 	{
-		response = m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),timeout,attribs);
+		m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,timeout,attribs);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -202,14 +202,14 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 		throw;
 	}
 
-	if (response)
+	if (!(attribs & TypeInfo::Asynchronous))
 	{
 		try
 		{
 
 			// Wrap the response
 			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
-			ptrRecv->init(*response);
+			ptrRecv->init(response);
 
 			// Unwrap the payload...
 			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
@@ -224,12 +224,12 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 
 bool_t OOCore::Channel::IsConnected()
 {
-	OOBase::SmartPtr<OOBase::CDRStream> response;
-
+	OOBase::CDRStream response;
 	bool connected = true;
+
 	try
 	{
-		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_ping);
+		m_pSession->send_request(m_channel_id,NULL,&response,0,Message::synchronous | Message::channel_ping);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -240,7 +240,7 @@ bool_t OOCore::Channel::IsConnected()
 	if (connected)
 	{
 		byte_t pong = 0;
-		if (!response || !response->read(pong))
+		if (!response.read(pong))
 			connected = false;
 		else if (pong != 1)
 			connected = false;
@@ -257,10 +257,10 @@ bool_t OOCore::Channel::IsConnected()
 
 void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
-	OOBase::SmartPtr<OOBase::CDRStream> response;
+	OOBase::CDRStream response;
 	try
 	{
-		response = m_pSession->send_request(m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
+		m_pSession->send_request(m_channel_id,NULL,&response,0,Message::synchronous | Message::channel_reflect);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -270,7 +270,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	}
 
 	uint32_t other_end = 0;
-	if (!response || !response->read(other_end))
+	if (!response.read(other_end))
 		OMEGA_THROW("Unexpected end of message");
 
 	// Return in the same format as we marshal

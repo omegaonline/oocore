@@ -70,7 +70,6 @@
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
-				FixedBaseAddress="2"
 				DataExecutionPrevention="1"
 			/>
 			<Tool
@@ -495,6 +494,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\OOCore\CDRMessage.h"
+				>
+			</File>
 			<File
 				RelativePath=".\Channel.h"
 				>

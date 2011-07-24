@@ -83,13 +83,12 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		return false;
@@ -116,13 +115,12 @@ bool_t Key::IsValue(const string_t& strName)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err==ENOENT)
 		return false;
@@ -149,13 +147,12 @@ any_t Key::GetValue(const string_t& strName)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
@@ -167,8 +164,8 @@ any_t Key::GetValue(const string_t& strName)
 		OMEGA_THROW(err);
 
 	OOBase::LocalString strValue;
-	if (!response->read(strValue))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(strValue))
+		OMEGA_THROW(response.last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -187,13 +184,12 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
@@ -214,13 +210,12 @@ string_t Key::GetDescription()
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err==ENOENT)
 		NotFoundException::Throw(GetName());
@@ -232,8 +227,8 @@ string_t Key::GetDescription()
 		OMEGA_THROW(err);
 
 	OOBase::LocalString strValue;
-	if (!response->read(strValue))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(strValue))
+		OMEGA_THROW(response.last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -251,13 +246,12 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);
@@ -269,8 +263,8 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 		OMEGA_THROW(err);
 
 	OOBase::LocalString strValue;
-	if (!response->read(strValue))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(strValue))
+		OMEGA_THROW(response.last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -286,13 +280,12 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(GetName());
@@ -316,13 +309,12 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strValue);
@@ -372,13 +364,12 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 		if (request.last_error() != 0)
 			OMEGA_THROW(request.last_error());
 
-		OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-		if (!response)
-			OMEGA_THROW("No response from root");
-
+		OOBase::CDRStream response;
+		m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+		
 		Omega::int32_t err = 0;
-		if (!response->read(err))
-			OMEGA_THROW(response->last_error());
+		if (!response.read(err))
+			OMEGA_THROW(response.last_error());
 
 		if (err != 0)
 			OMEGA_THROW(err);
@@ -387,11 +378,11 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 		Omega::int64_t mirror_key = 0;
 		OOBase::LocalString strName;
 
-		if (!response->read(local_type) ||
-				!response->read(mirror_key) ||
-				!response->read(strName))
+		if (!response.read(local_type) ||
+				!response.read(mirror_key) ||
+				!response.read(strName))
 		{
-			OMEGA_THROW(response->last_error());
+			OMEGA_THROW(response.last_error());
 		}
 
 		ObjectPtr<ObjectImpl<Key> > ptrLocal = ObjectImpl<Key>::CreateInstancePtr();
@@ -420,13 +411,12 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	string_t strFullKey = GetName();
 	if (!strFullKey.IsEmpty())
@@ -446,8 +436,8 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 
 	Omega::int64_t key = 0;
 	Omega::byte_t type = 255;
-	if (!response->read(key) || !response->read(type))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(key) || !response.read(type))
+		OMEGA_THROW(response.last_error());
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
@@ -464,13 +454,12 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
@@ -487,8 +476,8 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 		for (;;)
 		{
 			OOBase::LocalString strName;
-			if (!response->read(strName))
-				OMEGA_THROW(response->last_error());
+			if (!response.read(strName))
+				OMEGA_THROW(response.last_error());
 
 			if (strName.empty())
 				break;
@@ -519,13 +508,12 @@ std::set<Omega::string_t> Key::EnumValues()
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
@@ -542,8 +530,8 @@ std::set<Omega::string_t> Key::EnumValues()
 		for (;;)
 		{
 			OOBase::LocalString strName;
-			if (!response->read(strName))
-				OMEGA_THROW(response->last_error());
+			if (!response.read(strName))
+				OMEGA_THROW(response.last_error());
 
 			if (strName.empty())
 				break;
@@ -593,13 +581,12 @@ void Key::DeleteKey(const string_t& strSubKey)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err != 0)
 	{
@@ -632,13 +619,12 @@ void Key::DeleteValue(const string_t& strName)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	Omega::int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName);

@@ -197,12 +197,12 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint
 	return info.m_ptrChannel;
 }
 
-void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t& deadline)
+void OOCore::Compartment::process_request(const Message& msg, const OOBase::timeval_t& deadline)
 {
-	assert(pMsg->m_dest_cmpt_id == m_id);
+	assert(msg.m_dest_cmpt_id == m_id);
 
 	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id);
+	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(msg.m_src_channel_id);
 
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
@@ -212,7 +212,7 @@ void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t
 	// Wrap up the request
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
 	ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
-	ptrEnvelope->init(pMsg->m_payload);
+	ptrEnvelope->init(msg.m_payload);
 
 	// Unpack the payload
 	ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
@@ -232,7 +232,7 @@ void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t
 	ObjectPtr<Remoting::IMessage> ptrResult;
 	ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
 
-	if (!(pMsg->m_attribs & TypeInfo::Asynchronous))
+	if (!(msg.m_attribs & TypeInfo::Asynchronous))
 	{
 		// Wrap the response...
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
@@ -241,7 +241,7 @@ void OOCore::Compartment::process_request(Message* pMsg, const OOBase::timeval_t
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(pMsg->m_dest_cmpt_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
+			m_pSession->send_response(msg.m_dest_cmpt_id,msg.m_seq_no,msg.m_src_channel_id,msg.m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
 		}
 		catch (...)
 		{
@@ -312,7 +312,7 @@ IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id
 	return pRet;
 }
 
-void OOCore::ComptChannel::init(uint16_t src_compt_id, OOBase::SmartPtr<Compartment> ptrCompt, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::ComptChannel::init(uint16_t src_compt_id, const OOBase::SmartPtr<Compartment>& ptrCompt, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
 	ChannelBase::init(channel_id,Remoting::Compartment,pOM,message_oid);
 

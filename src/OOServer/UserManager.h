@@ -45,8 +45,7 @@ namespace User
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 
-		OOBase::SmartPtr<OOBase::CDRStream> sendrecv_root(OOBase::CDRStream& request, Omega::TypeInfo::MethodAttributes_t attribs);
-
+		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
 		void close_socket(Omega::uint32_t id);
 		
 	private:
@@ -76,14 +75,16 @@ namespace User
 		bool start_proactor_threads();
 		static int run_proactor(void*);
 
-		void on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		void on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err);
+
 		SECURITY_ATTRIBUTES              m_sa;
 #if defined(_WIN32)
 		OOSvrBase::Win32::sec_descript_t m_sd;
 #endif
 
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
-		bool handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket, const OOBase::LocalString& strPipe);
+		bool handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 		bool start_acceptor(const OOBase::LocalString& strPipe);
 

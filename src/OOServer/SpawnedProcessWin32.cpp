@@ -204,7 +204,7 @@ namespace
 	{
 		// Convert UName to wide
 		size_t wlen = OOBase::from_native(NULL,0,strUName.c_str());
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName = static_cast<wchar_t*>(OOBase::LocalAllocate(wlen*sizeof(wchar_t)));
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName(static_cast<wchar_t*>(OOBase::LocalAllocate(wlen*sizeof(wchar_t))));
 		if (!ptrUName)
 			LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
 
@@ -231,7 +231,7 @@ namespace
 			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 		}
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrPwd = static_cast<wchar_t*>(OOBase::LocalAllocate(pszVal->Length + sizeof(wchar_t)));
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrPwd(static_cast<wchar_t*>(OOBase::LocalAllocate(pszVal->Length + sizeof(wchar_t))));
 		if (ptrPwd)
 		{
 			memcpy(ptrPwd,pszVal->Buffer,pszVal->Length);
@@ -390,7 +390,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrProcessUser(static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser)));
 		if (!ptrProcessUser)
 			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
 
@@ -823,8 +823,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken) const
 {
 	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges)));
 
 	if (!pStats1 || !pStats2)
 		return false;
@@ -843,12 +843,10 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	if (m_bSandbox)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
-	if (!ptrUserInfo1)
-		return false;
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo1(static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser)));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo2(static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser)));
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
-	if (!ptrUserInfo2)
+	if (!ptrUserInfo1 || !ptrUserInfo2)
 		return false;
 
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
@@ -938,34 +936,32 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = new (std::nothrow) SpawnedProcessWin32();
-	if (!pSpawn32)
-		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)NULL);
+	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn(pSpawn32);
 
-	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
+	if (!pSpawn32)
+		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(uid,hPipe,bSandbox,bAgain))
-		return NULL;
+		return OOBase::SmartPtr<Root::SpawnedProcess>();
 
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
-		return NULL;
+		return OOBase::SmartPtr<Root::SpawnedProcess>();
 
 	// Connect up
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket;
-
 	int err = 0;
-	ptrSocket.attach(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)NULL);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
 
 	hPipe.detach();
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
-		return NULL;
+		return OOBase::SmartPtr<Root::SpawnedProcess>();
 
 	return pSpawn;
 }

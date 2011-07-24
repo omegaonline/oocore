@@ -609,49 +609,44 @@ int OOCore::UserSession::run_read_loop()
 			continue;
 
 		// Create a new Message struct
-		OOBase::SmartPtr<Message> msg = new (std::nothrow) Message(nReadLen);
-		if (!msg)
-		{
-			err = ERROR_OUTOFMEMORY;
-			break;
-		}
-
+		Message msg(nReadLen);
+		
 		// Issue another read for the rest of the data
-		err = m_stream->recv(msg->m_payload.buffer(),nReadLen);
+		err = m_stream->recv(msg.m_payload.buffer(),nReadLen);
 		if (err != 0)
 			break;
 
 		// Reset the byte order
-		msg->m_payload.big_endian(big_endian);
+		msg.m_payload.big_endian(big_endian);
 
 		// Read the destination and source channels
 		uint32_t dest_channel_id;
-		msg->m_payload.read(dest_channel_id);
-		msg->m_payload.read(msg->m_src_channel_id);
+		msg.m_payload.read(dest_channel_id);
+		msg.m_payload.read(msg.m_src_channel_id);
 
 		// Read the deadline
 		int64_t req_dline_secs;
-		msg->m_payload.read(req_dline_secs);
+		msg.m_payload.read(req_dline_secs);
 		int32_t req_dline_usecs;
-		msg->m_payload.read(req_dline_usecs);
-		msg->m_deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
+		msg.m_payload.read(req_dline_usecs);
+		msg.m_deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
 
 		// Read the rest of the message
-		msg->m_payload.read(msg->m_attribs);
-		msg->m_payload.read(msg->m_dest_thread_id);
-		msg->m_payload.read(msg->m_src_thread_id);
-		msg->m_payload.read(msg->m_seq_no);
-		msg->m_payload.read(msg->m_type);
+		msg.m_payload.read(msg.m_attribs);
+		msg.m_payload.read(msg.m_dest_thread_id);
+		msg.m_payload.read(msg.m_src_thread_id);
+		msg.m_payload.read(msg.m_seq_no);
+		msg.m_payload.read(msg.m_type);
 
 		// Align to the next boundary
-		if (msg->m_payload.buffer()->length() > 0)
+		if (msg.m_payload.buffer()->length() > 0)
 		{
 			// 6 Bytes padding here!
-			msg->m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 		}
 
 		// Did everything make sense?
-		err = msg->m_payload.last_error();
+		err = msg.m_payload.last_error();
 		if (err != 0)
 			break;
 
@@ -660,57 +655,57 @@ int OOCore::UserSession::run_read_loop()
 			continue;
 
 		// Unpack the compartment...
-		msg->m_dest_cmpt_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
+		msg.m_dest_cmpt_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
 
-		if ((msg->m_attribs & Message::system_message) && msg->m_type == Message::Request)
+		if ((msg.m_attribs & Message::system_message) && msg.m_type == Message::Request)
 		{
 			// Process system messages here... because the main message pump may not be running currently
-			if ((msg->m_attribs & Message::system_message)==Message::channel_close)
+			if ((msg.m_attribs & Message::system_message)==Message::channel_close)
 			{
 				uint32_t closed_channel_id;
-				if (!msg->m_payload.read(closed_channel_id))
-					msg->m_payload.last_error();
+				if (!msg.m_payload.read(closed_channel_id))
+					msg.m_payload.last_error();
 				else
 					process_channel_close(closed_channel_id);
 			}
-			else if ((msg->m_attribs & Message::system_message)==Message::channel_reflect)
+			else if ((msg.m_attribs & Message::system_message)==Message::channel_reflect)
 			{
 				// Send back the src_channel_id
-				OOBase::CDRStream response(sizeof(msg->m_src_channel_id));
-				if (response.write(msg->m_src_channel_id))
-					send_response_catch(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_reflect);
+				OOBase::CDRStream response(sizeof(msg.m_src_channel_id));
+				if (response.write(msg.m_src_channel_id))
+					send_response_catch(msg.m_dest_cmpt_id,msg.m_seq_no,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_reflect);
 			}
-			else if ((msg->m_attribs & Message::system_message)==Message::channel_ping)
+			else if ((msg.m_attribs & Message::system_message)==Message::channel_ping)
 			{
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 				// Send back 1 byte
-				byte_t res = (m_mapCompartments.exists(msg->m_dest_cmpt_id) ? 1 : 0);
+				byte_t res = (m_mapCompartments.exists(msg.m_dest_cmpt_id) ? 1 : 0);
 
 				guard.release();
 
 				OOBase::CDRStream response(sizeof(byte_t));
 				if (response.write(res))
-					send_response_catch(msg->m_dest_cmpt_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,&response,msg->m_deadline,Message::synchronous | Message::channel_ping);
+					send_response_catch(msg.m_dest_cmpt_id,msg.m_seq_no,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_ping);
 			}
 		}
-		else if (msg->m_dest_thread_id != 0)
+		else if (msg.m_dest_thread_id != 0)
 		{
 			// Find the right queue to send it to...
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			ThreadContext* pContext = NULL;
-			if (m_mapThreadContexts.find(msg->m_dest_thread_id,pContext))
+			if (m_mapThreadContexts.find(msg.m_dest_thread_id,pContext))
 			{
 				size_t waiting = pContext->m_usage_count;
 
-				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg,msg.m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg.m_deadline);
+				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = pContext->m_msg_queue.last_error();
 					break;
 				}
-				else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+				else if (res == OOBase::BoundedQueue<Message>::success)
 				{
 					if (waiting == 0)
 						wait_or_alert(pContext->m_usage_count);
@@ -720,17 +715,17 @@ int OOCore::UserSession::run_read_loop()
 		else
 		{
 			// Cannot have a response to 0 thread!
-			if (msg->m_type == Message::Request)
+			if (msg.m_type == Message::Request)
 			{
 				size_t waiting = m_usage_count;
 
-				OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
-				if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+				OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.push(msg,msg.m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg.m_deadline);
+				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = m_default_msg_queue.last_error();
 					break;
 				}
-				else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+				else if (res == OOBase::BoundedQueue<Message>::success)
 				{
 					if (waiting == 0)
 						wait_or_alert(m_usage_count);
@@ -748,8 +743,6 @@ int OOCore::UserSession::run_read_loop()
 	// Stop the default message queue
 	m_default_msg_queue.close();
 
-	m_stream = NULL;
-
 	return err;
 }
 
@@ -761,23 +754,23 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		++m_usage_count;
 
 		// Get the next message
-		OOBase::SmartPtr<Message> msg;
-		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,wait);
+		Message msg;
+		OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.pop(msg,wait);
 
 		// Decrement the consumers...
 		--m_usage_count;
 
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+		if (res == OOBase::BoundedQueue<Message>::error)
 			OOBase_CallCriticalFailure(m_default_msg_queue.last_error());
-		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		else if (res == OOBase::BoundedQueue<Message>::timedout)
 			return false;
-		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		else if (res != OOBase::BoundedQueue<Message>::success)
 		{
 			// Its gone... user process has terminated
 			throw Remoting::IChannelClosedException::Create();
 		}
 
-		if (msg->m_type == Message::Request)
+		if (msg.m_type == Message::Request)
 		{
 			// Don't confuse the wait deadline with the message processing deadline
 			process_request(ThreadContext::instance(),msg,0);
@@ -807,11 +800,10 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	}
 }
 
-OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::wait_for_response(uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
-	OOBase::SmartPtr<OOBase::CDRStream> response;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
@@ -832,39 +824,34 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::wait_for_response(uint3
 		++pContext->m_usage_count;
 
 		// Get the next message
-		OOBase::SmartPtr<Message> msg;
-		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.pop(msg,deadline);
+		Message msg;
+		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg,deadline);
 
 		// Decrement the usage count
 		--pContext->m_usage_count;
 
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::error)
+		if (res == OOBase::BoundedQueue<Message>::error)
 			OOBase_CallCriticalFailure(pContext->m_msg_queue.last_error());
-		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		else if (res == OOBase::BoundedQueue<Message>::success)
 		{
-			if (msg->m_type == Message::Request)
+			if (msg.m_type == Message::Request)
 			{
 				process_request(pContext,msg,deadline);
 			}
-			else if (msg->m_type == Message::Response && msg->m_seq_no == seq_no)
+			else if (msg.m_type == Message::Response && msg.m_seq_no == seq_no)
 			{
-				response = new (std::nothrow) OOBase::CDRStream(msg->m_payload);
-				if (!response)
-					OMEGA_THROW_NOMEM();
-
+				response = msg.m_payload;
 				break;
 			}
 		}
-		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+		else if (res == OOBase::BoundedQueue<Message>::closed)
 		{
 			// I/O socket has closed
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response"));
 		}
-		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		else if (res == OOBase::BoundedQueue<Message>::timedout)
 			break;
 	}
-
-	return response;
 }
 
 OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance()
@@ -911,7 +898,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
+void OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t timeout, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -966,11 +953,11 @@ OOBase::SmartPtr<OOBase::CDRStream> OOCore::UserSession::send_request(uint32_t d
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
 
-	if (attribs & TypeInfo::Asynchronous)
-		return 0;
-	
-	// Wait for response...
-	return wait_for_response(seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+	if (!(attribs & TypeInfo::Asynchronous))
+	{
+		// Wait for response...
+		wait_for_response(*response,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+	}
 }
 
 void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
@@ -1013,7 +1000,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, u
 	}
 }
 
-void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
+void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
 {
 	header.write(header.big_endian());
 	header.write(byte_t(1));     // version
@@ -1039,16 +1026,16 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 	if (header.last_error() != 0)
 		OMEGA_THROW(header.last_error());
 
-	if (msg)
+	if (request)
 	{
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Check the size
-		if (msg->buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
+		if (request->buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
 			OMEGA_THROW("Message too big");
 
 		// Write the request stream
-		header.write_buffer(msg->buffer());
+		header.write_buffer(request->buffer());
 		if (header.last_error())
 			OMEGA_THROW(header.last_error());
 	}
@@ -1074,21 +1061,21 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 	return mflags;
 }
 
-void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg, const OOBase::timeval_t* deadline)
+void OOCore::UserSession::process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::SmartPtr<Compartment> ptrCompt;
-	m_mapCompartments.find(pMsg->m_dest_cmpt_id,ptrCompt);
+	m_mapCompartments.find(msg.m_dest_cmpt_id,ptrCompt);
 
 	guard.release();
 
 	if (!ptrCompt)
 	{
 		// Send a channel close back to the sender
-		OOBase::CDRStream msg;
-		if (msg.write(pMsg->m_dest_cmpt_id | m_channel_id))
-			send_request(pMsg->m_src_channel_id,&msg,(deadline ? deadline->msec() : 0),Message::asynchronous | Message::channel_close);
+		OOBase::CDRStream response;
+		if (response.write(msg.m_dest_cmpt_id | m_channel_id))
+			send_request(msg.m_src_channel_id,&response,NULL,(deadline ? deadline->msec() : 0),Message::asynchronous | Message::channel_close);
 
 		return;
 	}
@@ -1096,43 +1083,43 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	// Set per channel thread id
 	uint16_t old_thread_id = 0;
 
-	uint16_t* v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
+	uint16_t* v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
 	if (v)
 	{
 		old_thread_id = *v;
-		*v = pMsg->m_src_thread_id;
+		*v = msg.m_src_thread_id;
 	}
 	else
 	{
-		int err = pContext->m_mapChannelThreads.insert(pMsg->m_src_channel_id,pMsg->m_src_thread_id);
+		int err = pContext->m_mapChannelThreads.insert(msg.m_src_channel_id,msg.m_src_thread_id);
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
 
 	uint16_t old_id = pContext->m_current_cmpt;
-	pContext->m_current_cmpt = pMsg->m_dest_cmpt_id;
+	pContext->m_current_cmpt = msg.m_dest_cmpt_id;
 
 	// Update deadline
 	OOBase::timeval_t old_deadline = pContext->m_deadline;
-	pContext->m_deadline = pMsg->m_deadline;
+	pContext->m_deadline = msg.m_deadline;
 	if (deadline && *deadline < pContext->m_deadline)
 		pContext->m_deadline = *deadline;
 
 	try
 	{
 		// Process the message...
-		ptrCompt->process_request(pMsg,pContext->m_deadline);
+		ptrCompt->process_request(msg,pContext->m_deadline);
 	}
 	catch (...)
 	{
 		if (v)
 		{
-			v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
+			v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
 			if (v)
 				*v = old_thread_id;
 		}
 		else
-			pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
+			pContext->m_mapChannelThreads.erase(msg.m_src_channel_id);
 
 		pContext->m_deadline = old_deadline;
 		pContext->m_current_cmpt = old_id;
@@ -1142,12 +1129,12 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, Message* pMsg
 	// Restore old context
 	if (v)
 	{
-		v = pContext->m_mapChannelThreads.find(pMsg->m_src_channel_id);
+		v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
 		if (v)
 			*v = old_thread_id;
 	}
 	else
-		pContext->m_mapChannelThreads.erase(pMsg->m_src_channel_id);
+		pContext->m_mapChannelThreads.erase(msg.m_src_channel_id);
 
 	pContext->m_deadline = old_deadline;
 	pContext->m_current_cmpt = old_id;

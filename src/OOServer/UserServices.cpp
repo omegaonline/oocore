@@ -78,10 +78,10 @@ bool User::Manager::start_services()
 	if (request.last_error() != 0)
 		LOG_ERROR_RETURN(("Failed to write service data: %s",OOBase::system_error_text(request.last_error())),false);
 
-	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+	OOBase::CDRStream response;
 	try
 	{
-		response = sendrecv_root(request,TypeInfo::Synchronous);
+		sendrecv_root(request,&response,TypeInfo::Synchronous);
 	}
 	catch (IException* pE)
 	{
@@ -90,22 +90,19 @@ bool User::Manager::start_services()
 		return false;
 	}
 
-	if (!response)
-		LOG_ERROR_RETURN(("No response from root"),false);
-
 	size_t count = 0;
-	if (!response->read(count))
-		LOG_ERROR_RETURN(("Failed to read root response: %d",response->last_error()),false);
+	if (!response.read(count))
+		LOG_ERROR_RETURN(("Failed to read root response: %d",response.last_error()),false);
 
 	// Loop through returned services, starting each one...
 	for (;count > 0;--count)
 	{
 		OOBase::LocalString strKey;
 		OOBase::LocalString strOid;
-		if (!response->read(strKey) ||
-			!response->read(strOid))
+		if (!response.read(strKey) ||
+			!response.read(strOid))
 		{
-			LOG_ERROR_RETURN(("Failed to read root response: %d",response->last_error()),false);
+			LOG_ERROR_RETURN(("Failed to read root response: %d",response.last_error()),false);
 		}
 
 		start_service(strKey,strOid);
@@ -194,23 +191,22 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::LocalStri
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response = sendrecv_root(request,TypeInfo::Synchronous);
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err != 0)
 		OMEGA_THROW(err);
 
 	int64_t uKey = 0;
 	OOBase::LocalString strKeyPath;
-	if (!response->read(uKey) ||
-		!response->read(strKeyPath))
+	if (!response.read(uKey) ||
+		!response.read(strKeyPath))
 	{
-		OMEGA_THROW(response->last_error());
+		OMEGA_THROW(response.last_error());
 	}
 
 	ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
@@ -253,13 +249,12 @@ void User::Manager::listen_service_socket(const OOBase::String& strKey, uint32_t
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response = sendrecv_root(request,TypeInfo::Synchronous);
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err != 0)
 		OMEGA_THROW(err);
@@ -299,7 +294,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 				OOBase::Guard<OOBase::RWMutex> guard2(m_service_lock);
 
 				// Force an overwriting insert
-				err = m_mapSockets.replace(id,ptrSocket);
+				err = m_mapSockets.replace(id,static_cast<Omega::Net::IAsyncSocket*>(ptrSocket));
 				if (err != 0)
 					LOG_ERROR(("Error adding socket: %s",OOBase::system_error_text(err)));
 				else
@@ -337,7 +332,7 @@ void User::Manager::close_socket(uint32_t id)
 		if (request.last_error() != 0)
 			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 		else
-			sendrecv_root(request,TypeInfo::Asynchronous);
+			sendrecv_root(request,NULL,OOServer::Message_t::asynchronous);
 	}
 }
 
@@ -478,13 +473,12 @@ void AsyncSocket::Recv(uint32_t lenBytes, bool_t bRecvAll)
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err != 0)
 		OMEGA_THROW(err);
@@ -511,13 +505,12 @@ void AsyncSocket::Send(uint32_t lenBytes, const byte_t* bytes, bool_t bReliable)
 		request.buffer()->wr_ptr(lenBytes);
 	}
 
-	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (!response)
-		OMEGA_THROW("No response from root");
-
+	OOBase::CDRStream response;
+	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	
 	int32_t err = 0;
-	if (!response->read(err))
-		OMEGA_THROW(response->last_error());
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
 
 	if (err != 0)
 		OMEGA_THROW(err);

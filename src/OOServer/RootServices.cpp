@@ -59,7 +59,8 @@ namespace
 		const Omega::uint32_t               m_id;
 		OOBase::RefPtr<OOSvrBase::Acceptor> m_ptrAcceptor;
 
-		void on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* addr, size_t addr_len, int err);
+		static void on_accept(void* pThis, OOSvrBase::AsyncSocket* pSocket, const sockaddr* addr, size_t addr_len, int err);
+		void on_accept_i(OOSvrBase::AsyncSocket* pSocket, int err);
 	};
 
 	class AsyncSocket :
@@ -308,7 +309,7 @@ void Root::Manager::stop_services()
 	{
 		guard.release();
 
-		ptrObj = 0;
+		ptrObj = NULL;
 
 		guard.acquire();
 	}
@@ -318,7 +319,7 @@ void Root::Manager::stop_services()
 	{
 		guard.release();
 
-		ptrSock = 0;
+		ptrSock = NULL;
 
 		guard.acquire();
 	}
@@ -329,7 +330,7 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	Omega::uint32_t id = 0;
-	Omega::int32_t err = m_mapSockets.insert(pSocket,id,1,0xFFFFFFFF);
+	Omega::int32_t err = m_mapSockets.insert(OOBase::SmartPtr<Socket>(pSocket),id,1,0xFFFFFFFF);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to add socket to table: %s",OOBase::system_error_text(err)),0);
 
@@ -346,18 +347,17 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),0);
 	}
 
-	OOBase::SmartPtr<OOBase::CDRStream> response;
-	sendrecv_sandbox(request,response,0,0);
-	if (!response)
+	OOBase::CDRStream response;
+	if (sendrecv_sandbox(request,&response,0,0) != io_result::success)
 	{
 		remove_socket(id);
-		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),0);
+		LOG_ERROR_RETURN(("Failed to send request to sandbox"),0);
 	}
 
-	if (!response->read(err))
+	if (!response.read(err))
 	{
 		remove_socket(id);
-		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response->last_error())),0);
+		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response.last_error())),0);
 	}
 	else if (err != 0)
 	{
@@ -524,7 +524,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)0);
 	}
 
-	pService->m_ptrAcceptor = Root::Proactor::instance().accept_remote(pService,&TcpAcceptor::on_accept,(sockaddr*)&addr,addr_len,err);
+	pService->m_ptrAcceptor = Root::Proactor::instance().accept_remote(pService,&on_accept,(sockaddr*)&addr,addr_len,err);
 	if (err != 0)
 	{
 		delete pService;
@@ -536,7 +536,12 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	return pService;
 }
 
-void TcpAcceptor::on_accept(OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*addr*/, size_t /*addr_len*/, int err)
+void TcpAcceptor::on_accept(void* pThis, OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*addr*/, size_t /*addr_len*/, int err)
+{
+	static_cast<TcpAcceptor*>(pThis)->on_accept_i(pSocket,err);
+}
+
+void TcpAcceptor::on_accept_i(OOSvrBase::AsyncSocket* pSocket, int err)
 {
 	if (err)
 	{
@@ -578,7 +583,7 @@ int AsyncSocket::recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll)
 	// We know we are going to pass this buffer along, so we preallocate the header we use later,
 	// and read the data behind it...
 
-	OOBase::RefPtr<OOBase::Buffer> buffer = OOBase::Buffer::create(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
+	OOBase::RefPtr<OOBase::Buffer> buffer = new (std::nothrow) OOBase::Buffer(12 + lenBytes,OOBase::CDRStream::MaxAlignment);
 	if (!buffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -618,8 +623,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		buffer->mark_wr_ptr(mark);
 
 		// Just forward on...
-		OOBase::SmartPtr<OOBase::CDRStream> response;
-		m_pManager->sendrecv_sandbox(request,response,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,0,1);
 	}
 	else if (err)
 	{
@@ -635,8 +639,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		}
 
 		// Just forward on...
-		OOBase::SmartPtr<OOBase::CDRStream> response;
-		m_pManager->sendrecv_sandbox(request,response,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,0,1);
 	}
 }
 
@@ -673,8 +676,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 		buffer->mark_wr_ptr(mark);
 
 		// Just forward on...
-		OOBase::SmartPtr<OOBase::CDRStream> response;
-		m_pManager->sendrecv_sandbox(request,response,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,0,1);
 	}
 	else
 	{
@@ -690,8 +692,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 		}
 
 		// Just forward on...
-		OOBase::SmartPtr<OOBase::CDRStream> response;
-		m_pManager->sendrecv_sandbox(request,response,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,0,1);
 	}
 }
 
@@ -704,9 +705,6 @@ void AsyncSocket::on_closed()
 	if (request.last_error() != 0)
 		LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 	else
-	{
-		OOBase::SmartPtr<OOBase::CDRStream> response;
-		m_pManager->sendrecv_sandbox(request,response,0,1);
-	}
+		m_pManager->sendrecv_sandbox(request,NULL,0,1);
 }
 

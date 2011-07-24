@@ -468,7 +468,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
-			const UserProcess* pU = m_mapUserProcesses.at(i);
+			UserProcess* pU = m_mapUserProcesses.at(i);
 			if (!pU->ptrSpawn->IsRunning())
 			{
 				vecDead.push(*m_mapUserProcesses.key_at(i));
@@ -519,7 +519,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 	return false;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const OOBase::SmartPtr<Registry::Hive>& ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
@@ -585,7 +585,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	return (ptrMC->read() ? channel_id : 0);
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
 {
 	OOBase::CDRStream stream;
 	if (!stream.write(m_sandbox_channel))
@@ -743,7 +743,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		send_response(seq_no,src_channel_id,src_thread_id,response,deadline,attribs);
 }
 
-OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(OOBase::CDRStream& request, OOBase::SmartPtr<OOBase::CDRStream>& response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs)
+OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs)
 {
 	return send_request(m_sandbox_channel,&request,response,deadline,attribs);
 }

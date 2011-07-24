@@ -129,21 +129,15 @@ void User::Manager::run()
 {
 	// Wait for stop
 	wait_for_quit();
-
-	// Close the user pipes
-	close_channels();
 }
 
 bool User::Manager::fork_slave(const OOBase::String& strPipe)
 {
-	// Connect to the root
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket;
-
 #if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	local_socket.attach(Proactor::instance().connect_local_socket(strPipe.c_str(),err,&wait));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().connect_local_socket(strPipe.c_str(),err,&wait));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -159,7 +153,7 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
-	local_socket.attach(Proactor::instance().attach_local_socket(fd,&err));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().attach_local_socket(fd,&err));
 	if (err != 0)
 	{
 		::close(fd);
@@ -254,7 +248,7 @@ int User::Manager::run_proactor(void*)
 	return Proactor::instance().run(err);
 }
 
-bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket, const OOBase::LocalString& strPipe)
+bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe)
 {
 	OOBase::CDRStream stream;
 
@@ -427,7 +421,7 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 #endif
 
 	int err = 0;
-	m_ptrAcceptor = Proactor::instance().accept_local(this,&Manager::on_accept,strPipe.c_str(),err,&m_sa);
+	m_ptrAcceptor = Proactor::instance().accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
 
@@ -441,7 +435,12 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 	return true;
 }
 
-void User::Manager::on_accept(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+void User::Manager::on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
+{
+	static_cast<Manager*>(pThis)->on_accept_i(pSocket,err);
+}
+
+void User::Manager::on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
 	if (err != 0)
 	{
@@ -624,6 +623,9 @@ void User::Manager::do_quit_i()
 
 		// Close the OOCore
 		Uninitialize();
+
+		// Close all channels
+		close_channels();
 	}
 	catch (...)
 	{
@@ -676,7 +678,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t se
 		break;
 	}
 
-	if (response.last_error() == 0 && !(attribs & TypeInfo::Asynchronous))
+	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
 	{
 		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_uUpstreamChannel,src_thread_id,response,deadline,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)
@@ -721,7 +723,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 		ObjectPtr<Remoting::IMessage> ptrResult;
 		ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
 
-		if (!(attribs & TypeInfo::Asynchronous))
+		if (!(attribs & OOServer::Message_t::asynchronous))
 		{
 			if (deadline != OOBase::timeval_t::MaxTime)
 			{
@@ -739,10 +741,10 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
 	}
-	catch (IException* pOuter)
+	catch (IException* pE)
 	{
 		// Just drop the exception, and let it pass...
-		pOuter->Release();
+		pE->Release();
 	}
 }
 
@@ -787,7 +789,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t s
 	return ptrChannel;
 }
 
-OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(OOBase::CDRStream& request, TypeInfo::MethodAttributes_t attribs)
+void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
@@ -800,7 +802,6 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(OOBase::CDRStre
 			deadline = OOBase::timeval_t::deadline(msecs);
 	}
 
-	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
@@ -811,6 +812,4 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(OOBase::CDRStre
 		else
 			OMEGA_THROW("Internal server exception");
 	}
-
-	return response;
 }

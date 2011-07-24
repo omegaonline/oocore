@@ -28,6 +28,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(HAVE_VLD_H)
+#include <vld.h>
+#endif
+
 static void exception_details(Omega::IException* pE);
 
 static void report_cause(Omega::IException* pE)

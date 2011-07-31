@@ -143,7 +143,7 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 
 #elif defined(HAVE_UNISTD_H)
 	// Use the passed fd
-	int fd = atoi(strPipe);
+	int fd = atoi(strPipe.c_str());
 
 	// Add FD_CLOEXEC to fd
 	int err = OOBase::POSIX::set_close_on_exec(fd,true);
@@ -153,7 +153,7 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().attach_local_socket(fd,&err));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().attach_local_socket(fd,err));
 	if (err != 0)
 	{
 		::close(fd);
@@ -179,7 +179,7 @@ bool User::Manager::session_launch(const OOBase::String& strPipe)
 #else
 
 	// Use the passed fd
-	int fd = atoi(strPipe);
+	int fd = atoi(strPipe.c_str());
 
 	// Invent a new pipe name...
 	OOBase::LocalString strNewPipe;
@@ -208,8 +208,7 @@ bool User::Manager::session_launch(const OOBase::String& strPipe)
 	// Now connect to ooserverd
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket;
-	local_socket.attach(Proactor::instance().connect_local_socket("/tmp/omegaonline",&err,&wait));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().connect_local_socket("/tmp/omegaonline",err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 

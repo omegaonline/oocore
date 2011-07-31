@@ -628,7 +628,7 @@ namespace OTL
 	};
 
 	template <typename ROOT>
-	class AggregatedObjectImpl : public Omega::IObject
+	class AggregatedObjectImpl : public Omega::IObject, public Omega::System::Internal::ThrowingNew
 	{
 		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter)
 		{

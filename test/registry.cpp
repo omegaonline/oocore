@@ -203,6 +203,7 @@ static bool test_key(const Omega::string_t& strKey)
 	pObj = NULL;
 	
 	Omega::Registry::IKey* pKey = pRootKey->OpenSubKey(strKey);
+	pRootKey->Release();
 	TEST(pKey);
 
 	bool bTest;

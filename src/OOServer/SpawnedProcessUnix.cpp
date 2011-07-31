@@ -488,7 +488,7 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
@@ -526,7 +526,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	::close(fd[1]);
 
 	// Create an async socket wrapper
-	OOSvrBase::AsyncLocalSocketPtr ptrSocket = Proactor::instance().attach_local_socket(fd[0],&err);
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance().attach_local_socket(fd[0],err);
 	if (err != 0)
 	{
 		::close(fd[0]);
@@ -541,7 +541,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	return pSpawn;
 }
 
-void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
+/*void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 {
 	// Socket will close when it drops out of scope
 
@@ -585,7 +585,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
 			}
 		}
 	}
-}
+}*/
 
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
 {

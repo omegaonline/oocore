@@ -747,3 +747,8 @@ OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const 
 {
 	return send_request(m_sandbox_channel,&request,response,deadline,attribs);
 }
+
+void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
+{
+	static_cast<Manager*>(pThis)->accept_client_i(pSocket,err);
+}

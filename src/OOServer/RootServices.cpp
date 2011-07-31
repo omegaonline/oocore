@@ -37,6 +37,8 @@
 
 #if defined(_WIN32)
 #include <Ws2tcpip.h>
+#else
+#include <netdb.h>
 #endif
 
 namespace
@@ -506,7 +508,11 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	addrinfo* pResults = NULL;
 	if (getaddrinfo(strAddress.c_str(),strPort.c_str(),&hints,&pResults) != 0)
 	{
+#if defined(_WIN32)
 		err = WSAGetLastError();
+#else
+		err = errno;
+#endif
 		return NULL;
 	}
 
@@ -521,14 +527,14 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	if (!pService)
 	{
 		err = ENOMEM;
-		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)0);
+		LOG_ERROR_RETURN(("Out of memory"),(TcpAcceptor*)NULL);
 	}
 
 	pService->m_ptrAcceptor = Root::Proactor::instance().accept_remote(pService,&on_accept,(sockaddr*)&addr,addr_len,err);
 	if (err != 0)
 	{
 		delete pService;
-		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(err)),(TcpAcceptor*)0);
+		LOG_ERROR_RETURN(("accept_remote failed: %s",OOBase::system_error_text(err)),(TcpAcceptor*)NULL);
 	}
 
 	OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Listening on %s:%s",strAddress.empty() ? "localhost" : strAddress.c_str(),strPort.c_str());

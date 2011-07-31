@@ -37,6 +37,8 @@
 
 #include "RootManager.h"
 
+#include "../../include/Omega/OOCore_version.h"
+
 #include <signal.h>
 #include <stdlib.h>
 
@@ -83,11 +85,9 @@ bool Root::Manager::start_client_acceptor()
 	return true;
 }
 
-void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+void Root::Manager::accept_client_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
 	void* TODO; // this might need adjusting
-
-	OOBase::SmartPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(pSocket);
 
 	if (err != 0)
 	{
@@ -97,7 +97,7 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
-	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	err = pSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
 		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
@@ -113,14 +113,11 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 	}
 
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	err = ptrSocket->get_uid(uid);
+	err = pSocket->get_uid(uid);
 	if (err != 0)
 		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
 	else
 	{
-		// Make sure the handle is closed
-		OOBase::Win32::SmartHandle hUidToken(uid);
-
 		UserProcess user_process;
 		if (get_user_process(uid,user_process))
 		{
@@ -129,12 +126,9 @@ void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 			if (!stream.write(user_process.strPipe.c_str()))
 				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
 			else
-				ptrSocket->send(stream.buffer());
+				pSocket->send(stream.buffer());
 		}
-
-		// Socket will be closed when it drops out of scope
 	}
 }
-
 
 #endif

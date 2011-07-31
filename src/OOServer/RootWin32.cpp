@@ -348,11 +348,6 @@ bool Root::Manager::start_client_acceptor()
 	return true;
 }
 
-void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
-{
-	static_cast<Manager*>(pThis)->accept_client_i(pSocket,err);
-}
-
 void Root::Manager::accept_client_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
 	if (err != 0)

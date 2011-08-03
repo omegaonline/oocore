@@ -1,0 +1,37 @@
+# Stuff we don't want to track
+
+# automake stuff
+configure
+aclocal.m4
+Makefile.in
+autom4te.cache/
+build-aux/
+libltdl/
+.libs/
+m4/argz.m4
+m4/libtool.m4
+m4/ltdl.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+autoheader_dummy.*
+Makefile
+config.log
+config.status
+libtool
+stamp-h*
+*-autoconf.h
+
+# build stuff
+*.Plo
+*.Po
+*.[oa]
+*.l[oa]
+*.lai
+lt-*.c
+*_ltshwrapper
+
+# Windows stuff
+*.exe
+*.dll

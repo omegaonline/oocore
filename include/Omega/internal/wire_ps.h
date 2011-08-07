@@ -89,7 +89,7 @@ namespace Omega
 				{
 					assert(!m_refcount.IsZero());
 
-					if (m_refcount.Release() && m_pincount.IsZero())
+					if (m_refcount.Release() == 0 && m_pincount.IsZero())
 						Destruct__proxy__();
 				}
 
@@ -169,7 +169,7 @@ namespace Omega
 				{
 					assert(!m_pincount.IsZero());
 
-					if (m_pincount.Release() && m_refcount.IsZero())
+					if (m_pincount.Release() == 0 && m_refcount.IsZero())
 						Destruct__proxy__();
 				}
 
@@ -343,9 +343,9 @@ namespace Omega
 
 			protected:
 				Wire_Stub_Base(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
-						m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController), m_bPinned(false)
+						m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController)
 				{
-					m_bPinned = PinObjectPointer(m_pController);
+					PinObjectPointer(m_pController);
 
 					m_ptrMarshaller->AddRef();
 					m_ptrI->AddRef();
@@ -355,8 +355,7 @@ namespace Omega
 
 				virtual ~Wire_Stub_Base()
 				{
-					if (m_bPinned)
-						UnpinObjectPointer(m_pController);
+					UnpinObjectPointer(m_pController);
 				}
 
 				typedef void (*MethodTableEntry)(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut);
@@ -372,7 +371,6 @@ namespace Omega
 				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
 				auto_iface_ptr<IObject>               m_ptrI;
 				Remoting::IStubController*            m_pController;
-				bool                                  m_bPinned;
 				Threading::AtomicRefCount             m_refcount;
 
 				Wire_Stub_Base(const Wire_Stub_Base&);
@@ -387,7 +385,7 @@ namespace Omega
 				{
 					assert(!m_refcount.IsZero());
 
-					if (m_refcount.Release())
+					if (m_refcount.Release() == 0)
 						delete this;
 				}
 

@@ -216,22 +216,27 @@ namespace Omega
 				virtual void AddRef()
 				{
 					m_refcount.AddRef();
+
+					if (!m_pincount.IsZero())
+						addref_safe(m_shim);
 				}
 
 				virtual void Release()
 				{
 					assert(!m_refcount.IsZero());
 
-					if (m_refcount.Release())
+					if (m_refcount.Release() == 0)
 					{
 						m_intcount.AddRef();
 
 						// This can result in a circular dependancy
 						release_safe(m_shim);
 
-						if (m_intcount.Release() && m_pincount.IsZero())
+						if (m_intcount.Release() == 0 && m_pincount.IsZero())
 							Destruct__proxy__();
 					}
+					else if (!m_pincount.IsZero())
+						release_safe(m_shim);
 				}
 
 				virtual IObject* QueryInterface(const guid_t& iid);
@@ -301,25 +306,26 @@ namespace Omega
 				{
 					assert(!m_intcount.IsZero());
 
-					if (m_intcount.Release() && m_refcount.IsZero() && m_pincount.IsZero())
+					if (m_intcount.Release() == 0 && m_refcount.IsZero() && m_pincount.IsZero())
 						Destruct__proxy__();
 				}
 
 				void Pin()
 				{
-					m_pincount.AddRef();
-					
-					// Pin the shim
-					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
-					if (except)
-						throw_correct_exception(except);
+					if (m_pincount.AddRef() == 1)
+					{
+						// Pin the shim
+						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
+						if (except)
+							throw_correct_exception(except);
+					}
 				}
 
 				void Unpin()
 				{
 					assert(!m_pincount.IsZero());
 
-					if (m_pincount.Release())
+					if (m_pincount.Release() == 0)
 					{
 						// Unpin the shim
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnUnpin_Safe(m_shim);
@@ -449,22 +455,27 @@ namespace Omega
 				void AddRef()
 				{
 					m_refcount.AddRef();
+
+					if (!m_pincount.IsZero())
+						m_pI->AddRef();
 				}
 
 				void Release()
 				{
 					assert(!m_refcount.IsZero());
 
-					if (m_refcount.Release())
+					if (m_refcount.Release() == 0)
 					{
 						m_pincount.AddRef();
 
 						// This can result in a circular dependancy
 						m_pI->Release();
 
-						if (m_pincount.Release())
+						if (m_pincount.Release() == 0)
 							delete this;
 					}
+					else if (!m_pincount.IsZero())
+						m_pI->Release();						
 				}
 
 				virtual bool IsDerived(const guid_t& iid) const = 0;
@@ -477,7 +488,7 @@ namespace Omega
 						m_pI(pI)
 				{
 					m_pI->AddRef();
-					m_refcount.AddRef();				
+					m_refcount.AddRef();
 				}
 
 				virtual ~Safe_Stub_Base()
@@ -485,14 +496,15 @@ namespace Omega
 
 				void Pin()
 				{
-					m_pincount.AddRef();
+					if (m_pincount.AddRef() == 1)
+						m_pI->AddRef();
 				}
 
 				void Unpin()
 				{
 					assert(!m_pincount.IsZero());
 
-					if (m_pincount.Release() && m_refcount.IsZero())
+					if (m_pincount.Release() == 0 && m_refcount.IsZero())
 						delete this;
 				}
 

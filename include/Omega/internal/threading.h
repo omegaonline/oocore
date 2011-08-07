@@ -164,14 +164,10 @@ namespace Omega
 			~AtomicRefCount()
 			{}
 
-			void AddRef();
-			bool Release();
+			size_t AddRef();
+			size_t Release();
+			bool IsZero() const;
 			
-			bool IsZero() const
-			{
-				return (m_value == 0);
-			}
-
 		private:
 			size_t m_value;
 		};

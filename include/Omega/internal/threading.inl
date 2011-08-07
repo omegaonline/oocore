@@ -249,16 +249,22 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void* param)
 	{}
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),size_t*,v));
-inline void Omega::Threading::AtomicRefCount::AddRef()
+OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_atomic_addref,1,((in),size_t*,v));
+inline size_t Omega::Threading::AtomicRefCount::AddRef()
 {
-	OOCore_atomic_addref(&m_value);
+	return OOCore_atomic_addref(&m_value);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),size_t*,v));
-inline bool Omega::Threading::AtomicRefCount::Release()
+OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_atomic_release,1,((in),size_t*,v));
+inline size_t Omega::Threading::AtomicRefCount::Release()
 {
-	return (OOCore_atomic_release(&m_value) != 0);
+	return OOCore_atomic_release(&m_value);
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_is_zero,1,((in),size_t*,v));
+inline bool Omega::Threading::AtomicRefCount::IsZero() const
+{
+	return (OOCore_atomic_is_zero(const_cast<size_t*>(&m_value)) != 0);
 }
 
 #endif // OMEGA_THREADING_INL_INCLUDED_

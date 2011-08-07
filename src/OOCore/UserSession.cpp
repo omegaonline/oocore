@@ -512,7 +512,9 @@ void OOCore::UserSession::add_uninit_call_i(Threading::DestructorCallback pfn, v
 
 void OOCore::UserSession::remove_uninit_call(Threading::DestructorCallback pfn, void* param)
 {
-	USER_SESSION::instance().remove_uninit_call_i(pfn,param);
+	UserSession* pThis = USER_SESSION::instance_ptr();
+	if (pThis)
+		pThis->remove_uninit_call_i(pfn,param);
 }
 
 void OOCore::UserSession::remove_uninit_call_i(Threading::DestructorCallback pfn, void* param)

@@ -100,14 +100,19 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*
 	static_cast<OOBase::RWMutex*>(m1)->release();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),size_t*,v))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_atomic_addref,1,((in),size_t*,v))
 {
-	OOBase::Atomic<size_t>::Increment(*v);
+	return OOBase::Atomic<size_t>::Increment(*v);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),size_t*,v))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_atomic_release,1,((in),size_t*,v))
 {
-	return (OOBase::Atomic<size_t>::Decrement(*v) == 0) ? 1 : 0;
+	return OOBase::Atomic<size_t>::Decrement(*v);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_is_zero,1,((in),size_t*,v))
+{
+	return (OOBase::Atomic<size_t>::CompareAndSwap(*v,0,0) == 0 ? 1 : 0);
 }
 
 namespace

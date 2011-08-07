@@ -154,7 +154,7 @@ inline Omega::IObject* Omega::System::Internal::Wire_Proxy_Base::QueryInterface(
 	{
 		// Check the proxy supports the interface
 		if (!m_ptrProxy->RemoteQueryInterface(iid))
-			return 0;
+			return NULL;
 
 		return create_wire_proxy(m_ptrProxy,iid);
 	}
@@ -164,7 +164,7 @@ inline Omega::IException* Omega::System::Internal::Wire_Proxy_Base::Throw(const 
 {
 	// Check the proxy supports the interface
 	if (!m_ptrProxy->RemoteQueryInterface(iid))
-		return 0;
+		return NULL;
 
 	return static_cast<IException*>(create_wire_proxy(m_ptrProxy,iid,OMEGA_GUIDOF(IException)));
 }
@@ -174,7 +174,7 @@ inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Omega::Remotin
 	assert(iid != OMEGA_GUIDOF(ISafeProxy));
 	assert(pProxy);
 
-	IObject* obj = 0;
+	IObject* obj = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))
 	{
 		obj = Wire_Proxy_IObject::bind(pProxy);
@@ -212,7 +212,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_St
 
 inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Omega::Remoting::IStubController* pController, Omega::Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
 {
-	Remoting::IStub* pStub = 0;
+	Remoting::IStub* pStub = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))
 	{
 		pStub = Wire_Stub<IObject>::create(pController,pMarshaller,pObj);
@@ -222,7 +222,7 @@ inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Omega::
 		// Check that pObj supports the interface...
 		auto_iface_ptr<IObject> ptrQI = pObj->QueryInterface(iid);
 		if (!ptrQI)
-			return 0;
+			return NULL;
 
 		// Wrap it in a proxy and add it...
 		const wire_rtti* rtti = get_wire_rtti_info(iid);

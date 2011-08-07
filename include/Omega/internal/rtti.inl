@@ -39,9 +39,12 @@ inline bool Omega::System::PinObjectPointer(Omega::IObject* pObject)
 
 inline void Omega::System::UnpinObjectPointer(Omega::IObject* pObject)
 {
-	Omega::System::Internal::auto_iface_ptr<Omega::System::Internal::ISafeProxy> ptrProxy(static_cast<Omega::System::Internal::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::Internal::ISafeProxy))));
-	if (ptrProxy)
-		ptrProxy->Unpin();
+	if (pObject)
+	{
+		Omega::System::Internal::auto_iface_ptr<Omega::System::Internal::ISafeProxy> ptrProxy(static_cast<Omega::System::Internal::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::Internal::ISafeProxy))));
+		if (ptrProxy)
+			ptrProxy->Unpin();
+	}
 }
 
 #if !defined(DOXYGEN)

@@ -341,7 +341,7 @@ namespace OTL
 		{
 			assert(!m_refcount.IsZero());
 
-			if (m_refcount.Release())
+			if (m_refcount.Release() == 0)
 				Final_Release();
 		}
 
@@ -590,23 +590,20 @@ namespace OTL
 
 	public:
 		ContainedObjectImpl(Omega::IObject* pOuter) :
-				m_pOuter(pOuter), m_bPinned(false)
+				m_pOuter(pOuter)
 		{
-			m_bPinned = Omega::System::PinObjectPointer(m_pOuter);
+			Omega::System::PinObjectPointer(m_pOuter);
 		}
 
 		Omega::IObject* m_pOuter;
 
 	private:
-		bool m_bPinned;
-
 		ContainedObjectImpl(const ContainedObjectImpl& rhs);
 		ContainedObjectImpl& operator = (const ContainedObjectImpl& rhs);
 
 		virtual ~ContainedObjectImpl()
 		{
-			if (m_bPinned)
-				Omega::System::UnpinObjectPointer(m_pOuter);
+			Omega::System::UnpinObjectPointer(m_pOuter);
 		}
 
 	// IObject members
@@ -676,7 +673,7 @@ namespace OTL
 		{
 			assert(!m_refcount.IsZero());
 
-			if (m_refcount.Release())
+			if (m_refcount.Release() == 0)
 				delete this;
 		}
 

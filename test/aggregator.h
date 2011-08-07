@@ -21,7 +21,7 @@ public:
 	{
 		assert(!m_refcount.IsZero());
 
-		if (m_refcount.Release())
+		if (m_refcount.Release() == 0)
 			delete this;
 	}
 

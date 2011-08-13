@@ -162,7 +162,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	}
 	else
 	{
-		strAppName.replace('/','\\');
+		strAppName.replace('\\','/');
 		int err = OOBase::AppendDirSeparator(strAppName);
 
 		if (err == 0)
@@ -282,7 +282,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 
 	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
 
-	LOG_ERROR(("Failed to launch %s",strAppName.c_str()));
+	LOG_ERROR(("Failed to launch %s cwd: %s - %s",strAppName.c_str(),get_current_dir_name(),strerror(errno)));
 
 	_exit(127);
 }

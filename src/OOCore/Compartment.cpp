@@ -76,7 +76,7 @@ void OOCore::Compartment::shutdown()
 		guard.acquire();
 	}
 
-	OTL::ObjectPtr<OTL::ObjectImpl<ComptChannel> > ptrCompt;
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
 	while (m_mapCompartments.pop(NULL,&ptrCompt))
 	{
 		guard.release();
@@ -154,47 +154,44 @@ bool OOCore::Compartment::is_channel_open(uint32_t channel_id)
 	return false;
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::Compartment::get_channel_om(uint32_t src_channel_id)
+Remoting::IObjectManager* OOCore::Compartment::get_channel_om(uint32_t src_channel_id)
 {
 	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,guid_t::Null());
 
 	return ptrChannel->GetObjectManager();
 }
 
-ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
+ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	// Lookup existing..
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
 	ChannelInfo info;
-	if (m_mapChannels.find(src_channel_id,info))
+	if (!m_mapChannels.find(src_channel_id,info))
 	{
-		assert(info.m_bOpen);
-		return info.m_ptrChannel;
+		read_guard.release();
+
+		// Create a new OM
+		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstance();
+
+		// Create a new channel
+		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstance();
+		ptrChannel->init(m_pSession,src_channel_id,ptrOM,message_oid);
+
+		// And add to the map
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		info.m_bOpen = true;
+		info.m_ptrChannel = ptrChannel;
+
+		int err = m_mapChannels.insert(src_channel_id,info);
+		if (err == EEXIST)
+			m_mapChannels.find(src_channel_id,info);
+		else if (err != 0)
+			OMEGA_THROW(err);
 	}
-	
-	read_guard.release();
-
-	// Create a new OM
-	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstance();
-
-	// Create a new channel
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstance();
-	ptrChannel->init(m_pSession,src_channel_id,ptrOM,message_oid);
-
-	// And add to the map
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	info.m_bOpen = true;
-	info.m_ptrChannel = ptrChannel;
-
-	int err = m_mapChannels.insert(src_channel_id,info);
-	if (err == EEXIST)
-		m_mapChannels.find(src_channel_id,info);
-	else if (err != 0)
-		OMEGA_THROW(err);
 		
-	return info.m_ptrChannel;
+	return info.m_ptrChannel.AddRef();
 }
 
 void OOCore::Compartment::process_request(const Message& msg, const OOBase::timeval_t& deadline)
@@ -250,7 +247,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 	}
 }
 
-ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compartment_channel(uint16_t compartment_id, const guid_t& message_oid)
+ObjectImpl<OOCore::ComptChannel>* OOCore::Compartment::create_compartment_channel(uint16_t compartment_id, const guid_t& message_oid)
 {
 	// Lookup existing..
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
@@ -283,7 +280,7 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 			OMEGA_THROW(err);
 	}
 
-	return ptrChannel;
+	return ptrChannel.AddRef();
 }
 
 IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)

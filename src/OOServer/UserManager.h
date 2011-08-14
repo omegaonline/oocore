@@ -43,7 +43,7 @@ namespace User
 	public:
 		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
-		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
+		static OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 
 		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
 		void close_socket(Omega::uint32_t id);
@@ -91,8 +91,8 @@ namespace User
 		static void do_quit(void* pParams, OOBase::CDRStream& input);
 		void do_quit_i();
 
-		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
+		OTL::ObjectImpl<Channel>* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
+		Omega::Remoting::IObjectManager* create_object_manager(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 		void process_user_request(OOBase::CDRStream& input, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 		void process_root_request(OOBase::CDRStream& input, Omega::uint32_t seq_no, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
@@ -124,8 +124,8 @@ namespace User
 
 		bool start_services();
 		void start_service(const OOBase::LocalString& strKey, const OOBase::LocalString& strOid);
-		OTL::ObjectPtr<Omega::Registry::IKey> get_service_key(const OOBase::LocalString& strKey);
-		void listen_service_socket(const OOBase::String& strKey, Omega::uint32_t nServiceId, OTL::ObjectPtr<Omega::System::INetworkService> ptrNetService);
+		Omega::Registry::IKey* get_service_key(const OOBase::LocalString& strKey);
+		void listen_service_socket(const OOBase::String& strKey, Omega::uint32_t nServiceId);
 		void stop_services();
 
 		void on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStream& response);

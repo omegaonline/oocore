@@ -748,19 +748,19 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(uint32_t src_channel_id, const guid_t& message_oid)
+Remoting::IObjectManager* User::Manager::create_object_manager(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel_i(src_channel_id,message_oid);
 
 	return ptrChannel->GetObjectManager();
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
+ObjectImpl<User::Channel>* User::Manager::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	return s_instance->create_channel_i(src_channel_id,message_oid);
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid)
+ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	assert(classify_channel(src_channel_id) > 1);
 
@@ -770,7 +770,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t s
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		if (m_mapChannels.find(src_channel_id,ptrChannel))
-			return ptrChannel;
+			return ptrChannel.AddRef();
 	}
 
 	// Create a new channel
@@ -786,7 +786,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t s
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	return ptrChannel;
+	return ptrChannel.AddRef();
 }
 
 void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)

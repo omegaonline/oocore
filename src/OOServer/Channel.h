@@ -39,10 +39,7 @@ namespace User
 		void init(Manager* pManager, Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager()
-		{
-			return m_ptrOM;
-		}
+		Omega::Remoting::IObjectManager* GetObjectManager();
 
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)

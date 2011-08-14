@@ -70,35 +70,35 @@ void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pPa
 	ptrStub->Invoke(pParamsIn,pParamsOut);
 }
 
-ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
+Remoting::IStub* OOCore::Stub::FindStub(const guid_t& iid)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// See if we have a stub for this interface already...
 	ObjectPtr<Remoting::IStub> ptrStub;
-	if (m_iid_map.find(iid,ptrStub))
-		return ptrStub;
-
-	// See if any known interface supports the new interface
-	for (size_t i=m_iid_map.begin(); i!=m_iid_map.npos; i=m_iid_map.next(i))
+	if (!m_iid_map.find(iid,ptrStub))
 	{
-		ObjectPtr<Remoting::IStub> ptrStub2 = *m_iid_map.at(i);
-		if (ptrStub2 && ptrStub2->SupportsInterface(iid))
+		// See if any known interface supports the new interface
+		for (size_t i=m_iid_map.begin(); i!=m_iid_map.npos; i=m_iid_map.next(i))
 		{
-			ptrStub = ptrStub2;
-			break;
+			ObjectPtr<Remoting::IStub> ptrStub2 = *m_iid_map.at(i);
+			if (ptrStub2 && ptrStub2->SupportsInterface(iid))
+			{
+				ptrStub = ptrStub2;
+				break;
+			}
 		}
+
+		if (!ptrStub)
+			ptrStub = CreateStub(iid);
+
+		// Now add it...
+		int err = m_iid_map.insert(iid,ptrStub);
+		if (err != 0)
+			OMEGA_THROW(err);
 	}
 
-	if (!ptrStub)
-		ptrStub = CreateStub(iid);
-
-	// Now add it...
-	int err = m_iid_map.insert(iid,ptrStub);
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	return ptrStub;
+	return ptrStub.AddRef();
 }
 
 Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)

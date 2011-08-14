@@ -62,14 +62,14 @@ void OOCore::ChannelBase::disconnect()
 		ptrOM->Shutdown();
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::ChannelBase::GetObjectManager()
+Remoting::IObjectManager* OOCore::ChannelBase::GetObjectManager()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	if (!m_ptrOM)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("GetObjectManager() called on disconnected channel"));
 
-	return m_ptrOM;
+	return m_ptrOM.AddRef();
 }
 
 Remoting::IMessage* OOCore::ChannelBase::CreateMessage()

@@ -342,8 +342,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		}
 	}
 
-	ObjectPtr<ObjectImpl<Key> > ptrRet = OpenSubKey_i(strSubKey,flags);
-	return ptrRet.AddRef();
+	return OpenSubKey_i(strSubKey,flags);
 }
 
 IKey* Key::ParseSubKey(string_t& strSubKey)
@@ -397,7 +396,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 	return 0;
 }
 
-ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::CreateKey));
@@ -440,7 +439,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstance();
 	ptrNew->Init(m_pManager,strFullKey,key,type);
-	return ptrNew;
+	return ptrNew.AddRef();
 }
 
 std::set<Omega::string_t> Key::EnumSubKeys()

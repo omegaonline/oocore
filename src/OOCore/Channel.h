@@ -38,7 +38,7 @@ namespace OOCore
 
 		virtual void disconnect();
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager();
+		Omega::Remoting::IObjectManager* GetObjectManager();
 
 		BEGIN_INTERFACE_MAP(ChannelBase)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)

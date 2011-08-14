@@ -33,7 +33,7 @@ User::RemoteChannel::RemoteChannel() :
 {
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::client_init(Manager* pManager, Remoting::IEndpoint* pEndpoint, const string_t& strEndpoint, uint32_t channel_id)
+ObjectImpl<User::Channel>* User::RemoteChannel::client_init(Manager* pManager, Remoting::IEndpoint* pEndpoint, const string_t& strEndpoint, uint32_t channel_id)
 {
 	m_pManager = pManager;
 	m_channel_id = channel_id;
@@ -60,7 +60,7 @@ void User::RemoteChannel::server_init(Manager* pManager, Remoting::IChannelSink*
 	create_channel(0);
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(uint32_t channel_id)
+ObjectImpl<User::Channel>* User::RemoteChannel::create_channel(uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -75,10 +75,10 @@ ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(uint32
 			OMEGA_THROW(err);
 	}
 
-	return ptrChannel;
+	return ptrChannel.AddRef();
 }
 
-ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(uint32_t channel_id)
+Remoting::IObjectManager* User::RemoteChannel::create_object_manager(uint32_t channel_id)
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(channel_id);
 
@@ -623,7 +623,7 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 
 void User::RemoteChannel::Close()
 {
-	OTL::ObjectPtr<Omega::Remoting::IChannelSink> ptrUpstream;
+	ObjectPtr<Remoting::IChannelSink> ptrUpstream;
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -700,7 +700,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
-		OTL::ObjectPtr<Omega::Remoting::IChannel> ptrChannel;
+		ObjectPtr<Remoting::IChannel> ptrChannel;
 		if (m_mapRemoteChannels.find(channel.strEndpoint,ptrChannel))
 			return ptrChannel.AddRef();
 	}

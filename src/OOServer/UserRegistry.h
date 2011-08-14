@@ -48,7 +48,7 @@ namespace User
 			Omega::byte_t   m_type;
 
 			Omega::Registry::IKey* ParseSubKey(Omega::string_t& strSubKey);
-			OTL::ObjectPtr<OTL::ObjectImpl<Key> > OpenSubKey_i(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags);
+			Omega::Registry::IKey* OpenSubKey_i(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags);
 
 		// IKey members
 		public:

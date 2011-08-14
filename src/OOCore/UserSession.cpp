@@ -1161,12 +1161,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServe
 	return ptrIPS->OpenServerSink(message_oid,pSink);
 }
 
-ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment()
+ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment()
 {
 	return USER_SESSION::instance().create_compartment_i();
 }
 
-ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment_i()
+ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i()
 {
 	// Create the new object
 	OOBase::SmartPtr<Compartment> ptrCompt = new (std::nothrow) Compartment(this);

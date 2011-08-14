@@ -68,6 +68,13 @@ void User::Channel::disconnect()
 	m_ptrMarshaller.Release();
 }
 
+Remoting::IObjectManager* User::Channel::GetObjectManager()
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	return m_ptrOM.AddRef();
+}
+
 Remoting::IMessage* User::Channel::CreateMessage()
 {
 	if (m_message_oid == guid_t::Null())

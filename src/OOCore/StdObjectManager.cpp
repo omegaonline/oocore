@@ -225,7 +225,7 @@ void OOCore::StdObjectManager::Shutdown()
 
 	// Clear the stub map
 	Omega::uint32_t stub_id = 0;
-	OTL::ObjectPtr<OTL::ObjectImpl<Stub> > ptrStub;
+	ObjectPtr<ObjectImpl<Stub> > ptrStub;
 	while (m_mapStubIds.pop(&stub_id,&ptrStub))
 	{
 		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
@@ -244,7 +244,7 @@ void OOCore::StdObjectManager::Shutdown()
 	m_mapStubObjs.clear();
 }
 
-void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
+void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, Remoting::IMessage* pResponse)
 {
 	// Read the oid, iid and flags
 	any_t oid = pParamsIn->ReadValue(L"oid");
@@ -259,7 +259,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	ObjectPtr<IObject> ptrObject = OOCore::GetInstance(oid,act_flags,iid);
 
 	// Write it out and return
-	MarshalInterface(L"$retval",ptrResponse,iid,ptrObject);
+	MarshalInterface(L"$retval",pResponse,iid,ptrObject);
 }
 
 Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
@@ -504,7 +504,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	return static_cast<TypeInfo::IInterfaceInfo*>(pRet);
 }
 
-void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
+void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParamsIn, Remoting::IMessage* pResponse)
 {
 	// Read the iid
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
@@ -513,7 +513,7 @@ void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParam
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	
 	// Write it out and return
-	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),ptrII);
+	MarshalInterface(L"$retval",pResponse,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),ptrII);
 }
 
 void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
@@ -537,14 +537,14 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 	}
 }
 
-bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
+bool OOCore::StdObjectManager::CustomMarshalInterface(Remoting::IMarshal* pMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("CustomMarshalInterface() called on disconnected ObjectManager"));
 
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
-	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
+	guid_t oid = pMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
 	if (oid == guid_t::Null())
 		return false;
 
@@ -559,7 +559,7 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarsh
 		++undo_count;
 
 		// Let the custom handle marshalling...
-		ptrMarshal->MarshalInterface(this,pMessage,iid,marshal_flags);
+		pMarshal->MarshalInterface(this,pMessage,iid,marshal_flags);
 		++undo_count;
 
 		// Write the struct end
@@ -574,7 +574,7 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarsh
 			pMessage->ReadValue(L"$oid");
 
 		if (undo_count > 2)
-			ptrMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
+			pMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
 
 		throw;
 	}

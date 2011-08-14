@@ -123,7 +123,7 @@ bool User::Manager::start_services()
 			if (ptrNS)
 			{
 				// Call the root, asking to start the async stuff, passing the id of the service...
-				listen_service_socket(pServ->strKey,*m_mapServices.key_at(i),ptrNS);
+				listen_service_socket(pServ->strKey,*m_mapServices.key_at(i));
 			}
 		}
 		catch (IException* pE)
@@ -183,7 +183,7 @@ void User::Manager::start_service(const OOBase::LocalString& strKey, const OOBas
 	}
 }
 
-ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::LocalString& strKey)
+Registry::IKey* User::Manager::get_service_key(const OOBase::LocalString& strKey)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetServiceKey));
@@ -212,8 +212,7 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::LocalStri
 	ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstance();
 	ptrKey->Init(this,string_t(strKeyPath.c_str(),true),uKey,0);
 
-	ObjectPtr<Omega::Registry::IKey> ptrRet = ptrKey;
-	return ptrRet;
+	return ptrKey.AddRef();
 }
 
 void User::Manager::stop_services()
@@ -240,7 +239,7 @@ void User::Manager::stop_services()
 	}
 }
 
-void User::Manager::listen_service_socket(const OOBase::String& strKey, uint32_t nServiceId, ObjectPtr<System::INetworkService> ptrNetService)
+void User::Manager::listen_service_socket(const OOBase::String& strKey, uint32_t nServiceId)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ListenSocket));

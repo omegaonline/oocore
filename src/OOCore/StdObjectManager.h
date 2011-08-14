@@ -80,10 +80,10 @@ namespace OOCore
 		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > > m_mapStubIds;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectImpl<Proxy>*>                   m_mapProxyIds;
 
-		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
-		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
+		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pResponse);
+		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pResponse);
 
-		bool CustomMarshalInterface(OTL::ObjectPtr<Omega::Remoting::IMarshal>& ptrMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
+		bool CustomMarshalInterface(Omega::Remoting::IMarshal* pMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
 
 	// IMarshaller members
 	public:

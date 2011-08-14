@@ -26,7 +26,7 @@
 
 namespace OOCore
 {
-	OTL::ObjectPtr<IInterProcessService> GetInterProcessService();
+	IInterProcessService* GetInterProcessService();
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
@@ -36,7 +36,7 @@ namespace OOCore
 		public Omega::Activation::IRunningObjectTable
 	{
 	public:
-		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS();
+		OOCore::IInterProcessService* GetIPS();
 		
 	protected:
 		ServiceManager();

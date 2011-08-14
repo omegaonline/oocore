@@ -39,20 +39,19 @@ OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC7
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),IException*,pCause))
 {
-	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
-
+	ObjectPtr<ObjectImpl<OOCore::SystemException> > pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strDesc = string_t(OOBase::system_error_text(e),false);
 	pExcept->m_errno = e;
 	pExcept->m_ptrCause = pCause;
-
-	return pExcept;
+	pExcept->m_ptrCause.AddRef();
+	return pExcept.AddRef();
 }
 
 namespace OOCore
 {
 	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc)
 	{
-		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstance();
 
 		// Make this use gettext etc...
 		void* ISSUE_6;
@@ -94,8 +93,7 @@ namespace OOCore
 OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 {
 	ObjectPtr<ObjectImpl<OOCore::InternalException> > ptrExcept = OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc);
-	ptrExcept->m_ptrCause.Attach(OOCore_ISystemException_Create_errno(e,0));
-
+	ptrExcept->m_ptrCause = OOCore_ISystemException_Create_errno(e,NULL);
 	return ptrExcept.AddRef();
 }
 
@@ -106,33 +104,31 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Cre
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,1,((in),const guid_t&,iid))
 {
-	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::NoInterfaceException> > pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
 	string_t strIID = string_t(L"Unknown interface {0}") % iid.ToString();
 
-	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
-	ptrII.Attach(OOCore::GetInterfaceInfo(iid));
+	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)
 		strIID = ptrII->GetName();
 
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
 	pExcept->m_iid = iid;
-	return pExcept;
+	return pExcept.AddRef();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
-	ObjectImpl<OOCore::TimeoutException>* pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
-
+	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
 	pExcept->m_strDesc = L"The operation timed out";
-	return pExcept;
+	return pExcept.AddRef();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,1,((in),IException*,pCause))
 {
-	ObjectImpl<OOCore::ChannelClosedException>* pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
-
+	ObjectPtr<ObjectImpl<OOCore::ChannelClosedException> > pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
 	pExcept->m_ptrCause = pCause;
+	pExcept->m_ptrCause.AddRef();
 	pExcept->m_strDesc = L"The remoting channel has closed";
-	return pExcept;
+	return pExcept.AddRef();
 }

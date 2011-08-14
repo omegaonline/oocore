@@ -201,11 +201,11 @@ namespace
 
 	void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
 	{
-		ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
-		pRE->m_ptrCause.Attach(pE);
+		ObjectPtr<ObjectImpl<LibraryNotFoundException> > pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
+		pRE->m_ptrCause = pE;
 		pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed." % strName;
 		pRE->m_dll_name = strName;
-		throw static_cast<ILibraryNotFoundException*>(pRE);
+		throw static_cast<ILibraryNotFoundException*>(pRE.AddRef());
 	}
 
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
@@ -309,7 +309,7 @@ namespace
 		}
 			
 		// See if we have it registered in the ROT
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
 		ptrROT->GetObject(oid,reg_mask,iid,pObject);
 		if (pObject)
 			return pObject;
@@ -353,27 +353,27 @@ namespace
 
 void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 {
-	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OidNotFoundException> > pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
 	pNew->m_strDesc = L"The identified object could not be found: {0}" % oid;
-	pNew->m_ptrCause.Attach(pE);
+	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
-	throw static_cast<IOidNotFoundException*>(pNew);
+	throw static_cast<IOidNotFoundException*>(pNew.AddRef());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
 {
-	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
+	ObjectPtr<ObjectImpl<NoAggregationException> > pNew = ObjectImpl<NoAggregationException>::CreateInstance();
 	pNew->m_strDesc = L"Object does not support aggregation.";
 	pNew->m_oid = oid;
-	return pNew;
+	return pNew.AddRef();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
 {
-	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::OidNotFoundException> > pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
 	pNew->m_strDesc = L"The identified object could not be found: {0}" % oid;
 	pNew->m_oid = oid;
-	return pNew;
+	return pNew.AddRef();
 }
 
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
@@ -417,14 +417,16 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		}
 
 		// Open a remote channel
-		ObjectPtr<Remoting::IChannel> ptrChannel;
-		ptrChannel.Attach(OOCore::GetInterProcessService()->OpenRemoteChannel(strEndpoint));
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ObjectPtr<Remoting::IChannel> ptrChannel = ptrIPS->OpenRemoteChannel(strEndpoint);
 
 		// Get the ObjectManager
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
+		IObject* pObject = NULL;
+		ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IObjectManager),pObject);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = static_cast<Remoting::IObjectManager*>(pObject);
 
 		// Get the remote instance
-		IObject* pObject = 0;
+		pObject = NULL;
 		ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
 		if (!pObject)
 			OidNotFoundException::Throw(oid);
@@ -461,9 +463,10 @@ void OOCore::RegistryFactory::CreateInstance(IObject* pOuter, const guid_t& iid,
 		throw Omega::Activation::INoAggregationException::Create(Registry::OID_Registry);
 		
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-	
-	ObjectPtr<Registry::IKey> ptrKey;
-	ptrKey.Attach(static_cast<Registry::IKey*>(ptrIPS->GetRegistry()));
-	
-	pObject = ptrKey->QueryInterface(iid);
+	if (ptrIPS)
+	{
+		ObjectPtr<Registry::IKey> ptrKey = ptrIPS->GetRegistry();
+		if (ptrKey)
+			pObject = ptrKey->QueryInterface(iid);
+	}
 }

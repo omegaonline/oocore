@@ -536,10 +536,6 @@
 				RelativePath="..\..\include\OTL\Registry.h"
 				>
 			</File>
-			<File
-				RelativePath="..\..\include\OTL\Remoting.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Omega"

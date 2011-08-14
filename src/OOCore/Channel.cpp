@@ -40,10 +40,11 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::Library));
+		m_ptrOF = Activation::GetObjectFactory(m_message_oid,Activation::Library);
 	
 	// Connect the OM to us
 	m_ptrOM = pOM;
+	m_ptrOM.AddRef();
 	if (m_ptrOM)
 		m_ptrOM->Connect(this);
 }
@@ -142,7 +143,7 @@ void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting:
 	m_pSession = pSession;
 	
 	// QI for IMarshaller
-	m_ptrMarshaller = m_ptrOM;
+	m_ptrMarshaller = m_ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!m_ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 }
@@ -182,7 +183,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	assert(ptrMarshaller);
 
 	// We need to wrap the message
-	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstance();
 	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	OOBase::CDRStream response;
@@ -208,11 +209,13 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 		{
 
 			// Wrap the response
-			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstance();
 			ptrRecv->init(response);
 
 			// Unwrap the payload...
-			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
+			IObject* pObj = NULL;
+			ptrMarshaller->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pObj);
+			pRecv = static_cast<Remoting::IMessage*>(pObj);
 		}
 		catch (IException* pE)
 		{
@@ -315,7 +318,7 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*
 	pMessage->ReadBytes(L"data",len,(byte_t*)input.buffer()->wr_ptr());
 	input.buffer()->wr_ptr(len);
 
-	ObjectPtr<ObjectImpl<CDRMessage> > ptrInput = ObjectImpl<CDRMessage>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrInput = ObjectImpl<CDRMessage>::CreateInstance();
 	ptrInput->init(input);
 
 	pObject = ptrInput->QueryInterface(iid);

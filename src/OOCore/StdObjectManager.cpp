@@ -171,13 +171,6 @@ namespace
 	public:
 		CallContext m_cc;
 	};
-
-	ObjectPtr<Remoting::IProxy> GetWireProxy(IObject* pObject)
-	{
-		ObjectPtr<Remoting::IProxy> ptrProxy;
-		ptrProxy.Attach(Remoting::GetProxy(pObject));
-		return ptrProxy;
-	}
 }
 
 uint32_t StdCallContext::Timeout()
@@ -220,6 +213,7 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 		OMEGA_THROW("ObjectManager already connected to a Channel");
 
 	m_ptrChannel = pChannel;
+	m_ptrChannel.AddRef();
 }
 
 void OOCore::StdObjectManager::Shutdown()
@@ -262,13 +256,10 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 		act_flags |= Activation::RemoteActivation;
 
 	// Get the required object
-	IObject* pObject = OOCore::GetInstance(oid,act_flags,iid);
-
-	ObjectPtr<IObject> ptrObject;
-	ptrObject.Attach(pObject);
+	ObjectPtr<IObject> ptrObject = OOCore::GetInstance(oid,act_flags,iid);
 
 	// Write it out and return
-	MarshalInterface(L"$retval",ptrResponse,iid,pObject);
+	MarshalInterface(L"$retval",ptrResponse,iid,ptrObject);
 }
 
 Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
@@ -297,8 +288,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		pCC->m_flags = m_ptrChannel->GetMarshalFlags();
 
 		// Create a response
-		ObjectPtr<Remoting::IMessage> ptrResponse;
-		ptrResponse.Attach(m_ptrChannel->CreateMessage());
+		ObjectPtr<Remoting::IMessage> ptrResponse = m_ptrChannel->CreateMessage();
 
 		// Assume we succeed
 		ptrResponse->WriteStructStart(L"ipc_response",L"$ipc_response_type");
@@ -347,11 +337,10 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		catch (IException* pE)
 		{
 			// Make sure the exception is released
-			ObjectPtr<IException> ptrE;
-			ptrE.Attach(pE);
+			ObjectPtr<IException> ptrE = pE;
 
 			// Dump the previous output and create a fresh output
-			ptrResponse.Attach(m_ptrChannel->CreateMessage());
+			ptrResponse = m_ptrChannel->CreateMessage();
 			ptrResponse->WriteStructStart(L"ipc_response",L"$ipc_response_type");
 
 			ptrResponse->WriteValue(L"$throw",true);
@@ -380,8 +369,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 {
 	pObject = 0;
 
-	ObjectPtr<Remoting::IMessage> ptrParamsOut;
-	ptrParamsOut.Attach(CreateMessage());
+	ObjectPtr<Remoting::IMessage> ptrParamsOut = CreateMessage();
 
 	ptrParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
@@ -393,12 +381,12 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 
 	ptrParamsOut->WriteStructEnd();
 
-	Remoting::IMessage* pParamsIn = 0;
+	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	IException* pERet;
 
 	try
 	{
-		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,pParamsIn);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (...)
 	{
@@ -414,9 +402,6 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 
 	if (pERet)
 		pERet->Rethrow();
-
-	ObjectPtr<Remoting::IMessage> ptrParamsIn;
-	ptrParamsIn.Attach(pParamsIn);
 
 	UnmarshalInterface(L"$retval",ptrParamsIn,iid,pObject);
 }
@@ -439,23 +424,20 @@ Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 
 IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
+	pRecv = NULL;
+
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected ObjectManager"));
 
-	Remoting::IMessage* pInternalRecv = 0;
-	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pInternalRecv,timeout);
+	ObjectPtr<Remoting::IMessage> ptrRecv;
+	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,ptrRecv,timeout);
 	if (pE)
 		return pE;
 
 	try
 	{
-		ObjectPtr<Remoting::IMessage> ptrRecv;
-		ptrRecv.Attach(pInternalRecv);
-
 		if (!(attribs & TypeInfo::Asynchronous))
 		{
-			assert(pInternalRecv);
-
 			// Read the header
 			ptrRecv->ReadStructStart(L"ipc_response",L"$ipc_response_type");
 
@@ -463,7 +445,8 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 			if (ptrRecv->ReadValue(L"$throw").cast<bool_t>())
 			{
 				// Unmarshal the exception
-				ObjectPtr<IException> ptrE = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(this)).UnmarshalInterface<IException>(L"exception",ptrRecv);
+				ObjectPtr<IException> ptrE;
+				ptrE.Unmarshal(this,L"exception",ptrRecv);
 				if (!ptrE)
 					OMEGA_THROW("Null exception returned");
 
@@ -472,7 +455,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 		}
 
 		pRecv = ptrRecv.AddRef();
-		return 0;
+		return NULL;
 	}
 	catch (IException* pE)
 	{
@@ -487,8 +470,7 @@ uint32_t OOCore::StdObjectManager::GetSource()
 
 TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_t& iid)
 {
-	ObjectPtr<Remoting::IMessage> ptrParamsOut;
-	ptrParamsOut.Attach(CreateMessage());
+	ObjectPtr<Remoting::IMessage> ptrParamsOut = CreateMessage();
 
 	ptrParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
@@ -497,12 +479,12 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	ptrParamsOut->WriteValue(L"iid",iid);
 	ptrParamsOut->WriteStructEnd();
 
-	Remoting::IMessage* pParamsIn = 0;
+	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	IException* pERet;
 
 	try
 	{
-		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,pParamsIn);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (...)
 	{
@@ -517,12 +499,8 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	if (pERet)
 		pERet->Rethrow();
 
-	ObjectPtr<Remoting::IMessage> ptrParamsIn;
-	ptrParamsIn.Attach(pParamsIn);
-
-	IObject* pRet = 0;
+	IObject* pRet = NULL;
 	UnmarshalInterface(L"$retval",ptrParamsIn,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),pRet);
-
 	return static_cast<TypeInfo::IInterfaceInfo*>(pRet);
 }
 
@@ -532,8 +510,7 @@ void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParam
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
 
 	// Get the type info
-	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
-	ptrII.Attach(OOCore::GetInterfaceInfo(iid));
+	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	
 	// Write it out and return
 	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),ptrII);
@@ -622,8 +599,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 	}
 
 	// See if we have a stub already...
-	ObjectPtr<IObject> ptrObj;
-	ptrObj.Attach(pObject->QueryInterface(OMEGA_GUIDOF(IObject)));
+	ObjectPtr<IObject> ptrObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
 
 	ObjectPtr<ObjectImpl<Stub> > ptrStub;
 	{
@@ -639,13 +615,13 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		ObjectPtr<Remoting::IMarshal> ptrMarshal;
 
 		// See if pObject is a SafeProxy wrapping a WireProxy...
-		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		ObjectPtr<Remoting::IProxy> ptrProxy = Remoting::GetProxy(pObject);
 		if (ptrProxy)
-			ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(ptrProxy->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
+			ptrMarshal = ptrProxy.QueryInterface<Remoting::IMarshal>();
 
 		// See if pObject does custom marshalling...
 		if (!ptrMarshal)
-			ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(pObject->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
+			ptrMarshal = OTL::QueryInterface<Remoting::IMarshal>(pObject);
 
 		// See if custom marshalling is possible...
 		if (ptrMarshal && CustomMarshalInterface(ptrMarshal,iid,pMessage))
@@ -660,7 +636,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		else
 		{
 			// Add to the map...
-			ptrStub = ObjectImpl<Stub>::CreateInstancePtr();
+			ptrStub = ObjectImpl<Stub>::CreateInstance();
 
 			int err = m_mapStubIds.insert(ptrStub,stub_id,1,0xFFFFFFFF);
 			if (err == 0)
@@ -709,26 +685,31 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 
 			OTL::ObjectImpl<Proxy>* p = NULL;
 			if (m_mapProxyIds.find(proxy_id,p))
+			{
 				ptrProxy = p;
+				ptrProxy.AddRef();
+			}
 		}
 
 		if (!ptrProxy)
 		{
-			ptrProxy = ObjectImpl<Proxy>::CreateInstancePtr();
+			ptrProxy = ObjectImpl<Proxy>::CreateInstance();
 			ptrProxy->init(proxy_id,this);
 
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			int err = m_mapProxyIds.insert(proxy_id,ptrProxy);
 			if (err == EEXIST)
+			{
 				ptrProxy = *m_mapProxyIds.find(proxy_id);
+				ptrProxy.AddRef();
+			}
 			else if (err != 0)
 				OMEGA_THROW(err);
 		}
 
 		// Unmarshal the object
-		ObjectPtr<IObject> ptrObj;
-		ptrObj.Attach(ptrProxy->UnmarshalInterface(pMessage));
+		ObjectPtr<IObject> ptrObj = ptrProxy->UnmarshalInterface(pMessage);
 
 		// QI for the desired interface
 		pObject = ptrObj->QueryInterface(iid);
@@ -772,10 +753,8 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 
 		if (pObject)
 		{
-			IObject* pObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
-			ObjectPtr<IObject> ptrObj;
-			ptrObj.Attach(pObj);
-
+			ObjectPtr<IObject> ptrObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
+			
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			ObjectPtr<ObjectImpl<Stub> > ptrStub;
@@ -799,7 +778,9 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 		pMessage->ReadValue(L"oid");
 
 		// See if pObject does custom marshalling...
-		ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
+		ObjectPtr<Remoting::IMarshal> ptrMarshal;
+		if (pObject)
+			ptrMarshal = OTL::QueryInterface<Remoting::IMarshal>(pObject);
 
 		if (!ptrMarshal)
 			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
@@ -819,7 +800,7 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshall
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
-	ObjectPtr<IStdObjectManager> ptrOM(pMarshaller);
+	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshaller);
 	assert(ptrOM);
 
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
@@ -830,7 +811,7 @@ void OOCore::StdObjectManager::UndoMarshalChannel(Remoting::IMarshaller* pMarsha
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
-	ObjectPtr<IStdObjectManager> ptrOM(pMarshaller);
+	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshaller);
 	assert(ptrOM);
 
 	ptrOM->ReleaseMarshalChannelData(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
@@ -841,7 +822,7 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("MarshalChannel() called on disconnected ObjectManager"));
 
-	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
+	ObjectPtr<Remoting::IMarshal> ptrMarshal = m_ptrChannel.QueryInterface<Remoting::IMarshal>();
 	if (!ptrMarshal)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
 
@@ -865,7 +846,7 @@ void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshaller* 
 	if (!m_ptrChannel)
 		return;
 
-	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
+	ObjectPtr<Remoting::IMarshal> ptrMarshal = m_ptrChannel.QueryInterface<Remoting::IMarshal>();
 	if (!ptrMarshal)
 		return;
 
@@ -881,7 +862,7 @@ void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshaller* 
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
 {
-	ObjectPtr<ObjectImpl<StdCallContext> > ptrCC = ObjectImpl<StdCallContext>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<StdCallContext> > ptrCC = ObjectImpl<StdCallContext>::CreateInstance();
 
 	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 
@@ -895,7 +876,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Remoting_IsAlive,1,((in),IObject*,p
 	{
 		ret = true;
 
-		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		ObjectPtr<Remoting::IProxy> ptrProxy = Remoting::GetProxy(pObject);
 		if (ptrProxy)
 			ret = ptrProxy->IsAlive();
 	}
@@ -908,11 +889,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_Remoting_GetSource,1,((in),IObjec
 	uint32_t ret = 0;
 	if (pObject)
 	{
-		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		ObjectPtr<Remoting::IProxy> ptrProxy = Remoting::GetProxy(pObject);
 		if (ptrProxy)
 		{
-			ObjectPtr<Remoting::IMarshaller> ptrMarshaller;
-			ptrMarshaller.Attach(ptrProxy->GetMarshaller());
+			ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrProxy->GetMarshaller();
 
 			ret = ptrMarshaller->GetSource();
 		}
@@ -927,15 +907,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInte
 	if (!pInfo && pObject)
 	{
 		// See if we have a wire proxy
-		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		ObjectPtr<Remoting::IProxy> ptrProxy = Remoting::GetProxy(pObject);
 		if (ptrProxy)
 		{
 			// Get the other ends' object manager
-			ObjectPtr<Remoting::IMarshaller> ptrMarshaller;
-			ptrMarshaller.Attach(ptrProxy->GetMarshaller());
+			ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrProxy->GetMarshaller();
 			if (ptrMarshaller)
 			{
-				ObjectPtr<Remoting::IObjectManager> ptrOM = ptrMarshaller;
+				ObjectPtr<Remoting::IObjectManager> ptrOM = ptrMarshaller.QueryInterface<Remoting::IObjectManager>();
 				if (ptrOM)
 				{
 					// Ask it for the TypeInfo
@@ -950,7 +929,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInte
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in),IObject*,pObject))
 {
-	ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(pObject);
+	ObjectPtr<System::Internal::ISafeProxy> ptrSProxy = QueryInterface<System::Internal::ISafeProxy>(pObject);
 	if (ptrSProxy)
 	{
 		System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));

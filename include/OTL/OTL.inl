@@ -62,8 +62,7 @@ inline void OTL::ProcessModule::RegisterObjectFactories()
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0; g[i].pfnOid!=0; ++i)
 	{
-		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF;
-		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory))));
+		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF = static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory)));
 
 		g[i].cookie = ptrROT->RegisterObject(*(g[i].pfnOid)(),ptrOF,(*g[i].pfnRegistrationFlags)());
 	}

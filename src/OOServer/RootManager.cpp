@@ -596,6 +596,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err)),0);
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
+	stream.reset();
 	size_t mark = stream.buffer()->mark_rd_ptr();
 	err = ptrSocket->recv(stream.buffer(),4);
 	if (err != 0)
@@ -630,6 +631,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 		return 0;
 	}
 
+	stream.reset();
 	if (!stream.write(channel_id))
 	{
 		ptrMC->close();

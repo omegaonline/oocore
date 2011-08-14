@@ -27,43 +27,41 @@
 using namespace Omega;
 using namespace OTL;
 
-void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager)
+void User::InterProcessService::Init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser, Manager* pManager)
 {
 	m_pManager = pManager;
 
-	if (ptrOMSB)
+	if (pOMSB)
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = NULL;
-		ptrOMSB->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
-		m_ptrSBIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
+		pOMSB->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		m_ptrSBIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
 	}
 
-	if (ptrOMUser)
+	if (pOMUser)
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = NULL;
-		ptrOMUser->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
+		pOMUser->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
 
 		// Get the running object table
-		m_ptrReg.Attach(ptrIPS->GetRegistry());
+		m_ptrReg = ptrIPS->GetRegistry();
 	}
 	else
 	{
 		// Create a local registry impl
-		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstance();
 		ptrKey->Init(m_pManager,string_t(),0,0);
-
-		m_ptrReg = static_cast<Omega::Registry::IKey*>(ptrKey);
+		m_ptrReg = ptrKey.AddRef();
 	}
 
 	// Create the ROT
-	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
+	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstance();
 	try
 	{
-		m_ptrROT->Init(ptrOMSB);
+		m_ptrROT->Init(pOMSB);
 	}
 	catch (...)
 	{
@@ -117,8 +115,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	OOBase::timeval_t wait(5);
 #endif
 
-	ObjectPtr<Remoting::ICallContext> ptrCC;
-	ptrCC.Attach(Remoting::GetCallContext());
+	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{
 		uint32_t msecs = ptrCC->Timeout();

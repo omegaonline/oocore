@@ -176,10 +176,10 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Compartment::create_channel(uint
 	read_guard.release();
 
 	// Create a new OM
-	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstance();
 
 	// Create a new channel
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstance();
 	ptrChannel->init(m_pSession,src_channel_id,ptrOM,message_oid);
 
 	// And add to the map
@@ -205,17 +205,17 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(msg.m_src_channel_id);
 
 	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Wrap up the request
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
-	ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 	ptrEnvelope->init(msg.m_payload);
 
 	// Unpack the payload
-	ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
+	ObjectPtr<Remoting::IMessage> ptrRequest;
+	ptrRequest.Unmarshal(ptrMarshaller,L"payload",ptrEnvelope);
 
 	// Check timeout - at the last possible moment...
 	uint32_t timeout = 0;
@@ -229,13 +229,12 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 	}
 
 	// Make the call
-	ObjectPtr<Remoting::IMessage> ptrResult;
-	ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
+	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout);
 
 	if (!(msg.m_attribs & TypeInfo::Asynchronous))
 	{
 		// Wrap the response...
-		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 		ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 		// Send it back...
@@ -268,12 +267,10 @@ ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::Compartment::create_compart
 		if (!ptrCompt)
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment in session"));
 
-		// Create a new OM
-		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
-
 		// Create a new channel
-		ptrChannel = ObjectImpl<ComptChannel>::CreateInstancePtr();
-
+		ptrChannel = ObjectImpl<ComptChannel>::CreateInstance();
+		
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ObjectImpl<StdObjectManager>::CreateInstance();
 		ptrChannel->init(m_id,ptrCompt,compartment_id | m_pSession->get_channel_id(),ptrOM,message_oid);
 
 		// And add to the map
@@ -388,14 +385,12 @@ void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
 	// Get the remote instance IObjectFactory
-	IObject* pObjF = 0;
+	IObject* pObjF = NULL;
 	ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObjF);
-
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObjF));
+	ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObjF);
 	
 	// Call CreateInstance
-	pObject = 0;
+	pObject = NULL;
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }
 
@@ -414,16 +409,16 @@ void OOCore::CompartmentFactory::CreateInstance(IObject* pOuter, const guid_t& i
 	// Create a CompartmentImpl
 	if (!pOuter)
 	{
-		ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt;
-		ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstance();
 		ptrCompt->init(ptrChannel);
+
 		pObject = ptrCompt->QueryInterface(iid);
 	}
 	else
 	{
-		ObjectPtr<AggregatedObjectImpl<OOCore::CompartmentImpl> > ptrCompt;
-		ptrCompt = AggregatedObjectImpl<OOCore::CompartmentImpl>::CreateInstancePtr(pOuter);
+		ObjectPtr<AggregatedObjectImpl<OOCore::CompartmentImpl> > ptrCompt = AggregatedObjectImpl<OOCore::CompartmentImpl>::CreateInstance(pOuter);
 		ptrCompt->ContainedObject()->init(ptrChannel);
+
 		if (iid == OMEGA_GUIDOF(IObject))
 			pObject = ptrCompt.AddRef();
 		else

@@ -43,13 +43,13 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.Attach(Activation::GetObjectFactory(m_message_oid,Activation::Library));
+		m_ptrOF = Activation::GetObjectFactory(m_message_oid,Activation::Library);
 
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::Library | Activation::DontLaunch);
 
 	// QI for IMarshaller
-	m_ptrMarshaller = m_ptrOM;
+	m_ptrMarshaller = m_ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!m_ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
@@ -96,7 +96,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	guard.release();
 
 	// We need to wrap the message
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	OOBase::CDRStream response;
@@ -132,11 +132,13 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		try
 		{
 			// Wrap the response
-			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrRecv = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrRecv = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 			ptrRecv->init(response);
 
 			// Unwrap the payload...
-			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
+			IObject* pObj = NULL;
+			ptrMarshaller->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pObj);
+			pRecv = static_cast<Remoting::IMessage*>(pObj);
 		}
 		catch (IException* pE)
 		{

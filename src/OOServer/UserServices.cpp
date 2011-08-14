@@ -119,7 +119,7 @@ bool User::Manager::start_services()
 
 		try
 		{
-			ObjectPtr<System::INetworkService> ptrNS = pServ->ptrService;
+			ObjectPtr<System::INetworkService> ptrNS = pServ->ptrService.QueryInterface<System::INetworkService>();
 			if (ptrNS)
 			{
 				// Call the root, asking to start the async stuff, passing the id of the service...
@@ -155,7 +155,7 @@ void User::Manager::start_service(const OOBase::LocalString& strKey, const OOBas
 
 		System::INetworkService* pNS = ptrService.QueryInterface<System::INetworkService>();
 		if (pNS)
-			ptrNetService.Attach(pNS);
+			ptrNetService = pNS;
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
 
@@ -209,7 +209,7 @@ ObjectPtr<Registry::IKey> User::Manager::get_service_key(const OOBase::LocalStri
 		OMEGA_THROW(response.last_error());
 	}
 
-	ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstance();
 	ptrKey->Init(this,string_t(strKeyPath.c_str(),true),uKey,0);
 
 	ObjectPtr<Omega::Registry::IKey> ptrRet = ptrKey;
@@ -282,19 +282,19 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 		{
 			try
 			{
-				ObjectPtr<System::INetworkService> ptrService = svc.ptrService;
+				ObjectPtr<System::INetworkService> ptrService = svc.ptrService.QueryInterface<System::INetworkService>();
 
 				guard.release();
 
 				// Create a socket
-				ObjectPtr<ObjectImpl<AsyncSocket> > ptrSocket = ObjectImpl<AsyncSocket>::CreateInstancePtr();
+				ObjectPtr<ObjectImpl<AsyncSocket> > ptrSocket = ObjectImpl<AsyncSocket>::CreateInstance();
 				ptrSocket->Init(this,id);
 
 				// Add to the map...
 				OOBase::Guard<OOBase::RWMutex> guard2(m_service_lock);
 
 				// Force an overwriting insert
-				err = m_mapSockets.replace(id,static_cast<Omega::Net::IAsyncSocket*>(ptrSocket));
+				err = m_mapSockets.replace(id,ptrSocket.QueryInterface<Net::IAsyncSocket>());
 				if (err != 0)
 					LOG_ERROR(("Error adding socket: %s",OOBase::system_error_text(err)));
 				else
@@ -544,7 +544,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 
 	ObjectPtr<ISystemException> ptrSE;
 	if (err != 0)
-		ptrSE.Attach(ISystemException::Create(err));
+		ptrSE = ISystemException::Create(err);
 
 	if (buffer)
 		ptrNotify->OnRecv(ptrSocket,buffer->length(),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
@@ -571,7 +571,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 
 	ObjectPtr<ISystemException> ptrSE;
 	if (err != 0)
-		ptrSE.Attach(ISystemException::Create(err));
+		ptrSE = ISystemException::Create(err);
 
 	if (buffer && bIncludeData)
 		ptrNotify->OnSent(ptrSocket,buffer->length(),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);

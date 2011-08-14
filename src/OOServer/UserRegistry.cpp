@@ -63,8 +63,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (m_key == 0 && m_type == 0)
 	{
 		string_t strSub = strSubKey;
-		ObjectPtr<IKey> ptrKey;
-		ptrKey.Attach(ParseSubKey(strSub));
+		ObjectPtr<IKey> ptrKey = ParseSubKey(strSub);
 		if (ptrKey)
 		{
 			if (strSub.IsEmpty())
@@ -333,8 +332,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (m_key == 0 && m_type == 0)
 	{
 		string_t strSub = strSubKey;
-		ObjectPtr<IKey> ptrKey;
-		ptrKey.Attach(ParseSubKey(strSub));
+		ObjectPtr<IKey> ptrKey = ParseSubKey(strSub);
 		if (ptrKey)
 		{
 			if (strSub.IsEmpty())
@@ -385,13 +383,13 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 			OMEGA_THROW(response.last_error());
 		}
 
-		ObjectPtr<ObjectImpl<Key> > ptrLocal = ObjectImpl<Key>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<Key> > ptrLocal = ObjectImpl<Key>::CreateInstance();
 		ptrLocal->Init(m_pManager,L"Local User",0,local_type);
 
-		ObjectPtr<ObjectImpl<Key> > ptrMirror = ObjectImpl<Key>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<Key> > ptrMirror = ObjectImpl<Key>::CreateInstance();
 		ptrMirror->Init(m_pManager,string_t(strName.c_str(),true),mirror_key,0);
 
-		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
 		ptrNew->Init(L"Local User",ptrLocal,ptrMirror);
 		return ptrNew.AddRef();
 	}
@@ -440,7 +438,7 @@ ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::O
 		OMEGA_THROW(response.last_error());
 
 	// By the time we get here then we have successfully opened or created the key...
-	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstance();
 	ptrNew->Init(m_pManager,strFullKey,key,type);
 	return ptrNew;
 }
@@ -554,8 +552,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	if (m_key == 0 && m_type == 0)
 	{
 		string_t strSub = strSubKey;
-		ObjectPtr<IKey> ptrKey;
-		ptrKey.Attach(ParseSubKey(strSub));
+		ObjectPtr<IKey> ptrKey = ParseSubKey(strSub);
 		if (ptrKey)
 		{
 			if (strSub.IsEmpty())

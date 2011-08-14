@@ -40,5 +40,4 @@ nobase_include_HEADERS = \
 	OTL/OTL.h \
 	OTL/OTL.inl \
 	OTL/Exception.h \
-	OTL/Registry.h \
-	OTL/Remoting.h
+	OTL/Registry.h

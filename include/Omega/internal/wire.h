@@ -429,7 +429,7 @@ namespace Omega
 
 				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
-					IObject* p = 0;
+					IObject* p = NULL;
 					pManager->UnmarshalInterface(strName,pMessage,iid,p);
 					pI = static_cast<I*>(p);
 				}

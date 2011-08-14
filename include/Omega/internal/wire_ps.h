@@ -60,10 +60,10 @@ namespace Omega
 					{
 						&AddRef_Safe,
 						&Release_Safe,
-						0,
-						0,
-						0,
-						0,
+						NULL,
+						NULL,
+						NULL,
+						NULL,
 						&GetWireProxy_Safe
 					};
 					m_shim.m_vtable = &vt;

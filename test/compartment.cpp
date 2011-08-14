@@ -25,18 +25,15 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment(Omega::Compartment::OID_Compartment);
 	TEST(ptrCompartment);
 
-	Omega::IObject* pObj = 0;
+	Omega::IObject* pObj = NULL;
 	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::Library,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
-	TEST(pObj);
-
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
-	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObj));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest = static_cast<Omega::TestSuite::ISimpleTest*>(pObj);
 
 	// Test the interface
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 	
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 	
 	ptrSimpleTest.Release();
@@ -45,16 +42,16 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	// Test aggregation
 	Aggregator* pAgg = new Aggregator();
 	
-	pObj = 0;
+	pObj = NULL;
 	ptrCompartment->CreateInstance(L"Test.Library",Omega::Activation::Library,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
 	TEST(pObj);
 
 	pAgg->SetInner(pObj);
 	
-	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
+	ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg);
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
-	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
+	ptrSimpleTest = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest); 
 
@@ -96,18 +93,15 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	OTL::ObjectPtr<Omega::Compartment::ICompartment> ptrCompartment(Omega::Compartment::OID_Compartment);
 	TEST(ptrCompartment);
 
-	Omega::IObject* pObj = 0;
+	Omega::IObject* pObj = NULL;
 	ptrCompartment->CreateInstance(L"Test.Process",Omega::Activation::Process,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
-	TEST(pObj);
-
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
-	ptrSimpleTest.Attach(static_cast<Omega::TestSuite::ISimpleTest*>(pObj));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest = static_cast<Omega::TestSuite::ISimpleTest*>(pObj);
 
 	// Test the interface
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 	
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 	
 	ptrSimpleTest.Release();
@@ -122,10 +116,10 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 
 	pAgg->SetInner(pObj);
 
-	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
+	ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg);
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
-	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
+	ptrSimpleTest = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 

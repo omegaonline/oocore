@@ -17,7 +17,7 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	std::set<Omega::string_t> keys = m_ptrKey->EnumSubKeys();
 	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey = m_ptrKey.OpenSubKey(*i);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey = m_ptrKey->OpenSubKey(*i);
 
 		TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
 		wxTreeItemId itemId = pTree->AppendItem(id,wxString(i->c_wstr()),2,3,pNewItem);
@@ -119,7 +119,7 @@ bool TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::stri
 
 void TreeItemData::RenameKey(const Omega::string_t& strFrom, const Omega::string_t& strTo, TreeItemData* pItem)
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrNewKey = m_ptrKey.OpenSubKey(strTo,Omega::Registry::IKey::CreateNew);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrNewKey = m_ptrKey->OpenSubKey(strTo,Omega::Registry::IKey::CreateNew);
 
 	CopyKey(pItem->m_ptrKey,ptrNewKey);
 
@@ -139,8 +139,8 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL
 	values = ptrOldKey->EnumSubKeys();
 	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
 	{
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrOldSub = ptrOldKey.OpenSubKey(*i,Omega::Registry::IKey::OpenExisting);
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey.OpenSubKey(*i,Omega::Registry::IKey::CreateNew);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrOldSub = ptrOldKey->OpenSubKey(*i,Omega::Registry::IKey::OpenExisting);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey->OpenSubKey(*i,Omega::Registry::IKey::CreateNew);
 
 		CopyKey(ptrOldSub,ptrNewSub);
 	}
@@ -157,7 +157,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		strName = Omega::string_t(wxString::Format(_("New Key #%lu"),c).wc_str(),Omega::string_t::npos);
 		if (!m_ptrKey->IsSubKey(strName))
 		{
-			ptrKey = m_ptrKey.OpenSubKey(strName,Omega::Registry::IKey::CreateNew);
+			ptrKey = m_ptrKey->OpenSubKey(strName,Omega::Registry::IKey::CreateNew);
 			break;
 		}
 	}
@@ -443,7 +443,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKe
 		}
 
 		// Check key values
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(*i);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenSubKey(*i);
 		std::set<Omega::string_t> values = ptrSubKey->EnumValues();
 		for (std::set<Omega::string_t>::const_iterator j=values.begin();j!=values.end();++j)
 		{

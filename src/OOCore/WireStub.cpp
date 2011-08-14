@@ -37,6 +37,7 @@ void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pMana
 {
 	m_stub_id = stub_id;
 	m_ptrObj = pObj;
+	m_ptrObj.AddRef();
 	m_pManager = pManager;
 }
 
@@ -90,7 +91,7 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 	}
 
 	if (!ptrStub)
-		ptrStub.Attach(CreateStub(iid));
+		ptrStub = CreateStub(iid);
 
 	// Now add it...
 	int err = m_iid_map.insert(iid,ptrStub);
@@ -102,7 +103,7 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 
 Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 {
-	ObjectPtr<System::Internal::ISafeProxy> ptrSafeProxy(m_ptrObj);
+	ObjectPtr<System::Internal::ISafeProxy> ptrSafeProxy = m_ptrObj.QueryInterface<System::Internal::ISafeProxy>();
 	if (ptrSafeProxy)
 	{
 		// Create the stubs for the controllers
@@ -137,13 +138,13 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
 
 	// Unmarshal the channel
-	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(m_pManager)).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",pParamsIn);
+	ObjectPtr<Remoting::IChannel> ptrChannel;
+	ptrChannel.Unmarshal(m_pManager,L"m_ptrChannel",pParamsIn);
 	if (!ptrChannel)
 		OMEGA_THROW("No channel");
 
 	// Create a new message
-	ObjectPtr<Remoting::IMessage> ptrMessage;
-	ptrMessage.Attach(ptrChannel->CreateMessage());
+	ObjectPtr<Remoting::IMessage> ptrMessage = ptrChannel->CreateMessage();
 
 	// Reflect the channel
 	// The following format is the same as IObjectManager::UnmarshalInterface...
@@ -156,7 +157,9 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	ptrMessage->WriteStructEnd();
 
 	// Get the channel's IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrChannel.GetManager<Remoting::IMarshaller>();
+	IObject* pObj = NULL;
+	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshaller),pObj);
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(pObj);
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 

@@ -32,64 +32,43 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(Omega::Registry::IKey* pKey = NULL) :
-				ObjectPtrBase<Omega::Registry::IKey>(pKey)
+				ObjectPtrBase<Omega::Registry::IKey>(pKey,false)
 		{ }
-
-		template <typename I>
-		ObjectPtr(I* pObject) :
-				ObjectPtrBase<Omega::Registry::IKey>(NULL)
-		{
-			if (pObject)
-				this->m_ptr = static_cast<Omega::Registry::IKey*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::Registry::IKey)));
-		}
 
 		ObjectPtr(const ObjectPtr<Omega::Registry::IKey>& rhs) :
-				ObjectPtrBase<Omega::Registry::IKey>(rhs)
+				ObjectPtrBase<Omega::Registry::IKey>(rhs.m_ptr,true)
 		{ }
 
-		template <typename I>
-		ObjectPtr(const ObjectPtr<I>& rhs) :
-				ObjectPtrBase<Omega::Registry::IKey>(NULL)
-		{
-			if (rhs)
-				this->m_ptr = static_cast<Omega::Registry::IKey*>(rhs->QueryInterface(OMEGA_GUIDOF(Omega::Registry::IKey)));
-		}
-		
 		ObjectPtr(const wchar_t* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
-				ObjectPtrBase<Omega::Registry::IKey>(NULL)
+				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL)
 		{
-			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
 			if (key && key[0] != L'\0')
-				Attach(this->m_ptr->OpenSubKey(Omega::string_t(key,size_t(-1),false),flags));
+				replace(this->m_ptr->OpenSubKey(Omega::string_t(key,size_t(-1),false),flags),false);
+			else
+				replace(NULL,false);
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
-				ObjectPtrBase<Omega::Registry::IKey>(NULL)
+				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL)
 		{
-			this->m_ptr = static_cast<Omega::Registry::IKey*>(Omega::CreateInstance(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL,OMEGA_GUIDOF(Omega::Registry::IKey)));
 			if (!key.IsEmpty())
-				Attach(this->m_ptr->OpenSubKey(key,flags));
+				replace(this->m_ptr->OpenSubKey(key,flags),false);
+			else
+				replace(NULL,false);
 		}
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::Registry::IKey>& rhs)
 		{
 			if (this != &rhs)
-				*this = rhs.m_ptr;
+				replace(rhs.m_ptr,true);
 
 			return *this;
 		}
 
 		ObjectPtr& operator = (Omega::Registry::IKey* obj)
 		{
-			ObjectPtrBase<Omega::Registry::IKey>::operator = (obj);
+			replace(obj,false);
 			return *this;
-		}
-
-		ObjectPtr<Omega::Registry::IKey> OpenSubKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting)
-		{
-			ObjectPtr<Omega::Registry::IKey> sub_key;
-			sub_key.Attach(m_ptr->OpenSubKey(key,flags));
-			return sub_key;
 		}
 	};
 }

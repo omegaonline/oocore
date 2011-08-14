@@ -37,9 +37,9 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects",Omega::Registry::IKey::OpenCreate);
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenSubKey(L"Test.Library",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
-	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey->OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Library",strLibName);
 
 	return true;
@@ -76,13 +76,13 @@ bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects",Omega::Registry::IKey::OpenCreate);
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"Test.Process",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenSubKey(L"Test.Process",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"OID",strOid);
-	ptrSubKey = ptrKey.OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey->OpenSubKey(L"OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Application",L"CoreTests.TestProcess");
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"Local User/Applications",Omega::Registry::IKey::OpenCreate);
-	ptrSubKey = ptrKey.OpenSubKey(L"CoreTests.TestProcess/Activation",Omega::Registry::IKey::OpenCreate);
+	ptrSubKey = ptrKey->OpenSubKey(L"CoreTests.TestProcess/Activation",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"Path",strExeName);
 
 	return true;
@@ -204,13 +204,11 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	}
 
 	// Check the QI rules
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2);
 
-	OTL::ObjectPtr<Omega::IObject> ptrO1;
-	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-	OTL::ObjectPtr<Omega::IObject> ptrO2;
-	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+	OTL::ObjectPtr<Omega::IObject> ptrO1 = ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject));
+	OTL::ObjectPtr<Omega::IObject> ptrO2 = ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject));
 
 	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
 
@@ -218,7 +216,7 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	ptrO2.Release();
 
 	// Test the type info
-	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI = ptrSimpleTest;
+	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI = ptrSimpleTest.QueryInterface<Omega::TypeInfo::IProvideObjectInfo>();
 	TEST(ptrPOI);
 
 	// Try to get the first interface
@@ -226,8 +224,7 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(!interfaces.empty());
 	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
-	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII;
-	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(interfaces.front(),ptrSimpleTest));
+	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII = Omega::TypeInfo::GetInterfaceInfo(interfaces.front(),ptrSimpleTest);
 	TEST(ptrII);
 
 	TEST(ptrII->GetName() == L"Omega::TestSuite::ISimpleTest");
@@ -252,7 +249,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 
 	ptrSimpleTest.Release();
@@ -263,10 +260,10 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 
 	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Library,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
-	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
+	ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg);
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
-	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
+	ptrSimpleTest = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -306,7 +303,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 
 	// Test redirecting the registration
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects",Omega::Registry::IKey::OpenCreate);
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenSubKey(L"MyLittleTest",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue(L"CurrentVersion",L"Test.Library");
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
@@ -365,7 +362,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 
 	ptrSimpleTest.Release();
@@ -376,10 +373,10 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 
 	pAgg->SetInner(Omega::CreateInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
-	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
+	ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg);
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
-	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
+	ptrSimpleTest = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 

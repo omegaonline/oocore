@@ -137,62 +137,34 @@
 namespace OTL
 {
 	template <typename OBJECT>
+	class ObjectPtr;
+
+	template <typename OBJECT>
 	class ObjectPtrBase
 	{
 	public:
-		ObjectPtrBase(OBJECT* obj) :
+		ObjectPtrBase(OBJECT* obj, bool bAddRef) :
 				m_ptr(obj)
-		{
-			if (m_ptr)
+		{ 
+			if (m_ptr && bAddRef)
 				m_ptr->AddRef();
 		}
 
-		ObjectPtrBase(const ObjectPtrBase& rhs) :
-				m_ptr(rhs.m_ptr)
-		{
-			if (m_ptr)
-				m_ptr->AddRef();
-		}
-
-		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
-				m_ptr(0)
+		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter)
 		{
 			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
 		}
 
 		virtual ~ObjectPtrBase()
 		{
-			Attach(NULL);
+			Release();
 		}
 
-		ObjectPtrBase& operator = (OBJECT* ptr)
+		OBJECT* Detach()
 		{
-			if (ptr != m_ptr)
-			{
-				if (ptr)
-					ptr->AddRef();
-
-				OBJECT* old = m_ptr;
-				m_ptr = ptr;
-
-				if (old)
-					old->Release();
-			}
-
-			return *this;
-		}
-
-		void Attach(OBJECT* obj)
-		{
-			OBJECT* old = m_ptr;
-			m_ptr = obj;
-			if (old)
-				old->Release();
-		}
-
-		void Detach()
-		{
+			OBJECT* ptr = m_ptr;
 			m_ptr = NULL;
+			return ptr;
 		}
 
 		OBJECT* AddRef()
@@ -205,13 +177,13 @@ namespace OTL
 
 		void Release()
 		{
-			Attach(0);
+			replace(NULL,false);
 		}
 
 		template <typename Q>
-		Q* QueryInterface() const
+		ObjectPtr<Q> QueryInterface() const
 		{
-			return (m_ptr ? static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q))) : NULL);
+			return ObjectPtr<Q>(m_ptr ? static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q))) : NULL);
 		}
 
 		OBJECT* operator ->() const
@@ -226,10 +198,30 @@ namespace OTL
 			return m_ptr;
 		}
 
+		operator OBJECT*&()
+		{
+			return m_ptr;
+		}
+
 	protected:
 		OBJECT* m_ptr;
 
+		void replace(OBJECT* ptr, bool bAddRef)
+		{
+			if (ptr != m_ptr)
+			{
+				if (m_ptr)
+					m_ptr->Release();
+
+				m_ptr = ptr;
+
+				if (m_ptr && bAddRef)
+					m_ptr->AddRef();
+			}
+		}
+
 	private:
+		ObjectPtrBase(const ObjectPtrBase& rhs);
 		ObjectPtrBase& operator = (const ObjectPtrBase& rhs);
 	};
 
@@ -238,28 +230,12 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(OBJECT* obj = NULL) :
-				ObjectPtrBase<OBJECT>(obj)
+				ObjectPtrBase<OBJECT>(obj,false)
 		{ }
-
-		template <typename I>
-		ObjectPtr(I* pObject) :
-				ObjectPtrBase<OBJECT>(0)
-		{
-			if (pObject)
-				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(OMEGA_GUIDOF(OBJECT)));
-		}
 
 		ObjectPtr(const ObjectPtr<OBJECT>& rhs) :
-				ObjectPtrBase<OBJECT>(rhs)
+				ObjectPtrBase<OBJECT>(rhs.m_ptr,true)
 		{ }
-
-		template <typename I>
-		ObjectPtr(const ObjectPtr<I>& rhs) :
-				ObjectPtrBase<OBJECT>(0)
-		{
-			if (rhs)
-				this->m_ptr = static_cast<OBJECT*>(rhs->QueryInterface(OMEGA_GUIDOF(OBJECT)));
-		}
 
 		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<OBJECT>(oid,flags,pOuter)
@@ -272,15 +248,23 @@ namespace OTL
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
 		{
 			if (this != &rhs)
-				*this = rhs.m_ptr;
+				replace(rhs.m_ptr,true);
 
 			return *this;
 		}
 
 		ObjectPtr& operator = (OBJECT* obj)
 		{
-			ObjectPtrBase<OBJECT>::operator = (obj);
+			replace(obj,false);
+
 			return *this;
+		}
+
+		void Unmarshal(Omega::Remoting::IMarshaller* pMarshaller, const Omega::string_t& strName, Omega::Remoting::IMessage* pMessage)
+		{
+			Omega::IObject* pObj = NULL;
+			pMarshaller->UnmarshalInterface(strName,pMessage,OMEGA_GUIDOF(OBJECT),pObj);
+			replace(static_cast<OBJECT*>(pObj),false);
 		}
 	};
 
@@ -289,11 +273,11 @@ namespace OTL
 	{
 	public:
 		ObjectPtr(Omega::IObject* obj = NULL) :
-				ObjectPtrBase<Omega::IObject>(obj)
+				ObjectPtrBase<Omega::IObject>(obj,false)
 		{ }
 
 		ObjectPtr(const ObjectPtr<Omega::IObject>& rhs) :
-				ObjectPtrBase<Omega::IObject>(rhs)
+				ObjectPtrBase<Omega::IObject>(rhs.m_ptr,true)
 		{ }
 
 		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = NULL) :
@@ -307,17 +291,28 @@ namespace OTL
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
 		{
 			if (this != &rhs)
-				*this = rhs.m_ptr;
+				replace(rhs.m_ptr,true);
 
 			return *this;
 		}
 
 		ObjectPtr& operator = (Omega::IObject* obj)
 		{
-			ObjectPtrBase<Omega::IObject>::operator = (obj);
+			replace(obj,false);
+
 			return *this;
 		}
 	};
+
+	template <class I>
+	inline ObjectPtr<I> QueryInterface(Omega::IObject* pObj)
+	{
+		I* p = NULL;
+		if (pObj)
+			p = static_cast<I*>(pObj->QueryInterface(OMEGA_GUIDOF(I)));
+
+		return ObjectPtr<I>(p);
+	}
 
 	// If the compiler moans here, then you need to #include <OTL/Registry.h>
 	template <>
@@ -500,13 +495,6 @@ namespace OTL
 			return new ObjectImpl<ROOT>();
 		}
 
-		static ObjectPtr<ObjectImpl<ROOT> > CreateInstancePtr()
-		{
-			ObjectPtr<ObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateInstance());
-			return ptr;
-		}
-
 	private:
 		ObjectImpl() : ROOT()
 		{
@@ -547,13 +535,6 @@ namespace OTL
 		static NoLockObjectImpl<ROOT>* CreateInstance()
 		{
 			return new NoLockObjectImpl<ROOT>();
-		}
-
-		static ObjectPtr<NoLockObjectImpl<ROOT> > CreateInstancePtr()
-		{
-			ObjectPtr<NoLockObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateInstance());
-			return ptr;
 		}
 
 	private:
@@ -650,13 +631,6 @@ namespace OTL
 			return new AggregatedObjectImpl(pOuter);
 		}
 
-		static ObjectPtr<AggregatedObjectImpl> CreateInstancePtr(Omega::IObject* pOuter)
-		{
-			ObjectPtr<AggregatedObjectImpl> ptr;
-			ptr.Attach(CreateInstance(pOuter));
-			return ptr;
-		}
-
 		ROOT* ContainedObject()
 		{
 			return &m_contained;
@@ -694,13 +668,6 @@ namespace OTL
 			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
 			pObject->AddRef();
 			return pObject;
-		}
-
-		static ObjectPtr<SingletonObjectImpl<ROOT> > CreateInstancePtr()
-		{
-			ObjectPtr<SingletonObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateInstance());
-			return ptr;
 		}
 
 	protected:
@@ -779,7 +746,7 @@ namespace OTL
 		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
 		{
 			Omega::IObject* ret = NULL;
-			ObjectPtr<T> ptr = T::CreateInstancePtr(pOuter);
+			ObjectPtr<T> ptr = T::CreateInstance(pOuter);
 			if (iid != OMEGA_GUIDOF(Omega::IObject))
 				ret = ptr->QueryInterface(iid);
 			else
@@ -791,7 +758,8 @@ namespace OTL
 
 		static Omega::IObject* CreateInstance(const Omega::guid_t& iid)
 		{
-			Omega::IObject* ret = T::CreateInstancePtr()->QueryInterface(iid);
+			ObjectPtr<T> ptr = T::CreateInstance();
+			Omega::IObject* ret = ptr->QueryInterface(iid);
 			if (!ret)
 				throw Omega::INoInterfaceException::Create(iid);
 			return ret;
@@ -864,7 +832,8 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid)
 			{
-				Omega::IObject* pObject = ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
+				ObjectPtr<ObjectImpl<T> > ptr = ObjectImpl<T>::CreateInstance();
+				Omega::IObject* pObject = ptr->QueryInterface(iid);
 				if (!pObject)
 					throw Omega::INoInterfaceException::Create(iid);
 				return pObject;
@@ -891,7 +860,8 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid)
 			{
-				Omega::IObject* pObject = NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
+				ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
+				Omega::IObject* pObject = ptr->QueryInterface(iid);
 				if (!pObject)
 					throw Omega::INoInterfaceException::Create(iid);
 				return pObject;
@@ -921,16 +891,14 @@ namespace OTL
 							retval.push_back(*(pEntries[i].pGuid));
 						else
 						{
-							ObjectPtr<Omega::IObject> ptrObj;
-							ptrObj.Attach(pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
+							ObjectPtr<Omega::IObject> ptrObj = pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI);
 							if (ptrObj)
 								retval.push_back(*(pEntries[i].pGuid));							
 						}
 					}
 					else if (pEntries[i].offset != 0)
 					{
-						ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrAgg;
-						ptrAgg.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI)));
+						ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrAgg = static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
 						if (ptrAgg)
 						{
 							Omega::TypeInfo::IProvideObjectInfo::iid_list_t agg = ptrAgg->EnumInterfaces();

@@ -34,7 +34,7 @@ namespace User
 	public:
 		RunningObjectTable();
 
-		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM);
+		void Init(Omega::Remoting::IObjectManager* pOM);
 
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)

@@ -264,6 +264,7 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 	m_bIsSandbox = (sandbox_channel == 0);
 
 	// Then send back our port name
+	stream.reset();
 	if (!stream.write(strPipe.c_str()))
 		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -272,6 +273,7 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
 	// Read our channel id
+	stream.reset();
 	err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
@@ -303,6 +305,7 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 	}
 
 	// Now bootstrap
+	stream.reset();
 	if (!stream.write(sandbox_channel) || !stream.write(strPipe.c_str()))
 	{
 		ptrMC->close();
@@ -355,10 +358,8 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		if (sandbox_channel != 0)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
-		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
-
-		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
-		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
+		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstance();
+		ptrIPS->Init(ptrOMSb,NULL,this);
 
 		// Register our interprocess service so we can react to activation requests
 		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
@@ -695,17 +696,18 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 			return;
 
 		// QI for IMarshaller
-		ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+		ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 		if (!ptrMarshaller)
 			return;
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
-		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 		ptrEnvelope->init(request);
 
 		// Unpack the payload
-		ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
+		ObjectPtr<Remoting::IMessage> ptrRequest;
+		ptrRequest.Unmarshal(ptrMarshaller,L"payload",ptrEnvelope);
 
 		// Check timeout
 		uint32_t timeout = 0;
@@ -719,8 +721,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 		}
 
 		// Make the call
-		ObjectPtr<Remoting::IMessage> ptrResult;
-		ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
+		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout);
 
 		if (!(attribs & OOServer::Message_t::asynchronous))
 		{
@@ -731,7 +732,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 			}
 
 			// Wrap the response...
-			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 			ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
@@ -773,7 +774,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(uint32_t s
 	}
 
 	// Create a new channel
-	ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+	ptrChannel = ObjectImpl<Channel>::CreateInstance();
 	ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
 
 	// And add to the map
@@ -792,8 +793,7 @@ void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRS
 {
 	// The timeout needs to be related to the request timeout...
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
-	ObjectPtr<Remoting::ICallContext> ptrCC;
-	ptrCC.Attach(Remoting::GetCallContext());
+	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{
 		uint32_t msecs = ptrCC->Timeout();

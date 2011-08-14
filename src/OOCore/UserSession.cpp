@@ -317,10 +317,9 @@ void OOCore::UserSession::start(const string_t& strArgs)
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
 
 		// Create a proxy to the server interface
-		IObject* pIPS = 0;
+		IObject* pIPS = NULL;
 		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
-
-		ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
+		ptrIPS = static_cast<IInterProcessService*>(pIPS);
 	}
 	else
 	{
@@ -335,12 +334,9 @@ void OOCore::UserSession::start(const string_t& strArgs)
 		if (!pfn)
 			OMEGA_THROW("Corrupt OOSvrLite");
 
-		IInterProcessService* pIPS = 0;
-		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS),System::Internal::marshal_info<const string_t&>::safe_type::coerce(strArgs));
+		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(ptrIPS),System::Internal::marshal_info<const string_t&>::safe_type::coerce(strArgs));
 		if (pSE)
 			System::Internal::throw_correct_exception(pSE);
-
-		ptrIPS.Attach(pIPS);
 	}
 
 	// Register locally...
@@ -950,8 +946,7 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::C
 	int err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
 	if (err != 0)
 	{
-		ObjectPtr<IException> ptrE;
-		ptrE.Attach(ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer")));
+		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
 
@@ -996,8 +991,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, u
 	int err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
 	if (err != 0)
 	{
-		ObjectPtr<IException> ptrE;
-		ptrE.Attach(ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer")));
+		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
 }
@@ -1152,14 +1146,19 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))
 {
 	if (OOCore::HostedByOOServer())
-		return OOCore::GetInterProcessService()->HandleRequest(timeout);
+	{
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		if (ptrIPS)
+			return ptrIPS->HandleRequest(timeout);
+	}
 		
 	return OOCore::UserSession::handle_request(timeout);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 {
-	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	return ptrIPS->OpenServerSink(message_oid,pSink);
 }
 
 ObjectPtr<ObjectImpl<OOCore::ComptChannel> > OOCore::UserSession::create_compartment()

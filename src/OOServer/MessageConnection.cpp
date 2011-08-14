@@ -58,6 +58,10 @@
 
 #include "MessageConnection.h"
 
+#if !defined(WSAECONNRESET)
+#define WSAECONNRESET ECONNRESET
+#endif
+
 namespace
 {
 	static const size_t     s_default_buffer_size = 512;
@@ -140,8 +144,13 @@ void OOServer::MessageConnection::on_recv2(OOBase::Buffer* buffer, int err)
 bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int part)
 {
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err)),false);
-	else if (buffer->length() == 0)
+	{
+		if (err != WSAECONNRESET)
+			LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err)));
+		return false;
+	}
+	
+	if (buffer->length() == 0)
 		return false;
 		
 	OOBase::CDRStream input(buffer);
@@ -155,7 +164,10 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 
 	// Read the version byte
 	Omega::byte_t version;
-	if (!input.read(version) || version != 1)
+	if (!input.read(version))
+		LOG_ERROR_RETURN(("Faield to read version information: %s",OOBase::system_error_text(input.last_error())),false);
+		
+	if (version != 1)
 		LOG_ERROR_RETURN(("Invalid protocol version"),false);
 		
 	// Room for 2 bytes here!
@@ -219,10 +231,12 @@ void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
+		if (err != WSAECONNRESET)
+			LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
+		
 		close();
 	}
-
+	
 	release();
 }
 

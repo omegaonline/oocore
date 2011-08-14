@@ -108,7 +108,7 @@ namespace
 		ObjectPtr<IKey> m_ptrSystemKey;
 		ObjectPtr<IKey> m_ptrLocalUserKey;
 
-		string_t parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey);
+		string_t parse_subkey(const string_t& strSubKey, IKey*& pKey);
 		int registry_access_check(const char* pszdb, Omega::uint32_t channel_id, ::Registry::Hive::access_rights_t access_mask);
 
 	// IKey members
@@ -313,7 +313,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		OMEGA_THROW(err);
 
 	// By the time we get here then we have successfully opened or created the key...
-	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstance();
 	ptrNew->Init(m_pHive,strFullKey,key);
 	return ptrNew.AddRef();
 }
@@ -400,7 +400,7 @@ void HiveKey::DeleteValue(const string_t& strName)
 
 void RootKey::Init_Once()
 {
-	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
+	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstance();
 
 	OOBase::LocalString dir;
 	get_db_dir(ptrIPS,dir);
@@ -423,13 +423,13 @@ void RootKey::Init_Once()
 	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
 		OMEGA_THROW("Failed to open database files");
 
-	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstance();
 	ptrKey->Init(m_system_hive,string_t(),0);
-	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
+	m_ptrSystemKey = ptrKey.AddRef();
 
-	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
+	ptrKey = ObjectImpl<HiveKey>::CreateInstance();
 	ptrKey->Init(m_localuser_hive,L"Local User",0);
-	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
+	m_ptrLocalUserKey = ptrKey.AddRef();
 }
 
 int RootKey::registry_access_check(const char* /*strdb*/, Omega::uint32_t /*channel_id*/, ::Registry::Hive::access_rights_t /*access_mask*/)
@@ -438,7 +438,7 @@ int RootKey::registry_access_check(const char* /*strdb*/, Omega::uint32_t /*chan
 	return 0;
 }
 
-string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey)
+string_t RootKey::parse_subkey(const string_t& strSubKey, IKey*& pKey)
 {
 	// Parse strKey
 	if (strSubKey == L"Local User" || strSubKey.Mid(0,11) == L"Local User/")
@@ -451,15 +451,15 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 
 		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(L"All Users");
 
-		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstance();
 		ptrNew->Init(L"Local User",m_ptrLocalUserKey,ptrMirror);
-		ptrKey.Attach(ptrNew.AddRef());
+		pKey = ptrNew.AddRef();
 
 		return strMirror;
 	}
 	else
 	{
-		ptrKey = m_ptrSystemKey;
+		pKey = m_ptrSystemKey.AddRef();
 
 		return strSubKey;
 	}
@@ -599,7 +599,7 @@ void RootKey::DeleteValue(const string_t& strName)
 IKey* InterProcessService::GetRegistry()
 {
 	// Return a pointer to the singleton
-	ObjectPtr<SingletonObjectImpl<RootKey> > ptrKey = SingletonObjectImpl<RootKey>::CreateInstancePtr();
+	ObjectPtr<SingletonObjectImpl<RootKey> > ptrKey = SingletonObjectImpl<RootKey>::CreateInstance();
 	return ptrKey.AddRef();
 }
 

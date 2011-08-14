@@ -53,28 +53,27 @@ namespace User
 
 void User::DuplicateRegistrationException::Throw(const any_t& oid)
 {
-	ObjectImpl<DuplicateRegistrationException>* pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
+	ObjectPtr<ObjectImpl<DuplicateRegistrationException> > pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
 	pRE->m_strDesc = L"Duplicate registration of oid {0} in running object table." % oid;
 	pRE->m_oid = oid;
-	throw static_cast<IDuplicateRegistrationException*>(pRE);
+	throw static_cast<IDuplicateRegistrationException*>(pRE.AddRef());
 }
 
 User::RunningObjectTable::RunningObjectTable() : m_mapObjectsByCookie(1)
 {
 }
 
-void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
+void User::RunningObjectTable::Init(Remoting::IObjectManager* pOM)
 {
-	if (ptrOM)
+	if (pOM)
 	{
 		// Create a proxy to the global interface
-		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
+		IObject* pIPS = NULL;
+		pOM->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
 
 		// Get the running object table
-		m_ptrROT.Attach(ptrIPS->GetRunningObjectTable());
+		m_ptrROT = ptrIPS->GetRunningObjectTable();
 	}
 }
 
@@ -92,8 +91,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	try
 	{
 		uint32_t src_id = 0;
-		ObjectPtr<Remoting::ICallContext> ptrCC;
-		ptrCC.Attach(Remoting::GetCallContext());
+		ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 		if (ptrCC != 0)
 			src_id = ptrCC->SourceId();
 
@@ -131,6 +129,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		info.m_oid = strOid;
 		info.m_flags = flags;
 		info.m_ptrObject = pObject;
+		info.m_ptrObject.AddRef();
 		info.m_rot_cookie = rot_cookie;
 		info.m_source = src_id;
 
@@ -188,7 +187,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 			}
 			else
 			{
-				ptrObject.Attach(pInfo->m_ptrObject->QueryInterface(iid));
+				ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
 				if (!ptrObject)
 					throw INoInterfaceException::Create(iid);
 
@@ -252,8 +251,7 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 void User::RunningObjectTable::RevokeObject(uint32_t cookie)
 {
 	uint32_t src_id = 0;
-	ObjectPtr<Remoting::ICallContext> ptrCC;
-	ptrCC.Attach(Remoting::GetCallContext());
+	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC != 0)
 		src_id = ptrCC->SourceId();
 

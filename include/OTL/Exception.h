@@ -22,7 +22,11 @@
 #ifndef OTL_EXCEPTION_H_INCLUDED_
 #define OTL_EXCEPTION_H_INCLUDED_
 
-#include "Remoting.h"
+#include "OTL.h"
+
+#if !defined(OMEGA_REMOTING_H_INCLUDED_)
+#include "../Omega/Remoting.h"
+#endif
 
 namespace OTL
 {
@@ -46,14 +50,17 @@ namespace OTL
 		{
 			throw static_cast<E*>(this);
 		}
+
 		virtual Omega::guid_t GetThrownIID()
 		{
 			return OMEGA_GUIDOF(E);
 		}
+
 		virtual Omega::IException* GetCause()
 		{
 			return m_ptrCause.AddRef();
 		}
+
 		virtual Omega::string_t GetDescription()
 		{
 			return m_strDesc;
@@ -74,7 +81,7 @@ namespace OTL
 	public:
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 		{
-			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstance();
 			ptrE->UnmarshalInterface(pMarshaller,pMessage,flags);
 			pObject = ptrE->QueryInterface(iid);
 		}
@@ -94,7 +101,7 @@ namespace OTL
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
 		{
 			this->m_strDesc = pMessage->ReadValue(L"m_strDesc").template cast<Omega::string_t>();
-			this->m_ptrCause = ObjectPtr<Omega::Remoting::IMarshaller>(pMarshaller).UnmarshalInterface<Omega::IException>(L"m_ptrCause",pMessage);
+			this->m_ptrCause.Unmarshal(pMarshaller,L"m_ptrCause",pMessage);
 		}
 
 	private:

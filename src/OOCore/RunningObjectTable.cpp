@@ -61,7 +61,7 @@ void DuplicateRegistrationException::Throw(const any_t& oid)
 OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,1,((in),IObject*,pIPS))
 {
 	// Get the zero cmpt service manager...
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
 	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessLocal | Activation::MultipleUse);
 	
 	// This forces the detection, so cleanup succeeds
@@ -75,14 +75,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 	// Get the zero cmpt service manager...
 	if (nCookie)
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr();
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
 		ptrROT->RevokeObject(nCookie);
 	}
 }
 
-ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
+OOCore::IInterProcessService* OOCore::GetInterProcessService()
 {
-	return SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->GetIPS();
+	ObjectPtr<SingletonObjectImpl<OOCore::ServiceManager> > ptrSM = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
+	return ptrSM->GetIPS();
 }
 
 bool OOCore::HostedByOOServer()
@@ -95,7 +96,7 @@ bool OOCore::HostedByOOServer()
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
 		ObjectPtr<IInterProcessService> ptrIPS = GetInterProcessService();
 		
-		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(ptrIPS);
+		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy = ptrIPS.QueryInterface<System::Internal::ISafeProxy>();
 		if (ptrSProxy)
 		{
 			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
@@ -133,7 +134,7 @@ OOCore::ServiceManager::~ServiceManager()
 	}
 }
 
-ObjectPtr<OOCore::IInterProcessService> OOCore::ServiceManager::GetIPS()
+OOCore::IInterProcessService* OOCore::ServiceManager::GetIPS()
 {
 	IObject* pIPS = NULL;
 	GetObject(OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(IInterProcessService),pIPS);
@@ -141,9 +142,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::ServiceManager::GetIPS()
 	if (!pIPS)
 		throw IInternalException::Create("Omega::Initialize not called","OOCore");
 
-	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
-	ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
-	return ptrIPS;
+	return static_cast<IInterProcessService*>(pIPS);
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
@@ -158,7 +157,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
 		if (ptrIPS)
 		{
-			ptrROT.Attach(ptrIPS->GetRunningObjectTable());
+			ptrROT = ptrIPS->GetRunningObjectTable();
 			if (ptrROT)
 			{
 				rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessLocal));
@@ -202,6 +201,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		info.m_oid = strOid;
 		info.m_flags = flags;
 		info.m_ptrObject = pObject;
+		info.m_ptrObject->AddRef();
 		info.m_rot_cookie = rot_cookie;
 
 		uint32_t nCookie = 0;
@@ -258,7 +258,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 			}
 			else
 			{
-				ptrObject.Attach(pInfo->m_ptrObject->QueryInterface(iid));
+				ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
 				if (!ptrObject)
 					throw INoInterfaceException::Create(iid);
 
@@ -292,9 +292,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
 		if (ptrIPS)
 		{
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(ptrIPS->GetRunningObjectTable());
-
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
 			if (ptrROT)
 			{
 				// Route to global rot
@@ -325,9 +323,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 			ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
 			if (ptrIPS)
 			{
-				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-				ptrROT.Attach(ptrIPS->GetRunningObjectTable());
-
+				ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
 				if (ptrROT)
 					ptrROT->RevokeObject(info.m_rot_cookie);
 			}
@@ -342,6 +338,12 @@ void OOCore::RunningObjectTableFactory::CreateInstance(IObject* pOuter, const gu
 {
 	if (pOuter)
 		throw Omega::Activation::INoAggregationException::Create(Activation::OID_RunningObjectTable);
-	
-	pObject = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstancePtr()->QueryInterface(iid);
+
+	ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	if (ptrIPS)
+	{
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
+		if (ptrROT)
+			pObject = ptrROT->QueryInterface(iid);
+	}
 }

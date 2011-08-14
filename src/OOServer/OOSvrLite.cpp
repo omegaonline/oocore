@@ -142,7 +142,7 @@ Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remot
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,1,((in),const string_t&,args))
 {
-	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
+	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstance();
 	ptrIPS->Load(args);
 	return ptrIPS.AddRef();
 }

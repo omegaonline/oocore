@@ -351,9 +351,9 @@ namespace Omega
 				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
 				{
 					if (!static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe)
-						return 0;
+						return NULL;
 
-					const SafeShim* ret = 0;
+					const SafeShim* ret = NULL;
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe(m_shim,shim_Controller,shim_Marshaller,&iid,&ret);
 					if (except)
 						throw_correct_exception(except);
@@ -566,7 +566,7 @@ namespace Omega
 						&Pin_Safe,
 						&Unpin_Safe,
 						&CreateWireStub_Safe,
-						0
+						NULL
 					};
 					return &vt;
 				}

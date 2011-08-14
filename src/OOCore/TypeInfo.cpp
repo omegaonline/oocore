@@ -216,8 +216,7 @@ namespace
 		case TypeInfo::typeObject:
 			{
 				string_t strIID = string_t(L"Unknown interface {0}") % guid_t(*(const guid_base_t*)(th->next)).ToString();
-				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF;
-				ptrIF.Attach(OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next)));
+				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF = OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next));
 				if (ptrIF)
 					strIID = ptrIF->GetName();
 				return strIID;
@@ -284,7 +283,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 	// Init the base class
 	if (type_info->base_type)
 	{
-		m_ptrBase.Attach(TIMap::instance().get_type_info(*type_info->base_type));
+		m_ptrBase = TIMap::instance().get_type_info(*type_info->base_type);
 		m_base_methods = m_ptrBase->GetMethodCount();
 	}
 
@@ -295,7 +294,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 		mi.strName = string_t(pmi->pszName,false);
 		mi.attribs = pmi->attribs;
 		mi.timeout = pmi->timeout;
-		mi.return_type.Attach(Remoting::CreateMemoryMessage());
+		mi.return_type = Remoting::CreateMemoryMessage();
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
 		mi.params = new (std::nothrow) OOBase::Stack<ParamInfo>();
@@ -308,7 +307,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 			pi.strName = string_t(ppi->pszName,false);
 			pi.attribs = ppi->attribs;
 			pi.strRef = string_t(ppi->attrib_ref,string_t::npos);
-			pi.type.Attach(Remoting::CreateMemoryMessage());
+			pi.type = Remoting::CreateMemoryMessage();
 
 			BuildTypeDetail(pi.type,ppi->type);
 
@@ -444,7 +443,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 	ti_t ti;
 	if (m_ti_map.find(iid,ti))
 	{
-		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstance();
 		ptrTI->init(iid,ti.pszName,ti.type_info);
 		return ptrTI.AddRef();
 	}
@@ -548,14 +547,14 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 		break;
 	}
 
-	ObjectImpl<CastException>* pNew = ObjectImpl<CastException>::CreateInstance();
+	ObjectPtr<ObjectImpl<CastException> > pNew = ObjectImpl<CastException>::CreateInstance();
 	pNew->m_strDesc = L"Failed to convert from {0} to {1}: {2}" % strSource % strDest % strReason;
 	pNew->m_value = value;
 	pNew->m_reason = reason;
-	pNew->m_type.Attach(Remoting::CreateMemoryMessage());
+	pNew->m_type = Remoting::CreateMemoryMessage();
 	BuildTypeDetail(pNew->m_type,typeDest);
 
-	throw static_cast<ICastException*>(pNew);
+	throw static_cast<ICastException*>(pNew.AddRef());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const any_t&,value,(in),any_t::CastResult_t,reason,(in),const System::Internal::type_holder*,typeDest))

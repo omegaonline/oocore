@@ -55,7 +55,7 @@ User::Process* User::Process::exec(const wchar_t* pszExeName)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
-		OMEGA_THROW_NOMEM();
+		OMEGA_THROW(ENOMEM);
 
 	ptrProcess->exec(pszExeName);
 	return ptrProcess.detach();
@@ -85,7 +85,7 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		szBuf[clen] = '\0';
 
 		const char* debug = getenv("OMEGA_DEBUG");
-		const char* term = ::getenv("TERM");
+		const char* term = getenv("TERM");
 		if (debug && strcmp(debug,"yes")==0 && term)
 			execlp(term,term,"-e",szBuf,(char*)NULL);
 

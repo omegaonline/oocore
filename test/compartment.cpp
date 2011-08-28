@@ -104,9 +104,11 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 	
-	ptrSimpleTest.Release();
+	void* FIX_ME;
+
+	/*ptrSimpleTest.Release();
 	ptrSimpleTest2.Release();
-	
+
 	// Test aggregation
 	Aggregator* pAgg = new Aggregator();
 	
@@ -123,7 +125,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	ptrSimpleTest2.Release(); 
+	ptrSimpleTest2.Release(); */
 	
 	// Kill the running version
 	try

@@ -147,10 +147,10 @@ void* operator new[](size_t size, const OOCore::throwing_t&)
 
 void operator delete(void* p, const OOCore::throwing_t&)
 {
-	delete p;
+	::operator delete(p);
 }
 
 void operator delete[](void* p, const OOCore::throwing_t&)
 {
-	delete [] p;
+	::operator delete[](p);
 }

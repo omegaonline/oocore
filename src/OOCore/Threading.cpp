@@ -44,11 +44,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
-	void* r = new (std::nothrow) OOBase::Mutex();
-	if (!r)
-		OMEGA_THROW_NOMEM();
-
-	return r;
+	return new (OOCore::throwing) OOBase::Mutex();
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
@@ -68,11 +64,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
 {
-	void* r = new (std::nothrow) OOBase::RWMutex();
-	if (!r)
-		OMEGA_THROW_NOMEM();
-
-	return r;
+	return new (OOCore::throwing) OOBase::RWMutex();
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,m1))

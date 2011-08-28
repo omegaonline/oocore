@@ -141,10 +141,8 @@ namespace
 		// Try to unload any unused dlls
 		unload_unused();
 
-		dll = new (std::nothrow) OOBase::DLL();
-		if (!dll)
-			OMEGA_THROW_NOMEM();
-	
+		dll = new (OOCore::throwing) OOBase::DLL();
+			
 		// Load the new DLL
 		int err = dll->load(name.c_nstr());
 		if (err != 0)

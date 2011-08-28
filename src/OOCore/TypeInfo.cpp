@@ -297,10 +297,8 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 		mi.return_type = Remoting::CreateMemoryMessage();
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
-		mi.params = new (std::nothrow) OOBase::Stack<ParamInfo>();
-		if (!mi.params)
-			OMEGA_THROW_NOMEM();
-
+		mi.params = new (OOCore::throwing) OOBase::Stack<ParamInfo>();
+		
 		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)(); ppi->pszName!=0; ++ppi)
 		{
 			ParamInfo pi;

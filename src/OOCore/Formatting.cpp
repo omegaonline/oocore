@@ -1740,21 +1740,14 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Omega::string_t&,format))
 {
-	format_state_t* s = new (std::nothrow) format_state_t();
-	if (!s)
-		OMEGA_THROW_NOMEM();
-
-	s->m_listInserts = new (std::nothrow) OOBase::Stack<insert_t>();
-	if (!s->m_listInserts)
-	{
-		delete s;
-		OMEGA_THROW_NOMEM();
-	}
-
+	OOBase::SmartPtr<format_state_t> s = new (OOCore::throwing) format_state_t();
+	
+	s->m_listInserts = new (OOCore::throwing) OOBase::Stack<insert_t>();
+	
 	// Split up the string
 	parse_format(format,s->m_strPrefix,*s->m_listInserts);
 
-	return s;
+	return s.detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle))
@@ -1763,17 +1756,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	if (!s || !s->m_listInserts)
 		return NULL;
 
-	format_state_t* s_new = new (std::nothrow) format_state_t();
-	if (!s_new)
-		OMEGA_THROW_NOMEM();
-
-	s_new->m_listInserts = new (std::nothrow) OOBase::Stack<insert_t>();
-	if (!s_new->m_listInserts)
-	{
-		delete s_new;
-		OMEGA_THROW_NOMEM();
-	}
-
+	OOBase::SmartPtr<format_state_t> s_new = new (OOCore::throwing) format_state_t();
+	
+	s_new->m_listInserts = new (OOCore::throwing) OOBase::Stack<insert_t>();
 	s_new->m_strPrefix = s->m_strPrefix;
 
 	bool pushed = false;
@@ -1797,7 +1782,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 		}
 	}
 
-	return s_new;
+	return s_new.detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,handle))

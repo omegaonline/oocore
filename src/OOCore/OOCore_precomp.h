@@ -75,12 +75,6 @@
 /////////////////////////////////////////////////
 // Some helpers and globals
 
-#if defined(_WIN32)
-#define OMEGA_THROW_NOMEM() OMEGA_THROW(ERROR_OUTOFMEMORY)
-#else
-#define OMEGA_THROW_NOMEM() OMEGA_THROW(ENOMEM)
-#endif
-
 namespace OOCore
 {
 	bool HostedByOOServer();
@@ -90,14 +84,11 @@ namespace OOCore
 		int unused;
 	};
 
-	class OmegaFailure
-	{
-	public:
-		static void fail()
-		{
-			OMEGA_THROW_NOMEM();
-		}
+	struct throwing_t 
+	{ 
+		int unused; 
 	};
+	extern const throwing_t throwing;
 
 	struct GuidHash
 	{
@@ -118,6 +109,12 @@ namespace OOCore
 		}
 	};
 }
+
+// Operator new that throws Omega::ISystemException
+void* operator new(size_t size, const OOCore::throwing_t&);
+void* operator new[](size_t size, const OOCore::throwing_t&);
+void operator delete(void* p, const OOCore::throwing_t&);
+void operator delete[](void* p, const OOCore::throwing_t&);
 
 #include "Formatting.h"
 

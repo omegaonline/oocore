@@ -41,9 +41,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder__ctor,2,((in),void
 	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
 	if (!pCur)
 	{
-		*phandle = new (std::nothrow) QIRttiHolder;
-		if (!*phandle)
-			OMEGA_THROW_NOMEM();			
+		*phandle = new (OOCore::throwing) QIRttiHolder;
 		
 		try
 		{
@@ -202,9 +200,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__ctor,2,((in),vo
 	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
 	if (!pCur)
 	{
-		*phandle = new (std::nothrow) WireRttiHolder;
-		if (!*phandle)
-			OMEGA_THROW_NOMEM();			
+		*phandle = new (OOCore::throwing) WireRttiHolder;
 		
 		try
 		{

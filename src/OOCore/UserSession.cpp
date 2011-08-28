@@ -293,10 +293,8 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	}
 
 	// Create the zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (std::nothrow) Compartment(this);
-	if (!ptrZeroCompt)
-		OMEGA_THROW_NOMEM();
-	else
+	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
+	
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -1169,10 +1167,8 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment()
 ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i()
 {
 	// Create the new object
-	OOBase::SmartPtr<Compartment> ptrCompt = new (std::nothrow) Compartment(this);
-	if (!ptrCompt)
-		OMEGA_THROW_NOMEM();
-
+	OOBase::SmartPtr<Compartment> ptrCompt = new (OOCore::throwing) Compartment(this);
+	
 	// Create a new Compartment object
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);
 

@@ -40,15 +40,6 @@ using namespace OTL;
 
 namespace
 {
-	class OmegaFailure
-	{
-	public:
-		static void fail()
-		{
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
-		}
-	};
-
 	class RootKey;
 
 	class HiveKey :

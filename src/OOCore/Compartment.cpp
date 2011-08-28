@@ -314,12 +314,6 @@ void OOCore::ComptChannel::init(uint16_t src_compt_id, const OOBase::SmartPtr<Co
 	m_ptrCompt = ptrCompt;	
 }
 
-void OOCore::ComptChannel::close_compartment()
-{
-	// Tell the other end to go...
-	m_ptrCompt->shutdown();
-}
-
 void OOCore::ComptChannel::shutdown()
 {
 	m_ptrCompt->process_compartment_close(m_src_compt_id);
@@ -364,7 +358,7 @@ namespace OOCore
 
 void OOCore::CompartmentImpl::Final_Release()
 {
-	m_ptrChannel->close_compartment();
+	m_ptrChannel->shutdown();
 
 	delete this;
 }

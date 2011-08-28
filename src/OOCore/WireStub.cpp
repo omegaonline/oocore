@@ -44,7 +44,7 @@ void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pMana
 void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
 	// Make sure we can support the outgoing interface...
-	assert(FindStub(iid) != 0);
+	assert(RemoteQueryInterface(iid));
 
 	pMessage->WriteValue(L"id",m_stub_id);
 	pMessage->WriteValue(L"iid",iid);
@@ -130,7 +130,8 @@ void OOCore::Stub::RemoteRelease()
 bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 {
 	// If we have a stub, then we can handle it...
-	return (FindStub(iid) != 0);
+	ObjectPtr<Remoting::IStub> ptrStub = FindStub(iid);
+	return (ptrStub != NULL);
 }
 
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

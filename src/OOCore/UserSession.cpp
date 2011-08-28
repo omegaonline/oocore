@@ -1183,10 +1183,6 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i()
 	write_guard.release();
 	
 	return ptrCompt->create_compartment_channel(ThreadContext::instance()->m_current_cmpt,guid_t::Null());
-
-	// Now a new ComptChannel for the new compartment connecting to this cmpt
-	//ptrCompt = get_compartment(ThreadContext::instance()->m_current_cmpt);
-	//return ptrCompt->create_compartment_channel(cmpt_id,guid_t::Null());
 }
 
 OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
@@ -1258,9 +1254,15 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 		return LoopChannel::create(src_channel_id,message_oid,iid);
 
 	case Remoting::Compartment:
-		return ptrCompt->create_compartment_channel(static_cast<uint16_t>(src_channel_id & 0xFFF),message_oid)->QueryInterface(iid);
+		{
+			ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = ptrCompt->create_compartment_channel(static_cast<uint16_t>(src_channel_id & 0xFFF),message_oid);
+			return ptrChannel->QueryInterface(iid);
+		}
 
 	default:
-		return ptrCompt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
+		{
+			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ptrCompt->create_channel(src_channel_id,message_oid);
+			return ptrChannel->QueryInterface(iid);
+		}
 	}
 }

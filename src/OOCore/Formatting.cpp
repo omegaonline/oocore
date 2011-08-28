@@ -1775,7 +1775,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 			if (err != 0)
 			{
 				delete s_new->m_listInserts;
-				delete s_new;
 				OMEGA_THROW(err);
 			}
 			pushed = true;
@@ -1789,9 +1788,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,hand
 {
 	format_state_t* s = static_cast<format_state_t*>(handle);
 	if (s)
+	{
 		delete s->m_listInserts;
-
-	delete s;
+		delete s;
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),Omega::uint32_t&,index,(out),Omega::string_t&,fmt))

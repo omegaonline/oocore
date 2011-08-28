@@ -49,12 +49,11 @@ namespace
 	{
 		Omega::string_t desc = pE->GetDescription();
 		
-		OTL::ObjectPtr<Omega::IInternalException> ptrInternal = pE;
+		OTL::ObjectPtr<Omega::IInternalException> ptrInternal = OTL::QueryInterface<Omega::IInternalException>(pE);
 		if (ptrInternal)
 			desc += L" at " + ptrInternal->GetSource();
 		
-		OTL::ObjectPtr<Omega::IException> ptrCause;
-		ptrCause.Attach(pE->GetCause());
+		OTL::ObjectPtr<Omega::IException> ptrCause = pE->GetCause();
 		if (ptrCause)
 			desc += L". Cause: " + GetDesc(ptrCause);
 			
@@ -247,9 +246,8 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	
 	Omega::IObject* pObj = NULL;
 	m_ptrCompt->CreateInstance(values[0],values[1].cast<Omega::Activation::Flags_t>(),NULL,OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObj);
-		
-	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
-	ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pObj));
+	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI = static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pObj);
+
 	if (!ptrPOI)
 	{
 		pExcepInfo->wCode = 1002;
@@ -271,15 +269,11 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	if (iids.empty())
 		return E_NOINTERFACE;
 		
-	pObj = ptrPOI->QueryInterface(iids.front());
-	if (!pObj)
+	OTL::ObjectPtr<Omega::IObject> ptrObj = ptrPOI->QueryInterface(iids.front());
+	if (!ptrObj)
 		return E_NOINTERFACE;
 	
-	OTL::ObjectPtr<Omega::IObject> ptrObj;
-	ptrObj.Attach(pObj);
-	
-	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy;
-	ptrProxy.Attach(Omega::Remoting::GetProxy(ptrObj));
+	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy = Omega::Remoting::GetProxy(ptrObj);
 	
 	IDispatchObjImpl* pDisp = new (std::nothrow) IDispatchObjImpl(ptrProxy,iids.front());
 	if (!pDisp)

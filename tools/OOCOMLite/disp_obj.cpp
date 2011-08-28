@@ -315,11 +315,11 @@ HRESULT IDispatchObjImpl::init()
 	
 	try
 	{
-		m_ptrInfo.Attach(Omega::TypeInfo::GetInterfaceInfo(m_iid,m_ptrProxy));
+		m_ptrInfo = Omega::TypeInfo::GetInterfaceInfo(m_iid,m_ptrProxy);
 		if (!m_ptrInfo)
 			return E_INVALIDARG;
 		
-		m_ptrMarshaller.Attach(m_ptrProxy->GetMarshaller());
+		m_ptrMarshaller = m_ptrProxy->GetMarshaller();
 		if (!m_ptrMarshaller)
 			return E_INVALIDARG;
 	}
@@ -434,12 +434,8 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	OTL::ObjectPtr<Omega::Remoting::IMessage> ptrRetType;
 	try
 	{
-		Omega::Remoting::IMessage* return_type = NULL;
-		
 		// Always Add 2 to avoid IObject::AddRef and IObject::Release
-		m_ptrInfo->GetMethodInfo(dispIdMember,strName,attribs,timeout,param_count,return_type);
-		
-		ptrRetType.Attach(return_type);
+		m_ptrInfo->GetMethodInfo(dispIdMember,strName,attribs,timeout,param_count,ptrRetType);
 	}
 	catch (Omega::IException* pE)	
 	{
@@ -482,7 +478,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	try
 	{
 		// Now build the message
-		ptrMsg.Attach(m_ptrMarshaller->CreateMessage());
+		ptrMsg = m_ptrMarshaller->CreateMessage();
 	}
 	catch (Omega::IException* pE)
 	{
@@ -558,10 +554,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		ptrMsg->WriteStructEnd();
 			
 		// Now make the call...
-		Omega::Remoting::IMessage* pRecv = NULL;
-		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,pRecv,timeout);
-		
-		ptrResult.Attach(pRecv);
+		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,ptrResult,timeout);
 		
 		if (pE)
 			return FillExcepInfo(strName.c_wstr(),pE,pExcepInfo);			
@@ -645,13 +638,11 @@ void IDispatchObjImpl::WriteDefault(LCID lcid, Omega::Remoting::IMessage* pMsg, 
 HRESULT IDispatchObjImpl::WriteArg(LCID lcid, Omega::Remoting::IMessage* pMsg, Omega::uint32_t method, Omega::byte_t param, const VARIANTARG& arg)
 {
 	Omega::string_t strName;
-	Omega::Remoting::IMessage* pType = NULL;
 	Omega::TypeInfo::ParamAttributes_t attribs;
 	OTL::ObjectPtr<Omega::Remoting::IMessage> ptrType;
 	
-	m_ptrInfo->GetParamInfo(method,param,strName,pType,attribs);
-	ptrType.Attach(pType);
-	
+	m_ptrInfo->GetParamInfo(method,param,strName,ptrType,attribs);
+		
 	if (!(arg.vt & VT_BYREF) && (attribs & Omega::TypeInfo::attrOut))
 		return DISP_E_TYPEMISMATCH;  // [out] params must be ByRef
 	
@@ -717,12 +708,10 @@ void IDispatchObjImpl::ReadArgByType(LCID lcid, const Omega::string_t& strName, 
 void IDispatchObjImpl::ReadArg(LCID lcid, Omega::Remoting::IMessage* pMsg, Omega::uint32_t method, Omega::byte_t param, VARIANTARG* pArg)
 {
 	Omega::string_t strName;
-	Omega::Remoting::IMessage* pType = NULL;
 	Omega::TypeInfo::ParamAttributes_t attribs;
 	OTL::ObjectPtr<Omega::Remoting::IMessage> ptrType;
 	
-	m_ptrInfo->GetParamInfo(method,param,strName,pType,attribs);
-	ptrType.Attach(pType);
+	m_ptrInfo->GetParamInfo(method,param,strName,ptrType,attribs);
 	
 	if (attribs & Omega::TypeInfo::attrOut)
 		ReadArgByType(lcid,strName,pMsg,ptrType,pArg);

@@ -62,7 +62,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,1,((in),IObject*,pIPS
 {
 	// Get the zero cmpt service manager...
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
-	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessLocal | Activation::MultipleUse);
+	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
 	
 	// This forces the detection, so cleanup succeeds
 	OOCore::HostedByOOServer();
@@ -137,7 +137,7 @@ OOCore::ServiceManager::~ServiceManager()
 OOCore::IInterProcessService* OOCore::ServiceManager::GetIPS()
 {
 	IObject* pIPS = NULL;
-	GetObject(OID_InterProcessService,Activation::ProcessLocal,OMEGA_GUIDOF(IInterProcessService),pIPS);
+	GetObject(OID_InterProcessService,Activation::ProcessScope,OMEGA_GUIDOF(IInterProcessService),pIPS);
 	
 	if (!pIPS)
 		throw IInternalException::Create("Omega::Initialize not called","OOCore");
@@ -151,7 +151,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	uint32_t rot_cookie = 0;
 
 	// Check for user registration
-	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Global))
+	if (flags & ~Activation::ProcessScope)
 	{
 		// Register in ROT
 		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
@@ -160,7 +160,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 			ptrROT = ptrIPS->GetRunningObjectTable();
 			if (ptrROT)
 			{
-				rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessLocal));
+				rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessScope));
 			}
 		}
 	}
@@ -287,7 +287,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 		return;
 	}
 
-	if (flags & (Activation::UserLocal | Activation::MachineLocal | Activation::Global))
+	if (flags & ~Activation::ProcessScope)
 	{
 		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
 		if (ptrIPS)

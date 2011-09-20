@@ -57,7 +57,7 @@ namespace
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
 
@@ -174,6 +174,10 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
 	}
 
+	// Check the file exists
+	if (access(strAppName.c_str(),X_OK) != 0)
+		LOG_ERROR_RETURN(("User process %s is not valid: %s",strAppName.c_str(),OOBase::system_error_text()),false);
+
 	// Check our uid
 	uid_t our_uid = getuid();
 
@@ -206,7 +210,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	}
 
 	// Check this session stuff with the Stevens book! umask? etc...
-	void* TODO;
+	void* POSIX_TODO;
 
 	dup2(fd,STDIN_FILENO);
 	dup2(fd,STDOUT_FILENO);
@@ -270,8 +274,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	if (debug == "yes" && !display.empty())
 	{
 		OOBase::LocalString strExec;
-		err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str());
-		if (err != 0)
+		if ((err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str())) != 0)
 		{
 			LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
 			_exit(127);
@@ -353,8 +356,13 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	return true;
 }
 
-bool SpawnedProcessUnix::IsSameLogin(uid_t uid) const
+bool SpawnedProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 {
+	assert(!IsSameUser(uid));
+
+	// Sort out the session handling
+	void* ISSUE_5;
+
 	// All POSIX sessions are assumed unique...
 	return false;
 }
@@ -489,6 +497,7 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 }
 
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
@@ -505,7 +514,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	}
 
 	// Alloc a new SpawnedProcess
-	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid,bSandbox);
+	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid,session_id == NULL);
 	if (!pSpawnUnix)
 	{
 		::close(fd[0]);
@@ -553,7 +562,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	{
 		// Make sure we have a user process
 		UserProcess user_process;
-		if (get_user_process(uid,user_process))
+		if (get_user_process(uid,session_id,user_process))
 		{
 			UserProcess new_process;
 			new_process.ptrRegistry = user_process.ptrRegistry;
@@ -572,7 +581,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 				// Insert the data into the process map...
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-				int err = m_mapUserProcesses.insert(channel_id,new_process);
+				err = m_mapUserProcesses.insert(channel_id,new_process);
 				if (err != 0)
 				{
 					ptrMC->close();

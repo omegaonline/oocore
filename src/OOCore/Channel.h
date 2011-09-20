@@ -105,7 +105,7 @@ namespace OOCore
 
 	class ChannelMarshalFactory :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactorySingleton<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::ProcessLocal>,
+			public OTL::AutoObjectFactorySingleton<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::ProcessScope>,
 			public Omega::Remoting::IMarshalFactory
 	{
 	public:
@@ -120,7 +120,7 @@ namespace OOCore
 
 	class CDRMessageMarshalFactory :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactorySingleton<CDRMessageMarshalFactory,&OID_CDRMessageMarshalFactory,Omega::Activation::ProcessLocal>,
+			public OTL::AutoObjectFactorySingleton<CDRMessageMarshalFactory,&OID_CDRMessageMarshalFactory,Omega::Activation::ProcessScope>,
 			public Omega::Remoting::IMarshalFactory
 	{
 	public:

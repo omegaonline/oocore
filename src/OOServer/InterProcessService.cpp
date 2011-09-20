@@ -82,9 +82,12 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 
 void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, IObject*& pObject)
 {
-	string_t strProcess;
-	
+	// Forward to sandbox if required
+	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
+		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
+		
 	// Find the OID key...
+	string_t strProcess;
 	ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects/OIDs/" + oid.ToString());
 	if (ptrKey->IsValue(L"Application"))
 	{
@@ -92,7 +95,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		string_t strAppName = ptrKey->GetValue(L"Application").cast<string_t>();
 		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"Local User/Applications/" + strAppName + L"/Activation");
 		strProcess = ptrKey->GetValue(L"Path").cast<string_t>();
-		if (!strProcess.IsEmpty() && User::Process::is_relative_path(strProcess.c_wstr()))
+		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess.c_wstr()))
 		{
 			string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value." % strProcess % strAppName;
 			OMEGA_THROW(strErr.c_nstr());
@@ -100,15 +103,26 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 	else if (ptrKey->IsValue(L"Library"))
 	{
+		string_t strLib = ptrKey->GetValue(L"Library").cast<string_t>();
+		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib.c_wstr()))
+		{
+			string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
+			OMEGA_THROW(strErr.c_nstr());
+		}
+		
 		void* ISSUE_8; // Surrogates here?!?
 	}
-			
-	if (strProcess.IsEmpty())
+	else
 		throw Activation::IOidNotFoundException::Create(oid);
+			
+	// Build RegisterFlags
+	Activation::RegisterFlags_t reg_mask = Activation::PublicScope;
+		
+	// Remote activation, add ExternalPublic flag
+	if (flags & Activation::RemoteActivation)
+		reg_mask |= Activation::ExternalPublic;
 
 	// The timeout needs to be related to the request timeout...
-	void* TODO;
-	
 #if defined(OMEGA_DEBUG)
 	OOBase::timeval_t wait(60);
 #else
@@ -154,7 +168,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		OOBase::Countdown timeout(&wait);
 		while (wait != OOBase::timeval_t::Zero)
 		{
-			m_ptrROT->GetObject(oid,Activation::UserLocal | Activation::MachineLocal,iid,pObject);
+			m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
 			if (pObject)
 			{
 				// The process has started - remove it from the starting list

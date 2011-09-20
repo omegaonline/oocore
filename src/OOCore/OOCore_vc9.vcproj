@@ -365,6 +365,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Launch.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LoopChannel.cpp"
 				>
 			</File>

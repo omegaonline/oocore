@@ -62,7 +62,7 @@ namespace
 		bool IsRunning() const;
 		bool Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
 
@@ -139,8 +139,7 @@ namespace
 
 		// Create the named pipe instance
 		OOBase::LocalString strFullPipe;
-		err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str());
-		if (err != 0)
+		if ((err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str())) != 0)
 			LOG_ERROR_RETURN(("Failed to concat strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
 
 		HANDLE hPipe = CreateNamedPipeA(strFullPipe.c_str(),
@@ -477,8 +476,7 @@ namespace
 		// Revert our Window Station
 		SetProcessWindowStation(hOldWinsta);
 
-		err = strWindowStation.append("\\default");
-		if (err != 0)
+		if ((err = strWindowStation.append("\\default")) != 0)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
 
 		return true;
@@ -541,21 +539,20 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	{
 		strModule.replace('/','\\');
 		int err = OOBase::AppendDirSeparator(strModule);
-			
+
 		if (err == 0)
 			err = strModule.append("OOSvrUser.exe");
-			
+
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
-	
+
 		if (strModule.length() >= MAX_PATH)
 		{
 			// Prefix with '\\?\'
-			err = strModule.concat("\\\\?\\",strModule.c_str());
-			if (err != 0)
+			if ((err = strModule.concat("\\\\?\\",strModule.c_str())) != 0)
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
 		}
-		
+
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 	}
 
@@ -590,8 +587,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 		LOG_ERROR_RETURN(("Failed to build command line: %s",OOBase::system_error_text(err)),err);
 
 	OOBase::LocalString strWindowStation;
-	err = strWindowStation.assign("WinSta0\\default");
-	if (err != 0)
+	if ((err = strWindowStation.assign("WinSta0\\default")) != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
 
 	// Forward declare these because of goto's
@@ -820,8 +816,10 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	return true;
 }
 
-bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken) const
+bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const
 {
+	assert(!IsSameUser(hToken));
+
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges)));
@@ -873,7 +871,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 		if ((err = strSysDir.assign(szBuf)) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
-	
+
 	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
@@ -925,14 +923,14 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
 		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
-		
+
 		void* ISSUE_11;
 	}
 
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, bool bSandbox, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = new (std::nothrow) SpawnedProcessWin32();
@@ -943,7 +941,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
-	if (!pSpawn32->Spawn(uid,hPipe,bSandbox,bAgain))
+	if (!pSpawn32->Spawn(uid,hPipe,session_id == NULL,bAgain))
 		return OOBase::SmartPtr<Root::SpawnedProcess>();
 
 	// Wait for the connect attempt

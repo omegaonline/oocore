@@ -68,7 +68,7 @@ ooserverd_SOURCES += OOServer.rc
 ooserverd_LDADD += -lshlwapi
 endif
 
-libexec_PROGRAMS = oosvruser
+oolibexec_PROGRAMS = oosvruser
 
 oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 

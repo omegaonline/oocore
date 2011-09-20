@@ -193,8 +193,7 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 
 		uSubKey = uKey;
 
-		err = strSubKey.assign(strSubKey.c_str() + pos + 1);
-		if (err != 0)
+		if ((err = strSubKey.assign(strSubKey.c_str() + pos + 1)) != 0)
 			return err;
 	}
 }
@@ -1008,8 +1007,7 @@ int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const char
 	}
 
 	// Check the value exists...
-	err = value_exists_i(uKey,pszName);
-	if (err != 0)
+	if ((err = value_exists_i(uKey,pszName)) != 0)
 		return err;
 	
 	OOSvrBase::Db::Resetter resetter(m_UpdateValueDesc_Stmt);

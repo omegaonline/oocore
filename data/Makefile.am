@@ -5,12 +5,14 @@
 	@$(SQLITE3) $@ < $(srcdir)/common.sql
 	$(AM_V_GEN)$(SQLITE3) $@ < $<
 	
-localstate_DATA = \
+oovardir = @localstatedir@/lib/omegaonline
+
+oovar_DATA = \
 	sandbox.regdb \
 	default_user.regdb \
 	system.regdb
 	
-CLEANFILES = $(localstate_DATA)
+CLEANFILES = $(oovar_DATA)
 	
 EXTRA_DIST = \
 	common.sql \

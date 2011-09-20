@@ -172,8 +172,7 @@ bool Root::Manager::init_database()
 
 	// Create a new system database
 	OOBase::String dir2 = dir;
-	err = dir2.append("system.regdb");
-	if (err != 0)
+	if ((err = dir2.append("system.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
 	m_registry = new (std::nothrow) Registry::Hive(this,dir2.c_str());
@@ -185,8 +184,7 @@ bool Root::Manager::init_database()
 
 	// Create a new System database
 	dir2 = dir;
-	err = dir2.append("sandbox.regdb");
-	if (err != 0)
+	if ((err = dir2.append("sandbox.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
 	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir2.c_str());
@@ -281,8 +279,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 
 					if (keyend > start)
 					{
-						err = strKey.assign(strBuffer.c_str() + start,keyend-start);
-						if (err != 0)
+						if ((err = strKey.assign(strBuffer.c_str() + start,keyend-start)) != 0)
 						{
 							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
 							break;
@@ -295,8 +292,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 
 						if (valpos < valend)
 						{
-							err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos);
-							if (err != 0)
+							if ((err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos)) != 0)
 							{
 								LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
 								break;
@@ -318,12 +314,8 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				}
 
 				// Do something with strKey and strValue
-				if (!strKey.empty())
-				{
-					int err = m_config_args.replace(strKey,strValue);
-					if (err != 0)
-						LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
-				}
+				if (!strKey.empty() && (err = m_config_args.replace(strKey,strValue)) != 0)
+					LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
 			}
 
 			if (end == OOBase::LocalString::npos)
@@ -387,7 +379,7 @@ bool Root::Manager::spawn_sandbox()
 	}
 
 	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
+	m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
 	if (m_sandbox_channel == 0 && m_bUnsafe && !strUName.empty() && bAgain)
 	{
 		OOBase::LocalString strOurUName;
@@ -400,7 +392,7 @@ bool Root::Manager::spawn_sandbox()
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user(uid,m_registry_sandbox,true,strPipe,bAgain);
+		m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
 	}
 
 #if defined(_WIN32)
@@ -456,7 +448,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	m_mapUserProcesses.erase(channel);
 }
 
-bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, UserProcess& user_process)
+bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const char* session_id, UserProcess& user_process)
 {
 	for (bool bFirst = true;bFirst;bFirst = false)
 	{
@@ -473,7 +465,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 			{
 				vecDead.push(*m_mapUserProcesses.key_at(i));
 			}
-			else if (pU->ptrSpawn->IsSameLogin(uid))
+			else if (pU->ptrSpawn->IsSameLogin(uid,session_id))
 			{
 				user_process = *pU;
 				bFound = true;
@@ -499,7 +491,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 
 		// Spawn a new user process
 		bool bAgain = false;
-		if (spawn_user(uid,user_process.ptrRegistry,false,user_process.strPipe,bAgain) != 0)
+		if (spawn_user(uid,session_id,user_process.ptrRegistry,user_process.strPipe,bAgain) != 0)
 			return true;
 
 		if (bFirst && bAgain && m_bUnsafe)
@@ -519,14 +511,14 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, Us
 	return false;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const OOBase::SmartPtr<Registry::Hive>& ptrRegistry, bool bSandbox, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Registry::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
-	process.ptrSpawn = platform_spawn(uid,bSandbox,strPipe,channel_id,ptrMC,bAgain);
+	process.ptrSpawn = platform_spawn(uid,session_id,strPipe,channel_id,ptrMC,bAgain);
 	if (!process.ptrSpawn)
 		return 0;
 
@@ -565,12 +557,15 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Check we haven't created a duplicate while we spawned...
-	for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
+	if (session_id)
 	{
-		if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid))
+		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
-			ptrMC->close();
-			return *m_mapUserProcesses.key_at(i);
+			if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid,session_id))
+			{
+				ptrMC->close();
+				return *m_mapUserProcesses.key_at(i);
+			}
 		}
 	}
 
@@ -598,16 +593,14 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
 	stream.reset();
 	size_t mark = stream.buffer()->mark_rd_ptr();
-	err = ptrSocket->recv(stream.buffer(),4);
-	if (err != 0)
+	if ((err = ptrSocket->recv(stream.buffer(),4)) != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	Omega::uint32_t len = 0;
 	if (!stream.read(len))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
-	err = ptrSocket->recv(stream.buffer(),len);
-	if (err != 0)
+	if ((err = ptrSocket->recv(stream.buffer(),len)) != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	// Now reset rd_ptr and read the string
@@ -616,8 +609,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 	if (!stream.read(strPipeL))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
-	err = strPipe.assign(strPipeL.c_str());
-	if (err != 0)
+	if ((err = strPipe.assign(strPipeL.c_str())) != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);

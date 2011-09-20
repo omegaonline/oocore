@@ -82,7 +82,7 @@ namespace User
 
 	class ChannelMarshalFactory :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactory<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::ProcessLocal>,
+			public OTL::AutoObjectFactory<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::ProcessScope>,
 			public Omega::Remoting::IMarshalFactory
 	{
 	public:

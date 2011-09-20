@@ -154,9 +154,7 @@ namespace OOCore
 		void start(const Omega::string_t& args);
 		void term_i();
 		void stop();
-		void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe);
-		void parse_args(const Omega::string_t& str, OOBase::Table<Omega::string_t,Omega::string_t>& args);
-
+				
 		// Uninitialise destructors
 		void close_singletons_i();
 		void close_compartments();

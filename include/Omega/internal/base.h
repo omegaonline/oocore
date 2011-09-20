@@ -53,15 +53,15 @@ namespace Omega
 	{
 		virtual uint32_t GetErrorCode() = 0;
 
-		static ISystemException* Create(uint32_t errno_val, IException* pCause = 0);
+		static ISystemException* Create(uint32_t errno_val, IException* pCause = NULL);
 	};
 
 	interface IInternalException : public IException
 	{
 		virtual string_t GetSource() = 0;
 
-		static IInternalException* Create(int32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
-		static IInternalException* Create(const char* desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = 0);
+		static IInternalException* Create(int32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL);
+		static IInternalException* Create(const char* desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL, IException* pCause = NULL);
 	};
 
 	interface INoInterfaceException : public IException

@@ -718,7 +718,7 @@ namespace OTL
 		}
 	};
 	
-	template <const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
+	template <const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::UserScope | Omega::Activation::MultipleUse>
 	class ObjectFactoryBase : 
 		public OTL::ObjectBase,
 		public Omega::Activation::IObjectFactory
@@ -797,7 +797,7 @@ namespace OTL
 		}
 	};
 
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::UserScope | Omega::Activation::MultipleUse>
 	class AutoObjectFactory
 	{
 	public:
@@ -814,7 +814,7 @@ namespace OTL
 		}
 	};
 
-	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::ProcessLocal | Omega::Activation::UserLocal | Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::UserScope | Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:

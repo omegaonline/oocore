@@ -82,7 +82,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	uint32_t rot_cookie = 0;
 
 	// Check for public registration...
-	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Global)))
+	if (m_ptrROT && (flags & ~Activation::UserScope))
 	{
 		// Register in sandbox ROT
 		rot_cookie = m_ptrROT->RegisterObject(oid,pObject,flags);
@@ -216,7 +216,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 		return;
 	}
 
-	if (m_ptrROT && (flags & (Activation::MachineLocal | Activation::Global)))
+	if (m_ptrROT && (flags & ~Activation::UserScope))
 	{
 		// Route to global rot
 		m_ptrROT->GetObject(oid,flags,iid,pObject);

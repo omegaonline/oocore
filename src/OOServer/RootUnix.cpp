@@ -119,7 +119,7 @@ void Root::Manager::accept_client_i(OOSvrBase::AsyncLocalSocket* pSocket, int er
 	else
 	{
 		UserProcess user_process;
-		if (get_user_process(uid,user_process))
+		if (get_user_process(uid,"TODO",user_process))
 		{
 			stream.reset();
 

@@ -168,7 +168,10 @@ int main(int argc, char* argv[])
 
 	// Now run...
 	if (bRun)
+	{
+		LOG_DEBUG((APPNAME " started successfully"));
 		manager.run();
+	}
 
 	// Stop the MessageHandler
 	manager.stop_request_threads();

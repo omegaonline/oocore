@@ -26,9 +26,7 @@
 
 #include <shlwapi.h>
 
-#if defined(OMEGA_DEBUG)
-void AttachDebugger(DWORD pid);
-#endif
+void AttachDebugger(unsigned long pid);
 
 #if defined(_MSC_VER)
 #define wcsicmp _wcsicmp
@@ -138,13 +136,11 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 		OMEGA_THROW(dwErr);
 	}
 
-#if defined(OMEGA_DEBUG)
 	if (hDebugEvent)
 	{
 		AttachDebugger(pi.dwProcessId);
 		SetEvent(hDebugEvent);
 	}
-#endif
 
 	CloseHandle(pi.hThread);
 	m_hProcess = pi.hProcess;

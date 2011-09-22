@@ -80,7 +80,7 @@ void OOCore::UserSession::term()
 
 void OOCore::UserSession::init_i(const string_t& args)
 {
-#if defined(OMEGA_DEBUG) && defined(_WIN32)
+#if defined(_WIN32)
 	// If this event exists, then we are being debugged
 	OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
 	if (hDebugEvent)

@@ -45,8 +45,17 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+void AttachDebugger(unsigned long pid);
+
 namespace
 {
+	bool getenv_OMEGA_DEBUG()
+	{
+		OOBase::LocalString str;
+		str.getenv("OMEGA_DEBUG");
+		return (str == "yes");
+	}
+
 	class SpawnedProcessUnix : public Root::SpawnedProcess
 	{
 	public:
@@ -154,6 +163,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 {
 	OOBase::LocalString strAppName;
 	strAppName.getenv("OOSERVER_BINARY_PATH");
+
 	if (strAppName.empty())
 	{
 		int err = strAppName.assign(LIBEXEC_DIR "/oosvruser");
@@ -194,38 +204,43 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 
 	if (child_id != 0)
 	{
+		if (getenv_OMEGA_DEBUG())
+			AttachDebugger(child_id);
+
 		// We are the parent
 		m_pid = child_id;
 		return true;
 	}
 
 	// We are the child...
-
-	// Set stdin/out/err to /dev/null
-	int fd = open("/dev/null",O_RDWR);
-	if (fd == -1)
+	if (!getenv_OMEGA_DEBUG())
 	{
-		LOG_ERROR(("open(/dev/null) failed: %s",OOBase::system_error_text()));
-		_exit(127);
+		// Set stdin/out/err to /dev/null
+		int fd = open("/dev/null",O_RDWR);
+		if (fd == -1)
+		{
+			LOG_ERROR(("open(/dev/null) failed: %s",OOBase::system_error_text()));
+			_exit(127);
+		}
+
+		// Check this session stuff with the Stevens book! umask? etc...
+		void* POSIX_TODO;
+
+		dup2(fd,STDIN_FILENO);
+		dup2(fd,STDOUT_FILENO);
+		dup2(fd,STDERR_FILENO);
+		close(fd);
+
+		// Change dir to a known location
+		if (chdir(LIBEXEC_DIR) != 0)
+		{
+			LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
+			_exit(127);
+		}
 	}
-
-	// Check this session stuff with the Stevens book! umask? etc...
-	void* POSIX_TODO;
-
-	dup2(fd,STDIN_FILENO);
-	dup2(fd,STDOUT_FILENO);
-	dup2(fd,STDERR_FILENO);
-	close(fd);
 
 	// Close all open handles - not that we should have any ;)
 	close_all_fds(pass_fd);
-
-	// Change dir to a known location
-	if (chdir(LIBEXEC_DIR) != 0)
-	{
-		LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
-		_exit(127);
-	}
 
 	if (bChangeUid)
 	{
@@ -268,10 +283,9 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 		_exit(127);
 	}
 
-	OOBase::LocalString debug,display;
-	debug.getenv("OMEGA_DEBUG");
+	OOBase::LocalString display;
 	display.getenv("DISPLAY");
-	if (debug == "yes" && !display.empty())
+	if (getenv_OMEGA_DEBUG() && !display.empty())
 	{
 		OOBase::LocalString strExec;
 		if ((err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str())) != 0)

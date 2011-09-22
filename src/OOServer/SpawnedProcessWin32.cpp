@@ -42,7 +42,7 @@
 #include <shlobj.h>
 #include <ntsecapi.h>
 
-void AttachDebugger(DWORD pid);
+void AttachDebugger(unsigned long pid);
 
 namespace
 {
@@ -636,10 +636,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 
 	if (getenv_OMEGA_DEBUG())
 	{
-#if defined(OMEGA_DEBUG)
 		if (IsDebuggerPresent())
 			hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-#endif
 
 		dwFlags |= CREATE_NEW_CONSOLE;
 
@@ -683,7 +681,6 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	}
 
 	// Attach a debugger if we are debugging
-#if defined(OMEGA_DEBUG)
 	if (hDebugEvent)
 	{
 		AttachDebugger(process_info.dwProcessId);
@@ -691,7 +688,6 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 		SetEvent(hDebugEvent);
 		CloseHandle(hDebugEvent);
 	}
-#endif
 
 	// See if process has immediately terminated...
 	dwWait = WaitForSingleObject(process_info.hProcess,500);

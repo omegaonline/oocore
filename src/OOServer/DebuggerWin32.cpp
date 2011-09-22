@@ -33,19 +33,13 @@
 
 #include <OOBase/String.h>
 
-#if defined(_MSC_VER) && defined(_DEBUG) && !defined(OMEGA_DEBUG)
-#define OMEGA_DEBUG
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////////
 //
 // This module provides hook functions that attempt to attach to a debugger...
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(OMEGA_DEBUG) && defined(_WIN32)
-
-#if defined(_MSC_VER)
+#if defined(_DEBUG) && defined(_MSC_VER)
 
 #if _MSC_VER == 1310
 //The following #import imports the command bar library based on its LIBID.
@@ -181,23 +175,30 @@ namespace
 
 		return bRet;
 	}
+}
 
-	void PromptForDebugger(DWORD pid)
+#endif
+
+namespace
+{
+	void PromptForDebugger(unsigned long pid)
 	{
 		OOBase::LocalString str;
 		if (str.printf("Attach the debugger to process id %ld now if you want!",pid) == 0)
+		{
+#if defined(_WIN32)
 			MessageBoxA(NULL,str.c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
+#else
+			printf("%s\n",str.c_str());
+#endif
+		}
 	}
 }
 
-#endif
-
-void AttachDebugger(DWORD pid)
+void AttachDebugger(unsigned long pid)
 {
-#if defined(_MSC_VER)
+#if defined(_DEBUG) && defined(_MSC_VER)
 	if (!AttachVSDebugger(pid))
-		PromptForDebugger(pid);
 #endif
+		PromptForDebugger(pid);
 }
-
-#endif // OMEGA_DEBUG && _WIN32

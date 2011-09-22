@@ -105,18 +105,23 @@ int main(int argc, char* argv[])
 	if (args.find("version") != args.npos)
 		return Version();
 
-#if defined(_WIN32) && defined(OMEGA_DEBUG)
-	// If this event exists, then we are being debugged
-	// Scope it...
+	OOBase::LocalString debug;
+	debug.getenv("OMEGA_DEBUG");
+	if (debug == "yes")
 	{
-		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
-		if (hDebugEvent)
+	#if defined(_WIN32)
+		// If this event exists, then we are being debugged
+		// Scope it...
 		{
-			// Wait for a bit, letting the caller attach a debugger
-			WaitForSingleObject(hDebugEvent,5000);
+			OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
+			if (hDebugEvent)
+			{
+				// Wait for a bit, letting the caller attach a debugger
+				WaitForSingleObject(hDebugEvent,5000);
+			}
 		}
+	#endif
 	}
-#endif
 
 #if !defined(_WIN32)
 	// Ignore SIGPIPE

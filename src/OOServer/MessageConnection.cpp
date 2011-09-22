@@ -58,8 +58,8 @@
 
 #include "MessageConnection.h"
 
-#if !defined(WSAECONNRESET)
-#define WSAECONNRESET ECONNRESET
+#if !defined(ECONNRESET)
+#define ECONNRESET WSAECONNRESET
 #endif
 
 namespace
@@ -68,13 +68,12 @@ namespace
 	static const size_t     s_header_len = 2 * sizeof(Omega::uint32_t);
 }
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocket* pSocket) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket) :
 		OOBase::RefCounted(),
 		m_pHandler(pHandler),
-		m_ptrSocket(pSocket),
+		m_ptrSocket(ptrSocket),
 		m_channel_id(0)
 {
-	m_ptrSocket->addref();
 }
 
 OOServer::MessageConnection::~MessageConnection()
@@ -145,7 +144,7 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 {
 	if (err != 0)
 	{
-		if (err != WSAECONNRESET)
+		if (err != ECONNRESET)
 			LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err)));
 		return false;
 	}
@@ -165,7 +164,7 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 	// Read the version byte
 	Omega::byte_t version;
 	if (!input.read(version))
-		LOG_ERROR_RETURN(("Faield to read version information: %s",OOBase::system_error_text(input.last_error())),false);
+		LOG_ERROR_RETURN(("Failed to read version information: %s",OOBase::system_error_text(input.last_error())),false);
 		
 	if (version != 1)
 		LOG_ERROR_RETURN(("Invalid protocol version"),false);
@@ -231,7 +230,7 @@ void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err != 0)
 	{
-		if (err != WSAECONNRESET)
+		if (err != ECONNRESET)
 			LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
 		
 		close();
@@ -1199,7 +1198,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Check the size
-		if (msg.m_payload.buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
+		if (msg.m_payload.buffer()->length() > 0xFFFFFF80)
 			LOG_ERROR_RETURN(("Message too big"),io_result::failed);
 
 		// Write the payload stream
@@ -1211,7 +1210,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err)),io_result::failed);
 
 	// Update the total length
-	header.replace(header.buffer()->length() - s_header_len,msg_len_mark);
+	header.replace(static_cast<Omega::uint32_t>(header.buffer()->length() - s_header_len),msg_len_mark);
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 

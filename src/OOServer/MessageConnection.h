@@ -41,7 +41,7 @@ namespace OOServer
 	class MessageConnection : public OOBase::RefCounted
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, OOSvrBase::AsyncLocalSocket* pSocket);
+		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
 		
 		void set_channel_id(Omega::uint32_t channel_id);
 

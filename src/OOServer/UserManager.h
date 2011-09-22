@@ -76,7 +76,7 @@ namespace User
 		static int run_proactor(void*);
 
 		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
-		void on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err);
+		void on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err);
 
 		SECURITY_ATTRIBUTES              m_sa;
 #if defined(_WIN32)

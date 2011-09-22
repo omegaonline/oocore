@@ -141,7 +141,8 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
-#elif defined(HAVE_UNISTD_H)
+#else
+
 	// Use the passed fd
 	int fd = atoi(strPipe.c_str());
 
@@ -443,10 +444,12 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 
 void User::Manager::on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
-	static_cast<Manager*>(pThis)->on_accept_i(pSocket,err);
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
+
+	static_cast<Manager*>(pThis)->on_accept_i(ptrSocket,err);
 }
 
-void User::Manager::on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
+void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err)
 {
 	if (err != 0)
 	{
@@ -456,7 +459,7 @@ void User::Manager::on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
-	err = pSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 	if (err != 0)
 	{
 		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
@@ -475,7 +478,7 @@ void User::Manager::on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 
 	// Check to see if the connection came from a process with our uid
 	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	err = pSocket->get_uid(uid);
+	err = ptrSocket->get_uid(uid);
 	if (err != 0)
 	{
 		LOG_WARNING(("get_uid failure: %s",OOBase::system_error_text(err)));
@@ -491,7 +494,7 @@ void User::Manager::on_accept_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
 #endif
 
 	// Create a new MessageConnection
-	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,pSocket);
+	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
 	{
 		LOG_ERROR(("Out of memory"));

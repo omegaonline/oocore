@@ -627,22 +627,22 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const w
 		return 0;
 
 	const wchar_t* endp = 0;
-	result->Data1 = OOCore::wcstou32(sz+1,endp,16);
+	result->Data1 = OOCore::wcstoul(sz+1,endp,16);
 	if (endp != sz+9)
 		return 0;
 
 	if (sz[9] != L'-' || !iswxdigit(sz[10]))
 		return 0;
 
-	result->Data2 = static_cast<uint16_t>(OOCore::wcstou32(sz+10,endp,16));
+	result->Data2 = static_cast<uint16_t>(OOCore::wcstoul(sz+10,endp,16));
 	if (endp != sz+14 || sz[14] != L'-' || !iswxdigit(sz[15]))
 		return 0;
 
-	result->Data3 = static_cast<uint16_t>(OOCore::wcstou32(sz+15,endp,16));
+	result->Data3 = static_cast<uint16_t>(OOCore::wcstoul(sz+15,endp,16));
 	if (endp != sz+19 || sz[19] != L'-' || !iswxdigit(sz[20]))
 		return 0;
 
-	uint32_t v1 = OOCore::wcstou32(sz+20,endp,16);
+	uint32_t v1 = OOCore::wcstoul(sz+20,endp,16);
 	if (endp != sz+24)
 		return 0;
 
@@ -699,6 +699,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 #else
 
 #error Fix me!
+
+	void* TODO;
 
 	// Pull from /dev/random ?
 

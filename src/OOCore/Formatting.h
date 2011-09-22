@@ -24,8 +24,8 @@
 
 namespace OOCore
 {
-	Omega::int32_t wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
-	Omega::uint32_t wcstou32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
+	long wcstol(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
+	unsigned long wcstoul(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
 	Omega::int64_t wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
 	Omega::uint64_t wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
 	Omega::float8_t wcstod(const wchar_t* sz, wchar_t const*& endptr);

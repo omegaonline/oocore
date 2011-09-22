@@ -624,13 +624,13 @@ inline void Omega::Formatting::formatter_t::free_handle(handle_t* h)
 	OOCore_formatter_t__dctor(h);
 }
 
-OOCORE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),Omega::uint32_t&,index,(out),Omega::string_t&,fmt));
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),Omega::uint32_t,index,(in),const Omega::string_t&,arg));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),unsigned long,index,(in),const Omega::string_t&,arg));
 
 template <typename T>
 inline Omega::Formatting::formatter_t& Omega::Formatting::formatter_t::operator % (const T& rhs)
 {
-	uint32_t index;
+	unsigned long index;
 	string_t strFormat;
 	if (!OOCore_formatter_t_get_arg(m_handle,index,strFormat))
 		throw Formatting::IFormattingException::Create(L"No more formatting arguments");

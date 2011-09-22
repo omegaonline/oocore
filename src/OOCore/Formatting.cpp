@@ -65,7 +65,7 @@ namespace
 		hexadecimal
 	};
 
-	bool parse_numfmt(const string_t& str, num_fmt& fmt, bool& capital, int& precision)
+	bool parse_numfmt(const string_t& str, num_fmt& fmt, bool& capital, long& precision)
 	{
 		if (str.Length() > 3)
 			return false;
@@ -136,7 +136,7 @@ namespace
 			if (iswdigit(str[1]))
 			{
 				const wchar_t* endp = 0;
-				precision = OOCore::wcsto32(str.c_wstr()+1,endp,10);
+				precision = OOCore::wcstol(str.c_wstr()+1,endp,10);
 				if (*endp != L'\0')
 					return false;
 			}
@@ -337,7 +337,7 @@ namespace
 				DWORD dwErr = GetLastError();
 				OMEGA_THROW(dwErr);
 			}
-			posn = static_cast<int>(val);
+			posn = static_cast<long>(val);
 
 			if (!GetLocaleInfoA(lcid,LOCALE_SNEGATIVESIGN,sign,sizeof(sign)))
 			{
@@ -367,7 +367,7 @@ namespace
 				DWORD dwErr = GetLastError();
 				OMEGA_THROW(dwErr);
 			}
-			posn = static_cast<int>(val);
+			posn = static_cast<long>(val);
 
 			if (!GetLocaleInfoA(lcid,LOCALE_SPOSITIVESIGN,sign,sizeof(sign)))
 			{
@@ -593,7 +593,7 @@ namespace
 		return dp;
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, const int64_t& val, int precision)
+	void fmt_fixed_i(OOBase::LocalString& str, const int64_t& val, long precision)
 	{
 		int err = str.printf("%" PRId64,val);
 		if (err != 0)
@@ -619,7 +619,7 @@ namespace
 		}
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, const uint64_t& val, int precision)
+	void fmt_fixed_i(OOBase::LocalString& str, const uint64_t& val, long precision)
 	{
 		int err = str.printf("%" PRIu64,val);
 		if (err != 0)
@@ -645,7 +645,7 @@ namespace
 		}
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, const double& val, int precision)
+	void fmt_fixed_i(OOBase::LocalString& str, const double& val, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -658,7 +658,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_currency(const T& val, int precision)
+	string_t fmt_currency(const T& val, long precision)
 	{
 		if (precision < 0)
 		{
@@ -672,7 +672,7 @@ namespace
 				OMEGA_THROW(dwErr);
 			}
 
-			precision = static_cast<int>(v);
+			precision = static_cast<long>(v);
 #else
 			precision = 2;
 			const lconv* lc = localeconv();
@@ -690,7 +690,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_number(const T& val, int precision)
+	string_t fmt_number(const T& val, long precision)
 	{
 		if (precision < 0)
 		{
@@ -704,7 +704,7 @@ namespace
 				OMEGA_THROW(dwErr);
 			}
 
-			precision = static_cast<int>(v);
+			precision = static_cast<long>(v);
 #else
 			precision = 2;
 			const lconv* lc = localeconv();
@@ -721,7 +721,7 @@ namespace
 		return string_t(ret.c_str(),false);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, const int64_t& val, int precision)
+	void fmt_decimal_i(OOBase::LocalString& str, const int64_t& val, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -733,7 +733,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, const uint64_t& val, int precision)
+	void fmt_decimal_i(OOBase::LocalString& str, const uint64_t& val, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -745,20 +745,20 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, const double& val, int precision)
+	void fmt_decimal_i(OOBase::LocalString& str, const double& val, long precision)
 	{
 		fmt_decimal_i(str,static_cast<int64_t>(val),precision);
 	}
 
 	template <typename T>
-	string_t fmt_decimal(const T& val, int precision)
+	string_t fmt_decimal(const T& val, long precision)
 	{
 		OOBase::LocalString str;
 		fmt_decimal_i(str,val,precision);
 		return string_t(str.c_str(),false);
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, const uint64_t& val, bool capital, int precision)
+	void fmt_hex_i(OOBase::LocalString& str, const uint64_t& val, bool capital, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -770,18 +770,18 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, const int64_t& val, bool capital, int precision)
+	void fmt_hex_i(OOBase::LocalString& str, const int64_t& val, bool capital, long precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, const double& val, bool capital, int precision)
+	void fmt_hex_i(OOBase::LocalString& str, const double& val, bool capital, long precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
 
 	template <typename T>
-	string_t fmt_hex(const T& val, bool capital, int precision)
+	string_t fmt_hex(const T& val, bool capital, long precision)
 	{
 		OOBase::LocalString str;
 		fmt_hex_i(str,val,capital,precision);
@@ -789,7 +789,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_fixed(const T& val, int precision)
+	string_t fmt_fixed(const T& val, long precision)
 	{
 		if (precision < 0)
 		{
@@ -803,7 +803,7 @@ namespace
 				OMEGA_THROW(dwErr);
 			}
 
-			precision = static_cast<int>(v);
+			precision = static_cast<long>(v);
 #else
 			precision = 2;
 			const lconv* lc = localeconv();
@@ -820,7 +820,7 @@ namespace
 		return string_t(ret.c_str(),false);
 	}
 
-	void exp_strip(OOBase::LocalString& str, int precision, bool show_plus)
+	void exp_strip(OOBase::LocalString& str, long precision, bool show_plus)
 	{
 		assert(precision >= 0);
 
@@ -849,7 +849,7 @@ namespace
 			insert(str,pos,pos+precision-str.length(),'0');
 	}
 
-	void fmt_scientific_i(OOBase::LocalString& str, const double& val, bool capital, int precision)
+	void fmt_scientific_i(OOBase::LocalString& str, const double& val, bool capital, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -865,13 +865,13 @@ namespace
 	}
 
 	template <typename T>
-	void fmt_scientific_i(OOBase::LocalString& str, const T& val, bool capital, int precision)
+	void fmt_scientific_i(OOBase::LocalString& str, const T& val, bool capital, long precision)
 	{
 		fmt_scientific_i(str,static_cast<double>(val),capital,precision);
 	}
 
 	template <typename T>
-	string_t fmt_scientific(const T& val, bool capital, int precision)
+	string_t fmt_scientific(const T& val, bool capital, long precision)
 	{
 		if (precision < 0)
 			precision = 6;
@@ -881,7 +881,7 @@ namespace
 		return string_t(str.c_str(),false);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, int precision)
+	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -893,7 +893,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, int precision)
+	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -905,7 +905,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, int precision)
+	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -921,7 +921,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_general(const T& val, bool capital, int precision)
+	string_t fmt_general(const T& val, bool capital, long precision)
 	{
 		OOBase::LocalString str;
 		fmt_general_i(str,val,capital,precision);
@@ -929,12 +929,12 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_round_trip(const T& val, int /*precision*/)
+	string_t fmt_round_trip(const T& val, long /*precision*/)
 	{
 		return fmt_decimal(val,0);
 	}
 
-	string_t fmt_round_trip(const double& val, int precision)
+	string_t fmt_round_trip(const double& val, long precision)
 	{
 		string_t s;
 		double p = 0.0;
@@ -1025,10 +1025,10 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision);
+	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision);
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, int def_precision, bool bRecurse);
+	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse);
 
 	template <typename T>
 	string_t fmt_rnd_away(const T& val)
@@ -1094,7 +1094,7 @@ namespace
 
 		// Work out precision and mode...
 		size_t sci = string_t::npos;
-		int precision = 0;
+		long precision = 0;
 		int width = 0;
 		int exp_digits = 0;
 		bool seen_decimal = false;
@@ -1340,11 +1340,11 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, int def_precision, bool bRecurse)
+	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse)
 	{
 		num_fmt fmt;
 		bool capital;
-		int precision;
+		long precision;
 		if (parse_numfmt(strFormat,fmt,capital,precision))
 		{
 			switch (fmt)
@@ -1391,7 +1391,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision)
+	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision)
 	{
 		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 		switch (parse_custom(strFormat,parts))
@@ -1431,7 +1431,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Formatting::IFormattingException*,OOCore_IFormatt
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	int def_precision = 0;
+	long def_precision = 0;
 	switch (byte_width)
 	{
 	case sizeof(byte_t):
@@ -1457,7 +1457,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,v
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	int def_precision = 0;
+	long def_precision = 0;
 	switch (byte_width)
 	{
 	case sizeof(byte_t):
@@ -1483,7 +1483,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	int def_precision = 0;
+	long def_precision = 0;
 	switch (byte_width)
 	{
 	case sizeof(float4_t):
@@ -1512,17 +1512,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	return val ? *parts.at(0) : *parts.at(1);
 }
 
-int32_t OOCore::wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+long OOCore::wcstol(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-	static_assert(sizeof(::wcstol(0,0,0)) == sizeof(int32_t),"Non-standard wcstol");
-
 	return ::wcstol(sz,const_cast<wchar_t**>(&endptr),base);
 }
 
-uint32_t OOCore::wcstou32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+unsigned long OOCore::wcstoul(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-	static_assert(sizeof(::wcstoul(0,0,0)) == sizeof(uint32_t),"Non-standard wcstoul");
-
 	return ::wcstoul(sz,const_cast<wchar_t**>(&endptr),base);
 }
 
@@ -1606,8 +1602,8 @@ namespace
 {
 	struct insert_t
 	{
-		uint32_t        index;
-		int32_t         alignment;
+		unsigned long   index;
+		long            alignment;
 		string_t        strFormat;
 		string_t        strSuffix;
 	};
@@ -1667,13 +1663,13 @@ namespace
 			throw Formatting::IFormattingException::Create(L"Missing index in format string: {0}" % strIn);
 
 		const wchar_t* endp = 0;
-		ins.index = OOCore::wcstou32(strIn.c_wstr()+pos,endp,10);
+		ins.index = OOCore::wcstoul(strIn.c_wstr()+pos,endp,10);
 
 		ins.alignment = 0;
 		if (comma < end && comma < colon)
 		{
 			pos = comma++;
-			ins.alignment = OOCore::wcsto32(strIn.c_wstr()+comma,endp,10);
+			ins.alignment = OOCore::wcstol(strIn.c_wstr()+comma,endp,10);
 		}
 
 		if (colon < end)
@@ -1721,14 +1717,14 @@ namespace
 		}
 	}
 
-	string_t align(const string_t& str, int align)
+	string_t align(const string_t& str, long align)
 	{
-		unsigned width = (align < 0 ? -align : align);
+		unsigned long width = (align < 0 ? -align : align);
 		if (str.Length() >= width)
 			return str;
 
 		string_t strFill;
-		for (size_t i=0;i<width-str.Length();++i)
+		for (unsigned long i=0;i<width-str.Length();++i)
 			strFill += L' ';
 
 		if (align < 0)
@@ -1765,7 +1761,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	for (size_t i=0; i!=s->m_listInserts->size(); ++i)
 	{
 		insert_t* ins = s->m_listInserts->at(i);
-		if (!pushed && ins->index == uint32_t(-1))
+		if (!pushed && ins->index == (unsigned long)-1)
 		{
 			s_new->m_strPrefix += ins->strFormat + ins->strSuffix;
 		}
@@ -1794,14 +1790,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,hand
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),Omega::uint32_t&,index,(out),Omega::string_t&,fmt))
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt))
 {
 	const format_state_t* s = static_cast<const format_state_t*>(handle);
 	if (!s || !s->m_listInserts)
 		return 0;
 
 	// Find the lowest index (from left to right)
-	index = uint32_t(-1);
+	index = (unsigned long)-1;
 	for (size_t i=0; i!=s->m_listInserts->size(); ++i)
 	{
 		insert_t* ins = s->m_listInserts->at(i);
@@ -1812,10 +1808,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void
 		}
 	}
 
-	return (index == uint32_t(-1) ? 0 : 1);
+	return (index == (unsigned long)-1 ? 0 : 1);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),Omega::uint32_t,index,(in),const Omega::string_t&,arg))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),unsigned long,index,(in),const Omega::string_t&,arg))
 {
 	const format_state_t* s = static_cast<const format_state_t*>(handle);
 	if (s && s->m_listInserts)
@@ -1827,7 +1823,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 			if (ins->index == index)
 			{
 				ins->strFormat = align(arg,ins->alignment);
-				ins->index = uint32_t(-1);
+				ins->index = (unsigned long)-1;
 				break;
 			}
 		}
@@ -1846,7 +1842,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),c
 		for (size_t i=0;i<s->m_listInserts->size();++i)
 		{
 			insert_t* ins = s->m_listInserts->at(i);
-			if (ins->index != uint32_t(-1))
+			if (ins->index != (unsigned long)-1)
 			{
 				strPrefix += L"{" + Formatting::ToString(ins->index);
 				if (ins->alignment != 0)

@@ -164,51 +164,41 @@ namespace Omega
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<signed short>
+			template <> struct is_c_abi<int16_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<unsigned short>
+			template <> struct is_c_abi<uint16_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<signed int>
+			template <> struct is_c_abi<int32_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<unsigned int>
+			template <> struct is_c_abi<uint32_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<signed long>
+			template <> struct is_c_abi<int64_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<unsigned long>
+			template <> struct is_c_abi<uint64_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<float>
+			template <> struct is_c_abi<float4_t>
 			{
 				enum { result = 1 };
 			};
-			template <> struct is_c_abi<double>
+			template <> struct is_c_abi<float8_t>
 			{
 				enum { result = 1 };
 			};
 
 			// Platform specific - therefore safe
 			template <> struct is_c_abi<wchar_t>
-			{
-				enum { result = 1 };
-			};
-
-			// Fairly sure about these
-			template <> struct is_c_abi<int64_t>
-			{
-				enum { result = 1 };
-			};
-			template <> struct is_c_abi<uint64_t>
 			{
 				enum { result = 1 };
 			};

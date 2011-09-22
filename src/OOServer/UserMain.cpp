@@ -105,32 +105,27 @@ int main(int argc, char* argv[])
 	if (args.find("version") != args.npos)
 		return Version();
 
-	OOBase::LocalString debug;
-	debug.getenv("OMEGA_DEBUG");
-	if (debug == "yes")
+#if defined(_WIN32)
+	// If this event exists, then we are being debugged
+	// Scope it...
 	{
-	#if defined(_WIN32)
-		// If this event exists, then we are being debugged
-		// Scope it...
+		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
+		if (hDebugEvent)
 		{
-			OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
-			if (hDebugEvent)
-			{
-				// Wait for a bit, letting the caller attach a debugger
-				WaitForSingleObject(hDebugEvent,5000);
-			}
+			// Wait for a bit, letting the caller attach a debugger
+			WaitForSingleObject(hDebugEvent,5000);
 		}
-	#endif
 	}
 
-#if !defined(_WIN32)
-	// Ignore SIGPIPE
-	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text()));
+#else
 
-	// Ignore SIGCHLD
-	if (::signal(SIGCHLD,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGCHLD) failed: %s",OOBase::system_error_text()));
+	// Ignore SIGPIPE and SIGCHLD
+	sigset_t sigset;
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGPIPE);
+	sigaddset(&sigset, SIGCHLD);
+	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+
 #endif
 
 	OOBase::String strPipe;

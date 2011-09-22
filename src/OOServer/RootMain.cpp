@@ -107,6 +107,15 @@ int main(int argc, char* argv[])
 	if (args.find("version") != args.npos)
 		return Version();
 
+#if !defined(_WIN32)
+	// Ignore SIGPIPE and SIGCHLD
+	sigset_t sigset;
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGPIPE);
+	sigaddset(&sigset, SIGCHLD);
+	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+#endif
+
 	// Run the one and only Root::Manager instance
 	return Root::Manager().run(args);
 }

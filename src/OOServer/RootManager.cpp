@@ -69,18 +69,11 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	m_bUnsafe = (cmd_args.find("unsafe") != cmd_args.npos);
 
-#if !defined(_WIN32)
-	// Ignore SIGPIPE
-	if (::signal(SIGPIPE,SIG_IGN) == SIG_ERR)
-		LOG_ERROR(("signal(SIGPIPE) failed: %s",OOBase::system_error_text(errno)));
-
 	OOBase::String strPidfile;
 	cmd_args.find("pidfile",strPidfile);
 
 	if (!pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str()))
 		return EXIT_FAILURE;
-
-#endif
 
 	// Loop until we quit
 	for (bool bQuit=false; !bQuit;)

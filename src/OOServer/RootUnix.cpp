@@ -62,7 +62,11 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	// Determine conf file
 	OOBase::String strFile;
 	if (cmd_args.find("conf-file",strFile))
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",strFile.c_str());
+	{
+		char* rpath = realpath(strFile.c_str(),NULL);
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",rpath);
+		free(rpath);
+	}
 
 	return load_config_file(strFile.empty() ? "/etc/omegaonline.conf" : strFile.c_str());
 }

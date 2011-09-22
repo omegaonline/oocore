@@ -87,7 +87,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 			return EXIT_FAILURE;
 
 		// Start the proactor pool
-		int err = m_proactor_pool.run(run_proactor,NULL,2);
+		int err = m_proactor_pool.run(&run_proactor,NULL,2);
 		if (err != 0)
 		{
 			m_proactor_pool.join();

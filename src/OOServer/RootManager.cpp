@@ -576,17 +576,10 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
 {
 	OOBase::CDRStream stream;
-	if (!stream.write(m_sandbox_channel))
-		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
-
-	int err = ptrSocket->send(stream.buffer());
-	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOBase::system_error_text(err)),0);
 
 	// We know a CDRStream writes strings as a 4 byte length followed by the character data
-	stream.reset();
-	size_t mark = stream.buffer()->mark_rd_ptr();
-	if ((err = ptrSocket->recv(stream.buffer(),4)) != 0)
+	int err = ptrSocket->recv(stream.buffer(),4);
+	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	Omega::uint32_t len = 0;
@@ -597,7 +590,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
 
 	// Now reset rd_ptr and read the string
-	stream.buffer()->mark_rd_ptr(mark);
+	stream.buffer()->mark_rd_ptr(0);
 	OOBase::LocalString strPipeL;
 	if (!stream.read(strPipeL))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
@@ -617,7 +610,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 	}
 
 	stream.reset();
-	if (!stream.write(channel_id))
+	if (!stream.write(m_sandbox_channel) || !stream.write(channel_id))
 	{
 		ptrMC->close();
 		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);

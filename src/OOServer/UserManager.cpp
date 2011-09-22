@@ -260,34 +260,29 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 {
 	OOBase::CDRStream stream;
 
+	// Send our port name
+	if (!stream.write(strPipe.c_str()))
+		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	int err = local_socket->send(stream.buffer());
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
+
 	// Read the sandbox channel
-	int err = local_socket->recv(stream.buffer(),sizeof(uint32_t));
+	stream.reset();
+	err = local_socket->recv(stream.buffer(),2*sizeof(uint32_t));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
 
 	uint32_t sandbox_channel = 0;
-	if (!stream.read(sandbox_channel))
+	uint32_t our_channel = 0;
+	if (!stream.read(sandbox_channel) || !stream.read(our_channel))
+	{
 		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
+	}
 
 	// Set the sandbox flag
 	m_bIsSandbox = (sandbox_channel == 0);
-
-	// Then send back our port name
-	stream.reset();
-	if (!stream.write(strPipe.c_str()))
-		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	if ((err = local_socket->send(stream.buffer())) != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
-
-	// Read our channel id
-	stream.reset();
-	if ((err = local_socket->recv(stream.buffer(),sizeof(uint32_t))) != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
-
-	uint32_t our_channel = 0;
-	if (!stream.read(our_channel))
-		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	// Init our channel id
 	set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);

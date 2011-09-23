@@ -799,7 +799,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Check the size
-		if (request->buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
+		if (request->buffer()->length() > 0xFFFFFF80)
 			OMEGA_THROW("Message too big");
 
 		// Write the request stream
@@ -809,7 +809,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 	}
 
 	// Update the total length
-	header.replace(header.buffer()->length() - s_header_len,msg_len_mark);
+	header.replace(static_cast<uint32_t>(header.buffer()->length() - s_header_len),msg_len_mark);
 }
 
 Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)

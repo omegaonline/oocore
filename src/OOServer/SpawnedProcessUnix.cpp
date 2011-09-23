@@ -372,8 +372,6 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 
 bool SpawnedProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 {
-	assert(!IsSameUser(uid));
-
 	// Sort out the session handling
 	void* ISSUE_5;
 

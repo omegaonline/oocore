@@ -727,5 +727,58 @@ OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const 
 
 void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
 {
-	static_cast<Manager*>(pThis)->accept_client_i(pSocket,err);
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
+
+	static_cast<Manager*>(pThis)->accept_client_i(ptrSocket,err);
 }
+
+#include "../../include/Omega/OOCore_version.h"
+
+void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err)
+{
+	LOG_DEBUG(("Got a client accept!"));
+
+	if (err != 0)
+		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
+	else
+	{
+		// Read 4 bytes - This forces credential passing
+		OOBase::CDRStream stream;
+		err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+		if (err != 0)
+			LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
+		else
+		{
+			// Check the versions are correct
+			Omega::uint32_t version = 0;
+			if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+				LOG_WARNING(("Unsupported version received: %u",version));
+			else
+			{
+				OOSvrBase::AsyncLocalSocket::uid_t uid;
+				err = ptrSocket->get_uid(uid);
+				if (err != 0)
+					LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
+				else
+				{
+				#if defined(_WIN32)
+					// Make sure the handle is closed
+					OOBase::Win32::SmartHandle hUidToken(uid);
+				#endif
+
+					void* TODO; // Session Id?
+
+					UserProcess user_process;
+					if (get_user_process(uid,"UNUSED",user_process))
+					{
+						if (!stream.write(user_process.strPipe.c_str()))
+							LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
+						else
+							ptrSocket->send(stream.buffer());
+					}
+				}
+			}
+		}
+	}
+}
+

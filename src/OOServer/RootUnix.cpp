@@ -37,8 +37,6 @@
 
 #include "RootManager.h"
 
-#include "../../include/Omega/OOCore_version.h"
-
 #include <signal.h>
 #include <stdlib.h>
 
@@ -83,56 +81,16 @@ bool Root::Manager::start_client_acceptor()
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
 	err = m_client_acceptor->listen();
+	if (err == EADDRINUSE)
+	{
+		unlink(pipe_name);
+		err = m_client_acceptor->listen();
+	}
+
 	if (err != 0)
 		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
 
 	return true;
-}
-
-void Root::Manager::accept_client_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
-{
-	void* TODO; // this might need adjusting
-
-	if (err != 0)
-	{
-		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
-		return;
-	}
-
-	// Read 4 bytes - This forces credential passing
-	OOBase::CDRStream stream;
-	err = pSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
-	if (err != 0)
-	{
-		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
-		return;
-	}
-
-	// Check the versions are correct
-	Omega::uint32_t version = 0;
-	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-	{
-		LOG_WARNING(("Unsupported version received: %u",version));
-		return;
-	}
-
-	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	err = pSocket->get_uid(uid);
-	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
-	else
-	{
-		UserProcess user_process;
-		if (get_user_process(uid,"TODO",user_process))
-		{
-			stream.reset();
-
-			if (!stream.write(user_process.strPipe.c_str()))
-				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
-			else
-				pSocket->send(stream.buffer());
-		}
-	}
 }
 
 #endif

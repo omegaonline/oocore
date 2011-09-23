@@ -37,8 +37,6 @@
 
 #include "RootManager.h"
 
-#include "../../include/Omega/OOCore_version.h"
-
 #include <ntsecapi.h>
 #include <shlwapi.h>
 #include <shlobj.h>
@@ -347,53 +345,6 @@ bool Root::Manager::start_client_acceptor()
 		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
 
 	return true;
-}
-
-void Root::Manager::accept_client_i(OOSvrBase::AsyncLocalSocket* pSocket, int err)
-{
-	if (err != 0)
-	{
-		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
-		return;
-	}
-
-	// Read 4 bytes - This forces credential passing
-	OOBase::CDRStream stream;
-	err = pSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
-	if (err != 0)
-	{
-		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
-		return;
-	}
-
-	// Check the versions are correct
-	Omega::uint32_t version = 0;
-	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-	{
-		LOG_WARNING(("Unsupported version received: %u",version));
-		return;
-	}
-
-	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	err = pSocket->get_uid(uid);
-	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
-	else
-	{
-		// Make sure the handle is closed
-		OOBase::Win32::SmartHandle hUidToken(uid);
-
-		void* TODO; // Session Id?
-
-		UserProcess user_process;
-		if (get_user_process(uid,"UNUSED",user_process))
-		{
-			if (!stream.write(user_process.strPipe.c_str()))
-				LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(stream.last_error())));
-			else
-				pSocket->send(stream.buffer());
-		}
-	}
 }
 
 #endif // _WIN32

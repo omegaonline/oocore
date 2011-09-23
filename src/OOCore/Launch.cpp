@@ -110,7 +110,7 @@ namespace
 	#else
 		void* TODO;
 		
-		const char* name = "/tmp/nowhere";
+		const char* name = "/tmp/omegaonline";
 	#endif
 
 		OOBase::SmartPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(name,err);
@@ -137,7 +137,7 @@ namespace
 			OMEGA_THROW(err);
 
 		// We know a CDRStream writes strings as a 4 byte length followed by the character data
-		size_t mark = stream.buffer()->mark_rd_ptr();
+		stream.reset();
 		err = root_socket->recv(stream.buffer(),sizeof(uint32_t));
 		if (err != 0)
 			OMEGA_THROW(err);
@@ -151,7 +151,7 @@ namespace
 			OMEGA_THROW(err);
 
 		// Now reset rd_ptr and read the string
-		stream.buffer()->mark_rd_ptr(mark);
+		stream.buffer()->mark_rd_ptr(0);
 
 		if (!stream.read(strPipe))
 			OMEGA_THROW(stream.last_error());
@@ -190,7 +190,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 		do
 		{
 			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,&wait);
-			if (!err || err != ENOENT)
+			if (!err || (err != ENOENT && err != ECONNREFUSED))
 				break;
 
 			// We ignore the error, and try again until we timeout

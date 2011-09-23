@@ -185,7 +185,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	if (!bStandalone)
 	{
 		// Connect up to the user process...
-		OOBase::timeval_t wait(5);
+		OOBase::timeval_t wait(15);
 		OOBase::Countdown countdown(&wait);
 		do
 		{

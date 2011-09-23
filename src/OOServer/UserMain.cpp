@@ -169,7 +169,8 @@ int main(int argc, char* argv[])
 	// Now run...
 	if (bRun)
 	{
-		LOG_DEBUG((APPNAME " started successfully"));
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
+
 		manager.run();
 	}
 

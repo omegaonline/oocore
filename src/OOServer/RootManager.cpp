@@ -111,7 +111,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 			// Start listening for clients
 			if (start_client_acceptor())
 			{
-				LOG_DEBUG(("Started successfully"));
+				OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
 
 				bOk = true;
 

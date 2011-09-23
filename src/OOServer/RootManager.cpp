@@ -139,7 +139,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		{
 #if defined(OMEGA_DEBUG)
 			// Give us a chance to read the errors!
-			OOBase::Thread::sleep(OOBase::timeval_t(5,0));
+			OOBase::Thread::sleep(OOBase::timeval_t(15));
 #endif
 			return EXIT_FAILURE;
 		}
@@ -736,8 +736,6 @@ void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSoc
 
 void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err)
 {
-	LOG_DEBUG(("Got a client accept!"));
-
 	if (err != 0)
 		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
 	else

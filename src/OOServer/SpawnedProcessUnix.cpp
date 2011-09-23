@@ -287,14 +287,12 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	display.getenv("DISPLAY");
 	if (getenv_OMEGA_DEBUG() && !display.empty())
 	{
-		OOBase::LocalString strExec;
-		if ((err = strExec.printf("%s %s",strAppName.c_str(),strPipe.c_str())) != 0)
-		{
-			LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
-			_exit(127);
-		}
+		//execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
 
-		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strExec.c_str(),(char*)0);
+		OOBase::LocalString gdb;
+		gdb.printf("run %s",strPipe.c_str());
+
+		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
 	}
 
 	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);

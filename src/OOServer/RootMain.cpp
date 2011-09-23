@@ -65,6 +65,11 @@ namespace
 	bool CriticalFailure(const char* msg)
 	{
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+
+#if defined(OMEGA_DEBUG)
+		// Give us a chance to read the errors!
+		OOBase::Thread::sleep(OOBase::timeval_t(15));
+#endif
 		return true;
 	}
 }
@@ -108,10 +113,9 @@ int main(int argc, char* argv[])
 		return Version();
 
 #if !defined(_WIN32)
-	// Ignore SIGPIPE and SIGCHLD
+	// Ignore  SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGPIPE);
 	sigaddset(&sigset, SIGCHLD);
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 #endif

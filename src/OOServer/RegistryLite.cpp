@@ -128,11 +128,7 @@ namespace
 		
 		if (!dir.empty())
 		{
-		#if defined(_WIN32)
-			dir.replace('/','\\');
-		#else
-			dir.replace('\\','/');
-		#endif
+			OOBase::CorrectDirSeparator(dir);
 			err = OOBase::AppendDirSeparator(dir);
 		}
 

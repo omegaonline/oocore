@@ -537,7 +537,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	}
 	else
 	{
-		strModule.replace('/','\\');
+		OOBase::CorrectDirSeparator(strModule);
 		int err = OOBase::AppendDirSeparator(strModule);
 
 		if (err == 0)

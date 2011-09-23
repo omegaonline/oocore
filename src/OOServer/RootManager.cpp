@@ -155,12 +155,7 @@ bool Root::Manager::init_database()
 	if (!m_config_args.find("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-#if defined(_WIN32)
-	dir.replace('/','\\');
-#else
-	dir.replace('\\','/');
-#endif
-
+	OOBase::CorrectDirSeparator(dir);
 	int err = OOBase::AppendDirSeparator(dir);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);

@@ -546,7 +546,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		ptrSE = ISystemException::Create(err);
 
 	if (buffer)
-		ptrNotify->OnRecv(ptrSocket,buffer->length(),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
+		ptrNotify->OnRecv(ptrSocket,static_cast<uint32_t>(buffer->length()),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
 	else
 		ptrNotify->OnRecv(ptrSocket,0,0,ptrSE);
 }
@@ -573,7 +573,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 		ptrSE = ISystemException::Create(err);
 
 	if (buffer && bIncludeData)
-		ptrNotify->OnSent(ptrSocket,buffer->length(),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
+		ptrNotify->OnSent(ptrSocket,static_cast<uint32_t>(buffer->length()),reinterpret_cast<const byte_t*>(buffer->rd_ptr()),ptrSE);
 	else
 		ptrNotify->OnSent(ptrSocket,0,0,ptrSE);
 }

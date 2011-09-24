@@ -64,7 +64,6 @@
     <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
       <Library Name="OOBased.lib" />
-      <Library Name="OOSvrBased.lib" />
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
         <Library Name="vld.lib" Optional="true" />

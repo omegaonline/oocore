@@ -117,11 +117,11 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 
-#if defined(OMEGA_DEBUG)
 	OOBase::Win32::SmartHandle hDebugEvent;
 	if (IsDebuggerPresent())
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Local\\OOCORE_DEBUG_MUTEX");
 
+#if defined(OMEGA_DEBUG)
 	dwFlags = CREATE_NEW_CONSOLE;
 #endif // OMEGA_DEBUG
 

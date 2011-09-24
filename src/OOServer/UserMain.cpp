@@ -185,12 +185,14 @@ int main(int argc, char* argv[])
 
 	if (!bRun)
 	{
-		LOG_ERROR_RETURN((APPNAME " exiting prematurely."),EXIT_FAILURE);
+		LOG_ERROR((APPNAME " exiting prematurely."));
 
 #if defined(OMEGA_DEBUG)
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(OOBase::timeval_t(15));
 #endif
+
+		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;

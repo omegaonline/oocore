@@ -61,7 +61,7 @@ namespace
 		const Omega::uint32_t               m_id;
 		OOBase::RefPtr<OOSvrBase::Acceptor> m_ptrAcceptor;
 
-		static void on_accept(void* pThis, OOSvrBase::AsyncSocket* pSocket, const sockaddr* addr, size_t addr_len, int err);
+		static void on_accept(void* pThis, OOSvrBase::AsyncSocket* pSocket, const sockaddr* addr, socklen_t addr_len, int err);
 		void on_accept_i(OOSvrBase::AsyncSocket* pSocket, int err);
 	};
 
@@ -508,7 +508,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	}
 
 	sockaddr_storage addr = {0};
-	size_t addr_len = pResults->ai_addrlen;
+	socklen_t addr_len = pResults->ai_addrlen;
 	memcpy(&addr,pResults->ai_addr,addr_len);
 	
 	// Done with address info
@@ -533,7 +533,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	return pService;
 }
 
-void TcpAcceptor::on_accept(void* pThis, OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*addr*/, size_t /*addr_len*/, int err)
+void TcpAcceptor::on_accept(void* pThis, OOSvrBase::AsyncSocket* pSocket, const sockaddr* /*addr*/, socklen_t /*addr_len*/, int err)
 {
 	static_cast<TcpAcceptor*>(pThis)->on_accept_i(pSocket,err);
 }

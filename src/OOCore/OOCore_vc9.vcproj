@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="..\..\..\oobase\include"
 				PreprocessorDefinitions=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -141,7 +141,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
-				AdditionalLibraryDirectories="C:\OOBase\src\x64\Debug"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\x64\Debug"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>

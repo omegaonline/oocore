@@ -58,7 +58,7 @@
 
 #include "MessageConnection.h"
 
-#if !defined(ECONNRESET)
+#if !defined(ECONNRESET) && defined(_WIN32)
 #define ECONNRESET WSAECONNRESET
 #endif
 

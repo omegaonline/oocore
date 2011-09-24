@@ -27,6 +27,10 @@
 using namespace Omega;
 using namespace OTL;
 
+#if !defined(ECONNREFUSED) && defined(_WIN32)
+#define ECONNREFUSED WSAECONNREFUSED
+#endif
+
 namespace
 {
 	void parse_args(const string_t& str, OOBase::Table<string_t,string_t>& args)

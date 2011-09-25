@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
 				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"

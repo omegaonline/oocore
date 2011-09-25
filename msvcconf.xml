@@ -113,10 +113,6 @@
   </Project>
   
   <Project Name="TestLibrary">
-    <Configuration Name="Debug">
-      <Platform Name="Win32">
-      </Platform>
-    </Configuration>
   </Project>
   
   <Project Name="TestProcess">

@@ -66,7 +66,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\Win32\Debug_Svr;&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\Win32\Debug_Svr;&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"

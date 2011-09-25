@@ -39,6 +39,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestProcess", "test\TestPro
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOGuidgen", "tools\OOGuidgen\OOGuidgen_vc9.vcproj", "{8DE689DF-8B41-48AF-89C2-23B19323FCD7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -116,6 +121,14 @@ Global
 		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release|Win32.Build.0 = Release|Win32
 		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release|x64.ActiveCfg = Release|x64
 		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release|x64.Build.0 = Release|x64
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Debug|Win32.Build.0 = Debug|Win32
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Debug|x64.ActiveCfg = Debug|x64
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Debug|x64.Build.0 = Debug|x64
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|Win32.ActiveCfg = Release|Win32
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|Win32.Build.0 = Release|Win32
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|x64.ActiveCfg = Release|x64
+		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -34,21 +34,37 @@
 #undef DllCanUnloadNow
 ////////////////////////////////////////////////
 
+#if defined(HAVE_VLD_H)
+#include <vld.h>
+#endif
+
 // {BD4D8C57-35ED-4f48-8302-2C90D837306F}
 DEFINE_GUID(CLSID_OmegaInterop,0xbd4d8c57, 0x35ed, 0x4f48, 0x83, 0x2, 0x2c, 0x90, 0xd8, 0x37, 0x30, 0x6f);
 
 HRESULT CreateClassFactory(void** ppv);
 bool CanUnloadNow();
 
-extern "C" __declspec(dllexport) HRESULT STDAPICALLTYPE DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv)
+#if defined(_MSC_VER)
+#pragma comment(linker, "/export:DllGetClassObject=_DllGetClassObject@12,PRIVATE") 
+#pragma comment(linker, "/export:DllCanUnloadNow=_DllCanUnloadNow@0,PRIVATE") 
+
+#define MAGIC_DECL extern "C" HRESULT STDAPICALLTYPE 
+#else
+#define MAGIC_DECL extern "C" __declspec(dllexport) HRESULT STDAPICALLTYPE 
+#endif
+
+MAGIC_DECL DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv)
 {
 	if (rclsid != CLSID_OmegaInterop)
 		return CLASS_E_CLASSNOTAVAILABLE;
 
+	if (riid != IID_IClassFactory)
+		return E_NOINTERFACE;
+
 	return CreateClassFactory(ppv);
 }
 
-extern "C" __declspec(dllexport) HRESULT STDAPICALLTYPE DllCanUnloadNow()
+MAGIC_DECL DllCanUnloadNow()
 {
 	return (CanUnloadNow() ? S_OK : S_FALSE);
 }

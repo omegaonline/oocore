@@ -44,6 +44,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOGuidgen", "tools\OOGuidge
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOCOMLite", "tools\OOCOMLite\OOCOMLite_vc9.vcproj", "{947F7F45-AC03-498F-99C2-60DC09CDF89E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -129,6 +134,12 @@ Global
 		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|Win32.Build.0 = Release|Win32
 		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|x64.ActiveCfg = Release|x64
 		{8DE689DF-8B41-48AF-89C2-23B19323FCD7}.Release|x64.Build.0 = Release|x64
+		{947F7F45-AC03-498F-99C2-60DC09CDF89E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{947F7F45-AC03-498F-99C2-60DC09CDF89E}.Debug|Win32.Build.0 = Debug|Win32
+		{947F7F45-AC03-498F-99C2-60DC09CDF89E}.Debug|x64.ActiveCfg = Debug|Win32
+		{947F7F45-AC03-498F-99C2-60DC09CDF89E}.Release|Win32.ActiveCfg = Release|Win32
+		{947F7F45-AC03-498F-99C2-60DC09CDF89E}.Release|Win32.Build.0 = Release|Win32
+		{947F7F45-AC03-498F-99C2-60DC09CDF89E}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

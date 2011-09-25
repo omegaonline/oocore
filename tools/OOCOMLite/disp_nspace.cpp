@@ -21,7 +21,7 @@
 
 #include "disp_nspace.h"
 
-STDMETHODIMP IDispatchNSpaceImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, UINT cNames, LCID lcid, DISPID* rgDispId)
+STDMETHODIMP IDispatchNSpaceImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, UINT cNames, LCID /*lcid*/, DISPID* rgDispId)
 {
 	if (riid != IID_NULL)
 		return DISP_E_UNKNOWNINTERFACE;

@@ -142,7 +142,7 @@ HRESULT variant_to_any(LCID lcid, const VARIANTARG& arg, Omega::any_t& value)
 	case VT_DATE:
 		{
 			VARIANTARG arg2;
-			HRESULT hr = VariantChangeType(&arg2,const_cast<VARIANTARG*>(&arg),lcid,VT_BSTR);
+			HRESULT hr = VariantChangeTypeEx(&arg2,const_cast<VARIANTARG*>(&arg),lcid,0,VT_BSTR);
 			if (hr != S_OK)
 				return hr;
 			
@@ -209,7 +209,7 @@ HRESULT variant_to_any(LCID lcid, const VARIANTARG& arg, Omega::any_t& value)
 		else
 		{
 			VARIANTARG arg2;
-			HRESULT hr = VariantChangeType(&arg2,const_cast<VARIANTARG*>(&arg),lcid,VT_BSTR);
+			HRESULT hr = VariantChangeTypeEx(&arg2,const_cast<VARIANTARG*>(&arg),lcid,0,VT_BSTR);
 			if (hr != S_OK)
 				return hr;
 			
@@ -303,7 +303,9 @@ IDispatchObjImpl::IDispatchObjImpl(Omega::Remoting::IProxy* pProxy, const Omega:
 		IDispatchImpl(),
 		m_iid(iid),
 		m_ptrProxy(pProxy)		
-{ }
+{ 
+	m_ptrProxy.AddRef();
+}
 
 IDispatchObjImpl::~IDispatchObjImpl()
 { }
@@ -379,7 +381,7 @@ STDMETHODIMP IDispatchObjImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, U
 		
 		for (UINT idx = 1; idx < cNames; ++idx)
 		{
-			UINT param_idx = 0;
+			Omega::byte_t param_idx = 0;
 			for (; param_idx < param_count; ++param_idx)
 			{
 				Omega::string_t strName;
@@ -456,7 +458,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		for (UINT idx = pDispParams->cNamedArgs; idx > 0; --idx)
 		{
 			// Check each DISPID < param_count, excluding the unnamed args (that go first)
-			if (static_cast<INT>(pDispParams->rgdispidNamedArgs[idx-1]) >= param_count - (pDispParams->cArgs - pDispParams->cNamedArgs))
+			if (static_cast<UINT>(pDispParams->rgdispidNamedArgs[idx-1]) >= param_count - (pDispParams->cArgs - pDispParams->cNamedArgs))
 			{
 				if (puArgErr)
 					*puArgErr = idx-1;

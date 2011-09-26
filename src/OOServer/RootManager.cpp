@@ -42,14 +42,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-namespace
+bool Root::getenv_OMEGA_DEBUG()
 {
-	bool getenv_OMEGA_DEBUG()
-	{
-		OOBase::LocalString str;
-		str.getenv("OMEGA_DEBUG");
-		return (str == "yes");
-	}
+	OOBase::LocalString str;
+	str.getenv("OMEGA_DEBUG");
+	return (str == "yes");
 }
 
 Root::Manager::Manager() :
@@ -137,10 +134,11 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 		if (!bOk)
 		{
-#if defined(OMEGA_DEBUG)
-			// Give us a chance to read the errors!
-			OOBase::Thread::sleep(OOBase::timeval_t(15));
-#endif
+			if (getenv_OMEGA_DEBUG())
+			{
+				// Give us a chance to read the errors!
+				OOBase::Thread::sleep(OOBase::timeval_t(15));
+			}
 			return EXIT_FAILURE;
 		}
 	}

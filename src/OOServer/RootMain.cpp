@@ -66,10 +66,12 @@ namespace
 	{
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
 
-#if defined(OMEGA_DEBUG)
-		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(15));
-#endif
+		if (Root::getenv_OMEGA_DEBUG())
+		{
+			// Give us a chance to read the errors!
+			OOBase::Thread::sleep(OOBase::timeval_t(15));
+		}
+
 		return true;
 	}
 }
@@ -136,7 +138,7 @@ namespace
 	{
 		printf(APPNAME " version %s",OOCORE_VERSION);
 
-	#if defined(OMEGA_DEBUG)
+	#if !defined(NDEBUG)
 		printf(" (Debug build)");
 	#endif
 

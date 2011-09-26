@@ -49,6 +49,8 @@ namespace Root
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,Root::Module> Proactor;
 
+	bool getenv_OMEGA_DEBUG();
+
 	class Manager :
 			public OOServer::MessageHandler,
 			public Registry::Manager,

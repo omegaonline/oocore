@@ -46,13 +46,6 @@ void AttachDebugger(unsigned long pid);
 
 namespace
 {
-	bool getenv_OMEGA_DEBUG()
-	{
-		OOBase::LocalString str;
-		str.getenv("OMEGA_DEBUG");
-		return (str == "yes");
-	}
-
 	class SpawnedProcessWin32 : public Root::SpawnedProcess
 	{
 	public:
@@ -634,7 +627,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
 
-	if (getenv_OMEGA_DEBUG())
+	if (Root::getenv_OMEGA_DEBUG())
 	{
 		if (IsDebuggerPresent())
 			hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");

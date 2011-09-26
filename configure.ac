@@ -124,7 +124,7 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
 ])
 
 # Add debug defines
-AS_IF([test "x$debug" = "xtrue"],[CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"],[CPPFLAGS="$CPPFLAGS -DNDEBUG"])
+AS_IF([test "x$debug" != "xtrue"],[CPPFLAGS="$CPPFLAGS -DNDEBUG"])
 
 # Set up libtool correctly
 m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])

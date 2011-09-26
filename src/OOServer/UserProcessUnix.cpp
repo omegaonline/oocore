@@ -20,6 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_User.h"
+#include "UserManager.h"
 #include "UserProcess.h"
 
 #if defined(HAVE_UNISTD_H)

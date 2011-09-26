@@ -30,7 +30,7 @@ static int version()
 {
 	printf("ooguidgen version %s",OOCORE_VERSION);
 
-#if defined(OMEGA_DEBUG)
+#if !defined(NDEBUG)
 	printf(" (Debug build)");
 #endif
 

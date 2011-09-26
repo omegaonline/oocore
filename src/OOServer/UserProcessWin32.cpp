@@ -119,11 +119,11 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 
 	OOBase::Win32::SmartHandle hDebugEvent;
 	if (IsDebuggerPresent())
+	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Local\\OOCORE_DEBUG_MUTEX");
-
-#if defined(OMEGA_DEBUG)
-	dwFlags = CREATE_NEW_CONSOLE;
-#endif // OMEGA_DEBUG
+		if (hDebugEvent.is_valid())
+			dwFlags = CREATE_NEW_CONSOLE;
+	}
 
 	STARTUPINFOW si = {0};
 	si.cb = sizeof(STARTUPINFOW);

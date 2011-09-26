@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////
 // string_t starts here
 
-#ifdef OMEGA_DEBUG
+#if !defined(NDEBUG)
 #define OMEGA_DEBUG_STASH_STRING()  m_debug_value = (m_handle ? OOCore_string_t_cast_w(m_handle) : L"")
 #else
 #define OMEGA_DEBUG_STASH_STRING()  (void)0

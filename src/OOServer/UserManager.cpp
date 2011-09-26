@@ -111,6 +111,13 @@ namespace
 
 User::Manager* User::Manager::s_instance = NULL;
 
+bool User::getenv_OMEGA_DEBUG()
+{
+	OOBase::LocalString str;
+	str.getenv("OMEGA_DEBUG");
+	return (str == "yes");
+}
+
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),

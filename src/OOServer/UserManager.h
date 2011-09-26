@@ -33,6 +33,8 @@ namespace User
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;
 
+	bool getenv_OMEGA_DEBUG();
+
 	class Manager :
 			public OOServer::MessageHandler,
 			public OOSvrBase::Server

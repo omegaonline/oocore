@@ -83,7 +83,7 @@ static int version()
 {
 	printf("ooreg version %s",OOCORE_VERSION);
 
-#if defined(OMEGA_DEBUG)
+#if !defined(NDEBUG)
 	printf(" (Debug build)");
 #endif
 

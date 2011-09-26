@@ -50,7 +50,7 @@ namespace
 	{
 		printf(APPNAME " version %s",OOCORE_VERSION);
 
-	#if defined(OMEGA_DEBUG)
+	#if !defined(NDEBUG)
 		printf(" (Debug build)");
 	#endif
 		printf("\n\tCompiler: %s\n\n",OMEGA_COMPILER_STRING);
@@ -62,10 +62,11 @@ namespace
 	{
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
 
-#if defined(OMEGA_DEBUG)
-		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(15));
-#endif
+		if (User::getenv_OMEGA_DEBUG())
+		{
+			// Give us a chance to read the errors!
+			OOBase::Thread::sleep(OOBase::timeval_t(15));
+		}
 		return true;
 	}
 }
@@ -187,11 +188,11 @@ int main(int argc, char* argv[])
 	{
 		LOG_ERROR((APPNAME " exiting prematurely."));
 
-#if defined(OMEGA_DEBUG)
-		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(15));
-#endif
-
+		if (User::getenv_OMEGA_DEBUG())
+		{
+			// Give us a chance to read the errors!
+			OOBase::Thread::sleep(OOBase::timeval_t(15));
+		}
 		return EXIT_FAILURE;
 	}
 

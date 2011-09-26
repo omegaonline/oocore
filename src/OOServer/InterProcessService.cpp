@@ -123,12 +123,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		reg_mask |= Activation::ExternalPublic;
 
 	// The timeout needs to be related to the request timeout...
-#if defined(OMEGA_DEBUG)
-	OOBase::timeval_t wait(60);
-#else
-	OOBase::timeval_t wait(5);
-#endif
-
+	OOBase::timeval_t wait(15);
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{

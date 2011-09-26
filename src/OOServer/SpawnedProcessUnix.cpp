@@ -49,13 +49,6 @@ void AttachDebugger(unsigned long pid);
 
 namespace
 {
-	bool getenv_OMEGA_DEBUG()
-	{
-		OOBase::LocalString str;
-		str.getenv("OMEGA_DEBUG");
-		return (str == "yes");
-	}
-
 	class SpawnedProcessUnix : public Root::SpawnedProcess
 	{
 	public:
@@ -204,7 +197,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 
 	if (child_id != 0)
 	{
-		if (getenv_OMEGA_DEBUG())
+		if (Root::getenv_OMEGA_DEBUG())
 			AttachDebugger(child_id);
 
 		// We are the parent
@@ -213,7 +206,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	}
 
 	// We are the child...
-	if (!getenv_OMEGA_DEBUG())
+	if (!Root::getenv_OMEGA_DEBUG())
 	{
 		// Set stdin/out/err to /dev/null
 		int fd = open("/dev/null",O_RDWR);
@@ -285,7 +278,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 
 	OOBase::LocalString display;
 	display.getenv("DISPLAY");
-	if (getenv_OMEGA_DEBUG() && !display.empty())
+	if (Root::getenv_OMEGA_DEBUG() && !display.empty())
 	{
 		//execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
 

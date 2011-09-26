@@ -137,7 +137,7 @@ namespace Omega
 
 		friend struct Omega::System::Internal::string_t_safe_type;
 
-#ifdef OMEGA_DEBUG
+#if !defined(NDEBUG)
 		const wchar_t* m_debug_value;
 #endif
 	};

@@ -38,7 +38,7 @@ namespace
 		{}
 
 		virtual bool running();
-		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
+		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
 		void exec(const wchar_t* pszExeName);
 
@@ -71,32 +71,19 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 	if (pid == 0)
 	{
 		// We are the child
-
-		// Check whether we need to control signals here...
-		// Not sure what we should do about stdin/out/err
-		void* POSIX_TODO;
-
-		char szBuf[512] = {0};
+		char szBuf[1024] = {0};
 		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
 		if (clen >= sizeof(szBuf))
 		{
-			fputs("exec filename > 512\n",stderr);
+			fputs("exec filename > 1024\n",stderr);
 			_exit(127);
 		}
 		szBuf[clen] = '\0';
 
-		const char* debug = getenv("OMEGA_DEBUG");
-		const char* term = getenv("TERM");
-		if (debug && strcmp(debug,"yes")==0 && term)
-			execlp(term,term,"-e",szBuf,(char*)NULL);
-
-		const char* shell = getenv("SHELL");
-		if (shell)
-			execlp(shell,shell,"-c",szBuf,(char*)NULL);
-
-		execlp("sh","sh","-c",szBuf,(char*)NULL);
-
-		execlp(szBuf,szBuf,(char*)NULL);
+		// Just use the system() call
+		int ret = system(szBuf);
+		if (WIFEXITED(ret))
+			_exit(WEXITSTATUS(ret));
 
 		fputs("Failed to launch process\n",stderr);
 		_exit(127);
@@ -118,7 +105,7 @@ bool UserProcessUnix::running()
 	return false;
 }
 
-bool UserProcessUnix::wait_for_exit(const OOBase::timeval_t* wait, int* exit_code)
+bool UserProcessUnix::wait_for_exit(const OOBase::timeval_t* wait, int& exit_code)
 {
 	if (m_pid == 0)
 		return true;
@@ -126,9 +113,16 @@ bool UserProcessUnix::wait_for_exit(const OOBase::timeval_t* wait, int* exit_cod
 	if (wait)
 		OOBase::Thread::sleep(*wait);
 
-	pid_t retv = waitpid(m_pid,exit_code,WNOHANG);
+	int status = 0;
+	pid_t retv = waitpid(m_pid,&status,WNOHANG);
 	if (retv != 0)
+	{
+		if (WIFEXITED(status))
+			exit_code = WEXITSTATUS(status);
+		else
+			exit_code = -1;
 		return true;
+	}
 
 	return false;
 }

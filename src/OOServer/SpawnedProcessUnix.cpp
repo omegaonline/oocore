@@ -552,52 +552,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	return pSpawn;
 }
 
-/*void Root::Manager::accept_client(OOSvrBase::AsyncLocalSocketPtr ptrSocket)
-{
-	// Socket will close when it drops out of scope
-
-	OOSvrBase::AsyncLocalSocket::uid_t uid;
-	int err = ptrSocket->get_uid(uid);
-	if (err != 0)
-		LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
-	else
-	{
-		// Make sure we have a user process
-		UserProcess user_process;
-		if (get_user_process(uid,session_id,user_process))
-		{
-			UserProcess new_process;
-			new_process.ptrRegistry = user_process.ptrRegistry;
-			new_process.ptrSpawn = new (std::nothrow) SpawnedProcessUnix(uid,false);
-			if (!new_process.ptrSpawn)
-			{
-				LOG_ERROR(("Out of memory"));
-				return;
-			}
-
-			// Bootstrap the user process...
-			OOBase::SmartPtr<OOServer::MessageConnection> ptrMC;
-			Omega::uint32_t channel_id = bootstrap_user(ptrSocket,ptrMC,new_process.strPipe);
-			if (channel_id)
-			{
-				// Insert the data into the process map...
-				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-				err = m_mapUserProcesses.insert(channel_id,new_process);
-				if (err != 0)
-				{
-					ptrMC->close();
-					LOG_ERROR(("Failed to insert into map: %s",OOBase::system_error_text(err)));
-					return;
-				}
-
-				// Now start the read cycle from ptrMC
-				ptrMC->read();
-			}
-		}
-	}
-}*/
-
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
 {
 	uid = getuid();

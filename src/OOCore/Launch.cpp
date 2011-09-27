@@ -112,8 +112,6 @@ namespace
  	#if defined(_WIN32)
  		const char* name = "OmegaOnline";
 	#else
-		void* TODO;
-		
 		const char* name = "/tmp/omegaonline";
 	#endif
 

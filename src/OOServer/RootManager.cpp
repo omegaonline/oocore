@@ -762,7 +762,7 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 					OOBase::Win32::SmartHandle hUidToken(uid);
 				#endif
 
-					void* TODO; // Session Id?
+					void* ISSUE_5; // Session Id?
 
 					UserProcess user_process;
 					if (get_user_process(uid,"UNUSED",user_process))

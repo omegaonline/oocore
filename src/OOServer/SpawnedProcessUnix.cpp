@@ -259,7 +259,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 			_exit(127);
 		}
 
-		// Stop being priviledged!
+		// Stop being privileged!
 		if (setuid(m_uid) != 0)
 		{
 			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text()));

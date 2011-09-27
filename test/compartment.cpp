@@ -104,7 +104,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 	
-	void* FIX_ME;
+	void* ISSUE_14;
 
 	/*ptrSimpleTest.Release();
 	ptrSimpleTest2.Release();

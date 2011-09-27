@@ -300,8 +300,8 @@ bool SpawnedProcessUnix::IsRunning() const
 	if (m_pid == 0)
 		return false;
 
-	pid_t retv = waitpid(m_pid,NULL,WNOHANG);
-	return (retv == 0);
+	int status = 0;
+	return (waitpid(m_pid,&status,WNOHANG) == 0);
 }
 
 bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const

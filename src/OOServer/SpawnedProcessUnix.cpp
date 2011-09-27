@@ -327,7 +327,8 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 		bAllowed = true;
 	else if (mode==O_RDWR && (sb.st_mode & (S_IROTH | S_IWOTH)))
 		bAllowed = true;
-	else if (sb.st_uid == m_uid)
+
+	if (!bAllowed && sb.st_uid == m_uid)
 	{
 		// Is the supplied user the file's owner
 		if (mode==O_RDONLY && (sb.st_mode & S_IRUSR))
@@ -337,24 +338,37 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 		else if (mode==O_RDWR && (sb.st_mode & (S_IRUSR | S_IWUSR)))
 			bAllowed = true;
 	}
-	else
-	{
-		void* POSIX_TODO; // Enumerate all the users groups!
 
-		// Get the suppied user's group see if that is the same as the file's group
+	if (!bAllowed)
+	{
+		// Get the supplied user's group see if that is the same as the file's group
 		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed!",OOBase::system_error_text()),false);
 
-		// Is the file's gid the same as the specified user's
-		if (pw->pw_gid == sb.st_gid)
+		OOBase::SmartPtr<gid_t,OOBase::LocalAllocator> ptrGroups;
+		int ngroups = 0;
+		if (getgrouplist(pw->pw_name,pw->pw_gid,NULL,&ngroups) == -1)
 		{
-			if (mode==O_RDONLY && (sb.st_mode & S_IRGRP))
-				bAllowed = true;
-			else if (mode==O_WRONLY && (sb.st_mode & S_IWGRP))
-				bAllowed = true;
-			else if (mode==O_RDWR && (sb.st_mode & (S_IRGRP | S_IWGRP)))
-				bAllowed = true;
+			ptrGroups = static_cast<gid_t*>(OOBase::LocalAllocate(ngroups * sizeof(gid_t)));
+			if (!ptrGroups)
+				LOG_ERROR_RETURN(("Out of memory!"),false);
+
+			getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups);
+		}
+
+		for (int i = 0; i< ngroups && !bAllowed; ++i)
+		{
+			// Is the file's gid the same as the specified user's
+			if (ptrGroups[i] == sb.st_gid)
+			{
+				if (mode==O_RDONLY && (sb.st_mode & S_IRGRP))
+					bAllowed = true;
+				else if (mode==O_WRONLY && (sb.st_mode & S_IWGRP))
+					bAllowed = true;
+				else if (mode==O_RDWR && (sb.st_mode & (S_IRGRP | S_IWGRP)))
+					bAllowed = true;
+			}
 		}
 	}
 

@@ -138,6 +138,16 @@ void User::Manager::run()
 	wait_for_quit();
 }
 
+void User::Manager::stop()
+{
+	// Stop the MessageHandler
+	stop_request_threads();
+
+	Proactor::instance().stop();
+
+	m_proactor_pool.join();
+}
+
 bool User::Manager::fork_slave(const OOBase::String& strPipe)
 {
 #if defined(_WIN32)
@@ -301,15 +311,12 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 
 	// Attach it to ourselves
 	if (register_channel(ptrMC,m_uUpstreamChannel) == 0)
-	{
-		ptrMC->close();
 		return false;
-	}
 
 	// Start I/O with root
-	if (!ptrMC->read())
+	if (ptrMC->recv() != 0)
 	{
-		ptrMC->close();
+		channel_closed(m_uUpstreamChannel,0);
 		return false;
 	}
 
@@ -317,13 +324,13 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 	stream.reset();
 	if (!stream.write(sandbox_channel) || !stream.write(strPipe.c_str()))
 	{
-		ptrMC->close();
+		ptrMC->shutdown();
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);
 	}
 
 	if (!call_async_function_i("do_bootstrap",&do_bootstrap,this,&stream))
 	{
-		ptrMC->close();
+		ptrMC->shutdown();
 		return false;
 	}
 
@@ -434,13 +441,6 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
 
-	err = m_ptrAcceptor->listen();
-	if (err != 0)
-	{
-		m_ptrAcceptor = NULL;
-		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
-	}
-
 	return true;
 }
 
@@ -472,7 +472,7 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 	Omega::uint32_t version = 0;
 	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 	{
-		LOG_WARNING(("Version received too early: %u",version));
+		LOG_WARNING(("Client is running a very old version: %u",version));
 		return;
 	}
 
@@ -498,32 +498,29 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 	// Create a new MessageConnection
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
-	{
 		LOG_ERROR(("Out of memory"));
-		return;
-	}
-
-	// Attach it to ourselves
-	uint32_t channel_id = register_channel(ptrMC,0);
-	if (channel_id == 0)
+	else
 	{
-		ptrMC->close();
-		return;
+		// Attach it to ourselves
+		uint32_t channel_id = register_channel(ptrMC,0);
+		if (channel_id != 0)
+		{
+			// Send the channel id...
+			if (!stream.write(channel_id))
+			{
+				channel_closed(channel_id,0);
+				LOG_ERROR(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error())));
+			}
+			else if ((err = ptrMC->send(stream.buffer())) != 0)
+				channel_closed(channel_id,0);
+			else
+			{
+				// Start I/O
+				if ((err = ptrMC->recv()) != 0)
+					ptrMC->shutdown();
+			}
+		}
 	}
-
-	// Send the channel id...
-	if (!stream.write(channel_id))
-	{
-		ptrMC->close();
-		LOG_ERROR(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error())));
-		return;
-	}
-
-	if (!ptrMC->send(stream.buffer()))
-		return;
-
-	// Start I/O
-	ptrMC->read();
 }
 
 void User::Manager::on_channel_closed(uint32_t channel)
@@ -595,7 +592,10 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 
 	// If the root closes, we should end!
 	if (channel_id == m_uUpstreamChannel)
+	{
+		LOG_DEBUG(("Upstream channel has closed!"));
 		do_quit_i();
+	}
 }
 
 void User::Manager::do_quit(void* pParams, OOBase::CDRStream&)
@@ -608,8 +608,7 @@ void User::Manager::do_quit_i()
 	try
 	{
 		// Stop accepting new clients
-		if (m_ptrAcceptor)
-			m_ptrAcceptor->stop();
+		m_ptrAcceptor = NULL;
 
 		// Close all the sinks
 		close_all_remotes();
@@ -636,7 +635,7 @@ void User::Manager::do_quit_i()
 		Uninitialize();
 
 		// Close all channels
-		close_channels();
+		shutdown_channels();
 	}
 	catch (...)
 	{

@@ -64,86 +64,87 @@ Root::Manager::~Manager()
 
 int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
+	int ret = EXIT_FAILURE;
+
 	m_bUnsafe = (cmd_args.find("unsafe") != cmd_args.npos);
 
 	OOBase::String strPidfile;
 	cmd_args.find("pidfile",strPidfile);
 
-	if (!pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str()))
-		return EXIT_FAILURE;
-
-	// Loop until we quit
-	for (bool bQuit=false; !bQuit;)
+	if (pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str()))
 	{
-		// Load the config
-		if (!load_config(cmd_args))
-			return EXIT_FAILURE;
-
-		// Open the root registry
-		if (!init_database())
-			return EXIT_FAILURE;
-
-		// Start the proactor pool
-		int err = m_proactor_pool.run(&run_proactor,NULL,2);
-		if (err != 0)
+		// Loop until we quit
+		for (bool bQuit=false; !bQuit;)
 		{
-			m_proactor_pool.join();
-			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
-			return EXIT_FAILURE;
-		}
+			ret = EXIT_FAILURE;
 
-		// Start the handler
-		if (!start_request_threads(2))
-		{
-			stop_request_threads();
-			return EXIT_FAILURE;
-		}
-
-		// Just so we can exit cleanly...
-		bool bOk = false;
-
-		// Spawn the sandbox
-		if (spawn_sandbox())
-		{
-			// Start listening for clients
-			if (start_client_acceptor())
+			// Load the config
+			if (load_config(cmd_args))
 			{
-				OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
+				// Open the root registry
+				if (init_database())
+				{
+					// Start the proactor pool
+					int err = m_proactor_pool.run(&run_proactor,NULL,2);
+					if (err != 0)
+						LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+					else
+					{
+						// Start the handler
+						if (start_request_threads(2))
+						{
+							// Spawn the sandbox
+							if (spawn_sandbox())
+							{
+								// Start listening for clients
+								if (start_client_acceptor())
+								{
+									OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
 
-				bOk = true;
+									ret = EXIT_SUCCESS;
 
-				// Wait for quit
-				bQuit = wait_to_quit();
+									// Wait for quit
+									bQuit = wait_to_quit();
 
-				// Stop accepting new clients
-				m_client_acceptor->stop();
+									// Stop accepting new clients
+									m_client_acceptor = NULL;
+								}
+
+								// Stop services
+								stop_services();
+
+								// Close all channels
+								shutdown_channels();
+
+								// Wait for all user processes to terminate
+								m_mapUserProcesses.clear();
+							}
+						}
+
+						// Stop the MessageHandler
+						stop_request_threads();
+					}
+
+					// Stop any proactor threads
+					Proactor::instance().stop();
+					m_proactor_pool.join();
+				}
 			}
 
-			// Stop services
-			stop_services();
-
-			// Close all channels
-			close_channels();
-		}
-
-		// Stop the MessageHandler
-		stop_request_threads();
-
-		// Stop any proactor threads
-		m_proactor_pool.join();
-
-		if (!bOk)
-		{
-			if (getenv_OMEGA_DEBUG())
-			{
-				// Give us a chance to read the errors!
-				OOBase::Thread::sleep(OOBase::timeval_t(15));
-			}
-			return EXIT_FAILURE;
+			if (ret == EXIT_FAILURE)
+				break;
 		}
 	}
 
-	return EXIT_SUCCESS;
+	if (getenv_OMEGA_DEBUG())
+	{
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"\nPausing to let you read the messages...");
+
+		// Give us a chance to read the errors!
+		OOBase::Thread::sleep(OOBase::timeval_t(15));
+	}
+
+	return ret;
 }
 
 bool Root::Manager::init_database()
@@ -537,7 +538,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 
 	if (!bOk)
 	{
-		ptrMC->close();
+		ptrMC->shutdown();
 		return 0;
 	}
 
@@ -551,7 +552,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		{
 			if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid,session_id))
 			{
-				ptrMC->close();
+				channel_closed(channel_id,0);
 				return *m_mapUserProcesses.key_at(i);
 			}
 		}
@@ -560,12 +561,18 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	int err = m_mapUserProcesses.insert(channel_id,process);
 	if (err != 0)
 	{
-		ptrMC->close();
+		channel_closed(channel_id,0);
 		LOG_ERROR_RETURN(("Failed to insert into map: %s",OOBase::system_error_text(err)),0);
 	}
 
 	// Now start the read cycle from ptrMC
-	return (ptrMC->read() ? channel_id : 0);
+	if ((err = ptrMC->recv()) != 0)
+	{
+		channel_closed(channel_id,0);
+		channel_id = 0;
+	}
+
+	return channel_id;
 }
 
 Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
@@ -599,19 +606,22 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 
 	Omega::uint32_t channel_id = register_channel(ptrMC,0);
 	if (!channel_id)
-	{
-		ptrMC->close();
 		return 0;
-	}
 
 	stream.reset();
 	if (!stream.write(m_sandbox_channel) || !stream.write(channel_id))
 	{
-		ptrMC->close();
+		channel_closed(channel_id,0);
 		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
 	}
 
-	return (ptrMC->send(stream.buffer()) ? channel_id : 0);
+	if ((err = ptrMC->send(stream.buffer())) != 0)
+	{
+		channel_closed(channel_id,0);
+		channel_id = 0;
+	}
+
+	return channel_id;
 }
 
 void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)

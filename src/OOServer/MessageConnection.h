@@ -45,9 +45,9 @@ namespace OOServer
 		
 		void set_channel_id(Omega::uint32_t channel_id);
 
-		void close();
-		bool read();
-		bool send(OOBase::Buffer* pBuffer);
+		void shutdown();
+		int recv();
+		int send(OOBase::Buffer* pBuffer);
 
 	private:
 		MessageConnection(const MessageConnection&);
@@ -58,11 +58,12 @@ namespace OOServer
 		MessageHandler*                             m_pHandler;
 		OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
 		Omega::uint32_t                             m_channel_id;
-		
+
 		void on_recv1(OOBase::Buffer* buffer, int err);
 		void on_recv2(OOBase::Buffer* buffer, int err);
 		bool on_recv(OOBase::Buffer* buffer, int err, int part);
 		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_closed();
 	};
 
 	struct Message_t
@@ -123,7 +124,7 @@ namespace OOServer
 		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 
 		bool start_request_threads(size_t threads);
-		void close_channels();
+		void shutdown_channels();
 		void stop_request_threads();
 
 		Omega::uint32_t register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);

@@ -87,12 +87,26 @@ void OOServer::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 	m_channel_id = channel_id;
 }
 
-void OOServer::MessageConnection::close()
+void OOServer::MessageConnection::shutdown()
+{
+	LOG_DEBUG(("Shutting down connection %X",m_channel_id));
+
+	// Send an empty message
+	OOBase::CDRStream header;
+	header.write(header.big_endian());
+	header.write(Omega::byte_t(1));  // version
+	header.write(Omega::byte_t('O'));  // signature
+	header.write(Omega::byte_t('U'));  // signature
+	header.write(Omega::uint32_t(0));
+
+	send(header.buffer());
+}
+
+void OOServer::MessageConnection::on_closed()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	Omega::uint32_t channel_id = m_channel_id;
-	m_channel_id = 0;
 
 	guard.release();
 
@@ -100,34 +114,30 @@ void OOServer::MessageConnection::close()
 		m_pHandler->channel_closed(channel_id,0);
 }
 
-bool OOServer::MessageConnection::read()
+int OOServer::MessageConnection::recv()
 {
 	// This buffer is reused...
 	OOBase::RefPtr<OOBase::Buffer> pBuffer = new (std::nothrow) OOBase::Buffer(s_default_buffer_size,OOBase::CDRStream::MaxAlignment);
 	if (!pBuffer)
-	{
-		close();
-		LOG_ERROR_RETURN(("Out of memory"),false);
-	}
+		LOG_ERROR_RETURN((OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
 
 	addref();
 
 	int err = m_ptrSocket->recv(this,&MessageConnection::on_recv1,pBuffer,s_header_len);
 	if (err != 0)
 	{
-		close();
 		release();
-		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err)));
 	}
 
-	return true;
+	return err;
 }
 
 void OOServer::MessageConnection::on_recv1(OOBase::Buffer* buffer, int err)
 {
 	if (!on_recv(buffer,err,1))
 	{
-		close();
+		on_closed();
 		release();
 	}
 }
@@ -135,7 +145,7 @@ void OOServer::MessageConnection::on_recv1(OOBase::Buffer* buffer, int err)
 void OOServer::MessageConnection::on_recv2(OOBase::Buffer* buffer, int err)
 {
 	if (!on_recv(buffer,err,2))
-		close();
+		on_closed();
 
 	release();
 }
@@ -143,15 +153,11 @@ void OOServer::MessageConnection::on_recv2(OOBase::Buffer* buffer, int err)
 bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int part)
 {
 	if (err != 0)
-	{
-		if (err != ECONNRESET)
-			LOG_ERROR(("AsyncSocket read failed: %s",OOBase::system_error_text(err)));
-		return false;
-	}
-	
+		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOBase::system_error_text(err)),false);
+
 	if (buffer->length() == 0)
 		return false;
-		
+
 	OOBase::CDRStream input(buffer);
 
 	// Read the payload specific data
@@ -184,8 +190,8 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 		LOG_ERROR_RETURN(("Corrupt header: %s",OOBase::system_error_text(err)),false);
 
 	if (read_len == 0)
-		return read();
-		
+		return false;
+
 	if (part == 1)
 	{
 		// Skip back to start
@@ -208,34 +214,28 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 		return false;
 
 	// Start the next read
-	return read();
+	return (recv() == 0);
 }
 
-bool OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
+int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
 	addref();
 
 	int err = m_ptrSocket->send(this,&MessageConnection::on_sent,pBuffer);
 	if (err != 0)
 	{
-		close();
 		release();
-		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
 	}
 
-	return true;
+	return err;
 }
 
 void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err != 0)
-	{
-		if (err != ECONNRESET)
-			LOG_ERROR(("AsyncSocket write failed: %s",OOBase::system_error_text(err)));
+		on_closed();
 		
-		close();
-	}
-	
 	release();
 }
 
@@ -380,7 +380,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		// Reset the buffer all the way to the start
 		input.buffer()->mark_rd_ptr(0);
 
-		return ptrMC->send(input.buffer());
+		return (ptrMC->send(input.buffer()) == 0);
 	}
 }
 
@@ -768,7 +768,7 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
-void OOServer::MessageHandler::close_channels()
+void OOServer::MessageHandler::shutdown_channels()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -776,7 +776,7 @@ void OOServer::MessageHandler::close_channels()
 	{
 		guard.release();
 
-		ptrConn->close();
+		ptrConn->shutdown();
 		
 		guard.acquire();
 	}
@@ -1198,7 +1198,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Check the size
-		if (msg.m_payload.buffer()->length() > 0xFFFFFF80)
+		if (msg.m_payload.buffer()->length() > (0xFFFFFFFF - header.buffer()->length()))
 			LOG_ERROR_RETURN(("Message too big"),io_result::failed);
 
 		// Write the payload stream
@@ -1222,5 +1222,5 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
 		return io_result::timedout;
 
-	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);
+	return ((ptrMC->send(header.buffer()) == 0) ? io_result::success : io_result::failed);
 }

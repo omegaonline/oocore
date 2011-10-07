@@ -77,18 +77,14 @@ bool Root::Manager::start_client_acceptor()
 
 	int err = 0;
 	m_client_acceptor = Proactor::instance().accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
-
-	err = m_client_acceptor->listen();
 	if (err == EADDRINUSE)
 	{
 		unlink(pipe_name);
-		err = m_client_acceptor->listen();
+		m_client_acceptor = Proactor::instance().accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
 	}
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
 	return true;
 }

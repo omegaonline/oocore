@@ -72,6 +72,7 @@ namespace User
 		void do_channel_closed_i(Omega::uint32_t channel_id);
 
 		void run();
+		void stop();
 		bool fork_slave(const OOBase::String& strPipe);
 		bool session_launch(const OOBase::String& strPipe);
 		bool start_proactor_threads();

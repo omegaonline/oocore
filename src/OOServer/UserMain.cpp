@@ -179,22 +179,16 @@ int main(int argc, char* argv[])
 		manager.run();
 	}
 
-	// Stop the MessageHandler
-	manager.stop_request_threads();
+	// Stop the manager
+	manager.stop();
 
-	manager.m_proactor_pool.join();
-
-	if (!bRun)
+	if (User::getenv_OMEGA_DEBUG())
 	{
-		LOG_ERROR((APPNAME " exiting prematurely."));
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"\nPausing to let you read the messages...");
 
-		if (User::getenv_OMEGA_DEBUG())
-		{
-			// Give us a chance to read the errors!
-			OOBase::Thread::sleep(OOBase::timeval_t(15));
-		}
-		return EXIT_FAILURE;
+		// Give us a chance to read the errors!
+		OOBase::Thread::sleep(OOBase::timeval_t(15));
 	}
 
-	return EXIT_SUCCESS;
+	return (bRun ? EXIT_SUCCESS : EXIT_FAILURE);
 }

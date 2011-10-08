@@ -248,15 +248,14 @@ namespace OTL
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
 		{
 			if (this != &rhs)
-				replace(rhs.m_ptr,true);
+				this->replace(rhs.m_ptr,true);
 
 			return *this;
 		}
 
 		ObjectPtr& operator = (OBJECT* obj)
 		{
-			replace(obj,false);
-
+			this->replace(obj,false);
 			return *this;
 		}
 
@@ -264,7 +263,7 @@ namespace OTL
 		{
 			Omega::IObject* pObj = NULL;
 			pMarshaller->UnmarshalInterface(strName,pMessage,OMEGA_GUIDOF(OBJECT),pObj);
-			replace(static_cast<OBJECT*>(pObj),false);
+			this->replace(static_cast<OBJECT*>(pObj),false);
 		}
 	};
 

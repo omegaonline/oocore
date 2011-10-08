@@ -62,7 +62,7 @@ namespace OOServer
 		void on_recv1(OOBase::Buffer* buffer, int err);
 		void on_recv2(OOBase::Buffer* buffer, int err);
 		bool on_recv(OOBase::Buffer* buffer, int err, int part);
-		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_sent(int err);
 		void on_closed();
 	};
 

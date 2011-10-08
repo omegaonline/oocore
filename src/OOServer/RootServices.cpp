@@ -83,7 +83,7 @@ namespace
 		int send(OOBase::Buffer* buffer, Omega::bool_t bReliable);
 
 		void on_recv(OOBase::Buffer* buffer, int err);
-		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_sent(int err);
 		void on_closed();
 
 		Root::Manager* const                   m_pManager;
@@ -649,9 +649,9 @@ int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
 	return err;
 }
 
-void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
+void AsyncSocket::on_sent(int err)
 {
-	if (buffer)
+	/*if (buffer)
 	{
 		// If we have data, then skip the wr_ptr back to the beginning
 		size_t mark = buffer->mark_wr_ptr();
@@ -690,7 +690,7 @@ void AsyncSocket::on_sent(OOBase::Buffer* buffer, int err)
 
 		// Just forward on...
 		m_pManager->sendrecv_sandbox(request,NULL,0,1);
-	}
+	}*/
 }
 
 void AsyncSocket::on_closed()

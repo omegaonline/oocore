@@ -340,10 +340,6 @@ bool Root::Manager::start_client_acceptor()
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
-	err = m_client_acceptor->listen(2);
-	if (err != 0)
-		LOG_ERROR_RETURN(("listen failed: %s",OOBase::system_error_text(err)),false);
-
 	return true;
 }
 

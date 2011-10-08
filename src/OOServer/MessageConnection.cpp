@@ -231,7 +231,7 @@ int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 	return err;
 }
 
-void OOServer::MessageConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
+void OOServer::MessageConnection::on_sent(int err)
 {
 	if (err != 0)
 		on_closed();

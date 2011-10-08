@@ -490,7 +490,7 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		if (m_hProfile)
 		{
 			// We only need to wait if we have loaded the profile...
-			DWORD dwWait = 25000;
+			DWORD dwWait = 30000;
 			DWORD dwRes = WaitForSingleObject(m_hProcess,dwWait);
 			if (dwRes != WAIT_OBJECT_0)
 				TerminateProcess(m_hProcess,UINT(-1));
@@ -607,7 +607,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 
 	// Load the users environment vars
 	LPVOID lpEnv = NULL;
-	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
+	if (!CreateEnvironmentBlock(&lpEnv,hToken,Root::getenv_OMEGA_DEBUG() ? TRUE : FALSE))
 	{
 		dwRes = GetLastError();
 		LOG_ERROR(("CreateEnvironmentBlock: %s",OOBase::system_error_text(dwRes)));

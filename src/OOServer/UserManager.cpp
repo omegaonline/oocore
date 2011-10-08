@@ -187,9 +187,7 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 		
 	// Set our pipe name
 #if defined(_WIN32)
-	OOBase::LocalString strPipe2;
-	if (strPipe2.printf("OMEGA_SESSION_ADDRESS=%s",strNewPipe.c_str()) == 0)
-		_putenv(strPipe2.c_str());
+	SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strNewPipe.c_str());
 #else
 	setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1);
 #endif
@@ -593,7 +591,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	// If the root closes, we should end!
 	if (channel_id == m_uUpstreamChannel)
 	{
-		LOG_DEBUG(("Upstream channel has closed!"));
+		LOG_DEBUG(("Upstream channel has closed"));
 		do_quit_i();
 	}
 }

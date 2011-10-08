@@ -198,7 +198,7 @@ void OOCore::UserSession::stop()
 	
 	// Clear our environment variable
 #if defined(_WIN32)
-	_putenv("OMEGA_SESSION_ADDRESS=");
+	SetEnvironmentVariable("OMEGA_SESSION_ADDRESS",NULL);
 #else
 	unsetenv("OMEGA_SESSION_ADDRESS");
 #endif

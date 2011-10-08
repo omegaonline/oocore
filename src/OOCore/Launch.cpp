@@ -267,8 +267,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	if (!strPipe.empty())
 	{
 #if defined(_WIN32)
-		if (strPipe.printf("OMEGA_SESSION_ADDRESS=%s",strPipe.c_str()) == 0)
-			_putenv(strPipe.c_str());
+		SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strPipe.c_str());
 #else
 		setenv("OMEGA_SESSION_ADDRESS",strPipe.c_str(),1);
 #endif

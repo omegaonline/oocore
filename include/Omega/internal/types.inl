@@ -634,7 +634,7 @@ inline Omega::Formatting::formatter_t& Omega::Formatting::formatter_t::operator 
 	string_t strFormat;
 	if (!OOCore_formatter_t_get_arg(m_handle,index,strFormat))
 		throw Formatting::IFormattingException::Create(L"No more formatting arguments");
-	
+
 	OOCore_formatter_t_set_arg(m_handle,index,Formatting::ToString(rhs,strFormat));
 
 	return *this;

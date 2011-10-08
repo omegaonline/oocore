@@ -101,7 +101,7 @@
 
 #define OBJECT_MAP_ENTRY(obj) \
 		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj::ObjectFactoryClass>::Create, 0 },
-		
+
 #define OBJECT_MAP_FACTORY_ENTRY(obj) \
 		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj>::Create, 0 },
 
@@ -145,7 +145,7 @@ namespace OTL
 	public:
 		ObjectPtrBase(OBJECT* obj, bool bAddRef) :
 				m_ptr(obj)
-		{ 
+		{
 			if (m_ptr && bAddRef)
 				m_ptr->AddRef();
 		}
@@ -345,7 +345,7 @@ namespace OTL
 			delete this;
 		}
 
-		virtual void Init_Once() 
+		virtual void Init_Once()
 		{}
 
 	public:
@@ -672,7 +672,7 @@ namespace OTL
 
 	protected:
 		SingletonObjectImpl() : ROOT()
-		{ 
+		{
 			ROOT::Init_Once();
 		}
 
@@ -717,13 +717,13 @@ namespace OTL
 			return this->Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 	};
-	
+
 	template <const Omega::guid_t* pOID, const Omega::Activation::RegisterFlags_t flags = Omega::Activation::UserScope | Omega::Activation::MultipleUse>
-	class ObjectFactoryBase : 
+	class ObjectFactoryBase :
 		public OTL::ObjectBase,
 		public Omega::Activation::IObjectFactory
 	{
-	public:		
+	public:
 		static const Omega::guid_t* GetOid()
 		{
 			return pOID;
@@ -733,7 +733,7 @@ namespace OTL
 		{
 			return flags;
 		}
-		
+
 		BEGIN_INTERFACE_MAP(ObjectFactoryBase)
 			INTERFACE_ENTRY(Omega::Activation::IObjectFactory)
 		END_INTERFACE_MAP()
@@ -841,7 +841,7 @@ namespace OTL
 		};
 
 		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
-		
+
 	protected:
 		LibraryModule()
 		{}
@@ -893,7 +893,7 @@ namespace OTL
 						{
 							ObjectPtr<Omega::IObject> ptrObj = pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI);
 							if (ptrObj)
-								retval.push_back(*(pEntries[i].pGuid));							
+								retval.push_back(*(pEntries[i].pGuid));
 						}
 					}
 					else if (pEntries[i].offset != 0)

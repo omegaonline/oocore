@@ -70,6 +70,7 @@
 				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
+				FixedBaseAddress="2"
 				DataExecutionPrevention="1"
 			/>
 			<Tool

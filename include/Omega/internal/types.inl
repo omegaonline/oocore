@@ -366,6 +366,12 @@ inline Omega::string_t Omega::string_t::TrimRight(const string_t& str) const
 	return Left(p+1-s);
 }
 
+template <typename T>
+inline Omega::string_t& Omega::string_t::operator %= (T rhs)
+{
+	return (*this = (*this % rhs));
+}
+
 inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
@@ -392,7 +398,7 @@ inline Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs)
 }
 
 template <typename T>
-inline Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, const T& rhs)
+inline Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, T rhs)
 {
 	return Omega::Formatting::formatter_t(lhs) % rhs;
 }

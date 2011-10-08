@@ -1404,7 +1404,7 @@ namespace
 #if defined(__clang__)
 			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),neg ? parts[1] : parts[0],def_precision,false);
+				return fmt_recurse(quick_abs(val,neg),neg ? *parts.at(1) : *parts.at(0),def_precision,false);
  			}
 #else
 			if (val < 0)

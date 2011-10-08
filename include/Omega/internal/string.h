@@ -115,10 +115,7 @@ namespace Omega
 		T ToNumber() const;
 
 		template <typename T>
-		string_t& operator %= (const T& rhs)
-		{
-			return (*this = (*this % rhs));
-		}
+		string_t& operator %= (T rhs);
 
 		static int64_t wcsto64(const string_t& str, size_t& end_pos, unsigned int base);
 		static uint64_t wcstou64(const string_t& str, size_t& end_pos, unsigned int base);
@@ -207,7 +204,7 @@ Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs);
 Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs);
 
 template <typename T>
-Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, const T& rhs);
+Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, T rhs);
 Omega::Formatting::formatter_t operator % (const wchar_t* lhs, const Omega::string_t& rhs);
 
 #endif // OMEGA_STRING_H_INCLUDED_

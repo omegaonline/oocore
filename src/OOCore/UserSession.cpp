@@ -317,8 +317,7 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 {
 	// Make this value configurable somehow...
-	OOBase::timeval_t wait(0,500000);
-	OOBase::Countdown countdown(&wait);
+	OOBase::Countdown countdown(0,500000);
 	do
 	{
 		// The tinyest sleep

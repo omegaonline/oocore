@@ -370,9 +370,9 @@ int OOCore::UserSession::run_read_loop()
 		if ((err = header.last_error()) != 0)
 			break;
 
-		// Check for tiny data
+		// Check for disconnect
 		if (nReadLen == 0)
-			continue;
+			break;
 
 		// Create a new Message struct
 		Message msg(nReadLen);

@@ -123,18 +123,20 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		reg_mask |= Activation::ExternalPublic;
 
 	// The timeout needs to be related to the request timeout...
-	OOBase::timeval_t wait(15);
+	OOBase::Countdown countdown(15,0);
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{
 		uint32_t msecs = ptrCC->Timeout();
 		if (msecs != (uint32_t)-1)
-			wait = OOBase::timeval_t(msecs / 1000,(msecs % 1000) * 1000);
+			countdown = OOBase::Countdown(msecs / 1000,(msecs % 1000) * 1000);
 	}
 
 	for (bool bStarted = false;!bStarted;)
 	{
-		OOBase::Guard<OOBase::Mutex> guard(m_lock);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
+		if (!guard.acquire(countdown))
+			throw ITimeoutException::Create();
 
 		OOBase::SmartPtr<User::Process> ptrProcess;
 		if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
@@ -160,8 +162,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		guard.release();
 
 		// Wait for the process to start and register its parts...
-		OOBase::Countdown timeout(&wait);
-		while (wait != OOBase::timeval_t::Zero)
+		
+		while (!countdown.has_ended())
 		{
 			m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
 			if (pObject)
@@ -178,13 +180,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			int ec = 0;
 			if (ptrProcess->wait_for_exit(&short_wait,ec))
 				break;
-
-			// Update our countdown
-			timeout.update();
 		}
-
-		if (wait == OOBase::timeval_t::Zero)
-			throw ITimeoutException::Create();
 
 		// Remove from the map
 		guard.acquire();

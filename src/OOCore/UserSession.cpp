@@ -323,10 +323,8 @@ void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 	{
 		// The tinyest sleep
 		OOBase::Thread::yield();
-
-		countdown.update();
 	}
-	while (usage == 0 && wait != OOBase::timeval_t::Zero);
+	while (usage == 0 && !countdown.has_ended());
 
 	if (usage == 0)
 	{

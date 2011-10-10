@@ -490,7 +490,8 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		if (m_hProfile)
 		{
 			// We only need to wait if we have loaded the profile...
-			DWORD dwWait = 30000;
+			DWORD dwWait = (Root::getenv_OMEGA_DEBUG() ? INFINITE : 5000);
+
 			DWORD dwRes = WaitForSingleObject(m_hProcess,dwWait);
 			if (dwRes != WAIT_OBJECT_0)
 				TerminateProcess(m_hProcess,UINT(-1));

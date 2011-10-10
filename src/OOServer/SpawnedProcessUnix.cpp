@@ -84,15 +84,24 @@ SpawnedProcessUnix::~SpawnedProcessUnix()
 	if (m_pid != 0)
 	{
 		pid_t retv = 0;
-		for (int i=0; i<10; ++i)
+
+		if (!Root::getenv_OMEGA_DEBUG())
+		{
+			for (int i=0; i<5; ++i)
+			{
+				int ec;
+				retv = waitpid(m_pid,&ec,WNOHANG);
+				if (retv != 0)
+					break;
+
+				sleep(1);
+				retv = 0;
+			}
+		}
+		else
 		{
 			int ec;
-			retv = waitpid(m_pid,&ec,WNOHANG);
-			if (retv != 0)
-				break;
-
-			sleep(1);
-			retv = 0;
+			retv = waitpid(m_pid,&ec,0);
 		}
 
 		if (retv == 0)
@@ -230,10 +239,10 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 			LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
 			_exit(127);
 		}
-	}
 
-	// Close all open handles - not that we should have any ;)
-	close_all_fds(pass_fd);
+		// Close all open handles - not that we should have any ;)
+		close_all_fds(pass_fd);
+	}
 
 	if (bChangeUid)
 	{
@@ -280,12 +289,16 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	display.getenv("DISPLAY");
 	if (Root::getenv_OMEGA_DEBUG() && !display.empty())
 	{
-		//execlp("xterm","xterm","-T","oosvruser - Sandbox","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
+		//execlp("xterm","xterm","-T","oosvruser","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
 
-		OOBase::LocalString gdb;
-		gdb.printf("run %s",strPipe.c_str());
+		OOBase::LocalString params;
+		params.printf("--log-file=vallog%d.txt",getpid());
 
-		execlp("xterm","xterm","-T","oosvruser - Sandbox","-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
+		execlp("xterm","xterm","-T","oosvruser","-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
+
+		//OOBase::LocalString gdb;
+		//gdb.printf("run %s",strPipe.c_str());
+		//execlp("xterm","xterm","-T","oosvruser","-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
 	}
 
 	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);

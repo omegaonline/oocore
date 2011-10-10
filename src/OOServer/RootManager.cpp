@@ -106,6 +106,8 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 									// Wait for quit
 									bQuit = wait_to_quit();
 
+									OOSvrBase::Logger::log(OOSvrBase::Logger::Information,APPNAME " closing");
+
 									// Stop accepting new clients
 									m_client_acceptor = NULL;
 								}

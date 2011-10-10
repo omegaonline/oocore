@@ -34,12 +34,6 @@
 #include <sys/stat.h>
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32__)
-#define APPNAME "OOSvrUser"
-#else
-#define APPNAME "oosvruser"
-#endif
-
 namespace
 {
 	int Help()

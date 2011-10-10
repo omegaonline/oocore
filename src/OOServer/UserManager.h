@@ -29,6 +29,12 @@
 
 int main(int, char**);
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+	#define APPNAME "OOSvrUser"
+#else
+	#define APPNAME "oosvruser"
+#endif
+
 namespace User
 {
 	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;

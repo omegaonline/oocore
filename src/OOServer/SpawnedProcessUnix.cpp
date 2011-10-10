@@ -397,10 +397,6 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 {
 	assert(!m_bSandbox);
 
-	OOBase::POSIX::pw_info pw(m_uid);
-	if (!pw)
-		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
-
 	int err = 0;
 	if (strSysDir.empty())
 	{
@@ -411,8 +407,9 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
-	if ((err = strSysDir.append("default_user.regdb")) != 0)
-		LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+	OOBase::POSIX::pw_info pw(m_uid);
+	if (!pw)
+		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
 	bool bAddDot = false;
 	if (strUsersDir.empty())
@@ -436,23 +433,33 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 
 	if (bAddDot)
 	{
-		if ((err = strUsersDir.append(".omegaonline")) != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+		if ((err = strHive.concat(strUsersDir.c_str(),".omegaonline.regdb")) != 0)
+			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 	}
 	else
 	{
-		if ((err = strHive.append(pw->pw_name)) != 0)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+		if ((err = strHive.printf("%s%s.regdb",strUsersDir.c_str(),pw->pw_name)) != 0)
+			LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
 	}
 
-	if ((err = strHive.append(".regdb")) != 0)
-		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-	int fd_to = ::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY | S_IRUSR | S_IWUSR);
-	if (fd_to!= -1)
+	int fd_to = ::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR);
+	if (fd_to == -1)
+	{
+		if (errno != EEXIST)
+			LOG_ERROR_RETURN(("Failed to open registry hive: '%s' %s",strHive.c_str(),OOBase::system_error_text(errno)),false);
+	}
+	else
 	{
 		// If we get here, then we have a brand new file...
+		if ((err = strSysDir.append("default_user.regdb")) != 0)
+		{
+			::close(fd_to);
+			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+		}
+
 		int fd_from = ::open(strSysDir.c_str(),O_RDONLY);
 		if (fd_from == -1)
 		{

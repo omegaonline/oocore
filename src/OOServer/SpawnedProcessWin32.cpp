@@ -900,6 +900,8 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 	}
 
+	LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
+
 	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
 	if (!PathFileExistsA(strHive.c_str()))
 	{

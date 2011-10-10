@@ -42,6 +42,10 @@
 #include <vld.h>
 #endif
 
+#if defined(HAVE_UNISTD_H)
+#include <sys/stat.h>
+#endif
+
 namespace
 {
 	int Version();
@@ -120,6 +124,8 @@ int main(int argc, char* argv[])
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+
+	umask(0);
 #endif
 
 	// Run the one and only Root::Manager instance

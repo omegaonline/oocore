@@ -30,6 +30,10 @@
 #include <vld.h>
 #endif
 
+#if defined(HAVE_UNISTD_H)
+#include <sys/stat.h>
+#endif
+
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define APPNAME "OOSvrUser"
 #else
@@ -130,6 +134,8 @@ int main(int argc, char* argv[])
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+
+	umask(0);
 
 #endif
 

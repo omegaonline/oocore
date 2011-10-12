@@ -509,7 +509,7 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 				channel_closed(channel_id,0);
 				LOG_ERROR(("Failed to encode channel_id: %s",OOBase::system_error_text(stream.last_error())));
 			}
-			else if ((err = ptrMC->send(stream.buffer())) != 0)
+			else if ((err = ptrMC->send(stream.buffer(),NULL)) != 0)
 				channel_closed(channel_id,0);
 			else
 			{

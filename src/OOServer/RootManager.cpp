@@ -617,7 +617,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
 	}
 
-	if ((err = ptrMC->send(stream.buffer())) != 0)
+	if ((err = ptrMC->send(stream.buffer(),NULL)) != 0)
 	{
 		channel_closed(channel_id,0);
 		channel_id = 0;

@@ -47,7 +47,7 @@ namespace OOServer
 
 		void shutdown();
 		int recv();
-		int send(OOBase::Buffer* pBuffer);
+		int send(OOBase::Buffer* pBuffer1, OOBase::Buffer* pBuffer2);
 
 	private:
 		MessageConnection(const MessageConnection&);
@@ -218,7 +218,7 @@ namespace OOServer
 		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
 		io_result::type queue_message(const Message& msg);
 		io_result::type wait_for_response(OOBase::CDRStream& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
-		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg);
+		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
 		bool process_request_context(ThreadContext* pContext, Message& msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline = NULL);
 
 		void process_channel_close(Message& msg);

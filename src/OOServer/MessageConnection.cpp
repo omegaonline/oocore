@@ -99,7 +99,7 @@ void OOServer::MessageConnection::shutdown()
 	header.write(Omega::byte_t('U'));  // signature
 	header.write(Omega::uint32_t(0));
 
-	send(header.buffer());
+	send(header.buffer(),NULL);
 }
 
 void OOServer::MessageConnection::on_closed()
@@ -219,11 +219,19 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 	return (recv() == 0);
 }
 
-int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
+int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer1, OOBase::Buffer* pBuffer2)
 {
 	addref();
 
-	int err = m_ptrSocket->send(this,&MessageConnection::on_sent,pBuffer);
+	int err = 0;
+	if (pBuffer2)
+	{
+		OOBase::Buffer* bufs[2] = { pBuffer1, pBuffer2 };
+		err = m_ptrSocket->send_v(this,&MessageConnection::on_sent,bufs,2);
+	}
+	else
+		err = m_ptrSocket->send(this,&MessageConnection::on_sent,pBuffer1);
+
 	if (err != 0)
 	{
 		release();
@@ -383,7 +391,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		// Reset the buffer all the way to the start
 		input.buffer()->mark_rd_ptr(0);
 
-		return (ptrMC->send(input.buffer()) == 0);
+		return (ptrMC->send(input.buffer(),NULL) == 0);
 	}
 }
 
@@ -1171,7 +1179,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg)
 {
 	// Write the header info
 	OOBase::CDRStream header;
@@ -1196,16 +1204,21 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.write(seq_no);
 	header.write(flags);
 
-	if (msg.m_payload.buffer()->length() > 0)
+	size_t len = 0;
+	size_t msg_len = msg.m_payload.buffer()->length();
+	if (msg_len == 0)
+		len = header.buffer()->length() - s_header_len;
+	else
 	{
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
+		len = header.buffer()->length() - s_header_len;
+
 		// Check the size
-		if (msg.m_payload.buffer()->length() > 0xFFFFFFFF - header.buffer()->length())
+		if (msg.m_payload.buffer()->length() > 0xFFFFFFFF - len)
 			LOG_ERROR_RETURN(("Message too big"),io_result::failed);
 
-		// Write the payload stream
-		header.write_buffer(msg.m_payload.buffer());
+		len += msg_len;
 	}
 
 	int err = header.last_error();
@@ -1213,7 +1226,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err)),io_result::failed);
 
 	// Update the total length
-	header.replace(static_cast<Omega::uint32_t>(header.buffer()->length() - s_header_len),msg_len_mark);
+	header.replace(static_cast<Omega::uint32_t>(len),msg_len_mark);
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -1225,5 +1238,5 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
 		return io_result::timedout;
 
-	return ((ptrMC->send(header.buffer()) == 0) ? io_result::success : io_result::failed);
+	return ((ptrMC->send(header.buffer(),msg_len ? msg.m_payload.buffer() : NULL) == 0) ? io_result::success : io_result::failed);
 }

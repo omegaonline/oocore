@@ -289,12 +289,11 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	display.getenv("DISPLAY");
 	if (Root::getenv_OMEGA_DEBUG() && !display.empty())
 	{
-		//execlp("xterm","xterm","-T","oosvruser","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
+		execlp("xterm","xterm","-T","oosvruser","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
 
-		OOBase::LocalString params;
-		params.printf("--log-file=vallog%d.txt",getpid());
-
-		execlp("xterm","xterm","-T","oosvruser","-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
+		//OOBase::LocalString params;
+		//params.printf("--log-file=vallog%d.txt",getpid());
+		//execlp("xterm","xterm","-T","oosvruser","-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
 
 		//OOBase::LocalString gdb;
 		//gdb.printf("run %s",strPipe.c_str());

@@ -59,10 +59,10 @@ namespace OOServer
 		OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
 		Omega::uint32_t                             m_channel_id;
 
-		void on_recv1(OOBase::Buffer* buffer, int err);
-		void on_recv2(OOBase::Buffer* buffer, int err);
+		static void on_recv1(void* param, OOBase::Buffer* buffer, int err);
+		static void on_recv2(void* param, OOBase::Buffer* buffer, int err);
 		bool on_recv(OOBase::Buffer* buffer, int err, int part);
-		void on_sent(int err);
+		static void on_sent(void* param, int err);
 		void on_closed();
 	};
 

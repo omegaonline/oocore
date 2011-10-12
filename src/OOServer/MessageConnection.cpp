@@ -133,21 +133,23 @@ int OOServer::MessageConnection::recv()
 	return err;
 }
 
-void OOServer::MessageConnection::on_recv1(OOBase::Buffer* buffer, int err)
+void OOServer::MessageConnection::on_recv1(void* param, OOBase::Buffer* buffer, int err)
 {
-	if (!on_recv(buffer,err,1))
+	MessageConnection* pThis = static_cast<MessageConnection*>(param);
+	if (!pThis->on_recv(buffer,err,1))
 	{
-		on_closed();
-		release();
+		pThis->on_closed();
+		pThis->release();
 	}
 }
 
-void OOServer::MessageConnection::on_recv2(OOBase::Buffer* buffer, int err)
+void OOServer::MessageConnection::on_recv2(void* param, OOBase::Buffer* buffer, int err)
 {
-	if (!on_recv(buffer,err,2))
-		on_closed();
+	MessageConnection* pThis = static_cast<MessageConnection*>(param);
+	if (!pThis->on_recv(buffer,err,2))
+		pThis->on_closed();
 
-	release();
+	pThis->release();
 }
 
 bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int part)
@@ -231,12 +233,13 @@ int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer)
 	return err;
 }
 
-void OOServer::MessageConnection::on_sent(int err)
+void OOServer::MessageConnection::on_sent(void* param, int err)
 {
+	MessageConnection* pThis = static_cast<MessageConnection*>(param);
 	if (err != 0)
-		on_closed();
+		pThis->on_closed();
 		
-	release();
+	pThis->release();
 }
 
 OOServer::MessageHandler::MessageHandler() :

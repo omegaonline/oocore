@@ -196,8 +196,8 @@ namespace
 	{
 		// Convert UName to wide
 		size_t wlen = OOBase::from_native(NULL,0,strUName.c_str());
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName(static_cast<wchar_t*>(OOBase::LocalAllocate(wlen*sizeof(wchar_t))));
-		if (!ptrUName)
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName;
+		if (!ptrUName.allocate(wlen*sizeof(wchar_t)))
 			LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
 
 		OOBase::from_native(ptrUName,wlen,strUName.c_str());
@@ -223,8 +223,8 @@ namespace
 			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 		}
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrPwd(static_cast<wchar_t*>(OOBase::LocalAllocate(pszVal->Length + sizeof(wchar_t))));
-		if (ptrPwd)
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrPwd;
+		if (ptrPwd.allocate(pszVal->Length + sizeof(wchar_t)))
 		{
 			memcpy(ptrPwd,pszVal->Buffer,pszVal->Length);
 			ptrPwd[pszVal->Length/sizeof(wchar_t)] = L'\0';
@@ -762,7 +762,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	OOBase::SmartPtr<void,OOBase::LocalAllocator> pSD;
 	for (DWORD cbNeeded = 512;;)
 	{
-		pSD = OOBase::LocalAllocate(cbNeeded);
+		pSD = OOBase::LocalAllocator::allocate(cbNeeded);
 		if (!pSD)
 			LOG_ERROR_RETURN(("Out of memory"),false);
 

@@ -186,8 +186,8 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
 			{
 				++dwValLen;
-				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf = static_cast<char*>(OOBase::LocalAllocate(dwValLen+1));
-				if (!buf)
+				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf;
+				if (!buf.allocate(dwValLen+1))
 					LOG_ERROR_RETURN(("Out of memory"),false);
 
 				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
@@ -204,8 +204,8 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 						lRes = value.assign(buf2,dwExpLen-1);
 					else
 					{
-						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3 = static_cast<char*>(OOBase::LocalAllocate(dwExpLen+1));
-						if (!buf3)
+						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3;
+						if (!buf3.allocate(dwExpLen+1))
 							LOG_ERROR_RETURN(("Out of memory"),false);
 
 						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))

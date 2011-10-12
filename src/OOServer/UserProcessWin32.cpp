@@ -50,8 +50,8 @@ namespace
 	{
 		size_t wlen = (wcslen(psz)+1)*sizeof(wchar_t);
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine(static_cast<wchar_t*>(OOBase::LocalAllocate(wlen)));
-		if (!ptrCmdLine)
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine;
+		if (!ptrCmdLine.allocate(wlen))
 			OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 		memcpy(ptrCmdLine,psz,wlen);
@@ -74,8 +74,7 @@ namespace
 				ptrCmdLine = CopyCmdLine(szBuf);
 			else if (hRes == E_POINTER)
 			{
-				ptrCmdLine = static_cast<wchar_t*>(OOBase::LocalAllocate((dwLen+1)*sizeof(wchar_t)));
-				if (!ptrCmdLine)
+				if (!ptrCmdLine.allocate((dwLen+1)*sizeof(wchar_t)))
 					OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 				hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,ptrCmdLine,&dwLen);

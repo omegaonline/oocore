@@ -363,8 +363,7 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 		int ngroups = 0;
 		if (getgrouplist(pw->pw_name,pw->pw_gid,NULL,&ngroups) == -1)
 		{
-			ptrGroups = static_cast<gid_t*>(OOBase::LocalAllocate(ngroups * sizeof(gid_t)));
-			if (!ptrGroups)
+			if (!ptrGroups.allocate(ngroups * sizeof(gid_t)))
 				LOG_ERROR_RETURN(("Out of memory!"),false);
 
 			getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups);

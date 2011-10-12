@@ -98,21 +98,16 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega:
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 {
-	void* p = OOBase::HeapAllocate(bytes);
+	void* p = OOBase::HeapAllocator::allocate(bytes);
 	if (!p)
-	{
-#if defined(_WIN32)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-		OMEGA_THROW(ENOMEM);
-#endif
-	}	
+
 	return p;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,1,((in),void*,mem))
 {
-	OOBase::HeapFree(mem);
+	OOBase::HeapAllocator::free(mem);
 }
 
 const OOCore::throwing_t OOCore::throwing = {0};
@@ -121,13 +116,8 @@ void* operator new(size_t size, const OOCore::throwing_t&)
 {
 	void* p = ::operator new(size,std::nothrow);
 	if (!p)
-	{
-#if defined(_WIN32)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-		OMEGA_THROW(ENOMEM);
-#endif
-	}	
+
 	return p;
 }
 
@@ -135,13 +125,8 @@ void* operator new[](size_t size, const OOCore::throwing_t&)
 {
 	void* p = ::operator new [] (size,std::nothrow);
 	if (!p)
-	{
-#if defined(_WIN32)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-		OMEGA_THROW(ENOMEM);
-#endif
-	}	
+
 	return p;
 }
 

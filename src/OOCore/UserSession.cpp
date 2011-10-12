@@ -188,7 +188,15 @@ void OOCore::UserSession::stop()
 
 	// Stop the io thread...
 	if (m_stream)
-		m_stream->close();
+	{
+		OOBase::CDRStream header;
+		header.write(header.big_endian());
+		header.write(byte_t(1));     // version
+		header.write(byte_t('o'));   // signature
+		header.write(byte_t('c'));   // signature
+		header.write(uint32_t(0));
+		m_stream->send(header.buffer());
+	}
 
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();

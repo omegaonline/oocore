@@ -672,7 +672,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-void OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t timeout, uint32_t attribs)
+void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t timeout, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -719,7 +719,15 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::C
 		wait = deadline - now;
 	}
 
-	int err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
+	int err = 0;
+	if (request)
+	{
+		OOBase::Buffer* bufs[2] = { header.buffer(), request->buffer() };
+		err = m_stream->send_v(bufs,2,wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
+	}
+	else
+		err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
+
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
@@ -733,7 +741,7 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, const OOBase::C
 	}
 }
 
-void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	try
 	{
@@ -746,7 +754,7 @@ void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq
 	}
 }
 
-void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -764,7 +772,8 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, u
 		wait = deadline - now;
 	}
 
-	int err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
+	OOBase::Buffer* bufs[2] = { header.buffer(), response->buffer() };
+	int err = m_stream->send_v(bufs,2,wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
@@ -798,22 +807,26 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 	if (header.last_error() != 0)
 		OMEGA_THROW(header.last_error());
 
-	if (request)
+	size_t len = 0;
+	if (!request)
+		len = header.buffer()->length() - s_header_len;
+	else
 	{
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
+		len = header.buffer()->length() - s_header_len;
+
+		size_t request_len = request->buffer()->length();
+
 		// Check the size
-		if (request->buffer()->length() > 0xFFFFFFFF - header.buffer()->length())
+		if (request_len > 0xFFFFFFFF - len)
 			OMEGA_THROW("Message too big");
 
-		// Write the request stream
-		header.write_buffer(request->buffer());
-		if (header.last_error())
-			OMEGA_THROW(header.last_error());
+		len += request_len;
 	}
 
 	// Update the total length
-	header.replace(static_cast<uint32_t>(header.buffer()->length() - s_header_len),msg_len_mark);
+	header.replace(static_cast<uint32_t>(len),msg_len_mark);
 }
 
 Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)

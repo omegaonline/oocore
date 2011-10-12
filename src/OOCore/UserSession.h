@@ -80,8 +80,8 @@ namespace OOCore
 
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
-		void send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t timeout, Omega::uint32_t attribs);
-		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		void send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t timeout, Omega::uint32_t attribs);
+		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
 		Omega::uint32_t get_channel_id() const;
 
 		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment();
@@ -175,7 +175,7 @@ namespace OOCore
 
 		// Message pumping
 		int run_read_loop();
-		void send_response_catch(Omega::uint16_t src_cmpt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		void send_response_catch(Omega::uint16_t src_cmpt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
 		bool pump_request(const OOBase::timeval_t* deadline = 0);
 		void process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline);
 		void wait_for_response(OOBase::CDRStream& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);

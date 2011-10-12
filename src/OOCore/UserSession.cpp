@@ -803,7 +803,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Check the size
-		if (request->buffer()->length() > 0xFFFFFF80)
+		if (request->buffer()->length() > 0xFFFFFFFF - header.buffer()->length())
 			OMEGA_THROW("Message too big");
 
 		// Write the request stream

@@ -1201,7 +1201,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Check the size
-		if (msg.m_payload.buffer()->length() > (0xFFFFFFFF - header.buffer()->length()))
+		if (msg.m_payload.buffer()->length() > 0xFFFFFFFF - header.buffer()->length())
 			LOG_ERROR_RETURN(("Message too big"),io_result::failed);
 
 		// Write the payload stream

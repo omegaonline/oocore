@@ -288,14 +288,14 @@ IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id
 	// Switch state...
 	ComptState compt_state(this);
 	
-	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(src_cmpt_id,guid_t::Null());
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
-	
-	// Make the call
 	IException* pRet = 0;
 	try
 	{
+		// Find and/or create the object manager associated with src_channel_id
+		ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel = create_compartment_channel(src_cmpt_id,guid_t::Null());
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
+
+		// Make the call
 		pRecv = ptrOM->Invoke(pSend,timeout);
 	}
 	catch (IException* pE)

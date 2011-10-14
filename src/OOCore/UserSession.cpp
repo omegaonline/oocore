@@ -372,9 +372,6 @@ int OOCore::UserSession::run_read_loop()
 		uint32_t nReadLen = 0;
 		header.read(nReadLen);
 
-		// If we add anything extra here to the header,
-		// it must be padded to 8 bytes.
-
 		if ((err = header.last_error()) != 0)
 			break;
 

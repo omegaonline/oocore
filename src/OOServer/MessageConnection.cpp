@@ -183,10 +183,6 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 	Omega::uint32_t read_len = 0;
 	input.read(read_len);
 
-	// If we add anything extra here to the header,
-	// it must be padded to 8 bytes.
-	// And update s_header_len above!
-
 	err = input.last_error();
 	if (err != 0)
 		LOG_ERROR_RETURN(("Corrupt header: %s",OOBase::system_error_text(err)),false);

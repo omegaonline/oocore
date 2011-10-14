@@ -429,9 +429,6 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		}
 
 		// Read remaining message members
-		Omega::uint32_t seq_no = 0;
-		msg.m_payload.read(seq_no);
-
 		Omega::uint16_t type = 0;
 		msg.m_payload.read(type);
 
@@ -464,7 +461,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 					OOBase::CDRStream response;
 					response.write(msg.m_src_channel_id);
 
-					send_response(seq_no,msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_reflect);
+					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_reflect);
 				}
 				else if ((msg.m_attribs & Message_t::system_message) == Message_t::channel_ping)
 				{
@@ -472,7 +469,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 					OOBase::CDRStream response;
 					response.write(Omega::byte_t(1));
 
-					send_response(seq_no,msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_ping);
+					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_ping);
 				}
 				else
 					LOG_ERROR(("Unrecognised system message"));
@@ -483,7 +480,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 			else
 			{
 				// Process the message...
-				process_request_context(pContext,msg,seq_no);
+				process_request_context(pContext,msg);
 			}
 		}
 		else
@@ -595,9 +592,6 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	Omega::uint16_t src_thread_id;
 	input.read(src_thread_id);
 
-	Omega::uint32_t seq_no;
-	input.read(seq_no);
-
 	Omega::uint16_t flags;
 	input.read(flags);
 
@@ -610,11 +604,11 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 		if (input.buffer()->length() > 0)
 			input.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
-		pThis->route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
+		pThis->route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::timeval_t&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t, Omega::uint32_t)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::timeval_t&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t)
 {
 	// We have nowhere to route!
 	return io_result::channel_closed;
@@ -748,8 +742,7 @@ OOServer::MessageHandler::ThreadContext* OOServer::MessageHandler::ThreadContext
 OOServer::MessageHandler::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_pHandler(0),
-		m_deadline(OOBase::timeval_t::MaxTime),
-		m_seq_no(0)
+		m_deadline(OOBase::timeval_t::MaxTime)
 {
 }
 
@@ -807,7 +800,7 @@ void OOServer::MessageHandler::stop_request_threads()
 	m_threadpool.join();
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_response(OOBase::CDRStream& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -845,9 +838,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			break;
 		}
 
-		Omega::uint32_t recv_seq_no = 0;
-		msg.m_payload.read(recv_seq_no);
-
 		Omega::uint16_t type = 0;
 		msg.m_payload.read(type);
 
@@ -864,9 +854,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		{
 			if (type == Message_t::Request)
 			{
-				process_request_context(pContext,msg,recv_seq_no,deadline);
+				process_request_context(pContext,msg,deadline);
 			}
-			else if (type == Message_t::Response && recv_seq_no == seq_no)
+			else if (type == Message_t::Response)
 			{
 				response = msg.m_payload;
 				ret = io_result::success;
@@ -880,7 +870,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 	return ret;
 }
 
-bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, Message& msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline)
+bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, Message& msg, const OOBase::timeval_t* deadline)
 {
 	// Set per channel thread id
 	Omega::uint16_t old_thread_id = 0;
@@ -904,7 +894,7 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 		pContext->m_deadline = *deadline;
 
 	// Process the message...
-	process_request(msg.m_payload,seq_no,msg.m_src_channel_id,msg.m_src_thread_id,pContext->m_deadline,msg.m_attribs);
+	process_request(msg.m_payload,msg.m_src_channel_id,msg.m_src_thread_id,pContext->m_deadline,msg.m_attribs);
 	
 	pContext->m_deadline = old_deadline;
 
@@ -990,9 +980,6 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 	msg.m_src_thread_id = 0;
 	msg.m_attribs = Message_t::asynchronous | Message_t::async_function;
 
-	Omega::uint32_t seq_no = 0;
-	msg.m_payload.write(seq_no);
-
 	Omega::uint16_t type = Message_t::Request;
 	msg.m_payload.write(type);
 
@@ -1026,8 +1013,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	msg.m_deadline = deadline ? *deadline : OOBase::timeval_t::MaxTime;
 	msg.m_attribs = attribs;
 	
-	Omega::uint32_t seq_no = 0;
-
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message_t::asynchronous))
 	{
@@ -1037,11 +1022,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 		
 		msg.m_src_thread_id = pContext->m_thread_id;
 		msg.m_deadline = pContext->m_deadline;
-
-		while (!seq_no)
-		{
-			seq_no = ++pContext->m_seq_no;
-		}
 	}
 
 	// Find the destination channel
@@ -1055,14 +1035,14 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request,seq_no);
+		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request);
 		if (res != io_result::success)
 			return res;
 	}
 	else
 	{
 		// Send upstream
-		io_result::type res = send_message(Message_t::Request,seq_no,actual_dest_channel_id,dest_channel_id,msg);
+		io_result::type res = send_message(Message_t::Request,actual_dest_channel_id,dest_channel_id,msg);
 		if (res != io_result::success)
 			return res;
 	}
@@ -1071,10 +1051,10 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 		return io_result::success;
 
 	// Wait for response...
-	return wait_for_response(*response,seq_no,msg.m_deadline != OOBase::timeval_t::MaxTime ? &msg.m_deadline : 0,actual_dest_channel_id);
+	return wait_for_response(*response,msg.m_deadline != OOBase::timeval_t::MaxTime ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1099,16 +1079,16 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response,seq_no);
+		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response);
 	}
 	else
 	{
 		// Send upstream
-		return send_message(Message_t::Response,seq_no,actual_dest_channel_id,dest_channel_id,msg);
+		return send_message(Message_t::Response,actual_dest_channel_id,dest_channel_id,msg);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, OOBase::CDRStream& message)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, OOBase::CDRStream& message)
 {
 	// Check the destination
 	bool bRoute = true;
@@ -1136,7 +1116,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		return route_off(message,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
+		return route_off(message,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
 	}
 
 	if (!bRoute)
@@ -1151,7 +1131,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		msg.m_deadline = deadline;
 
 		// Build a message
-		msg.m_payload.write(seq_no);
 		msg.m_payload.write(flags);
 
 		// 2 Bytes of padding here
@@ -1175,11 +1154,11 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		msg.m_attribs = attribs;
 		msg.m_deadline = deadline;
 		
-		return send_message(flags,seq_no,actual_dest_channel_id,dest_channel_id,msg);
+		return send_message(flags,actual_dest_channel_id,dest_channel_id,msg);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg)
 {
 	// Write the header info
 	OOBase::CDRStream header;
@@ -1201,7 +1180,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.write(msg.m_attribs);
 	header.write(msg.m_dest_thread_id);
 	header.write(msg.m_src_thread_id);
-	header.write(seq_no);
 	header.write(flags);
 
 	size_t len = 0;

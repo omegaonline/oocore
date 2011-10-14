@@ -646,15 +646,15 @@ void User::Manager::do_quit_i()
 	quit();
 }
 
-void User::Manager::process_request(OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	if (src_channel_id == m_uUpstreamChannel)
-		process_root_request(request,seq_no,src_thread_id,deadline,attribs);
+		process_root_request(request,src_thread_id,deadline,attribs);
 	else
-		process_user_request(request,seq_no,src_channel_id,src_thread_id,deadline,attribs);
+		process_user_request(request,src_channel_id,src_thread_id,deadline,attribs);
 }
 
-void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t seq_no, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
@@ -690,13 +690,13 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint32_t se
 
 	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
 	{
-		OOServer::MessageHandler::io_result::type res = send_response(seq_no,m_uUpstreamChannel,src_thread_id,response,deadline,attribs);
+		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,deadline,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)
 			LOG_ERROR(("Root response sending failed"));
 	}
 }
 
-void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	try
 	{
@@ -746,7 +746,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t se
 			ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
-			OOServer::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
+			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}

@@ -237,7 +237,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(msg.m_dest_cmpt_id,msg.m_seq_no,msg.m_src_channel_id,msg.m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
+			m_pSession->send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
 		}
 		catch (...)
 		{

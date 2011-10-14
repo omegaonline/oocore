@@ -409,7 +409,6 @@ int OOCore::UserSession::run_read_loop()
 		msg.m_payload.read(msg.m_attribs);
 		msg.m_payload.read(msg.m_dest_thread_id);
 		msg.m_payload.read(msg.m_src_thread_id);
-		msg.m_payload.read(msg.m_seq_no);
 		msg.m_payload.read(msg.m_type);
 
 		// Align to the next boundary
@@ -447,7 +446,7 @@ int OOCore::UserSession::run_read_loop()
 				// Send back the src_channel_id
 				OOBase::CDRStream response(sizeof(msg.m_src_channel_id));
 				if (response.write(msg.m_src_channel_id))
-					send_response_catch(msg.m_dest_cmpt_id,msg.m_seq_no,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_reflect);
+					send_response_catch(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_reflect);
 			}
 			else if ((msg.m_attribs & Message::system_message)==Message::channel_ping)
 			{
@@ -460,7 +459,7 @@ int OOCore::UserSession::run_read_loop()
 
 				OOBase::CDRStream response(sizeof(byte_t));
 				if (response.write(res))
-					send_response_catch(msg.m_dest_cmpt_id,msg.m_seq_no,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_ping);
+					send_response_catch(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_ping);
 			}
 		}
 		else if (msg.m_dest_thread_id != 0)
@@ -574,7 +573,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	}
 }
 
-void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, uint32_t seq_no, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -612,7 +611,7 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, uint32_
 			{
 				process_request(pContext,msg,deadline);
 			}
-			else if (msg.m_type == Message::Response && msg.m_seq_no == seq_no)
+			else if (msg.m_type == Message::Response)
 			{
 				response = msg.m_payload;
 				break;
@@ -641,7 +640,6 @@ OOCore::UserSession::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_usage_count(0),
 		m_deadline(OOBase::timeval_t::MaxTime),
-		m_seq_no(0),
 		m_current_cmpt(0)
 {
 }
@@ -680,8 +678,6 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 	uint16_t dest_thread_id = 0;
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
 
-	uint32_t seq_no = 0;
-
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message::asynchronous))
 	{
@@ -690,11 +686,6 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 
 		src_thread_id = pContext->m_thread_id;
 		deadline = pContext->m_deadline;
-
-		while (!seq_no)
-		{
-			seq_no = ++pContext->m_seq_no;
-		}
 	}
 
 	if (timeout > 0)
@@ -706,7 +697,7 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 
 	// Write the header info
 	OOBase::CDRStream header;
-	build_header(header,seq_no,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
+	build_header(header,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
 
 	// Send to the handle
 	OOBase::timeval_t wait = deadline;
@@ -728,6 +719,8 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 	else
 		err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
 
+	void* TODO; // TIMEOUT!
+
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
@@ -737,15 +730,15 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 	if (!(attribs & TypeInfo::Asynchronous))
 	{
 		// Wait for response...
-		wait_for_response(*response,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+		wait_for_response(*response,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
 	}
 }
 
-void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	try
 	{
-		send_response(src_cmpt_id,seq_no,dest_channel_id,dest_thread_id,response,deadline,attribs);
+		send_response(src_cmpt_id,dest_channel_id,dest_thread_id,response,deadline,attribs);
 	}
 	catch (IException* pE)
 	{
@@ -754,13 +747,13 @@ void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t seq
 	}
 }
 
-void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
 	// Write the header info
 	OOBase::CDRStream header;
-	build_header(header,seq_no,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
+	build_header(header,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
 
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
@@ -781,7 +774,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t seq_no, u
 	}
 }
 
-void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
+void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
 {
 	header.write(header.big_endian());
 	header.write(byte_t(1));     // version
@@ -801,7 +794,6 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t seq_n
 	header.write(attribs);
 	header.write(dest_thread_id);
 	header.write(src_thread_id);
-	header.write(seq_no);
 	header.write(flags);
 
 	if (header.last_error() != 0)

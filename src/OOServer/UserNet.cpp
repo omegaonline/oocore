@@ -85,7 +85,7 @@ Remoting::IObjectManager* User::RemoteChannel::create_object_manager(uint32_t ch
 	return ptrChannel->GetObjectManager();
 }
 
-void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::timeval_t& deadline, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, uint16_t flags, uint32_t seq_no)
+void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::timeval_t& deadline, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, uint16_t flags)
 {
 	// Make sure we have the source in the map...
 	if (src_channel_id != 0)
@@ -193,10 +193,10 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 		}
 	}
 
-	send_away_i(ptrPayload,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
+	send_away_i(ptrPayload,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
 }
 
-void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::timeval_t& deadline, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, uint16_t flags, uint32_t seq_no)
+void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::timeval_t& deadline, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, uint16_t flags)
 {
 	// Create a new message of the right format...
 	ObjectPtr<Remoting::IMessage> ptrMessage;
@@ -224,7 +224,6 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	ptrMessage->WriteValue(L"dest_thread_id",dest_thread_id);
 	ptrMessage->WriteValue(L"src_thread_id",src_thread_id);
 	ptrMessage->WriteValue(L"flags",flags);
-	ptrMessage->WriteValue(L"seq_no",seq_no);
 
 	// Get the source channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
@@ -266,7 +265,6 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 		ptrMessage->ReadValue(L"dest_thread_id");
 		ptrMessage->ReadValue(L"src_thread_id");
 		ptrMessage->ReadValue(L"flags");
-		ptrMessage->ReadValue(L"seq_no");
 		ptrMarshaller->ReleaseMarshalData(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		throw;
 	}
@@ -313,8 +311,6 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	input.read(dest_thread_id);
 	uint16_t src_thread_id;
 	input.read(src_thread_id);
-	uint32_t seq_no;
-	input.read(seq_no);
 	if (input.last_error() != 0)
 		OMEGA_THROW(input.last_error());
 
@@ -354,7 +350,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 		}
 
 		// Send it back...
-		send_away_i(ptrResult,0,src_channel_id,deadline,OOServer::Message_t::synchronous,src_thread_id,dest_thread_id,OOServer::Message_t::Response,seq_no);
+		send_away_i(ptrResult,0,src_channel_id,deadline,OOServer::Message_t::synchronous,src_thread_id,dest_thread_id,OOServer::Message_t::Response);
 	}
 }
 
@@ -385,7 +381,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	uint16_t dest_thread_id = pMsg->ReadValue(L"dest_thread_id").cast<uint16_t>();
 	uint16_t src_thread_id = pMsg->ReadValue(L"src_thread_id").cast<uint16_t>();
 	uint16_t flags = pMsg->ReadValue(L"flags").cast<uint16_t>();
-	uint32_t seq_no = pMsg->ReadValue(L"seq_no").cast<uint32_t>();
 
 	// Get the dest channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
@@ -450,7 +445,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				if (!(out_attribs & OOServer::Message_t::asynchronous))
 				{
 					// Send it back...
-					send_away_i(ptrResult,dest_channel_id,src_channel_id,deadline,out_attribs,src_thread_id,dest_thread_id,OOServer::Message_t::Response,seq_no);
+					send_away_i(ptrResult,dest_channel_id,src_channel_id,deadline,out_attribs,src_thread_id,dest_thread_id,OOServer::Message_t::Response);
 				}
 			}
 			else
@@ -473,7 +468,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			output.write(ex_attribs);
 			output.write(dest_thread_id);
 			output.write(src_thread_id);
-			output.write(seq_no);
 			if (output.last_error() != 0)
 				OMEGA_THROW(output.last_error());
 
@@ -581,7 +575,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 
 		// Forward through the network...
-		OOServer::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,*ptrOutput->GetCDRStream());
+		OOServer::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,*ptrOutput->GetCDRStream());
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & OOServer::Message_t::system_message))
@@ -617,7 +611,7 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 		guard.release();
 
 		// Send a sys message
-		send_away_i(ptrMsg,0,0,OOBase::timeval_t::MaxTime,OOServer::Message_t::asynchronous | OOServer::Message_t::channel_close,0,0,OOServer::Message_t::Request,0);
+		send_away_i(ptrMsg,0,0,OOBase::timeval_t::MaxTime,OOServer::Message_t::asynchronous | OOServer::Message_t::channel_close,0,0,OOServer::Message_t::Request);
 	}
 }
 
@@ -765,7 +759,7 @@ void User::Manager::close_all_remotes()
 	}
 }
 
-OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
+OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags)
 {
 	try
 	{
@@ -775,13 +769,13 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 
 			RemoteChannelEntry channel_entry;
 			if (!m_mapRemoteChannelIds.find(dest_channel_id & 0xFFF00000,channel_entry))
-				return MessageHandler::route_off(msg,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
+				return MessageHandler::route_off(msg,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
 
 			ptrRemoteChannel = channel_entry.ptrRemoteChannel;
 		}
 
 		// Send it on...
-		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
+		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
 
 		return OOServer::MessageHandler::io_result::success;
 	}

@@ -115,13 +115,13 @@ namespace OOServer
 			};
 		};
 
-		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, OOBase::CDRStream& message);
+		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, OOBase::CDRStream& message);
 		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs);
 
 		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
 
 	protected:
-		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
+		io_result::type send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 
 		bool start_request_threads(size_t threads);
 		void shutdown_channels();
@@ -129,10 +129,10 @@ namespace OOServer
 
 		Omega::uint32_t register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
 
-		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs) = 0;
+		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs) = 0;
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
 		virtual void on_channel_closed(Omega::uint32_t channel) = 0;
-		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
+		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags);
 
 		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
 		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
@@ -194,7 +194,6 @@ namespace OOServer
 
 			// 'Private' thread-local data
 			OOBase::timeval_t         m_deadline;
-			Omega::uint32_t           m_seq_no;
 
 			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator> m_mapChannelThreads;
 
@@ -217,9 +216,9 @@ namespace OOServer
 
 		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
 		io_result::type queue_message(const Message& msg);
-		io_result::type wait_for_response(OOBase::CDRStream& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
-		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
-		bool process_request_context(ThreadContext* pContext, Message& msg, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline = NULL);
+		io_result::type wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
+		bool process_request_context(ThreadContext* pContext, Message& msg, const OOBase::timeval_t* deadline = NULL);
 
 		void process_channel_close(Message& msg);
 		void process_async_function(Message& msg);

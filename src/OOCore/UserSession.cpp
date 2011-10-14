@@ -418,7 +418,7 @@ int OOCore::UserSession::run_read_loop()
 		// Did everything make sense?
 		err = msg.m_payload.last_error();
 		if (err != 0)
-			break;
+			continue;
 
 		// Just skip any misdirected packets
 		if ((dest_channel_id & 0xFFFFF000) != m_channel_id)
@@ -443,7 +443,7 @@ int OOCore::UserSession::run_read_loop()
 				// Send back the src_channel_id
 				OOBase::CDRStream response(sizeof(msg.m_src_channel_id));
 				if (response.write(msg.m_src_channel_id))
-					send_response_catch(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_reflect);
+					send_response_catch(msg,&response,Message::channel_reflect);
 			}
 			else if ((msg.m_attribs & Message::system_message)==Message::channel_ping)
 			{
@@ -456,7 +456,7 @@ int OOCore::UserSession::run_read_loop()
 
 				OOBase::CDRStream response(sizeof(byte_t));
 				if (response.write(res))
-					send_response_catch(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,&response,msg.m_deadline,Message::synchronous | Message::channel_ping);
+					send_response_catch(msg,&response,Message::channel_ping);
 			}
 		}
 		else if (msg.m_dest_thread_id != 0)
@@ -523,7 +523,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		// Increment the consumers...
 		++m_usage_count;
 
-		// Get the next message
+		// Get the next message - use a fresh Countdown each time
 		Message msg;
 		OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.pop(msg,wait);
 
@@ -543,7 +543,7 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 		if (msg.m_type == Message::Request)
 		{
 			// Don't confuse the wait deadline with the message processing deadline
-			process_request(ThreadContext::instance(),msg,0);
+			process_request(ThreadContext::instance(),msg,NULL);
 
 			// We processed something
 			return true;
@@ -587,11 +587,13 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 		if (!ptrCompt || !ptrCompt->is_channel_open(from_channel_id))
 		{
 			// Channel has closed
-			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Other compartment closed while waiting for response"));
+			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Other compartment closed while waiting for response")));
 		}
 
 		// Increment the usage count
 		++pContext->m_usage_count;
+
+		void* TODO; // Timeouts are all wrong!
 
 		// Get the next message
 		Message msg;
@@ -615,11 +617,8 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 			}
 		}
 		else if (res == OOBase::BoundedQueue<Message>::closed)
-		{
-			// I/O socket has closed
-			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response"));
-		}
-		else if (res == OOBase::BoundedQueue<Message>::timedout)
+			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
+		else // if (res == OOBase::BoundedQueue<Message>::timedout)
 			break;
 	}
 }
@@ -731,11 +730,11 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 	}
 }
 
-void OOCore::UserSession::send_response_catch(uint16_t src_cmpt_id, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response_catch(const Message& msg, OOBase::CDRStream* response, uint32_t attribs)
 {
 	try
 	{
-		send_response(src_cmpt_id,dest_channel_id,dest_thread_id,response,deadline,attribs);
+		send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_deadline,Message::synchronous | attribs);
 	}
 	catch (IException* pE)
 	{
@@ -835,6 +834,14 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 	return mflags;
 }
 
+void OOCore::UserSession::respond_exception(OOBase::CDRStream& response, IException* pE)
+{
+	// Make sure the exception is released
+	ObjectPtr<IException> ptrE = pE;
+
+	void* TODO;
+}
+
 void OOCore::UserSession::process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -846,17 +853,13 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 
 	if (!ptrCompt)
 	{
-		// Send a channel close back to the sender
 		OOBase::CDRStream response;
-		if (response.write(msg.m_dest_cmpt_id | m_channel_id))
-			send_request(msg.m_src_channel_id,&response,NULL,(deadline ? deadline->msec() : 0),Message::asynchronous | Message::channel_close);
-
-		return;
+		respond_exception(response,Remoting::IChannelClosedException::Create());
+		return send_response_catch(msg,&response);
 	}
 
 	// Set per channel thread id
 	uint16_t old_thread_id = 0;
-
 	uint16_t* v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
 	if (v)
 	{
@@ -867,7 +870,11 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	{
 		int err = pContext->m_mapChannelThreads.insert(msg.m_src_channel_id,msg.m_src_thread_id);
 		if (err != 0)
-			OMEGA_THROW(err);
+		{
+			OOBase::CDRStream response;
+			respond_exception(response,ISystemException::Create(err));
+			return send_response_catch(msg,&response);
+		}
 	}
 
 	uint16_t old_id = pContext->m_current_cmpt;
@@ -884,20 +891,11 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 		// Process the message...
 		ptrCompt->process_request(msg,pContext->m_deadline);
 	}
-	catch (...)
+	catch (IException* pE)
 	{
-		if (v)
-		{
-			v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
-			if (v)
-				*v = old_thread_id;
-		}
-		else
-			pContext->m_mapChannelThreads.erase(msg.m_src_channel_id);
-
-		pContext->m_deadline = old_deadline;
-		pContext->m_current_cmpt = old_id;
-		throw;
+		OOBase::CDRStream response;
+		respond_exception(response,pE);
+		send_response_catch(msg,&response);
 	}
 
 	// Restore old context

@@ -173,7 +173,8 @@ namespace OOCore
 
 		// Message pumping
 		int run_read_loop();
-		void send_response_catch(Omega::uint16_t src_cmpt_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		void respond_exception(OOBase::CDRStream& response, Omega::IException* pE);
+		void send_response_catch(const Message& msg, OOBase::CDRStream* response, Omega::uint32_t attribs = Message::synchronous);
 		bool pump_request(const OOBase::timeval_t* deadline = 0);
 		void process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline);
 		void wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);

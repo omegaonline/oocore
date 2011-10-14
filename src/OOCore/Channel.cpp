@@ -207,7 +207,6 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	{
 		try
 		{
-
 			// Wrap the response
 			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstance();
 			ptrRecv->init(response);

@@ -146,7 +146,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 		{
 			// Create a new message of the right format...
 			if (m_message_oid == guid_t::Null())
-				ptrPayload = static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+				ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 			else
 				ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -201,7 +201,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	// Create a new message of the right format...
 	ObjectPtr<Remoting::IMessage> ptrMessage;
 	if (m_message_oid == guid_t::Null())
-		ptrMessage = static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+		ptrMessage = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 	else
 		ptrMessage = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -417,7 +417,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				{
 					// Create a new message of the right format...
 					if (m_message_oid == guid_t::Null())
-						ptrResult = static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+						ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 					else
 						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -430,7 +430,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				{
 					// Create a new message of the right format...
 					if (m_message_oid == guid_t::Null())
-						ptrResult = static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+						ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 					else
 						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -601,7 +601,7 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 		// Create a new message of the right format...
 		ObjectPtr<Remoting::IMessage> ptrMsg;
 		if (m_message_oid == guid_t::Null())
-			ptrMsg = static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+			ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 		else
 			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 

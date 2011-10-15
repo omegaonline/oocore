@@ -80,7 +80,7 @@ Remoting::IMessage* User::Channel::CreateMessage()
 	if (m_message_oid == guid_t::Null())
 	{
 		// Create a fresh CDRMessage
-		return static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+		return ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 	}
 	else
 	{

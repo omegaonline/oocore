@@ -1426,7 +1426,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Formatting::IFormattingException*,OOCore_IFormatt
 {
 	ObjectImpl<FormattingException>* pNew = ObjectImpl<FormattingException>::CreateInstance();
 	pNew->m_strDesc = msg;
-	return static_cast<Formatting::IFormattingException*>(pNew);
+	return pNew;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))

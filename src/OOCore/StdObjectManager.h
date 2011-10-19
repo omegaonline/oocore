@@ -82,7 +82,6 @@ namespace OOCore
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pResponse);
 		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pResponse);
-
 		bool CustomMarshalInterface(Omega::Remoting::IMarshal* pMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
 
 	// IMarshaller members

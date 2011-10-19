@@ -77,7 +77,7 @@ Remoting::IMessage* OOCore::ChannelBase::CreateMessage()
 	if (m_message_oid == guid_t::Null())
 	{
 		// Create a fresh CDRMessage
-		return static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+		return ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 	}
 	else
 	{
@@ -325,5 +325,5 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,())
 {
-	return static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
+	return ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 }

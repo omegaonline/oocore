@@ -539,45 +539,31 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 
 bool OOCore::StdObjectManager::CustomMarshalInterface(Remoting::IMarshal* pMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
-	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("CustomMarshalInterface() called on disconnected ObjectManager"));
-
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
 	guid_t oid = pMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
 	if (oid == guid_t::Null())
 		return false;
 
-	size_t undo_count = 0;
+	// Write the marshalling oid
+	pMessage->WriteValue(L"$marshal_type",byte_t(2));
+	pMessage->WriteValue(L"$oid",oid);
+
 	try
 	{
-		// Write the marshalling oid
-		pMessage->WriteValue(L"$marshal_type",byte_t(2));
-		++undo_count;
-
-		pMessage->WriteValue(L"$oid",oid);
-		++undo_count;
-
 		// Let the custom handle marshalling...
 		pMarshal->MarshalInterface(this,pMessage,iid,marshal_flags);
-		++undo_count;
-
-		// Write the struct end
-		pMessage->WriteStructEnd();
 	}
 	catch (...)
 	{
-		if (undo_count > 0)
-			pMessage->ReadValue(L"$marshal_type");
-
-		if (undo_count > 1)
-			pMessage->ReadValue(L"$oid");
-
-		if (undo_count > 2)
-			pMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
-
+		pMessage->ReadValue(L"$marshal_type");
+		pMessage->ReadValue(L"$oid");
+		pMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
 		throw;
 	}
+
+	// Write the struct end
+	pMessage->WriteStructEnd();
 
 	return true;
 }

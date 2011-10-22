@@ -417,6 +417,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SimpleMarshaller.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\StdObjectManager.cpp"
 				>
 			</File>

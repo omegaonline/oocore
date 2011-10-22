@@ -1073,23 +1073,11 @@ namespace
 			DWORD dwErr = GetLastError();
 			OMEGA_THROW(dwErr);
 		}
-
-		char thousands_char[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_char,5))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
 #else
 		const char* decimal_char = ".";
-		const char* thousands_char = ",";
-
 		const lconv* lc = localeconv();
 		if (lc)
-		{
 			decimal_char = lc->decimal_point;
-			thousands_char = lc->thousands_sep;
-		}
 #endif
 
 		// Work out precision and mode...

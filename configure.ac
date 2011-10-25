@@ -53,19 +53,6 @@ OO_PROG_CXX
 # Check the multi-threading flags
 OO_MULTI_THREAD
 
-# Find sqlite3
-OO_LIB_SQLITE3([3.5.0])
-AS_IF([test -z "$SQLITE3_LIBS"],[AC_MSG_ERROR([Need a valid sqlite3 library])])
-
-# Check for the headers we use
-AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h])
-
-# Add the correct libs to LIBS
-AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
-
-# Check for wcstoull and friends
-AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
-
 # Set sensible default CFLAGS if necessary
 AS_IF([test "x$oo_test_CFLAGS" != "xset"],
 [
@@ -125,6 +112,19 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
 
 # Add debug defines
 AS_IF([test "x$debug" != "xtrue"],[CPPFLAGS="$CPPFLAGS -DNDEBUG"])
+
+# Find sqlite3
+OO_LIB_SQLITE3([3.5.0])
+AS_IF([test -z "$SQLITE3_LIBS"],[AC_MSG_ERROR([Need a valid sqlite3 library])])
+
+# Check for the headers we use
+AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h])
+
+# Add the correct libs to LIBS
+AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
+
+# Check for wcstoull and friends
+AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
 
 # Set up libtool correctly
 m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])

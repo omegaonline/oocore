@@ -7,7 +7,7 @@ AC_DEFUN([OO_LIB_SQLITE3],
 
 	AS_IF([test -n "$PKG_CONFIG"],[PKG_CHECK_MODULES([SQLITE3],[sqlite3 >= $sqlite3_version_req],
 		[
-			AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have the SQLite3 library])
+			AC_DEFINE([HAVE_SQLITE3_H], [1], [Define to 1 if you have the SQLite3 library])
 			AC_SUBST([SQLITE3_CFLAGS])
 			AC_SUBST([SQLITE3_LIBS])
 		])
@@ -43,7 +43,7 @@ AC_DEFUN([OO_LIB_SQLITE3],
 					)],
 					[
 						AC_MSG_RESULT([yes])
-						AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have the SQLite3 library])
+						AC_DEFINE([HAVE_SQLITE3_H], [1], [Define to 1 if you have the SQLite3 library])
 					],
 					[AC_MSG_RESULT([no])]
 				)

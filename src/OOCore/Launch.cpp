@@ -138,24 +138,10 @@ namespace
 		if (err)
 			OMEGA_THROW(err);
 
-		// We know a CDRStream writes strings as a 4 byte length followed by the character data
 		stream.reset();
-		err = root_socket->recv(stream.buffer(),sizeof(uint32_t));
-		if (err != 0)
-			OMEGA_THROW(err);
 
-		uint32_t len = 0;
-		if (!stream.read(len))
-			OMEGA_THROW(stream.last_error());
-
-		err = root_socket->recv(stream.buffer(),len);
-		if (err != 0)
-			OMEGA_THROW(err);
-
-		// Now reset rd_ptr and read the string
-		stream.buffer()->mark_rd_ptr(0);
-
-		if (!stream.read(strPipe))
+		// Now read strPipe
+		if (!stream.recv_string(root_socket,strPipe))
 			OMEGA_THROW(stream.last_error());
 	}
 }

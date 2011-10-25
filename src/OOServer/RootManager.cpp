@@ -581,25 +581,12 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 {
 	OOBase::CDRStream stream;
 
-	// We know a CDRStream writes strings as a 4 byte length followed by the character data
-	int err = ptrSocket->recv(stream.buffer(),4);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
-
-	Omega::uint32_t len = 0;
-	if (!stream.read(len))
-		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
-
-	if ((err = ptrSocket->recv(stream.buffer(),len)) != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
-
-	// Now reset rd_ptr and read the string
-	stream.buffer()->mark_rd_ptr(0);
 	OOBase::LocalString strPipeL;
-	if (!stream.read(strPipeL))
+	if (!stream.recv_string(ptrSocket,strPipeL))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
-	if ((err = strPipe.assign(strPipeL.c_str())) != 0)
+	int err = strPipe.assign(strPipeL.c_str());
+	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);

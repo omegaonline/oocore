@@ -173,18 +173,20 @@ namespace
 		{
 			if (err == ENOENT && bStandalone)
  				return;
- 
+
 			ObjectPtr<IException> ptrE = ISystemException::Create(err);
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
 		}
 
 		bStandalone = false;
 
-		// Send version information
-		OOBase::CDRStream stream;
-
 		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-		if (!stream.write(version))
+
+		OOBase::LocalString strSid;
+		get_session_id(strSid);
+
+		OOBase::CDRStream stream;
+		if (!stream.write(version) || !stream.write(strSid.c_str()))
 			OMEGA_THROW(stream.last_error());
 
 		err = root_socket->send(stream.buffer());

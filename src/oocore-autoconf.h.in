@@ -1,3 +1,6 @@
+/* Define to 1 if you have the DBus library */
+#undef HAVE_DBUS_H
+
 /* Define to 1 if you have the SQLite3 library */
 #undef HAVE_SQLITE3_H
 

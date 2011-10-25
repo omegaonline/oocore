@@ -31,6 +31,12 @@ using namespace OTL;
 #define ECONNREFUSED WSAECONNREFUSED
 #endif
 
+#if defined(HAVE_DBUS_H)
+#undef interface
+#include <dbus/dbus.h>
+#define interface struct
+#endif
+
 namespace
 {
 	void parse_args(const string_t& str, OOBase::Table<string_t,string_t>& args)
@@ -100,15 +106,62 @@ namespace
 		}
 	}
 	
+	void get_session_id(OOBase::LocalString& strId)
+	{
+#if defined(_WIN32)
+		// We don't use session_id
+#elif defined(HAVE_DBUS_H)
+
+		DBusError error;
+		dbus_error_init(&error);
+
+		DBusConnection* conn = dbus_bus_get(DBUS_BUS_SYSTEM,NULL);
+		if (dbus_error_is_set(&error))
+			dbus_error_free(&error);
+		else if (conn)
+		{
+			DBusMessage* call = dbus_message_new_method_call(
+					"org.freedesktop.ConsoleKit",
+					"/org/freedesktop/ConsoleKit/Manager",
+					"org.freedesktop.ConsoleKit.Manager",
+					"GetCurrentSession");
+
+			if (call)
+			{
+				DBusMessage* reply = dbus_connection_send_with_reply_and_block(conn,call,-1,&error);
+				if (dbus_error_is_set(&error))
+					dbus_error_free(&error);
+				else if (reply)
+				{
+					const char* session_path = NULL;
+					if (!dbus_message_get_args(reply,&error,DBUS_TYPE_OBJECT_PATH,&session_path,DBUS_TYPE_INVALID))
+						dbus_error_free(&error);
+					else
+						strId.assign(session_path);
+
+					dbus_message_unref(reply);
+				}
+
+				dbus_message_unref(call);
+			}
+
+			dbus_connection_unref(conn);
+		}
+#elif defined(HAVE_UNISTD_H)
+
+
+#endif
+	}
+
 	void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)
 	{
 		int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
 		if (err != 0)
 			OMEGA_THROW(err);
-			
+
 		if (!strPipe.empty())
 			return;
-			
+
  	#if defined(_WIN32)
  		const char* name = "OmegaOnline";
 	#else

@@ -123,6 +123,17 @@ AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h])
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
 
+# Check for dbus
+PKG_PROG_PKG_CONFIG
+AS_IF([test -n "$PKG_CONFIG"],[PKG_CHECK_MODULES([DBUS],[dbus-1 >= 1.0],
+	[
+		AC_DEFINE([HAVE_DBUS_H], [1], [Define to 1 if you have the DBus library])
+		AC_SUBST([DBUS_CFLAGS])
+		AC_SUBST([DBUS_LIBS])
+	])
+])
+AS_IF([test -z "$win32" && test -z "$DBUS_LIBS"],[AC_MSG_WARN([Cannot find libdbus, you probably want it])])
+
 # Check for wcstoull and friends
 AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
 

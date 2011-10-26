@@ -108,49 +108,56 @@ namespace
 	
 	void get_session_id(OOBase::LocalString& strId)
 	{
-#if defined(_WIN32)
-		// We don't use session_id
-#elif defined(HAVE_DBUS_H)
+		// We don't use session_id with Win32
+#if !defined(_WIN32)
 
-		DBusError error;
-		dbus_error_init(&error);
+#if defined(HAVE_UNISTD_H)
+		// Just default to using the sid with POSIX
+		strId.printf("%ld",getsid(0));
+#endif
 
-		DBusConnection* conn = dbus_bus_get(DBUS_BUS_SYSTEM,NULL);
-		if (dbus_error_is_set(&error))
-			dbus_error_free(&error);
-		else if (conn)
+#if defined(HAVE_DBUS_H)
 		{
-			DBusMessage* call = dbus_message_new_method_call(
-					"org.freedesktop.ConsoleKit",
-					"/org/freedesktop/ConsoleKit/Manager",
-					"org.freedesktop.ConsoleKit.Manager",
-					"GetCurrentSession");
+			// Try for a DBUS session id
+			DBusError error;
+			dbus_error_init(&error);
 
-			if (call)
+			DBusConnection* conn = dbus_bus_get(DBUS_BUS_SYSTEM,NULL);
+			if (dbus_error_is_set(&error))
+				dbus_error_free(&error);
+			else if (conn)
 			{
-				DBusMessage* reply = dbus_connection_send_with_reply_and_block(conn,call,-1,&error);
-				if (dbus_error_is_set(&error))
-					dbus_error_free(&error);
-				else if (reply)
-				{
-					const char* session_path = NULL;
-					if (!dbus_message_get_args(reply,&error,DBUS_TYPE_OBJECT_PATH,&session_path,DBUS_TYPE_INVALID))
-						dbus_error_free(&error);
-					else
-						strId.assign(session_path);
+				DBusMessage* call = dbus_message_new_method_call(
+						"org.freedesktop.ConsoleKit",
+						"/org/freedesktop/ConsoleKit/Manager",
+						"org.freedesktop.ConsoleKit.Manager",
+						"GetCurrentSession");
 
-					dbus_message_unref(reply);
+				if (call)
+				{
+					DBusMessage* reply = dbus_connection_send_with_reply_and_block(conn,call,-1,&error);
+					if (dbus_error_is_set(&error))
+						dbus_error_free(&error);
+					else if (reply)
+					{
+						const char* session_path = NULL;
+						if (!dbus_message_get_args(reply,&error,DBUS_TYPE_OBJECT_PATH,&session_path,DBUS_TYPE_INVALID))
+							dbus_error_free(&error);
+						else
+							strId.assign(session_path);
+
+						dbus_message_unref(reply);
+					}
+
+					dbus_message_unref(call);
 				}
 
-				dbus_message_unref(call);
+				dbus_connection_unref(conn);
 			}
-
-			dbus_connection_unref(conn);
 		}
-#elif defined(HAVE_UNISTD_H)
+#endif // HAVE_DBUS_H
 
-
-#endif
+#endif // !WIN32
 	}
 
 	void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)

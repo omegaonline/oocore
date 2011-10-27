@@ -19,6 +19,8 @@ reallyclean: maintainer-clean
 	rm -f @srcdir@/Makefile.in
 	rm -f @srcdir@/aclocal.m4
 	rm -f @srcdir@/configure
+	rm -f @srcdir@/autoheader_dummy.h.in
+	rm -f @srcdir@/autoheader_dummy.h.in~
 	rm -f @srcdir@/data/Makefile.in
 	rm -f @srcdir@/include/Makefile.in
 	rm -f @srcdir@/m4/argz.m4
@@ -28,8 +30,6 @@ reallyclean: maintainer-clean
 	rm -f @srcdir@/m4/ltversion.m4
 	rm -f @srcdir@/m4/lt~obsolete.m4
 	rm -f @srcdir@/src/Makefile.in
-	rm -f @srcdir@/src/OOCore/autoheader_dummy.h.in
-	rm -f @srcdir@/src/OOCore/autoheader_dummy.h.in~
 	rm -f @srcdir@/src/OOCore/Makefile.in
 	rm -f @srcdir@/src/OORegister/Makefile.in
 	rm -f @srcdir@/src/OOServer/Makefile.in

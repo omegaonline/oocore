@@ -73,5 +73,6 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <stddef.h>
 
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

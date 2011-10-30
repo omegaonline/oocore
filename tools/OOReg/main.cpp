@@ -178,10 +178,10 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	if (args.find("help") != args.npos)
+	if (args.exists("help"))
 		return help();
 
-	if (args.find("version") != args.npos)
+	if (args.exists("version"))
 		return version();
 
 	OOBase::String oo_args;
@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
 		fputs("', use --help for information.",stderr);
 		return EXIT_FAILURE;
 	}
-	else if (args.find("@3") != args.npos)
+	else if (args.exists("@3"))
 	{
 		fputs("Too many arguments to '",stderr);
 		fputs(method.c_str(),stderr);

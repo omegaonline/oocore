@@ -101,7 +101,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (size_t i=m_mapObjectsByOid.find(strOid,true); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid; ++i)
+		for (size_t i=m_mapObjectsByOid.find_first(strOid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid; ++i)
 		{
 			// Check its still alive...
 			Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
@@ -173,7 +173,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	for (size_t i=m_mapObjectsByOid.find(strOid,true); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid;++i)
+	for (size_t i=m_mapObjectsByOid.find_first(strOid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid;++i)
 	{
 		Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
 		if (pInfo && (pInfo->m_flags & search_flags))
@@ -232,7 +232,7 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 	{
 		uint32_t rot_cookie = pInfo->m_rot_cookie;
 
-		for (size_t i=m_mapObjectsByOid.find(pInfo->m_oid,true); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==pInfo->m_oid; ++i)
+		for (size_t i=m_mapObjectsByOid.find_first(pInfo->m_oid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==pInfo->m_oid; ++i)
 		{
 			if (*m_mapObjectsByOid.at(i) == cookie)
 				m_mapObjectsByOid.erase(i);

@@ -76,10 +76,10 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	if (args.find("help") != args.npos)
+	if (args.exists("help"))
 		return help();
 
-	if (args.find("version") != args.npos)
+	if (args.exists("version"))
 		return version();
 
 	fputs(Omega::guid_t::Create().ToString().c_nstr(),stdout);

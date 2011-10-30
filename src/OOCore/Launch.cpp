@@ -215,12 +215,12 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 	bool bStandalone = false;
 	bool bStandaloneAlways = false;
-	size_t i = args.find(L"standalone");
-	if (i != args.npos)
+	string_t* parg = args.find(L"standalone");
+	if (parg)
 	{
-		if (*args.at(i) == L"true")
+		if (*parg == L"true")
 			bStandalone = true;
-		else if (*args.at(i) == L"always")
+		else if (*parg == L"always")
 		{
 			bStandalone = true;
 			bStandaloneAlways = true;

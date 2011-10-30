@@ -192,22 +192,22 @@ int main(int argc, char* argv[])
 	if (cmd_args.parse(argc,argv,args) != 0)
 		return EXIT_FAILURE;
 
-	if (args.find("help") != args.npos)
+	if (args.exists("help"))
 		return Help();
 
-	if (args.find("version") != args.npos)
+	if (args.exists("version"))
 		return Version();
 
-	if (args.find("csh-syntax") != args.npos && args.find("sh-syntax") != args.npos)
+	if (args.exists("csh-syntax") && args.exists("sh-syntax"))
 	{
 		std::cerr << "Either --sh-syntax or --csh-syntax allowed" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	bool bCsh = false;
-	if (args.find("csh-syntax") != args.npos)
+	if (args.exists("csh-syntax"))
 		bCsh = true;
-	else if (args.find("sh-syntax") != args.npos)
+	else if (args.exists("sh-syntax"))
 		bCsh = false;
 	else
 	{
@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
 			bCsh = true;
 	}
 
-	bool bExit = (args.find("exit-with-session") != args.npos);
+	bool bExit = args.exists("exit-with-session");
 
 	// Now do the fork and exec dance...
 	int p = run_oosvruser();

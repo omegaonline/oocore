@@ -425,7 +425,7 @@ void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti*
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	for (size_t i=m_ti_map.find(iid,true); i < m_ti_map.size() && *m_ti_map.key_at(i)==iid;)
+	for (size_t i=m_ti_map.find_first(iid); i < m_ti_map.size() && *m_ti_map.key_at(i)==iid;)
 	{
 		if (m_ti_map.at(i)->type_info == type_info)
 			m_ti_map.erase(i);

@@ -173,7 +173,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check if we have someone registered already
-		for (size_t i=m_mapServicesByOid.find(strOid,true); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
+		for (size_t i=m_mapServicesByOid.find_first(strOid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
 		{
 			Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
 			if (pInfo)
@@ -244,7 +244,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	
-	for (size_t i=m_mapServicesByOid.find(strOid,true); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
+	for (size_t i=m_mapServicesByOid.find_first(strOid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
 	{
 		Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
 		if (pInfo && (pInfo->m_flags & search_flags))
@@ -309,7 +309,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 	Info info;
 	if (m_mapServicesByCookie.erase(cookie,&info))
 	{
-		for (size_t i=m_mapServicesByOid.find(info.m_oid,true); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==info.m_oid; ++i)
+		for (size_t i=m_mapServicesByOid.find_first(info.m_oid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==info.m_oid; ++i)
 		{
 			if (*m_mapServicesByOid.at(i) == cookie)
 				m_mapServicesByOid.erase(i);

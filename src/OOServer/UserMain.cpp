@@ -103,10 +103,10 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 	
-	if (args.find("help") != args.npos)
+	if (args.exists("help"))
 		return Help();
 
-	if (args.find("version") != args.npos)
+	if (args.exists("version"))
 		return Version();
 
 #if defined(_WIN32)

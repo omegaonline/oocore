@@ -107,11 +107,9 @@ void InterProcessService::Load(const string_t& str)
 
 string_t InterProcessService::GetArg(const string_t& arg)
 {
-	size_t i = m_args.find(arg);
-	if (i == m_args.npos)
-		return string_t();
-
-	return *m_args.at(i);
+	string_t ret;
+	m_args.find(arg,ret);
+	return ret;
 }
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()

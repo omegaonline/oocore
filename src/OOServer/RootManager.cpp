@@ -66,7 +66,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	int ret = EXIT_FAILURE;
 
-	m_bUnsafe = (cmd_args.find("unsafe") != cmd_args.npos);
+	m_bUnsafe = cmd_args.exists("unsafe");
 
 	OOBase::String strPidfile;
 	cmd_args.find("pidfile",strPidfile);

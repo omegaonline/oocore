@@ -439,7 +439,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	m_mapUserProcesses.erase(channel);
 }
 
-bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const char* session_id, UserProcess& user_process)
+bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
 	for (bool bFirst = true;bFirst;bFirst = false)
 	{
@@ -456,7 +456,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 			{
 				vecDead.push(*m_mapUserProcesses.key_at(i));
 			}
-			else if (pU->ptrSpawn->IsSameLogin(uid,session_id))
+			else if (pU->ptrSpawn->IsSameLogin(uid,session_id.c_str()))
 			{
 				user_process = *pU;
 				bFound = true;
@@ -482,7 +482,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 
 		// Spawn a new user process
 		bool bAgain = false;
-		if (spawn_user(uid,session_id,user_process.ptrRegistry,user_process.strPipe,bAgain) != 0)
+		if (spawn_user(uid,session_id.c_str(),user_process.ptrRegistry,user_process.strPipe,bAgain) != 0)
 			return true;
 
 		if (bFirst && bAgain && m_bUnsafe)
@@ -581,25 +581,12 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 {
 	OOBase::CDRStream stream;
 
-	// We know a CDRStream writes strings as a 4 byte length followed by the character data
-	int err = ptrSocket->recv(stream.buffer(),4);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
-
-	Omega::uint32_t len = 0;
-	if (!stream.read(len))
-		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
-
-	if ((err = ptrSocket->recv(stream.buffer(),len)) != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOBase::system_error_text(err)),0);
-
-	// Now reset rd_ptr and read the string
-	stream.buffer()->mark_rd_ptr(0);
 	OOBase::LocalString strPipeL;
-	if (!stream.read(strPipeL))
+	if (!stream.recv_string(ptrSocket,strPipeL))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
-	if ((err = strPipe.assign(strPipeL.c_str())) != 0)
+	int err = strPipe.assign(strPipeL.c_str());
+	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
@@ -750,7 +737,7 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
 	else
 	{
-		// Read 4 bytes - This forces credential passing
+		// Read the version - This forces credential passing
 		OOBase::CDRStream stream;
 		err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
 		if (err != 0)
@@ -763,26 +750,30 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 				LOG_WARNING(("Unsupported version received: %u",version));
 			else
 			{
-				OOSvrBase::AsyncLocalSocket::uid_t uid;
-				err = ptrSocket->get_uid(uid);
-				if (err != 0)
-					LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
+				OOBase::LocalString strSid;
+				if (!stream.recv_string(ptrSocket,strSid))
+					LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
-				#if defined(_WIN32)
-					// Make sure the handle is closed
-					OOBase::Win32::SmartHandle hUidToken(uid);
-				#endif
-
-					void* ISSUE_5; // Session Id?
-
-					UserProcess user_process;
-					if (get_user_process(uid,"UNUSED",user_process))
+					OOSvrBase::AsyncLocalSocket::uid_t uid;
+					err = ptrSocket->get_uid(uid);
+					if (err != 0)
+						LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
+					else
 					{
-						if (!stream.write(user_process.strPipe.c_str()))
-							LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
-						else
-							ptrSocket->send(stream.buffer());
+					#if defined(_WIN32)
+						// Make sure the handle is closed
+						OOBase::Win32::SmartHandle hUidToken(uid);
+					#endif
+
+						UserProcess user_process;
+						if (get_user_process(uid,strSid,user_process))
+						{
+							if (!stream.write(user_process.strPipe.c_str()))
+								LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
+							else
+								ptrSocket->send(stream.buffer());
+						}
 					}
 				}
 			}

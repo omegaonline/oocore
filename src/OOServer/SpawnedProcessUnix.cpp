@@ -52,10 +52,10 @@ namespace
 	class SpawnedProcessUnix : public Root::SpawnedProcess
 	{
 	public:
-		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox);
+		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(int pass_fd, bool& bAgain);
+		bool Spawn(const char* session_id, int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -64,16 +64,17 @@ namespace
 		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
 
 	private:
-		bool    m_bSandbox;
-		uid_t   m_uid;
-		pid_t   m_pid;
+		OOBase::String m_sid;
+		bool           m_bSandbox;
+		uid_t          m_uid;
+		pid_t          m_pid;
 
 		void close_all_fds(int except_fd);
 	};
 }
 
-SpawnedProcessUnix::SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id, bool bSandbox) :
-		m_bSandbox(bSandbox),
+SpawnedProcessUnix::SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
+		m_bSandbox(true),
 		m_uid(id),
 		m_pid(0)
 {
@@ -161,23 +162,26 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
+bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain)
 {
+	m_bSandbox = (session_id == NULL);
+	int err = m_sid.assign(session_id);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
 	OOBase::LocalString strAppName;
 	strAppName.getenv("OOSERVER_BINARY_PATH");
 
 	if (strAppName.empty())
 	{
-		int err = strAppName.assign(LIBEXEC_DIR "/oosvruser");
-		if (err != 0)
+		if ((err = strAppName.assign(LIBEXEC_DIR "/oosvruser")) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 	else
 	{
 		strAppName.replace('\\','/');
-		int err = OOBase::AppendDirSeparator(strAppName);
 
-		if (err == 0)
+		if ((err = OOBase::AppendDirSeparator(strAppName)) == 0)
 			err = strAppName.append("oosvruser");
 
 		if (err != 0)
@@ -278,8 +282,7 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 
 	// Exec the user process
 	OOBase::LocalString strPipe;
-	int err = strPipe.printf("--fork-slave=%u",pass_fd);
-	if (err != 0)
+	if ((err = strPipe.printf("--fork-slave=%u",pass_fd)) != 0)
 	{
 		LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
 		_exit(127);
@@ -289,15 +292,21 @@ bool SpawnedProcessUnix::Spawn(int pass_fd, bool& bAgain)
 	display.getenv("DISPLAY");
 	if (Root::getenv_OMEGA_DEBUG() && !display.empty())
 	{
-		execlp("xterm","xterm","-T","oosvruser","-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
+		OOBase::String title;
+		if (m_bSandbox)
+			title.assign("oosvruser:/sandbox");
+		else
+			title.concat("oosvruser:",m_sid.c_str());
+
+		execlp("xterm","xterm","-T",title.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
 
 		//OOBase::LocalString params;
 		//params.printf("--log-file=vallog%d.txt",getpid());
-		//execlp("xterm","xterm","-T","oosvruser","-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
+		//execlp("xterm","xterm","-T",title.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
 
 		//OOBase::LocalString gdb;
 		//gdb.printf("run %s",strPipe.c_str());
-		//execlp("xterm","xterm","-T","oosvruser","-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
+		//execlp("xterm","xterm","-T",title.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
 	}
 
 	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
@@ -388,11 +397,11 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 
 bool SpawnedProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 {
-	// Sort out the session handling
-	void* ISSUE_5;
+	if (!IsSameUser(uid))
+		return false;
 
-	// All POSIX sessions are assumed unique...
-	return false;
+	// Compare session_ids
+	return (m_sid == session_id);
 }
 
 bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
@@ -548,7 +557,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	}
 
 	// Alloc a new SpawnedProcess
-	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid,session_id == NULL);
+	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid);
 	if (!pSpawnUnix)
 	{
 		::close(fd[0]);
@@ -558,7 +567,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(fd[1],bAgain))
+	if (!pSpawnUnix->Spawn(session_id,fd[1],bAgain))
 	{
 		::close(fd[0]);
 		::close(fd[1]);

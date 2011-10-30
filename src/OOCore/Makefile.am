@@ -1,6 +1,6 @@
 include $(top_srcdir)/m4/ltrc.inc
 
-AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
+AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include $(DBUS_CFLAGS)
 AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
@@ -54,7 +54,7 @@ else
 
 lib_LTLIBRARIES = liboocore.la
 
-liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la $(UUID_LIBS)
+liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la $(UUID_LIBS) $(DBUS_LIBS)
 liboocore_la_LDFLAGS = -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \

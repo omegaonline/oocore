@@ -31,6 +31,12 @@ using namespace OTL;
 #define ECONNREFUSED WSAECONNREFUSED
 #endif
 
+#if defined(HAVE_DBUS_H)
+#undef interface
+#include <dbus/dbus.h>
+#define interface struct
+#endif
+
 namespace
 {
 	void parse_args(const string_t& str, OOBase::Table<string_t,string_t>& args)
@@ -100,15 +106,69 @@ namespace
 		}
 	}
 	
+	void get_session_id(OOBase::LocalString& strId)
+	{
+		// We don't use session_id with Win32
+#if !defined(_WIN32)
+
+#if defined(HAVE_UNISTD_H)
+		// Just default to using the sid with POSIX
+		strId.printf("%ld",getsid(0));
+#endif
+
+#if defined(HAVE_DBUS_H)
+		{
+			// Try for a DBUS session id
+			DBusError error;
+			dbus_error_init(&error);
+
+			DBusConnection* conn = dbus_bus_get(DBUS_BUS_SYSTEM,NULL);
+			if (dbus_error_is_set(&error))
+				dbus_error_free(&error);
+			else if (conn)
+			{
+				DBusMessage* call = dbus_message_new_method_call(
+						"org.freedesktop.ConsoleKit",
+						"/org/freedesktop/ConsoleKit/Manager",
+						"org.freedesktop.ConsoleKit.Manager",
+						"GetCurrentSession");
+
+				if (call)
+				{
+					DBusMessage* reply = dbus_connection_send_with_reply_and_block(conn,call,-1,&error);
+					if (dbus_error_is_set(&error))
+						dbus_error_free(&error);
+					else if (reply)
+					{
+						const char* session_path = NULL;
+						if (!dbus_message_get_args(reply,&error,DBUS_TYPE_OBJECT_PATH,&session_path,DBUS_TYPE_INVALID))
+							dbus_error_free(&error);
+						else
+							strId.assign(session_path);
+
+						dbus_message_unref(reply);
+					}
+
+					dbus_message_unref(call);
+				}
+
+				dbus_connection_unref(conn);
+			}
+		}
+#endif // HAVE_DBUS_H
+
+#endif // !WIN32
+	}
+
 	void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)
 	{
 		int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
 		if (err != 0)
 			OMEGA_THROW(err);
-			
+
 		if (!strPipe.empty())
 			return;
-			
+
  	#if defined(_WIN32)
  		const char* name = "OmegaOnline";
 	#else
@@ -120,42 +180,30 @@ namespace
 		{
 			if (err == ENOENT && bStandalone)
  				return;
- 
+
 			ObjectPtr<IException> ptrE = ISystemException::Create(err);
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
 		}
 
 		bStandalone = false;
 
-		// Send version information
-		OOBase::CDRStream stream;
-
 		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-		if (!stream.write(version))
+
+		OOBase::LocalString strSid;
+		get_session_id(strSid);
+
+		OOBase::CDRStream stream;
+		if (!stream.write(version) || !stream.write(strSid.c_str()))
 			OMEGA_THROW(stream.last_error());
 
 		err = root_socket->send(stream.buffer());
 		if (err)
 			OMEGA_THROW(err);
 
-		// We know a CDRStream writes strings as a 4 byte length followed by the character data
 		stream.reset();
-		err = root_socket->recv(stream.buffer(),sizeof(uint32_t));
-		if (err != 0)
-			OMEGA_THROW(err);
 
-		uint32_t len = 0;
-		if (!stream.read(len))
-			OMEGA_THROW(stream.last_error());
-
-		err = root_socket->recv(stream.buffer(),len);
-		if (err != 0)
-			OMEGA_THROW(err);
-
-		// Now reset rd_ptr and read the string
-		stream.buffer()->mark_rd_ptr(0);
-
-		if (!stream.read(strPipe))
+		// Now read strPipe
+		if (!stream.recv_string(root_socket,strPipe))
 			OMEGA_THROW(stream.last_error());
 	}
 }

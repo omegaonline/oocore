@@ -65,8 +65,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;;..\..\..\OOBase\src\Win32\Debug;..\..\..\OOBase\src\Win32\Debug_Svr"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\Win32\Debug_Svr"
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="1"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
@@ -122,7 +124,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite\sqlite-autoconf-3070603;..\..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -142,7 +144,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="C:\OOBase\src\x64\Debug;C:\OOBase\src\x64\Debug"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\x64\Debug_Svr;..\..\..\oobase\src\x64\Debug"
 				GenerateDebugInformation="true"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 				TargetMachine="17"
@@ -201,14 +203,16 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;C:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite;..\..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -222,7 +226,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="C:\OOBase\src\Win32\Release;C:\OOBase\src\Win32\Release_Svr"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
@@ -280,14 +287,16 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;C:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite\sqlite-autoconf-3070603;..\..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -301,7 +310,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="C:\OOBase\src\x64\Release;C:\OOBase\src\x64\Release"
+				AdditionalLibraryDirectories="..\..\..\oobase\src\x64\Release;..\..\..\oobase\src\x64\Release_Svr"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 				TargetMachine="17"
 			/>

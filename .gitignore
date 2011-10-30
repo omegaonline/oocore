@@ -25,8 +25,6 @@ stamp-h*
 
 # general stuff
 *.regdb
-oobase
-oobase/
 
 # build stuff
 *.Plo
@@ -69,10 +67,10 @@ dte80a.*
 *.wixobj
 *.wixproj.FileList.txt
 
-
 # Unix stuff
 ooserverd
 oosvruser
+ooguidgen
 oo-launch
 ooreg
 coretests

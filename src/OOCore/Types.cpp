@@ -25,6 +25,11 @@
 #include <uuid/uuid.h>
 #endif
 
+#if defined(HAVE_UNISTD_H)
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+
 #include <wctype.h>
 
 using namespace Omega;
@@ -696,14 +701,28 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 
 	return *(guid_t*)(digest);
 
+#elif defined(HAVE_UNISTD_H)
+
+	int fd = open("/dev/urandom",O_RDONLY);
+	if (fd == -1)
+		fd = open("/dev/random",O_RDONLY);
+
+	if (fd == -1)
+		OMEGA_THROW(errno);
+
+	guid_base_t res;
+	if (read(fd,&res,sizeof(res)) != sizeof(res))
+	{
+		int err = errno;
+		close(fd);
+		OMEGA_THROW(err);
+	}
+
+	close(fd);
+	return res;
+
 #else
-
-#error Fix me!
-
-	void* TODO;
-
-	// Pull from /dev/random ?
-
+#error Need to implement uuid creation on your platform
 #endif
 }
 

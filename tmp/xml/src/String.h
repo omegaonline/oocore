@@ -12,8 +12,9 @@ public:
 	bool empty() const;
 	unsigned char pop();
 	void push(unsigned char c);
+	void clear();
 	
-	void dump();
+	void dump(int offset = 0);
 	
 private:
 	class StringNode
@@ -28,7 +29,7 @@ private:
 		unsigned char pop();
 		void push(unsigned char c);
 		
-		void dump();
+		void dump(int offset);
 		
 	private:
 		~StringNode();

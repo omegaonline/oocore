@@ -22,11 +22,10 @@ private:
 	
 	size_t        m_stacksize;
 	unsigned char m_char;
-	size_t        m_rec;
-	bool          m_skip;
 		
 	String m_input;
 	String m_output;
+	String m_entity;
 		
 	// These are the private members used by Ragel
 	Tokenizer& operator ++ ()
@@ -58,5 +57,9 @@ private:
 	unsigned char get_char();
 	unsigned char next_char_i();
 	void next_char();
-	void pop();
+	void token(const char* s, int offset = 0);
+	
+	void subst_entity();
+	void subst_char();
+	void subst_hex();
 };

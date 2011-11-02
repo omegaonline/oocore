@@ -1,14 +1,13 @@
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "Tokenizer.h"
 
 Tokenizer::Tokenizer() : 
 		m_stack(NULL), 
 		m_stacksize(0), 
-		m_char('\0'),
-		m_rec(0),
-		m_skip(false)
+		m_char('\0')
 {
 }
 
@@ -53,11 +52,6 @@ unsigned char Tokenizer::next_char_i()
 
 void Tokenizer::next_char()
 {
-	if (m_skip)
-		m_skip = false;
-	else if (m_rec)
-		m_output.push(m_char);
-		
 	unsigned char c = next_char_i();
 	if (c == '\r')
 	{
@@ -71,12 +65,39 @@ void Tokenizer::next_char()
 	m_char = c;
 }
 
-void Tokenizer::pop()
+void Tokenizer::subst_entity()
 {
-	m_output.push(m_char);
-	m_output.push(']');
-	--m_rec;
-	m_skip = true;
+	printf("Entity!\n");
+	
+	m_entity.clear();
+}
+
+void Tokenizer::subst_char()
+{
+	//printf("CHARREF: '");
+	//m_entity.dump();
+	//printf("'\n");
+	
+	m_entity.clear();
+	m_output.push('1');
+}
+
+void Tokenizer::subst_hex()
+{
+	printf("CHARREF: '0x");
+	m_entity.dump();
+	printf("'\n");
+	
+	m_entity.clear();
+}
+
+void Tokenizer::token(const char* s, int offset)
+{
+	printf("%s: '",s);
+	m_output.dump(offset);
+	printf("'\n");
+	
+	m_output.clear();
 }
 
 void Tokenizer::next_token()
@@ -85,5 +106,5 @@ void Tokenizer::next_token()
 	
 	printf("State: %u\n",m_cs);
 	
-	m_output.dump();
+	
 }

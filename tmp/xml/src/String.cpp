@@ -54,12 +54,18 @@ void String::push(unsigned char c)
 	m_node->push(c);
 }
 
-void String::dump()
+void String::clear()
 {
-	if (!m_node)
-		printf("(empty)");
-	else
-		m_node->dump();
+	if (m_node)
+		m_node->release();
+		
+	m_node = NULL;
+}
+
+void String::dump(int offset)
+{
+	if (m_node)
+		m_node->dump(offset);
 }
 
 String::StringNode::StringNode() :
@@ -120,10 +126,8 @@ void String::StringNode::push(unsigned char c)
 	*(m_ptr++) = c;
 }
 
-void String::StringNode::dump()
+void String::StringNode::dump(int offset)
 {
-	if (m_ptr == m_data)
-		printf("(empty)");
-	else
-		printf("%.*s",(int)(m_ptr-m_data),m_data);
+	if (m_ptr != m_data)
+		printf("%.*s",(int)(m_ptr-m_data)+offset,m_data);
 }

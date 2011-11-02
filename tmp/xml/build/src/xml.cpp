@@ -22,7 +22,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 
-#line 120 "../src/xml.ragel"
+#line 113 "../src/xml.ragel"
 
 
 #include "../src/Tokenizer.h"
@@ -30,15 +30,15 @@
 
 #line 32 "src/xml.cpp"
 static const int xml_start = 1;
-static const int xml_first_final = 444;
+static const int xml_first_final = 458;
 static const int xml_error = 0;
 
-static const int xml_en_ch_or_seq1 = 378;
-static const int xml_en_content_1 = 390;
+static const int xml_en_ch_or_seq1 = 389;
+static const int xml_en_content_1 = 401;
 static const int xml_en_main = 1;
 
 
-#line 125 "../src/xml.ragel"
+#line 118 "../src/xml.ragel"
 
 void Tokenizer::do_init()
 {
@@ -49,7 +49,7 @@ void Tokenizer::do_init()
 	 this->m_top = 0;
 	}
 
-#line 129 "../src/xml.ragel"
+#line 122 "../src/xml.ragel"
 }
 
 bool Tokenizer::do_exec()
@@ -97,9 +97,9 @@ _again:
 		case 26: goto st26;
 		case 27: goto st27;
 		case 28: goto st28;
-		case 444: goto st444;
 		case 29: goto st29;
 		case 30: goto st30;
+		case 458: goto st458;
 		case 31: goto st31;
 		case 32: goto st32;
 		case 33: goto st33;
@@ -450,7 +450,6 @@ _again:
 		case 378: goto st378;
 		case 379: goto st379;
 		case 380: goto st380;
-		case 445: goto st445;
 		case 381: goto st381;
 		case 382: goto st382;
 		case 383: goto st383;
@@ -462,6 +461,7 @@ _again:
 		case 389: goto st389;
 		case 390: goto st390;
 		case 391: goto st391;
+		case 459: goto st459;
 		case 392: goto st392;
 		case 393: goto st393;
 		case 394: goto st394;
@@ -485,7 +485,6 @@ _again:
 		case 412: goto st412;
 		case 413: goto st413;
 		case 414: goto st414;
-		case 446: goto st446;
 		case 415: goto st415;
 		case 416: goto st416;
 		case 417: goto st417;
@@ -498,6 +497,7 @@ _again:
 		case 424: goto st424;
 		case 425: goto st425;
 		case 426: goto st426;
+		case 460: goto st460;
 		case 427: goto st427;
 		case 428: goto st428;
 		case 429: goto st429;
@@ -515,6 +515,20 @@ _again:
 		case 441: goto st441;
 		case 442: goto st442;
 		case 443: goto st443;
+		case 444: goto st444;
+		case 445: goto st445;
+		case 446: goto st446;
+		case 447: goto st447;
+		case 448: goto st448;
+		case 449: goto st449;
+		case 450: goto st450;
+		case 451: goto st451;
+		case 452: goto st452;
+		case 453: goto st453;
+		case 454: goto st454;
+		case 455: goto st455;
+		case 456: goto st456;
+		case 457: goto st457;
 	default: break;
 	}
 
@@ -530,7 +544,7 @@ case 1:
 	switch( (*p) ) {
 		case 13u: goto st2;
 		case 32u: goto st2;
-		case 60u: goto st317;
+		case 60u: goto st328;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st2;
@@ -538,10 +552,15 @@ case 1:
 st0:
  this->m_cs = 0;
 	goto _out;
+tr359:
+#line 48 "../src/xml.ragel"
+	{token("pi",-1);}
+	goto st2;
 st2:
 	if ( ++p == pe )
 		goto _test_eof2;
 case 2:
+#line 564 "src/xml.cpp"
 	switch( (*p) ) {
 		case 13u: goto st2;
 		case 32u: goto st2;
@@ -556,15 +575,15 @@ st3:
 case 3:
 	switch( (*p) ) {
 		case 33u: goto st4;
-		case 58u: goto st26;
-		case 63u: goto st310;
-		case 95u: goto st26;
+		case 58u: goto tr5;
+		case 63u: goto st320;
+		case 95u: goto tr5;
 	}
 	if ( (*p) > 90u ) {
 		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st26;
+			goto tr5;
 	} else if ( (*p) >= 65u )
-		goto st26;
+		goto tr5;
 	goto st0;
 st4:
 	if ( ++p == pe )
@@ -572,7 +591,7 @@ st4:
 case 4:
 	switch( (*p) ) {
 		case 45u: goto st5;
-		case 68u: goto st9;
+		case 68u: goto st10;
 	}
 	goto st0;
 st5:
@@ -600,60 +619,58 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-	if ( (*p) == 62u )
-		goto st2;
+	switch( (*p) ) {
+		case 45u: goto st9;
+		case 62u: goto st2;
+	}
 	goto st0;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-	if ( (*p) == 79u )
-		goto st10;
+	if ( (*p) == 62u )
+		goto st2;
 	goto st0;
 st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-	if ( (*p) == 67u )
+	if ( (*p) == 79u )
 		goto st11;
 	goto st0;
 st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-	if ( (*p) == 84u )
+	if ( (*p) == 67u )
 		goto st12;
 	goto st0;
 st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-	if ( (*p) == 89u )
+	if ( (*p) == 84u )
 		goto st13;
 	goto st0;
 st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-	if ( (*p) == 80u )
+	if ( (*p) == 89u )
 		goto st14;
 	goto st0;
 st14:
 	if ( ++p == pe )
 		goto _test_eof14;
 case 14:
-	if ( (*p) == 69u )
+	if ( (*p) == 80u )
 		goto st15;
 	goto st0;
 st15:
 	if ( ++p == pe )
 		goto _test_eof15;
 case 15:
-	switch( (*p) ) {
-		case 13u: goto st16;
-		case 32u: goto st16;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 69u )
 		goto st16;
 	goto st0;
 st16:
@@ -661,18 +678,10 @@ st16:
 		goto _test_eof16;
 case 16:
 	switch( (*p) ) {
-		case 13u: goto st16;
-		case 32u: goto st16;
-		case 58u: goto st17;
-		case 95u: goto st17;
+		case 13u: goto st17;
+		case 32u: goto st17;
 	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st16;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st17;
-	} else
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st17;
 	goto st0;
 st17:
@@ -680,41 +689,50 @@ st17:
 		goto _test_eof17;
 case 17:
 	switch( (*p) ) {
-		case 13u: goto st18;
-		case 32u: goto st18;
-		case 62u: goto st19;
-		case 91u: goto st78;
-		case 95u: goto st17;
+		case 13u: goto st17;
+		case 32u: goto st17;
+		case 58u: goto tr20;
+		case 95u: goto tr20;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st17;
-		} else if ( (*p) >= 9u )
-			goto st18;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st17;
-		} else if ( (*p) >= 65u )
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
 			goto st17;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr20;
 	} else
-		goto st17;
+		goto tr20;
 	goto st0;
+tr20:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st18;
 st18:
 	if ( ++p == pe )
 		goto _test_eof18;
 case 18:
+#line 715 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st18;
-		case 32u: goto st18;
-		case 62u: goto st19;
-		case 80u: goto st66;
-		case 83u: goto st305;
-		case 91u: goto st78;
+		case 13u: goto st19;
+		case 32u: goto st19;
+		case 62u: goto st20;
+		case 91u: goto st84;
+		case 95u: goto tr20;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st18;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr20;
+		} else if ( (*p) >= 9u )
+			goto st19;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr20;
+		} else if ( (*p) >= 65u )
+			goto tr20;
+	} else
+		goto tr20;
 	goto st0;
 st19:
 	if ( ++p == pe )
@@ -723,33 +741,46 @@ case 19:
 	switch( (*p) ) {
 		case 13u: goto st19;
 		case 32u: goto st19;
-		case 60u: goto st20;
+		case 62u: goto st20;
+		case 80u: goto st72;
+		case 83u: goto st315;
+		case 91u: goto st84;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st19;
 	goto st0;
+tr90:
+#line 48 "../src/xml.ragel"
+	{token("pi",-1);}
+	goto st20;
 st20:
 	if ( ++p == pe )
 		goto _test_eof20;
 case 20:
+#line 761 "src/xml.cpp"
 	switch( (*p) ) {
-		case 33u: goto st21;
-		case 58u: goto st26;
-		case 63u: goto st59;
-		case 95u: goto st26;
+		case 13u: goto st20;
+		case 32u: goto st20;
+		case 60u: goto st21;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st26;
-	} else if ( (*p) >= 65u )
-		goto st26;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st20;
 	goto st0;
 st21:
 	if ( ++p == pe )
 		goto _test_eof21;
 case 21:
-	if ( (*p) == 45u )
-		goto st22;
+	switch( (*p) ) {
+		case 33u: goto st22;
+		case 58u: goto tr5;
+		case 63u: goto st64;
+		case 95u: goto tr5;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr5;
+	} else if ( (*p) >= 65u )
+		goto tr5;
 	goto st0;
 st22:
 	if ( ++p == pe )
@@ -764,111 +795,142 @@ st23:
 case 23:
 	if ( (*p) == 45u )
 		goto st24;
-	goto st23;
+	goto st0;
 st24:
 	if ( ++p == pe )
 		goto _test_eof24;
 case 24:
 	if ( (*p) == 45u )
 		goto st25;
-	goto st23;
+	goto st24;
 st25:
 	if ( ++p == pe )
 		goto _test_eof25;
 case 25:
-	if ( (*p) == 62u )
-		goto st19;
-	goto st0;
+	if ( (*p) == 45u )
+		goto st26;
+	goto st24;
 st26:
 	if ( ++p == pe )
 		goto _test_eof26;
 case 26:
 	switch( (*p) ) {
-		case 13u: goto st27;
-		case 32u: goto st27;
-		case 47u: goto st28;
-		case 62u: goto tr34;
-		case 95u: goto st26;
+		case 45u: goto st27;
+		case 62u: goto st20;
 	}
-	if ( (*p) < 45u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st27;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st26;
-		} else if ( (*p) >= 65u )
-			goto st26;
-	} else
-		goto st26;
 	goto st0;
 st27:
 	if ( ++p == pe )
 		goto _test_eof27;
 case 27:
-	switch( (*p) ) {
-		case 13u: goto st27;
-		case 32u: goto st27;
-		case 47u: goto st28;
-		case 58u: goto st41;
-		case 62u: goto tr34;
-		case 95u: goto st41;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st27;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st41;
-	} else
-		goto st41;
+	if ( (*p) == 62u )
+		goto st20;
 	goto st0;
+tr5:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st28;
 st28:
 	if ( ++p == pe )
 		goto _test_eof28;
 case 28:
-	if ( (*p) == 62u )
-		goto st444;
+#line 838 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr34;
+		case 32u: goto tr34;
+		case 47u: goto tr35;
+		case 62u: goto tr36;
+		case 95u: goto tr5;
+	}
+	if ( (*p) < 45u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto tr34;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr5;
+		} else if ( (*p) >= 65u )
+			goto tr5;
+	} else
+		goto tr5;
 	goto st0;
 tr34:
-#line 108 "../src/xml.ragel"
-	{ { pre_push(); { this->m_stack[ this->m_top++] = 444; goto st390;}} }
-	goto st444;
-st444:
-	if ( ++p == pe )
-		goto _test_eof444;
-case 444:
-#line 842 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st444;
-		case 32u: goto st444;
-		case 60u: goto st29;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st444;
-	goto st0;
+#line 101 "../src/xml.ragel"
+	{ token("element_name"); }
+	goto st29;
 st29:
 	if ( ++p == pe )
 		goto _test_eof29;
 case 29:
+#line 866 "src/xml.cpp"
 	switch( (*p) ) {
-		case 33u: goto st30;
-		case 63u: goto st34;
+		case 13u: goto st29;
+		case 32u: goto st29;
+		case 47u: goto st30;
+		case 58u: goto tr39;
+		case 62u: goto tr40;
+		case 95u: goto tr39;
 	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st29;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr39;
+	} else
+		goto tr39;
 	goto st0;
+tr35:
+#line 101 "../src/xml.ragel"
+	{ token("element_name"); }
+	goto st30;
 st30:
 	if ( ++p == pe )
 		goto _test_eof30;
 case 30:
-	if ( (*p) == 45u )
-		goto st31;
+#line 892 "src/xml.cpp"
+	if ( (*p) == 62u )
+		goto tr41;
+	goto st0;
+tr36:
+#line 101 "../src/xml.ragel"
+	{ token("element_name"); }
+#line 100 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 458; goto st401;}} }
+	goto st458;
+tr40:
+#line 100 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 458; goto st401;}} }
+	goto st458;
+tr41:
+#line 102 "../src/xml.ragel"
+	{token("empty element");}
+	goto st458;
+tr55:
+#line 48 "../src/xml.ragel"
+	{token("pi",-1);}
+	goto st458;
+st458:
+	if ( ++p == pe )
+		goto _test_eof458;
+case 458:
+#line 918 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st458;
+		case 32u: goto st458;
+		case 60u: goto st31;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st458;
 	goto st0;
 st31:
 	if ( ++p == pe )
 		goto _test_eof31;
 case 31:
-	if ( (*p) == 45u )
-		goto st32;
+	switch( (*p) ) {
+		case 33u: goto st32;
+		case 63u: goto st38;
+	}
 	goto st0;
 st32:
 	if ( ++p == pe )
@@ -876,675 +938,750 @@ st32:
 case 32:
 	if ( (*p) == 45u )
 		goto st33;
-	goto st32;
+	goto st0;
 st33:
 	if ( ++p == pe )
 		goto _test_eof33;
 case 33:
 	if ( (*p) == 45u )
-		goto st28;
-	goto st32;
+		goto st34;
+	goto st0;
 st34:
 	if ( ++p == pe )
 		goto _test_eof34;
 case 34:
-	switch( (*p) ) {
-		case 58u: goto st35;
-		case 88u: goto st38;
-		case 95u: goto st35;
-		case 120u: goto st38;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st35;
-	} else if ( (*p) >= 65u )
+	if ( (*p) == 45u )
 		goto st35;
-	goto st0;
+	goto st34;
 st35:
 	if ( ++p == pe )
 		goto _test_eof35;
 case 35:
-	switch( (*p) ) {
-		case 13u: goto st36;
-		case 32u: goto st36;
-		case 63u: goto st28;
-		case 95u: goto st35;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st35;
-		} else if ( (*p) >= 9u )
-			goto st36;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st35;
-		} else if ( (*p) >= 65u )
-			goto st35;
-	} else
-		goto st35;
-	goto st0;
+	if ( (*p) == 45u )
+		goto st36;
+	goto st34;
 st36:
 	if ( ++p == pe )
 		goto _test_eof36;
 case 36:
-	if ( (*p) == 63u )
-		goto st37;
-	goto st36;
+	switch( (*p) ) {
+		case 45u: goto st37;
+		case 62u: goto st458;
+	}
+	goto st0;
 st37:
 	if ( ++p == pe )
 		goto _test_eof37;
 case 37:
-	switch( (*p) ) {
-		case 62u: goto st444;
-		case 63u: goto st37;
-	}
-	goto st36;
+	if ( (*p) == 62u )
+		goto st458;
+	goto st0;
 st38:
 	if ( ++p == pe )
 		goto _test_eof38;
 case 38:
 	switch( (*p) ) {
-		case 13u: goto st36;
-		case 32u: goto st36;
-		case 63u: goto st28;
-		case 77u: goto st39;
-		case 95u: goto st35;
-		case 109u: goto st39;
+		case 58u: goto tr50;
+		case 88u: goto tr51;
+		case 95u: goto tr50;
+		case 120u: goto tr51;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st35;
-		} else if ( (*p) >= 9u )
-			goto st36;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st35;
-		} else if ( (*p) >= 65u )
-			goto st35;
-	} else
-		goto st35;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr50;
+	} else if ( (*p) >= 65u )
+		goto tr50;
 	goto st0;
+tr50:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st39;
 st39:
 	if ( ++p == pe )
 		goto _test_eof39;
 case 39:
+#line 1004 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st36;
-		case 32u: goto st36;
-		case 63u: goto st28;
-		case 76u: goto st40;
-		case 95u: goto st35;
-		case 108u: goto st40;
+		case 13u: goto tr52;
+		case 32u: goto tr52;
+		case 63u: goto st42;
+		case 95u: goto tr50;
 	}
 	if ( (*p) < 48u ) {
 		if ( (*p) > 10u ) {
 			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st35;
+				goto tr50;
 		} else if ( (*p) >= 9u )
-			goto st36;
+			goto tr52;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st35;
+				goto tr50;
 		} else if ( (*p) >= 65u )
-			goto st35;
+			goto tr50;
 	} else
-		goto st35;
+		goto tr50;
 	goto st0;
+tr52:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st40;
 st40:
 	if ( ++p == pe )
 		goto _test_eof40;
 case 40:
-	if ( (*p) == 95u )
-		goto st35;
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st35;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st35;
-		} else if ( (*p) >= 65u )
-			goto st35;
-	} else
-		goto st35;
-	goto st0;
+#line 1034 "src/xml.cpp"
+	if ( (*p) == 63u )
+		goto tr54;
+	goto tr52;
+tr54:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st41;
 st41:
 	if ( ++p == pe )
 		goto _test_eof41;
 case 41:
+#line 1046 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st42;
-		case 32u: goto st42;
-		case 61u: goto st43;
-		case 95u: goto st41;
+		case 62u: goto tr55;
+		case 63u: goto tr54;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st41;
-		} else if ( (*p) >= 9u )
-			goto st42;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st41;
-		} else if ( (*p) >= 65u )
-			goto st41;
-	} else
-		goto st41;
-	goto st0;
+	goto tr52;
 st42:
 	if ( ++p == pe )
 		goto _test_eof42;
 case 42:
-	switch( (*p) ) {
-		case 13u: goto st42;
-		case 32u: goto st42;
-		case 61u: goto st43;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st42;
+	if ( (*p) == 62u )
+		goto tr55;
 	goto st0;
+tr51:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st43;
 st43:
 	if ( ++p == pe )
 		goto _test_eof43;
 case 43:
+#line 1067 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st43;
-		case 32u: goto st43;
-		case 34u: goto tr50;
-		case 39u: goto tr51;
+		case 13u: goto tr52;
+		case 32u: goto tr52;
+		case 63u: goto st42;
+		case 77u: goto tr56;
+		case 95u: goto tr50;
+		case 109u: goto tr56;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st43;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr50;
+		} else if ( (*p) >= 9u )
+			goto tr52;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr50;
+		} else if ( (*p) >= 65u )
+			goto tr50;
+	} else
+		goto tr50;
 	goto st0;
-tr50:
+tr56:
 #line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st44;
-tr59:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
+	{ m_output.push(m_char); }
 	goto st44;
 st44:
 	if ( ++p == pe )
 		goto _test_eof44;
 case 44:
-#line 1079 "src/xml.cpp"
+#line 1099 "src/xml.cpp"
 	switch( (*p) ) {
-		case 34u: goto tr53;
-		case 38u: goto tr54;
-		case 60u: goto st0;
+		case 13u: goto tr52;
+		case 32u: goto tr52;
+		case 63u: goto st42;
+		case 76u: goto tr57;
+		case 95u: goto tr50;
+		case 108u: goto tr57;
 	}
-	goto st44;
-tr53:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr50;
+		} else if ( (*p) >= 9u )
+			goto tr52;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr50;
+		} else if ( (*p) >= 65u )
+			goto tr50;
+	} else
+		goto tr50;
+	goto st0;
+tr57:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
 	goto st45;
 st45:
 	if ( ++p == pe )
 		goto _test_eof45;
 case 45:
-#line 1094 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st27;
-		case 32u: goto st27;
-		case 47u: goto st28;
-		case 62u: goto tr34;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st27;
+#line 1131 "src/xml.cpp"
+	if ( (*p) == 95u )
+		goto tr50;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr50;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr50;
+		} else if ( (*p) >= 65u )
+			goto tr50;
+	} else
+		goto tr50;
 	goto st0;
-tr54:
+tr39:
 #line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
+	{ m_output.push(m_char); }
 	goto st46;
 st46:
 	if ( ++p == pe )
 		goto _test_eof46;
 case 46:
-#line 1112 "src/xml.cpp"
+#line 1154 "src/xml.cpp"
 	switch( (*p) ) {
-		case 35u: goto st47;
-		case 58u: goto st51;
-		case 95u: goto st51;
+		case 13u: goto tr58;
+		case 32u: goto tr58;
+		case 61u: goto tr59;
+		case 95u: goto tr39;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st51;
-	} else if ( (*p) >= 65u )
-		goto st51;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr39;
+		} else if ( (*p) >= 9u )
+			goto tr58;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr39;
+		} else if ( (*p) >= 65u )
+			goto tr39;
+	} else
+		goto tr39;
 	goto st0;
+tr58:
+#line 80 "../src/xml.ragel"
+	{token("attr_name");}
+	goto st47;
 st47:
 	if ( ++p == pe )
 		goto _test_eof47;
 case 47:
-	if ( (*p) == 120u )
-		goto st49;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st48;
+#line 1184 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st47;
+		case 32u: goto st47;
+		case 61u: goto st48;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st47;
 	goto st0;
+tr59:
+#line 80 "../src/xml.ragel"
+	{token("attr_name");}
+	goto st48;
 st48:
 	if ( ++p == pe )
 		goto _test_eof48;
 case 48:
-	if ( (*p) == 59u )
-		goto tr59;
-	if ( 48u <= (*p) && (*p) <= 57u )
+#line 1201 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st48;
+		case 32u: goto st48;
+		case 34u: goto st49;
+		case 39u: goto st57;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st48;
 	goto st0;
+tr64:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st49;
+tr71:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st49;
+tr73:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st49;
+tr74:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st49;
 st49:
 	if ( ++p == pe )
 		goto _test_eof49;
 case 49:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st50;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st50;
-	} else
-		goto st50;
-	goto st0;
+#line 1231 "src/xml.cpp"
+	switch( (*p) ) {
+		case 34u: goto tr65;
+		case 38u: goto st51;
+		case 60u: goto st0;
+	}
+	goto tr64;
+tr65:
+#line 65 "../src/xml.ragel"
+	{token("attr_value");}
+	goto st50;
 st50:
 	if ( ++p == pe )
 		goto _test_eof50;
 case 50:
-	if ( (*p) == 59u )
-		goto tr59;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st50;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st50;
-	} else
-		goto st50;
+#line 1246 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st29;
+		case 32u: goto st29;
+		case 47u: goto st30;
+		case 62u: goto tr40;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st29;
 	goto st0;
 st51:
 	if ( ++p == pe )
 		goto _test_eof51;
 case 51:
 	switch( (*p) ) {
-		case 59u: goto st44;
-		case 95u: goto st51;
+		case 35u: goto st52;
+		case 58u: goto tr68;
+		case 95u: goto tr68;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st51;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st51;
-		} else if ( (*p) >= 65u )
-			goto st51;
-	} else
-		goto st51;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr68;
+	} else if ( (*p) >= 65u )
+		goto tr68;
 	goto st0;
-tr51:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st52;
-tr67:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st52;
 st52:
 	if ( ++p == pe )
 		goto _test_eof52;
 case 52:
-#line 1202 "src/xml.cpp"
-	switch( (*p) ) {
-		case 38u: goto tr62;
-		case 39u: goto tr53;
-		case 60u: goto st0;
-	}
-	goto st52;
-tr62:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
+	if ( (*p) == 120u )
+		goto st54;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr69;
+	goto st0;
+tr69:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
 	goto st53;
 st53:
 	if ( ++p == pe )
 		goto _test_eof53;
 case 53:
-#line 1217 "src/xml.cpp"
-	switch( (*p) ) {
-		case 35u: goto st54;
-		case 58u: goto st58;
-		case 95u: goto st58;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st58;
-	} else if ( (*p) >= 65u )
-		goto st58;
+#line 1288 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr71;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr69;
 	goto st0;
 st54:
 	if ( ++p == pe )
 		goto _test_eof54;
 case 54:
-	if ( (*p) == 120u )
-		goto st56;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st55;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr72;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr72;
+	} else
+		goto tr72;
 	goto st0;
+tr72:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st55;
 st55:
 	if ( ++p == pe )
 		goto _test_eof55;
 case 55:
+#line 1315 "src/xml.cpp"
 	if ( (*p) == 59u )
-		goto tr67;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st55;
+		goto tr73;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr72;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr72;
+	} else
+		goto tr72;
 	goto st0;
+tr68:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st56;
 st56:
 	if ( ++p == pe )
 		goto _test_eof56;
 case 56:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st57;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st57;
+#line 1335 "src/xml.cpp"
+	switch( (*p) ) {
+		case 59u: goto tr74;
+		case 95u: goto tr68;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr68;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr68;
+		} else if ( (*p) >= 65u )
+			goto tr68;
 	} else
-		goto st57;
+		goto tr68;
 	goto st0;
+tr75:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st57;
+tr81:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st57;
+tr83:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st57;
+tr84:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st57;
 st57:
 	if ( ++p == pe )
 		goto _test_eof57;
 case 57:
-	if ( (*p) == 59u )
-		goto tr67;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st57;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st57;
-	} else
-		goto st57;
-	goto st0;
+#line 1372 "src/xml.cpp"
+	switch( (*p) ) {
+		case 38u: goto st58;
+		case 39u: goto tr65;
+		case 60u: goto st0;
+	}
+	goto tr75;
 st58:
 	if ( ++p == pe )
 		goto _test_eof58;
 case 58:
 	switch( (*p) ) {
-		case 59u: goto st52;
-		case 95u: goto st58;
+		case 35u: goto st59;
+		case 58u: goto tr78;
+		case 95u: goto tr78;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st58;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st58;
-		} else if ( (*p) >= 65u )
-			goto st58;
-	} else
-		goto st58;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr78;
+	} else if ( (*p) >= 65u )
+		goto tr78;
 	goto st0;
 st59:
 	if ( ++p == pe )
 		goto _test_eof59;
 case 59:
-	switch( (*p) ) {
-		case 58u: goto st60;
-		case 88u: goto st63;
-		case 95u: goto st60;
-		case 120u: goto st63;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st60;
-	} else if ( (*p) >= 65u )
-		goto st60;
+	if ( (*p) == 120u )
+		goto st61;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr79;
 	goto st0;
+tr79:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st60;
 st60:
 	if ( ++p == pe )
 		goto _test_eof60;
 case 60:
-	switch( (*p) ) {
-		case 13u: goto st61;
-		case 32u: goto st61;
-		case 63u: goto st25;
-		case 95u: goto st60;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st60;
-		} else if ( (*p) >= 9u )
-			goto st61;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st60;
-		} else if ( (*p) >= 65u )
-			goto st60;
-	} else
-		goto st60;
+#line 1411 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr81;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr79;
 	goto st0;
 st61:
 	if ( ++p == pe )
 		goto _test_eof61;
 case 61:
-	if ( (*p) == 63u )
-		goto st62;
-	goto st61;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr82;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr82;
+	} else
+		goto tr82;
+	goto st0;
+tr82:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st62;
 st62:
 	if ( ++p == pe )
 		goto _test_eof62;
 case 62:
-	switch( (*p) ) {
-		case 62u: goto st19;
-		case 63u: goto st62;
-	}
-	goto st61;
+#line 1438 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr83;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr82;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr82;
+	} else
+		goto tr82;
+	goto st0;
+tr78:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st63;
 st63:
 	if ( ++p == pe )
 		goto _test_eof63;
 case 63:
+#line 1458 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st61;
-		case 32u: goto st61;
-		case 63u: goto st25;
-		case 77u: goto st64;
-		case 95u: goto st60;
-		case 109u: goto st64;
+		case 59u: goto tr84;
+		case 95u: goto tr78;
 	}
 	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st60;
-		} else if ( (*p) >= 9u )
-			goto st61;
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr78;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st60;
+				goto tr78;
 		} else if ( (*p) >= 65u )
-			goto st60;
+			goto tr78;
 	} else
-		goto st60;
+		goto tr78;
 	goto st0;
 st64:
 	if ( ++p == pe )
 		goto _test_eof64;
 case 64:
 	switch( (*p) ) {
-		case 13u: goto st61;
-		case 32u: goto st61;
-		case 63u: goto st25;
-		case 76u: goto st65;
-		case 95u: goto st60;
-		case 108u: goto st65;
+		case 58u: goto tr85;
+		case 88u: goto tr86;
+		case 95u: goto tr85;
+		case 120u: goto tr86;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st60;
-		} else if ( (*p) >= 9u )
-			goto st61;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st60;
-		} else if ( (*p) >= 65u )
-			goto st60;
-	} else
-		goto st60;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr85;
+	} else if ( (*p) >= 65u )
+		goto tr85;
 	goto st0;
+tr85:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st65;
 st65:
 	if ( ++p == pe )
 		goto _test_eof65;
 case 65:
-	if ( (*p) == 95u )
-		goto st60;
+#line 1499 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr87;
+		case 32u: goto tr87;
+		case 63u: goto st68;
+		case 95u: goto tr85;
+	}
 	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st60;
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr85;
+		} else if ( (*p) >= 9u )
+			goto tr87;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st60;
+				goto tr85;
 		} else if ( (*p) >= 65u )
-			goto st60;
+			goto tr85;
 	} else
-		goto st60;
+		goto tr85;
 	goto st0;
+tr87:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st66;
 st66:
 	if ( ++p == pe )
 		goto _test_eof66;
 case 66:
-	if ( (*p) == 85u )
-		goto st67;
-	goto st0;
+#line 1529 "src/xml.cpp"
+	if ( (*p) == 63u )
+		goto tr89;
+	goto tr87;
+tr89:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st67;
 st67:
 	if ( ++p == pe )
 		goto _test_eof67;
 case 67:
-	if ( (*p) == 66u )
-		goto st68;
-	goto st0;
+#line 1541 "src/xml.cpp"
+	switch( (*p) ) {
+		case 62u: goto tr90;
+		case 63u: goto tr89;
+	}
+	goto tr87;
 st68:
 	if ( ++p == pe )
 		goto _test_eof68;
 case 68:
-	if ( (*p) == 76u )
-		goto st69;
+	if ( (*p) == 62u )
+		goto tr90;
 	goto st0;
+tr86:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st69;
 st69:
 	if ( ++p == pe )
 		goto _test_eof69;
 case 69:
-	if ( (*p) == 73u )
-		goto st70;
+#line 1562 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr87;
+		case 32u: goto tr87;
+		case 63u: goto st68;
+		case 77u: goto tr91;
+		case 95u: goto tr85;
+		case 109u: goto tr91;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr85;
+		} else if ( (*p) >= 9u )
+			goto tr87;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr85;
+		} else if ( (*p) >= 65u )
+			goto tr85;
+	} else
+		goto tr85;
 	goto st0;
+tr91:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st70;
 st70:
 	if ( ++p == pe )
 		goto _test_eof70;
 case 70:
-	if ( (*p) == 67u )
-		goto st71;
+#line 1594 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr87;
+		case 32u: goto tr87;
+		case 63u: goto st68;
+		case 76u: goto tr92;
+		case 95u: goto tr85;
+		case 108u: goto tr92;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr85;
+		} else if ( (*p) >= 9u )
+			goto tr87;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr85;
+		} else if ( (*p) >= 65u )
+			goto tr85;
+	} else
+		goto tr85;
 	goto st0;
+tr92:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st71;
 st71:
 	if ( ++p == pe )
 		goto _test_eof71;
 case 71:
-	switch( (*p) ) {
-		case 13u: goto st72;
-		case 32u: goto st72;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st72;
+#line 1626 "src/xml.cpp"
+	if ( (*p) == 95u )
+		goto tr85;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr85;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr85;
+		} else if ( (*p) >= 65u )
+			goto tr85;
+	} else
+		goto tr85;
 	goto st0;
 st72:
 	if ( ++p == pe )
 		goto _test_eof72;
 case 72:
-	switch( (*p) ) {
-		case 13u: goto st72;
-		case 32u: goto st72;
-		case 34u: goto st73;
-		case 39u: goto st304;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st72;
+	if ( (*p) == 85u )
+		goto st73;
 	goto st0;
 st73:
 	if ( ++p == pe )
 		goto _test_eof73;
 case 73:
-	switch( (*p) ) {
-		case 10u: goto st73;
-		case 13u: goto st73;
-		case 34u: goto st74;
-		case 61u: goto st73;
-		case 95u: goto st73;
-	}
-	if ( (*p) < 39u ) {
-		if ( 32u <= (*p) && (*p) <= 37u )
-			goto st73;
-	} else if ( (*p) > 59u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st73;
-		} else if ( (*p) >= 63u )
-			goto st73;
-	} else
-		goto st73;
+	if ( (*p) == 66u )
+		goto st74;
 	goto st0;
 st74:
 	if ( ++p == pe )
 		goto _test_eof74;
 case 74:
-	switch( (*p) ) {
-		case 13u: goto st75;
-		case 32u: goto st75;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 76u )
 		goto st75;
 	goto st0;
 st75:
 	if ( ++p == pe )
 		goto _test_eof75;
 case 75:
-	switch( (*p) ) {
-		case 13u: goto st75;
-		case 32u: goto st75;
-		case 34u: goto st76;
-		case 39u: goto st303;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st75;
+	if ( (*p) == 73u )
+		goto st76;
 	goto st0;
 st76:
 	if ( ++p == pe )
 		goto _test_eof76;
 case 76:
-	if ( (*p) == 34u )
+	if ( (*p) == 67u )
 		goto st77;
-	goto st76;
+	goto st0;
 st77:
 	if ( ++p == pe )
 		goto _test_eof77;
 case 77:
 	switch( (*p) ) {
-		case 13u: goto st77;
-		case 32u: goto st77;
-		case 62u: goto st19;
-		case 91u: goto st78;
+		case 13u: goto st78;
+		case 32u: goto st78;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st77;
+		goto st78;
 	goto st0;
 st78:
 	if ( ++p == pe )
@@ -1553,9 +1690,8 @@ case 78:
 	switch( (*p) ) {
 		case 13u: goto st78;
 		case 32u: goto st78;
-		case 37u: goto st79;
-		case 60u: goto st81;
-		case 93u: goto st302;
+		case 34u: goto st79;
+		case 39u: goto st314;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st78;
@@ -1565,262 +1701,223 @@ st79:
 		goto _test_eof79;
 case 79:
 	switch( (*p) ) {
-		case 58u: goto st80;
-		case 95u: goto st80;
+		case 10u: goto st79;
+		case 13u: goto st79;
+		case 34u: goto st80;
+		case 61u: goto st79;
+		case 95u: goto st79;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st80;
-	} else if ( (*p) >= 65u )
-		goto st80;
+	if ( (*p) < 39u ) {
+		if ( 32u <= (*p) && (*p) <= 37u )
+			goto st79;
+	} else if ( (*p) > 59u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st79;
+		} else if ( (*p) >= 63u )
+			goto st79;
+	} else
+		goto st79;
 	goto st0;
 st80:
 	if ( ++p == pe )
 		goto _test_eof80;
 case 80:
 	switch( (*p) ) {
-		case 59u: goto st78;
-		case 95u: goto st80;
+		case 13u: goto st81;
+		case 32u: goto st81;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st80;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st80;
-		} else if ( (*p) >= 65u )
-			goto st80;
-	} else
-		goto st80;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st81;
 	goto st0;
 st81:
 	if ( ++p == pe )
 		goto _test_eof81;
 case 81:
 	switch( (*p) ) {
-		case 33u: goto st82;
-		case 63u: goto st295;
+		case 13u: goto st81;
+		case 32u: goto st81;
+		case 34u: goto st82;
+		case 39u: goto st313;
 	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st81;
 	goto st0;
 st82:
 	if ( ++p == pe )
 		goto _test_eof82;
 case 82:
-	switch( (*p) ) {
-		case 45u: goto st83;
-		case 65u: goto st87;
-		case 69u: goto st170;
-		case 78u: goto st273;
-	}
-	goto st0;
+	if ( (*p) == 34u )
+		goto st83;
+	goto st82;
 st83:
 	if ( ++p == pe )
 		goto _test_eof83;
 case 83:
-	if ( (*p) == 45u )
-		goto st84;
+	switch( (*p) ) {
+		case 13u: goto st83;
+		case 32u: goto st83;
+		case 62u: goto st20;
+		case 91u: goto st84;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st83;
 	goto st0;
+tr347:
+#line 48 "../src/xml.ragel"
+	{token("pi",-1);}
+	goto st84;
 st84:
 	if ( ++p == pe )
 		goto _test_eof84;
 case 84:
-	if ( (*p) == 45u )
-		goto st85;
-	goto st84;
+#line 1775 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st84;
+		case 32u: goto st84;
+		case 37u: goto st85;
+		case 60u: goto st87;
+		case 93u: goto st312;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st84;
+	goto st0;
 st85:
 	if ( ++p == pe )
 		goto _test_eof85;
 case 85:
-	if ( (*p) == 45u )
-		goto st86;
-	goto st84;
+	switch( (*p) ) {
+		case 58u: goto tr109;
+		case 95u: goto tr109;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr109;
+	} else if ( (*p) >= 65u )
+		goto tr109;
+	goto st0;
+tr109:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st86;
 st86:
 	if ( ++p == pe )
 		goto _test_eof86;
 case 86:
-	if ( (*p) == 62u )
-		goto st78;
+#line 1808 "src/xml.cpp"
+	switch( (*p) ) {
+		case 59u: goto st84;
+		case 95u: goto tr109;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr109;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr109;
+		} else if ( (*p) >= 65u )
+			goto tr109;
+	} else
+		goto tr109;
 	goto st0;
 st87:
 	if ( ++p == pe )
 		goto _test_eof87;
 case 87:
-	if ( (*p) == 84u )
-		goto st88;
+	switch( (*p) ) {
+		case 33u: goto st88;
+		case 63u: goto st304;
+	}
 	goto st0;
 st88:
 	if ( ++p == pe )
 		goto _test_eof88;
 case 88:
-	if ( (*p) == 84u )
-		goto st89;
+	switch( (*p) ) {
+		case 45u: goto st89;
+		case 65u: goto st94;
+		case 69u: goto st177;
+		case 78u: goto st282;
+	}
 	goto st0;
 st89:
 	if ( ++p == pe )
 		goto _test_eof89;
 case 89:
-	if ( (*p) == 76u )
+	if ( (*p) == 45u )
 		goto st90;
 	goto st0;
 st90:
 	if ( ++p == pe )
 		goto _test_eof90;
 case 90:
-	if ( (*p) == 73u )
+	if ( (*p) == 45u )
 		goto st91;
-	goto st0;
+	goto st90;
 st91:
 	if ( ++p == pe )
 		goto _test_eof91;
 case 91:
-	if ( (*p) == 83u )
+	if ( (*p) == 45u )
 		goto st92;
-	goto st0;
+	goto st90;
 st92:
 	if ( ++p == pe )
 		goto _test_eof92;
 case 92:
-	if ( (*p) == 84u )
-		goto st93;
+	switch( (*p) ) {
+		case 45u: goto st93;
+		case 62u: goto st84;
+	}
 	goto st0;
 st93:
 	if ( ++p == pe )
 		goto _test_eof93;
 case 93:
-	switch( (*p) ) {
-		case 13u: goto st94;
-		case 32u: goto st94;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st94;
+	if ( (*p) == 62u )
+		goto st84;
 	goto st0;
 st94:
 	if ( ++p == pe )
 		goto _test_eof94;
 case 94:
-	switch( (*p) ) {
-		case 13u: goto st94;
-		case 32u: goto st94;
-		case 58u: goto st95;
-		case 95u: goto st95;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st94;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st95;
-	} else
+	if ( (*p) == 84u )
 		goto st95;
 	goto st0;
 st95:
 	if ( ++p == pe )
 		goto _test_eof95;
 case 95:
-	switch( (*p) ) {
-		case 13u: goto st96;
-		case 32u: goto st96;
-		case 62u: goto st78;
-		case 95u: goto st95;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st95;
-		} else if ( (*p) >= 9u )
-			goto st96;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st95;
-		} else if ( (*p) >= 65u )
-			goto st95;
-	} else
-		goto st95;
+	if ( (*p) == 84u )
+		goto st96;
 	goto st0;
 st96:
 	if ( ++p == pe )
 		goto _test_eof96;
 case 96:
-	switch( (*p) ) {
-		case 13u: goto st96;
-		case 32u: goto st96;
-		case 58u: goto st97;
-		case 62u: goto st78;
-		case 95u: goto st97;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st96;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st97;
-	} else
+	if ( (*p) == 76u )
 		goto st97;
 	goto st0;
 st97:
 	if ( ++p == pe )
 		goto _test_eof97;
 case 97:
-	switch( (*p) ) {
-		case 13u: goto st98;
-		case 32u: goto st98;
-		case 95u: goto st97;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st97;
-		} else if ( (*p) >= 9u )
-			goto st98;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st97;
-		} else if ( (*p) >= 65u )
-			goto st97;
-	} else
-		goto st97;
+	if ( (*p) == 73u )
+		goto st98;
 	goto st0;
 st98:
 	if ( ++p == pe )
 		goto _test_eof98;
 case 98:
-	switch( (*p) ) {
-		case 13u: goto st98;
-		case 32u: goto st98;
-		case 40u: goto st99;
-		case 67u: goto st137;
-		case 69u: goto st141;
-		case 73u: goto st148;
-		case 78u: goto st153;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st98;
+	if ( (*p) == 83u )
+		goto st99;
 	goto st0;
 st99:
 	if ( ++p == pe )
 		goto _test_eof99;
 case 99:
-	switch( (*p) ) {
-		case 13u: goto st99;
-		case 32u: goto st99;
-		case 95u: goto st100;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st100;
-		} else if ( (*p) >= 9u )
-			goto st99;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st100;
-		} else if ( (*p) >= 65u )
-			goto st100;
-	} else
+	if ( (*p) == 84u )
 		goto st100;
 	goto st0;
 st100:
@@ -1830,24 +1927,9 @@ case 100:
 	switch( (*p) ) {
 		case 13u: goto st101;
 		case 32u: goto st101;
-		case 41u: goto st102;
-		case 95u: goto st100;
-		case 124u: goto st99;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st100;
-		} else if ( (*p) >= 9u )
-			goto st101;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st100;
-		} else if ( (*p) >= 65u )
-			goto st100;
-	} else
-		goto st100;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st101;
 	goto st0;
 st101:
 	if ( ++p == pe )
@@ -1856,22 +1938,47 @@ case 101:
 	switch( (*p) ) {
 		case 13u: goto st101;
 		case 32u: goto st101;
-		case 41u: goto st102;
-		case 124u: goto st99;
+		case 58u: goto tr127;
+		case 95u: goto tr127;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st101;
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st101;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr127;
+	} else
+		goto tr127;
 	goto st0;
+tr127:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st102;
 st102:
 	if ( ++p == pe )
 		goto _test_eof102;
 case 102:
+#line 1962 "src/xml.cpp"
 	switch( (*p) ) {
 		case 13u: goto st103;
 		case 32u: goto st103;
+		case 62u: goto st84;
+		case 95u: goto tr127;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st103;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr127;
+		} else if ( (*p) >= 9u )
+			goto st103;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr127;
+		} else if ( (*p) >= 65u )
+			goto tr127;
+	} else
+		goto tr127;
 	goto st0;
 st103:
 	if ( ++p == pe )
@@ -1880,476 +1987,608 @@ case 103:
 	switch( (*p) ) {
 		case 13u: goto st103;
 		case 32u: goto st103;
-		case 34u: goto st104;
-		case 35u: goto st112;
-		case 39u: goto st119;
+		case 58u: goto tr129;
+		case 62u: goto st84;
+		case 95u: goto tr129;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st103;
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st103;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr129;
+	} else
+		goto tr129;
 	goto st0;
-tr130:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
+tr129:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
 	goto st104;
 st104:
 	if ( ++p == pe )
 		goto _test_eof104;
 case 104:
-#line 1899 "src/xml.cpp"
+#line 2012 "src/xml.cpp"
 	switch( (*p) ) {
-		case 34u: goto st105;
-		case 38u: goto tr125;
-		case 60u: goto st0;
+		case 13u: goto st105;
+		case 32u: goto st105;
+		case 95u: goto tr129;
 	}
-	goto st104;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr129;
+		} else if ( (*p) >= 9u )
+			goto st105;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr129;
+		} else if ( (*p) >= 65u )
+			goto tr129;
+	} else
+		goto tr129;
+	goto st0;
 st105:
 	if ( ++p == pe )
 		goto _test_eof105;
 case 105:
 	switch( (*p) ) {
-		case 13u: goto st96;
-		case 32u: goto st96;
-		case 62u: goto st78;
+		case 13u: goto st105;
+		case 32u: goto st105;
+		case 40u: goto st106;
+		case 67u: goto st144;
+		case 69u: goto st148;
+		case 73u: goto st155;
+		case 78u: goto st160;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st96;
+		goto st105;
 	goto st0;
-tr125:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st106;
 st106:
 	if ( ++p == pe )
 		goto _test_eof106;
 case 106:
-#line 1926 "src/xml.cpp"
 	switch( (*p) ) {
-		case 35u: goto st107;
-		case 58u: goto st111;
-		case 95u: goto st111;
+		case 13u: goto st106;
+		case 32u: goto st106;
+		case 95u: goto st107;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st111;
-	} else if ( (*p) >= 65u )
-		goto st111;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto st107;
+		} else if ( (*p) >= 9u )
+			goto st106;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st107;
+		} else if ( (*p) >= 65u )
+			goto st107;
+	} else
+		goto st107;
 	goto st0;
 st107:
 	if ( ++p == pe )
 		goto _test_eof107;
 case 107:
-	if ( (*p) == 120u )
-		goto st109;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st108;
+	switch( (*p) ) {
+		case 13u: goto st108;
+		case 32u: goto st108;
+		case 41u: goto st109;
+		case 95u: goto st107;
+		case 124u: goto st106;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto st107;
+		} else if ( (*p) >= 9u )
+			goto st108;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st107;
+		} else if ( (*p) >= 65u )
+			goto st107;
+	} else
+		goto st107;
 	goto st0;
 st108:
 	if ( ++p == pe )
 		goto _test_eof108;
 case 108:
-	if ( (*p) == 59u )
-		goto tr130;
-	if ( 48u <= (*p) && (*p) <= 57u )
+	switch( (*p) ) {
+		case 13u: goto st108;
+		case 32u: goto st108;
+		case 41u: goto st109;
+		case 124u: goto st106;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st108;
 	goto st0;
 st109:
 	if ( ++p == pe )
 		goto _test_eof109;
 case 109:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st110;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st110;
-	} else
+	switch( (*p) ) {
+		case 13u: goto st110;
+		case 32u: goto st110;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st110;
 	goto st0;
 st110:
 	if ( ++p == pe )
 		goto _test_eof110;
 case 110:
-	if ( (*p) == 59u )
-		goto tr130;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st110;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st110;
-	} else
+	switch( (*p) ) {
+		case 13u: goto st110;
+		case 32u: goto st110;
+		case 34u: goto st111;
+		case 35u: goto st119;
+		case 39u: goto st126;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st110;
 	goto st0;
+tr143:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st111;
+tr150:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st111;
+tr152:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st111;
+tr153:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st111;
 st111:
 	if ( ++p == pe )
 		goto _test_eof111;
 case 111:
+#line 2157 "src/xml.cpp"
 	switch( (*p) ) {
-		case 59u: goto st104;
-		case 95u: goto st111;
+		case 34u: goto tr144;
+		case 38u: goto st113;
+		case 60u: goto st0;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st111;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st111;
-		} else if ( (*p) >= 65u )
-			goto st111;
-	} else
-		goto st111;
-	goto st0;
+	goto tr143;
+tr144:
+#line 65 "../src/xml.ragel"
+	{token("attr_value");}
+	goto st112;
 st112:
 	if ( ++p == pe )
 		goto _test_eof112;
 case 112:
+#line 2172 "src/xml.cpp"
 	switch( (*p) ) {
-		case 70u: goto st113;
-		case 73u: goto st126;
-		case 82u: goto st132;
+		case 13u: goto st103;
+		case 32u: goto st103;
+		case 62u: goto st84;
 	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st103;
 	goto st0;
 st113:
 	if ( ++p == pe )
 		goto _test_eof113;
 case 113:
-	if ( (*p) == 73u )
-		goto st114;
+	switch( (*p) ) {
+		case 35u: goto st114;
+		case 58u: goto tr147;
+		case 95u: goto tr147;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr147;
+	} else if ( (*p) >= 65u )
+		goto tr147;
 	goto st0;
 st114:
 	if ( ++p == pe )
 		goto _test_eof114;
 case 114:
-	if ( (*p) == 88u )
-		goto st115;
+	if ( (*p) == 120u )
+		goto st116;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr148;
 	goto st0;
+tr148:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st115;
 st115:
 	if ( ++p == pe )
 		goto _test_eof115;
 case 115:
-	if ( (*p) == 69u )
-		goto st116;
+#line 2213 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr150;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr148;
 	goto st0;
 st116:
 	if ( ++p == pe )
 		goto _test_eof116;
 case 116:
-	if ( (*p) == 68u )
-		goto st117;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr151;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr151;
+	} else
+		goto tr151;
 	goto st0;
+tr151:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st117;
 st117:
 	if ( ++p == pe )
 		goto _test_eof117;
 case 117:
-	switch( (*p) ) {
-		case 13u: goto st118;
-		case 32u: goto st118;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st118;
+#line 2240 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr152;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr151;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr151;
+	} else
+		goto tr151;
 	goto st0;
+tr147:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st118;
 st118:
 	if ( ++p == pe )
 		goto _test_eof118;
 case 118:
+#line 2260 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st118;
-		case 32u: goto st118;
-		case 34u: goto st104;
-		case 39u: goto st119;
+		case 59u: goto tr153;
+		case 95u: goto tr147;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st118;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr147;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr147;
+		} else if ( (*p) >= 65u )
+			goto tr147;
+	} else
+		goto tr147;
 	goto st0;
-tr145:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st119;
 st119:
 	if ( ++p == pe )
 		goto _test_eof119;
 case 119:
-#line 2074 "src/xml.cpp"
 	switch( (*p) ) {
-		case 38u: goto tr140;
-		case 39u: goto st105;
-		case 60u: goto st0;
+		case 70u: goto st120;
+		case 73u: goto st133;
+		case 82u: goto st139;
 	}
-	goto st119;
-tr140:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st120;
+	goto st0;
 st120:
 	if ( ++p == pe )
 		goto _test_eof120;
 case 120:
-#line 2089 "src/xml.cpp"
-	switch( (*p) ) {
-		case 35u: goto st121;
-		case 58u: goto st125;
-		case 95u: goto st125;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st125;
-	} else if ( (*p) >= 65u )
-		goto st125;
+	if ( (*p) == 73u )
+		goto st121;
 	goto st0;
 st121:
 	if ( ++p == pe )
 		goto _test_eof121;
 case 121:
-	if ( (*p) == 120u )
-		goto st123;
-	if ( 48u <= (*p) && (*p) <= 57u )
+	if ( (*p) == 88u )
 		goto st122;
 	goto st0;
 st122:
 	if ( ++p == pe )
 		goto _test_eof122;
 case 122:
-	if ( (*p) == 59u )
-		goto tr145;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st122;
+	if ( (*p) == 69u )
+		goto st123;
 	goto st0;
 st123:
 	if ( ++p == pe )
 		goto _test_eof123;
 case 123:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st124;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st124;
-	} else
+	if ( (*p) == 68u )
 		goto st124;
 	goto st0;
 st124:
 	if ( ++p == pe )
 		goto _test_eof124;
 case 124:
-	if ( (*p) == 59u )
-		goto tr145;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st124;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st124;
-	} else
-		goto st124;
+	switch( (*p) ) {
+		case 13u: goto st125;
+		case 32u: goto st125;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st125;
 	goto st0;
 st125:
 	if ( ++p == pe )
 		goto _test_eof125;
 case 125:
 	switch( (*p) ) {
-		case 59u: goto st119;
-		case 95u: goto st125;
+		case 13u: goto st125;
+		case 32u: goto st125;
+		case 34u: goto st111;
+		case 39u: goto st126;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st125;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st125;
-		} else if ( (*p) >= 65u )
-			goto st125;
-	} else
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st125;
 	goto st0;
+tr162:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st126;
+tr168:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st126;
+tr170:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st126;
+tr171:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st126;
 st126:
 	if ( ++p == pe )
 		goto _test_eof126;
 case 126:
-	if ( (*p) == 77u )
-		goto st127;
-	goto st0;
+#line 2359 "src/xml.cpp"
+	switch( (*p) ) {
+		case 38u: goto st127;
+		case 39u: goto tr144;
+		case 60u: goto st0;
+	}
+	goto tr162;
 st127:
 	if ( ++p == pe )
 		goto _test_eof127;
 case 127:
-	if ( (*p) == 80u )
-		goto st128;
+	switch( (*p) ) {
+		case 35u: goto st128;
+		case 58u: goto tr165;
+		case 95u: goto tr165;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr165;
+	} else if ( (*p) >= 65u )
+		goto tr165;
 	goto st0;
 st128:
 	if ( ++p == pe )
 		goto _test_eof128;
 case 128:
-	if ( (*p) == 76u )
-		goto st129;
+	if ( (*p) == 120u )
+		goto st130;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr166;
 	goto st0;
+tr166:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st129;
 st129:
 	if ( ++p == pe )
 		goto _test_eof129;
 case 129:
-	if ( (*p) == 73u )
-		goto st130;
+#line 2398 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr168;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr166;
 	goto st0;
 st130:
 	if ( ++p == pe )
 		goto _test_eof130;
 case 130:
-	if ( (*p) == 69u )
-		goto st131;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr169;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr169;
+	} else
+		goto tr169;
 	goto st0;
+tr169:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st131;
 st131:
 	if ( ++p == pe )
 		goto _test_eof131;
 case 131:
-	if ( (*p) == 68u )
-		goto st105;
+#line 2425 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr170;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr169;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr169;
+	} else
+		goto tr169;
 	goto st0;
+tr165:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st132;
 st132:
 	if ( ++p == pe )
 		goto _test_eof132;
 case 132:
-	if ( (*p) == 69u )
-		goto st133;
+#line 2445 "src/xml.cpp"
+	switch( (*p) ) {
+		case 59u: goto tr171;
+		case 95u: goto tr165;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr165;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr165;
+		} else if ( (*p) >= 65u )
+			goto tr165;
+	} else
+		goto tr165;
 	goto st0;
 st133:
 	if ( ++p == pe )
 		goto _test_eof133;
 case 133:
-	if ( (*p) == 81u )
+	if ( (*p) == 77u )
 		goto st134;
 	goto st0;
 st134:
 	if ( ++p == pe )
 		goto _test_eof134;
 case 134:
-	if ( (*p) == 85u )
+	if ( (*p) == 80u )
 		goto st135;
 	goto st0;
 st135:
 	if ( ++p == pe )
 		goto _test_eof135;
 case 135:
-	if ( (*p) == 73u )
+	if ( (*p) == 76u )
 		goto st136;
 	goto st0;
 st136:
 	if ( ++p == pe )
 		goto _test_eof136;
 case 136:
-	if ( (*p) == 82u )
-		goto st130;
+	if ( (*p) == 73u )
+		goto st137;
 	goto st0;
 st137:
 	if ( ++p == pe )
 		goto _test_eof137;
 case 137:
-	if ( (*p) == 68u )
+	if ( (*p) == 69u )
 		goto st138;
 	goto st0;
 st138:
 	if ( ++p == pe )
 		goto _test_eof138;
 case 138:
-	if ( (*p) == 65u )
-		goto st139;
+	if ( (*p) == 68u )
+		goto st112;
 	goto st0;
 st139:
 	if ( ++p == pe )
 		goto _test_eof139;
 case 139:
-	if ( (*p) == 84u )
+	if ( (*p) == 69u )
 		goto st140;
 	goto st0;
 st140:
 	if ( ++p == pe )
 		goto _test_eof140;
 case 140:
-	if ( (*p) == 65u )
-		goto st102;
+	if ( (*p) == 81u )
+		goto st141;
 	goto st0;
 st141:
 	if ( ++p == pe )
 		goto _test_eof141;
 case 141:
-	if ( (*p) == 78u )
+	if ( (*p) == 85u )
 		goto st142;
 	goto st0;
 st142:
 	if ( ++p == pe )
 		goto _test_eof142;
 case 142:
-	if ( (*p) == 84u )
+	if ( (*p) == 73u )
 		goto st143;
 	goto st0;
 st143:
 	if ( ++p == pe )
 		goto _test_eof143;
 case 143:
-	if ( (*p) == 73u )
-		goto st144;
+	if ( (*p) == 82u )
+		goto st137;
 	goto st0;
 st144:
 	if ( ++p == pe )
 		goto _test_eof144;
 case 144:
-	if ( (*p) == 84u )
+	if ( (*p) == 68u )
 		goto st145;
 	goto st0;
 st145:
 	if ( ++p == pe )
 		goto _test_eof145;
 case 145:
-	switch( (*p) ) {
-		case 73u: goto st146;
-		case 89u: goto st102;
-	}
+	if ( (*p) == 65u )
+		goto st146;
 	goto st0;
 st146:
 	if ( ++p == pe )
 		goto _test_eof146;
 case 146:
-	if ( (*p) == 69u )
+	if ( (*p) == 84u )
 		goto st147;
 	goto st0;
 st147:
 	if ( ++p == pe )
 		goto _test_eof147;
 case 147:
-	if ( (*p) == 83u )
-		goto st102;
+	if ( (*p) == 65u )
+		goto st109;
 	goto st0;
 st148:
 	if ( ++p == pe )
 		goto _test_eof148;
 case 148:
-	if ( (*p) == 68u )
+	if ( (*p) == 78u )
 		goto st149;
 	goto st0;
 st149:
 	if ( ++p == pe )
 		goto _test_eof149;
 case 149:
-	switch( (*p) ) {
-		case 13u: goto st103;
-		case 32u: goto st103;
-		case 82u: goto st150;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st103;
+	if ( (*p) == 84u )
+		goto st150;
 	goto st0;
 st150:
 	if ( ++p == pe )
 		goto _test_eof150;
 case 150:
-	if ( (*p) == 69u )
+	if ( (*p) == 73u )
 		goto st151;
 	goto st0;
 st151:
 	if ( ++p == pe )
 		goto _test_eof151;
 case 151:
-	if ( (*p) == 70u )
+	if ( (*p) == 84u )
 		goto st152;
 	goto st0;
 st152:
@@ -2357,42 +2596,42 @@ st152:
 		goto _test_eof152;
 case 152:
 	switch( (*p) ) {
-		case 13u: goto st103;
-		case 32u: goto st103;
-		case 83u: goto st102;
+		case 73u: goto st153;
+		case 89u: goto st109;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st103;
 	goto st0;
 st153:
 	if ( ++p == pe )
 		goto _test_eof153;
 case 153:
-	switch( (*p) ) {
-		case 77u: goto st154;
-		case 79u: goto st159;
-	}
+	if ( (*p) == 69u )
+		goto st154;
 	goto st0;
 st154:
 	if ( ++p == pe )
 		goto _test_eof154;
 case 154:
-	if ( (*p) == 84u )
-		goto st155;
+	if ( (*p) == 83u )
+		goto st109;
 	goto st0;
 st155:
 	if ( ++p == pe )
 		goto _test_eof155;
 case 155:
-	if ( (*p) == 79u )
+	if ( (*p) == 68u )
 		goto st156;
 	goto st0;
 st156:
 	if ( ++p == pe )
 		goto _test_eof156;
 case 156:
-	if ( (*p) == 75u )
-		goto st157;
+	switch( (*p) ) {
+		case 13u: goto st110;
+		case 32u: goto st110;
+		case 82u: goto st157;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st110;
 	goto st0;
 st157:
 	if ( ++p == pe )
@@ -2405,22 +2644,29 @@ st158:
 	if ( ++p == pe )
 		goto _test_eof158;
 case 158:
-	if ( (*p) == 78u )
-		goto st152;
+	if ( (*p) == 70u )
+		goto st159;
 	goto st0;
 st159:
 	if ( ++p == pe )
 		goto _test_eof159;
 case 159:
-	if ( (*p) == 84u )
-		goto st160;
+	switch( (*p) ) {
+		case 13u: goto st110;
+		case 32u: goto st110;
+		case 83u: goto st109;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st110;
 	goto st0;
 st160:
 	if ( ++p == pe )
 		goto _test_eof160;
 case 160:
-	if ( (*p) == 65u )
-		goto st161;
+	switch( (*p) ) {
+		case 77u: goto st161;
+		case 79u: goto st166;
+	}
 	goto st0;
 st161:
 	if ( ++p == pe )
@@ -2433,291 +2679,295 @@ st162:
 	if ( ++p == pe )
 		goto _test_eof162;
 case 162:
-	if ( (*p) == 73u )
+	if ( (*p) == 79u )
 		goto st163;
 	goto st0;
 st163:
 	if ( ++p == pe )
 		goto _test_eof163;
 case 163:
-	if ( (*p) == 79u )
+	if ( (*p) == 75u )
 		goto st164;
 	goto st0;
 st164:
 	if ( ++p == pe )
 		goto _test_eof164;
 case 164:
-	if ( (*p) == 78u )
+	if ( (*p) == 69u )
 		goto st165;
 	goto st0;
 st165:
 	if ( ++p == pe )
 		goto _test_eof165;
 case 165:
-	switch( (*p) ) {
-		case 13u: goto st166;
-		case 32u: goto st166;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st166;
+	if ( (*p) == 78u )
+		goto st159;
 	goto st0;
 st166:
 	if ( ++p == pe )
 		goto _test_eof166;
 case 166:
-	switch( (*p) ) {
-		case 13u: goto st166;
-		case 32u: goto st166;
-		case 40u: goto st167;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st166;
+	if ( (*p) == 84u )
+		goto st167;
 	goto st0;
 st167:
 	if ( ++p == pe )
 		goto _test_eof167;
 case 167:
-	switch( (*p) ) {
-		case 13u: goto st167;
-		case 32u: goto st167;
-		case 58u: goto st168;
-		case 95u: goto st168;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st167;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st168;
-	} else
+	if ( (*p) == 65u )
 		goto st168;
 	goto st0;
 st168:
 	if ( ++p == pe )
 		goto _test_eof168;
 case 168:
-	switch( (*p) ) {
-		case 13u: goto st169;
-		case 32u: goto st169;
-		case 41u: goto st102;
-		case 95u: goto st168;
-		case 124u: goto st167;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st168;
-		} else if ( (*p) >= 9u )
-			goto st169;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st168;
-		} else if ( (*p) >= 65u )
-			goto st168;
-	} else
-		goto st168;
+	if ( (*p) == 84u )
+		goto st169;
 	goto st0;
 st169:
 	if ( ++p == pe )
 		goto _test_eof169;
 case 169:
-	switch( (*p) ) {
-		case 13u: goto st169;
-		case 32u: goto st169;
-		case 41u: goto st102;
-		case 124u: goto st167;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st169;
+	if ( (*p) == 73u )
+		goto st170;
 	goto st0;
 st170:
 	if ( ++p == pe )
 		goto _test_eof170;
 case 170:
-	switch( (*p) ) {
-		case 76u: goto st171;
-		case 78u: goto st200;
-	}
+	if ( (*p) == 79u )
+		goto st171;
 	goto st0;
 st171:
 	if ( ++p == pe )
 		goto _test_eof171;
 case 171:
-	if ( (*p) == 69u )
+	if ( (*p) == 78u )
 		goto st172;
 	goto st0;
 st172:
 	if ( ++p == pe )
 		goto _test_eof172;
 case 172:
-	if ( (*p) == 77u )
+	switch( (*p) ) {
+		case 13u: goto st173;
+		case 32u: goto st173;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st173;
 	goto st0;
 st173:
 	if ( ++p == pe )
 		goto _test_eof173;
 case 173:
-	if ( (*p) == 69u )
-		goto st174;
+	switch( (*p) ) {
+		case 13u: goto st173;
+		case 32u: goto st173;
+		case 40u: goto st174;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st173;
 	goto st0;
 st174:
 	if ( ++p == pe )
 		goto _test_eof174;
 case 174:
-	if ( (*p) == 78u )
-		goto st175;
+	switch( (*p) ) {
+		case 13u: goto st174;
+		case 32u: goto st174;
+		case 58u: goto tr209;
+		case 95u: goto tr209;
+	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st174;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr209;
+	} else
+		goto tr209;
 	goto st0;
+tr209:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st175;
 st175:
 	if ( ++p == pe )
 		goto _test_eof175;
 case 175:
-	if ( (*p) == 84u )
-		goto st176;
+#line 2799 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st176;
+		case 32u: goto st176;
+		case 41u: goto st109;
+		case 95u: goto tr209;
+		case 124u: goto st174;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr209;
+		} else if ( (*p) >= 9u )
+			goto st176;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr209;
+		} else if ( (*p) >= 65u )
+			goto tr209;
+	} else
+		goto tr209;
 	goto st0;
 st176:
 	if ( ++p == pe )
 		goto _test_eof176;
 case 176:
 	switch( (*p) ) {
-		case 13u: goto st177;
-		case 32u: goto st177;
+		case 13u: goto st176;
+		case 32u: goto st176;
+		case 41u: goto st109;
+		case 124u: goto st174;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st177;
+		goto st176;
 	goto st0;
 st177:
 	if ( ++p == pe )
 		goto _test_eof177;
 case 177:
 	switch( (*p) ) {
-		case 13u: goto st177;
-		case 32u: goto st177;
-		case 58u: goto st178;
-		case 95u: goto st178;
+		case 76u: goto st178;
+		case 78u: goto st207;
 	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st177;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st178;
-	} else
-		goto st178;
 	goto st0;
 st178:
 	if ( ++p == pe )
 		goto _test_eof178;
 case 178:
-	switch( (*p) ) {
-		case 13u: goto st179;
-		case 32u: goto st179;
-		case 95u: goto st178;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st178;
-		} else if ( (*p) >= 9u )
-			goto st179;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st178;
-		} else if ( (*p) >= 65u )
-			goto st178;
-	} else
-		goto st178;
+	if ( (*p) == 69u )
+		goto st179;
 	goto st0;
 st179:
 	if ( ++p == pe )
 		goto _test_eof179;
 case 179:
-	switch( (*p) ) {
-		case 13u: goto st179;
-		case 32u: goto st179;
-		case 40u: goto tr195;
-		case 65u: goto st195;
-		case 69u: goto st197;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st179;
+	if ( (*p) == 77u )
+		goto st180;
 	goto st0;
-tr195:
-#line 91 "../src/xml.ragel"
-	{ { pre_push(); { this->m_stack[ this->m_top++] = 180; goto st378;}} }
-	goto st180;
 st180:
 	if ( ++p == pe )
 		goto _test_eof180;
 case 180:
-#line 2655 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st181;
-		case 32u: goto st181;
-		case 35u: goto st182;
-		case 62u: goto st78;
-		case 63u: goto st190;
-	}
-	if ( (*p) > 10u ) {
-		if ( 42u <= (*p) && (*p) <= 43u )
-			goto st190;
-	} else if ( (*p) >= 9u )
+	if ( (*p) == 69u )
 		goto st181;
 	goto st0;
 st181:
 	if ( ++p == pe )
 		goto _test_eof181;
 case 181:
-	switch( (*p) ) {
-		case 13u: goto st181;
-		case 32u: goto st181;
-		case 35u: goto st182;
-		case 62u: goto st78;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st181;
+	if ( (*p) == 78u )
+		goto st182;
 	goto st0;
 st182:
 	if ( ++p == pe )
 		goto _test_eof182;
 case 182:
-	if ( (*p) == 80u )
+	if ( (*p) == 84u )
 		goto st183;
 	goto st0;
 st183:
 	if ( ++p == pe )
 		goto _test_eof183;
 case 183:
-	if ( (*p) == 67u )
+	switch( (*p) ) {
+		case 13u: goto st184;
+		case 32u: goto st184;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st184;
 	goto st0;
 st184:
 	if ( ++p == pe )
 		goto _test_eof184;
 case 184:
-	if ( (*p) == 68u )
-		goto st185;
+	switch( (*p) ) {
+		case 13u: goto st184;
+		case 32u: goto st184;
+		case 58u: goto tr219;
+		case 95u: goto tr219;
+	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st184;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr219;
+	} else
+		goto tr219;
 	goto st0;
+tr219:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st185;
 st185:
 	if ( ++p == pe )
 		goto _test_eof185;
 case 185:
-	if ( (*p) == 65u )
-		goto st186;
+#line 2917 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st186;
+		case 32u: goto st186;
+		case 95u: goto tr219;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr219;
+		} else if ( (*p) >= 9u )
+			goto st186;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr219;
+		} else if ( (*p) >= 65u )
+			goto tr219;
+	} else
+		goto tr219;
 	goto st0;
 st186:
 	if ( ++p == pe )
 		goto _test_eof186;
 case 186:
-	if ( (*p) == 84u )
-		goto st187;
+	switch( (*p) ) {
+		case 13u: goto st186;
+		case 32u: goto st186;
+		case 40u: goto tr221;
+		case 65u: goto st202;
+		case 69u: goto st204;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st186;
 	goto st0;
+tr221:
+#line 87 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 187; goto st389;}} }
+	goto st187;
 st187:
 	if ( ++p == pe )
 		goto _test_eof187;
 case 187:
-	if ( (*p) == 65u )
+#line 2960 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st188;
+		case 32u: goto st188;
+		case 35u: goto st189;
+		case 62u: goto st84;
+		case 63u: goto st197;
+	}
+	if ( (*p) > 10u ) {
+		if ( 42u <= (*p) && (*p) <= 43u )
+			goto st197;
+	} else if ( (*p) >= 9u )
 		goto st188;
 	goto st0;
 st188:
@@ -2727,8 +2977,8 @@ case 188:
 	switch( (*p) ) {
 		case 13u: goto st188;
 		case 32u: goto st188;
-		case 41u: goto st189;
-		case 124u: goto st191;
+		case 35u: goto st189;
+		case 62u: goto st84;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st188;
@@ -2737,146 +2987,157 @@ st189:
 	if ( ++p == pe )
 		goto _test_eof189;
 case 189:
-	switch( (*p) ) {
-		case 13u: goto st190;
-		case 32u: goto st190;
-		case 42u: goto st190;
-		case 62u: goto st78;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 80u )
 		goto st190;
 	goto st0;
 st190:
 	if ( ++p == pe )
 		goto _test_eof190;
 case 190:
-	switch( (*p) ) {
-		case 13u: goto st190;
-		case 32u: goto st190;
-		case 62u: goto st78;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st190;
+	if ( (*p) == 67u )
+		goto st191;
 	goto st0;
 st191:
 	if ( ++p == pe )
 		goto _test_eof191;
 case 191:
-	switch( (*p) ) {
-		case 13u: goto st191;
-		case 32u: goto st191;
-		case 58u: goto st192;
-		case 95u: goto st192;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st191;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st192;
-	} else
+	if ( (*p) == 68u )
 		goto st192;
 	goto st0;
 st192:
 	if ( ++p == pe )
 		goto _test_eof192;
 case 192:
-	switch( (*p) ) {
-		case 13u: goto st193;
-		case 32u: goto st193;
-		case 41u: goto st194;
-		case 95u: goto st192;
-		case 124u: goto st191;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st192;
-		} else if ( (*p) >= 9u )
-			goto st193;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st192;
-		} else if ( (*p) >= 65u )
-			goto st192;
-	} else
-		goto st192;
+	if ( (*p) == 65u )
+		goto st193;
 	goto st0;
 st193:
 	if ( ++p == pe )
 		goto _test_eof193;
 case 193:
-	switch( (*p) ) {
-		case 13u: goto st193;
-		case 32u: goto st193;
-		case 41u: goto st194;
-		case 124u: goto st191;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st193;
+	if ( (*p) == 84u )
+		goto st194;
 	goto st0;
 st194:
 	if ( ++p == pe )
 		goto _test_eof194;
 case 194:
-	if ( (*p) == 42u )
-		goto st190;
+	if ( (*p) == 65u )
+		goto st195;
 	goto st0;
 st195:
 	if ( ++p == pe )
 		goto _test_eof195;
 case 195:
-	if ( (*p) == 78u )
-		goto st196;
+	switch( (*p) ) {
+		case 13u: goto st195;
+		case 32u: goto st195;
+		case 41u: goto st196;
+		case 124u: goto st198;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st195;
 	goto st0;
 st196:
 	if ( ++p == pe )
 		goto _test_eof196;
 case 196:
-	if ( (*p) == 89u )
-		goto st190;
+	switch( (*p) ) {
+		case 13u: goto st197;
+		case 32u: goto st197;
+		case 42u: goto st197;
+		case 62u: goto st84;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st197;
 	goto st0;
 st197:
 	if ( ++p == pe )
 		goto _test_eof197;
 case 197:
-	if ( (*p) == 77u )
-		goto st198;
+	switch( (*p) ) {
+		case 13u: goto st197;
+		case 32u: goto st197;
+		case 62u: goto st84;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st197;
 	goto st0;
 st198:
 	if ( ++p == pe )
 		goto _test_eof198;
 case 198:
-	if ( (*p) == 80u )
-		goto st199;
+	switch( (*p) ) {
+		case 13u: goto st198;
+		case 32u: goto st198;
+		case 58u: goto tr235;
+		case 95u: goto tr235;
+	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st198;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr235;
+	} else
+		goto tr235;
 	goto st0;
+tr235:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st199;
 st199:
 	if ( ++p == pe )
 		goto _test_eof199;
 case 199:
-	if ( (*p) == 84u )
-		goto st196;
+#line 3094 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st200;
+		case 32u: goto st200;
+		case 41u: goto st201;
+		case 95u: goto tr235;
+		case 124u: goto st198;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr235;
+		} else if ( (*p) >= 9u )
+			goto st200;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr235;
+		} else if ( (*p) >= 65u )
+			goto tr235;
+	} else
+		goto tr235;
 	goto st0;
 st200:
 	if ( ++p == pe )
 		goto _test_eof200;
 case 200:
-	if ( (*p) == 84u )
-		goto st201;
+	switch( (*p) ) {
+		case 13u: goto st200;
+		case 32u: goto st200;
+		case 41u: goto st201;
+		case 124u: goto st198;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st200;
 	goto st0;
 st201:
 	if ( ++p == pe )
 		goto _test_eof201;
 case 201:
-	if ( (*p) == 73u )
-		goto st202;
+	if ( (*p) == 42u )
+		goto st197;
 	goto st0;
 st202:
 	if ( ++p == pe )
 		goto _test_eof202;
 case 202:
-	if ( (*p) == 84u )
+	if ( (*p) == 78u )
 		goto st203;
 	goto st0;
 st203:
@@ -2884,135 +3145,66 @@ st203:
 		goto _test_eof203;
 case 203:
 	if ( (*p) == 89u )
-		goto st204;
+		goto st197;
 	goto st0;
 st204:
 	if ( ++p == pe )
 		goto _test_eof204;
 case 204:
-	switch( (*p) ) {
-		case 13u: goto st205;
-		case 32u: goto st205;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 77u )
 		goto st205;
 	goto st0;
 st205:
 	if ( ++p == pe )
 		goto _test_eof205;
 case 205:
-	switch( (*p) ) {
-		case 13u: goto st205;
-		case 32u: goto st205;
-		case 37u: goto st206;
-		case 58u: goto st244;
-		case 95u: goto st244;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st205;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st244;
-	} else
-		goto st244;
+	if ( (*p) == 80u )
+		goto st206;
 	goto st0;
 st206:
 	if ( ++p == pe )
 		goto _test_eof206;
 case 206:
-	switch( (*p) ) {
-		case 13u: goto st207;
-		case 32u: goto st207;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st207;
+	if ( (*p) == 84u )
+		goto st203;
 	goto st0;
 st207:
 	if ( ++p == pe )
 		goto _test_eof207;
 case 207:
-	switch( (*p) ) {
-		case 13u: goto st207;
-		case 32u: goto st207;
-		case 58u: goto st208;
-		case 95u: goto st208;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st207;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st208;
-	} else
+	if ( (*p) == 84u )
 		goto st208;
 	goto st0;
 st208:
 	if ( ++p == pe )
 		goto _test_eof208;
 case 208:
-	switch( (*p) ) {
-		case 13u: goto st209;
-		case 32u: goto st209;
-		case 95u: goto st208;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st208;
-		} else if ( (*p) >= 9u )
-			goto st209;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st208;
-		} else if ( (*p) >= 65u )
-			goto st208;
-	} else
-		goto st208;
+	if ( (*p) == 73u )
+		goto st209;
 	goto st0;
 st209:
 	if ( ++p == pe )
 		goto _test_eof209;
 case 209:
-	switch( (*p) ) {
-		case 13u: goto st209;
-		case 32u: goto st209;
-		case 34u: goto st210;
-		case 39u: goto st218;
-		case 80u: goto st226;
-		case 83u: goto st239;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st209;
+	if ( (*p) == 84u )
+		goto st210;
 	goto st0;
-tr235:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st210;
 st210:
 	if ( ++p == pe )
 		goto _test_eof210;
 case 210:
-#line 2998 "src/xml.cpp"
-	switch( (*p) ) {
-		case 34u: goto st190;
-		case 37u: goto st211;
-		case 38u: goto tr230;
-	}
-	goto st210;
+	if ( (*p) == 89u )
+		goto st211;
+	goto st0;
 st211:
 	if ( ++p == pe )
 		goto _test_eof211;
 case 211:
 	switch( (*p) ) {
-		case 58u: goto st212;
-		case 95u: goto st212;
+		case 13u: goto st212;
+		case 32u: goto st212;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st212;
-	} else if ( (*p) >= 65u )
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st212;
 	goto st0;
 st212:
@@ -3020,587 +3212,717 @@ st212:
 		goto _test_eof212;
 case 212:
 	switch( (*p) ) {
-		case 59u: goto st210;
-		case 95u: goto st212;
+		case 13u: goto st212;
+		case 32u: goto st212;
+		case 37u: goto st213;
+		case 58u: goto tr247;
+		case 95u: goto tr247;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
 			goto st212;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st212;
-		} else if ( (*p) >= 65u )
-			goto st212;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr247;
 	} else
-		goto st212;
+		goto tr247;
 	goto st0;
-tr230:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st213;
 st213:
 	if ( ++p == pe )
 		goto _test_eof213;
 case 213:
-#line 3047 "src/xml.cpp"
 	switch( (*p) ) {
-		case 35u: goto st214;
-		case 58u: goto st212;
-		case 95u: goto st212;
+		case 13u: goto st214;
+		case 32u: goto st214;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st212;
-	} else if ( (*p) >= 65u )
-		goto st212;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st214;
 	goto st0;
 st214:
 	if ( ++p == pe )
 		goto _test_eof214;
 case 214:
-	if ( (*p) == 120u )
-		goto st216;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st215;
+	switch( (*p) ) {
+		case 13u: goto st214;
+		case 32u: goto st214;
+		case 58u: goto tr249;
+		case 95u: goto tr249;
+	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st214;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr249;
+	} else
+		goto tr249;
 	goto st0;
+tr249:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st215;
 st215:
 	if ( ++p == pe )
 		goto _test_eof215;
 case 215:
-	if ( (*p) == 59u )
-		goto tr235;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st215;
+#line 3269 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st216;
+		case 32u: goto st216;
+		case 95u: goto tr249;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr249;
+		} else if ( (*p) >= 9u )
+			goto st216;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr249;
+		} else if ( (*p) >= 65u )
+			goto tr249;
+	} else
+		goto tr249;
 	goto st0;
 st216:
 	if ( ++p == pe )
 		goto _test_eof216;
 case 216:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st217;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st217;
-	} else
-		goto st217;
+	switch( (*p) ) {
+		case 13u: goto st216;
+		case 32u: goto st216;
+		case 34u: goto st217;
+		case 39u: goto st226;
+		case 80u: goto st235;
+		case 83u: goto st248;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st216;
 	goto st0;
+tr262:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st217;
+tr264:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st217;
+tr265:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st217;
 st217:
 	if ( ++p == pe )
 		goto _test_eof217;
 case 217:
-	if ( (*p) == 59u )
-		goto tr235;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st217;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st217;
-	} else
-		goto st217;
-	goto st0;
-tr243:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st218;
+#line 3321 "src/xml.cpp"
+	switch( (*p) ) {
+		case 34u: goto st197;
+		case 37u: goto st218;
+		case 38u: goto st220;
+	}
+	goto st217;
 st218:
 	if ( ++p == pe )
 		goto _test_eof218;
 case 218:
-#line 3113 "src/xml.cpp"
 	switch( (*p) ) {
-		case 37u: goto st219;
-		case 38u: goto tr238;
-		case 39u: goto st190;
+		case 58u: goto tr257;
+		case 95u: goto tr257;
 	}
-	goto st218;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr257;
+	} else if ( (*p) >= 65u )
+		goto tr257;
+	goto st0;
+tr257:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st219;
 st219:
 	if ( ++p == pe )
 		goto _test_eof219;
 case 219:
+#line 3350 "src/xml.cpp"
 	switch( (*p) ) {
-		case 58u: goto st220;
-		case 95u: goto st220;
+		case 59u: goto st217;
+		case 95u: goto tr257;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st220;
-	} else if ( (*p) >= 65u )
-		goto st220;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr257;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr257;
+		} else if ( (*p) >= 65u )
+			goto tr257;
+	} else
+		goto tr257;
 	goto st0;
 st220:
 	if ( ++p == pe )
 		goto _test_eof220;
 case 220:
 	switch( (*p) ) {
-		case 59u: goto st218;
-		case 95u: goto st220;
+		case 35u: goto st221;
+		case 58u: goto tr259;
+		case 95u: goto tr259;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st220;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st220;
-		} else if ( (*p) >= 65u )
-			goto st220;
-	} else
-		goto st220;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr259;
+	} else if ( (*p) >= 65u )
+		goto tr259;
 	goto st0;
-tr238:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st221;
 st221:
 	if ( ++p == pe )
 		goto _test_eof221;
 case 221:
-#line 3162 "src/xml.cpp"
-	switch( (*p) ) {
-		case 35u: goto st222;
-		case 58u: goto st220;
-		case 95u: goto st220;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st220;
-	} else if ( (*p) >= 65u )
-		goto st220;
+	if ( (*p) == 120u )
+		goto st223;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr260;
 	goto st0;
+tr260:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st222;
 st222:
 	if ( ++p == pe )
 		goto _test_eof222;
 case 222:
-	if ( (*p) == 120u )
-		goto st224;
+#line 3399 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr262;
 	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st223;
+		goto tr260;
 	goto st0;
 st223:
 	if ( ++p == pe )
 		goto _test_eof223;
 case 223:
-	if ( (*p) == 59u )
-		goto tr243;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st223;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr263;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr263;
+	} else
+		goto tr263;
 	goto st0;
+tr263:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st224;
 st224:
 	if ( ++p == pe )
 		goto _test_eof224;
 case 224:
+#line 3426 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr264;
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st225;
+			goto tr263;
 	} else if ( (*p) > 70u ) {
 		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st225;
+			goto tr263;
 	} else
-		goto st225;
+		goto tr263;
 	goto st0;
+tr259:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st225;
 st225:
 	if ( ++p == pe )
 		goto _test_eof225;
 case 225:
-	if ( (*p) == 59u )
-		goto tr243;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st225;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st225;
+#line 3446 "src/xml.cpp"
+	switch( (*p) ) {
+		case 59u: goto tr265;
+		case 95u: goto tr259;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr259;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr259;
+		} else if ( (*p) >= 65u )
+			goto tr259;
 	} else
-		goto st225;
+		goto tr259;
 	goto st0;
+tr273:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st226;
+tr275:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st226;
+tr276:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st226;
 st226:
 	if ( ++p == pe )
 		goto _test_eof226;
 case 226:
-	if ( (*p) == 85u )
-		goto st227;
-	goto st0;
+#line 3479 "src/xml.cpp"
+	switch( (*p) ) {
+		case 37u: goto st227;
+		case 38u: goto st229;
+		case 39u: goto st197;
+	}
+	goto st226;
 st227:
 	if ( ++p == pe )
 		goto _test_eof227;
 case 227:
-	if ( (*p) == 66u )
-		goto st228;
+	switch( (*p) ) {
+		case 58u: goto tr268;
+		case 95u: goto tr268;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr268;
+	} else if ( (*p) >= 65u )
+		goto tr268;
 	goto st0;
+tr268:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st228;
 st228:
 	if ( ++p == pe )
 		goto _test_eof228;
 case 228:
-	if ( (*p) == 76u )
-		goto st229;
+#line 3508 "src/xml.cpp"
+	switch( (*p) ) {
+		case 59u: goto st226;
+		case 95u: goto tr268;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr268;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr268;
+		} else if ( (*p) >= 65u )
+			goto tr268;
+	} else
+		goto tr268;
 	goto st0;
 st229:
 	if ( ++p == pe )
 		goto _test_eof229;
 case 229:
-	if ( (*p) == 73u )
-		goto st230;
+	switch( (*p) ) {
+		case 35u: goto st230;
+		case 58u: goto tr270;
+		case 95u: goto tr270;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr270;
+	} else if ( (*p) >= 65u )
+		goto tr270;
 	goto st0;
 st230:
 	if ( ++p == pe )
 		goto _test_eof230;
 case 230:
-	if ( (*p) == 67u )
-		goto st231;
+	if ( (*p) == 120u )
+		goto st232;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr271;
 	goto st0;
+tr271:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st231;
 st231:
 	if ( ++p == pe )
 		goto _test_eof231;
 case 231:
-	switch( (*p) ) {
-		case 13u: goto st232;
-		case 32u: goto st232;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st232;
+#line 3557 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr273;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr271;
 	goto st0;
 st232:
 	if ( ++p == pe )
 		goto _test_eof232;
 case 232:
-	switch( (*p) ) {
-		case 13u: goto st232;
-		case 32u: goto st232;
-		case 34u: goto st233;
-		case 39u: goto st238;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st232;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr274;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr274;
+	} else
+		goto tr274;
 	goto st0;
+tr274:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st233;
 st233:
 	if ( ++p == pe )
 		goto _test_eof233;
 case 233:
-	switch( (*p) ) {
-		case 10u: goto st233;
-		case 13u: goto st233;
-		case 34u: goto st234;
-		case 61u: goto st233;
-		case 95u: goto st233;
-	}
-	if ( (*p) < 39u ) {
-		if ( 32u <= (*p) && (*p) <= 37u )
-			goto st233;
-	} else if ( (*p) > 59u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st233;
-		} else if ( (*p) >= 63u )
-			goto st233;
+#line 3584 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr275;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr274;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr274;
 	} else
-		goto st233;
+		goto tr274;
 	goto st0;
+tr270:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st234;
 st234:
 	if ( ++p == pe )
 		goto _test_eof234;
 case 234:
+#line 3604 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st235;
-		case 32u: goto st235;
+		case 59u: goto tr276;
+		case 95u: goto tr270;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st235;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr270;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr270;
+		} else if ( (*p) >= 65u )
+			goto tr270;
+	} else
+		goto tr270;
 	goto st0;
 st235:
 	if ( ++p == pe )
 		goto _test_eof235;
 case 235:
-	switch( (*p) ) {
-		case 13u: goto st235;
-		case 32u: goto st235;
-		case 34u: goto st236;
-		case 39u: goto st237;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st235;
+	if ( (*p) == 85u )
+		goto st236;
 	goto st0;
 st236:
 	if ( ++p == pe )
 		goto _test_eof236;
 case 236:
-	if ( (*p) == 34u )
-		goto st190;
-	goto st236;
+	if ( (*p) == 66u )
+		goto st237;
+	goto st0;
 st237:
 	if ( ++p == pe )
 		goto _test_eof237;
 case 237:
-	if ( (*p) == 39u )
-		goto st190;
-	goto st237;
+	if ( (*p) == 76u )
+		goto st238;
+	goto st0;
 st238:
 	if ( ++p == pe )
 		goto _test_eof238;
 case 238:
-	switch( (*p) ) {
-		case 10u: goto st238;
-		case 13u: goto st238;
-		case 39u: goto st234;
-		case 61u: goto st238;
-		case 95u: goto st238;
-	}
-	if ( (*p) < 40u ) {
-		if ( (*p) > 33u ) {
-			if ( 35u <= (*p) && (*p) <= 37u )
-				goto st238;
-		} else if ( (*p) >= 32u )
-			goto st238;
-	} else if ( (*p) > 59u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st238;
-		} else if ( (*p) >= 63u )
-			goto st238;
-	} else
-		goto st238;
+	if ( (*p) == 73u )
+		goto st239;
 	goto st0;
 st239:
 	if ( ++p == pe )
 		goto _test_eof239;
 case 239:
-	if ( (*p) == 89u )
+	if ( (*p) == 67u )
 		goto st240;
 	goto st0;
 st240:
 	if ( ++p == pe )
 		goto _test_eof240;
 case 240:
-	if ( (*p) == 83u )
+	switch( (*p) ) {
+		case 13u: goto st241;
+		case 32u: goto st241;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st241;
 	goto st0;
 st241:
 	if ( ++p == pe )
 		goto _test_eof241;
 case 241:
-	if ( (*p) == 84u )
-		goto st242;
+	switch( (*p) ) {
+		case 13u: goto st241;
+		case 32u: goto st241;
+		case 34u: goto st242;
+		case 39u: goto st247;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st241;
 	goto st0;
 st242:
 	if ( ++p == pe )
 		goto _test_eof242;
 case 242:
-	if ( (*p) == 69u )
-		goto st243;
+	switch( (*p) ) {
+		case 10u: goto st242;
+		case 13u: goto st242;
+		case 34u: goto st243;
+		case 61u: goto st242;
+		case 95u: goto st242;
+	}
+	if ( (*p) < 39u ) {
+		if ( 32u <= (*p) && (*p) <= 37u )
+			goto st242;
+	} else if ( (*p) > 59u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st242;
+		} else if ( (*p) >= 63u )
+			goto st242;
+	} else
+		goto st242;
 	goto st0;
 st243:
 	if ( ++p == pe )
 		goto _test_eof243;
 case 243:
-	if ( (*p) == 77u )
-		goto st234;
+	switch( (*p) ) {
+		case 13u: goto st244;
+		case 32u: goto st244;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st244;
 	goto st0;
 st244:
 	if ( ++p == pe )
 		goto _test_eof244;
 case 244:
 	switch( (*p) ) {
-		case 13u: goto st245;
-		case 32u: goto st245;
-		case 95u: goto st244;
+		case 13u: goto st244;
+		case 32u: goto st244;
+		case 34u: goto st245;
+		case 39u: goto st246;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st244;
-		} else if ( (*p) >= 9u )
-			goto st245;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st244;
-		} else if ( (*p) >= 65u )
-			goto st244;
-	} else
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st244;
 	goto st0;
 st245:
 	if ( ++p == pe )
 		goto _test_eof245;
 case 245:
-	switch( (*p) ) {
-		case 13u: goto st245;
-		case 32u: goto st245;
-		case 34u: goto st210;
-		case 39u: goto st218;
-		case 80u: goto st246;
-		case 83u: goto st268;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st245;
-	goto st0;
+	if ( (*p) == 34u )
+		goto st197;
+	goto st245;
 st246:
 	if ( ++p == pe )
 		goto _test_eof246;
 case 246:
-	if ( (*p) == 85u )
-		goto st247;
-	goto st0;
+	if ( (*p) == 39u )
+		goto st197;
+	goto st246;
 st247:
 	if ( ++p == pe )
 		goto _test_eof247;
 case 247:
-	if ( (*p) == 66u )
-		goto st248;
+	switch( (*p) ) {
+		case 10u: goto st247;
+		case 13u: goto st247;
+		case 39u: goto st243;
+		case 61u: goto st247;
+		case 95u: goto st247;
+	}
+	if ( (*p) < 40u ) {
+		if ( (*p) > 33u ) {
+			if ( 35u <= (*p) && (*p) <= 37u )
+				goto st247;
+		} else if ( (*p) >= 32u )
+			goto st247;
+	} else if ( (*p) > 59u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st247;
+		} else if ( (*p) >= 63u )
+			goto st247;
+	} else
+		goto st247;
 	goto st0;
 st248:
 	if ( ++p == pe )
 		goto _test_eof248;
 case 248:
-	if ( (*p) == 76u )
+	if ( (*p) == 89u )
 		goto st249;
 	goto st0;
 st249:
 	if ( ++p == pe )
 		goto _test_eof249;
 case 249:
-	if ( (*p) == 73u )
+	if ( (*p) == 83u )
 		goto st250;
 	goto st0;
 st250:
 	if ( ++p == pe )
 		goto _test_eof250;
 case 250:
-	if ( (*p) == 67u )
+	if ( (*p) == 84u )
 		goto st251;
 	goto st0;
 st251:
 	if ( ++p == pe )
 		goto _test_eof251;
 case 251:
-	switch( (*p) ) {
-		case 13u: goto st252;
-		case 32u: goto st252;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 69u )
 		goto st252;
 	goto st0;
 st252:
 	if ( ++p == pe )
 		goto _test_eof252;
 case 252:
-	switch( (*p) ) {
-		case 13u: goto st252;
-		case 32u: goto st252;
-		case 34u: goto st253;
-		case 39u: goto st267;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st252;
+	if ( (*p) == 77u )
+		goto st243;
 	goto st0;
+tr247:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st253;
 st253:
 	if ( ++p == pe )
 		goto _test_eof253;
 case 253:
+#line 3810 "src/xml.cpp"
 	switch( (*p) ) {
-		case 10u: goto st253;
-		case 13u: goto st253;
-		case 34u: goto st254;
-		case 61u: goto st253;
-		case 95u: goto st253;
+		case 13u: goto st254;
+		case 32u: goto st254;
+		case 95u: goto tr247;
 	}
-	if ( (*p) < 39u ) {
-		if ( 32u <= (*p) && (*p) <= 37u )
-			goto st253;
-	} else if ( (*p) > 59u ) {
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr247;
+		} else if ( (*p) >= 9u )
+			goto st254;
+	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st253;
-		} else if ( (*p) >= 63u )
-			goto st253;
+				goto tr247;
+		} else if ( (*p) >= 65u )
+			goto tr247;
 	} else
-		goto st253;
+		goto tr247;
 	goto st0;
 st254:
 	if ( ++p == pe )
 		goto _test_eof254;
 case 254:
 	switch( (*p) ) {
-		case 13u: goto st255;
-		case 32u: goto st255;
+		case 13u: goto st254;
+		case 32u: goto st254;
+		case 34u: goto st217;
+		case 39u: goto st226;
+		case 80u: goto st255;
+		case 83u: goto st277;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st255;
+		goto st254;
 	goto st0;
 st255:
 	if ( ++p == pe )
 		goto _test_eof255;
 case 255:
-	switch( (*p) ) {
-		case 13u: goto st255;
-		case 32u: goto st255;
-		case 34u: goto st256;
-		case 39u: goto st266;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st255;
+	if ( (*p) == 85u )
+		goto st256;
 	goto st0;
 st256:
 	if ( ++p == pe )
 		goto _test_eof256;
 case 256:
-	if ( (*p) == 34u )
+	if ( (*p) == 66u )
 		goto st257;
-	goto st256;
+	goto st0;
 st257:
 	if ( ++p == pe )
 		goto _test_eof257;
 case 257:
-	switch( (*p) ) {
-		case 13u: goto st258;
-		case 32u: goto st258;
-		case 62u: goto st78;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 76u )
 		goto st258;
 	goto st0;
 st258:
 	if ( ++p == pe )
 		goto _test_eof258;
 case 258:
-	switch( (*p) ) {
-		case 13u: goto st258;
-		case 32u: goto st258;
-		case 62u: goto st78;
-		case 78u: goto st259;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st258;
+	if ( (*p) == 73u )
+		goto st259;
 	goto st0;
 st259:
 	if ( ++p == pe )
 		goto _test_eof259;
 case 259:
-	if ( (*p) == 68u )
+	if ( (*p) == 67u )
 		goto st260;
 	goto st0;
 st260:
 	if ( ++p == pe )
 		goto _test_eof260;
 case 260:
-	if ( (*p) == 65u )
+	switch( (*p) ) {
+		case 13u: goto st261;
+		case 32u: goto st261;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st261;
 	goto st0;
 st261:
 	if ( ++p == pe )
 		goto _test_eof261;
 case 261:
-	if ( (*p) == 84u )
-		goto st262;
+	switch( (*p) ) {
+		case 13u: goto st261;
+		case 32u: goto st261;
+		case 34u: goto st262;
+		case 39u: goto st276;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st261;
 	goto st0;
 st262:
 	if ( ++p == pe )
 		goto _test_eof262;
 case 262:
-	if ( (*p) == 65u )
-		goto st263;
+	switch( (*p) ) {
+		case 10u: goto st262;
+		case 13u: goto st262;
+		case 34u: goto st263;
+		case 61u: goto st262;
+		case 95u: goto st262;
+	}
+	if ( (*p) < 39u ) {
+		if ( 32u <= (*p) && (*p) <= 37u )
+			goto st262;
+	} else if ( (*p) > 59u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st262;
+		} else if ( (*p) >= 63u )
+			goto st262;
+	} else
+		goto st262;
 	goto st0;
 st263:
 	if ( ++p == pe )
@@ -3620,88 +3942,56 @@ case 264:
 	switch( (*p) ) {
 		case 13u: goto st264;
 		case 32u: goto st264;
-		case 58u: goto st265;
-		case 95u: goto st265;
+		case 34u: goto st265;
+		case 39u: goto st275;
 	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st264;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st265;
-	} else
-		goto st265;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st264;
 	goto st0;
 st265:
 	if ( ++p == pe )
 		goto _test_eof265;
 case 265:
-	switch( (*p) ) {
-		case 13u: goto st190;
-		case 32u: goto st190;
-		case 62u: goto st78;
-		case 95u: goto st265;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st265;
-		} else if ( (*p) >= 9u )
-			goto st190;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st265;
-		} else if ( (*p) >= 65u )
-			goto st265;
-	} else
-		goto st265;
-	goto st0;
+	if ( (*p) == 34u )
+		goto st266;
+	goto st265;
 st266:
 	if ( ++p == pe )
 		goto _test_eof266;
 case 266:
-	if ( (*p) == 39u )
-		goto st257;
-	goto st266;
+	switch( (*p) ) {
+		case 13u: goto st267;
+		case 32u: goto st267;
+		case 62u: goto st84;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st267;
+	goto st0;
 st267:
 	if ( ++p == pe )
 		goto _test_eof267;
 case 267:
 	switch( (*p) ) {
-		case 10u: goto st267;
 		case 13u: goto st267;
-		case 39u: goto st254;
-		case 61u: goto st267;
-		case 95u: goto st267;
+		case 32u: goto st267;
+		case 62u: goto st84;
+		case 78u: goto st268;
 	}
-	if ( (*p) < 40u ) {
-		if ( (*p) > 33u ) {
-			if ( 35u <= (*p) && (*p) <= 37u )
-				goto st267;
-		} else if ( (*p) >= 32u )
-			goto st267;
-	} else if ( (*p) > 59u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st267;
-		} else if ( (*p) >= 63u )
-			goto st267;
-	} else
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st267;
 	goto st0;
 st268:
 	if ( ++p == pe )
 		goto _test_eof268;
 case 268:
-	if ( (*p) == 89u )
+	if ( (*p) == 68u )
 		goto st269;
 	goto st0;
 st269:
 	if ( ++p == pe )
 		goto _test_eof269;
 case 269:
-	if ( (*p) == 83u )
+	if ( (*p) == 65u )
 		goto st270;
 	goto st0;
 st270:
@@ -3715,165 +4005,184 @@ st271:
 	if ( ++p == pe )
 		goto _test_eof271;
 case 271:
-	if ( (*p) == 69u )
+	if ( (*p) == 65u )
 		goto st272;
 	goto st0;
 st272:
 	if ( ++p == pe )
 		goto _test_eof272;
 case 272:
-	if ( (*p) == 77u )
-		goto st254;
+	switch( (*p) ) {
+		case 13u: goto st273;
+		case 32u: goto st273;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st273;
 	goto st0;
 st273:
 	if ( ++p == pe )
 		goto _test_eof273;
 case 273:
-	if ( (*p) == 79u )
-		goto st274;
+	switch( (*p) ) {
+		case 13u: goto st273;
+		case 32u: goto st273;
+		case 58u: goto tr316;
+		case 95u: goto tr316;
+	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st273;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr316;
+	} else
+		goto tr316;
 	goto st0;
+tr316:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st274;
 st274:
 	if ( ++p == pe )
 		goto _test_eof274;
 case 274:
-	if ( (*p) == 84u )
-		goto st275;
+#line 4050 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st197;
+		case 32u: goto st197;
+		case 62u: goto st84;
+		case 95u: goto tr316;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr316;
+		} else if ( (*p) >= 9u )
+			goto st197;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr316;
+		} else if ( (*p) >= 65u )
+			goto tr316;
+	} else
+		goto tr316;
 	goto st0;
 st275:
 	if ( ++p == pe )
 		goto _test_eof275;
 case 275:
-	if ( (*p) == 65u )
-		goto st276;
-	goto st0;
+	if ( (*p) == 39u )
+		goto st266;
+	goto st275;
 st276:
 	if ( ++p == pe )
 		goto _test_eof276;
 case 276:
-	if ( (*p) == 84u )
-		goto st277;
+	switch( (*p) ) {
+		case 10u: goto st276;
+		case 13u: goto st276;
+		case 39u: goto st263;
+		case 61u: goto st276;
+		case 95u: goto st276;
+	}
+	if ( (*p) < 40u ) {
+		if ( (*p) > 33u ) {
+			if ( 35u <= (*p) && (*p) <= 37u )
+				goto st276;
+		} else if ( (*p) >= 32u )
+			goto st276;
+	} else if ( (*p) > 59u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st276;
+		} else if ( (*p) >= 63u )
+			goto st276;
+	} else
+		goto st276;
 	goto st0;
 st277:
 	if ( ++p == pe )
 		goto _test_eof277;
 case 277:
-	if ( (*p) == 73u )
+	if ( (*p) == 89u )
 		goto st278;
 	goto st0;
 st278:
 	if ( ++p == pe )
 		goto _test_eof278;
 case 278:
-	if ( (*p) == 79u )
+	if ( (*p) == 83u )
 		goto st279;
 	goto st0;
 st279:
 	if ( ++p == pe )
 		goto _test_eof279;
 case 279:
-	if ( (*p) == 78u )
+	if ( (*p) == 84u )
 		goto st280;
 	goto st0;
 st280:
 	if ( ++p == pe )
 		goto _test_eof280;
 case 280:
-	switch( (*p) ) {
-		case 13u: goto st281;
-		case 32u: goto st281;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 69u )
 		goto st281;
 	goto st0;
 st281:
 	if ( ++p == pe )
 		goto _test_eof281;
 case 281:
-	switch( (*p) ) {
-		case 13u: goto st281;
-		case 32u: goto st281;
-		case 58u: goto st282;
-		case 95u: goto st282;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st281;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st282;
-	} else
-		goto st282;
+	if ( (*p) == 77u )
+		goto st263;
 	goto st0;
 st282:
 	if ( ++p == pe )
 		goto _test_eof282;
 case 282:
-	switch( (*p) ) {
-		case 13u: goto st283;
-		case 32u: goto st283;
-		case 95u: goto st282;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st282;
-		} else if ( (*p) >= 9u )
-			goto st283;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st282;
-		} else if ( (*p) >= 65u )
-			goto st282;
-	} else
-		goto st282;
+	if ( (*p) == 79u )
+		goto st283;
 	goto st0;
 st283:
 	if ( ++p == pe )
 		goto _test_eof283;
 case 283:
-	switch( (*p) ) {
-		case 13u: goto st283;
-		case 32u: goto st283;
-		case 80u: goto st284;
-		case 83u: goto st239;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st283;
+	if ( (*p) == 84u )
+		goto st284;
 	goto st0;
 st284:
 	if ( ++p == pe )
 		goto _test_eof284;
 case 284:
-	if ( (*p) == 85u )
+	if ( (*p) == 65u )
 		goto st285;
 	goto st0;
 st285:
 	if ( ++p == pe )
 		goto _test_eof285;
 case 285:
-	if ( (*p) == 66u )
+	if ( (*p) == 84u )
 		goto st286;
 	goto st0;
 st286:
 	if ( ++p == pe )
 		goto _test_eof286;
 case 286:
-	if ( (*p) == 76u )
+	if ( (*p) == 73u )
 		goto st287;
 	goto st0;
 st287:
 	if ( ++p == pe )
 		goto _test_eof287;
 case 287:
-	if ( (*p) == 73u )
+	if ( (*p) == 79u )
 		goto st288;
 	goto st0;
 st288:
 	if ( ++p == pe )
 		goto _test_eof288;
 case 288:
-	if ( (*p) == 67u )
+	if ( (*p) == 78u )
 		goto st289;
 	goto st0;
 st289:
@@ -3894,215 +4203,153 @@ case 290:
 	switch( (*p) ) {
 		case 13u: goto st290;
 		case 32u: goto st290;
-		case 34u: goto st291;
-		case 39u: goto st294;
+		case 58u: goto tr329;
+		case 95u: goto tr329;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st290;
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st290;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr329;
+	} else
+		goto tr329;
 	goto st0;
+tr329:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st291;
 st291:
 	if ( ++p == pe )
 		goto _test_eof291;
 case 291:
+#line 4227 "src/xml.cpp"
 	switch( (*p) ) {
-		case 10u: goto st291;
-		case 13u: goto st291;
-		case 34u: goto st292;
-		case 61u: goto st291;
-		case 95u: goto st291;
+		case 13u: goto st292;
+		case 32u: goto st292;
+		case 95u: goto tr329;
 	}
-	if ( (*p) < 39u ) {
-		if ( 32u <= (*p) && (*p) <= 37u )
-			goto st291;
-	} else if ( (*p) > 59u ) {
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr329;
+		} else if ( (*p) >= 9u )
+			goto st292;
+	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st291;
-		} else if ( (*p) >= 63u )
-			goto st291;
+				goto tr329;
+		} else if ( (*p) >= 65u )
+			goto tr329;
 	} else
-		goto st291;
+		goto tr329;
 	goto st0;
 st292:
 	if ( ++p == pe )
 		goto _test_eof292;
 case 292:
 	switch( (*p) ) {
-		case 13u: goto st293;
-		case 32u: goto st293;
-		case 62u: goto st78;
+		case 13u: goto st292;
+		case 32u: goto st292;
+		case 80u: goto st293;
+		case 83u: goto st248;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st293;
+		goto st292;
 	goto st0;
 st293:
 	if ( ++p == pe )
 		goto _test_eof293;
 case 293:
-	switch( (*p) ) {
-		case 13u: goto st293;
-		case 32u: goto st293;
-		case 34u: goto st236;
-		case 39u: goto st237;
-		case 62u: goto st78;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st293;
+	if ( (*p) == 85u )
+		goto st294;
 	goto st0;
 st294:
 	if ( ++p == pe )
 		goto _test_eof294;
 case 294:
-	switch( (*p) ) {
-		case 10u: goto st294;
-		case 13u: goto st294;
-		case 39u: goto st292;
-		case 61u: goto st294;
-		case 95u: goto st294;
-	}
-	if ( (*p) < 40u ) {
-		if ( (*p) > 33u ) {
-			if ( 35u <= (*p) && (*p) <= 37u )
-				goto st294;
-		} else if ( (*p) >= 32u )
-			goto st294;
-	} else if ( (*p) > 59u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st294;
-		} else if ( (*p) >= 63u )
-			goto st294;
-	} else
-		goto st294;
+	if ( (*p) == 66u )
+		goto st295;
 	goto st0;
 st295:
 	if ( ++p == pe )
 		goto _test_eof295;
 case 295:
-	switch( (*p) ) {
-		case 58u: goto st296;
-		case 88u: goto st299;
-		case 95u: goto st296;
-		case 120u: goto st299;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st296;
-	} else if ( (*p) >= 65u )
+	if ( (*p) == 76u )
 		goto st296;
 	goto st0;
 st296:
 	if ( ++p == pe )
 		goto _test_eof296;
 case 296:
-	switch( (*p) ) {
-		case 13u: goto st297;
-		case 32u: goto st297;
-		case 63u: goto st86;
-		case 95u: goto st296;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st296;
-		} else if ( (*p) >= 9u )
-			goto st297;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st296;
-		} else if ( (*p) >= 65u )
-			goto st296;
-	} else
-		goto st296;
+	if ( (*p) == 73u )
+		goto st297;
 	goto st0;
 st297:
 	if ( ++p == pe )
 		goto _test_eof297;
 case 297:
-	if ( (*p) == 63u )
+	if ( (*p) == 67u )
 		goto st298;
-	goto st297;
+	goto st0;
 st298:
 	if ( ++p == pe )
 		goto _test_eof298;
 case 298:
 	switch( (*p) ) {
-		case 62u: goto st78;
-		case 63u: goto st298;
+		case 13u: goto st299;
+		case 32u: goto st299;
 	}
-	goto st297;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st299;
+	goto st0;
 st299:
 	if ( ++p == pe )
 		goto _test_eof299;
 case 299:
 	switch( (*p) ) {
-		case 13u: goto st297;
-		case 32u: goto st297;
-		case 63u: goto st86;
-		case 77u: goto st300;
-		case 95u: goto st296;
-		case 109u: goto st300;
+		case 13u: goto st299;
+		case 32u: goto st299;
+		case 34u: goto st300;
+		case 39u: goto st303;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st296;
-		} else if ( (*p) >= 9u )
-			goto st297;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st296;
-		} else if ( (*p) >= 65u )
-			goto st296;
-	} else
-		goto st296;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st299;
 	goto st0;
 st300:
 	if ( ++p == pe )
 		goto _test_eof300;
 case 300:
 	switch( (*p) ) {
-		case 13u: goto st297;
-		case 32u: goto st297;
-		case 63u: goto st86;
-		case 76u: goto st301;
-		case 95u: goto st296;
-		case 108u: goto st301;
+		case 10u: goto st300;
+		case 13u: goto st300;
+		case 34u: goto st301;
+		case 61u: goto st300;
+		case 95u: goto st300;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st296;
-		} else if ( (*p) >= 9u )
-			goto st297;
-	} else if ( (*p) > 58u ) {
+	if ( (*p) < 39u ) {
+		if ( 32u <= (*p) && (*p) <= 37u )
+			goto st300;
+	} else if ( (*p) > 59u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st296;
-		} else if ( (*p) >= 65u )
-			goto st296;
+				goto st300;
+		} else if ( (*p) >= 63u )
+			goto st300;
 	} else
-		goto st296;
+		goto st300;
 	goto st0;
 st301:
 	if ( ++p == pe )
 		goto _test_eof301;
 case 301:
-	if ( (*p) == 95u )
-		goto st296;
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st296;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st296;
-		} else if ( (*p) >= 65u )
-			goto st296;
-	} else
-		goto st296;
+	switch( (*p) ) {
+		case 13u: goto st302;
+		case 32u: goto st302;
+		case 62u: goto st84;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st302;
 	goto st0;
 st302:
 	if ( ++p == pe )
@@ -4111,7 +4358,9 @@ case 302:
 	switch( (*p) ) {
 		case 13u: goto st302;
 		case 32u: goto st302;
-		case 62u: goto st19;
+		case 34u: goto st245;
+		case 39u: goto st246;
+		case 62u: goto st84;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st302;
@@ -4120,655 +4369,813 @@ st303:
 	if ( ++p == pe )
 		goto _test_eof303;
 case 303:
-	if ( (*p) == 39u )
-		goto st77;
-	goto st303;
+	switch( (*p) ) {
+		case 10u: goto st303;
+		case 13u: goto st303;
+		case 39u: goto st301;
+		case 61u: goto st303;
+		case 95u: goto st303;
+	}
+	if ( (*p) < 40u ) {
+		if ( (*p) > 33u ) {
+			if ( 35u <= (*p) && (*p) <= 37u )
+				goto st303;
+		} else if ( (*p) >= 32u )
+			goto st303;
+	} else if ( (*p) > 59u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st303;
+		} else if ( (*p) >= 63u )
+			goto st303;
+	} else
+		goto st303;
+	goto st0;
 st304:
 	if ( ++p == pe )
 		goto _test_eof304;
 case 304:
 	switch( (*p) ) {
-		case 10u: goto st304;
-		case 13u: goto st304;
-		case 39u: goto st74;
-		case 61u: goto st304;
-		case 95u: goto st304;
+		case 58u: goto tr342;
+		case 88u: goto tr343;
+		case 95u: goto tr342;
+		case 120u: goto tr343;
 	}
-	if ( (*p) < 40u ) {
-		if ( (*p) > 33u ) {
-			if ( 35u <= (*p) && (*p) <= 37u )
-				goto st304;
-		} else if ( (*p) >= 32u )
-			goto st304;
-	} else if ( (*p) > 59u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st304;
-		} else if ( (*p) >= 63u )
-			goto st304;
-	} else
-		goto st304;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr342;
+	} else if ( (*p) >= 65u )
+		goto tr342;
 	goto st0;
+tr342:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st305;
 st305:
 	if ( ++p == pe )
 		goto _test_eof305;
 case 305:
-	if ( (*p) == 89u )
-		goto st306;
-	goto st0;
-st306:
-	if ( ++p == pe )
-		goto _test_eof306;
-case 306:
-	if ( (*p) == 83u )
-		goto st307;
-	goto st0;
-st307:
-	if ( ++p == pe )
-		goto _test_eof307;
-case 307:
-	if ( (*p) == 84u )
-		goto st308;
-	goto st0;
-st308:
-	if ( ++p == pe )
-		goto _test_eof308;
-case 308:
-	if ( (*p) == 69u )
-		goto st309;
-	goto st0;
-st309:
-	if ( ++p == pe )
-		goto _test_eof309;
-case 309:
-	if ( (*p) == 77u )
-		goto st74;
-	goto st0;
-st310:
-	if ( ++p == pe )
-		goto _test_eof310;
-case 310:
+#line 4419 "src/xml.cpp"
 	switch( (*p) ) {
-		case 58u: goto st311;
-		case 88u: goto st314;
-		case 95u: goto st311;
-		case 120u: goto st314;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st311;
-	} else if ( (*p) >= 65u )
-		goto st311;
-	goto st0;
-st311:
-	if ( ++p == pe )
-		goto _test_eof311;
-case 311:
-	switch( (*p) ) {
-		case 13u: goto st312;
-		case 32u: goto st312;
-		case 63u: goto st8;
-		case 95u: goto st311;
+		case 13u: goto tr344;
+		case 32u: goto tr344;
+		case 63u: goto st308;
+		case 95u: goto tr342;
 	}
 	if ( (*p) < 48u ) {
 		if ( (*p) > 10u ) {
 			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st311;
+				goto tr342;
 		} else if ( (*p) >= 9u )
-			goto st312;
+			goto tr344;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
+				goto tr342;
 		} else if ( (*p) >= 65u )
-			goto st311;
+			goto tr342;
 	} else
-		goto st311;
+		goto tr342;
+	goto st0;
+tr344:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st306;
+st306:
+	if ( ++p == pe )
+		goto _test_eof306;
+case 306:
+#line 4449 "src/xml.cpp"
+	if ( (*p) == 63u )
+		goto tr346;
+	goto tr344;
+tr346:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st307;
+st307:
+	if ( ++p == pe )
+		goto _test_eof307;
+case 307:
+#line 4461 "src/xml.cpp"
+	switch( (*p) ) {
+		case 62u: goto tr347;
+		case 63u: goto tr346;
+	}
+	goto tr344;
+st308:
+	if ( ++p == pe )
+		goto _test_eof308;
+case 308:
+	if ( (*p) == 62u )
+		goto tr347;
+	goto st0;
+tr343:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st309;
+st309:
+	if ( ++p == pe )
+		goto _test_eof309;
+case 309:
+#line 4482 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr344;
+		case 32u: goto tr344;
+		case 63u: goto st308;
+		case 77u: goto tr348;
+		case 95u: goto tr342;
+		case 109u: goto tr348;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr342;
+		} else if ( (*p) >= 9u )
+			goto tr344;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr342;
+		} else if ( (*p) >= 65u )
+			goto tr342;
+	} else
+		goto tr342;
+	goto st0;
+tr348:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st310;
+st310:
+	if ( ++p == pe )
+		goto _test_eof310;
+case 310:
+#line 4514 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr344;
+		case 32u: goto tr344;
+		case 63u: goto st308;
+		case 76u: goto tr349;
+		case 95u: goto tr342;
+		case 108u: goto tr349;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr342;
+		} else if ( (*p) >= 9u )
+			goto tr344;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr342;
+		} else if ( (*p) >= 65u )
+			goto tr342;
+	} else
+		goto tr342;
+	goto st0;
+tr349:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st311;
+st311:
+	if ( ++p == pe )
+		goto _test_eof311;
+case 311:
+#line 4546 "src/xml.cpp"
+	if ( (*p) == 95u )
+		goto tr342;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr342;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr342;
+		} else if ( (*p) >= 65u )
+			goto tr342;
+	} else
+		goto tr342;
 	goto st0;
 st312:
 	if ( ++p == pe )
 		goto _test_eof312;
 case 312:
-	if ( (*p) == 63u )
-		goto st313;
-	goto st312;
+	switch( (*p) ) {
+		case 13u: goto st312;
+		case 32u: goto st312;
+		case 62u: goto st20;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st312;
+	goto st0;
 st313:
 	if ( ++p == pe )
 		goto _test_eof313;
 case 313:
-	switch( (*p) ) {
-		case 62u: goto st2;
-		case 63u: goto st313;
-	}
-	goto st312;
+	if ( (*p) == 39u )
+		goto st83;
+	goto st313;
 st314:
 	if ( ++p == pe )
 		goto _test_eof314;
 case 314:
 	switch( (*p) ) {
-		case 13u: goto st312;
-		case 32u: goto st312;
-		case 63u: goto st8;
-		case 77u: goto st315;
-		case 95u: goto st311;
-		case 109u: goto st315;
+		case 10u: goto st314;
+		case 13u: goto st314;
+		case 39u: goto st80;
+		case 61u: goto st314;
+		case 95u: goto st314;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st311;
-		} else if ( (*p) >= 9u )
-			goto st312;
-	} else if ( (*p) > 58u ) {
+	if ( (*p) < 40u ) {
+		if ( (*p) > 33u ) {
+			if ( 35u <= (*p) && (*p) <= 37u )
+				goto st314;
+		} else if ( (*p) >= 32u )
+			goto st314;
+	} else if ( (*p) > 59u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
-		} else if ( (*p) >= 65u )
-			goto st311;
+				goto st314;
+		} else if ( (*p) >= 63u )
+			goto st314;
 	} else
-		goto st311;
+		goto st314;
 	goto st0;
 st315:
 	if ( ++p == pe )
 		goto _test_eof315;
 case 315:
-	switch( (*p) ) {
-		case 13u: goto st312;
-		case 32u: goto st312;
-		case 63u: goto st8;
-		case 76u: goto st316;
-		case 95u: goto st311;
-		case 108u: goto st316;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st311;
-		} else if ( (*p) >= 9u )
-			goto st312;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
-		} else if ( (*p) >= 65u )
-			goto st311;
-	} else
-		goto st311;
+	if ( (*p) == 89u )
+		goto st316;
 	goto st0;
 st316:
 	if ( ++p == pe )
 		goto _test_eof316;
 case 316:
-	if ( (*p) == 95u )
-		goto st311;
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st311;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
-		} else if ( (*p) >= 65u )
-			goto st311;
-	} else
-		goto st311;
+	if ( (*p) == 83u )
+		goto st317;
 	goto st0;
 st317:
 	if ( ++p == pe )
 		goto _test_eof317;
 case 317:
-	switch( (*p) ) {
-		case 33u: goto st4;
-		case 58u: goto st26;
-		case 63u: goto st318;
-		case 95u: goto st26;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st26;
-	} else if ( (*p) >= 65u )
-		goto st26;
+	if ( (*p) == 84u )
+		goto st318;
 	goto st0;
 st318:
 	if ( ++p == pe )
 		goto _test_eof318;
 case 318:
-	switch( (*p) ) {
-		case 58u: goto st311;
-		case 88u: goto st314;
-		case 95u: goto st311;
-		case 120u: goto st319;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st311;
-	} else if ( (*p) >= 65u )
-		goto st311;
+	if ( (*p) == 69u )
+		goto st319;
 	goto st0;
 st319:
 	if ( ++p == pe )
 		goto _test_eof319;
 case 319:
-	switch( (*p) ) {
-		case 13u: goto st312;
-		case 32u: goto st312;
-		case 63u: goto st8;
-		case 77u: goto st315;
-		case 95u: goto st311;
-		case 109u: goto st320;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st311;
-		} else if ( (*p) >= 9u )
-			goto st312;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
-		} else if ( (*p) >= 65u )
-			goto st311;
-	} else
-		goto st311;
+	if ( (*p) == 77u )
+		goto st80;
 	goto st0;
 st320:
 	if ( ++p == pe )
 		goto _test_eof320;
 case 320:
 	switch( (*p) ) {
-		case 13u: goto st312;
-		case 32u: goto st312;
-		case 63u: goto st8;
-		case 76u: goto st316;
-		case 95u: goto st311;
-		case 108u: goto st321;
+		case 58u: goto tr354;
+		case 88u: goto tr355;
+		case 95u: goto tr354;
+		case 120u: goto tr355;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st311;
-		} else if ( (*p) >= 9u )
-			goto st312;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
-		} else if ( (*p) >= 65u )
-			goto st311;
-	} else
-		goto st311;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr354;
+	} else if ( (*p) >= 65u )
+		goto tr354;
 	goto st0;
+tr354:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st321;
 st321:
 	if ( ++p == pe )
 		goto _test_eof321;
 case 321:
+#line 4665 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st322;
-		case 32u: goto st322;
-		case 95u: goto st311;
+		case 13u: goto tr356;
+		case 32u: goto tr356;
+		case 63u: goto st324;
+		case 95u: goto tr354;
 	}
 	if ( (*p) < 48u ) {
 		if ( (*p) > 10u ) {
 			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st311;
+				goto tr354;
 		} else if ( (*p) >= 9u )
-			goto st322;
+			goto tr356;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st311;
+				goto tr354;
 		} else if ( (*p) >= 65u )
-			goto st311;
+			goto tr354;
 	} else
-		goto st311;
+		goto tr354;
 	goto st0;
+tr356:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st322;
 st322:
 	if ( ++p == pe )
 		goto _test_eof322;
 case 322:
-	switch( (*p) ) {
-		case 13u: goto st322;
-		case 32u: goto st322;
-		case 118u: goto st323;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st322;
-	goto st0;
+#line 4695 "src/xml.cpp"
+	if ( (*p) == 63u )
+		goto tr358;
+	goto tr356;
+tr358:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st323;
 st323:
 	if ( ++p == pe )
 		goto _test_eof323;
 case 323:
-	if ( (*p) == 101u )
-		goto st324;
-	goto st0;
+#line 4707 "src/xml.cpp"
+	switch( (*p) ) {
+		case 62u: goto tr359;
+		case 63u: goto tr358;
+	}
+	goto tr356;
 st324:
 	if ( ++p == pe )
 		goto _test_eof324;
 case 324:
-	if ( (*p) == 114u )
-		goto st325;
+	if ( (*p) == 62u )
+		goto tr359;
 	goto st0;
+tr355:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st325;
 st325:
 	if ( ++p == pe )
 		goto _test_eof325;
 case 325:
-	if ( (*p) == 115u )
-		goto st326;
+#line 4728 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr356;
+		case 32u: goto tr356;
+		case 63u: goto st324;
+		case 77u: goto tr360;
+		case 95u: goto tr354;
+		case 109u: goto tr360;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr354;
+		} else if ( (*p) >= 9u )
+			goto tr356;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr354;
+		} else if ( (*p) >= 65u )
+			goto tr354;
+	} else
+		goto tr354;
 	goto st0;
+tr360:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st326;
 st326:
 	if ( ++p == pe )
 		goto _test_eof326;
 case 326:
-	if ( (*p) == 105u )
-		goto st327;
+#line 4760 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr356;
+		case 32u: goto tr356;
+		case 63u: goto st324;
+		case 76u: goto tr361;
+		case 95u: goto tr354;
+		case 108u: goto tr361;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr354;
+		} else if ( (*p) >= 9u )
+			goto tr356;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr354;
+		} else if ( (*p) >= 65u )
+			goto tr354;
+	} else
+		goto tr354;
 	goto st0;
+tr361:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st327;
 st327:
 	if ( ++p == pe )
 		goto _test_eof327;
 case 327:
-	if ( (*p) == 111u )
-		goto st328;
+#line 4792 "src/xml.cpp"
+	if ( (*p) == 95u )
+		goto tr354;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr354;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr354;
+		} else if ( (*p) >= 65u )
+			goto tr354;
+	} else
+		goto tr354;
 	goto st0;
 st328:
 	if ( ++p == pe )
 		goto _test_eof328;
 case 328:
-	if ( (*p) == 110u )
-		goto st329;
+	switch( (*p) ) {
+		case 33u: goto st4;
+		case 58u: goto tr5;
+		case 63u: goto st329;
+		case 95u: goto tr5;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr5;
+	} else if ( (*p) >= 65u )
+		goto tr5;
 	goto st0;
 st329:
 	if ( ++p == pe )
 		goto _test_eof329;
 case 329:
 	switch( (*p) ) {
-		case 13u: goto st329;
-		case 32u: goto st329;
-		case 61u: goto st330;
+		case 58u: goto tr354;
+		case 88u: goto tr355;
+		case 95u: goto tr354;
+		case 120u: goto tr363;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st329;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr354;
+	} else if ( (*p) >= 65u )
+		goto tr354;
 	goto st0;
+tr363:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st330;
 st330:
 	if ( ++p == pe )
 		goto _test_eof330;
 case 330:
+#line 4847 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st330;
-		case 32u: goto st330;
-		case 34u: goto st331;
-		case 39u: goto st374;
+		case 13u: goto tr356;
+		case 32u: goto tr356;
+		case 63u: goto st324;
+		case 77u: goto tr360;
+		case 95u: goto tr354;
+		case 109u: goto tr364;
 	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st330;
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr354;
+		} else if ( (*p) >= 9u )
+			goto tr356;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr354;
+		} else if ( (*p) >= 65u )
+			goto tr354;
+	} else
+		goto tr354;
 	goto st0;
+tr364:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st331;
 st331:
 	if ( ++p == pe )
 		goto _test_eof331;
 case 331:
-	if ( (*p) == 49u )
-		goto st332;
+#line 4879 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr356;
+		case 32u: goto tr356;
+		case 63u: goto st324;
+		case 76u: goto tr361;
+		case 95u: goto tr354;
+		case 108u: goto tr365;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr354;
+		} else if ( (*p) >= 9u )
+			goto tr356;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr354;
+		} else if ( (*p) >= 65u )
+			goto tr354;
+	} else
+		goto tr354;
 	goto st0;
+tr365:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st332;
 st332:
 	if ( ++p == pe )
 		goto _test_eof332;
 case 332:
-	if ( (*p) == 46u )
-		goto st333;
+#line 4911 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st333;
+		case 32u: goto st333;
+		case 95u: goto tr354;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr354;
+		} else if ( (*p) >= 9u )
+			goto st333;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr354;
+		} else if ( (*p) >= 65u )
+			goto tr354;
+	} else
+		goto tr354;
 	goto st0;
 st333:
 	if ( ++p == pe )
 		goto _test_eof333;
 case 333:
-	if ( (*p) == 48u )
-		goto st334;
+	switch( (*p) ) {
+		case 13u: goto st333;
+		case 32u: goto st333;
+		case 118u: goto st334;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st333;
 	goto st0;
 st334:
 	if ( ++p == pe )
 		goto _test_eof334;
 case 334:
-	if ( (*p) == 34u )
+	if ( (*p) == 101u )
 		goto st335;
 	goto st0;
 st335:
 	if ( ++p == pe )
 		goto _test_eof335;
 case 335:
-	switch( (*p) ) {
-		case 13u: goto st336;
-		case 32u: goto st336;
-		case 63u: goto st8;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 114u )
 		goto st336;
 	goto st0;
 st336:
 	if ( ++p == pe )
 		goto _test_eof336;
 case 336:
-	switch( (*p) ) {
-		case 13u: goto st336;
-		case 32u: goto st336;
-		case 63u: goto st8;
-		case 101u: goto st337;
-		case 115u: goto st350;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st336;
+	if ( (*p) == 115u )
+		goto st337;
 	goto st0;
 st337:
 	if ( ++p == pe )
 		goto _test_eof337;
 case 337:
-	if ( (*p) == 110u )
+	if ( (*p) == 105u )
 		goto st338;
 	goto st0;
 st338:
 	if ( ++p == pe )
 		goto _test_eof338;
 case 338:
-	if ( (*p) == 99u )
+	if ( (*p) == 111u )
 		goto st339;
 	goto st0;
 st339:
 	if ( ++p == pe )
 		goto _test_eof339;
 case 339:
-	if ( (*p) == 111u )
+	if ( (*p) == 110u )
 		goto st340;
 	goto st0;
 st340:
 	if ( ++p == pe )
 		goto _test_eof340;
 case 340:
-	if ( (*p) == 100u )
-		goto st341;
+	switch( (*p) ) {
+		case 13u: goto st340;
+		case 32u: goto st340;
+		case 61u: goto st341;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st340;
 	goto st0;
 st341:
 	if ( ++p == pe )
 		goto _test_eof341;
 case 341:
-	if ( (*p) == 105u )
-		goto st342;
+	switch( (*p) ) {
+		case 13u: goto st341;
+		case 32u: goto st341;
+		case 34u: goto st342;
+		case 39u: goto st385;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st341;
 	goto st0;
 st342:
 	if ( ++p == pe )
 		goto _test_eof342;
 case 342:
-	if ( (*p) == 110u )
+	if ( (*p) == 49u )
 		goto st343;
 	goto st0;
 st343:
 	if ( ++p == pe )
 		goto _test_eof343;
 case 343:
-	if ( (*p) == 103u )
+	if ( (*p) == 46u )
 		goto st344;
 	goto st0;
 st344:
 	if ( ++p == pe )
 		goto _test_eof344;
 case 344:
-	switch( (*p) ) {
-		case 13u: goto st344;
-		case 32u: goto st344;
-		case 61u: goto st345;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st344;
+	if ( (*p) == 48u )
+		goto st345;
 	goto st0;
 st345:
 	if ( ++p == pe )
 		goto _test_eof345;
 case 345:
-	switch( (*p) ) {
-		case 13u: goto st345;
-		case 32u: goto st345;
-		case 34u: goto tr356;
-		case 39u: goto tr357;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st345;
+	if ( (*p) == 34u )
+		goto st346;
 	goto st0;
-tr356:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st346;
 st346:
 	if ( ++p == pe )
 		goto _test_eof346;
 case 346:
-#line 4642 "src/xml.cpp"
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto tr358;
-	} else if ( (*p) >= 65u )
-		goto tr358;
+	switch( (*p) ) {
+		case 13u: goto st347;
+		case 32u: goto st347;
+		case 63u: goto st9;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st347;
 	goto st0;
-tr358:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st347;
 st347:
 	if ( ++p == pe )
 		goto _test_eof347;
 case 347:
-#line 4657 "src/xml.cpp"
 	switch( (*p) ) {
-		case 34u: goto st348;
-		case 95u: goto tr358;
+		case 13u: goto st347;
+		case 32u: goto st347;
+		case 63u: goto st9;
+		case 101u: goto st348;
+		case 115u: goto st361;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto tr358;
-	} else if ( (*p) > 57u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto tr358;
-		} else if ( (*p) >= 65u )
-			goto tr358;
-	} else
-		goto tr358;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st347;
 	goto st0;
 st348:
 	if ( ++p == pe )
 		goto _test_eof348;
 case 348:
-	switch( (*p) ) {
-		case 13u: goto st349;
-		case 32u: goto st349;
-		case 63u: goto st8;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
+	if ( (*p) == 110u )
 		goto st349;
 	goto st0;
 st349:
 	if ( ++p == pe )
 		goto _test_eof349;
 case 349:
-	switch( (*p) ) {
-		case 13u: goto st349;
-		case 32u: goto st349;
-		case 63u: goto st8;
-		case 115u: goto st350;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st349;
+	if ( (*p) == 99u )
+		goto st350;
 	goto st0;
 st350:
 	if ( ++p == pe )
 		goto _test_eof350;
 case 350:
-	if ( (*p) == 116u )
+	if ( (*p) == 111u )
 		goto st351;
 	goto st0;
 st351:
 	if ( ++p == pe )
 		goto _test_eof351;
 case 351:
-	if ( (*p) == 97u )
+	if ( (*p) == 100u )
 		goto st352;
 	goto st0;
 st352:
 	if ( ++p == pe )
 		goto _test_eof352;
 case 352:
-	if ( (*p) == 110u )
+	if ( (*p) == 105u )
 		goto st353;
 	goto st0;
 st353:
 	if ( ++p == pe )
 		goto _test_eof353;
 case 353:
-	if ( (*p) == 100u )
+	if ( (*p) == 110u )
 		goto st354;
 	goto st0;
 st354:
 	if ( ++p == pe )
 		goto _test_eof354;
 case 354:
-	if ( (*p) == 97u )
+	if ( (*p) == 103u )
 		goto st355;
 	goto st0;
 st355:
 	if ( ++p == pe )
 		goto _test_eof355;
 case 355:
-	if ( (*p) == 108u )
-		goto st356;
+	switch( (*p) ) {
+		case 13u: goto st355;
+		case 32u: goto st355;
+		case 61u: goto st356;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st355;
 	goto st0;
 st356:
 	if ( ++p == pe )
 		goto _test_eof356;
 case 356:
-	if ( (*p) == 111u )
-		goto st357;
+	switch( (*p) ) {
+		case 13u: goto st356;
+		case 32u: goto st356;
+		case 34u: goto st357;
+		case 39u: goto st383;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st356;
 	goto st0;
 st357:
 	if ( ++p == pe )
 		goto _test_eof357;
 case 357:
-	if ( (*p) == 110u )
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto st358;
+	} else if ( (*p) >= 65u )
 		goto st358;
 	goto st0;
 st358:
 	if ( ++p == pe )
 		goto _test_eof358;
 case 358:
-	if ( (*p) == 101u )
-		goto st359;
+	switch( (*p) ) {
+		case 34u: goto st359;
+		case 95u: goto st358;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto st358;
+	} else if ( (*p) > 57u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto st358;
+		} else if ( (*p) >= 65u )
+			goto st358;
+	} else
+		goto st358;
 	goto st0;
 st359:
 	if ( ++p == pe )
 		goto _test_eof359;
 case 359:
 	switch( (*p) ) {
-		case 13u: goto st359;
-		case 32u: goto st359;
-		case 61u: goto st360;
+		case 13u: goto st360;
+		case 32u: goto st360;
+		case 63u: goto st9;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st359;
+		goto st360;
 	goto st0;
 st360:
 	if ( ++p == pe )
@@ -4777,8 +5184,8 @@ case 360:
 	switch( (*p) ) {
 		case 13u: goto st360;
 		case 32u: goto st360;
-		case 34u: goto st361;
-		case 39u: goto st367;
+		case 63u: goto st9;
+		case 115u: goto st361;
 	}
 	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st360;
@@ -4787,304 +5194,202 @@ st361:
 	if ( ++p == pe )
 		goto _test_eof361;
 case 361:
-	switch( (*p) ) {
-		case 110u: goto st362;
-		case 121u: goto st365;
-	}
+	if ( (*p) == 116u )
+		goto st362;
 	goto st0;
 st362:
 	if ( ++p == pe )
 		goto _test_eof362;
 case 362:
-	if ( (*p) == 111u )
+	if ( (*p) == 97u )
 		goto st363;
 	goto st0;
 st363:
 	if ( ++p == pe )
 		goto _test_eof363;
 case 363:
-	if ( (*p) == 34u )
+	if ( (*p) == 110u )
 		goto st364;
 	goto st0;
 st364:
 	if ( ++p == pe )
 		goto _test_eof364;
 case 364:
-	switch( (*p) ) {
-		case 13u: goto st364;
-		case 32u: goto st364;
-		case 63u: goto st8;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st364;
+	if ( (*p) == 100u )
+		goto st365;
 	goto st0;
 st365:
 	if ( ++p == pe )
 		goto _test_eof365;
 case 365:
-	if ( (*p) == 101u )
+	if ( (*p) == 97u )
 		goto st366;
 	goto st0;
 st366:
 	if ( ++p == pe )
 		goto _test_eof366;
 case 366:
-	if ( (*p) == 115u )
-		goto st363;
+	if ( (*p) == 108u )
+		goto st367;
 	goto st0;
 st367:
 	if ( ++p == pe )
 		goto _test_eof367;
 case 367:
-	switch( (*p) ) {
-		case 110u: goto st368;
-		case 121u: goto st370;
-	}
+	if ( (*p) == 111u )
+		goto st368;
 	goto st0;
 st368:
 	if ( ++p == pe )
 		goto _test_eof368;
 case 368:
-	if ( (*p) == 111u )
+	if ( (*p) == 110u )
 		goto st369;
 	goto st0;
 st369:
 	if ( ++p == pe )
 		goto _test_eof369;
 case 369:
-	if ( (*p) == 39u )
-		goto st364;
+	if ( (*p) == 101u )
+		goto st370;
 	goto st0;
 st370:
 	if ( ++p == pe )
 		goto _test_eof370;
 case 370:
-	if ( (*p) == 101u )
-		goto st371;
+	switch( (*p) ) {
+		case 13u: goto st370;
+		case 32u: goto st370;
+		case 61u: goto st371;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st370;
 	goto st0;
 st371:
 	if ( ++p == pe )
 		goto _test_eof371;
 case 371:
-	if ( (*p) == 115u )
-		goto st369;
+	switch( (*p) ) {
+		case 13u: goto st371;
+		case 32u: goto st371;
+		case 34u: goto st372;
+		case 39u: goto st378;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st371;
 	goto st0;
-tr357:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st372;
 st372:
 	if ( ++p == pe )
 		goto _test_eof372;
 case 372:
-#line 4881 "src/xml.cpp"
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto tr382;
-	} else if ( (*p) >= 65u )
-		goto tr382;
+	switch( (*p) ) {
+		case 110u: goto st373;
+		case 121u: goto st376;
+	}
 	goto st0;
-tr382:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st373;
 st373:
 	if ( ++p == pe )
 		goto _test_eof373;
 case 373:
-#line 4896 "src/xml.cpp"
-	switch( (*p) ) {
-		case 39u: goto st348;
-		case 95u: goto tr382;
-	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto tr382;
-	} else if ( (*p) > 57u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto tr382;
-		} else if ( (*p) >= 65u )
-			goto tr382;
-	} else
-		goto tr382;
+	if ( (*p) == 111u )
+		goto st374;
 	goto st0;
 st374:
 	if ( ++p == pe )
 		goto _test_eof374;
 case 374:
-	if ( (*p) == 49u )
+	if ( (*p) == 34u )
 		goto st375;
 	goto st0;
 st375:
 	if ( ++p == pe )
 		goto _test_eof375;
 case 375:
-	if ( (*p) == 46u )
-		goto st376;
+	switch( (*p) ) {
+		case 13u: goto st375;
+		case 32u: goto st375;
+		case 63u: goto st9;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st375;
 	goto st0;
 st376:
 	if ( ++p == pe )
 		goto _test_eof376;
 case 376:
-	if ( (*p) == 48u )
+	if ( (*p) == 101u )
 		goto st377;
 	goto st0;
 st377:
 	if ( ++p == pe )
 		goto _test_eof377;
 case 377:
-	if ( (*p) == 39u )
-		goto st335;
+	if ( (*p) == 115u )
+		goto st374;
 	goto st0;
 st378:
 	if ( ++p == pe )
 		goto _test_eof378;
 case 378:
 	switch( (*p) ) {
-		case 13u: goto st378;
-		case 32u: goto st378;
-		case 40u: goto tr387;
-		case 58u: goto st389;
-		case 95u: goto st389;
+		case 110u: goto st379;
+		case 121u: goto st381;
 	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st378;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st389;
-	} else
-		goto st389;
 	goto st0;
-tr387:
-#line 91 "../src/xml.ragel"
-	{ { pre_push(); { this->m_stack[ this->m_top++] = 379; goto st378;}} }
-	goto st379;
 st379:
 	if ( ++p == pe )
 		goto _test_eof379;
 case 379:
-#line 4969 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st380;
-		case 32u: goto st380;
-		case 41u: goto tr390;
-		case 44u: goto st381;
-		case 63u: goto st380;
-		case 124u: goto st385;
-	}
-	if ( (*p) > 10u ) {
-		if ( 42u <= (*p) && (*p) <= 43u )
-			goto st380;
-	} else if ( (*p) >= 9u )
+	if ( (*p) == 111u )
 		goto st380;
 	goto st0;
 st380:
 	if ( ++p == pe )
 		goto _test_eof380;
 case 380:
-	switch( (*p) ) {
-		case 13u: goto st380;
-		case 32u: goto st380;
-		case 41u: goto tr390;
-		case 44u: goto st381;
-		case 124u: goto st385;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st380;
-	goto st0;
-tr390:
-#line 29 "../src/xml.ragel"
-	{ { this->m_cs =  this->m_stack[-- this->m_top];goto _again;} }
-	goto st445;
-st445:
-	if ( ++p == pe )
-		goto _test_eof445;
-case 445:
-#line 5006 "src/xml.cpp"
+	if ( (*p) == 39u )
+		goto st375;
 	goto st0;
 st381:
 	if ( ++p == pe )
 		goto _test_eof381;
 case 381:
-	switch( (*p) ) {
-		case 13u: goto st381;
-		case 32u: goto st381;
-		case 40u: goto tr393;
-		case 58u: goto st384;
-		case 95u: goto st384;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st381;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st384;
-	} else
-		goto st384;
+	if ( (*p) == 101u )
+		goto st382;
 	goto st0;
-tr393:
-#line 91 "../src/xml.ragel"
-	{ { pre_push(); { this->m_stack[ this->m_top++] = 382; goto st378;}} }
-	goto st382;
 st382:
 	if ( ++p == pe )
 		goto _test_eof382;
 case 382:
-#line 5036 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st383;
-		case 32u: goto st383;
-		case 41u: goto tr390;
-		case 44u: goto st381;
-		case 63u: goto st383;
-	}
-	if ( (*p) > 10u ) {
-		if ( 42u <= (*p) && (*p) <= 43u )
-			goto st383;
-	} else if ( (*p) >= 9u )
-		goto st383;
+	if ( (*p) == 115u )
+		goto st380;
 	goto st0;
 st383:
 	if ( ++p == pe )
 		goto _test_eof383;
 case 383:
-	switch( (*p) ) {
-		case 13u: goto st383;
-		case 32u: goto st383;
-		case 41u: goto tr390;
-		case 44u: goto st381;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st383;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto st384;
+	} else if ( (*p) >= 65u )
+		goto st384;
 	goto st0;
 st384:
 	if ( ++p == pe )
 		goto _test_eof384;
 case 384:
 	switch( (*p) ) {
-		case 13u: goto st383;
-		case 32u: goto st383;
-		case 41u: goto tr390;
-		case 44u: goto st381;
-		case 63u: goto st383;
+		case 39u: goto st359;
 		case 95u: goto st384;
 	}
-	if ( (*p) < 45u ) {
-		if ( (*p) > 10u ) {
-			if ( 42u <= (*p) && (*p) <= 43u )
-				goto st383;
-		} else if ( (*p) >= 9u )
-			goto st383;
-	} else if ( (*p) > 46u ) {
-		if ( (*p) < 65u ) {
-			if ( 48u <= (*p) && (*p) <= 58u )
-				goto st384;
-		} else if ( (*p) > 90u ) {
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto st384;
+	} else if ( (*p) > 57u ) {
+		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
 				goto st384;
-		} else
+		} else if ( (*p) >= 65u )
 			goto st384;
 	} else
 		goto st384;
@@ -5093,875 +5398,1261 @@ st385:
 	if ( ++p == pe )
 		goto _test_eof385;
 case 385:
-	switch( (*p) ) {
-		case 13u: goto st385;
-		case 32u: goto st385;
-		case 40u: goto tr396;
-		case 58u: goto st388;
-		case 95u: goto st388;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st385;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st388;
-	} else
-		goto st388;
+	if ( (*p) == 49u )
+		goto st386;
 	goto st0;
-tr396:
-#line 91 "../src/xml.ragel"
-	{ { pre_push(); { this->m_stack[ this->m_top++] = 386; goto st378;}} }
-	goto st386;
 st386:
 	if ( ++p == pe )
 		goto _test_eof386;
 case 386:
-#line 5121 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st387;
-		case 32u: goto st387;
-		case 41u: goto tr390;
-		case 63u: goto st387;
-		case 124u: goto st385;
-	}
-	if ( (*p) > 10u ) {
-		if ( 42u <= (*p) && (*p) <= 43u )
-			goto st387;
-	} else if ( (*p) >= 9u )
+	if ( (*p) == 46u )
 		goto st387;
 	goto st0;
 st387:
 	if ( ++p == pe )
 		goto _test_eof387;
 case 387:
-	switch( (*p) ) {
-		case 13u: goto st387;
-		case 32u: goto st387;
-		case 41u: goto tr390;
-		case 124u: goto st385;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st387;
+	if ( (*p) == 48u )
+		goto st388;
 	goto st0;
 st388:
 	if ( ++p == pe )
 		goto _test_eof388;
 case 388:
-	switch( (*p) ) {
-		case 13u: goto st387;
-		case 32u: goto st387;
-		case 41u: goto tr390;
-		case 63u: goto st387;
-		case 95u: goto st388;
-		case 124u: goto st385;
-	}
-	if ( (*p) < 45u ) {
-		if ( (*p) > 10u ) {
-			if ( 42u <= (*p) && (*p) <= 43u )
-				goto st387;
-		} else if ( (*p) >= 9u )
-			goto st387;
-	} else if ( (*p) > 46u ) {
-		if ( (*p) < 65u ) {
-			if ( 48u <= (*p) && (*p) <= 58u )
-				goto st388;
-		} else if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st388;
-		} else
-			goto st388;
-	} else
-		goto st388;
+	if ( (*p) == 39u )
+		goto st346;
 	goto st0;
 st389:
 	if ( ++p == pe )
 		goto _test_eof389;
 case 389:
 	switch( (*p) ) {
-		case 13u: goto st380;
-		case 32u: goto st380;
-		case 41u: goto tr390;
-		case 44u: goto st381;
-		case 63u: goto st380;
-		case 95u: goto st389;
-		case 124u: goto st385;
+		case 13u: goto st389;
+		case 32u: goto st389;
+		case 40u: goto tr423;
+		case 58u: goto tr424;
+		case 95u: goto tr424;
 	}
-	if ( (*p) < 45u ) {
-		if ( (*p) > 10u ) {
-			if ( 42u <= (*p) && (*p) <= 43u )
-				goto st380;
-		} else if ( (*p) >= 9u )
-			goto st380;
-	} else if ( (*p) > 46u ) {
-		if ( (*p) < 65u ) {
-			if ( 48u <= (*p) && (*p) <= 58u )
-				goto st389;
-		} else if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st389;
-		} else
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
 			goto st389;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr424;
 	} else
-		goto st389;
+		goto tr424;
 	goto st0;
-tr430:
-#line 108 "../src/xml.ragel"
-	{ { pre_push(); { this->m_stack[ this->m_top++] = 390; goto st390;}} }
-	goto st390;
-tr407:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
+tr423:
+#line 87 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 390; goto st389;}} }
 	goto st390;
 st390:
 	if ( ++p == pe )
 		goto _test_eof390;
 case 390:
-#line 5221 "src/xml.cpp"
+#line 5454 "src/xml.cpp"
 	switch( (*p) ) {
-		case 38u: goto tr400;
-		case 60u: goto st397;
-		case 93u: goto st442;
+		case 13u: goto st391;
+		case 32u: goto st391;
+		case 41u: goto tr426;
+		case 44u: goto st392;
+		case 63u: goto st391;
+		case 124u: goto st396;
 	}
-	goto st390;
-tr400:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st391;
+	if ( (*p) > 10u ) {
+		if ( 42u <= (*p) && (*p) <= 43u )
+			goto st391;
+	} else if ( (*p) >= 9u )
+		goto st391;
+	goto st0;
 st391:
 	if ( ++p == pe )
 		goto _test_eof391;
 case 391:
-#line 5236 "src/xml.cpp"
 	switch( (*p) ) {
-		case 35u: goto st392;
-		case 58u: goto st396;
-		case 95u: goto st396;
+		case 13u: goto st391;
+		case 32u: goto st391;
+		case 41u: goto tr426;
+		case 44u: goto st392;
+		case 124u: goto st396;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st396;
-	} else if ( (*p) >= 65u )
-		goto st396;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st391;
+	goto st0;
+tr426:
+#line 29 "../src/xml.ragel"
+	{ { this->m_cs =  this->m_stack[-- this->m_top];goto _again;} }
+	goto st459;
+st459:
+	if ( ++p == pe )
+		goto _test_eof459;
+case 459:
+#line 5491 "src/xml.cpp"
 	goto st0;
 st392:
 	if ( ++p == pe )
 		goto _test_eof392;
 case 392:
-	if ( (*p) == 120u )
-		goto st394;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st393;
+	switch( (*p) ) {
+		case 13u: goto st392;
+		case 32u: goto st392;
+		case 40u: goto tr429;
+		case 58u: goto tr430;
+		case 95u: goto tr430;
+	}
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st392;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr430;
+	} else
+		goto tr430;
 	goto st0;
+tr429:
+#line 87 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 393; goto st389;}} }
+	goto st393;
 st393:
 	if ( ++p == pe )
 		goto _test_eof393;
 case 393:
-	if ( (*p) == 59u )
-		goto tr407;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st393;
+#line 5521 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st394;
+		case 32u: goto st394;
+		case 41u: goto tr426;
+		case 44u: goto st392;
+		case 63u: goto st394;
+	}
+	if ( (*p) > 10u ) {
+		if ( 42u <= (*p) && (*p) <= 43u )
+			goto st394;
+	} else if ( (*p) >= 9u )
+		goto st394;
 	goto st0;
 st394:
 	if ( ++p == pe )
 		goto _test_eof394;
 case 394:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st395;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st395;
-	} else
-		goto st395;
+	switch( (*p) ) {
+		case 13u: goto st394;
+		case 32u: goto st394;
+		case 41u: goto tr426;
+		case 44u: goto st392;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st394;
 	goto st0;
+tr430:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st395;
 st395:
 	if ( ++p == pe )
 		goto _test_eof395;
 case 395:
-	if ( (*p) == 59u )
-		goto tr407;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st395;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st395;
+#line 5556 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st394;
+		case 32u: goto st394;
+		case 41u: goto tr426;
+		case 44u: goto st392;
+		case 63u: goto st394;
+		case 95u: goto tr430;
+	}
+	if ( (*p) < 45u ) {
+		if ( (*p) > 10u ) {
+			if ( 42u <= (*p) && (*p) <= 43u )
+				goto st394;
+		} else if ( (*p) >= 9u )
+			goto st394;
+	} else if ( (*p) > 46u ) {
+		if ( (*p) < 65u ) {
+			if ( 48u <= (*p) && (*p) <= 58u )
+				goto tr430;
+		} else if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr430;
+		} else
+			goto tr430;
 	} else
-		goto st395;
+		goto tr430;
 	goto st0;
 st396:
 	if ( ++p == pe )
 		goto _test_eof396;
 case 396:
 	switch( (*p) ) {
-		case 59u: goto st390;
-		case 95u: goto st396;
+		case 13u: goto st396;
+		case 32u: goto st396;
+		case 40u: goto tr432;
+		case 58u: goto tr433;
+		case 95u: goto tr433;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
 			goto st396;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st396;
-		} else if ( (*p) >= 65u )
-			goto st396;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr433;
 	} else
-		goto st396;
+		goto tr433;
 	goto st0;
+tr432:
+#line 87 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 397; goto st389;}} }
+	goto st397;
 st397:
 	if ( ++p == pe )
 		goto _test_eof397;
 case 397:
+#line 5611 "src/xml.cpp"
 	switch( (*p) ) {
-		case 33u: goto st398;
-		case 47u: goto st412;
-		case 58u: goto st415;
-		case 63u: goto st435;
-		case 95u: goto st415;
+		case 13u: goto st398;
+		case 32u: goto st398;
+		case 41u: goto tr426;
+		case 63u: goto st398;
+		case 124u: goto st396;
 	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st415;
-	} else if ( (*p) >= 65u )
-		goto st415;
+	if ( (*p) > 10u ) {
+		if ( 42u <= (*p) && (*p) <= 43u )
+			goto st398;
+	} else if ( (*p) >= 9u )
+		goto st398;
 	goto st0;
 st398:
 	if ( ++p == pe )
 		goto _test_eof398;
 case 398:
 	switch( (*p) ) {
-		case 45u: goto st399;
-		case 91u: goto st403;
+		case 13u: goto st398;
+		case 32u: goto st398;
+		case 41u: goto tr426;
+		case 124u: goto st396;
 	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st398;
 	goto st0;
+tr433:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st399;
 st399:
 	if ( ++p == pe )
 		goto _test_eof399;
 case 399:
-	if ( (*p) == 45u )
-		goto st400;
+#line 5646 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st398;
+		case 32u: goto st398;
+		case 41u: goto tr426;
+		case 63u: goto st398;
+		case 95u: goto tr433;
+		case 124u: goto st396;
+	}
+	if ( (*p) < 45u ) {
+		if ( (*p) > 10u ) {
+			if ( 42u <= (*p) && (*p) <= 43u )
+				goto st398;
+		} else if ( (*p) >= 9u )
+			goto st398;
+	} else if ( (*p) > 46u ) {
+		if ( (*p) < 65u ) {
+			if ( 48u <= (*p) && (*p) <= 58u )
+				goto tr433;
+		} else if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr433;
+		} else
+			goto tr433;
+	} else
+		goto tr433;
 	goto st0;
+tr424:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st400;
 st400:
 	if ( ++p == pe )
 		goto _test_eof400;
 case 400:
-	if ( (*p) == 45u )
-		goto st401;
-	goto st400;
+#line 5681 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st391;
+		case 32u: goto st391;
+		case 41u: goto tr426;
+		case 44u: goto st392;
+		case 63u: goto st391;
+		case 95u: goto tr424;
+		case 124u: goto st396;
+	}
+	if ( (*p) < 45u ) {
+		if ( (*p) > 10u ) {
+			if ( 42u <= (*p) && (*p) <= 43u )
+				goto st391;
+		} else if ( (*p) >= 9u )
+			goto st391;
+	} else if ( (*p) > 46u ) {
+		if ( (*p) < 65u ) {
+			if ( 48u <= (*p) && (*p) <= 58u )
+				goto tr424;
+		} else if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr424;
+		} else
+			goto tr424;
+	} else
+		goto tr424;
+	goto st0;
+tr435:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st401;
+tr473:
+#line 101 "../src/xml.ragel"
+	{ token("element_name"); }
+#line 100 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 401; goto st401;}} }
+	goto st401;
+tr477:
+#line 100 "../src/xml.ragel"
+	{ { pre_push(); { this->m_stack[ this->m_top++] = 401; goto st401;}} }
+	goto st401;
+tr478:
+#line 102 "../src/xml.ragel"
+	{token("empty element");}
+	goto st401;
+tr511:
+#line 48 "../src/xml.ragel"
+	{token("pi",-1);}
+	goto st401;
+tr443:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st401;
+tr445:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st401;
+tr446:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st401;
 st401:
 	if ( ++p == pe )
 		goto _test_eof401;
 case 401:
-	if ( (*p) == 45u )
-		goto st402;
-	goto st400;
+#line 5747 "src/xml.cpp"
+	switch( (*p) ) {
+		case 38u: goto tr436;
+		case 60u: goto tr437;
+		case 93u: goto tr438;
+	}
+	goto tr435;
+tr436:
+#line 81 "../src/xml.ragel"
+	{token("text");}
+	goto st402;
 st402:
 	if ( ++p == pe )
 		goto _test_eof402;
 case 402:
-	if ( (*p) == 62u )
-		goto st390;
+#line 5762 "src/xml.cpp"
+	switch( (*p) ) {
+		case 35u: goto st403;
+		case 58u: goto tr440;
+		case 95u: goto tr440;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr440;
+	} else if ( (*p) >= 65u )
+		goto tr440;
 	goto st0;
 st403:
 	if ( ++p == pe )
 		goto _test_eof403;
 case 403:
-	if ( (*p) == 67u )
-		goto st404;
+	if ( (*p) == 120u )
+		goto st405;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr441;
 	goto st0;
+tr441:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st404;
 st404:
 	if ( ++p == pe )
 		goto _test_eof404;
 case 404:
-	if ( (*p) == 68u )
-		goto st405;
+#line 5791 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr443;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr441;
 	goto st0;
 st405:
 	if ( ++p == pe )
 		goto _test_eof405;
 case 405:
-	if ( (*p) == 65u )
-		goto st406;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr444;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr444;
+	} else
+		goto tr444;
 	goto st0;
+tr444:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st406;
 st406:
 	if ( ++p == pe )
 		goto _test_eof406;
 case 406:
-	if ( (*p) == 84u )
-		goto st407;
+#line 5818 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr445;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr444;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr444;
+	} else
+		goto tr444;
 	goto st0;
+tr440:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st407;
 st407:
 	if ( ++p == pe )
 		goto _test_eof407;
 case 407:
-	if ( (*p) == 65u )
-		goto st408;
+#line 5838 "src/xml.cpp"
+	switch( (*p) ) {
+		case 59u: goto tr446;
+		case 95u: goto tr440;
+	}
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr440;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr440;
+		} else if ( (*p) >= 65u )
+			goto tr440;
+	} else
+		goto tr440;
 	goto st0;
+tr437:
+#line 81 "../src/xml.ragel"
+	{token("text");}
+	goto st408;
 st408:
 	if ( ++p == pe )
 		goto _test_eof408;
 case 408:
-	if ( (*p) == 91u )
-		goto st409;
+#line 5863 "src/xml.cpp"
+	switch( (*p) ) {
+		case 33u: goto st409;
+		case 47u: goto st424;
+		case 58u: goto tr449;
+		case 63u: goto st448;
+		case 95u: goto tr449;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr449;
+	} else if ( (*p) >= 65u )
+		goto tr449;
 	goto st0;
 st409:
 	if ( ++p == pe )
 		goto _test_eof409;
 case 409:
-	if ( (*p) == 93u )
-		goto st410;
-	goto st409;
+	switch( (*p) ) {
+		case 45u: goto st410;
+		case 91u: goto st415;
+	}
+	goto st0;
 st410:
 	if ( ++p == pe )
 		goto _test_eof410;
 case 410:
-	if ( (*p) == 93u )
+	if ( (*p) == 45u )
 		goto st411;
-	goto st409;
+	goto st0;
 st411:
 	if ( ++p == pe )
 		goto _test_eof411;
 case 411:
-	switch( (*p) ) {
-		case 62u: goto st390;
-		case 93u: goto st411;
-	}
-	goto st409;
+	if ( (*p) == 45u )
+		goto st412;
+	goto st411;
 st412:
 	if ( ++p == pe )
 		goto _test_eof412;
 case 412:
-	switch( (*p) ) {
-		case 58u: goto st413;
-		case 95u: goto st413;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st413;
-	} else if ( (*p) >= 65u )
+	if ( (*p) == 45u )
 		goto st413;
-	goto st0;
+	goto st411;
 st413:
 	if ( ++p == pe )
 		goto _test_eof413;
 case 413:
 	switch( (*p) ) {
-		case 13u: goto st414;
-		case 32u: goto st414;
-		case 62u: goto tr428;
-		case 95u: goto st413;
+		case 45u: goto st414;
+		case 62u: goto st401;
 	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st413;
-		} else if ( (*p) >= 9u )
-			goto st414;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st413;
-		} else if ( (*p) >= 65u )
-			goto st413;
-	} else
-		goto st413;
 	goto st0;
 st414:
 	if ( ++p == pe )
 		goto _test_eof414;
 case 414:
-	switch( (*p) ) {
-		case 13u: goto st414;
-		case 32u: goto st414;
-		case 62u: goto tr428;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st414;
-	goto st0;
-tr428:
-#line 29 "../src/xml.ragel"
-	{ { this->m_cs =  this->m_stack[-- this->m_top];goto _again;} }
-	goto st446;
-st446:
-	if ( ++p == pe )
-		goto _test_eof446;
-case 446:
-#line 5492 "src/xml.cpp"
+	if ( (*p) == 62u )
+		goto st401;
 	goto st0;
 st415:
 	if ( ++p == pe )
 		goto _test_eof415;
 case 415:
-	switch( (*p) ) {
-		case 13u: goto st416;
-		case 32u: goto st416;
-		case 47u: goto st402;
-		case 62u: goto tr430;
-		case 95u: goto st415;
-	}
-	if ( (*p) < 45u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st416;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st415;
-		} else if ( (*p) >= 65u )
-			goto st415;
-	} else
-		goto st415;
+	if ( (*p) == 67u )
+		goto st416;
 	goto st0;
 st416:
 	if ( ++p == pe )
 		goto _test_eof416;
 case 416:
-	switch( (*p) ) {
-		case 13u: goto st416;
-		case 32u: goto st416;
-		case 47u: goto st402;
-		case 58u: goto st417;
-		case 62u: goto tr430;
-		case 95u: goto st417;
-	}
-	if ( (*p) < 65u ) {
-		if ( 9u <= (*p) && (*p) <= 10u )
-			goto st416;
-	} else if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st417;
-	} else
+	if ( (*p) == 68u )
 		goto st417;
 	goto st0;
 st417:
 	if ( ++p == pe )
 		goto _test_eof417;
 case 417:
-	switch( (*p) ) {
-		case 13u: goto st418;
-		case 32u: goto st418;
-		case 61u: goto st419;
-		case 95u: goto st417;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st417;
-		} else if ( (*p) >= 9u )
-			goto st418;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st417;
-		} else if ( (*p) >= 65u )
-			goto st417;
-	} else
-		goto st417;
+	if ( (*p) == 65u )
+		goto st418;
 	goto st0;
 st418:
 	if ( ++p == pe )
 		goto _test_eof418;
 case 418:
-	switch( (*p) ) {
-		case 13u: goto st418;
-		case 32u: goto st418;
-		case 61u: goto st419;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st418;
+	if ( (*p) == 84u )
+		goto st419;
 	goto st0;
 st419:
 	if ( ++p == pe )
 		goto _test_eof419;
 case 419:
-	switch( (*p) ) {
-		case 13u: goto st419;
-		case 32u: goto st419;
-		case 34u: goto tr434;
-		case 39u: goto tr435;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st419;
+	if ( (*p) == 65u )
+		goto st420;
 	goto st0;
-tr434:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st420;
-tr443:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st420;
 st420:
 	if ( ++p == pe )
 		goto _test_eof420;
 case 420:
-#line 5600 "src/xml.cpp"
-	switch( (*p) ) {
-		case 34u: goto tr437;
-		case 38u: goto tr438;
-		case 60u: goto st0;
-	}
-	goto st420;
-tr437:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
-	goto st421;
+	if ( (*p) == 91u )
+		goto st421;
+	goto st0;
 st421:
 	if ( ++p == pe )
 		goto _test_eof421;
 case 421:
-#line 5615 "src/xml.cpp"
-	switch( (*p) ) {
-		case 13u: goto st416;
-		case 32u: goto st416;
-		case 47u: goto st402;
-		case 62u: goto tr430;
-	}
-	if ( 9u <= (*p) && (*p) <= 10u )
-		goto st416;
-	goto st0;
-tr438:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st422;
+	if ( (*p) == 93u )
+		goto st422;
+	goto st421;
 st422:
 	if ( ++p == pe )
 		goto _test_eof422;
 case 422:
-#line 5633 "src/xml.cpp"
-	switch( (*p) ) {
-		case 35u: goto st423;
-		case 58u: goto st427;
-		case 95u: goto st427;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st427;
-	} else if ( (*p) >= 65u )
-		goto st427;
-	goto st0;
+	if ( (*p) == 93u )
+		goto st423;
+	goto st421;
 st423:
 	if ( ++p == pe )
 		goto _test_eof423;
 case 423:
-	if ( (*p) == 120u )
-		goto st425;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st424;
-	goto st0;
+	switch( (*p) ) {
+		case 62u: goto st401;
+		case 93u: goto st423;
+	}
+	goto st421;
 st424:
 	if ( ++p == pe )
 		goto _test_eof424;
 case 424:
-	if ( (*p) == 59u )
-		goto tr443;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st424;
+	switch( (*p) ) {
+		case 58u: goto tr466;
+		case 95u: goto tr466;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr466;
+	} else if ( (*p) >= 65u )
+		goto tr466;
 	goto st0;
+tr466:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st425;
 st425:
 	if ( ++p == pe )
 		goto _test_eof425;
 case 425:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st426;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st426;
+#line 6010 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr467;
+		case 32u: goto tr467;
+		case 62u: goto tr468;
+		case 95u: goto tr466;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr466;
+		} else if ( (*p) >= 9u )
+			goto tr467;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr466;
+		} else if ( (*p) >= 65u )
+			goto tr466;
 	} else
-		goto st426;
+		goto tr466;
 	goto st0;
+tr467:
+#line 104 "../src/xml.ragel"
+	{token("end element");}
+	goto st426;
 st426:
 	if ( ++p == pe )
 		goto _test_eof426;
 case 426:
-	if ( (*p) == 59u )
-		goto tr443;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st426;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st426;
-	} else
+#line 6040 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st426;
+		case 32u: goto st426;
+		case 62u: goto tr470;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st426;
 	goto st0;
+tr470:
+#line 29 "../src/xml.ragel"
+	{ { this->m_cs =  this->m_stack[-- this->m_top];goto _again;} }
+	goto st460;
+tr468:
+#line 104 "../src/xml.ragel"
+	{token("end element");}
+#line 29 "../src/xml.ragel"
+	{ { this->m_cs =  this->m_stack[-- this->m_top];goto _again;} }
+	goto st460;
+st460:
+	if ( ++p == pe )
+		goto _test_eof460;
+case 460:
+#line 6063 "src/xml.cpp"
+	goto st0;
+tr449:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st427;
 st427:
 	if ( ++p == pe )
 		goto _test_eof427;
 case 427:
+#line 6073 "src/xml.cpp"
 	switch( (*p) ) {
-		case 59u: goto st420;
-		case 95u: goto st427;
+		case 13u: goto tr471;
+		case 32u: goto tr471;
+		case 47u: goto tr472;
+		case 62u: goto tr473;
+		case 95u: goto tr449;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st427;
+	if ( (*p) < 45u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto tr471;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st427;
+				goto tr449;
 		} else if ( (*p) >= 65u )
-			goto st427;
+			goto tr449;
 	} else
-		goto st427;
+		goto tr449;
 	goto st0;
-tr435:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
-	goto st428;
-tr451:
-#line 31 "../src/xml.ragel"
-	{ pop(); }
+tr471:
+#line 101 "../src/xml.ragel"
+	{ token("element_name"); }
 	goto st428;
 st428:
 	if ( ++p == pe )
 		goto _test_eof428;
 case 428:
-#line 5723 "src/xml.cpp"
+#line 6101 "src/xml.cpp"
 	switch( (*p) ) {
-		case 38u: goto tr446;
-		case 39u: goto tr437;
-		case 60u: goto st0;
+		case 13u: goto st428;
+		case 32u: goto st428;
+		case 47u: goto st429;
+		case 58u: goto tr476;
+		case 62u: goto tr477;
+		case 95u: goto tr476;
 	}
-	goto st428;
-tr446:
-#line 30 "../src/xml.ragel"
-	{ m_output.push('['); ++m_rec; }
+	if ( (*p) < 65u ) {
+		if ( 9u <= (*p) && (*p) <= 10u )
+			goto st428;
+	} else if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr476;
+	} else
+		goto tr476;
+	goto st0;
+tr472:
+#line 101 "../src/xml.ragel"
+	{ token("element_name"); }
 	goto st429;
 st429:
 	if ( ++p == pe )
 		goto _test_eof429;
 case 429:
-#line 5738 "src/xml.cpp"
-	switch( (*p) ) {
-		case 35u: goto st430;
-		case 58u: goto st434;
-		case 95u: goto st434;
-	}
-	if ( (*p) > 90u ) {
-		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st434;
-	} else if ( (*p) >= 65u )
-		goto st434;
+#line 6127 "src/xml.cpp"
+	if ( (*p) == 62u )
+		goto tr478;
 	goto st0;
+tr476:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st430;
 st430:
 	if ( ++p == pe )
 		goto _test_eof430;
 case 430:
-	if ( (*p) == 120u )
-		goto st432;
-	if ( 48u <= (*p) && (*p) <= 57u )
-		goto st431;
+#line 6139 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr479;
+		case 32u: goto tr479;
+		case 61u: goto tr480;
+		case 95u: goto tr476;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr476;
+		} else if ( (*p) >= 9u )
+			goto tr479;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr476;
+		} else if ( (*p) >= 65u )
+			goto tr476;
+	} else
+		goto tr476;
 	goto st0;
+tr479:
+#line 80 "../src/xml.ragel"
+	{token("attr_name");}
+	goto st431;
 st431:
 	if ( ++p == pe )
 		goto _test_eof431;
 case 431:
-	if ( (*p) == 59u )
-		goto tr451;
-	if ( 48u <= (*p) && (*p) <= 57u )
+#line 6169 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st431;
+		case 32u: goto st431;
+		case 61u: goto st432;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
 		goto st431;
 	goto st0;
+tr480:
+#line 80 "../src/xml.ragel"
+	{token("attr_name");}
+	goto st432;
 st432:
 	if ( ++p == pe )
 		goto _test_eof432;
 case 432:
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st433;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st433;
-	} else
-		goto st433;
+#line 6186 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto st432;
+		case 32u: goto st432;
+		case 34u: goto st433;
+		case 39u: goto st441;
+	}
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st432;
 	goto st0;
+tr485:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st433;
+tr492:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st433;
+tr494:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st433;
+tr495:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st433;
 st433:
 	if ( ++p == pe )
 		goto _test_eof433;
 case 433:
-	if ( (*p) == 59u )
-		goto tr451;
-	if ( (*p) < 65u ) {
-		if ( 48u <= (*p) && (*p) <= 57u )
-			goto st433;
-	} else if ( (*p) > 70u ) {
-		if ( 97u <= (*p) && (*p) <= 102u )
-			goto st433;
-	} else
-		goto st433;
-	goto st0;
+#line 6216 "src/xml.cpp"
+	switch( (*p) ) {
+		case 34u: goto tr486;
+		case 38u: goto st435;
+		case 60u: goto st0;
+	}
+	goto tr485;
+tr486:
+#line 65 "../src/xml.ragel"
+	{token("attr_value");}
+	goto st434;
 st434:
 	if ( ++p == pe )
 		goto _test_eof434;
 case 434:
+#line 6231 "src/xml.cpp"
 	switch( (*p) ) {
-		case 59u: goto st428;
-		case 95u: goto st434;
+		case 13u: goto st428;
+		case 32u: goto st428;
+		case 47u: goto st429;
+		case 62u: goto tr477;
 	}
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st434;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st434;
-		} else if ( (*p) >= 65u )
-			goto st434;
-	} else
-		goto st434;
+	if ( 9u <= (*p) && (*p) <= 10u )
+		goto st428;
 	goto st0;
 st435:
 	if ( ++p == pe )
 		goto _test_eof435;
 case 435:
 	switch( (*p) ) {
-		case 58u: goto st436;
-		case 88u: goto st439;
-		case 95u: goto st436;
-		case 120u: goto st439;
+		case 35u: goto st436;
+		case 58u: goto tr489;
+		case 95u: goto tr489;
 	}
 	if ( (*p) > 90u ) {
 		if ( 97u <= (*p) && (*p) <= 122u )
-			goto st436;
+			goto tr489;
 	} else if ( (*p) >= 65u )
-		goto st436;
+		goto tr489;
 	goto st0;
 st436:
 	if ( ++p == pe )
 		goto _test_eof436;
 case 436:
-	switch( (*p) ) {
-		case 13u: goto st437;
-		case 32u: goto st437;
-		case 63u: goto st402;
-		case 95u: goto st436;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st436;
-		} else if ( (*p) >= 9u )
-			goto st437;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st436;
-		} else if ( (*p) >= 65u )
-			goto st436;
-	} else
-		goto st436;
+	if ( (*p) == 120u )
+		goto st438;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr490;
 	goto st0;
+tr490:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st437;
 st437:
 	if ( ++p == pe )
 		goto _test_eof437;
 case 437:
-	if ( (*p) == 63u )
-		goto st438;
-	goto st437;
+#line 6273 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr492;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr490;
+	goto st0;
 st438:
 	if ( ++p == pe )
 		goto _test_eof438;
 case 438:
-	switch( (*p) ) {
-		case 62u: goto st390;
-		case 63u: goto st438;
-	}
-	goto st437;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr493;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr493;
+	} else
+		goto tr493;
+	goto st0;
+tr493:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st439;
 st439:
 	if ( ++p == pe )
 		goto _test_eof439;
 case 439:
-	switch( (*p) ) {
-		case 13u: goto st437;
-		case 32u: goto st437;
-		case 63u: goto st402;
-		case 77u: goto st440;
-		case 95u: goto st436;
-		case 109u: goto st440;
-	}
-	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st436;
-		} else if ( (*p) >= 9u )
-			goto st437;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st436;
-		} else if ( (*p) >= 65u )
-			goto st436;
+#line 6300 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr494;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr493;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr493;
 	} else
-		goto st436;
+		goto tr493;
 	goto st0;
+tr489:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st440;
 st440:
 	if ( ++p == pe )
 		goto _test_eof440;
 case 440:
+#line 6320 "src/xml.cpp"
 	switch( (*p) ) {
-		case 13u: goto st437;
-		case 32u: goto st437;
-		case 63u: goto st402;
-		case 76u: goto st441;
-		case 95u: goto st436;
-		case 108u: goto st441;
+		case 59u: goto tr495;
+		case 95u: goto tr489;
 	}
 	if ( (*p) < 48u ) {
-		if ( (*p) > 10u ) {
-			if ( 45u <= (*p) && (*p) <= 46u )
-				goto st436;
-		} else if ( (*p) >= 9u )
-			goto st437;
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr489;
 	} else if ( (*p) > 58u ) {
 		if ( (*p) > 90u ) {
 			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st436;
+				goto tr489;
 		} else if ( (*p) >= 65u )
-			goto st436;
+			goto tr489;
 	} else
-		goto st436;
+		goto tr489;
 	goto st0;
+tr496:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st441;
+tr502:
+#line 63 "../src/xml.ragel"
+	{subst_char();}
+	goto st441;
+tr504:
+#line 63 "../src/xml.ragel"
+	{subst_hex();}
+	goto st441;
+tr505:
+#line 62 "../src/xml.ragel"
+	{subst_entity();}
+	goto st441;
 st441:
 	if ( ++p == pe )
 		goto _test_eof441;
 case 441:
-	if ( (*p) == 95u )
-		goto st436;
-	if ( (*p) < 48u ) {
-		if ( 45u <= (*p) && (*p) <= 46u )
-			goto st436;
-	} else if ( (*p) > 58u ) {
-		if ( (*p) > 90u ) {
-			if ( 97u <= (*p) && (*p) <= 122u )
-				goto st436;
-		} else if ( (*p) >= 65u )
-			goto st436;
-	} else
-		goto st436;
-	goto st0;
+#line 6357 "src/xml.cpp"
+	switch( (*p) ) {
+		case 38u: goto st442;
+		case 39u: goto tr486;
+		case 60u: goto st0;
+	}
+	goto tr496;
 st442:
 	if ( ++p == pe )
 		goto _test_eof442;
 case 442:
 	switch( (*p) ) {
-		case 38u: goto tr400;
-		case 60u: goto st397;
-		case 93u: goto st443;
+		case 35u: goto st443;
+		case 58u: goto tr499;
+		case 95u: goto tr499;
 	}
-	goto st390;
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr499;
+	} else if ( (*p) >= 65u )
+		goto tr499;
+	goto st0;
 st443:
 	if ( ++p == pe )
 		goto _test_eof443;
 case 443:
+	if ( (*p) == 120u )
+		goto st445;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr500;
+	goto st0;
+tr500:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st444;
+st444:
+	if ( ++p == pe )
+		goto _test_eof444;
+case 444:
+#line 6396 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr502;
+	if ( 48u <= (*p) && (*p) <= 57u )
+		goto tr500;
+	goto st0;
+st445:
+	if ( ++p == pe )
+		goto _test_eof445;
+case 445:
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr503;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr503;
+	} else
+		goto tr503;
+	goto st0;
+tr503:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st446;
+st446:
+	if ( ++p == pe )
+		goto _test_eof446;
+case 446:
+#line 6423 "src/xml.cpp"
+	if ( (*p) == 59u )
+		goto tr504;
+	if ( (*p) < 65u ) {
+		if ( 48u <= (*p) && (*p) <= 57u )
+			goto tr503;
+	} else if ( (*p) > 70u ) {
+		if ( 97u <= (*p) && (*p) <= 102u )
+			goto tr503;
+	} else
+		goto tr503;
+	goto st0;
+tr499:
+#line 31 "../src/xml.ragel"
+	{ m_entity.push(m_char); }
+	goto st447;
+st447:
+	if ( ++p == pe )
+		goto _test_eof447;
+case 447:
+#line 6443 "src/xml.cpp"
 	switch( (*p) ) {
-		case 38u: goto tr400;
-		case 60u: goto st397;
-		case 62u: goto st0;
-		case 93u: goto st443;
+		case 59u: goto tr505;
+		case 95u: goto tr499;
 	}
-	goto st390;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr499;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr499;
+		} else if ( (*p) >= 65u )
+			goto tr499;
+	} else
+		goto tr499;
+	goto st0;
+st448:
+	if ( ++p == pe )
+		goto _test_eof448;
+case 448:
+	switch( (*p) ) {
+		case 58u: goto tr506;
+		case 88u: goto tr507;
+		case 95u: goto tr506;
+		case 120u: goto tr507;
+	}
+	if ( (*p) > 90u ) {
+		if ( 97u <= (*p) && (*p) <= 122u )
+			goto tr506;
+	} else if ( (*p) >= 65u )
+		goto tr506;
+	goto st0;
+tr506:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st449;
+st449:
+	if ( ++p == pe )
+		goto _test_eof449;
+case 449:
+#line 6484 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr508;
+		case 32u: goto tr508;
+		case 63u: goto st452;
+		case 95u: goto tr506;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr506;
+		} else if ( (*p) >= 9u )
+			goto tr508;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr506;
+		} else if ( (*p) >= 65u )
+			goto tr506;
+	} else
+		goto tr506;
+	goto st0;
+tr508:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st450;
+st450:
+	if ( ++p == pe )
+		goto _test_eof450;
+case 450:
+#line 6514 "src/xml.cpp"
+	if ( (*p) == 63u )
+		goto tr510;
+	goto tr508;
+tr510:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st451;
+st451:
+	if ( ++p == pe )
+		goto _test_eof451;
+case 451:
+#line 6526 "src/xml.cpp"
+	switch( (*p) ) {
+		case 62u: goto tr511;
+		case 63u: goto tr510;
+	}
+	goto tr508;
+st452:
+	if ( ++p == pe )
+		goto _test_eof452;
+case 452:
+	if ( (*p) == 62u )
+		goto tr511;
+	goto st0;
+tr507:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st453;
+st453:
+	if ( ++p == pe )
+		goto _test_eof453;
+case 453:
+#line 6547 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr508;
+		case 32u: goto tr508;
+		case 63u: goto st452;
+		case 77u: goto tr512;
+		case 95u: goto tr506;
+		case 109u: goto tr512;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr506;
+		} else if ( (*p) >= 9u )
+			goto tr508;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr506;
+		} else if ( (*p) >= 65u )
+			goto tr506;
+	} else
+		goto tr506;
+	goto st0;
+tr512:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st454;
+st454:
+	if ( ++p == pe )
+		goto _test_eof454;
+case 454:
+#line 6579 "src/xml.cpp"
+	switch( (*p) ) {
+		case 13u: goto tr508;
+		case 32u: goto tr508;
+		case 63u: goto st452;
+		case 76u: goto tr513;
+		case 95u: goto tr506;
+		case 108u: goto tr513;
+	}
+	if ( (*p) < 48u ) {
+		if ( (*p) > 10u ) {
+			if ( 45u <= (*p) && (*p) <= 46u )
+				goto tr506;
+		} else if ( (*p) >= 9u )
+			goto tr508;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr506;
+		} else if ( (*p) >= 65u )
+			goto tr506;
+	} else
+		goto tr506;
+	goto st0;
+tr513:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st455;
+st455:
+	if ( ++p == pe )
+		goto _test_eof455;
+case 455:
+#line 6611 "src/xml.cpp"
+	if ( (*p) == 95u )
+		goto tr506;
+	if ( (*p) < 48u ) {
+		if ( 45u <= (*p) && (*p) <= 46u )
+			goto tr506;
+	} else if ( (*p) > 58u ) {
+		if ( (*p) > 90u ) {
+			if ( 97u <= (*p) && (*p) <= 122u )
+				goto tr506;
+		} else if ( (*p) >= 65u )
+			goto tr506;
+	} else
+		goto tr506;
+	goto st0;
+tr438:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st456;
+st456:
+	if ( ++p == pe )
+		goto _test_eof456;
+case 456:
+#line 6634 "src/xml.cpp"
+	switch( (*p) ) {
+		case 38u: goto tr436;
+		case 60u: goto tr437;
+		case 93u: goto tr514;
+	}
+	goto tr435;
+tr514:
+#line 30 "../src/xml.ragel"
+	{ m_output.push(m_char); }
+	goto st457;
+st457:
+	if ( ++p == pe )
+		goto _test_eof457;
+case 457:
+#line 6649 "src/xml.cpp"
+	switch( (*p) ) {
+		case 38u: goto tr436;
+		case 60u: goto tr437;
+		case 62u: goto st0;
+		case 93u: goto tr514;
+	}
+	goto tr435;
 	}
 	_test_eof1:  this->m_cs = 1; goto _test_eof; 
 	_test_eof2:  this->m_cs = 2; goto _test_eof; 
@@ -5991,9 +6682,9 @@ case 443:
 	_test_eof26:  this->m_cs = 26; goto _test_eof; 
 	_test_eof27:  this->m_cs = 27; goto _test_eof; 
 	_test_eof28:  this->m_cs = 28; goto _test_eof; 
-	_test_eof444:  this->m_cs = 444; goto _test_eof; 
 	_test_eof29:  this->m_cs = 29; goto _test_eof; 
 	_test_eof30:  this->m_cs = 30; goto _test_eof; 
+	_test_eof458:  this->m_cs = 458; goto _test_eof; 
 	_test_eof31:  this->m_cs = 31; goto _test_eof; 
 	_test_eof32:  this->m_cs = 32; goto _test_eof; 
 	_test_eof33:  this->m_cs = 33; goto _test_eof; 
@@ -6344,7 +7035,6 @@ case 443:
 	_test_eof378:  this->m_cs = 378; goto _test_eof; 
 	_test_eof379:  this->m_cs = 379; goto _test_eof; 
 	_test_eof380:  this->m_cs = 380; goto _test_eof; 
-	_test_eof445:  this->m_cs = 445; goto _test_eof; 
 	_test_eof381:  this->m_cs = 381; goto _test_eof; 
 	_test_eof382:  this->m_cs = 382; goto _test_eof; 
 	_test_eof383:  this->m_cs = 383; goto _test_eof; 
@@ -6356,6 +7046,7 @@ case 443:
 	_test_eof389:  this->m_cs = 389; goto _test_eof; 
 	_test_eof390:  this->m_cs = 390; goto _test_eof; 
 	_test_eof391:  this->m_cs = 391; goto _test_eof; 
+	_test_eof459:  this->m_cs = 459; goto _test_eof; 
 	_test_eof392:  this->m_cs = 392; goto _test_eof; 
 	_test_eof393:  this->m_cs = 393; goto _test_eof; 
 	_test_eof394:  this->m_cs = 394; goto _test_eof; 
@@ -6379,7 +7070,6 @@ case 443:
 	_test_eof412:  this->m_cs = 412; goto _test_eof; 
 	_test_eof413:  this->m_cs = 413; goto _test_eof; 
 	_test_eof414:  this->m_cs = 414; goto _test_eof; 
-	_test_eof446:  this->m_cs = 446; goto _test_eof; 
 	_test_eof415:  this->m_cs = 415; goto _test_eof; 
 	_test_eof416:  this->m_cs = 416; goto _test_eof; 
 	_test_eof417:  this->m_cs = 417; goto _test_eof; 
@@ -6392,6 +7082,7 @@ case 443:
 	_test_eof424:  this->m_cs = 424; goto _test_eof; 
 	_test_eof425:  this->m_cs = 425; goto _test_eof; 
 	_test_eof426:  this->m_cs = 426; goto _test_eof; 
+	_test_eof460:  this->m_cs = 460; goto _test_eof; 
 	_test_eof427:  this->m_cs = 427; goto _test_eof; 
 	_test_eof428:  this->m_cs = 428; goto _test_eof; 
 	_test_eof429:  this->m_cs = 429; goto _test_eof; 
@@ -6409,17 +7100,31 @@ case 443:
 	_test_eof441:  this->m_cs = 441; goto _test_eof; 
 	_test_eof442:  this->m_cs = 442; goto _test_eof; 
 	_test_eof443:  this->m_cs = 443; goto _test_eof; 
+	_test_eof444:  this->m_cs = 444; goto _test_eof; 
+	_test_eof445:  this->m_cs = 445; goto _test_eof; 
+	_test_eof446:  this->m_cs = 446; goto _test_eof; 
+	_test_eof447:  this->m_cs = 447; goto _test_eof; 
+	_test_eof448:  this->m_cs = 448; goto _test_eof; 
+	_test_eof449:  this->m_cs = 449; goto _test_eof; 
+	_test_eof450:  this->m_cs = 450; goto _test_eof; 
+	_test_eof451:  this->m_cs = 451; goto _test_eof; 
+	_test_eof452:  this->m_cs = 452; goto _test_eof; 
+	_test_eof453:  this->m_cs = 453; goto _test_eof; 
+	_test_eof454:  this->m_cs = 454; goto _test_eof; 
+	_test_eof455:  this->m_cs = 455; goto _test_eof; 
+	_test_eof456:  this->m_cs = 456; goto _test_eof; 
+	_test_eof457:  this->m_cs = 457; goto _test_eof; 
 
 	_test_eof: {}
 	_out: {}
 	}
 
-#line 139 "../src/xml.ragel"
+#line 132 "../src/xml.ragel"
 	}
 	
 	return (m_cs != 
-#line 6422 "src/xml.cpp"
+#line 7127 "src/xml.cpp"
 0
-#line 141 "../src/xml.ragel"
+#line 134 "../src/xml.ragel"
 );
 }

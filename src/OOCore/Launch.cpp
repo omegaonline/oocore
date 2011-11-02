@@ -93,9 +93,15 @@ namespace
 
 				if (!strKey.IsEmpty())
 				{
-					int err = args.replace(strKey,strValue);
-					if (err != 0)
-						OMEGA_THROW(err);
+					string_t* v = args.find(strKey);
+					if (v)
+						*v = strValue;
+					else
+					{
+						int err = args.insert(strKey,strValue);
+						if (err != 0)
+							OMEGA_THROW(err);
+					}
 				}
 			}
 
@@ -271,7 +277,7 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		if ((err = m_mapCompartments.replace(0,ptrZeroCompt)) != 0)
+		if ((err = m_mapCompartments.force_insert(0,ptrZeroCompt)) != 0)
 			OMEGA_THROW(err);
 
 		ptrZeroCompt->set_id(0);

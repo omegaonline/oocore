@@ -92,9 +92,15 @@ void InterProcessService::Load(const string_t& str)
 
 			if (!strKey.IsEmpty())
 			{
-				int err = m_args.replace(strKey,strValue);
-				if (err != 0)
-					OMEGA_THROW(err);
+				string_t* pv = m_args.find(strKey);
+				if (pv)
+					*pv = strValue;
+				else
+				{
+					int err = m_args.insert(strKey,strValue);
+					if (err != 0)
+						OMEGA_THROW(err);
+				}
 			}
 		}
 

@@ -305,8 +305,17 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				}
 
 				// Do something with strKey and strValue
-				if (!strKey.empty() && (err = m_config_args.replace(strKey,strValue)) != 0)
-					LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
+				if (!strKey.empty())
+				{
+					OOBase::String* pv = m_config_args.find(strKey);
+					if (pv)
+						*pv = strValue;
+					else
+					{
+						if ((err = m_config_args.insert(strKey,strValue)) != 0)
+							LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
+					}
+				}
 			}
 
 			if (end == OOBase::LocalString::npos)

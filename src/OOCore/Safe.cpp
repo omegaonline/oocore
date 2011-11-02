@@ -86,9 +86,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder_insert,3,((in),voi
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_map.replace(*iid,pRtti);
-	if (err != 0)
-		OOBase_CallCriticalFailure(err);
+	if (!pThis->m_map.exists(*iid))
+	{
+		int err = pThis->m_map.insert(*iid,pRtti);
+		if (err != 0)
+			OOBase_CallCriticalFailure(err);
+	}
 }
 
 namespace
@@ -245,9 +248,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),v
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_map.replace(*iid,pRtti);
-	if (err != 0)
-		OOBase_CallCriticalFailure(err);
+	if (!pThis->m_map.exists(*iid))
+	{
+		int err = pThis->m_map.insert(*iid,pRtti);
+		if (err != 0)
+			OOBase_CallCriticalFailure(err);
+	}
 }
 
 namespace

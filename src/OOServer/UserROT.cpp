@@ -139,7 +139,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		{
 			err = m_mapObjectsByOid.insert(strOid,nCookie);
 			if (err != 0)
-				m_mapObjectsByCookie.erase(nCookie);
+				m_mapObjectsByCookie.remove(nCookie);
 		}
 		if (err != 0)
 			OMEGA_THROW(err);
@@ -235,10 +235,10 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 		for (size_t i=m_mapObjectsByOid.find_first(pInfo->m_oid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==pInfo->m_oid; ++i)
 		{
 			if (*m_mapObjectsByOid.at(i) == cookie)
-				m_mapObjectsByOid.erase(i);
+				m_mapObjectsByOid.remove_at(i);
 		}
 
-		m_mapObjectsByCookie.erase(cookie);
+		m_mapObjectsByCookie.remove(cookie);
 
 		guard.release();
 

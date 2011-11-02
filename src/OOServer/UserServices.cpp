@@ -320,7 +320,7 @@ void User::Manager::close_socket(uint32_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
 
-	if (m_mapSockets.erase(id))
+	if (m_mapSockets.remove(id))
 	{
 		guard.release();
 

@@ -95,7 +95,7 @@ void OOCore::Compartment::process_compartment_close(uint16_t src_compt_id)
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
-	m_mapCompartments.erase(src_compt_id,&ptrCompt);
+	m_mapCompartments.remove(src_compt_id,&ptrCompt);
 		
 	guard.release();
 
@@ -149,7 +149,7 @@ bool OOCore::Compartment::is_channel_open(uint32_t channel_id)
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);
 
 	if (m_mapChannels.find(channel_id,info) && !info.m_bOpen)
-		m_mapChannels.erase(channel_id);
+		m_mapChannels.remove(channel_id);
 	
 	return false;
 }

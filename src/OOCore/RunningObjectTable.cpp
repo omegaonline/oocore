@@ -210,7 +210,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 		{
 			err = m_mapServicesByOid.insert(strOid,nCookie);
 			if (err != 0)
-				m_mapServicesByCookie.erase(nCookie);
+				m_mapServicesByCookie.remove(nCookie);
 		}
 		if (err != 0)
 			OMEGA_THROW(err);
@@ -307,12 +307,12 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 	
 	Info info;
-	if (m_mapServicesByCookie.erase(cookie,&info))
+	if (m_mapServicesByCookie.remove(cookie,&info))
 	{
 		for (size_t i=m_mapServicesByOid.find_first(info.m_oid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==info.m_oid; ++i)
 		{
 			if (*m_mapServicesByOid.at(i) == cookie)
-				m_mapServicesByOid.erase(i);
+				m_mapServicesByOid.remove_at(i);
 		}
 
 		guard.release();

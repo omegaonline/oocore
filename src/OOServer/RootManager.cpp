@@ -436,7 +436,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	// Remove the associated spawned process
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapUserProcesses.erase(channel);
+	m_mapUserProcesses.remove(channel);
 }
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
@@ -474,7 +474,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			for (Omega::uint32_t i = 0;vecDead.pop(&i);)
-				m_mapUserProcesses.erase(i);
+				m_mapUserProcesses.remove(i);
 		}
 
 		if (bFound)

@@ -620,7 +620,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		OOBase::RefPtr<MessageConnection> ptrConn;
-		bPulse = m_mapChannelIds.erase(channel_id,&ptrConn);
+		bPulse = m_mapChannelIds.remove(channel_id,&ptrConn);
 
 		guard.release();
 
@@ -765,7 +765,7 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapThreadContexts.erase(pContext->m_thread_id);
+	m_mapThreadContexts.remove(pContext->m_thread_id);
 }
 
 void OOServer::MessageHandler::shutdown_channels()
@@ -902,7 +902,7 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 			*v = old_thread_id;
 	}
 	else
-		pContext->m_mapChannelThreads.erase(msg.m_src_channel_id);
+		pContext->m_mapChannelThreads.remove(msg.m_src_channel_id);
 	
 	return true;
 }

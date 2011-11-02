@@ -113,7 +113,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 			{
 				err = m_mapChannelIds.insert(channel_id,src_channel_id);
 				if (err != 0)
-					m_mapChannelIds.erase(src_channel_id);
+					m_mapChannelIds.remove(src_channel_id);
 			}
 
 			if (err != 0)
@@ -559,7 +559,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			{
 				err = m_mapChannelIds.insert(channel_id,dest_channel_id);
 				if (err != 0)
-					m_mapChannelIds.erase(dest_channel_id);
+					m_mapChannelIds.remove(dest_channel_id);
 			}
 
 			if (err != 0)
@@ -718,7 +718,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	}
 	catch (...)
 	{
-		m_mapRemoteChannelIds.erase(channel_id);
+		m_mapRemoteChannelIds.remove(channel_id);
 		throw;
 	}
 
@@ -726,7 +726,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	err = m_mapRemoteChannels.insert(channel.strEndpoint,static_cast<Remoting::IChannel*>(ptrChannel));
 	if (err != 0)
 	{
-		m_mapRemoteChannelIds.erase(channel_id);
+		m_mapRemoteChannelIds.remove(channel_id);
 		channel.ptrRemoteChannel->Close();
 		OMEGA_THROW(err);
 	}
@@ -824,7 +824,7 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	}
 	catch (...)
 	{
-		m_mapRemoteChannelIds.erase(channel_id);
+		m_mapRemoteChannelIds.remove(channel_id);
 		throw;
 	}
 

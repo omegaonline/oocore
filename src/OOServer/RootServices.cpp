@@ -366,14 +366,14 @@ void Root::Manager::remove_socket(Omega::uint32_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapSockets.erase(id);
+	m_mapSockets.remove(id);
 }
 
 void Root::Manager::remove_listener(Omega::uint32_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapListeners.erase(id);
+	m_mapListeners.remove(id);
 }
 
 void Root::Manager::socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)

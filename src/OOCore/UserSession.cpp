@@ -300,7 +300,7 @@ void OOCore::UserSession::remove_uninit_call_i(Threading::DestructorCallback pfn
 
 	Uninit uninit = { pfn, param };
 
-	m_listUninitCalls.erase(uninit);
+	m_listUninitCalls.remove(uninit);
 }
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
@@ -663,7 +663,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapThreadContexts.erase(thread_id);
+	m_mapThreadContexts.remove(thread_id);
 }
 
 void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t timeout, uint32_t attribs)
@@ -906,7 +906,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 			*v = old_thread_id;
 	}
 	else
-		pContext->m_mapChannelThreads.erase(msg.m_src_channel_id);
+		pContext->m_mapChannelThreads.remove(msg.m_src_channel_id);
 
 	pContext->m_deadline = old_deadline;
 	pContext->m_current_cmpt = old_id;
@@ -977,7 +977,7 @@ void OOCore::UserSession::remove_compartment(uint16_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapCompartments.erase(id);
+	m_mapCompartments.remove(id);
 }
 
 uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pTimeout)

@@ -141,7 +141,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		OOBase::SmartPtr<User::Process> ptrProcess;
 		if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
 		{
-			m_mapInProgress.erase(strProcess);
+			m_mapInProgress.remove(strProcess);
 			ptrProcess = NULL;
 		}
 
@@ -170,7 +170,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			{
 				// The process has started - remove it from the starting list
 				guard.acquire();
-				m_mapInProgress.erase(strProcess);
+				m_mapInProgress.remove(strProcess);
 				guard.release();
 				return;
 			}
@@ -184,7 +184,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		// Remove from the map
 		guard.acquire();
-		m_mapInProgress.erase(strProcess);
+		m_mapInProgress.remove(strProcess);
 		guard.release();
 	}
 

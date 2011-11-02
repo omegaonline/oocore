@@ -573,7 +573,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 
 				dead_channels.push(k);
 
-				m_mapChannels.erase(k);
+				m_mapChannels.remove(k);
 			}
 		}
 

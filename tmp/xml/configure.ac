@@ -102,6 +102,7 @@ LT_PREREQ([2.2.6])
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
-AC_PATH_PROG([RAGEL],[ragel],[AC_MSG_ERROR([Need ragel command])])
+AC_CHECK_TOOL([RAGEL],[ragel])
+AS_IF([test "x$RAGEL" == "x"],[AC_MSG_ERROR([Need ragel command])])
 
 AC_OUTPUT()

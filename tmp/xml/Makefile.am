@@ -44,11 +44,12 @@ dist-hook:
 ####################################
 
 .ragel.cpp:
+	$(AM_V_at)$(MKDIR_P) $(@D)
 	$(AM_V_GEN)$(RAGEL) -C -G2 -o $@ $<
 
-omegadir = @includedir@/Omega
-omega_HEADERS = \
-	include\XML.h
+#omegadir = @includedir@/Omega
+#omega_HEADERS = \
+#	include\XML.h
 
 omegalibexecdir = @libexecdir@/omegaonline
 

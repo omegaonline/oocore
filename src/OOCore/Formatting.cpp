@@ -159,7 +159,7 @@ namespace
 				{
 					err = str2.append(str.c_str()+pos+strlen(orig));
 					if (err == 0)
-						err = str.assign(str2.c_str());
+						err = str.assign(str2);
 				}
 			}
 			if (err != 0)
@@ -180,7 +180,7 @@ namespace
 			{
 				err = str2.append(str.c_str()+pos);
 				if (err == 0)
-					err = str.assign(str2.c_str());
+					err = str.assign(str2);
 			}
 		}
 		if (err != 0)
@@ -199,7 +199,7 @@ namespace
 		{
 			err = str2.append(str.c_str()+pos);
 			if (err == 0)
-				err = str.assign(str2.c_str());
+				err = str.assign(str2);
 		}
 
 		if (err != 0)
@@ -214,7 +214,7 @@ namespace
 		{
 			err = str2.append(str.c_str()+start+len);
 			if (err == 0)
-				err = str.assign(str2.c_str());
+				err = str.assign(str2);
 		}
 
 		if (err != 0)

@@ -179,10 +179,11 @@ bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain
 	}
 	else
 	{
-		strAppName.replace('\\','/');
-
-		if ((err = OOBase::AppendDirSeparator(strAppName)) == 0)
+		if ((err = OOBase::Paths::CorrectDirSeparators(strAppName)) == 0 &&
+				(err = OOBase::Paths::AppendDirSeparator(strAppName)) == 0)
+		{
 			err = strAppName.append("oosvruser");
+		}
 
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
@@ -424,7 +425,7 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
+	if ((err = OOBase::Paths::AppendDirSeparator(strSysDir)) != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::POSIX::pw_info pw(m_uid);
@@ -448,7 +449,7 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::Stri
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	if ((err = OOBase::AppendDirSeparator(strUsersDir)) != 0)
+	if ((err = OOBase::Paths::AppendDirSeparator(strUsersDir)) != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	if (bAddDot)

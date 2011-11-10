@@ -605,7 +605,7 @@ void User::Manager::do_quit_i()
 {
 	try
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,APPNAME " closing");
+		OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
 
 		// Stop accepting new clients
 		m_ptrAcceptor = NULL;

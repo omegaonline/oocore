@@ -99,14 +99,14 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 								// Start listening for clients
 								if (start_client_acceptor())
 								{
-									OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
+									OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
 
 									ret = EXIT_SUCCESS;
 
 									// Wait for quit
 									bQuit = wait_to_quit();
 
-									OOSvrBase::Logger::log(OOSvrBase::Logger::Information,APPNAME " closing");
+									OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
 
 									// Stop accepting new clients
 									m_client_acceptor = NULL;
@@ -140,7 +140,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 	if (getenv_OMEGA_DEBUG())
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"\nPausing to let you read the messages...");
+		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(OOBase::timeval_t(15));
@@ -356,7 +356,7 @@ bool Root::Manager::spawn_sandbox()
 			return false;
 
 		// Warn!
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+		OOBase::Logger::log(OOBase::Logger::Warning,
 			"Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 			strOurUName.c_str());
@@ -369,7 +369,7 @@ bool Root::Manager::spawn_sandbox()
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+			OOBase::Logger::log(OOBase::Logger::Warning,
 								   APPNAME " is running under a user account that does not have the priviledges required to impersonate a different user.\n\n"
 								   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
@@ -387,7 +387,7 @@ bool Root::Manager::spawn_sandbox()
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+		OOBase::Logger::log(OOBase::Logger::Warning,
 							   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
 							   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
@@ -501,7 +501,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+			OOBase::Logger::log(OOBase::Logger::Warning,
 								   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
 								   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
 								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",

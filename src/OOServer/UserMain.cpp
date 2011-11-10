@@ -58,7 +58,7 @@ namespace
 
 	bool CriticalFailure(const char* msg)
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+		OOBase::Logger::log(OOBase::Logger::Error,msg);
 
 		if (User::getenv_OMEGA_DEBUG())
 		{
@@ -72,7 +72,7 @@ namespace
 int main(int argc, char* argv[])
 {
 	// Start the logger - use OOServer again...
-	OOSvrBase::Logger::open("OOServer",__FILE__);
+	OOBase::Logger::open("OOServer",__FILE__);
 
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
@@ -94,11 +94,11 @@ int main(int argc, char* argv[])
 	{
 		OOBase::String strErr;
 		if (args.find("missing",strErr))
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Missing value for option %s",strErr.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,"Missing value for option %s",strErr.c_str());
 		else if (args.find("unknown",strErr))
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Unknown option %s",strErr.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,"Unknown option %s",strErr.c_str());
 		else
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
+			OOBase::Logger::log(OOBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
 			
 		return EXIT_FAILURE;
 	}
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 		if (!args.find("launch-session",strPipe))
 		{
 			// Ooops...
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
+			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
 			return EXIT_FAILURE;
 		}
 	}
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 	// Now run...
 	if (bRun)
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
+		OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
 
 		manager.run();
 	}
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 
 	if (User::getenv_OMEGA_DEBUG())
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"\nPausing to let you read the messages...");
+		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(OOBase::timeval_t(15));

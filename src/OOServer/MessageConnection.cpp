@@ -41,10 +41,10 @@
 #include <OOBase/HandleTable.h>
 #include <OOBase/HashTable.h>
 #include <OOBase/Stack.h>
+#include <OOBase/Logger.h>
 #include <OOBase/Thread.h>
 
 #include <OOSvrBase/Proactor.h>
-#include <OOSvrBase/Logger.h>
 
 //////////////////////////////////////////////
 

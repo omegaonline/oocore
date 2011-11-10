@@ -62,7 +62,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	if (cmd_args.find("conf-file",strFile))
 	{
 		char* rpath = realpath(strFile.c_str(),NULL);
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",rpath);
+		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
 		free(rpath);
 	}
 

@@ -48,11 +48,11 @@
 #include <OOBase/Socket.h>
 #include <OOBase/String.h>
 #include <OOBase/CmdArgs.h>
+#include <OOBase/SecurityWin32.h>
+#include <OOBase/Logger.h>
 
 #include <OOSvrBase/Proactor.h>
-#include <OOSvrBase/Logger.h>
 #include <OOSvrBase/Database.h>
-#include <OOSvrBase/SecurityWin32.h>
 #include <OOSvrBase/Service.h>
 
 //////////////////////////////////////////////

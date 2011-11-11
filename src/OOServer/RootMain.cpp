@@ -68,7 +68,7 @@ namespace
 
 	bool CriticalFailure(const char* msg)
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
+		OOBase::Logger::log(OOBase::Logger::Error,msg);
 
 		if (Root::getenv_OMEGA_DEBUG())
 		{
@@ -83,7 +83,7 @@ namespace
 int main(int argc, char* argv[])
 {
 	// Start the logger
-	OOSvrBase::Logger::open("OOServer",__FILE__);
+	OOBase::Logger::open("OOServer",__FILE__);
 
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
@@ -103,11 +103,11 @@ int main(int argc, char* argv[])
 	{
 		OOBase::String strErr;
 		if (args.find("missing",strErr))
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Missing value for option %s",strErr.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,"Missing value for option %s",strErr.c_str());
 		else if (args.find("unknown",strErr))
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Unknown option %s",strErr.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,"Unknown option %s",strErr.c_str());
 		else
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
+			OOBase::Logger::log(OOBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
 			
 		return EXIT_FAILURE;
 	}

@@ -147,7 +147,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		if (!ptrProcess)
 		{
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"Executing process %ls",strProcess.c_wstr());
+			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %ls",strProcess.c_wstr());
 
 			// Create a new process
 			ptrProcess = User::Process::exec(strProcess.c_wstr());

@@ -188,7 +188,7 @@ bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
+		OOBase::Logger::log(OOBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
 	}
 
 	// Check the file exists

@@ -547,7 +547,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
 		}
 
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
+		OOBase::Logger::log(OOBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 	}
 
 	// Create the named pipe

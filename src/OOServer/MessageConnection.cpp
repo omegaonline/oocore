@@ -93,10 +93,9 @@ void OOServer::MessageConnection::shutdown()
 
 	// Send an empty message
 	OOBase::CDRStream header;
-	header.write(header.big_endian());
+	header.write_endianess();
 	header.write(Omega::byte_t(1));  // version
-	header.write(Omega::byte_t('O'));  // signature
-	header.write(Omega::byte_t('U'));  // signature
+	header.write(Omega::byte_t('S'));  // signature
 	header.write(Omega::uint32_t(0));
 
 	send(header.buffer(),NULL);
@@ -163,11 +162,7 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 	OOBase::CDRStream input(buffer);
 
 	// Read the payload specific data
-	bool big_endian;
-	input.read(big_endian);
-
-	// Set the read for the right endianess
-	input.big_endian(big_endian);
+	input.read_endianess();
 
 	// Read the version byte
 	Omega::byte_t version;
@@ -177,7 +172,7 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 	if (version != 1)
 		LOG_ERROR_RETURN(("Invalid protocol version"),false);
 		
-	// Room for 2 bytes here!
+	// Room for 1 byte here!
 
 	// Read the length
 	Omega::uint32_t read_len = 0;
@@ -550,15 +545,13 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	MessageHandler* pThis = static_cast<MessageHandler*>(pParam);
 
 	// Read the payload specific data
-	bool big_endian;
-	input.read(big_endian);
-
-	// Set the read for the right endianess
-	input.big_endian(big_endian);
+	input.read_endianess();
 
 	// Read the version byte
 	Omega::byte_t version;
 	input.read(version);
+
+	// Room for 1 byte here!
 
 	// Read the length
 	Omega::uint32_t read_len = 0;
@@ -1158,10 +1151,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 {
 	// Write the header info
 	OOBase::CDRStream header;
-	header.write(header.big_endian());
+	header.write_endianess();
 	header.write(Omega::byte_t(1));  // version
-	header.write(Omega::byte_t('O'));  // signature
-	header.write(Omega::byte_t('U'));  // signature
+	header.write(Omega::byte_t('S'));  // signature
 
 	// Write out the header length and remember where we wrote it
 	size_t msg_len_mark = header.buffer()->mark_wr_ptr();

@@ -190,9 +190,8 @@ void OOCore::UserSession::stop()
 	if (m_stream)
 	{
 		OOBase::CDRStream header;
-		header.write(header.big_endian());
+		header.write_endianess();
 		header.write(byte_t(1));     // version
-		header.write(byte_t('o'));   // signature
 		header.write(byte_t('c'));   // signature
 		header.write(uint32_t(0));
 		m_stream->send(header.buffer());
@@ -354,11 +353,7 @@ int OOCore::UserSession::run_read_loop()
 			break;
 
 		// Read the payload specific data
-		bool big_endian;
-		header.read(big_endian);
-
-		// Set the read for the right endianess
-		header.big_endian(big_endian);
+		header.read_endianess();
 
 		// Read the version byte
 		byte_t version;
@@ -366,7 +361,7 @@ int OOCore::UserSession::run_read_loop()
 		if (version != 1)
 			OOBase_CallCriticalFailure("Invalid protocol version");
 
-		// Room for 2 bytes here!
+		// Room for 1 byte here!
 
 		// Read the length
 		uint32_t nReadLen = 0;
@@ -388,7 +383,7 @@ int OOCore::UserSession::run_read_loop()
 			break;
 
 		// Reset the byte order
-		msg.m_payload.big_endian(big_endian);
+		msg.m_payload.endianess(header.endianess());
 
 		// Read the destination and source channels
 		uint32_t dest_channel_id;
@@ -772,9 +767,8 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_chan
 
 void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
 {
-	header.write(header.big_endian());
+	header.write_endianess();
 	header.write(byte_t(1));     // version
-	header.write(byte_t('o'));   // signature
 	header.write(byte_t('c'));   // signature
 
 	// Write out the header length and remember where we wrote it

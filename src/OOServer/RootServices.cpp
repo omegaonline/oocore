@@ -508,7 +508,7 @@ TcpAcceptor* TcpAcceptor::create(Root::Manager* pManager, Omega::uint32_t id, co
 	}
 
 	sockaddr_storage addr = {0};
-	socklen_t addr_len = pResults->ai_addrlen;
+	socklen_t addr_len = (socklen_t)pResults->ai_addrlen;
 	memcpy(&addr,pResults->ai_addr,addr_len);
 	
 	// Done with address info

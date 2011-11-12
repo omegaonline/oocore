@@ -41,31 +41,32 @@
 
 #if defined(_DEBUG) && defined(_MSC_VER)
 
+// #import the guts of visual studio
 #if _MSC_VER == 1310
-//The following #import imports the command bar library based on its LIBID.
-#import "libid:2df8d04c-5bfa-101b-bde5-00aa0044de52" raw_interfaces_only rename("RGB","dte_RGB") rename("DocumentProperties","dte_DocumentProperties")
 
 //The following #import imports EnvDTE based on its LIBID.
+#import "libid:2df8d04c-5bfa-101b-bde5-00aa0044de52" raw_interfaces_only rename("RGB","dte_RGB") rename("DocumentProperties","dte_DocumentProperties")
 #import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("7.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
 
+#elif _MSC_VER > 1310
+
+//The following #import imports EnvDTE based on its LIBID.
+#import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("8.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
+
+#endif
+
+#if _MSC_VER == 1310
 #define DTE_VER "7.1"
 #elif _MSC_VER == 1400
-
-//The following #import imports EnvDTE based on its LIBID.
-#import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("8.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
-
 #define DTE_VER "8.0"
 #elif _MSC_VER == 1500
-
-//The following #import imports EnvDTE based on its LIBID.
-#import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("8.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
-
 #define DTE_VER "9.0"
+#elif _MSC_VER == 1600
+#define DTE_VER "10.0"
 #else
 
-// MSVC 10 isn't out as I write this...
+// MSVC 11 isn't out as I write this...
 #error Fix me for the new release of Visual Studio!
-#define DTE_VER "10.0"
 
 #endif
 

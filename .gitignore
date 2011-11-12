@@ -45,14 +45,15 @@ OOServer_msgs.rc
 # msvc stuff
 ipch/
 bin/
-Debug/
-Release/
+Debug*/
+Release*/
 *.vcproj.*.user
 *.vcxproj.user
 *.sdf
 *.opensdf
 *.ncb
 *.suo
+*.aps
 
 # WiX stuff
 *.msi

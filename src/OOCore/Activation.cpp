@@ -190,7 +190,7 @@ namespace
 			guard.acquire();
 
 			if (erase)
-				m_dll_map.erase(name);
+				m_dll_map.remove(name);
 			else
 				++i;
 		}

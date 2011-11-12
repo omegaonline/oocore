@@ -86,9 +86,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_qi_rtti_holder_insert,3,((in),voi
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_map.replace(*iid,pRtti);
-	if (err != 0)
-		OOBase_CallCriticalFailure(err);
+	if (!pThis->m_map.exists(*iid))
+	{
+		int err = pThis->m_map.insert(*iid,pRtti);
+		if (err != 0)
+			OOBase_CallCriticalFailure(err);
+	}
 }
 
 namespace
@@ -170,8 +173,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove1,2,((in),void*
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	const System::Internal::SafeShim* shim;
-	if (pThis->m_obj_map.erase(pObject,&shim))
-		pThis->m_shim_map.erase(shim);
+	if (pThis->m_obj_map.remove(pObject,&shim))
+		pThis->m_shim_map.remove(shim);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*,handle,(in),const System::Internal::SafeShim*,shim))
@@ -181,8 +184,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder_remove2,2,((in),void*
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	IObject* pObject;
-	if (pThis->m_shim_map.erase(shim,&pObject))
-		pThis->m_obj_map.erase(pObject);
+	if (pThis->m_shim_map.remove(shim,&pObject))
+		pThis->m_obj_map.remove(pObject);
 }
 
 namespace
@@ -245,9 +248,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),v
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_map.replace(*iid,pRtti);
-	if (err != 0)
-		OOBase_CallCriticalFailure(err);
+	if (!pThis->m_map.exists(*iid))
+	{
+		int err = pThis->m_map.insert(*iid,pRtti);
+		if (err != 0)
+			OOBase_CallCriticalFailure(err);
+	}
 }
 
 namespace
@@ -305,5 +311,5 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder_remove,2,((in),void*,
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	pThis->m_map.erase(pProxy);
+	pThis->m_map.remove(pProxy);
 }

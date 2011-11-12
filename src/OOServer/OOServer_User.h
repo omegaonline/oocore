@@ -35,10 +35,10 @@
 #include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
 #include <OOBase/utf8.h>
+#include <OOBase/SecurityWin32.h>
+#include <OOBase/Logger.h>
 
 #include <OOSvrBase/Proactor.h>
-#include <OOSvrBase/Logger.h>
-#include <OOSvrBase/SecurityWin32.h>
 #include <OOSvrBase/Service.h>
 
 //////////////////////////////////////////////

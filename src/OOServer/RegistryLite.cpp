@@ -128,8 +128,8 @@ namespace
 		
 		if (!dir.empty())
 		{
-			OOBase::CorrectDirSeparator(dir);
-			err = OOBase::AppendDirSeparator(dir);
+			if ((err = OOBase::Paths::CorrectDirSeparators(dir)) == 0)
+				err = OOBase::Paths::AppendDirSeparator(dir);
 		}
 
 		if (err != 0)

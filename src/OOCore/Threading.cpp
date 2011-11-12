@@ -193,6 +193,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*
 
 		destruct_entry_t e = { pfn_dctor, param };
 
-		h->m_list.erase(e);
+		h->m_list.remove(e);
 	}
 }

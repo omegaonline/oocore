@@ -99,14 +99,14 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 								// Start listening for clients
 								if (start_client_acceptor())
 								{
-									OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,APPNAME " started successfully");
+									OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
 
 									ret = EXIT_SUCCESS;
 
 									// Wait for quit
 									bQuit = wait_to_quit();
 
-									OOSvrBase::Logger::log(OOSvrBase::Logger::Information,APPNAME " closing");
+									OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
 
 									// Stop accepting new clients
 									m_client_acceptor = NULL;
@@ -140,7 +140,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 	if (getenv_OMEGA_DEBUG())
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Debug,"\nPausing to let you read the messages...");
+		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(OOBase::timeval_t(15));
@@ -156,8 +156,9 @@ bool Root::Manager::init_database()
 	if (!m_config_args.find("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-	OOBase::CorrectDirSeparator(dir);
-	int err = OOBase::AppendDirSeparator(dir);
+	int err = OOBase::Paths::CorrectDirSeparators(dir);
+	if (err == 0)
+		err = OOBase::Paths::AppendDirSeparator(dir);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
@@ -305,8 +306,17 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				}
 
 				// Do something with strKey and strValue
-				if (!strKey.empty() && (err = m_config_args.replace(strKey,strValue)) != 0)
-					LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
+				if (!strKey.empty())
+				{
+					OOBase::String* pv = m_config_args.find(strKey);
+					if (pv)
+						*pv = strValue;
+					else
+					{
+						if ((err = m_config_args.insert(strKey,strValue)) != 0)
+							LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
+					}
+				}
 			}
 
 			if (end == OOBase::LocalString::npos)
@@ -346,7 +356,7 @@ bool Root::Manager::spawn_sandbox()
 			return false;
 
 		// Warn!
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+		OOBase::Logger::log(OOBase::Logger::Warning,
 			"Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 			strOurUName.c_str());
@@ -359,7 +369,7 @@ bool Root::Manager::spawn_sandbox()
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+			OOBase::Logger::log(OOBase::Logger::Warning,
 								   APPNAME " is running under a user account that does not have the priviledges required to impersonate a different user.\n\n"
 								   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
@@ -377,7 +387,7 @@ bool Root::Manager::spawn_sandbox()
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+		OOBase::Logger::log(OOBase::Logger::Warning,
 							   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
 							   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
@@ -436,7 +446,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	// Remove the associated spawned process
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapUserProcesses.erase(channel);
+	m_mapUserProcesses.remove(channel);
 }
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
@@ -474,7 +484,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			for (Omega::uint32_t i = 0;vecDead.pop(&i);)
-				m_mapUserProcesses.erase(i);
+				m_mapUserProcesses.remove(i);
 		}
 
 		if (bFound)
@@ -491,7 +501,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
+			OOBase::Logger::log(OOBase::Logger::Warning,
 								   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
 								   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
 								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",

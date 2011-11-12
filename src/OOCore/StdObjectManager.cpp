@@ -231,7 +231,7 @@ void OOCore::StdObjectManager::Shutdown()
 		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
 		{
 			if (*m_mapStubObjs.at(i) == stub_id)
-				m_mapStubObjs.erase(*m_mapStubObjs.key_at(i));
+				m_mapStubObjs.remove_at(i);
 		}
 
 		guard.release();
@@ -520,19 +520,19 @@ void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapProxyIds.erase(proxy_id);
+	m_mapProxyIds.remove(proxy_id);
 }
 
 void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	if (m_mapStubIds.erase(stub_id))
+	if (m_mapStubIds.remove(stub_id))
 	{
 		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
 		{
 			if (*m_mapStubObjs.at(i) == stub_id)
-				m_mapStubObjs.erase(*m_mapStubObjs.key_at(i));
+				m_mapStubObjs.remove_at(i);
 		}
 	}
 }
@@ -629,7 +629,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 			{
 				err = m_mapStubObjs.insert(ptrObj,stub_id);
 				if (err != 0)
-					m_mapStubIds.erase(stub_id);
+					m_mapStubIds.remove(stub_id);
 			}
 			if (err != 0)
 				OMEGA_THROW(err);

@@ -293,10 +293,21 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 				OOBase::Guard<OOBase::RWMutex> guard2(m_service_lock);
 
 				// Force an overwriting insert
-				err = m_mapSockets.replace(id,ptrSocket.QueryInterface<Net::IAsyncSocket>());
-				if (err != 0)
-					LOG_ERROR(("Error adding socket: %s",OOBase::system_error_text(err)));
+				ObjectPtr<Net::IAsyncSocket> ptrIAsync = ptrSocket.QueryInterface<Net::IAsyncSocket>();
+				ObjectPtr<Net::IAsyncSocket>* pv = m_mapSockets.find(id);
+				if (pv)
+				{
+					*pv = ptrIAsync;
+					err = 0;
+				}
 				else
+				{
+					err = m_mapSockets.insert(id,ptrIAsync);
+					if (err != 0)
+						LOG_ERROR(("Error adding socket: %s",OOBase::system_error_text(err)));
+				}
+
+				if (err == 0)
 				{
 					guard2.release();
 
@@ -320,7 +331,7 @@ void User::Manager::close_socket(uint32_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_service_lock);
 
-	if (m_mapSockets.erase(id))
+	if (m_mapSockets.remove(id))
 	{
 		guard.release();
 

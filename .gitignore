@@ -43,22 +43,16 @@ OOServer_msgs.rc
 *.dll
 
 # msvc stuff
-*.obj
-*.[ip]db
-*.lib
-*.intermediate.manifest
-*.embed.manifest
-*.pch
-*.res
-*.exp
-*.ncb
-*.ilk
+ipch/
+bin/
+Debug/
+Release/
 *.vcproj.*.user
+*.vcxproj.user
+*.sdf
+*.opensdf
+*.ncb
 *.suo
-*.aps
-BuildLog.htm
-mt.dep
-dte80a.*
 
 # WiX stuff
 *.msi

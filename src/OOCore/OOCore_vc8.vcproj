@@ -20,7 +20,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -64,8 +64,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;;..\..\oobase\src\Win32\Debug"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -95,7 +95,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\oobase\include"
 				PreprocessorDefinitions=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -140,8 +140,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBased.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\x64\Debug"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -172,7 +172,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\..\bin"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -222,8 +222,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
-				AdditionalLibraryDirectories="..\..\oobase\src\Win32\Release"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -256,7 +256,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -285,7 +285,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\oobase\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -307,8 +307,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib OOBase.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\x64\Release"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

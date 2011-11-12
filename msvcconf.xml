@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <MsvcConf>
+  <Project Name="OOSvrBase">
+    <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
+  </Project>
+  
   <Project Name="OOCore">
     <Configuration Name="Debug">
       <Platform Name="Win32">

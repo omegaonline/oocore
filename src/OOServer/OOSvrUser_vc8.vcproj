@@ -20,7 +20,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_User"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -64,8 +64,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;;..\..\oobase\src\Win32\Debug;..\..\oobase\src\Win32\Debug_Svr"
+				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 			/>
@@ -96,7 +96,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_User"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -122,7 +122,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\oobase\include"
 				PreprocessorDefinitions=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -141,8 +141,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\x64\Debug;..\..\..\oobase\src\x64\Debug_Svr"
+				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib"
+				AdditionalLibraryDirectories=""
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 			/>
@@ -173,7 +173,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\..\bin"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_User"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -222,8 +222,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="..\..\oobase\src\Win32\Release;..\..\oobase\src\Win32\Release_Svr"
+				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib"
+				AdditionalLibraryDirectories=""
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -257,7 +257,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)bin\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_User"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -285,7 +285,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\oobase\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -307,8 +307,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\x64\Release;..\..\..\oobase\src\x64\Release_Svr"
+				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib"
+				AdditionalLibraryDirectories=""
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"

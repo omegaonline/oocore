@@ -45,8 +45,14 @@ HRESULT CreateClassFactory(void** ppv);
 bool CanUnloadNow();
 
 #if defined(_MSC_VER)
+
+#if defined(_WIN64)
+#pragma comment(linker, "/export:DllGetClassObject,PRIVATE") 
+#pragma comment(linker, "/export:DllCanUnloadNow,PRIVATE") 
+#else
 #pragma comment(linker, "/export:DllGetClassObject=_DllGetClassObject@12,PRIVATE") 
 #pragma comment(linker, "/export:DllCanUnloadNow=_DllCanUnloadNow@0,PRIVATE") 
+#endif
 
 #define MAGIC_DECL extern "C" HRESULT STDAPICALLTYPE 
 #else

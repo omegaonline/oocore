@@ -22,7 +22,6 @@
 // Hand generated resource script!
 //
 
-#include "winnt.h"
 #include "winver.h"
 #include "../../include/Omega/OOCore_version.h"
 

@@ -456,8 +456,8 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			// Need to queue this as an async func...
 			OOBase::CDRStream output;
 			output.write(src_channel_id);
-			int64_t secs = 0;
-			int32_t usecs = 0;
+			secs = 0;
+			usecs = 0;
 			if (deadline != OOBase::timeval_t::MaxTime)
 			{
 				secs = deadline.tv_sec();
@@ -542,7 +542,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			dest_channel_id = channel_id;
 		else
 		{
-			uint32_t channel_id = 0;
 			do
 			{
 				channel_id = ++m_nNextChannelId;

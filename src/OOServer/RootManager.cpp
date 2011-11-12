@@ -454,7 +454,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	for (bool bFirst = true;bFirst;bFirst = false)
 	{
 		// See if we have a process already
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
 		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator> vecDead;
 		bool bFound = false;
@@ -477,7 +477,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 			}
 		}
 
-		guard.release();
+		read_guard.release();
 
 		if (!vecDead.empty())
 		{

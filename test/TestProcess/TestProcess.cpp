@@ -113,9 +113,9 @@ int main(int /*argc*/, char* /*argv*/[])
 	{
 		OTL::GetModule()->Run();
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::IException* pE2)
 	{
-		report_exception(pE);
+		report_exception(pE2);
 		ret = EXIT_FAILURE;
 	}
 

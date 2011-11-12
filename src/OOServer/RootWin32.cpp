@@ -58,7 +58,7 @@
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
-    OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
+    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
 
     // Create a SID for the BUILTIN\Administrators group.
     if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
@@ -69,7 +69,7 @@
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
-    OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
+    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
     const int NUM_ACES  = 2;
     EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
@@ -130,7 +130,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	// Clear current entries
 	m_config_args.clear();
 
-	size_t f = cmd_args.find("conf-file");
+	size_t f = cmd_args.find_first("conf-file");
 
 	// Read from registry
 	HKEY hKey = 0;
@@ -138,7 +138,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	if (lRes != ERROR_SUCCESS)
 	{
 		if (lRes == ERROR_FILE_NOT_FOUND && f != cmd_args.npos)
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Missing registry key: HKEY_LOCAL_MACHINE\\Software\\Omega Online\\OOServer");
+			OOBase::Logger::log(OOBase::Logger::Warning,"Missing registry key: HKEY_LOCAL_MACHINE\\Software\\Omega Online\\OOServer");
 		else
 			LOG_ERROR(("Failed to open config registry key: %s",OOBase::system_error_text(lRes)));
 	}
@@ -228,9 +228,15 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 
 			if (!key.empty())
 			{
-				lRes = m_config_args.replace(key,value);
-				if (lRes != 0)
-					LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(lRes)),false);
+				OOBase::String* v = m_config_args.find(key);
+				if (v)
+					*v = value;
+				else
+				{
+					lRes = m_config_args.insert(key,value);
+					if (lRes != 0)
+						LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(lRes)),false);
+				}
 			}
 		}
 
@@ -240,7 +246,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	// Load any config file now...
 	if (f != cmd_args.npos)
 	{
-		OOSvrBase::Logger::log(OOSvrBase::Logger::Information,"Using config file: %s",cmd_args.at(f)->c_str());
+		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",cmd_args.at(f)->c_str());
 
 		if (!load_config_file(cmd_args.at(f)->c_str()))
 			return false;
@@ -264,7 +270,7 @@ bool Root::Manager::start_client_acceptor()
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDSystem(pSID);
+	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDSystem(pSID);
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -281,7 +287,7 @@ bool Root::Manager::start_client_acceptor()
 
 	// Get the logon SID of the Token
 	OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
-	if (OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
+	if (OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
 	{
 		// Use logon sid instead...
 		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
@@ -296,7 +302,7 @@ bool Root::Manager::start_client_acceptor()
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDEveryone(pSID);
+	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDEveryone(pSID);
 
 	// Set read/write access for EVERYONE
 	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
@@ -314,7 +320,7 @@ bool Root::Manager::start_client_acceptor()
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDNetwork(pSID);
+	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDNetwork(pSID);
 
 	// Deny all to NETWORK
 	ea[2].grfAccessPermissions = FILE_ALL_ACCESS;

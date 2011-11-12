@@ -46,7 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;;..\..\..\OOBase\include;C:\Work\sqlite\sqlite-autoconf-3070603"
+				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;;C:\Work\sqlite\sqlite-autoconf-3070603;..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -66,7 +66,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\Win32\Debug_Svr;&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;;..\..\oobase\src\Win32\Debug;..\..\oobase\src\Win32\Debug_Svr"
 				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
@@ -199,7 +199,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite;..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite;..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -222,7 +222,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
+				AdditionalLibraryDirectories="..\..\oobase\src\Win32\Release;..\..\oobase\src\Win32\Release_Svr"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"

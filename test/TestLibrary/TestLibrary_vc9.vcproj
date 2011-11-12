@@ -28,8 +28,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Configuring project settings..."
-				CommandLine="msvcconf_vc9.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -101,8 +100,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Configuring project settings..."
-				CommandLine="msvcconf_vc9.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -175,8 +173,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Configuring project settings..."
-				CommandLine="msvcconf_vc9.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -253,8 +250,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Configuring project settings..."
-				CommandLine="msvcconf_vc9.exe &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"

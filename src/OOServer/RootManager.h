@@ -85,7 +85,7 @@ namespace Root
 		SECURITY_ATTRIBUTES                 m_sa;
 		OOBase::RefPtr<OOSvrBase::Acceptor> m_client_acceptor;
 #if defined(_WIN32)
-		OOSvrBase::Win32::sec_descript_t    m_sd;
+		OOBase::Win32::sec_descript_t       m_sd;
 #endif
 		bool start_client_acceptor();
 		static void accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);

@@ -46,7 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\OOBase\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Visual Leak Detector\include&quot;;..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
@@ -67,7 +67,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="OOBased.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;;..\..\oobase\src\Win32\Debug"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -203,7 +203,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\oobase\include"
 				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
@@ -222,7 +222,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="OOBase.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release"
+				AdditionalLibraryDirectories="..\..\oobase\src\Win32\Release"
 				GenerateManifest="false"
 				SubSystem="1"
 			/>

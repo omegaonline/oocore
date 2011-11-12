@@ -87,9 +87,9 @@ namespace User
 		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
 		void on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err);
 
-		SECURITY_ATTRIBUTES              m_sa;
+		SECURITY_ATTRIBUTES           m_sa;
 #if defined(_WIN32)
-		OOSvrBase::Win32::sec_descript_t m_sd;
+		OOBase::Win32::sec_descript_t m_sd;
 #endif
 
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);

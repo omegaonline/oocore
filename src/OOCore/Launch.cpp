@@ -115,7 +115,9 @@ namespace
 	void get_session_id(OOBase::LocalString& strId)
 	{
 		// We don't use session_id with Win32
-#if !defined(_WIN32)
+#if defined(_WIN32)
+		(void)strId;
+#else
 
 #if defined(HAVE_UNISTD_H)
 		// Just default to using the sid with POSIX

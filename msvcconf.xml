@@ -1,90 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <MsvcConf>
   <Project Name="OOCore">
-    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
         <Library Name="vld.lib" Optional="true" />
       </Platform>
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
     </Configuration>
   </Project>
   
   <Project Name="OOServer">
     <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
-    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
-      <Library Name="OOSvrBased.lib" />
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
         <Library Name="vld.lib" Optional="true" />
       </Platform>
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
-      <Library Name="OOSvrBase.lib" />
     </Configuration>
   </Project>
   
   <Project Name="OOSvrLite">
     <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
-    <Include Name="OOBase/Win32.h" />
-    <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
-      <Library Name="OOSvrBased.lib" />
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
-      <Library Name="OOSvrBase.lib" />
-    </Configuration>
   </Project>
   
   <Project Name="OOSvrUser">
-    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
-      <Library Name="OOSvrBased.lib" />
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
         <Library Name="vld.lib" Optional="true" />
       </Platform>
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
-      <Library Name="OOSvrBase.lib" />
     </Configuration>
   </Project>
 
   <Project Name="OOReg">
-    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
         <Library Name="vld.lib" Optional="true" />
       </Platform>
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
     </Configuration>
   </Project>
 
   <Project Name="OOGuidgen">
-    <Include Name="OOBase/Win32.h" />
     <Configuration Name="Debug">
-      <Library Name="OOBased.lib" />
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
         <Library Name="vld.lib" Optional="true" />
       </Platform>
-    </Configuration>
-    <Configuration Name="Release">
-      <Library Name="OOBase.lib" />
     </Configuration>
   </Project>
 
@@ -119,9 +81,6 @@
         <Library Name="vld.lib" Optional="true" />
       </Platform>
     </Configuration>
-  </Project>
-  
-  <Project Name="TestLibrary">
   </Project>
   
   <Project Name="TestProcess">

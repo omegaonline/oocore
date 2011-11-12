@@ -74,7 +74,7 @@ namespace
 
 		// Get the logon SID of the Token
 		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
-		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
+		DWORD dwRes = OOBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),INVALID_HANDLE_VALUE);
 
@@ -98,7 +98,7 @@ namespace
 		{
 			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 		}
-		OOBase::SmartPtr<void,OOSvrBase::Win32::SIDDestructor> pSIDOwner(pSID);
+		OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDOwner(pSID);
 
 		static const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -119,7 +119,7 @@ namespace
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
 		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
-		OOSvrBase::Win32::sec_descript_t sd;
+		OOBase::Win32::sec_descript_t sd;
 		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwRes)),INVALID_HANDLE_VALUE);
@@ -251,12 +251,12 @@ namespace
 		OOBase::Win32::SmartHandle tok(hToken);
 
 		// Restrict the Token
-		dwErr = OOSvrBase::Win32::RestrictToken(hToken);
+		dwErr = OOBase::Win32::RestrictToken(hToken);
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 
 		// This might be needed for retricted tokens...
-		dwErr = OOSvrBase::Win32::SetTokenDefaultDACL(hToken);
+		dwErr = OOBase::Win32::SetTokenDefaultDACL(hToken);
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 
@@ -264,7 +264,7 @@ namespace
 		return ERROR_SUCCESS;
 	}
 
-	DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 3;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
@@ -303,7 +303,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOBase::Win32::sec_descript_t& sd)
 	{
 		const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -343,9 +343,9 @@ namespace
 
 		// Get the logon SID of the Token
 		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
-		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
+		DWORD dwRes = OOBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
+			LOG_ERROR_RETURN(("OOBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
 
 		char* pszSid = 0;
 		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
@@ -382,9 +382,9 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrProcessUser(static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser)));
+		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrProcessUser(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(hProcessToken,TokenUser)));
 		if (!ptrProcessUser)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("OOBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
 
 		// Open or create the new window station and desktop
 		// Now confirm the Window Station exists...
@@ -396,7 +396,7 @@ namespace
 			if (dwRes != ERROR_FILE_NOT_FOUND)
 				LOG_ERROR_RETURN(("OpenWindowStationA failed: %s",OOBase::system_error_text(dwRes)),false);
 
-			OOSvrBase::Win32::sec_descript_t sd;
+			OOBase::Win32::sec_descript_t sd;
 			dwRes = CreateWindowStationSD(ptrProcessUser,ptrSIDLogon,sd);
 			if (dwRes != ERROR_SUCCESS)
 				LOG_ERROR_RETURN(("CreateWindowStationSD failed: %s",OOBase::system_error_text(dwRes)),false);
@@ -442,7 +442,7 @@ namespace
 				LOG_ERROR_RETURN(("OpenDesktopW failed: %s",OOBase::system_error_text(dwRes)),false);
 			}
 
-			OOSvrBase::Win32::sec_descript_t sd;
+			OOBase::Win32::sec_descript_t sd;
 			dwRes = CreateDesktopSD(ptrProcessUser,ptrSIDLogon,sd);
 			if (dwRes != ERROR_SUCCESS)
 			{
@@ -531,8 +531,8 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	}
 	else
 	{
-		OOBase::CorrectDirSeparator(strModule);
-		int err = OOBase::AppendDirSeparator(strModule);
+		OOBase::Paths::CorrectDirSeparators(strModule);
+		int err = OOBase::Paths::AppendDirSeparator(strModule);
 
 		if (err == 0)
 			err = strModule.append("OOSvrUser.exe");
@@ -599,11 +599,11 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	HANDLE hProfile = NULL;
 	if (!bSandbox)
 	{
-		dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
+		dwRes = OOBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 			dwRes = ERROR_SUCCESS;
 		else if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("OOSvrBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::system_error_text(dwRes)),dwRes);
+			LOG_ERROR_RETURN(("OOBase::Win32::LoadUserProfileFromToken failed: %s",OOBase::system_error_text(dwRes)),dwRes);
 	}
 
 	// Load the users environment vars
@@ -639,7 +639,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
 
-		if (OOSvrBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
+		if (OOBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
 		{
 			if (bSandbox)
 				err = strTitle.printf("%s - %ls\\%ls [Sandbox]",strModule.c_str(),static_cast<const wchar_t*>(strDomainName),static_cast<const wchar_t*>(strUserName));
@@ -809,8 +809,8 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const
 {
 	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges)));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges)));
 
 	if (!pStats1 || !pStats2)
 		return false;
@@ -818,9 +818,9 @@ bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/)
 	return (pStats1->SidCount==pStats2->SidCount &&
 			pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
 			pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
-			OOSvrBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
-			OOSvrBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
-			OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
+			OOBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
+			OOBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
+			OOBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
 bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
@@ -829,8 +829,8 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	if (m_bSandbox)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo1(static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser)));
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo2(static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser)));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo1(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(hToken,TokenUser)));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo2(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(m_hToken,TokenUser)));
 
 	if (!ptrUserInfo1 || !ptrUserInfo2)
 		return false;
@@ -860,7 +860,7 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	if ((err = OOBase::AppendDirSeparator(strSysDir)) != 0)
+	if ((err = OOBase::Paths::AppendDirSeparator(strSysDir)) != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	if (strUsersDir.empty())
@@ -881,14 +881,14 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::Str
 	}
 	else
 	{
-		if ((err = OOBase::AppendDirSeparator(strUsersDir)) != 0)
+		if ((err = OOBase::Paths::AppendDirSeparator(strUsersDir)) != 0)
 			LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 		// Get the names associated with the user SID
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
 
-		DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
+		DWORD dwErr = OOBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
 
@@ -966,11 +966,11 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUserName;
 	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrDomainName;
 
-	DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,ptrUserName,ptrDomainName);
+	DWORD dwRes = OOBase::Win32::GetNameFromToken(uid,ptrUserName,ptrDomainName);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		CloseHandle(uid);
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::system_error_text(dwRes)),false);
+		LOG_ERROR_RETURN(("OOBase::Win32::GetNameFromToken failed: %s",OOBase::system_error_text(dwRes)),false);
 	}
 
 	if (!ptrDomainName)
@@ -984,11 +984,11 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	}
 
 	// Restrict the Token
-	dwRes = OOSvrBase::Win32::RestrictToken(uid);
+	dwRes = OOBase::Win32::RestrictToken(uid);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		CloseHandle(uid);
-		LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::system_error_text(dwRes)),false);
+		LOG_ERROR_RETURN(("OOBase::Win32::RestrictToken failed: %s",OOBase::system_error_text(dwRes)),false);
 	}
 
 	return true;

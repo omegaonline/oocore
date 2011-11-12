@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx</Extensions>
+    </Filter>
+    <Filter Include="OTL">
+      <UniqueIdentifier>{6ccd98c0-b4cb-43d7-aab0-100e7e39a9ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Omega">
+      <UniqueIdentifier>{2b9a46e3-ace4-440f-9746-2db5bf67d31d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Activation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Channel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Compartment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Exception.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Formatting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Launch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoopChannel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OOCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RunningObjectTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Safe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleMarshaller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StdObjectManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Threading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TypeInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UserSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WireProxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WireStub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Activation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDRMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Channel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Compartment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Formatting.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopChannel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\oocore-config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\oocore-msvc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OOCore_precomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdObjectManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WireProxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WireStub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\OTL\Exception.h">
+      <Filter>OTL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Otl\OTL.h">
+      <Filter>OTL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\OTL\Registry.h">
+      <Filter>OTL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\any.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\base.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\base_types.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\Compartment.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\config-borland.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\config-gcc.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\config-guess.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\config-msvc.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\config-win32.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\export.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\interfaces.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\IO.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\memory.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\Omega.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\OOCore_version.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\Remoting.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\rtti.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\safe.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\safe_ps.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\Service.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\string.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\threading.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\types.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\wire.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\internal\wire_ps.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OOCore_res.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\include\Otl\OTL.inl">
+      <Filter>OTL</Filter>
+    </None>
+    <None Include="..\..\include\Omega\internal\any.inl">
+      <Filter>Omega</Filter>
+    </None>
+    <None Include="..\..\include\Omega\internal\rtti.inl">
+      <Filter>Omega</Filter>
+    </None>
+    <None Include="..\..\include\Omega\internal\safe.inl">
+      <Filter>Omega</Filter>
+    </None>
+    <None Include="..\..\include\Omega\internal\threading.inl">
+      <Filter>Omega</Filter>
+    </None>
+    <None Include="..\..\include\Omega\internal\types.inl">
+      <Filter>Omega</Filter>
+    </None>
+    <None Include="..\..\include\Omega\internal\wire.inl">
+      <Filter>Omega</Filter>
+    </None>
+  </ItemGroup>
+</Project>

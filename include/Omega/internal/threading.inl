@@ -109,6 +109,12 @@ inline void* Omega::Threading::ModuleDestructor<DLL>::handle()
 	return s_handle;
 }
 
+template <typename DLL>
+inline Omega::Threading::ModuleDestructor<DLL>::auto_destructor::~auto_destructor()
+{
+	OOCore_mod_destruct__dctor(m_h);
+}
+
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param));
 

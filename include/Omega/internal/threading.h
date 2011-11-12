@@ -193,10 +193,7 @@ namespace Omega
 				auto_destructor(void*& h) : m_h(h)
 				{}
 
-				~auto_destructor()
-				{
-					OOCore_mod_destruct__dctor(m_h);
-				}
+				~auto_destructor();
 
 				void*& m_h;
 

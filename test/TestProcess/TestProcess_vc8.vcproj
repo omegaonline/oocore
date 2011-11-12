@@ -69,8 +69,6 @@
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="1"
 				TargetMachine="1"
 			/>
 			<Tool

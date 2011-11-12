@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\OOBase\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Visual Leak Detector\include&quot;;..\..\oobase\include"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -65,11 +65,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBased.lib OOSvrBased.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Debug;..\..\..\oobase\src\Win32\Debug_Svr;&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib\Win32&quot;;..\..\oobase\src\Win32\Debug;..\..\oobase\src\Win32\Debug_Svr"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -202,7 +200,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\oobase\include"
+				AdditionalIncludeDirectories="..\..\oobase\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -225,7 +223,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib netapi32.lib userenv.lib shlwapi.lib OOBase.lib OOSvrBase.lib"
-				AdditionalLibraryDirectories="..\..\..\oobase\src\Win32\Release;..\..\..\oobase\src\Win32\Release_Svr"
+				AdditionalLibraryDirectories="..\..\oobase\src\Win32\Release;..\..\oobase\src\Win32\Release_Svr"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"

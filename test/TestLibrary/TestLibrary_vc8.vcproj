@@ -46,6 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions=""
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -65,8 +66,6 @@
 				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="1"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool

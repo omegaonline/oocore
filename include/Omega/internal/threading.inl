@@ -103,24 +103,7 @@ template <typename DLL>
 inline void* Omega::Threading::ModuleDestructor<DLL>::handle()
 {
 	static void* s_handle = NULL;
-
-	static struct auto_destructor
-	{
-		auto_destructor(void*& h) : m_h(h)
-		{}
-
-		~auto_destructor()
-		{
-			OOCore_mod_destruct__dctor(m_h);
-		}
-
-		void*& m_h;
-
-	private:
-		auto_destructor(const auto_destructor& rhs) : m_h(rhs.m_h) {}
-		auto_destructor& operator = (const auto_destructor&) { return *this; }
-
-	} s_i(s_handle);
+	static auto_destructor s_i(s_handle);
 	
 	OOCore_mod_destruct__ctor(&s_handle);
 	return s_handle;

@@ -187,9 +187,9 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 		{
 			m_ptrCompt = OTL::ObjectPtr<Omega::Compartment::ICompartment>(Omega::Compartment::OID_Compartment);
 		}
-		catch (Omega::IException* pE)
+		catch (Omega::IException* pE2)
 		{
-			return FillExcepInfo(L"CreateInstance",pE,pExcepInfo);
+			return FillExcepInfo(L"CreateInstance",pE2,pExcepInfo);
 		}			
 	}
 	

@@ -168,5 +168,5 @@ IException* SimpleMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t /*attr
 
 uint32_t SimpleMarshaller::GetSource()
 {
-	OMEGA_THROW("Cannot call GetSource() on SimpleMarshaller");
+	return 0;
 }

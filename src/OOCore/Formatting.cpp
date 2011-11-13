@@ -1236,7 +1236,7 @@ namespace
 				break;
 
 			case L'#':
-				while (!isdigit(strNumber[numpos]))
+				while (!isdigit((unsigned char)strNumber[numpos]))
 				{
 					if (sig_zero)
 						res += string_t(strNumber.c_str()+numpos,false,1);
@@ -1253,7 +1253,7 @@ namespace
 				break;
 
 			case L'0':
-				while (!isdigit(strNumber[numpos]))
+				while (!isdigit((unsigned char)strNumber[numpos]))
 				{
 					res += string_t(strNumber.c_str()+numpos,false,1);
 					++numpos;

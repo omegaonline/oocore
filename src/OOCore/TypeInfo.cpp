@@ -349,7 +349,8 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 		OMEGA_THROW("GetMethodInfo requesting invalid method index");
 
 	MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
-	assert(mi);
+	if (!mi)
+		OMEGA_THROW("GetMethodInfo requesting invalid method index");
 
 	strName = mi->strName;
 	attribs = mi->attribs;
@@ -367,13 +368,15 @@ void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t&
 		OMEGA_THROW("GetParamInfo requesting invalid method index");
 
 	MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
-	assert(mi);
+	if (!mi)
+		OMEGA_THROW("GetParamInfo requesting invalid method index");
 
 	if (!mi->params || param_idx >= mi->params->size())
 		OMEGA_THROW("GetParamInfo requesting invalid param index");
 
 	ParamInfo* pi = mi->params->at(param_idx);
-	assert(pi);
+	if (!pi)
+		OMEGA_THROW("GetParamInfo requesting invalid param index");
 
 	strName = pi->strName;
 	type = pi->type;
@@ -390,13 +393,15 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 		OMEGA_THROW("GetAttributeRef requesting invalid method index");
 
 	const MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
-	assert(mi);
+	if (!mi)
+		OMEGA_THROW("GetAttributeRef requesting invalid method index");
 
 	if (!mi->params || param_idx >= mi->params->size())
 		OMEGA_THROW("GetAttributeRef requesting invalid param index");
 
 	const ParamInfo* pi = mi->params->at(param_idx);
-	assert(pi);
+	if (!pi)
+		OMEGA_THROW("GetAttributeRef requesting non-ref param reference");
 
 	if (!(pi->attribs & attrib))
 		OMEGA_THROW("GetAttributeRef requesting non-ref param reference");

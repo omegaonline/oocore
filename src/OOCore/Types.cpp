@@ -47,48 +47,47 @@ namespace
 
 		StringNode(size_t length) : m_wbuf(NULL), m_wlen(0), m_cbuf(NULL), m_clen(0), m_flags(eOwn), m_refcount(1)
 		{
-			assert(length);
+			if (length)
+			{
+				wchar_t* buf = new (OOCore::throwing) wchar_t[length+1];
+				buf[length] = L'\0';
 
-			wchar_t* buf = new (OOCore::throwing) wchar_t[length+1];
-			buf[length] = L'\0';
-
-			m_wbuf = buf;
-			m_wlen = length;
+				m_wbuf = buf;
+				m_wlen = length;
+			}
 		}
 
 		StringNode(const wchar_t* sz, size_t length, bool own) : m_wbuf(NULL), m_wlen(0), m_cbuf(NULL), m_clen(0), m_flags(own ? eOwn : 0), m_refcount(1)
 		{
-			assert(sz);
-			assert(length);
-
-			if (own)
+			if (sz && length)
 			{
-				wchar_t* buf = new (OOCore::throwing) wchar_t[length+1];
-				memcpy(buf,sz,length*sizeof(wchar_t));
-				buf[length] = L'\0';
+				if (own)
+				{
+					wchar_t* buf = new (OOCore::throwing) wchar_t[length+1];
+					memcpy(buf,sz,length*sizeof(wchar_t));
+					buf[length] = L'\0';
 
-				m_wbuf = buf;
+					m_wbuf = buf;
+				}
+				else
+					m_wbuf = sz;
+
+				m_wlen = length;
 			}
-			else
-				m_wbuf = sz;
-
-			m_wlen = length;
 		}
 
 		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_wbuf(NULL), m_wlen(0), m_cbuf(NULL), m_clen(0), m_flags(eOwn), m_refcount(1)
 		{
-			assert(sz1);
-			assert(len1);
-			assert(sz2);
-			assert(len2);
+			if (sz1 && len1 && sz2 && len2)
+			{
+				wchar_t* buf = new (OOCore::throwing) wchar_t[len1+len2+1];
+				memcpy(buf,sz1,len1*sizeof(wchar_t));
+				memcpy(buf+len1,sz2,len2*sizeof(wchar_t));
+				buf[len1+len2] = L'\0';
 
-			wchar_t* buf = new (OOCore::throwing) wchar_t[len1+len2+1];
-			memcpy(buf,sz1,len1*sizeof(wchar_t));
-			memcpy(buf+len1,sz2,len2*sizeof(wchar_t));
-			buf[len1+len2] = L'\0';
-
-			m_wbuf = buf;
-			m_wlen = len1+len2;
+				m_wbuf = buf;
+				m_wlen = len1+len2;
+			}
 		}
 
 		void* AddRef()
@@ -180,9 +179,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const ch
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_addref,2,((in),void*,s1,(in),int,own))
 {
-	assert(s1);
-
-	if (own == 0)
+	if (!s1)
+		return NULL;
+	else if (own == 0)
 		return static_cast<StringNode*>(s1)->AddRef();
 	else
 		return static_cast<StringNode*>(s1)->Own();
@@ -201,9 +200,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,3,((in),const wc
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,s1))
 {
-	assert(s1);
-
-	static_cast<StringNode*>(s1)->Release();
+	if (s1)
+		static_cast<StringNode*>(s1)->Release();
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s1,(in),const void*,s2))

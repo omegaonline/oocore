@@ -271,11 +271,13 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		OMEGA_THROW("Invoke called with no message");
 
 	// Stash call context
-	CallContext* pCC = 0;
-	pCC = OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 	CallContext old_context;
+	CallContext* pCC = NULL;
+	pCC = OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 	if (pCC)
 		old_context = *pCC;
+	else
+		pCC = &old_context;
 
 	try
 	{
@@ -457,9 +459,9 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 		pRecv = ptrRecv.AddRef();
 		return NULL;
 	}
-	catch (IException* pE)
+	catch (IException* pE2)
 	{
-		return pE;
+		return pE2;
 	}
 }
 

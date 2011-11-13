@@ -284,8 +284,6 @@ namespace Omega
 				{
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
-					assert(count == count2);
-
 					// Stop overflow
 					if (count2 > count)
 						count2 = static_cast<uint32_t>(count);
@@ -326,7 +324,6 @@ namespace Omega
 				{
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
-					assert(count == count2);
 					OMEGA_UNUSED_ARG(count);
 
 					// Stop overflow
@@ -634,8 +631,6 @@ namespace Omega
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
 
-					assert(count == val.size());
-
 					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 						marshal_info<typename Coll::value_type>::wire_type::unpack(string_t(),pMarshaller,pMessage,*i);
 
@@ -851,8 +846,6 @@ namespace Omega
 				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
-
-					assert(count == val.size());
 
 					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 					{

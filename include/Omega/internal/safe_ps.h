@@ -77,8 +77,6 @@ namespace Omega
 
 				I* operator ->()
 				{
-					assert(m_pI != 0);
-
 					return m_pI;
 				}
 
@@ -148,8 +146,6 @@ namespace Omega
 
 				const SafeShim* operator ->() const
 				{
-					assert(m_pS != 0);
-
 					return m_pS;
 				}
 
@@ -223,8 +219,6 @@ namespace Omega
 
 				virtual void Release()
 				{
-					assert(!m_refcount.IsZero());
-
 					if (m_refcount.Release() == 0)
 					{
 						m_intcount.AddRef();
@@ -304,8 +298,6 @@ namespace Omega
 
 				virtual void Internal_Release()
 				{
-					assert(!m_intcount.IsZero());
-
 					if (m_intcount.Release() == 0 && m_refcount.IsZero() && m_pincount.IsZero())
 						Destruct__proxy__();
 				}
@@ -323,8 +315,6 @@ namespace Omega
 
 				void Unpin()
 				{
-					assert(!m_pincount.IsZero());
-
 					if (m_pincount.Release() == 0)
 					{
 						// Unpin the shim
@@ -462,8 +452,6 @@ namespace Omega
 
 				void Release()
 				{
-					assert(!m_refcount.IsZero());
-
 					if (m_refcount.Release() == 0)
 					{
 						m_pincount.AddRef();
@@ -502,8 +490,6 @@ namespace Omega
 
 				void Unpin()
 				{
-					assert(!m_pincount.IsZero());
-
 					if (m_pincount.Release() == 0 && m_refcount.IsZero())
 						delete this;
 				}

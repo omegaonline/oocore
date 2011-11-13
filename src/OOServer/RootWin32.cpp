@@ -147,11 +147,11 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		// Loop pulling out registry values
 		for (DWORD dwIndex=0;; ++dwIndex)
 		{
-			char valName[16383 + 1];
-			DWORD dwNameLen = 16383 + 1;
+			char szBuf[1024];
+			DWORD dwNameLen = sizeof(szBuf);
 			DWORD dwType = 0;
 			DWORD dwValLen = 0;
-			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
+			lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
 			if (lRes == ERROR_NO_MORE_ITEMS)
 				break;
 			else if (lRes != ERROR_SUCCESS)
@@ -161,11 +161,11 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 			}
 
 			// Skip anything starting with #
-			if (dwValLen>=1 && valName[0]=='#')
+			if (dwValLen>=1 && szBuf[0]=='#')
 				continue;
 
 			OOBase::String value,key;
-			lRes = key.assign(valName,dwNameLen);
+			lRes = key.assign(szBuf,dwNameLen);
 			if (lRes != 0)
 				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(lRes)),false);
 
@@ -175,7 +175,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 			{
 				DWORD dwVal = 0;
 				DWORD dwLen = sizeof(dwVal);
-				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
+				lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
 				if (lRes != ERROR_SUCCESS)
 					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
 
@@ -190,18 +190,17 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 				if (!buf.allocate(dwValLen+1))
 					LOG_ERROR_RETURN(("Out of memory"),false);
 
-				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
+				lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
 				if (lRes != ERROR_SUCCESS)
 					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
 
 				if (dwType == REG_EXPAND_SZ)
 				{
-					char buf2[1024] = {0};
-					DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1022);
+					DWORD dwExpLen = ExpandEnvironmentStringsA(buf,szBuf,sizeof(szBuf));
 					if (dwExpLen == 0)
 						LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);
-					else if (dwExpLen <= 1022)
-						lRes = value.assign(buf2,dwExpLen-1);
+					else if (dwExpLen <= sizeof(szBuf))
+						lRes = value.assign(szBuf,dwExpLen-1);
 					else
 					{
 						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3;

@@ -188,8 +188,6 @@ namespace OTL
 
 		OBJECT* operator ->() const
 		{
-			assert(m_ptr != NULL);
-
 			return m_ptr;
 		}
 
@@ -333,8 +331,6 @@ namespace OTL
 
 		virtual void Internal_Release()
 		{
-			assert(!m_refcount.IsZero());
-
 			if (m_refcount.Release() == 0)
 				Final_Release();
 		}
@@ -438,19 +434,16 @@ namespace OTL
 		virtual void RegisterObjectFactories()
 		{
 			// Override this in a derived class, or do not call
-			assert(false);
 		}
 
 		virtual void UnregisterObjectFactories()
 		{
 			// Override this in a derived class, or do not call
-			assert(false);
 		}
 
 		virtual void Run()
 		{
 			// Override this in a derived class, or do not call
-			assert(false);
 		}
 
 	protected:
@@ -644,8 +637,6 @@ namespace OTL
 
 		virtual void Release()
 		{
-			assert(!m_refcount.IsZero());
-
 			if (m_refcount.Release() == 0)
 				delete this;
 		}

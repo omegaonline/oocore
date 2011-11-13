@@ -358,7 +358,6 @@ STDMETHODIMP IDispatchObjImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, U
 			// Always Add 2 to avoid IObject::AddRef and IObject::Release
 			for (; method < methodCount; ++method)
 			{
-				Omega::byte_t param_count;
 				Omega::TypeInfo::MethodAttributes_t attribs;
 				Omega::uint32_t timeout;
 				Omega::string_t strName;
@@ -498,52 +497,47 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		// See http://msdn.microsoft.com/en-us/library/ms221653.aspx for details of DISPPARAMS
 		// Key points: args are in reverse order (right to left)
 		//             unnamed args processed before named args
-		UINT arg = pDispParams->cArgs;
-		while (arg > pDispParams->cNamedArgs)
+		if (pDispParams)
 		{
-			HRESULT hr = WriteArg(lcid,ptrMsg,dispIdMember,params_written,pDispParams->rgvarg[arg-1]);
-			if (hr != S_OK)
-			{
-				if (puArgErr)
-					*puArgErr = arg-1;
-				
-				UnpackArgs(lcid,ptrMsg,dispIdMember,params_written);
-				return hr;
-			}
-			
-			++params_written;
-			--arg;
-		}
-		
-		// Now write named args
-		while (arg > 0)
-		{
-			UINT idx = 0;
-			for (; idx < pDispParams->cNamedArgs; ++idx)
-			{
-				if (pDispParams->rgdispidNamedArgs[idx] == static_cast<INT>(arg-1))
-					break;
-			}
-			
-			if (idx != pDispParams->cNamedArgs)
+			UINT arg = pDispParams->cArgs;
+			for (; arg > pDispParams->cNamedArgs; --arg, ++params_written)
 			{
 				HRESULT hr = WriteArg(lcid,ptrMsg,dispIdMember,params_written,pDispParams->rgvarg[arg-1]);
 				if (hr != S_OK)
 				{
 					if (puArgErr)
 						*puArgErr = arg-1;
-					
+				
 					UnpackArgs(lcid,ptrMsg,dispIdMember,params_written);
 					return hr;
 				}
 			}
-			else
+		
+			// Now write named args
+			for (; arg > 0; --arg, ++params_written)
 			{
-				WriteDefault(lcid,ptrMsg,dispIdMember,params_written);
-			}			
+				UINT idx = 0;
+				for (; idx < pDispParams->cNamedArgs; ++idx)
+				{
+					if (pDispParams->rgdispidNamedArgs[idx] == static_cast<INT>(arg-1))
+						break;
+				}
 			
-			++params_written;
-			--arg;
+				if (idx != pDispParams->cNamedArgs)
+				{
+					HRESULT hr = WriteArg(lcid,ptrMsg,dispIdMember,params_written,pDispParams->rgvarg[arg-1]);
+					if (hr != S_OK)
+					{
+						if (puArgErr)
+							*puArgErr = arg-1;
+					
+						UnpackArgs(lcid,ptrMsg,dispIdMember,params_written);
+						return hr;
+					}
+				}
+				else
+					WriteDefault(lcid,ptrMsg,dispIdMember,params_written);			
+			}
 		}
 		
 		// Now write missing params as any_t()
@@ -557,7 +551,6 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			
 		// Now make the call...
 		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,ptrResult,timeout);
-		
 		if (pE)
 			return FillExcepInfo(strName.c_wstr(),pE,pExcepInfo);			
 	}
@@ -583,33 +576,29 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		ReadArgByType(lcid,L"$retval",ptrMsg,ptrRetType,pVarResult);
 		
 		Omega::byte_t params_read = 0;
-		
-		UINT arg = pDispParams->cArgs;
-		while (arg > pDispParams->cNamedArgs)
+		if (pDispParams)
 		{
-			ReadArg(lcid,ptrMsg,dispIdMember,params_read,&pDispParams->rgvarg[arg-1]);
-			
-			++params_read;
-			--arg;
-		}
-		
-		// Now read named args
-		while (arg > 0)
-		{
-			UINT idx = 0;
-			for (; idx < pDispParams->cNamedArgs; ++idx)
+			UINT arg = pDispParams->cArgs;
+			for (; arg > pDispParams->cNamedArgs; ++params_read,--arg)
 			{
-				if (pDispParams->rgdispidNamedArgs[idx] == static_cast<INT>(arg-1))
-					break;
-			}
-			
-			if (idx != pDispParams->cNamedArgs)
 				ReadArg(lcid,ptrMsg,dispIdMember,params_read,&pDispParams->rgvarg[arg-1]);
-			else
-				ReadArg(lcid,ptrMsg,dispIdMember,params_read,NULL);
-							
-			++params_read;
-			--arg;
+			}
+		
+			// Now read named args
+			for (;arg > 0; ++params_read,--arg)
+			{
+				UINT idx = 0;
+				for (; idx < pDispParams->cNamedArgs; ++idx)
+				{
+					if (pDispParams->rgdispidNamedArgs[idx] == static_cast<INT>(arg-1))
+						break;
+				}
+			
+				if (idx != pDispParams->cNamedArgs)
+					ReadArg(lcid,ptrMsg,dispIdMember,params_read,&pDispParams->rgvarg[arg-1]);
+				else
+					ReadArg(lcid,ptrMsg,dispIdMember,params_read,NULL);
+			}
 		}
 		
 		// Now read missing params

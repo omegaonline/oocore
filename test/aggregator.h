@@ -1,3 +1,4 @@
+
 class Aggregator :
 		public Omega::TestSuite::ISimpleTest2
 {
@@ -19,8 +20,6 @@ public:
 
 	void Release()
 	{
-		assert(!m_refcount.IsZero());
-
 		if (m_refcount.Release() == 0)
 			delete this;
 	}

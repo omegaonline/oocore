@@ -171,9 +171,6 @@ inline Omega::IException* Omega::System::Internal::Wire_Proxy_Base::Throw(const 
 
 inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Omega::Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
 {
-	assert(iid != OMEGA_GUIDOF(ISafeProxy));
-	assert(pProxy);
-
 	IObject* obj = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))
 	{

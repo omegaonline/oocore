@@ -155,20 +155,13 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		// Control its lifetime
 		auto_iface_ptr<Remoting::IProxy> ptrProxy = create_safe_proxy<Remoting::IProxy>(proxy);
 
-		assert(iid == OMEGA_GUIDOF(IObject) || ptrProxy->RemoteQueryInterface(iid));
-
 		// Create a wire proxy
 		return create_wire_proxy(ptrProxy,iid);
 	}
 	
 	// Check for special case of IObject
 	if (guid_t(*shim->m_iid) == OMEGA_GUIDOF(IObject))
-	{
-		// Shims should always be 'complete'
-		assert(iid == OMEGA_GUIDOF(IObject));
-		
 		return Safe_Proxy_IObject::bind(shim);
-	}
 		
 	// Find the rtti info...
 	const qi_rtti* rtti = get_qi_rtti_info(*shim->m_iid);
@@ -188,7 +181,8 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 
 inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shim)
 {
-	assert(shim);
+	if (!shim)
+		OMEGA_THROW("Attempt to throw NUL exception!");
 
 	// Ensure shim is released
 	auto_safe_shim ss = shim;

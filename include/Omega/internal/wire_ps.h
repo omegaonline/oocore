@@ -87,8 +87,6 @@ namespace Omega
 
 				virtual void Release()
 				{
-					assert(!m_refcount.IsZero());
-
 					if (m_refcount.Release() == 0 && m_pincount.IsZero())
 						Destruct__proxy__();
 				}
@@ -167,8 +165,6 @@ namespace Omega
 
 				void Unpin()
 				{
-					assert(!m_pincount.IsZero());
-
 					if (m_pincount.Release() == 0 && m_refcount.IsZero())
 						Destruct__proxy__();
 				}
@@ -332,7 +328,6 @@ namespace Omega
 				template <typename I>
 				I* get_iface()
 				{
-					assert(SupportsInterface(OMEGA_GUIDOF(I)));
 					return static_cast<I*>(static_cast<IObject*>(m_ptrI));
 				}
 
@@ -383,8 +378,6 @@ namespace Omega
 
 				void Release()
 				{
-					assert(!m_refcount.IsZero());
-
 					if (m_refcount.Release() == 0)
 						delete this;
 				}

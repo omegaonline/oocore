@@ -24,7 +24,7 @@ void normalise_path(Omega::string_t& strPath)
 bool init_standalone_tests()
 {
 #if defined(_MSC_VER)
-	Omega::string_t regdb_path = L"..\\build\\data\\";
+	Omega::string_t regdb_path = L"..\\..\\..\\build\\data\\";
 #else
 	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../data/";
 #endif

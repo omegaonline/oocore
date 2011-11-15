@@ -328,7 +328,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 				ObjectPtr<ObjectImpl<Stub> > ptrStub;
 				if (!m_mapStubIds.find(stub_id,ptrStub))
-					OMEGA_THROW("Bad stub id");
+					OMEGA_THROW("Proxy references an object that has gone");
 
 				guard.release();
 

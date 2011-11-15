@@ -148,8 +148,20 @@ static void recurse_output_exception(Omega::IException* pE)
 	Omega::IException* pCause = pE->GetCause();
 	if (pCause)
 	{
-		output("Cause:\t%ls\n",pCause->GetDescription().c_wstr());
-		recurse_output_exception(pCause);
+		try
+		{
+			output("Cause:\t%ls\n",pCause->GetDescription().c_wstr());
+			recurse_output_exception(pCause);
+		}
+		catch (Omega::IException* pE2)
+		{
+			output_exception(pE2);
+			pE2->Release();
+		}
+		catch (...)
+		{
+			output("[C++ exception!]\n");
+		}
 		pCause->Release();
 	}
 }

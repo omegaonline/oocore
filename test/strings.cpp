@@ -252,7 +252,7 @@ bool string_tests_format()
 bool string_tests_utf8()
 {
 #if defined(_MSC_VER)
-	FILE* pInUTF8 = fopen("UTF-8-test.txt","rb");
+	FILE* pInUTF8 = fopen("..\\..\\..\\test\\UTF-8-test.txt","rb");
 #else
 	FILE* pInUTF8 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/UTF-8-test.txt","rb");
 #endif
@@ -277,7 +277,7 @@ bool string_tests_utf8()
 	fclose(pInUTF8);
 
 #if defined(_MSC_VER)
-	FILE* pInUTF16 = fopen("UTF-16-test.txt","rb");
+	FILE* pInUTF16 = fopen("..\\..\\..\\test\\UTF-16-test.txt","rb");
 #else
 	FILE* pInUTF16 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/UTF-16-test.txt","rb");
 #endif

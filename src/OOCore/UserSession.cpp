@@ -198,7 +198,12 @@ void OOCore::UserSession::stop()
 	}
 
 	// Wait for the io worker thread to finish
-	m_worker_thread.join();
+	OOBase::timeval_t wait(15);
+	if (!m_worker_thread.join(&wait))
+	{
+		m_stream->close();
+		m_worker_thread.join();
+	}
 
 	// Unload the OOSvrLite dll if loaded
 	m_lite_dll.unload();

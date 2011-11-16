@@ -31,6 +31,70 @@ namespace OOCore
 	TypeInfo::IInterfaceInfo* GetInterfaceInfo(const guid_t& iid);
 }
 
+namespace
+{
+	class OutOfMemoryException : public ISystemException
+	{
+	public:
+		OutOfMemoryException()
+		{
+			m_strError = string_t(OOBase::system_error_text(ERROR_OUTOFMEMORY),false);
+		}
+
+		static OutOfMemoryException s_instance;
+		
+	private:
+		string_t m_strError;	
+
+	// IObject members
+	public:
+		void AddRef() {}
+		void Release() {}
+		IObject* QueryInterface(const guid_t& iid)
+		{
+			if (iid == OMEGA_GUIDOF(IObject) ||
+				iid == OMEGA_GUIDOF(IException) ||
+				iid == OMEGA_GUIDOF(ISystemException))
+			{
+				return this;
+			}
+			
+			return NULL;
+		}
+
+	// IException members
+	public:
+		void Rethrow()
+		{
+			throw static_cast<IException*>(this);
+		}
+
+		guid_t GetThrownIID()
+		{
+			return OMEGA_GUIDOF(ISystemException);
+		}
+
+		IException* GetCause()
+		{
+			return NULL;
+		}
+
+		string_t GetDescription()
+		{
+			return m_strError;
+		}
+
+	// ISystemException members
+	public:
+		uint32_t GetErrorCode()
+		{
+			return ERROR_OUTOFMEMORY;
+		}
+	};
+
+	OutOfMemoryException OutOfMemoryException::s_instance;
+}
+
 OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
 OMEGA_DEFINE_OID(OOCore,OID_InternalExceptionMarshalFactory, "{47E86F31-E9E9-4667-89CA-40EB048DA2B7}");
 OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
@@ -39,6 +103,9 @@ OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC7
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),IException*,pCause))
 {
+	if (e == ERROR_OUTOFMEMORY)
+		OutOfMemoryException::s_instance.Rethrow();
+
 	ObjectPtr<ObjectImpl<OOCore::SystemException> > pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strDesc = string_t(OOBase::system_error_text(e),false);
 	pExcept->m_errno = e;

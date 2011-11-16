@@ -144,7 +144,7 @@ namespace
 			for (;;)
 			{
 				ssize_t r = ::read(m_fd,data,lenBytes);
-				if (r != ssize_t(-1))
+				if (r != -1)
 					return static_cast<uint32_t>(r);
 
 				int err = errno;

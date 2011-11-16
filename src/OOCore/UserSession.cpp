@@ -618,7 +618,7 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 		}
 		else if (res == OOBase::BoundedQueue<Message>::closed)
 			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
-		else // if (res == OOBase::BoundedQueue<Message>::timedout)
+		else if (res == OOBase::BoundedQueue<Message>::timedout)
 			break;
 	}
 }
@@ -837,8 +837,11 @@ void OOCore::UserSession::respond_exception(OOBase::CDRStream& response, IExcept
 {
 	// Make sure the exception is released
 	ObjectPtr<IException> ptrE = pE;
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrResponse = ObjectImpl<CDRMessage>::CreateInstance();
 
-	void* TODO;
+	OOCore_RespondException(ptrResponse,pE);
+	
+	response = *ptrResponse->GetCDRStream();
 }
 
 void OOCore::UserSession::process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline)
@@ -852,9 +855,13 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 
 	if (!ptrCompt)
 	{
-		OOBase::CDRStream response;
-		respond_exception(response,Remoting::IChannelClosedException::Create());
-		return send_response_catch(msg,&response);
+		if (!(msg.m_attribs & Message::asynchronous))
+		{
+			OOBase::CDRStream response;
+			respond_exception(response,Remoting::IChannelClosedException::Create());
+			send_response_catch(msg,&response);
+		}
+		return;
 	}
 
 	// Set per channel thread id
@@ -870,9 +877,13 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 		int err = pContext->m_mapChannelThreads.insert(msg.m_src_channel_id,msg.m_src_thread_id);
 		if (err != 0)
 		{
-			OOBase::CDRStream response;
-			respond_exception(response,ISystemException::Create(err));
-			return send_response_catch(msg,&response);
+			if (!(msg.m_attribs & Message::asynchronous))
+			{
+				OOBase::CDRStream response;
+				respond_exception(response,ISystemException::Create(err));
+				send_response_catch(msg,&response);
+			}
+			return;
 		}
 	}
 
@@ -892,9 +903,16 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	}
 	catch (IException* pE)
 	{
-		OOBase::CDRStream response;
-		respond_exception(response,pE);
-		send_response_catch(msg,&response);
+		if (!(msg.m_attribs & Message::asynchronous))
+		{
+			OOBase::CDRStream response;
+			respond_exception(response,pE);
+			send_response_catch(msg,&response);
+		}
+		else
+		{
+			pE->Release();
+		}
 	}
 
 	// Restore old context

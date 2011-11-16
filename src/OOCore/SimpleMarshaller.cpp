@@ -153,7 +153,7 @@ void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMe
 
 Remoting::IMessage* SimpleMarshaller::CreateMessage()
 {
-	return ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+	OMEGA_THROW("Cannot call CreateMessage() on SimpleMarshaller");
 }
 
 void SimpleMarshaller::UnmarshalInterface(const string_t& /*strName*/, Remoting::IMessage* /*pMessage*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
@@ -169,4 +169,24 @@ IException* SimpleMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t /*attr
 uint32_t SimpleMarshaller::GetSource()
 {
 	return 0;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Remoting::IMessage*,pMessage,(in),IException*,pException))
+{
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+	ObjectPtr<ObjectImpl<SimpleMarshaller> > ptrMarshaller = ObjectImpl<SimpleMarshaller>::CreateInstance();
+
+	ptrPayload->WriteStructStart(L"ipc_response",L"$ipc_response_type");
+	ptrPayload->WriteValue(L"$throw",true);
+
+	guid_t iid = pException->GetThrownIID();
+	ObjectPtr<IObject> ptrQI = pException->QueryInterface(iid);
+	if (ptrQI)
+		ptrMarshaller->MarshalInterface(L"exception",ptrPayload,iid,ptrQI);
+	else
+		ptrMarshaller->MarshalInterface(L"exception",ptrPayload,OMEGA_GUIDOF(IException),pException);
+
+	ptrPayload->WriteStructEnd();
+	
+	ptrMarshaller->MarshalInterface(L"payload",pMessage,OMEGA_GUIDOF(Remoting::IMessage),static_cast<Remoting::IMessage*>(ptrPayload));
 }

@@ -221,7 +221,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 			return pE;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 bool_t OOCore::Channel::IsConnected()

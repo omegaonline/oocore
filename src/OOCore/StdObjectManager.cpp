@@ -369,7 +369,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
-	pObject = 0;
+	pObject = NULL;
 
 	ObjectPtr<Remoting::IMessage> ptrParamsOut = CreateMessage();
 
@@ -660,7 +660,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 	if (flag == 0)
 	{
 		// NOP
-		pObject = 0;
+		pObject = NULL;
 	}
 	else if (flag == 1)
 	{

@@ -27,6 +27,7 @@ common = \
 	RunningObjectTable.cpp \
 	Safe.cpp \
 	Server.h \
+	SimpleMarshaller.cpp \
 	StdObjectManager.cpp \
 	StdObjectManager.h \
 	Threading.cpp \

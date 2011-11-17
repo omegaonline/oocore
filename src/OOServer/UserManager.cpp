@@ -700,6 +700,9 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 {
 	try
 	{
+		// Add respond_exception
+		void* TODO;
+
 		// Find and/or create the object manager associated with src_channel_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id,guid_t::Null());
 		if (!ptrOM)

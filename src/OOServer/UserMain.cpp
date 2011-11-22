@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
 	// Stop the manager
 	manager.stop();
 
-	if (User::is_debug())
+	if (User::is_debug() && !bRun)
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 

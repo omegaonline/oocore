@@ -70,7 +70,7 @@ namespace
 	{
 		OOBase::Logger::log(OOBase::Logger::Error,msg);
 
-		if (Root::getenv_OMEGA_DEBUG())
+		if (Root::is_debug())
 		{
 			// Give us a chance to read the errors!
 			OOBase::Thread::sleep(OOBase::timeval_t(15));
@@ -78,10 +78,24 @@ namespace
 
 		return true;
 	}
+
+	static bool s_is_debug = false;
+}
+
+bool Root::is_debug()
+{
+	return s_is_debug;
 }
 
 int main(int argc, char* argv[])
 {
+	// Get the debug ENV var
+	{
+		OOBase::LocalString str;
+		str.getenv("OMEGA_DEBUG");
+		s_is_debug = (str == "yes");
+	}
+
 	// Start the logger
 	OOBase::Logger::open("OOServer",__FILE__);
 

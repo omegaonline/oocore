@@ -490,7 +490,7 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		if (m_hProfile)
 		{
 			// We only need to wait if we have loaded the profile...
-			DWORD dwWait = (Root::getenv_OMEGA_DEBUG() ? INFINITE : 5000);
+			DWORD dwWait = (Root::is_debug() ? INFINITE : 5000);
 
 			DWORD dwRes = WaitForSingleObject(m_hProcess,dwWait);
 			if (dwRes != WAIT_OBJECT_0)
@@ -608,7 +608,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 
 	// Load the users environment vars
 	LPVOID lpEnv = NULL;
-	if (!CreateEnvironmentBlock(&lpEnv,hToken,Root::getenv_OMEGA_DEBUG() ? TRUE : FALSE))
+	if (!CreateEnvironmentBlock(&lpEnv,hToken,Root::is_debug() ? TRUE : FALSE))
 	{
 		dwRes = GetLastError();
 		LOG_ERROR(("CreateEnvironmentBlock: %s",OOBase::system_error_text(dwRes)));
@@ -628,7 +628,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
 
-	if (Root::getenv_OMEGA_DEBUG())
+	if (Root::is_debug())
 	{
 		if (IsDebuggerPresent())
 			hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");

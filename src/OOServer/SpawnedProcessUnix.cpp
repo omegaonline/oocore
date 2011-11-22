@@ -86,7 +86,7 @@ SpawnedProcessUnix::~SpawnedProcessUnix()
 	{
 		pid_t retv = 0;
 
-		if (!Root::getenv_OMEGA_DEBUG())
+		if (!Root::is_debug())
 		{
 			for (int i=0; i<5; ++i)
 			{
@@ -211,7 +211,7 @@ bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain
 
 	if (child_id != 0)
 	{
-		if (Root::getenv_OMEGA_DEBUG())
+		if (Root::is_debug())
 			AttachDebugger(child_id);
 
 		// We are the parent
@@ -220,7 +220,7 @@ bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain
 	}
 
 	// We are the child...
-	if (!Root::getenv_OMEGA_DEBUG())
+	if (!Root::is_debug())
 	{
 		// Set stdin/out/err to /dev/null
 		int fd = open("/dev/null",O_RDWR);
@@ -289,9 +289,18 @@ bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain
 		_exit(127);
 	}
 
+	if (Root::is_debug())
+	{
+		if ((err = strPipe.append(" --debug")) != 0)
+		{
+			LOG_ERROR(("Failed to append strings: %s",OOBase::system_error_text(err)));
+			_exit(127);
+		}
+	}
+
 	OOBase::LocalString display;
 	display.getenv("DISPLAY");
-	if (Root::getenv_OMEGA_DEBUG() && !display.empty())
+	if (Root::is_debug() && !display.empty())
 	{
 		OOBase::String title;
 		if (m_bSandbox)

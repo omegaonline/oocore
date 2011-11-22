@@ -42,13 +42,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-bool Root::getenv_OMEGA_DEBUG()
-{
-	OOBase::LocalString str;
-	str.getenv("OMEGA_DEBUG");
-	return (str == "yes");
-}
-
 Root::Manager::Manager() :
 		m_bUnsafe(false),
 		m_sandbox_channel(0),
@@ -138,7 +131,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		}
 	}
 
-	if (getenv_OMEGA_DEBUG())
+	if (is_debug())
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
@@ -411,13 +404,13 @@ bool Root::Manager::wait_to_quit()
 		{
 #if defined (_WIN32)
 			case CTRL_BREAK_EVENT:
-				return getenv_OMEGA_DEBUG();
+				return is_debug();
 
 			default:
 				return true;
 #elif defined(HAVE_UNISTD_H)
 			case SIGHUP:
-				return getenv_OMEGA_DEBUG();
+				return is_debug();
 
 			case SIGQUIT:
 			case SIGTERM:

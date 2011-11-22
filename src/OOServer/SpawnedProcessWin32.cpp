@@ -53,7 +53,7 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool IsRunning() const;
-		bool Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		bool Spawn(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
@@ -65,7 +65,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD SpawnFromToken(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
 	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
@@ -502,10 +502,8 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	OOBase::LocalString strModule;
-	strModule.getenv("OOSERVER_BINARY_PATH");
 	if (strModule.empty())
 	{
 		// Get our module name
@@ -518,37 +516,24 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, OOBase::Win32::SmartHan
 
 		// Strip off our name, and add OOSvrUser.exe
 		PathRemoveFileSpecA(szPath);
-
-		if (!PathAppendA(szPath,"OOSvrUser.exe"))
-		{
-			DWORD dwErr = GetLastError();
-			LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text(dwErr)),dwErr);
-		}
-
-		int err = strModule.assign(szPath);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
 	}
-	else
+
+	OOBase::Paths::CorrectDirSeparators(strModule);
+	int err = OOBase::Paths::AppendDirSeparator(strModule);
+	if (err == 0)
+		err = strModule.append("OOSvrUser.exe");
+
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
+
+	if (strModule.length() >= MAX_PATH)
 	{
-		OOBase::Paths::CorrectDirSeparators(strModule);
-		int err = OOBase::Paths::AppendDirSeparator(strModule);
-
-		if (err == 0)
-			err = strModule.append("OOSvrUser.exe");
-
-		if (err != 0)
+		// Prefix with '\\?\'
+		if ((err = strModule.concat("\\\\?\\",strModule.c_str())) != 0)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
-
-		if (strModule.length() >= MAX_PATH)
-		{
-			// Prefix with '\\?\'
-			if ((err = strModule.concat("\\\\?\\",strModule.c_str())) != 0)
-				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
-		}
-
-		OOBase::Logger::log(OOBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 	}
+
+	OOBase::Logger::log(OOBase::Logger::Information,"Using OOSvrUser: %s",strModule.c_str());
 
 	// Create the named pipe
 	OOBase::LocalString strPipe;
@@ -736,11 +721,11 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+bool SpawnedProcessWin32::Spawn(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
-	DWORD dwRes = SpawnFromToken(hToken,hPipe,bSandbox);
+	DWORD dwRes = SpawnFromToken(strModule,hToken,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
 
@@ -929,9 +914,12 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
 
+	OOBase::LocalString strModule;
+	strModule.getenv("OOSERVER_BINARY_PATH");
+
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
-	if (!pSpawn32->Spawn(uid,hPipe,session_id == NULL,bAgain))
+	if (!pSpawn32->Spawn(strModule,uid,hPipe,session_id == NULL,bAgain))
 		return OOBase::SmartPtr<Root::SpawnedProcess>();
 
 	// Wait for the connect attempt

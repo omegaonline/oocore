@@ -55,7 +55,7 @@ namespace
 		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(const char* session_id, int pass_fd, bool& bAgain);
+		bool Spawn(OOBase::LocalString& strAppName, const char* session_id, int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -162,34 +162,30 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(const char* session_id, int pass_fd, bool& bAgain)
+bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppName, const char* session_id, int pass_fd, bool& bAgain)
 {
 	m_bSandbox = (session_id == NULL);
 	int err = m_sid.assign(session_id);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::LocalString strAppName;
-	strAppName.getenv("OOSERVER_BINARY_PATH");
-
 	if (strAppName.empty())
 	{
-		if ((err = strAppName.assign(LIBEXEC_DIR "/oosvruser")) != 0)
+		if ((err = strAppName.assign(LIBEXEC_DIR)) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
-	else
+
+	if ((err = OOBase::Paths::CorrectDirSeparators(strAppName)) == 0 &&
+			(err = OOBase::Paths::AppendDirSeparator(strAppName)) == 0)
 	{
-		if ((err = OOBase::Paths::CorrectDirSeparators(strAppName)) == 0 &&
-				(err = OOBase::Paths::AppendDirSeparator(strAppName)) == 0)
-		{
-			err = strAppName.append("oosvruser");
-		}
-
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
-		OOBase::Logger::log(OOBase::Logger::Warning,"Using oosvruser: %s",strAppName.c_str());
+		err = strAppName.append("oosvruser");
 	}
+
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+	char* rpath = realpath(strAppName.c_str(),NULL);
+	OOBase::Logger::log(OOBase::Logger::Warning,"Using oosvruser: %s",rpath);
 
 	// Check the file exists
 	if (access(strAppName.c_str(),X_OK) != 0)
@@ -576,8 +572,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	}
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
+	OOBase::LocalString strAppName;
+	strAppName.getenv("OOSERVER_BINARY_PATH");
+
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(session_id,fd[1],bAgain))
+	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
 	{
 		::close(fd[0]);
 		::close(fd[1]);

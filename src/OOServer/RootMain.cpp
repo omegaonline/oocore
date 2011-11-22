@@ -106,9 +106,13 @@ int main(int argc, char* argv[])
 	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
+
 	cmd_args.add_option("conf-file",'f',true);
 	cmd_args.add_option("pidfile",0,true);
 	cmd_args.add_option("unsafe");
+	cmd_args.add_option("regdb_path",0,true);
+	cmd_args.add_option("sandbox_uname",0,true);
+	cmd_args.add_option("users_path",0,true);
 
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
@@ -133,7 +137,7 @@ int main(int argc, char* argv[])
 		return Version();
 
 #if !defined(_WIN32)
-	// Ignore  SIGCHLD
+	// Ignore SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);

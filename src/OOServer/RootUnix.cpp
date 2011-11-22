@@ -52,11 +52,8 @@
     return true;
 }*/
 
-bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
+bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 {
-	// Clear current entries
-	m_config_args.clear();
-
 	// Determine conf file
 	OOBase::String strFile;
 	if (cmd_args.find("conf-file",strFile))

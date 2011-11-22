@@ -71,6 +71,7 @@ namespace Root
 
 		// Init and run members
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
+		bool load_config_i(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_file(const char* pszFile);
 		bool init_database();
 		bool spawn_sandbox();
@@ -79,7 +80,7 @@ namespace Root
 
 		// Configuration members
 		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
-		bool                                         m_bUnsafe;
+		bool get_config_arg(const char* name, OOBase::String& val);
 
 		// Client handling members
 		SECURITY_ATTRIBUTES                 m_sa;
@@ -98,10 +99,10 @@ namespace Root
 			OOBase::SmartPtr<SpawnedProcess> ptrSpawn;
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
-		Omega::uint32_t                       m_sandbox_channel;
+		Omega::uint32_t                      m_sandbox_channel;
 
 		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
-		mapUserProcessesType m_mapUserProcesses;
+		mapUserProcessesType                                   m_mapUserProcesses;
 
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);

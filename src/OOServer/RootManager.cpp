@@ -186,15 +186,15 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 	if (m_registry)
 	{
 		Omega::int64_t key = 0;
-		int err = m_registry->open_key(0,key,"/Server/Settings",0);
+		int err = m_registry->open_key(0,key,"/System/Server/Settings",0);
 		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to find the '/Server/Settings' key in the system registry: %s",OOBase::system_error_text(err)),false);
+			LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry: %s",OOBase::system_error_text(err)),false);
 
 		OOBase::LocalString str;
 		if ((err = m_registry->get_value(key,name,0,str)) != 0)
 		{
 			if (err != ENOENT)
-				LOG_ERROR_RETURN(("Failed to find the '/Server/Settings/%s' setting in the system registry: %s",name,OOBase::system_error_text(err)),false);
+				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry: %s",name,OOBase::system_error_text(err)),false);
 		}
 		else if ((err = val.assign(str.c_str())) != 0)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",name,OOBase::system_error_text(err)),false);

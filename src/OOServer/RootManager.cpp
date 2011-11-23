@@ -207,6 +207,8 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
 	// Clear current entries
 	m_config_args.clear();
 

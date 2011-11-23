@@ -36,7 +36,6 @@
 #include <OOBase/DLL.h>
 #include <OOBase/Win32.h>
 #include <OOBase/utf8.h>
-#include <OOBase/tr24731.h>
 
 #include "../oocore-config.h"
 

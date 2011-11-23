@@ -52,7 +52,7 @@ namespace
 
 	int Help()
 	{
-		printf(APPNAME " - The Omega Online network deamon.\n\n"
+		OOBase::stdout_write(APPNAME " - The Omega Online network deamon.\n\n"
 			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n"
 			"Usage: " APPNAME " [options]\n\n"
 			"Options:\n"
@@ -160,14 +160,19 @@ namespace
 {
 	int Version()
 	{
-		printf(APPNAME " version %s",OOCORE_VERSION);
+		OOBase::stdout_write(APPNAME " version " OOCORE_VERSION);
 
 	#if !defined(NDEBUG)
-		printf(" (Debug build)");
+		OOBase::stdout_write(" (Debug build)");
 	#endif
 
-		printf("\n\tCompiler: %s\n",OMEGA_COMPILER_STRING);
-		printf("\tSQLite library version: %s, built with %s headers\n",sqlite3_libversion(),sqlite3_version);
+		OOBase::stdout_write("\n\tCompiler: " OMEGA_COMPILER_STRING "\n");
+
+		OOBase::stdout_write("\tSQLite library version: ");
+		OOBase::stdout_write(sqlite3_libversion());
+		OOBase::stdout_write(", built with ");
+		OOBase::stdout_write(sqlite3_version);
+		OOBase::stdout_write(" headers\n");
 
 		return EXIT_SUCCESS;
 	}

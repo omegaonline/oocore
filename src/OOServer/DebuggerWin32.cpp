@@ -190,7 +190,8 @@ namespace
 #if defined(_WIN32)
 			MessageBoxA(NULL,str.c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 #else
-			printf("%s\n",str.c_str());
+			OOBase::stdout_write(str.c_str());
+			OOBase::stdout_write("\n");
 #endif
 		}
 	}

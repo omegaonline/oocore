@@ -28,10 +28,10 @@
 
 static int version()
 {
-	printf("ooguidgen version %s",OOCORE_VERSION);
+	OOBase::stdout_write("ooguidgen version " OOCORE_VERSION);
 
 #if !defined(NDEBUG)
-	printf(" (Debug build)");
+	OOBase::stdout_write(" (Debug build)");
 #endif
 
 	return EXIT_SUCCESS;
@@ -39,8 +39,9 @@ static int version()
 
 static int help()
 {
-	printf("ooguidgen - The Omega Online GUID generator.\n\n");
-	printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n");
+	OOBase::stdout_write(
+			"ooguidgen - The Omega Online GUID generator.\n\n"
+			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n");
 
 	return EXIT_SUCCESS;
 }
@@ -60,18 +61,18 @@ int main(int argc, char* argv[])
 		OOBase::String strErr;
 		if (args.find("missing",strErr))
 		{
-			fputs("Missing value for option ",stderr);
-			fputs(strErr.c_str(),stderr);
+			OOBase::stderr_write("Missing value for option ");
+			OOBase::stderr_write(strErr.c_str());
 		}
 		else if (args.find("unknown",strErr))
 		{
-			fputs("Unknown option ",stderr);
-			fputs(strErr.c_str(),stderr);
+			OOBase::stderr_write("Unknown option ");
+			OOBase::stderr_write(strErr.c_str());
 		}
 		else
 		{
-			fputs("Failed to parse comand line: ",stderr);
-			fputs(OOBase::system_error_text(err),stderr);
+			OOBase::stderr_write("Failed to parse comand line: ");
+			OOBase::stderr_write(OOBase::system_error_text(err));
 		}
 		return EXIT_FAILURE;
 	}
@@ -82,7 +83,7 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return version();
 
-	fputs(Omega::guid_t::Create().ToString().c_nstr(),stdout);
+	OOBase::stdout_write(Omega::guid_t::Create().ToString().c_nstr());
 
 	return EXIT_SUCCESS;
 }

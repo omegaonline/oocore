@@ -39,14 +39,14 @@ static void report_cause(Omega::IException* pE)
 	Omega::IException* pCause = pE->GetCause();
 	if (pCause)
 	{
-		fputs("\nCause: ",stderr);
+		OOBase::stderr_write("\nCause: ");
 		exception_details(pCause);
 	}
 }
 
 static void report_exception(Omega::IException* pE)
 {
-	fputs("Exception: ",stderr);
+	OOBase::stderr_write("Exception: ");
 	exception_details(pE);
 }
 
@@ -58,13 +58,13 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IInternalException* pE)
 	{
-		fputs(pE->GetDescription().c_nstr(),stderr);
+		OOBase::stderr_write(pE->GetDescription().c_nstr());
 
 		Omega::string_t strSource = pE->GetSource();
 		if (!strSource.IsEmpty())
 		{
-			fputs("\nAt: ",stderr);
-			fputs(strSource.c_nstr(),stderr);
+			OOBase::stderr_write("\nAt: ");
+			OOBase::stderr_write(strSource.c_nstr());
 		}
 
 		report_cause(pE);
@@ -72,7 +72,7 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IException* pE)
 	{
-		fputs(pE->GetDescription().c_nstr(),stderr);
+		OOBase::stderr_write(pE->GetDescription().c_nstr());
 
 		report_cause(pE);
 		pE->Release();
@@ -81,10 +81,10 @@ static void exception_details(Omega::IException* pOrig)
 
 static int version()
 {
-	printf("ooreg version %s",OOCORE_VERSION);
+	OOBase::stdout_write("ooreg version " OOCORE_VERSION);
 
 #if !defined(NDEBUG)
-	printf(" (Debug build)");
+	OOBase::stdout_write(" (Debug build)");
 #endif
 
 	return EXIT_SUCCESS;
@@ -92,27 +92,28 @@ static int version()
 
 static int help()
 {
-	printf("ooreg - The Omega Online registry editor.\n\n");
-	printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
-	printf("Usage: ooreg [options] <mode> <arguments> ... <arguments> \n");
-	printf("\nOptions:\n");
-	printf("  --help (-h)              Display this help text\n");
-	printf("  --version (-v)           Display version information\n");
-	printf("  --args=<args>            Pass <args> to Omega::Initialize\n");
-	printf("\nMode, one of:\n");
-	printf("  get <value_path>         Display the value of <value_path>\n");
-	printf("  set <value_path> <value> Set the value of <value_path> to <value>\n");
-	printf("  delete <key_path>        Delete the key <key_path> and all sub-items\n");
-	printf("  delete <value_path>      Delete the value <value_path>\n");
-	printf("  list <key_path>          List the subkeys and values of the key <key_path>\n");
-	printf("  exists <key_path>        Exit with code EXIT_SUCCESS if the key <key_path>\n");
-	printf("                            exists, EXIT_FAILURE if not\n");
-	printf("  exists <value_path>      Exit with code EXIT_SUCCESS if the value <value_path>\n");
-	printf("	                        exists, EXIT_FAILURE if not\n");
-	printf("\nArguments:\n");
-	printf("  <key_path>     The full path to a key, separated by /, and ending with /,\n");
-	printf("                  e.g. \"All Users/Objects/\"\n");
-	printf("  <value_path>   The full path to the value of a key, not ending with /\n");
+	OOBase::stdout_write(
+			"ooreg - The Omega Online registry editor.\n\n"
+			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n"
+			"Usage: ooreg [options] <mode> <arguments> ... <arguments> \n"
+			"\nOptions:\n"
+			"  --help (-h)              Display this help text\n"
+			"  --version (-v)           Display version information\n"
+			"  --args=<args>            Pass <args> to Omega::Initialize\n"
+			"\nMode, one of:\n"
+			"  get <value_path>         Display the value of <value_path>\n"
+			"  set <value_path> <value> Set the value of <value_path> to <value>\n"
+			"  delete <key_path>        Delete the key <key_path> and all sub-items\n"
+			"  delete <value_path>      Delete the value <value_path>\n"
+			"  list <key_path>          List the subkeys and values of the key <key_path>\n"
+			"  exists <key_path>        Exit with code EXIT_SUCCESS if the key <key_path>\n"
+			"                            exists, EXIT_FAILURE if not\n"
+			"  exists <value_path>      Exit with code EXIT_SUCCESS if the value <value_path>\n"
+			"	                        exists, EXIT_FAILURE if not\n"
+			"\nArguments:\n"
+			"  <key_path>     The full path to a key, separated by /, and ending with /,\n"
+			"                  e.g. \"All Users/Objects/\"\n"
+			"  <value_path>   The full path to the value of a key, not ending with /\n");
 
 	return EXIT_SUCCESS;
 }
@@ -162,18 +163,18 @@ int main(int argc, char* argv[])
 		OOBase::String strErr;
 		if (args.find("missing",strErr))
 		{
-			fputs("Missing value for option ",stderr);
-			fputs(strErr.c_str(),stderr);
+			OOBase::stderr_write("Missing value for option ");
+			OOBase::stderr_write(strErr.c_str());
 		}
 		else if (args.find("unknown",strErr))
 		{
-			fputs("Unknown option ",stderr);
-			fputs(strErr.c_str(),stderr);
+			OOBase::stderr_write("Unknown option ");
+			OOBase::stderr_write(strErr.c_str());
 		}
 		else
 		{
-			fputs("Failed to parse comand line: ",stderr);
-			fputs(OOBase::system_error_text(err),stderr);
+			OOBase::stderr_write("Failed to parse comand line: ");
+			OOBase::stderr_write(OOBase::system_error_text(err));
 		}
 		return EXIT_FAILURE;
 	}
@@ -190,23 +191,23 @@ int main(int argc, char* argv[])
 	OOBase::String method;
 	if (!args.find("@0",method))
 	{
-		fputs("Mode expected, use --help for information.",stderr);
+		OOBase::stderr_write("Mode expected, use --help for information.");
 		return EXIT_FAILURE;
 	}
 
 	OOBase::String params[2];
 	if (!args.find("@1",params[0]))
 	{
-		fputs("Too few arguments to '",stderr);
-		fputs(method.c_str(),stderr);
-		fputs("', use --help for information.",stderr);
+		OOBase::stderr_write("Too few arguments to '");
+		OOBase::stderr_write(method.c_str());
+		OOBase::stderr_write("', use --help for information.");
 		return EXIT_FAILURE;
 	}
 	else if (args.exists("@3"))
 	{
-		fputs("Too many arguments to '",stderr);
-		fputs(method.c_str(),stderr);
-		fputs("', use --help for information.",stderr);
+		OOBase::stderr_write("Too many arguments to '");
+		OOBase::stderr_write(method.c_str());
+		OOBase::stderr_write("', use --help for information.");
 		return EXIT_FAILURE;
 	}
 	args.find("@2",params[1]);
@@ -226,7 +227,7 @@ int main(int argc, char* argv[])
 		if (method == "set")
 		{
 			if (!value_path(params[0],key,value))
-				fputs("set requires a value_path, use --help for information.",stderr);
+				OOBase::stderr_write("set requires a value_path, use --help for information.");
 			else
 			{
 				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,Omega::string_t(params[1].c_str(),false));
@@ -235,17 +236,17 @@ int main(int argc, char* argv[])
 		}
 		else if (!params[1].empty())
 		{
-			fputs("Too many arguments to '",stderr);
-			fputs(method.c_str(),stderr);
-			fputs("', use --help for information.",stderr);
+			OOBase::stderr_write("Too many arguments to '");
+			OOBase::stderr_write(method.c_str());
+			OOBase::stderr_write("', use --help for information.");
 		}
 		else if (method == "get")
 		{
 			if (!value_path(params[0],key,value))
-				fputs("get requires a value_path, use --help for information.",stderr);
+				OOBase::stderr_write("get requires a value_path, use --help for information.");
 			else
 			{
-				fputs(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr(),stdout);
+				OOBase::stdout_write(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr());
 				result = EXIT_SUCCESS;
 			}
 		}
@@ -262,7 +263,7 @@ int main(int argc, char* argv[])
 				result = EXIT_SUCCESS;
 			}
 			else
-				fputs("delete requires a key_path or a value_path, use --help for information.",stderr);
+				OOBase::stderr_write("delete requires a key_path or a value_path, use --help for information.");
 		}
 		else if (method == "exists")
 		{
@@ -271,12 +272,12 @@ int main(int argc, char* argv[])
 			if (value_path(params[0],key,value))
 				result = (OTL::ObjectPtr<Omega::Registry::IKey>(key)->IsValue(value) ? EXIT_SUCCESS : EXIT_FAILURE);
 			else
-				fputs("exists requires a key_path or a value_path, use --help for information.",stderr);
+				OOBase::stderr_write("exists requires a key_path or a value_path, use --help for information.");
 		}
 		else if (method == "list")
 		{
 			if (!key_path(params[0],key))
-				fputs("list requires a key_path, use --help for information.",stderr);
+				OOBase::stderr_write("list requires a key_path, use --help for information.");
 			else
 			{
 				OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(key);
@@ -286,16 +287,16 @@ int main(int argc, char* argv[])
 					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
 					{
 						if (i != v.begin())
-							fputs("\n",stdout);
-						fputs(i->c_nstr(),stdout);
-						fputs("/",stdout);
+							OOBase::stdout_write("\n");
+						OOBase::stdout_write(i->c_nstr());
+						OOBase::stdout_write("/");
 					}
 					v = ptrKey->EnumValues();
 					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
 					{
 						if (i != v.begin())
-							fputs("\n",stdout);
-						fputs(i->c_nstr(),stdout);
+							OOBase::stdout_write("\n");
+						OOBase::stdout_write(i->c_nstr());
 					}
 					result = EXIT_SUCCESS;
 				}
@@ -303,9 +304,9 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			fputs("Unknown mode '",stderr);
-			fputs(method.c_str(),stderr);
-			fputs("', use --help for information.",stderr);
+			OOBase::stderr_write("Unknown mode '");
+			OOBase::stderr_write(method.c_str());
+			OOBase::stderr_write("', use --help for information.");
 		}
 	}
 	catch (Omega::IException* pE2)

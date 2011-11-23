@@ -38,7 +38,7 @@ namespace
 {
 	int Help()
 	{
-		printf(APPNAME " - The Omega Online user host process.\n\n"
+		OOBase::stdout_write(APPNAME " - The Omega Online user host process.\n\n"
 			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
 
 		return EXIT_SUCCESS;
@@ -46,12 +46,12 @@ namespace
 
 	int Version()
 	{
-		printf(APPNAME " version %s",OOCORE_VERSION);
+		OOBase::stdout_write(APPNAME " version " OOCORE_VERSION);
 
 	#if !defined(NDEBUG)
-		printf(" (Debug build)");
+		OOBase::stdout_write(" (Debug build)");
 	#endif
-		printf("\n\tCompiler: %s\n\n",OMEGA_COMPILER_STRING);
+		OOBase::stdout_write("\n\tCompiler: " OMEGA_COMPILER_STRING "\n\n");
 
 		return EXIT_SUCCESS;
 	}

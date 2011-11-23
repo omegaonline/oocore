@@ -143,7 +143,7 @@ bool Root::Manager::init_database()
 {
 	// Get dir from config
 	OOBase::String dir;
-	if (!m_config_args.find("regdb_path",dir) || dir.empty())
+	if (!get_config_arg("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
 	int err = OOBase::Paths::CorrectDirSeparators(dir);
@@ -178,6 +178,8 @@ bool Root::Manager::init_database()
 
 bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 {
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
+
 	if (m_config_args.find(name,val))
 		return true;
 
@@ -576,7 +578,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		bOk = false;
 
 		OOBase::String strRegPath, strUsersPath;
-		m_config_args.find("regdb_path",strRegPath);
+		get_config_arg("regdb_path",strRegPath);
 		get_config_arg("users_path",strUsersPath);
 
 		OOBase::LocalString strHive;

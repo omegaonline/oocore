@@ -38,7 +38,7 @@ namespace
 {
 	int Help()
 	{
-		printf(APPNAME " - The Omega Online user host process.\n\n"
+		OOBase::stdout_write(APPNAME " - The Omega Online user host process.\n\n"
 			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
 
 		return EXIT_SUCCESS;
@@ -46,12 +46,12 @@ namespace
 
 	int Version()
 	{
-		printf(APPNAME " version %s",OOCORE_VERSION);
+		OOBase::stdout_write(APPNAME " version " OOCORE_VERSION);
 
 	#if !defined(NDEBUG)
-		printf(" (Debug build)");
+		OOBase::stdout_write(" (Debug build)");
 	#endif
-		printf("\n\tCompiler: %s\n\n",OMEGA_COMPILER_STRING);
+		OOBase::stdout_write("\n\tCompiler: " OMEGA_COMPILER_STRING "\n\n");
 
 		return EXIT_SUCCESS;
 	}
@@ -60,13 +60,20 @@ namespace
 	{
 		OOBase::Logger::log(OOBase::Logger::Error,msg);
 
-		if (User::getenv_OMEGA_DEBUG())
+		if (User::is_debug())
 		{
 			// Give us a chance to read the errors!
 			OOBase::Thread::sleep(OOBase::timeval_t(15));
 		}
 		return true;
 	}
+
+	static bool s_is_debug = false;
+}
+
+bool User::is_debug()
+{
+	return s_is_debug;
 }
 
 int main(int argc, char* argv[])
@@ -81,6 +88,7 @@ int main(int argc, char* argv[])
 	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
+	cmd_args.add_option("debug");
 	cmd_args.add_option("fork-slave",0,true);
 
 #if !defined(_WIN32)
@@ -103,6 +111,8 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 	
+	s_is_debug = args.exists("debug");
+
 	if (args.exists("help"))
 		return Help();
 
@@ -182,7 +192,7 @@ int main(int argc, char* argv[])
 	// Stop the manager
 	manager.stop();
 
-	if (User::getenv_OMEGA_DEBUG())
+	if (User::is_debug() && !bRun)
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 

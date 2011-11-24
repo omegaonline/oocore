@@ -52,7 +52,7 @@ namespace
 
 	int Help()
 	{
-		printf(APPNAME " - The Omega Online network deamon.\n\n"
+		OOBase::stdout_write(APPNAME " - The Omega Online network deamon.\n\n"
 			"Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n"
 			"Usage: " APPNAME " [options]\n\n"
 			"Options:\n"
@@ -70,7 +70,7 @@ namespace
 	{
 		OOBase::Logger::log(OOBase::Logger::Error,msg);
 
-		if (Root::getenv_OMEGA_DEBUG())
+		if (Root::is_debug())
 		{
 			// Give us a chance to read the errors!
 			OOBase::Thread::sleep(OOBase::timeval_t(15));
@@ -78,10 +78,24 @@ namespace
 
 		return true;
 	}
+
+	static bool s_is_debug = false;
+}
+
+bool Root::is_debug()
+{
+	return s_is_debug;
 }
 
 int main(int argc, char* argv[])
 {
+	// Get the debug ENV var
+	{
+		OOBase::LocalString str;
+		str.getenv("OMEGA_DEBUG");
+		s_is_debug = (str == "yes");
+	}
+
 	// Start the logger
 	OOBase::Logger::open("OOServer",__FILE__);
 
@@ -92,9 +106,13 @@ int main(int argc, char* argv[])
 	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
+
 	cmd_args.add_option("conf-file",'f',true);
 	cmd_args.add_option("pidfile",0,true);
 	cmd_args.add_option("unsafe");
+	cmd_args.add_option("regdb_path",0,true);
+	cmd_args.add_option("sandbox_uname",0,true);
+	cmd_args.add_option("users_path",0,true);
 
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
@@ -119,7 +137,7 @@ int main(int argc, char* argv[])
 		return Version();
 
 #if !defined(_WIN32)
-	// Ignore  SIGCHLD
+	// Ignore SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);
@@ -142,14 +160,19 @@ namespace
 {
 	int Version()
 	{
-		printf(APPNAME " version %s",OOCORE_VERSION);
+		OOBase::stdout_write(APPNAME " version " OOCORE_VERSION);
 
 	#if !defined(NDEBUG)
-		printf(" (Debug build)");
+		OOBase::stdout_write(" (Debug build)");
 	#endif
 
-		printf("\n\tCompiler: %s\n",OMEGA_COMPILER_STRING);
-		printf("\tSQLite library version: %s, built with %s headers\n",sqlite3_libversion(),sqlite3_version);
+		OOBase::stdout_write("\n\tCompiler: " OMEGA_COMPILER_STRING "\n");
+
+		OOBase::stdout_write("\tSQLite library version: ");
+		OOBase::stdout_write(sqlite3_libversion());
+		OOBase::stdout_write(", built with ");
+		OOBase::stdout_write(sqlite3_version);
+		OOBase::stdout_write(" headers\n");
 
 		return EXIT_SUCCESS;
 	}

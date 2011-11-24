@@ -42,15 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-bool Root::getenv_OMEGA_DEBUG()
-{
-	OOBase::LocalString str;
-	str.getenv("OMEGA_DEBUG");
-	return (str == "yes");
-}
-
 Root::Manager::Manager() :
-		m_bUnsafe(false),
 		m_sandbox_channel(0),
 		m_mapSockets(1)
 {
@@ -65,8 +57,6 @@ Root::Manager::~Manager()
 int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	int ret = EXIT_FAILURE;
-
-	m_bUnsafe = cmd_args.exists("unsafe");
 
 	OOBase::String strPidfile;
 	cmd_args.find("pidfile",strPidfile);
@@ -138,7 +128,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		}
 	}
 
-	if (getenv_OMEGA_DEBUG())
+	if (is_debug() && ret != EXIT_SUCCESS)
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
@@ -153,7 +143,7 @@ bool Root::Manager::init_database()
 {
 	// Get dir from config
 	OOBase::String dir;
-	if (!m_config_args.find("regdb_path",dir) || dir.empty())
+	if (!get_config_arg("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
 	int err = OOBase::Paths::CorrectDirSeparators(dir);
@@ -186,6 +176,52 @@ bool Root::Manager::init_database()
 	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }
 
+bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
+{
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
+
+	if (m_config_args.find(name,val))
+		return true;
+
+	if (m_registry)
+	{
+		Omega::int64_t key = 0;
+		int err = m_registry->open_key(0,key,"/System/Server/Settings",0);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry: %s",OOBase::system_error_text(err)),false);
+
+		OOBase::LocalString str;
+		if ((err = m_registry->get_value(key,name,0,str)) != 0)
+		{
+			if (err != ENOENT)
+				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry: %s",name,OOBase::system_error_text(err)),false);
+		}
+		else if ((err = val.assign(str.c_str())) != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",name,OOBase::system_error_text(err)),false);
+		else
+			return true;
+	}
+
+	return false;
+}
+
+bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Clear current entries
+	m_config_args.clear();
+
+	for (size_t i=0; i < cmd_args.size(); ++i)
+	{
+		int err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to copy command args: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return load_config_i(cmd_args);
+}
+
 bool Root::Manager::load_config_file(const char* pszFile)
 {
 	// Load simple config file...
@@ -198,6 +234,9 @@ bool Root::Manager::load_config_file(const char* pszFile)
 	if (!f)
 		err = errno;
 #endif
+	if (err == ENOENT)
+		return true;
+
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to open file %s: %s",pszFile,OOBase::system_error_text(err)),false);
 
@@ -309,9 +348,7 @@ bool Root::Manager::load_config_file(const char* pszFile)
 				if (!strKey.empty())
 				{
 					OOBase::String* pv = m_config_args.find(strKey);
-					if (pv)
-						*pv = strValue;
-					else
+					if (!pv)
 					{
 						if ((err = m_config_args.insert(strKey,strValue)) != 0)
 							LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
@@ -340,15 +377,19 @@ int Root::Manager::run_proactor(void*)
 bool Root::Manager::spawn_sandbox()
 {
 	// Get username from config
-	OOBase::String strUName;
-	if (!m_config_args.find("sandbox_uname",strUName))
+	OOBase::String strUName,strUnsafe;
+	if (!get_config_arg("sandbox_uname",strUName))
 		LOG_ERROR(("Failed to find the 'sandbox_uname' setting in the config"));
+
+	bool bUnsafe = false;
+	if (get_config_arg("unsafe",strUnsafe))
+		bUnsafe = (strUnsafe == "true");
 
 	bool bAgain = false;
 	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
 	{
-		if (!m_bUnsafe)
+		if (!bUnsafe)
 			LOG_ERROR_RETURN(("'sandbox_uname' setting in the config is empty!"),false);
 
 		OOBase::LocalString strOurUName;
@@ -363,7 +404,7 @@ bool Root::Manager::spawn_sandbox()
 	}
 	else if (!get_sandbox_uid(strUName,uid,bAgain))
 	{
-		if (bAgain && m_bUnsafe)
+		if (bAgain && bUnsafe)
 		{
 			OOBase::LocalString strOurUName;
 			if (!get_our_uid(uid,strOurUName))
@@ -381,7 +422,7 @@ bool Root::Manager::spawn_sandbox()
 
 	OOBase::String strPipe;
 	m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
-	if (m_sandbox_channel == 0 && m_bUnsafe && !strUName.empty() && bAgain)
+	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
 	{
 		OOBase::LocalString strOurUName;
 		if (!get_our_uid(uid,strOurUName))
@@ -411,13 +452,13 @@ bool Root::Manager::wait_to_quit()
 		{
 #if defined (_WIN32)
 			case CTRL_BREAK_EVENT:
-				return getenv_OMEGA_DEBUG();
+				return is_debug();
 
 			default:
 				return true;
 #elif defined(HAVE_UNISTD_H)
 			case SIGHUP:
-				return getenv_OMEGA_DEBUG();
+				return is_debug();
 
 			case SIGQUIT:
 			case SIGTERM:
@@ -495,17 +536,23 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 		if (spawn_user(uid,session_id.c_str(),user_process.ptrRegistry,user_process.strPipe,bAgain) != 0)
 			return true;
 
-		if (bFirst && bAgain && m_bUnsafe)
+		if (bFirst && bAgain)
 		{
-			OOBase::LocalString strOurUName;
-			if (!get_our_uid(uid,strOurUName))
-				return false;
+			OOBase::String strUnsafe;
+			if (get_config_arg("unsafe",strUnsafe) && strUnsafe == "true")
+			{
+				OOBase::LocalString strOurUName;
+				if (!get_our_uid(uid,strOurUName))
+					return false;
 
-			OOBase::Logger::log(OOBase::Logger::Warning,
-								   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
-								   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
-								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-								   strOurUName.c_str());
+				OOBase::Logger::log(OOBase::Logger::Warning,
+									   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
+									   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
+									   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
+									   strOurUName.c_str());
+			}
+			else
+				return false;
 		}
 	}
 
@@ -533,8 +580,8 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		bOk = false;
 
 		OOBase::String strRegPath, strUsersPath;
-		m_config_args.find("regdb_path",strRegPath);
-		m_config_args.find("users_path",strUsersPath);
+		get_config_arg("regdb_path",strRegPath);
+		get_config_arg("users_path",strUsersPath);
 
 		OOBase::LocalString strHive;
 		if (process.ptrSpawn->GetRegistryHive(strRegPath,strUsersPath,strHive))

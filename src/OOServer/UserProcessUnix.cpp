@@ -75,7 +75,7 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
 		if (clen >= sizeof(szBuf))
 		{
-			fputs("exec filename > 1024\n",stderr);
+			OOBase::stderr_write("exec filename > 1024\n");
 			_exit(127);
 		}
 		szBuf[clen] = '\0';
@@ -85,7 +85,7 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 		if (WIFEXITED(ret))
 			_exit(WEXITSTATUS(ret));
 
-		fputs("Failed to launch process\n",stderr);
+		OOBase::stderr_write("Failed to launch process\n");
 		_exit(127);
 	}
 

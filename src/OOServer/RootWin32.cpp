@@ -125,19 +125,14 @@
     return true;
 }*/
 
-bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
+bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 {
-	// Clear current entries
-	m_config_args.clear();
-
-	size_t f = cmd_args.find_first("conf-file");
-
 	// Read from registry
 	HKEY hKey = 0;
 	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
 	if (lRes != ERROR_SUCCESS)
 	{
-		if (lRes == ERROR_FILE_NOT_FOUND && f != cmd_args.npos)
+		if (lRes == ERROR_FILE_NOT_FOUND)
 			OOBase::Logger::log(OOBase::Logger::Warning,"Missing registry key: HKEY_LOCAL_MACHINE\\Software\\Omega Online\\OOServer");
 		else
 			LOG_ERROR(("Failed to open config registry key: %s",OOBase::system_error_text(lRes)));
@@ -228,9 +223,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 			if (!key.empty())
 			{
 				OOBase::String* v = m_config_args.find(key);
-				if (v)
-					*v = value;
-				else
+				if (!v)
 				{
 					lRes = m_config_args.insert(key,value);
 					if (lRes != 0)
@@ -243,7 +236,8 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	}
 
 	// Load any config file now...
-	if (f != cmd_args.npos)
+	size_t f = m_config_args.find_first("conf-file");
+	if (f != m_config_args.npos)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",cmd_args.at(f)->c_str());
 

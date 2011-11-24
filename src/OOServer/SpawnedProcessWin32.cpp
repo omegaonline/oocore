@@ -544,7 +544,6 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::LocalString& strModule, HANDLE
 		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::system_error_text(dwErr)),dwErr);
 	}
 
-	int err = 0;
 	OOBase::LocalString strCmdLine;
 	if (!strModule.empty() && strModule[0] != '"' && strModule.find(' ') != strModule.npos)
 	{

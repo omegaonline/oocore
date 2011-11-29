@@ -19,8 +19,7 @@ liboosvrdb_la_SOURCES = \
 	
 liboosvrdb_la_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) 
 
-oolibexecdir = @libexecdir@/omegaonline
-oolibexec_LTLIBRARIES = oosvrlite.la
+pkglibexec_LTLIBRARIES = oosvrlite.la
 
 oosvrlite_la_LDFLAGS = -module -no-undefined
 oosvrlite_la_LIBADD = liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
@@ -47,7 +46,11 @@ endif
 
 bin_PROGRAMS = ooserverd
 
-ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) -DLIBEXEC_DIR=\"@libexecdir@/omegaonline\"
+ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) \
+	-DLIBEXEC_DIR=\"$(pkglibexecdir)/\" \
+	-DCONFIG_DIR=\"$(pkgdatadir)/\" \
+	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" 
+		
 ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 ooserverd_SOURCES = \
@@ -68,7 +71,7 @@ ooserverd_SOURCES += OOServer.rc
 ooserverd_LDADD += -lshlwapi
 endif
 
-oolibexec_PROGRAMS = oosvruser
+pkglibexec_PROGRAMS = oosvruser
 
 oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 

@@ -37,9 +37,7 @@ EXTRA_DIST = \
 	UTF-8-test.txt
 
 if DEBUG
-TESTS_ENVIRONMENT = \
-	OMEGA_DEBUG=yes \
-	OOSERVER_BINARY_PATH=$(abs_top_builddir)/src/OOServer/ 
+TESTS_ENVIRONMENT = OMEGA_DEBUG=true
 endif
 
 TESTS = \

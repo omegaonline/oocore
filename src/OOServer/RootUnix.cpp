@@ -63,7 +63,23 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 		free(rpath);
 	}
 
-	return load_config_file(strFile.empty() ? "/etc/omegaonline.conf" : strFile.c_str());
+	if (!load_config_file(strFile.empty() ? CONFIG_DIR "/ooserver.conf" : strFile.c_str()))
+		return false;
+
+	// Now set some defaults
+	if (!m_config_args.exists("regdb_path"))
+	{
+		OOBase::String v,k;
+		int err = k.assign("regdb_path");
+		if (err == 0)
+			err = v.assign(REGDB_PATH);
+		if (err == 0)
+			err = m_config_args.insert(k,v);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
+	return true;
 }
 
 bool Root::Manager::start_client_acceptor()

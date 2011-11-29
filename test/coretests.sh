@@ -8,7 +8,7 @@ cd ../src/OOCore
 
 server_launch="../OOServer/ooserverd"
 
-if test "x$OMEGA_DEBUG" = "xyes" && test -n "$TERM"; then
+if test -n "$TERM"; then
 	#Try to do something sensible with $TERM
 	case $TERM in
 		cygwin)
@@ -16,20 +16,16 @@ if test "x$OMEGA_DEBUG" = "xyes" && test -n "$TERM"; then
 			server_launch="$COMSPEC //Q //c start ../OOServer/ooserverd.exe"
 			;;
 		*)
-			server_launch="$TERM -e ../OOServer/ooserverd"
+			server_launch="$TERM -e $server_launch"
+			#server_launch="$TERM -e libtool --mode=execute valgrind --tool=callgrind $server_launch" 
 			;;
 	esac
 fi
 
-$server_launch --unsafe --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
+$server_launch --debug --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
 
 echo Giving ooserverd a chance to start...
 sleep 3s
-
-# Start up oosvruser
-if test -f ../../tools/OOLaunch/oo-launch; then
-	eval `../../tools/OOLaunch/oo-launch`
-fi
 
 echo Running tests...
 echo

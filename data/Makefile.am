@@ -5,7 +5,7 @@
 	@$(SQLITE3) $@ < $(srcdir)/common.sql
 	$(AM_V_GEN)$(SQLITE3) $@ < $<
 	
-oovardir = @localstatedir@/lib/omegaonline
+oovardir = @localstatedir@/lib/@PACKAGE@
 
 oovar_DATA = \
 	sandbox.regdb \
@@ -19,3 +19,6 @@ EXTRA_DIST = \
 	sandbox.sql \
 	default_user.sql \
 	system.sql
+
+dist_pkgdata_DATA = \
+	ooserver.conf 

@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 	{
 		OOBase::LocalString str;
 		str.getenv("OMEGA_DEBUG");
-		s_is_debug = (str == "yes");
+		s_is_debug = (str == "true");
 	}
 
 	// Start the logger
@@ -106,13 +106,9 @@ int main(int argc, char* argv[])
 	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
-
 	cmd_args.add_option("conf-file",'f',true);
 	cmd_args.add_option("pidfile",0,true);
-	cmd_args.add_option("unsafe");
-	cmd_args.add_option("regdb_path",0,true);
-	cmd_args.add_option("sandbox_uname",0,true);
-	cmd_args.add_option("users_path",0,true);
+	cmd_args.add_option("debug");
 
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
@@ -129,6 +125,9 @@ int main(int argc, char* argv[])
 			
 		return EXIT_FAILURE;
 	}
+
+	if (args.exists("debug"))
+		s_is_debug = true;
 
 	if (args.exists("help"))
 		return Help();

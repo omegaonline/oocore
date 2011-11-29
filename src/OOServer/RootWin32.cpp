@@ -245,6 +245,30 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			return false;
 	}
 
+	// Now set some defaults...
+	if (!m_config_args.exists("regdb_path"))
+	{
+		char szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathAppendA(szBuf,"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathFileExistsA(szBuf))
+			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
+
+		OOBase::String v,k;
+		int err = v.assign("regdb_path");
+		if (err == 0)
+			err = k.assign(szBuf);
+		if (err == 0)
+			err = m_config_args.insert(k,v);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
 	return true;
 }
 

@@ -53,11 +53,11 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool IsRunning() const;
-		bool Spawn(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		bool Spawn(OOBase::String& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
+		bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -65,7 +65,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD SpawnFromToken(OOBase::String& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
 	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
@@ -502,22 +502,8 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	if (strModule.empty())
-	{
-		// Get our module name
-		char szPath[MAX_PATH];
-		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-		{
-			DWORD dwErr = GetLastError();
-			LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text(dwErr)),dwErr);
-		}
-
-		// Strip off our name, and add OOSvrUser.exe
-		PathRemoveFileSpecA(szPath);
-	}
-
 	OOBase::Paths::CorrectDirSeparators(strModule);
 	int err = OOBase::Paths::AppendDirSeparator(strModule);
 	if (err == 0)
@@ -720,7 +706,7 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(OOBase::LocalString& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+bool SpawnedProcessWin32::Spawn(OOBase::String& strModule, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
@@ -822,29 +808,12 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool SpawnedProcessWin32::GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive)
+bool SpawnedProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
-	int err = 0;
-	if (strSysDir.empty())
-	{
-		char szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-		if FAILED(hr)
-			LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
-
-		if (!PathAppendA(szBuf,"Omega Online"))
-			LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
-
-		if (!PathFileExistsA(szBuf))
-			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
-
-		if ((err = strSysDir.assign(szBuf)) != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if ((err = OOBase::Paths::AppendDirSeparator(strSysDir)) != 0)
+	int err = OOBase::Paths::AppendDirSeparator(strSysDir);
+	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	if (strUsersDir.empty())
@@ -913,8 +882,28 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
 
-	OOBase::LocalString strModule;
-	strModule.getenv("OOSERVER_BINARY_PATH");
+	OOBase::String strModule;
+
+	// Get our module name
+	char szPath[MAX_PATH];
+	if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
+	{
+		DWORD dwErr = GetLastError();
+		LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text(dwErr)),dwErr);
+	}
+
+	// Strip off our name
+	PathRemoveFileSpecA(szPath);
+
+	if ((err = strModule.assign(szPath)) != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+
+	// If we are debugging, allow binary_path override
+	if (Root::is_debug())
+	{
+		if (get_config_arg("binary_path",strAppName))
+			LOG_WARNING(("Overriding with 'binary_path' setting %s",strAppName.c_str()));
+	}
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;

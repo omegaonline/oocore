@@ -55,13 +55,13 @@ namespace
 		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalString& strAppName, const char* session_id, int pass_fd, bool& bAgain);
+		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive);
+		bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		OOBase::String m_sid;
@@ -162,18 +162,12 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(OOBase::LocalString& strAppName, const char* session_id, int pass_fd, bool& bAgain)
+bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain)
 {
 	m_bSandbox = (session_id == NULL);
 	int err = m_sid.assign(session_id);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
-	if (strAppName.empty())
-	{
-		if ((err = strAppName.assign(LIBEXEC_DIR)) != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-	}
 
 	if ((err = OOBase::Paths::CorrectDirSeparators(strAppName)) == 0 &&
 			(err = OOBase::Paths::AppendDirSeparator(strAppName)) == 0)
@@ -419,18 +413,12 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
 	return (m_uid == uid);
 }
 
-bool SpawnedProcessUnix::GetRegistryHive(OOBase::String& strSysDir, OOBase::String& strUsersDir, OOBase::LocalString& strHive)
+bool SpawnedProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
-	int err = 0;
-	if (strSysDir.empty())
-	{
-		if ((err = strSysDir.assign("/var/lib/omegaonline/")) != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if ((err = OOBase::Paths::AppendDirSeparator(strSysDir)) != 0)
+	int err = OOBase::Paths::AppendDirSeparator(strSysDir);
+	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::POSIX::pw_info pw(m_uid);
@@ -551,7 +539,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::SpawnedProcess>());
 
 	// Add FD_CLOEXEC to fd[0]
 	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
@@ -559,7 +547,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
 	}
 
 	// Alloc a new SpawnedProcess
@@ -568,19 +556,26 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::SpawnedProcess>());
 	}
-	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
-	OOBase::LocalString strAppName;
-	strAppName.getenv("OOSERVER_BINARY_PATH");
+	OOBase::String strAppName;
+	if ((err = strAppName.assign(LIBEXEC_DIR)) != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+
+	// If we are debugging, allow binary_path override
+	if (Root::is_debug())
+	{
+		if (get_config_arg("binary_path",strAppName))
+			LOG_WARNING(("Overriding with 'binary_path' setting %s",strAppName.c_str()));
+	}
 
 	// Spawn the process
 	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		return 0;
+		return OOBase::SmartPtr<Root::SpawnedProcess>();
 	}
 
 	// Done with fd[1]
@@ -591,15 +586,15 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (err != 0)
 	{
 		::close(fd[0]);
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
 	}
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
-		return 0;
+		return OOBase::SmartPtr<Root::SpawnedProcess>();
 
-	return pSpawn;
+	return OOBase::SmartPtr<Root::SpawnedProcess>(pSpawnUnix);
 }
 
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)

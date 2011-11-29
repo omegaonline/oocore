@@ -382,7 +382,7 @@ bool Root::Manager::spawn_sandbox()
 		LOG_ERROR(("Failed to find the 'sandbox_uname' setting in the config"));
 
 	bool bUnsafe = false;
-	if (get_config_arg("unsafe",strUnsafe))
+	if (Root::is_debug() && get_config_arg("unsafe",strUnsafe))
 		bUnsafe = (strUnsafe == "true");
 
 	bool bAgain = false;
@@ -539,7 +539,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 		if (bFirst && bAgain)
 		{
 			OOBase::String strUnsafe;
-			if (get_config_arg("unsafe",strUnsafe) && strUnsafe == "true")
+			if (Root::is_debug() && get_config_arg("unsafe",strUnsafe) && strUnsafe == "true")
 			{
 				OOBase::LocalString strOurUName;
 				if (!get_our_uid(uid,strOurUName))
@@ -580,7 +580,9 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		bOk = false;
 
 		OOBase::String strRegPath, strUsersPath;
-		get_config_arg("regdb_path",strRegPath);
+		if (!get_config_arg("regdb_path",strRegPath) || strRegPath.empty())
+			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),0);
+
 		get_config_arg("users_path",strUsersPath);
 
 		OOBase::LocalString strHive;

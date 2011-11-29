@@ -37,8 +37,6 @@ int main(int, char**);
 
 namespace User
 {
-	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;
-
 	bool is_debug();
 
 	class Manager :
@@ -142,6 +140,8 @@ namespace User
 		void on_socket_sent(OOBase::CDRStream& request);
 		void on_socket_close(OOBase::CDRStream& request);
 	};
+
+	typedef OOBase::Singleton<OOSvrBase::Proactor,Manager> Proactor;
 }
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_

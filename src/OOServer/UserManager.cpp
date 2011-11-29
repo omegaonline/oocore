@@ -31,6 +31,8 @@
 #include <sddl.h>
 #endif
 
+template class OOBase::Singleton<OOSvrBase::Proactor,User::Manager>;
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -53,7 +55,7 @@ namespace OTL
 
 		OMEGA_PRIVATE_FN_DECL(Module::OOSvrUser_ProcessModuleImpl*,GetModule())
 		{
-			return Omega::Threading::Singleton<Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Module> >::instance();
+			return Omega::Threading::Singleton<Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Manager> >::instance();
 		}
 
 		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
@@ -62,6 +64,8 @@ namespace OTL
 		}
 	}
 }
+
+template class Omega::Threading::Singleton<OTL::Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Manager> >;
 
 using namespace Omega;
 using namespace OTL;
@@ -452,7 +456,7 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 
 	// Read 4 bytes - This forces credential passing
 	OOBase::CDRStream stream;
-	err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
+	err = ptrSocket->recv(stream.buffer(),sizeof(uint32_t));
 	if (err != 0)
 	{
 		LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
@@ -460,7 +464,7 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 	}
 
 	// Check the versions are correct
-	Omega::uint32_t version = 0;
+	uint32_t version = 0;
 	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 	{
 		LOG_WARNING(("Client is running a very old version: %u",version));

@@ -63,14 +63,4 @@
 
 #include "../../include/Omega/internal/base_types.h"
 
-//////////////////////////////////////////////
-
-namespace Root
-{
-	struct Module
-	{
-		int unused;
-	};
-}
-
 #endif // OOSERVER_ROOT_H_INCLUDED_

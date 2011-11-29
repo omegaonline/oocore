@@ -47,8 +47,6 @@
 
 namespace Root
 {
-	typedef OOBase::Singleton<OOSvrBase::Proactor,Root::Module> Proactor;
-
 	bool is_debug();
 
 	class Manager :
@@ -171,6 +169,8 @@ namespace Root
 		void socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void socket_close(Omega::uint32_t channel_id, OOBase::CDRStream& request);
 	};
+
+	typedef OOBase::Singleton<OOSvrBase::Proactor,Manager> Proactor;
 }
 
 #endif // OOSERVER_ROOT_MANAGER_H_INCLUDED_

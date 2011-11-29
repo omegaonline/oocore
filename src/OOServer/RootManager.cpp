@@ -42,6 +42,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
+
 Root::Manager::Manager() :
 		m_sandbox_channel(0),
 		m_mapSockets(1)

@@ -173,6 +173,8 @@ namespace
 	};
 }
 
+template class OOBase::TLSSingleton<CallContext,OOCore::DLL>;
+
 uint32_t StdCallContext::Timeout()
 {
 	OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();

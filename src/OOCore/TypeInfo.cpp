@@ -264,6 +264,8 @@ namespace
 	}
 }
 
+template class OOBase::Singleton<TIMapImpl,OOCore::DLL>;
+
 TypeInfoImpl::TypeInfoImpl() :
 		m_base_methods(0)
 {

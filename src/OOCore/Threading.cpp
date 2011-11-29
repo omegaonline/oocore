@@ -21,6 +21,8 @@
 
 #include "OOCore_precomp.h"
 
+template class OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>;
+
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init))
 {
 	// The value pointed to is definitely volatile under race conditions

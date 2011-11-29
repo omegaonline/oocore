@@ -36,6 +36,9 @@ namespace
 	static const size_t s_header_len = sizeof(uint32_t) * 2;
 }
 
+template class OOBase::TLSSingleton<OOCore::UserSession::ThreadContext,OOCore::DLL>;
+template class OOBase::Singleton<OOCore::UserSession,OOCore::DLL>;
+
 OOCore::UserSession::UserSession() :
 		m_worker_thread(false),
 		m_channel_id(0),

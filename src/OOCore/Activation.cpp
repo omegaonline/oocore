@@ -345,6 +345,8 @@ namespace
 	}
 }
 
+template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> >;
+
 void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 {
 	ObjectPtr<ObjectImpl<OidNotFoundException> > pNew = ObjectImpl<OidNotFoundException>::CreateInstance();

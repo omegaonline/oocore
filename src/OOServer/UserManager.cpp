@@ -221,7 +221,11 @@ bool User::Manager::session_launch(const OOBase::String& strPipe)
 		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
 
 	// Make sure we set our OMEGA_SESSION_ADDRESS
+#if defined(_WIN32)
+	if (!SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strNewPipe.c_str()))
+#else
 	if (setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1) != 0)
+#endif
 		LOG_ERROR_RETURN(("Failed to set OMEGA_SESSION_ADDRESS: %s",OOBase::system_error_text()),false);
 
 	// Done with the port...

@@ -942,7 +942,7 @@ namespace
 		{
 			s = fmt_general(val,false,precision+i);
 
-			const wchar_t* end = 0;
+			const wchar_t* end = NULL;
 			p = OOCore::wcstod(s.c_wstr(),end);
 		}
 
@@ -1515,11 +1515,11 @@ int64_t OOCore::wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int 
 #if defined(HAVE_WCSTOLL)
 	static_assert(sizeof(::wcstoll(0,0,0)) == sizeof(int64_t),"Non-standard wcstoll");
 
-	return wcstoll(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::wcstoll(sz,const_cast<wchar_t**>(&endptr),base);
 #elif defined(HAVE__WCSTOI64)
 	static_assert(sizeof(::_wcstoi64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoi64");
 
-	return _wcstoi64(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::_wcstoi64(sz,const_cast<wchar_t**>(&endptr),base);
 #else
 #error Fix me!
 #endif
@@ -1530,11 +1530,11 @@ uint64_t OOCore::wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned in
 #if defined(HAVE_WCSTOULL)
 	static_assert(sizeof(::wcstoull(0,0,0)) == sizeof(int64_t),"Non-standard wcstoull");
 
-	return wcstoull(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::wcstoull(sz,const_cast<wchar_t**>(&endptr),base);
 #elif defined(HAVE__WCSTOUI64)
 	static_assert(sizeof(::_wcstoui64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoui64");
 
-	return _wcstoui64(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::_wcstoui64(sz,const_cast<wchar_t**>(&endptr),base);
 #else
 #error Fix me!
 #endif
@@ -1547,7 +1547,7 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 	return ::wcstod(sz,const_cast<wchar_t**>(&endptr));
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_wcsto64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_strto64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
 	const wchar_t* start = str.c_wstr();
 	const wchar_t* end = start;
@@ -1560,7 +1560,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_wcsto64,3,((in),const string_t&,st
 	return v;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_wcstou64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_strtou64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
 	const wchar_t* start = str.c_wstr();
 	const wchar_t* end = start;
@@ -1573,7 +1573,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_wcstou64,3,((in),const string_t&,
 	return v;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(float8_t,OOCore_wcstod,2,((in),const string_t&,str,(out),size_t&,end_pos))
+OMEGA_DEFINE_EXPORTED_FUNCTION(float8_t,OOCore_strtod,2,((in),const string_t&,str,(out),size_t&,end_pos))
 {
 	const wchar_t* start = str.c_wstr();
 	const wchar_t* end = start;

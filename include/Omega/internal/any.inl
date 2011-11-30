@@ -230,9 +230,9 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 }
 
 // string_t::ToNumber<T> uses helpers defined in this file
-OOCORE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcsto64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
-OOCORE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstou64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
-OOCORE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_wcstod,2,((in),const Omega::string_t&,str,(out),size_t&,end_pos));
+OOCORE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_strto64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
+OOCORE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_strtou64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
+OOCORE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_strtod,2,((in),const Omega::string_t&,str,(out),size_t&,end_pos));
 
 // Helper templates
 namespace Omega
@@ -399,7 +399,7 @@ namespace Omega
 				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
 				{
 					size_t end_pos = string_t::npos;
-					int64_t v = OOCore_wcsto64(val,end_pos,10);
+					int64_t v = OOCore_strto64(val,end_pos,10);
 					if (end_pos != string_t::npos)
 						return any_t::castOverflow;
 
@@ -413,7 +413,7 @@ namespace Omega
 				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
 				{
 					size_t end_pos = string_t::npos;
-					uint64_t v = OOCore_wcstou64(val,end_pos,10);
+					uint64_t v = OOCore_strtou64(val,end_pos,10);
 					if (end_pos != string_t::npos)
 						return any_t::castOverflow;
 
@@ -427,7 +427,7 @@ namespace Omega
 				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
 				{
 					size_t end_pos = string_t::npos;
-					float8_t v = OOCore_wcstod(val,end_pos);
+					float8_t v = OOCore_strtod(val,end_pos);
 					if (end_pos != string_t::npos)
 						return any_t::castOverflow;
 
@@ -697,19 +697,19 @@ inline T Omega::string_t::ToNumber() const
 	return ret;
 }
 
-inline Omega::int64_t Omega::string_t::wcsto64(const string_t& str, size_t& end_pos, unsigned int base)
+inline Omega::int64_t Omega::string_t::strto64(const string_t& str, size_t& end_pos, unsigned int base)
 {
-	return OOCore_wcsto64(str,end_pos,base);
+	return OOCore_strto64(str,end_pos,base);
 }
 
-inline Omega::uint64_t Omega::string_t::wcstou64(const string_t& str, size_t& end_pos, unsigned int base)
+inline Omega::uint64_t Omega::string_t::strtou64(const string_t& str, size_t& end_pos, unsigned int base)
 {
-	return OOCore_wcstou64(str,end_pos,base);
+	return OOCore_strtou64(str,end_pos,base);
 }
 
-inline Omega::float8_t Omega::string_t::wcstod(const string_t& str, size_t& end_pos)
+inline Omega::float8_t Omega::string_t::strtod(const string_t& str, size_t& end_pos)
 {
-	return OOCore_wcstod(str,end_pos);
+	return OOCore_strtod(str,end_pos);
 }
 
 namespace Omega

@@ -117,9 +117,9 @@ namespace Omega
 		template <typename T>
 		string_t& operator %= (T rhs);
 
-		static int64_t wcsto64(const string_t& str, size_t& end_pos, unsigned int base);
-		static uint64_t wcstou64(const string_t& str, size_t& end_pos, unsigned int base);
-		static float8_t wcstod(const string_t& str, size_t& end_pos);
+		static int64_t strto64(const string_t& str, size_t& end_pos, unsigned int base);
+		static uint64_t strtou64(const string_t& str, size_t& end_pos, unsigned int base);
+		static float8_t strtod(const string_t& str, size_t& end_pos);
 
 	private:
 		struct handle_t

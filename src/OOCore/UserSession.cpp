@@ -655,7 +655,7 @@ uint16_t OOCore::UserSession::insert_thread_context(OOCore::UserSession::ThreadC
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	uint16_t id = 0;
-	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFF);
+	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFFF);
 	if (err != 0)
 		OMEGA_THROW(err);
 

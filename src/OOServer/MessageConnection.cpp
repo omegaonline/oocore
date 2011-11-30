@@ -512,7 +512,7 @@ Omega::uint32_t OOServer::MessageHandler::register_channel(OOBase::RefPtr<Messag
 			if (m_mapChannelIds.exists(channel_id))
 				LOG_ERROR_RETURN(("Duplicate fixed channel registered"),0);
 		}
-		else if (m_mapChannelIds.size() >= m_uNextChannelMask - 0xF)
+		else if (m_mapChannelIds.size() >= m_uNextChannelMask - 1)
 		{
 			LOG_ERROR_RETURN(("Out of free channels"),0);
 		}
@@ -747,7 +747,7 @@ Omega::uint16_t OOServer::MessageHandler::insert_thread_context(OOServer::Messag
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	Omega::uint16_t id = 0;
-	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFF);
+	int err = m_mapThreadContexts.insert(pContext,id,1,0xFFFF);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to add thread context: %s",OOBase::system_error_text(err)),0);
 

@@ -318,24 +318,6 @@ inline Omega::string_t& Omega::string_t::Clear()
 	return *this;
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const void*,h));
-inline Omega::string_t Omega::string_t::ToLower() const
-{
-	if (!m_handle)
-		return string_t((handle_t*)NULL,false);
-
-	return string_t(static_cast<handle_t*>(OOCore_string_t_tolower(m_handle)),false);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const void*,h));
-inline Omega::string_t Omega::string_t::ToUpper() const
-{
-	if (!m_handle)
-		return string_t((handle_t*)NULL,false);
-
-	return string_t(static_cast<handle_t*>(OOCore_string_t_toupper(m_handle)),false);
-}
-
 inline Omega::string_t Omega::string_t::TrimLeft(wchar_t c) const
 {
 	return Mid(FindNot(c));

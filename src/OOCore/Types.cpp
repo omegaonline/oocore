@@ -387,32 +387,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,
 	return 0;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const void*,s1))
-{
-	if (!s1)
-		return NULL;
-
-	StringNode* s2 = new (OOCore::throwing) StringNode(static_cast<const StringNode*>(s1)->m_wbuf,static_cast<const StringNode*>(s1)->m_wlen,true);
-	
-	for (wchar_t* p=const_cast<wchar_t*>(s2->m_wbuf); size_t(p-s2->m_wbuf) < s2->m_wlen; ++p)
-		*p = towlower(*p);
-
-	return s2;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const void*,s1))
-{
-	if (!s1)
-		return NULL;
-
-	StringNode* s2 = new (OOCore::throwing) StringNode(static_cast<const StringNode*>(s1)->m_wbuf,static_cast<const StringNode*>(s1)->m_wlen,true);
-	
-	for (wchar_t* p=const_cast<wchar_t*>(s2->m_wbuf); size_t(p-s2->m_wbuf) < s2->m_wlen; ++p)
-		*p = towupper(*p);
-
-	return s2;
-}
-
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
 {
 	size_t len = static_cast<const StringNode*>(s1)->m_wlen;

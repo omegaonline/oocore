@@ -103,9 +103,6 @@ namespace Omega
 		string_t Mid(size_t start, size_t length = npos) const;
 		string_t Right(size_t length) const;
 
-		string_t ToLower() const;
-		string_t ToUpper() const;
-
 		string_t TrimLeft(wchar_t c = L' ') const;
 		string_t TrimLeft(const string_t& str) const;
 		string_t TrimRight(wchar_t c = L' ') const;

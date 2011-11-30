@@ -659,7 +659,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	if (pos == string_t::npos)
 		OMEGA_THROW("No protocol specified");
 
-	string_t strProtocol = strEndpoint.Left(pos).ToLower();
+	string_t strProtocol = strEndpoint.Left(pos);
 
 	// Look up handler in registry
 	string_t strHandler;

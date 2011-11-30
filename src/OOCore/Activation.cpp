@@ -392,7 +392,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		size_t pos = strObject.Find(L'@');
 		if (pos != string_t::npos)
 		{
-			strEndpoint = strObject.Mid(pos+1).ToLower();
+			strEndpoint = strObject.Mid(pos+1);
 			strObject = strObject.Left(pos);
 
 			if (strEndpoint == L"local")

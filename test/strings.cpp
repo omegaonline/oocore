@@ -40,8 +40,6 @@ bool string_tests()
 
 	s3 = sz1_2;
 	TEST(s1.Compare(s3,0,Omega::string_t::npos,true) == 0);
-	TEST(s1 == s3.ToLower());
-	TEST(s1.ToUpper() == s3);
 
 	s1 = L"abcdefghijabcdefghij";
 	TEST(s1.Find(L'a') == 0);
@@ -64,8 +62,6 @@ bool string_tests()
 	s2 = sz1;
 	TEST(s1.Find(s2) == 0);
 	TEST(s1.Find(s2,1) == 10);
-	TEST(s1.Find(s2.ToUpper(),0,true) == 0);
-	TEST(s1.Find(s2.ToUpper(),1,true) == 10);
 
 	TEST(s1.Left(5) == L"abcde");
 	TEST(s1.Mid(15) == L"fghij");

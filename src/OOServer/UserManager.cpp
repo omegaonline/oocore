@@ -142,7 +142,7 @@ int User::Manager::run(const char* pszPipe)
 
 	// Start the handler
 	if (start_request_threads(2) &&
-			fork_slave(pszPipe))
+			connect_root(pszPipe))
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
 
@@ -176,7 +176,7 @@ int User::Manager::run_proactor(void*)
 	return Proactor::instance().run(err);
 }
 
-bool User::Manager::fork_slave(const char* pszPipe)
+bool User::Manager::connect_root(const char* pszPipe)
 {
 #if defined(_WIN32)
 	// Use a named pipe

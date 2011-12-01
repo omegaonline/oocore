@@ -73,7 +73,7 @@ namespace User
 		static void do_channel_closed(void* pParams, OOBase::CDRStream& input);
 		void do_channel_closed_i(Omega::uint32_t channel_id);
 
-		bool fork_slave(const char* pszPipe);
+		bool connect_root(const char* pszPipe);
 		static int run_proactor(void*);
 
 		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);

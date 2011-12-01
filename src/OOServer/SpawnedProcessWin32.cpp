@@ -902,7 +902,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (Root::is_debug())
 	{
 		if (get_config_arg("binary_path",strAppName))
-			LOG_WARNING(("Overriding with 'binary_path' setting %s",strAppName.c_str()));
+			OOBase::Logger::log(OOBase::Logger::Warning,"Overriding with 'binary_path' setting '%s'",strAppName.c_str());
 	}
 
 	// Spawn the process

@@ -126,7 +126,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 #endif
 #endif
 
-	if (mx > 4)
+	if (mx >= 4)
 	{
 		for (int fd_i=STDERR_FILENO+1; fd_i<mx && fd_i != except_fd; ++fd_i)
 			close(fd_i);
@@ -210,34 +210,9 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 	}
 
 	// We are the child...
-	if (!Root::is_debug())
-	{
-		// Set stdin/out/err to /dev/null
-		int fd = open("/dev/null",O_RDWR);
-		if (fd == -1)
-		{
-			LOG_ERROR(("open(/dev/null) failed: %s",OOBase::system_error_text()));
-			_exit(127);
-		}
 
-		// Check this session stuff with the Stevens book! umask? etc...
-		void* POSIX_TODO;
-
-		dup2(fd,STDIN_FILENO);
-		dup2(fd,STDOUT_FILENO);
-		dup2(fd,STDERR_FILENO);
-		close(fd);
-
-		// Change dir to a known location
-		if (chdir(LIBEXEC_DIR) != 0)
-		{
-			LOG_ERROR(("chdir(%s) failed: %s",LIBEXEC_DIR,OOBase::system_error_text()));
-			_exit(127);
-		}
-
-		// Close all open handles - not that we should have any ;)
-		close_all_fds(pass_fd);
-	}
+	// Close all open handles - not that we should have any ;)
+	close_all_fds(pass_fd);
 
 	if (bChangeUid)
 	{

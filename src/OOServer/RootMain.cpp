@@ -135,7 +135,18 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return Version();
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
+	char szPath[MAX_PATH];
+	if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
+		LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
+
+	// Strip off our name
+	PathRemoveFileSpecA(szPath);
+
+	if (!SetCurrentDirectoryA(szPath))
+		LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),EXIT_FAILURE);
+
+#elif defined(HAVE_UNISTD_H)
 	// Ignore SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);
@@ -143,6 +154,10 @@ int main(int argc, char* argv[])
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 
 	umask(0);
+
+	// Change dir to a known location
+	if (!s_is_debug && chdir("/") != 0)
+		LOG_ERROR_RETURN(("chdir(/) failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
 #endif
 
 	// Run the one and only Root::Manager instance

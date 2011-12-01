@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-#else
+#elif defined(HAVE_UNISTD_H)
 	// Ignore SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);

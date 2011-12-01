@@ -128,15 +128,11 @@ int main(int argc, char* argv[])
 	}
 
 #else
-
 	// Ignore SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
-
-	umask(0);
-
 #endif
 
 	OOBase::String strPipe;
@@ -147,36 +143,5 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	User::Manager manager;
-
-	if (!manager.start_proactor_threads())
-		return EXIT_FAILURE;
-
-	// Start the handler
-	if (!manager.start_request_threads(2))
-	{
-		manager.stop_request_threads();
-		return EXIT_FAILURE;
-	}
-
-	bool bRun = manager.fork_slave(strPipe);
-	if (bRun)
-	{
-		OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
-
-		manager.run();
-	}
-
-	// Stop the manager
-	manager.stop();
-
-	if (User::is_debug() && !bRun)
-	{
-		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
-
-		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(15));
-	}
-
-	return (bRun ? EXIT_SUCCESS : EXIT_FAILURE);
+	return User::Manager().run(strPipe.c_str());
 }

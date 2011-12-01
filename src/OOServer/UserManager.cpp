@@ -129,36 +129,67 @@ User::Manager::~Manager()
 	s_instance = NULL;
 }
 
-void User::Manager::run()
+int User::Manager::run(const char* pszPipe)
 {
-	// Wait for stop
-	wait_for_quit();
-}
+	int err = m_proactor_pool.run(run_proactor,NULL,2);
+	if (err != 0)
+	{
+		m_proactor_pool.join();
+		LOG_ERROR_RETURN(("Thread pool create failed: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
+	}
 
-void User::Manager::stop()
-{
+	int ret = EXIT_FAILURE;
+
+	// Start the handler
+	if (start_request_threads(2) &&
+			fork_slave(pszPipe))
+	{
+		OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
+
+		// Wait for stop
+		wait_for_quit();
+
+		ret = EXIT_SUCCESS;
+	}
+
 	// Stop the MessageHandler
 	stop_request_threads();
 
 	Proactor::instance().stop();
 
 	m_proactor_pool.join();
+
+	if (User::is_debug() && ret != EXIT_SUCCESS)
+	{
+		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
+
+		// Give us a chance to read the errors!
+		OOBase::Thread::sleep(OOBase::timeval_t(15));
+	}
+
+	return ret;
 }
 
-bool User::Manager::fork_slave(const OOBase::String& strPipe)
+int User::Manager::run_proactor(void*)
+{
+	int err = 0;
+	return Proactor::instance().run(err);
+}
+
+bool User::Manager::fork_slave(const char* pszPipe)
 {
 #if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
 	OOBase::timeval_t wait(20);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().connect_local_socket(strPipe.c_str(),err,&wait));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().connect_local_socket(pszPipe,err,&wait));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
 #else
 
 	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
+	int fd = atoi(pszPipe);
 
 	// Add FD_CLOEXEC to fd
 	int err = OOBase::POSIX::set_close_on_exec(fd,true);
@@ -189,105 +220,18 @@ bool User::Manager::fork_slave(const OOBase::String& strPipe)
 	setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1);
 #endif
 
-	return handshake_root(local_socket,strNewPipe);
-}
-
-bool User::Manager::session_launch(const OOBase::String& strPipe)
-{
-#if defined(_WIN32)
-	OMEGA_UNUSED_ARG(strPipe);
-
-	LOG_ERROR_RETURN(("Somehow got into session_launch!"),false);
-#else
-
-	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
-
-	// Invent a new pipe name...
-	OOBase::LocalString strNewPipe;
-	if (!unique_name(strNewPipe))
-		return false;
-
-	pid_t pid = getpid();
-	if (write(fd,&pid,sizeof(pid)) != sizeof(pid))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
-
-	// Then send back our port name
-	size_t uLen = strNewPipe.length()+1;
-	if (write(fd,&uLen,sizeof(uLen)) != sizeof(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
-
-	if (write(fd,strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
-		LOG_ERROR_RETURN(("Failed to write session data: %s",OOBase::system_error_text()),false);
-
-	// Make sure we set our OMEGA_SESSION_ADDRESS
-#if defined(_WIN32)
-	if (!SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strNewPipe.c_str()))
-#else
-	if (setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1) != 0)
-#endif
-		LOG_ERROR_RETURN(("Failed to set OMEGA_SESSION_ADDRESS: %s",OOBase::system_error_text()),false);
-
-	// Done with the port...
-	close(fd);
-
-	// Now connect to ooserverd
-	int err = 0;
-	OOBase::timeval_t wait(20);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket = Proactor::instance().connect_local_socket("/tmp/omegaonline",err,&wait);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
-
-	// Send version information
-	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-
 	OOBase::CDRStream stream;
-	if (!stream.write(version))
-		LOG_ERROR_RETURN(("Failed to write root data: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	// Send our port name
+	if (!stream.write(strNewPipe.c_str()))
+		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	if ((err = local_socket->send(stream.buffer())) != 0)
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
 
-	// Connect up
-	return handshake_root(local_socket,strNewPipe);
-
-#endif
-}
-
-bool User::Manager::start_proactor_threads()
-{
-	int err = m_proactor_pool.run(run_proactor,NULL,2);
-	if (err != 0)
-	{
-		m_proactor_pool.join();
-		LOG_ERROR_RETURN(("Thread pool create failed: %s",OOBase::system_error_text(err)),false);
-	}
-
-	return true;
-}
-
-int User::Manager::run_proactor(void*)
-{
-	int err = 0;
-	return Proactor::instance().run(err);
-}
-
-bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe)
-{
-	OOBase::CDRStream stream;
-
-	// Send our port name
-	if (!stream.write(strPipe.c_str()))
-		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	int err = local_socket->send(stream.buffer());
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
-
 	// Read the sandbox channel
 	stream.reset();
-	err = local_socket->recv(stream.buffer(),2*sizeof(uint32_t));
-	if (err != 0)
+	if ((err = local_socket->recv(stream.buffer(),2*sizeof(uint32_t))) != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
 
 	uint32_t sandbox_channel = 0;
@@ -321,7 +265,7 @@ bool User::Manager::handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& 
 
 	// Now bootstrap
 	stream.reset();
-	if (!stream.write(sandbox_channel) || !stream.write(strPipe.c_str()))
+	if (!stream.write(sandbox_channel) || !stream.write(strNewPipe.c_str()))
 	{
 		ptrMC->shutdown();
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);

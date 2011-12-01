@@ -43,22 +43,20 @@ namespace User
 			public OOServer::MessageHandler,
 			public OOSvrBase::Server
 	{
-		// main() has full access...
-		friend int ::main(int, char**);
-
 	public:
+		Manager();
+		virtual ~Manager();
+
 		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		static OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 
+		int run(const char* pszPipe);
 		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
 		void close_socket(Omega::uint32_t id);
 		
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
-
-		Manager();
-		virtual ~Manager();
 
 		Manager(const Manager&);
 		Manager& operator = (const Manager&);
@@ -75,11 +73,7 @@ namespace User
 		static void do_channel_closed(void* pParams, OOBase::CDRStream& input);
 		void do_channel_closed_i(Omega::uint32_t channel_id);
 
-		void run();
-		void stop();
-		bool fork_slave(const OOBase::String& strPipe);
-		bool session_launch(const OOBase::String& strPipe);
-		bool start_proactor_threads();
+		bool fork_slave(const char* pszPipe);
 		static int run_proactor(void*);
 
 		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);

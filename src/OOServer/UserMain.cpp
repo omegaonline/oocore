@@ -91,10 +91,6 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("debug");
 	cmd_args.add_option("fork-slave",0,true);
 
-#if !defined(_WIN32)
-	cmd_args.add_option("launch-session",0,true);
-#endif
-
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
@@ -144,22 +140,11 @@ int main(int argc, char* argv[])
 #endif
 
 	OOBase::String strPipe;
-	bool bForkSlave = false;
-
-	// Try to work out how we are being asked to start
-	if (args.find("fork-slave",strPipe))
+	if (!args.find("fork-slave",strPipe))
 	{
-		// Fork start from ooserverd
-		bForkSlave = true;
-	}
-	else
-	{
-		if (!args.find("launch-session",strPipe))
-		{
-			// Ooops...
-			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
-			return EXIT_FAILURE;
-		}
+		// Ooops...
+		OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
+		return EXIT_FAILURE;
 	}
 
 	User::Manager manager;
@@ -174,14 +159,7 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	// Do the correct init
-	bool bRun = false;
-	if (bForkSlave)
-		bRun = manager.fork_slave(strPipe);
-	else
-		bRun = manager.session_launch(strPipe);
-
-	// Now run...
+	bool bRun = manager.fork_slave(strPipe);
 	if (bRun)
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");

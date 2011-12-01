@@ -80,11 +80,11 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
-void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, IObject*& pObject)
+void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, IObject*& pObject)
 {
 	// Forward to sandbox if required
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
-		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
+		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
 		
 	// Find the OID key...
 	string_t strProcess;
@@ -150,7 +150,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %ls",strProcess.c_wstr());
 
 			// Create a new process
-			ptrProcess = User::Process::exec(strProcess.c_wstr());
+			ptrProcess = User::Process::exec(strProcess.c_wstr(),envc,envp);
 
 			int err = m_mapInProgress.insert(strProcess,ptrProcess);
 			if (err != 0)

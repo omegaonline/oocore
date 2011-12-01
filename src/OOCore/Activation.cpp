@@ -274,7 +274,11 @@ namespace
 			if (ptrIPS)
 			{
 				IObject* pObject = NULL;
-				ptrIPS->LaunchObjectApp(oid,iid,flags,pObject);
+
+				string_t envp[1];
+				uint32_t envc = 0;
+
+				ptrIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
 				return pObject;
 			}
 		}

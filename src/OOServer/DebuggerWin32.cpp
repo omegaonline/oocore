@@ -39,7 +39,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_DEBUG) && defined(_MSC_VER)
+#if !defined(NDEBUG) && defined(_MSC_VER)
 
 // #import the guts of visual studio
 #if _MSC_VER == 1310
@@ -199,7 +199,7 @@ namespace
 
 void AttachDebugger(unsigned long pid)
 {
-#if defined(_DEBUG) && defined(_MSC_VER)
+#if !defined(NDEBUG) && defined(_MSC_VER)
 	if (!AttachVSDebugger(pid))
 #endif
 		PromptForDebugger(pid);

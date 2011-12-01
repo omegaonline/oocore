@@ -220,28 +220,40 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
 		{
-			LOG_ERROR(("getpwuid() failed: %s",OOBase::system_error_text()));
+			err = errno;
+			OOBase::stderr_write("getpwuid() failed: ");
+			OOBase::stderr_write(OOBase::system_error_text(err));
+			OOBase::stderr_write("\n");
 			_exit(127);
 		}
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
 		{
-			LOG_ERROR(("setgid() failed: %s",OOBase::system_error_text()));
+			err = errno;
+			OOBase::stderr_write("setgid() failed: ");
+			OOBase::stderr_write(OOBase::system_error_text(err));
+			OOBase::stderr_write("\n");
 			_exit(127);
 		}
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 		{
-			LOG_ERROR(("initgroups() failed: %s",OOBase::system_error_text()));
+			err = errno;
+			OOBase::stderr_write("initgroups() failed: ");
+			OOBase::stderr_write(OOBase::system_error_text(err));
+			OOBase::stderr_write("\n");
 			_exit(127);
 		}
 
 		// Stop being privileged!
 		if (setuid(m_uid) != 0)
 		{
-			LOG_ERROR(("setuid() failed: %s",OOBase::system_error_text()));
+			err = errno;
+			OOBase::stderr_write("setuid() failed: ");
+			OOBase::stderr_write(OOBase::system_error_text(err));
+			OOBase::stderr_write("\n");
 			_exit(127);
 		}
 	}
@@ -250,38 +262,47 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 	OOBase::LocalString strPipe;
 	if ((err = strPipe.printf("--fork-slave=%u",pass_fd)) != 0)
 	{
-		LOG_ERROR(("Failed to concatenate strings: %s",OOBase::system_error_text(err)));
+		OOBase::stderr_write("Failed to concatenate strings: ");
+		OOBase::stderr_write(OOBase::system_error_text(err));
+		OOBase::stderr_write("\n");
 		_exit(127);
 	}
-
-	const char* debug = NULL;
-	if (Root::is_debug())
-		debug = "--debug";
 
 	OOBase::LocalString display;
 	display.getenv("DISPLAY");
 	if (Root::is_debug() && !display.empty())
 	{
-		OOBase::String title;
+		OOBase::String strTitle;
 		if (m_bSandbox)
-			title.assign("oosvruser:/sandbox");
+			strTitle.assign("oosvruser:/sandbox");
 		else
-			title.concat("oosvruser:",m_sid.c_str());
+			strTitle.concat("oosvruser:",m_sid.c_str());
 
-		execlp("xterm","xterm","-T",title.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),debug,(char*)0);
+		execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
 		//OOBase::LocalString params;
 		//params.printf("--log-file=vallog%d.txt",getpid());
-		//execlp("xterm","xterm","-T",title.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
+		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
 		//OOBase::LocalString gdb;
-		//gdb.printf("run %s",strPipe.c_str());
-		//execlp("xterm","xterm","-T",title.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
+		//gdb.printf("run %s --debug",strPipe.c_str());
+		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)NULL);
 	}
 
-	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),debug,(char*)0);
+	const char* argv[] = { "oosvruser", strPipe.c_str(), NULL, NULL };
+	if (Root::is_debug())
+		argv[2] = "--debug";
 
-	LOG_ERROR(("Failed to launch %s cwd: %s - %s",strAppName.c_str(),get_current_dir_name(),strerror(errno)));
+	execv(strAppName.c_str(),(char* const*)argv);
+
+	err = errno;
+	OOBase::stderr_write("Failed to launch '");
+	OOBase::stderr_write(strAppName.c_str());
+	OOBase::stderr_write("' cwd '");
+	OOBase::stderr_write(get_current_dir_name());
+	OOBase::stderr_write("' - ");
+	OOBase::stderr_write(OOBase::system_error_text(err));
+	OOBase::stderr_write("\n");
 
 	_exit(127);
 }

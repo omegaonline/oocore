@@ -541,11 +541,11 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strModule, HANDLE hTok
 		err = strCmdLine.assign(strModule.c_str());
 
 	if (err == 0)
-	{
 		err = strCmdLine.append(" --fork-slave=");
-		if (err == 0)
-			err = strCmdLine.append(strPipe.c_str());
-	}
+	if (err == 0)
+		err = strCmdLine.append(strPipe.c_str());
+	if (err == 0 && Root::is_debug())
+		err = strCmdLine.append(" --debug");
 
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to build command line: %s",OOBase::system_error_text(err)),err);

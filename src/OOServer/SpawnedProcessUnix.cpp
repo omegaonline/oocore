@@ -254,14 +254,9 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 		_exit(127);
 	}
 
+	const char* debug = NULL;
 	if (Root::is_debug())
-	{
-		if ((err = strPipe.append(" --debug")) != 0)
-		{
-			LOG_ERROR(("Failed to append strings: %s",OOBase::system_error_text(err)));
-			_exit(127);
-		}
-	}
+		debug = "--debug";
 
 	OOBase::LocalString display;
 	display.getenv("DISPLAY");
@@ -273,7 +268,7 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 		else
 			title.concat("oosvruser:",m_sid.c_str());
 
-		execlp("xterm","xterm","-T",title.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),(char*)0);
+		execlp("xterm","xterm","-T",title.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),debug,(char*)0);
 
 		//OOBase::LocalString params;
 		//params.printf("--log-file=vallog%d.txt",getpid());
@@ -284,7 +279,7 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 		//execlp("xterm","xterm","-T",title.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)0);
 	}
 
-	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),(char*)0);
+	execlp(strAppName.c_str(),strAppName.c_str(),strPipe.c_str(),debug,(char*)0);
 
 	LOG_ERROR(("Failed to launch %s cwd: %s - %s",strAppName.c_str(),get_current_dir_name(),strerror(errno)));
 

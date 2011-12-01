@@ -560,7 +560,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strModule, HANDLE hTok
 	STARTUPINFOA startup_info = {0};
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
-	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE;
+	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	OOBase::LocalString strTitle;
@@ -621,7 +621,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strModule, HANDLE hTok
 	}
 	else
 	{
-		dwFlags |= DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
+		dwFlags |= DETACHED_PROCESS;
 
 		if (bSandbox)
 			OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);

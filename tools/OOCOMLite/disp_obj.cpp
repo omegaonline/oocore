@@ -26,7 +26,7 @@ namespace
 	HRESULT parse_type_info(Omega::Remoting::IMessage* pType, bool& seen_array, Omega::guid_t& iid, Omega::TypeInfo::Type_t& type)
 	{
 		bool seen_pointer = false;
-		for (bool loop = true;loop;)
+		for (;;)
 		{
 			type = pType->ReadValue(L"type").cast<Omega::TypeInfo::Type_t>();
 			switch (type)
@@ -55,16 +55,14 @@ namespace
 						
 						seen_array = true;
 					}					
-					loop = false;
-					break;
+					return S_OK;
 				
 				case Omega::TypeInfo::typeObject:
 					if (!seen_pointer)
 						return DISP_E_TYPEMISMATCH; // Must be an Omega::IObject*
 					
 					iid = pType->ReadValue(L"iid").cast<Omega::guid_t>();
-					loop = false;
-					break;
+					return S_OK;
 				
 				case Omega::TypeInfo::modifierPointer:
 					if (seen_pointer)
@@ -297,6 +295,7 @@ HRESULT variant_to_any(LCID lcid, const VARIANTARG& arg, Omega::any_t& value)
 
 void any_to_variant(LCID lcid, const Omega::any_t& value, VARIANTARG* pArg)
 {
+	void* TODO;
 }
 
 IDispatchObjImpl::IDispatchObjImpl(Omega::Remoting::IProxy* pProxy, const Omega::guid_t& iid) : 

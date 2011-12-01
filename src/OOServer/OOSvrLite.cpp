@@ -120,12 +120,12 @@ string_t InterProcessService::GetArg(const string_t& arg)
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
 {
-	return 0;
+	return NULL;
 }
 
 void InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&, Activation::Flags_t, IObject*& pObject)
 {
-	pObject = 0;
+	pObject = NULL;
 	throw Activation::IOidNotFoundException::Create(oid);
 }
 

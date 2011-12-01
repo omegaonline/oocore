@@ -1,1 +1,1 @@
-SUBDIRS = OOCOMLite OOLaunch OOGuidgen OOReg
+SUBDIRS = OOCOMLite OOGuidgen OOReg

@@ -80,7 +80,7 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
-void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, IObject*& pObject)
+void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::byte_t* envp, IObject*& pObject)
 {
 	// Forward to sandbox if required
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)

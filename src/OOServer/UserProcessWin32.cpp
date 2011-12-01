@@ -101,7 +101,7 @@ bool User::Process::is_relative_path(const wchar_t* pszPath)
 	return (PathIsRelativeW(pszPath) != FALSE);
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t envc, const Omega::string_t* envp)
+User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t envc, const Omega::byte_t* envp)
 {
 	// Do a ShellExecute style lookup for the actual thing to call..
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();

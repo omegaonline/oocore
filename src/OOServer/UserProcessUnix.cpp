@@ -42,7 +42,7 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(const wchar_t* pszExeName);
+		void exec(const wchar_t* pszExeName, const char* envp);
 
 	private:
 		pid_t m_pid;
@@ -54,20 +54,20 @@ bool User::Process::is_relative_path(const wchar_t* pszPath)
 	return (pszPath[0] != L'/');
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t envc, const Omega::string_t* envp)
+User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t envc, const Omega::byte_t* envp)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	// Sort out environment block
+	// Sort out environment block and split args
 	void* TODO;
 
-	ptrProcess->exec(pszExeName);
+	ptrProcess->exec(pszExeName,(const char*)envp);
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const wchar_t* pszExeName)
+void UserProcessUnix::exec(const wchar_t* pszExeName, const char* envp)
 {
 	pid_t pid = fork();
 	if (pid < 0)
@@ -76,6 +76,22 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 	if (pid == 0)
 	{
 		// We are the child
+
+		// We need to set the LC_CTYPE before the conversion...
+		void* TODO;
+		/*if (env_var(LC_ALL))
+			setlocale(LC_ALL,v);
+		else
+		{
+			if (env_var(LANG))
+				setlocale(LC_ALL,v);
+			else
+				setlocale(LC_ALL,"C");
+
+			if (env_var(LC_CTYPE))
+				set = (setlocale(LC_CTYPE,v) != NULL);
+		}*/
+
 		char szBuf[1024] = {0};
 		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
 		if (clen >= sizeof(szBuf))
@@ -84,6 +100,8 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 			_exit(127);
 		}
 		szBuf[clen] = '\0';
+
+		// Use execve()
 
 		// Just use the system() call
 		int ret = system(szBuf);

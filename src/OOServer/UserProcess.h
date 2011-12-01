@@ -32,7 +32,7 @@ namespace User
 		virtual bool running() = 0;
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code) = 0;
 
-		static Process* exec(const wchar_t* pszProcess, Omega::uint32_t envc, const Omega::string_t* envp);
+		static Process* exec(const wchar_t* pszProcess, Omega::uint32_t envc, const Omega::byte_t* envp);
 		static bool is_relative_path(const wchar_t* pszPath);
 
 	protected:

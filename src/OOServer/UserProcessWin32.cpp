@@ -117,11 +117,11 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 	DWORD dwFlags = DETACHED_PROCESS;
 
 	OOBase::Win32::SmartHandle hDebugEvent;
-	if (IsDebuggerPresent())
+	if (User::is_debug())
 	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Local\\OOCORE_DEBUG_MUTEX");
-		if (hDebugEvent.is_valid())
-			dwFlags = CREATE_NEW_CONSOLE;
+
+		dwFlags = CREATE_NEW_CONSOLE;
 	}
 
 	STARTUPINFOW si = {0};
@@ -135,11 +135,11 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 		OMEGA_THROW(dwErr);
 	}
 
-	if (hDebugEvent)
-	{
+	if (User::is_debug())
 		AttachDebugger(pi.dwProcessId);
+
+	if (hDebugEvent)
 		SetEvent(hDebugEvent);
-	}
 
 	CloseHandle(pi.hThread);
 	m_hProcess = pi.hProcess;

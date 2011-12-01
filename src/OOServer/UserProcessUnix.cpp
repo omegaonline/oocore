@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
+void AttachDebugger(unsigned long pid);
+
 namespace
 {
 	class UserProcessUnix : public User::Process
@@ -87,6 +89,11 @@ void UserProcessUnix::exec(const wchar_t* pszExeName)
 
 		OOBase::stderr_write("Failed to launch process\n");
 		_exit(127);
+	}
+	else
+	{
+		if (User::is_debug())
+			AttachDebugger(pid);
 	}
 
 	m_pid = pid;

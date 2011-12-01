@@ -600,8 +600,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strModule, HANDLE hTok
 
 	if (Root::is_debug())
 	{
-		if (IsDebuggerPresent())
-			hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 
 		dwFlags |= CREATE_NEW_CONSOLE;
 
@@ -644,11 +643,12 @@ DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strModule, HANDLE hTok
 		goto Cleanup;
 	}
 
+	if (Root::is_debug())
+		AttachDebugger(process_info.dwProcessId);
+
 	// Attach a debugger if we are debugging
 	if (hDebugEvent)
 	{
-		AttachDebugger(process_info.dwProcessId);
-
 		SetEvent(hDebugEvent);
 		CloseHandle(hDebugEvent);
 	}

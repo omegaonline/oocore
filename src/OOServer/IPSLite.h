@@ -22,6 +22,8 @@
 #ifndef OOSERVER_IPSLITE_H_INCLUDED_
 #define OOSERVER_IPSLITE_H_INCLUDED_
 
+#include "../OOCore/Server.h"
+
 class InterProcessService :
 		public OTL::ObjectBase,
 		public OOCore::IInterProcessService

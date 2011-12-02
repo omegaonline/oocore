@@ -33,6 +33,4 @@
 #include "../../include/OTL/Exception.h"
 #include "../../include/OTL/Registry.h"
 
-#include "../OOCore/Server.h"
-
 #endif // OOSERVER_LITE_H_INCLUDED_

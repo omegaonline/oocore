@@ -144,9 +144,9 @@ namespace
 		dll = new (OOCore::throwing) OOBase::DLL();
 			
 		// Load the new DLL
-		int err = dll->load(name.c_nstr());
+		int err = dll->load(name.c_ustr());
 		if (err != 0)
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL((L"Loading library: " + name).c_nstr()));
+			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL((L"Loading library: " + name).c_ustr()));
 				
 		// Add to the map
 		if ((err = m_dll_map.insert(name,dll)) != 0)
@@ -257,7 +257,7 @@ namespace
 				if (strLib.IsEmpty() || IsRelativePath(strLib))
 				{
 					string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
-					OMEGA_THROW(strErr.c_nstr());
+					OMEGA_THROW(strErr.c_ustr());
 				}
 
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);

@@ -98,7 +98,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess.c_wstr()))
 		{
 			string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value." % strProcess % strAppName;
-			OMEGA_THROW(strErr.c_nstr());
+			OMEGA_THROW(strErr.c_ustr());
 		}
 	}
 	else if (ptrKey->IsValue(L"Library"))
@@ -107,7 +107,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib.c_wstr()))
 		{
 			string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
-			OMEGA_THROW(strErr.c_nstr());
+			OMEGA_THROW(strErr.c_ustr());
 		}
 		
 		void* ISSUE_8; // Surrogates here?!?

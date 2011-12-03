@@ -112,8 +112,6 @@ inline Omega::string_t::~string_t()
 	{
 		pE->Release();
 	}
-	catch (...)
-	{}
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,h1,(in),const void*,h2));
@@ -596,8 +594,6 @@ inline Omega::Formatting::formatter_t::~formatter_t()
 	{
 		pE->Release();
 	}
-	catch (...)
-	{}
 }
 
 OOCORE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle));

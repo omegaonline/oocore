@@ -190,18 +190,26 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 		Omega::int64_t key = 0;
 		int err = m_registry->open_key(0,key,"/System/Server/Settings",0);
 		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry: %s",OOBase::system_error_text(err)),false);
-
-		OOBase::LocalString str;
-		if ((err = m_registry->get_value(key,name,0,str)) != 0)
 		{
 			if (err != ENOENT)
-				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry: %s",name,OOBase::system_error_text(err)),false);
+				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry: %s",OOBase::system_error_text(err)),false);
 		}
-		else if ((err = val.assign(str.c_str())) != 0)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",name,OOBase::system_error_text(err)),false);
 		else
-			return true;
+		{
+			OOBase::LocalString str;
+			if ((err = m_registry->get_value(key,name,0,str)) != 0)
+			{
+				if (err != ENOENT)
+					LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry: %s",name,OOBase::system_error_text(err)),false);
+			}
+			else 
+			{
+				if ((err = val.assign(str.c_str())) != 0)
+					LOG_ERROR_RETURN(("Failed to assign string: %s",name,OOBase::system_error_text(err)),false);
+			
+				return true;
+			}
+		}
 	}
 
 	return false;
@@ -229,10 +237,10 @@ bool Root::Manager::load_config_file(const char* pszFile)
 	// Load simple config file...
 	FILE* f = NULL;
 #if defined(_MSC_VER)
-	int err = fopen_s(&f,pszFile,"r");
+	int err = fopen_s(&f,pszFile,"rt");
 #else
 	int err = 0;
-	f = fopen(pszFile,"r");
+	f = fopen(pszFile,"rt");
 	if (!f)
 		err = errno;
 #endif
@@ -290,10 +298,11 @@ bool Root::Manager::load_config_file(const char* pszFile)
 			}
 
 			// Skip everything after #
-			size_t hash = strBuffer.find('#',start);
+			size_t valend = strBuffer.find('#',start);
+			if (valend > end)
+				valend = end;
 
 			// Trim trailing whitespace
-			size_t valend = (hash != OOBase::String::npos ? hash : end);
 			while (valend > start && (strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' '))
 				--valend;
 

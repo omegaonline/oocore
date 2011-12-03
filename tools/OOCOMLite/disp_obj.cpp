@@ -95,7 +95,6 @@ namespace
 					return DISP_E_TYPEMISMATCH;
 			}				
 		}
-		return S_OK;
 	}
 }
 

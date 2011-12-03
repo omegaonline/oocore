@@ -42,6 +42,10 @@
 #include <vld.h>
 #endif
 
+#if defined(_WIN32)
+#include <shlwapi.h>
+#endif
+
 #if defined(HAVE_UNISTD_H)
 #include <sys/stat.h>
 #endif
@@ -136,15 +140,18 @@ int main(int argc, char* argv[])
 		return Version();
 
 #if defined(_WIN32)
-	char szPath[MAX_PATH];
-	if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-		LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
+	if (!s_is_debug)
+	{
+		char szPath[MAX_PATH];
+		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
 
-	// Strip off our name
-	PathRemoveFileSpecA(szPath);
+		// Strip off our name
+		PathRemoveFileSpecA(szPath);
 
-	if (!SetCurrentDirectoryA(szPath))
-		LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),EXIT_FAILURE);
+		if (!SetCurrentDirectoryA(szPath))
+			LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),EXIT_FAILURE);
+	}
 
 #elif defined(HAVE_UNISTD_H)
 	// Ignore SIGCHLD

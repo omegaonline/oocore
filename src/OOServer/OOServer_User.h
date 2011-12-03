@@ -57,4 +57,9 @@
 
 #include "../../include/Omega/Service.h"
 
+namespace User
+{
+	bool is_debug();
+}
+
 #endif // OOSERVER_USER_H_INCLUDED_

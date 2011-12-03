@@ -37,8 +37,6 @@ int main(int, char**);
 
 namespace User
 {
-	bool is_debug();
-
 	class Manager :
 			public OOServer::MessageHandler,
 			public OOSvrBase::Server

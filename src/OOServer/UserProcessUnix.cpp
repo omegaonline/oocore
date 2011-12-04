@@ -54,7 +54,7 @@ bool User::Process::is_relative_path(const wchar_t* pszPath)
 	return (pszPath[0] != L'/');
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t envc, const Omega::byte_t* envp)
+User::Process* User::Process::exec(const wchar_t* pszExeName, const OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
@@ -63,7 +63,7 @@ User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t en
 	// Sort out environment block and split args
 	void* TODO;
 
-	ptrProcess->exec(pszExeName,(const char*)envp);
+	ptrProcess->exec(pszExeName,(const char*)NULL);
 	return ptrProcess.detach();
 }
 

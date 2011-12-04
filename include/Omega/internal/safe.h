@@ -494,6 +494,8 @@ namespace Omega
 					T            m_val;
 					T*           m_pVals;
 					const size_t m_cbSize;
+
+					type_wrapper& operator = (const type_wrapper&);
 				};
 
 				struct safe_type_wrapper
@@ -543,6 +545,8 @@ namespace Omega
 					arr_type     m_val;
 					arr_type*    m_pVals;
 					const size_t m_cbSize;
+
+					safe_type_wrapper& operator = (const safe_type_wrapper&);
 				};
 			};
 

@@ -80,14 +80,23 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
-void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::byte_t* envp, IObject*& pObject)
+void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, IObject*& pObject)
 {
 	// Forward to sandbox if required
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
 		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
+
+	string_t strProcess;
+	OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
+	for (uint32_t i = 0; i < envc; ++i)
+	{
+		int err = setEnv.insert(envp[i],false);
+		if (err != 0)
+			OMEGA_THROW(err);
+	}
+	setEnv.sort();
 		
 	// Find the OID key...
-	string_t strProcess;
 	ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects/OIDs/" + oid.ToString());
 	if (ptrKey->IsValue(L"Application"))
 	{
@@ -111,6 +120,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		}
 		
 		void* ISSUE_8; // Surrogates here?!?
+
+		throw Activation::IOidNotFoundException::Create(oid);
 	}
 	else
 		throw Activation::IOidNotFoundException::Create(oid);
@@ -150,7 +161,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %ls",strProcess.c_wstr());
 
 			// Create a new process
-			ptrProcess = User::Process::exec(strProcess.c_wstr(),envc,envp);
+			ptrProcess = User::Process::exec(strProcess.c_wstr(),setEnv);
 
 			int err = m_mapInProgress.insert(strProcess,ptrProcess);
 			if (err != 0)

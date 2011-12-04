@@ -40,7 +40,7 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine);
+		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, const OOBase::RefPtr<OOBase::Buffer>& env_block);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
@@ -101,21 +101,46 @@ bool User::Process::is_relative_path(const wchar_t* pszPath)
 	return (PathIsRelativeW(pszPath) != FALSE);
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, Omega::uint32_t envc, const Omega::byte_t* envp)
+User::Process* User::Process::exec(const wchar_t* pszExeName, const OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
-	// Do a ShellExecute style lookup for the actual thing to call..
+	// Sort out environment block
+	OOBase::RefPtr<OOBase::Buffer> env_block = new (std::nothrow) OOBase::Buffer();
+	if (!env_block)
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+	for (size_t i=0;i<env.size();++i)
+	{
+		Omega::string_t e = *env.at(i);
+		if (!e.IsEmpty())
+		{
+			size_t len = (e.Length() + 1)*sizeof(wchar_t);
+			int err = env_block->space(len);
+			if (err != 0)
+				OMEGA_THROW(err);
+
+			memcpy(env_block->wr_ptr(),e.c_wstr(),len);
+			env_block->wr_ptr()[len-1] = L'\0';
+			env_block->wr_ptr(len);
+		}
+	}
+
+	int err = env_block->space(4);
+	if (err != 0)
+		OMEGA_THROW(err);
+
+	memset(env_block->wr_ptr(),0,4);
+	env_block->wr_ptr(4);
+
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
 	if (!ptrProcess)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-	// Sort out environment block
-	void* TODO;
-
-	ptrProcess->exec(ShellParse(pszExeName));
+	// Do a ShellExecute style lookup for the actual thing to call..
+	ptrProcess->exec(ShellParse(pszExeName),env_block);
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine)
+void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, const OOBase::RefPtr<OOBase::Buffer>& env_block)
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 
@@ -127,12 +152,14 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 		dwFlags = CREATE_NEW_CONSOLE;
 	}
 
+	dwFlags |= CREATE_UNICODE_ENVIRONMENT;
+
 	STARTUPINFOW si = {0};
 	si.cb = sizeof(STARTUPINFOW);
 
 	// Spawn the process
 	PROCESS_INFORMATION pi = {0};
-	if (!CreateProcessW(NULL,ptrCmdLine,NULL,NULL,FALSE,dwFlags,NULL,NULL,&si,&pi))
+	if (!CreateProcessW(NULL,ptrCmdLine,NULL,NULL,FALSE,dwFlags,(void*)(env_block->rd_ptr()),NULL,&si,&pi))
 	{
 		DWORD dwErr = GetLastError();
 		OMEGA_THROW(dwErr);

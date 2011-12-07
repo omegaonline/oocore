@@ -201,7 +201,9 @@ namespace Omega
 			{
 				struct type
 				{
-					type() : m_alloc_count(0),m_pVals(0)
+					typedef typename remove_const<T>::type non_const_T;
+
+					type() : m_alloc_count(0), m_pVals(NULL)
 					{}
 
 					~type()
@@ -209,10 +211,10 @@ namespace Omega
 						if (m_pVals)
 						{
 							for (size_t i=0;i<m_alloc_count;++i)
-								m_pVals[i].~T();
+								m_pVals[i].~non_const_T();
 
 							::Omega::System::Free(m_pVals);
-						}
+						}							
 					}
 
 					void init(Remoting::IMarshaller* /*pManager*/, size_t count)
@@ -226,16 +228,26 @@ namespace Omega
 						//
 						// Or maybe implement IMarshaller::Allocate()...
 						
-						void* ptr = System::Allocate(count * sizeof(T));
-						try 
-						{ 
-							m_pVals = ::new (ptr) typename remove_const<T>::type[count];
-							m_alloc_count = count;
-						} 
-						catch (...) 
-						{ 
-							System::Free(ptr); 
-							throw; 
+						
+						if (count)
+						{
+							m_pVals = static_cast<non_const_T*>(::Omega::System::Allocate(count * sizeof(non_const_T)));
+
+							size_t i = 0;
+							try
+							{
+								for (;i<count;++i)
+									::new (&m_pVals[i]) non_const_T();
+							} 
+							catch (...) 
+							{ 
+								for (;i > 0;--i)
+									m_pVals[i-1].~non_const_T();
+								
+								::Omega::System::Free(m_pVals); 
+								throw; 
+							}
+							m_alloc_count = count;							
 						}
 					}
 
@@ -244,8 +256,8 @@ namespace Omega
 						return m_pVals;
 					}
 
-					size_t                          m_alloc_count;
-					typename remove_const<T>::type* m_pVals;
+					size_t       m_alloc_count;
+					non_const_T* m_pVals;
 				};
 
 				static void init(Remoting::IMarshaller* pManager, type& val, size_t count)

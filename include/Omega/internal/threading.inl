@@ -136,16 +136,10 @@ OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threa
 template <typename DLL>
 inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(DestructorCallback pfn, void* param)
 {
-	multi_dctor* p = new (std::nothrow) multi_dctor(pfn,param);
-	if (!p)
-	{
-#if defined(_WIN32)
-		OMEGA_THROW(ERROR_OUTOFMEMORY);
-#else
-		OMEGA_THROW(ENOMEM);
-#endif
-	}
-
+	multi_dctor* p = static_cast<multi_dctor*>(System::Allocate(sizeof(multi_dctor)));
+	p->pfn_dctor = pfn;
+	p->param = param;
+	
 	try
 	{
 		OOCore_add_uninit_call(destruct,p);
@@ -154,7 +148,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(Destruct
 	catch (...)
 	{
 		OOCore_remove_uninit_call(destruct,p);
-		delete p;
+		System::Free(p);
 		throw;
 	}
 }
@@ -189,7 +183,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	catch (...)
 	{}
 
-	delete p;
+	System::Free(p);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init));

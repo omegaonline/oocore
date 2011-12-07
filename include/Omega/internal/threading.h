@@ -214,10 +214,6 @@ namespace Omega
 		private:
 			struct multi_dctor
 			{
-				multi_dctor(DestructorCallback pfn, void* p) :
-					pfn_dctor(pfn), param(p)
-				{}
-
 				DestructorCallback pfn_dctor;
 				void*              param;
 			};

@@ -275,7 +275,7 @@ namespace
 			{
 				IObject* pObject = NULL;
 
-				string_t envp[1] = { L"Hello" };
+				string_t envp[1] = { L"HELLO=Yay!" };
 				uint32_t envc = sizeof(envp)/sizeof(envp[0]);
 
 				ptrIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);

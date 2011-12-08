@@ -42,7 +42,7 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
+		void exec(const wchar_t* pszExeName, const char* envp);
 
 	private:
 		pid_t m_pid;

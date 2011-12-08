@@ -273,13 +273,15 @@ namespace
 			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 			if (ptrIPS)
 			{
-#if defined(_WIN32)
 				uint32_t envc = 0;
+				OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
+
+#if defined(_WIN32)
+
 				const wchar_t* environ = GetEnvironmentStringsW();
 				for (const wchar_t* e=environ;e != NULL && *e != L'\0';++envc)
 					e = wcschr(e,L'\0')+1;
 
-				OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
 				if (envc)
 				{
 					envp = new (OOCore::throwing) string_t[envc];
@@ -290,6 +292,18 @@ namespace
 						envp[i] = string_t(e,string_t::npos,false);
 						e = wcschr(e,L'\0')+1;
 					}
+				}
+#elif defined(HAVE_UNISTD_H)
+				for (const char* e=*environ;e != NULL;++envc,++e)
+					;
+
+				if (envc)
+				{
+					envp = new (OOCore::throwing) string_t[envc];
+
+					size_t i = 0;
+					for (const char* e=*environ;e != NULL;++e,++i)
+						envp[i] = string_t(e,false,string_t::npos);
 				}
 #else
 #error Fix me!

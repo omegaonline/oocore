@@ -86,16 +86,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
 		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
 
-	string_t strProcess;
-	OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
-	for (uint32_t i = 0; i < envc; ++i)
-	{
-		int err = setEnv.insert(envp[i],false);
-		if (err != 0)
-			OMEGA_THROW(err);
-	}
-			
 	// Find the OID key...
+	string_t strProcess;
 	ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects/OIDs/" + oid.ToString());
 	if (ptrKey->IsValue(L"Application"))
 	{
@@ -124,6 +116,18 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 	else
 		throw Activation::IOidNotFoundException::Create(oid);
+
+	// Build the environment block
+	OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
+	for (uint32_t i = 0; i < envc; ++i)
+	{
+		// Remove any unwanted entries
+		void* TODO;
+
+		int err = setEnv.insert(envp[i]);
+		if (err != 0)
+			OMEGA_THROW(err);
+	}
 			
 	// Build RegisterFlags
 	Activation::RegisterFlags_t reg_mask = Activation::PublicScope;

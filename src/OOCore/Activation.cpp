@@ -274,7 +274,7 @@ namespace
 			if (ptrIPS)
 			{
 #if defined(_WIN32)
-				size_t envc = 0;
+				uint32_t envc = 0;
 				const wchar_t* environ = GetEnvironmentStringsW();
 				for (const wchar_t* e=environ;e != NULL && *e != L'\0';++envc)
 					e = wcschr(e,L'\0')+1;
@@ -287,7 +287,7 @@ namespace
 					size_t i = 0;
 					for (const wchar_t* e=environ;e != NULL && *e != L'\0';++i)
 					{
-						envp[i] = string_t(e,-1,true);
+						envp[i] = string_t(e,string_t::npos,false);
 						e = wcschr(e,L'\0')+1;
 					}
 				}

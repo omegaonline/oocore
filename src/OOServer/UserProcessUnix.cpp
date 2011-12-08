@@ -42,7 +42,7 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(const wchar_t* pszExeName, const char* envp);
+		void exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 
 	private:
 		pid_t m_pid;
@@ -54,7 +54,7 @@ bool User::Process::is_relative_path(const wchar_t* pszPath)
 	return (pszPath[0] != L'/');
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, const OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)

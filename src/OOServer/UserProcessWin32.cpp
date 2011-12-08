@@ -40,7 +40,7 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, const OOBase::RefPtr<OOBase::Buffer>& env_block);
+		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, OOBase::RefPtr<OOBase::Buffer>& env_block);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
@@ -94,6 +94,11 @@ namespace
 		
 		return ptrCmdLine;
 	}
+
+	bool env_sort(const Omega::string_t& s1, const Omega::string_t& s2)
+	{
+		return (_wcsicmp(s1.c_wstr(),s2.c_wstr()) < 0);
+	}
 }
 
 bool User::Process::is_relative_path(const wchar_t* pszPath)
@@ -101,9 +106,12 @@ bool User::Process::is_relative_path(const wchar_t* pszPath)
 	return (PathIsRelativeW(pszPath) != FALSE);
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, const OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
-	// Sort out environment block
+	// Sort envrionment block - UNICODE, no-locale, case-insensitive (from MSDN)
+	env.sort(&env_sort);
+
+	// Build environment block
 	OOBase::RefPtr<OOBase::Buffer> env_block = new (std::nothrow) OOBase::Buffer();
 	if (!env_block)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
@@ -113,6 +121,8 @@ User::Process* User::Process::exec(const wchar_t* pszExeName, const OOBase::Set<
 		Omega::string_t e = *env.at(i);
 		if (!e.IsEmpty())
 		{
+			LOG_DEBUG(("%s",e.c_ustr()));
+
 			size_t len = (e.Length() + 1)*sizeof(wchar_t);
 			int err = env_block->space(len);
 			if (err != 0)
@@ -140,7 +150,7 @@ User::Process* User::Process::exec(const wchar_t* pszExeName, const OOBase::Set<
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, const OOBase::RefPtr<OOBase::Buffer>& env_block)
+void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, OOBase::RefPtr<OOBase::Buffer>& env_block)
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 

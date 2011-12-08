@@ -121,8 +121,6 @@ User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega:
 		Omega::string_t e = *env.at(i);
 		if (!e.IsEmpty())
 		{
-			LOG_DEBUG(("%s",e.c_ustr()));
-
 			size_t len = (e.Length() + 1)*sizeof(wchar_t);
 			int err = env_block->space(len);
 			if (err != 0)

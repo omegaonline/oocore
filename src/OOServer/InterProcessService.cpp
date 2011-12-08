@@ -94,8 +94,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
-	setEnv.sort();
-		
+			
 	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects/OIDs/" + oid.ToString());
 	if (ptrKey->IsValue(L"Application"))

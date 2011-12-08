@@ -273,11 +273,28 @@ namespace
 			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 			if (ptrIPS)
 			{
+#if defined(_WIN32)
+				size_t envc = 0;
+				const wchar_t* environ = GetEnvironmentStringsW();
+				for (const wchar_t* e=environ;e != NULL && *e != L'\0';++envc)
+					e = wcschr(e,L'\0')+1;
+
+				OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
+				if (envc)
+				{
+					envp = new (OOCore::throwing) string_t[envc];
+
+					size_t i = 0;
+					for (const wchar_t* e=environ;e != NULL && *e != L'\0';++i)
+					{
+						envp[i] = string_t(e,-1,true);
+						e = wcschr(e,L'\0')+1;
+					}
+				}
+#else
+#error Fix me!
+#endif
 				IObject* pObject = NULL;
-
-				string_t envp[1] = { L"HELLO=Yay!" };
-				uint32_t envc = sizeof(envp)/sizeof(envp[0]);
-
 				ptrIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
 				return pObject;
 			}

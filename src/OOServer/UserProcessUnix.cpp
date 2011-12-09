@@ -42,7 +42,7 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(const wchar_t* pszExeName, const char* envp);
+		void exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 
 	private:
 		pid_t m_pid;
@@ -60,14 +60,11 @@ User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega:
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	// Sort out environment block and split args
-	void* TODO;
-
-	ptrProcess->exec(pszExeName,(const char*)NULL);
+	ptrProcess->exec(pszExeName,env);
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const wchar_t* pszExeName, const char* envp)
+void UserProcessUnix::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	pid_t pid = fork();
 	if (pid < 0)
@@ -76,6 +73,8 @@ void UserProcessUnix::exec(const wchar_t* pszExeName, const char* envp)
 	if (pid == 0)
 	{
 		// We are the child
+
+		// Sort out environment block and split args
 
 		// We need to set the LC_CTYPE before the conversion...
 		void* TODO;

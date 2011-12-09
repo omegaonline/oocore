@@ -294,16 +294,16 @@ namespace
 					}
 				}
 #elif defined(HAVE_UNISTD_H)
-				for (const char* e=*environ;e != NULL;++envc,++e)
-					;
+				for (char** e=environ;*e != NULL;++e)
+					++envc;
 
 				if (envc)
 				{
 					envp = new (OOCore::throwing) string_t[envc];
 
 					size_t i = 0;
-					for (const char* e=*environ;e != NULL;++e,++i)
-						envp[i] = string_t(e,false,string_t::npos);
+					for (char** e=environ;*e != NULL;++e)
+						envp[i++] = string_t(*e,false,string_t::npos);
 				}
 #else
 #error Fix me!

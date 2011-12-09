@@ -526,7 +526,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SpawnedProcessWin32.cpp"
+				RelativePath=".\RootProcessWin32.cpp"
 				>
 			</File>
 		</Filter>
@@ -556,7 +556,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SpawnedProcess.h"
+				RelativePath=".\RootProcess.h"
 				>
 			</File>
 		</Filter>

@@ -263,7 +263,7 @@
     <ClCompile Include="RootRegistry.cpp" />
     <ClCompile Include="RootServices.cpp" />
     <ClCompile Include="RootWin32.cpp" />
-    <ClCompile Include="SpawnedProcessWin32.cpp" />
+    <ClCompile Include="RootProcessWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MessageConnection.h" />
@@ -271,7 +271,7 @@
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="RegistryHive.h" />
     <ClInclude Include="RootManager.h" />
-    <ClInclude Include="SpawnedProcess.h" />
+    <ClInclude Include="RootProcess.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="asInvoker_manifest.xml" />

@@ -33,7 +33,7 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "SpawnedProcess.h"
+#include "RootProcess.h"
 
 int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask)
 {
@@ -53,7 +53,7 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 
 	// Check access
 	bool bAllowed = false;
-	if (!pU->ptrSpawn->CheckAccess(pszDb,bRead,bWrite,bAllowed))
+	if (!pU->m_ptrProcess->CheckAccess(pszDb,bRead,bWrite,bAllowed))
 		return EIO;
 	else if (!bAllowed)
 		return EACCES;
@@ -82,7 +82,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 			return EINVAL;
 
 		// Get the registry hive
-		ptrHive = pU->ptrRegistry;
+		ptrHive = pU->m_ptrRegistry;
 
 		// Clear channel id -  not used for user content
 		channel_id = 0;

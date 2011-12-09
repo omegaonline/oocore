@@ -39,7 +39,7 @@
     <ClCompile Include="RootWin32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SpawnedProcessWin32.cpp">
+    <ClCompile Include="RootProcessWin32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,7 +59,7 @@
     <ClInclude Include="RootManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SpawnedProcess.h">
+    <ClInclude Include="RootProcess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

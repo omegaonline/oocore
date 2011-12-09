@@ -35,7 +35,7 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "SpawnedProcess.h"
+#include "RootProcess.h"
 #include "Protocol.h"
 
 #include <signal.h>
@@ -514,18 +514,18 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
 			UserProcess* pU = m_mapUserProcesses.at(i);
-			if (!pU->ptrSpawn->IsRunning())
+			if (!pU->m_ptrProcess->IsRunning())
 			{
 				vecDead.push(*m_mapUserProcesses.key_at(i));
 			}
-			else if (pU->ptrSpawn->IsSameLogin(uid,session_id.c_str()))
+			else if (pU->m_ptrProcess->IsSameLogin(uid,session_id.c_str()))
 			{
 				user_process = *pU;
 				bFound = true;
 			}
-			else if (!bFound && pU->ptrSpawn->IsSameUser(uid))
+			else if (!bFound && pU->m_ptrProcess->IsSameUser(uid))
 			{
-				user_process.ptrRegistry = pU->ptrRegistry;
+				user_process.m_ptrRegistry = pU->m_ptrRegistry;
 			}
 		}
 
@@ -544,7 +544,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 
 		// Spawn a new user process
 		bool bAgain = false;
-		if (spawn_user(uid,session_id.c_str(),user_process.ptrRegistry,user_process.strPipe,bAgain) != 0)
+		if (spawn_user(uid,session_id.c_str(),user_process.m_ptrRegistry,user_process.m_strPipe,bAgain) != 0)
 			return true;
 
 		if (bFirst && bAgain)
@@ -577,16 +577,16 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC;
 
 	UserProcess process;
-	process.ptrSpawn = platform_spawn(uid,session_id,strPipe,channel_id,ptrMC,bAgain);
-	if (!process.ptrSpawn)
+	process.m_ptrProcess = platform_spawn(uid,session_id,strPipe,channel_id,ptrMC,bAgain);
+	if (!process.m_ptrProcess)
 		return 0;
 
-	process.ptrRegistry = ptrRegistry;
-	process.strPipe = strPipe;
+	process.m_ptrRegistry = ptrRegistry;
+	process.m_strPipe = strPipe;
 
 	// Init the registry, if necessary
 	bool bOk = true;
-	if (!process.ptrRegistry)
+	if (!process.m_ptrRegistry)
 	{
 		bOk = false;
 
@@ -597,14 +597,14 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		get_config_arg("users_path",strUsersPath);
 
 		OOBase::LocalString strHive;
-		if (process.ptrSpawn->GetRegistryHive(strRegPath,strUsersPath,strHive))
+		if (process.m_ptrProcess->GetRegistryHive(strRegPath,strUsersPath,strHive))
 		{
 			// Create a new database
-			process.ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive.c_str());
-			if (!process.ptrRegistry)
+			process.m_ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive.c_str());
+			if (!process.m_ptrRegistry)
 				LOG_ERROR(("Out of memory"));
 			else
-				bOk = process.ptrRegistry->open(SQLITE_OPEN_READWRITE);
+				bOk = process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE);
 		}
 	}
 
@@ -622,7 +622,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	{
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
-			if (m_mapUserProcesses.at(i)->ptrSpawn->IsSameLogin(uid,session_id))
+			if (m_mapUserProcesses.at(i)->m_ptrProcess->IsSameLogin(uid,session_id))
 			{
 				channel_closed(channel_id,0);
 				return *m_mapUserProcesses.key_at(i);
@@ -839,7 +839,7 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 						UserProcess user_process;
 						if (get_user_process(uid,strSid,user_process))
 						{
-							if (!stream.write(user_process.strPipe.c_str()))
+							if (!stream.write(user_process.m_strPipe.c_str()))
 								LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
 							else
 								ptrSocket->send(stream.buffer());

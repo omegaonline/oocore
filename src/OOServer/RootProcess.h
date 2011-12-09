@@ -31,15 +31,15 @@
 //
 /////////////////////////////////////////////////////////////
 
-#ifndef OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
-#define OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
+#ifndef OOSERVER_ROOT_PROCESS_H_INCLUDED_
+#define OOSERVER_ROOT_PROCESS_H_INCLUDED_
 
 namespace Root
 {
-	class SpawnedProcess
+	class Process
 	{
 	public:
-		virtual ~SpawnedProcess() {}
+		virtual ~Process() {}
 
 		virtual bool IsRunning() const = 0;
 		virtual bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
@@ -48,13 +48,13 @@ namespace Root
 		virtual bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive) = 0;
 
 	protected:
-		SpawnedProcess() {}
+		Process() {}
 
 	private:
-		SpawnedProcess(const SpawnedProcess&);
-		SpawnedProcess& operator = (const SpawnedProcess&);
+		Process(const Process&);
+		Process& operator = (const Process&);
 	};
 }
 
-#endif // OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
+#endif // OOSERVER_ROOT_PROCESS_H_INCLUDED_
 

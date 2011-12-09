@@ -27,13 +27,13 @@
 //
 //  Therefore it needs to be SAFE AS HOUSES!
 //
-//  Do not include anything unecessary
+//  Do not include anything unnecessary
 //
 /////////////////////////////////////////////////////////////
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "SpawnedProcess.h"
+#include "RootProcess.h"
 
 #if defined(HAVE_UNISTD_H)
 
@@ -49,11 +49,11 @@ void AttachDebugger(unsigned long pid);
 
 namespace
 {
-	class SpawnedProcessUnix : public Root::SpawnedProcess
+	class RootProcessUnix : public Root::Process
 	{
 	public:
-		SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
-		virtual ~SpawnedProcessUnix();
+		RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
+		virtual ~RootProcessUnix();
 
 		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain);
 
@@ -73,14 +73,14 @@ namespace
 	};
 }
 
-SpawnedProcessUnix::SpawnedProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
+RootProcessUnix::RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
 		m_bSandbox(true),
 		m_uid(id),
 		m_pid(0)
 {
 }
 
-SpawnedProcessUnix::~SpawnedProcessUnix()
+RootProcessUnix::~RootProcessUnix()
 {
 	if (m_pid != 0)
 	{
@@ -112,7 +112,7 @@ SpawnedProcessUnix::~SpawnedProcessUnix()
 	}
 }
 
-void SpawnedProcessUnix::close_all_fds(int except_fd)
+void RootProcessUnix::close_all_fds(int except_fd)
 {
 	int mx = -1;
 
@@ -162,7 +162,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain)
+bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain)
 {
 	m_bSandbox = (session_id == NULL);
 	int err = m_sid.assign(session_id);
@@ -279,11 +279,11 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 		else
 			strTitle.concat("oosvruser:",m_sid.c_str());
 
-		execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
-		//OOBase::LocalString params;
-		//params.printf("--log-file=vallog%d.txt",getpid());
-		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		OOBase::LocalString params;
+		params.printf("--log-file=vallog%d.txt",getpid());
+		execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
 		//OOBase::LocalString gdb;
 		//gdb.printf("run %s --debug",strPipe.c_str());
@@ -308,7 +308,7 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 	_exit(127);
 }
 
-bool SpawnedProcessUnix::IsRunning() const
+bool RootProcessUnix::IsRunning() const
 {
 	if (m_pid == 0)
 		return false;
@@ -317,7 +317,7 @@ bool SpawnedProcessUnix::IsRunning() const
 	return (waitpid(m_pid,&status,WNOHANG) == 0);
 }
 
-bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
+bool RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
 
@@ -387,7 +387,7 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	return true;
 }
 
-bool SpawnedProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
+bool RootProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 {
 	if (!IsSameUser(uid))
 		return false;
@@ -396,7 +396,7 @@ bool SpawnedProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 	return (m_sid == session_id);
 }
 
-bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
+bool RootProcessUnix::IsSameUser(uid_t uid) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)
@@ -405,7 +405,7 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid) const
 	return (m_uid == uid);
 }
 
-bool SpawnedProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
@@ -526,12 +526,12 @@ bool SpawnedProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::Strin
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::Process>());
 
 	// Add FD_CLOEXEC to fd[0]
 	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
@@ -539,21 +539,21 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 	}
 
-	// Alloc a new SpawnedProcess
-	SpawnedProcessUnix* pSpawnUnix = new (std::nothrow) SpawnedProcessUnix(uid);
+	// Alloc a new RootProcess
+	RootProcessUnix* pSpawnUnix = new (std::nothrow) RootProcessUnix(uid);
 	if (!pSpawnUnix)
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::Process>());
 	}
 
 	OOBase::String strAppName;
 	if ((err = strAppName.assign(LIBEXEC_DIR)) != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 
 	// If we are debugging, allow binary_path override
 	if (Root::is_debug())
@@ -567,7 +567,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	{
 		::close(fd[0]);
 		::close(fd[1]);
-		return OOBase::SmartPtr<Root::SpawnedProcess>();
+		return OOBase::SmartPtr<Root::Process>();
 	}
 
 	// Done with fd[1]
@@ -578,15 +578,15 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	if (err != 0)
 	{
 		::close(fd[0]);
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 	}
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
-		return OOBase::SmartPtr<Root::SpawnedProcess>();
+		return OOBase::SmartPtr<Root::Process>();
 
-	return OOBase::SmartPtr<Root::SpawnedProcess>(pSpawnUnix);
+	return OOBase::SmartPtr<Root::Process>(pSpawnUnix);
 }
 
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)

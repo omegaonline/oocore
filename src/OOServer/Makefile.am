@@ -62,9 +62,9 @@ ooserverd_SOURCES = \
 	RootServices.cpp \
 	RootUnix.cpp \
 	RootWin32.cpp \
-	SpawnedProcess.h \
-	SpawnedProcessUnix.cpp \
-	SpawnedProcessWin32.cpp
+	RootProcess.h \
+	RootProcessUnix.cpp \
+	RootProcessWin32.cpp
 
 if WIN32
 ooserverd_SOURCES += OOServer.rc

@@ -33,7 +33,7 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "SpawnedProcess.h"
+#include "RootProcess.h"
 
 #if defined(_WIN32)
 
@@ -46,11 +46,11 @@ void AttachDebugger(unsigned long pid);
 
 namespace
 {
-	class SpawnedProcessWin32 : public Root::SpawnedProcess
+	class RootProcessWin32 : public Root::Process
 	{
 	public:
-		SpawnedProcessWin32();
-		virtual ~SpawnedProcessWin32();
+		RootProcessWin32();
+		virtual ~RootProcessWin32();
 
 		bool IsRunning() const;
 		bool Spawn(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
@@ -476,14 +476,14 @@ namespace
 	}
 }
 
-SpawnedProcessWin32::SpawnedProcessWin32() :
+RootProcessWin32::RootProcessWin32() :
 		m_hToken(NULL),
 		m_hProcess(NULL),
 		m_hProfile(NULL)
 {
 }
 
-SpawnedProcessWin32::~SpawnedProcessWin32()
+RootProcessWin32::~RootProcessWin32()
 {
 	if (m_hProcess)
 	{
@@ -502,7 +502,7 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	OOBase::Paths::CorrectDirSeparators(strAppName);
 	int err = OOBase::Paths::AppendDirSeparator(strAppName);
@@ -706,7 +706,7 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+bool RootProcessWin32::Spawn(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	m_bSandbox = bSandbox;
 
@@ -717,7 +717,7 @@ bool SpawnedProcessWin32::Spawn(OOBase::String& strAppName, HANDLE hToken, OOBas
 	return (dwRes == ERROR_SUCCESS);
 }
 
-bool SpawnedProcessWin32::IsRunning() const
+bool RootProcessWin32::IsRunning() const
 {
 	if (!m_hProcess.is_valid())
 		return false;
@@ -725,7 +725,7 @@ bool SpawnedProcessWin32::IsRunning() const
 	return (WaitForSingleObject(m_hProcess,0) == WAIT_TIMEOUT);
 }
 
-bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
+bool RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
 
@@ -776,7 +776,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	return true;
 }
 
-bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const
+bool RootProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const
 {
 	// Check the SIDs and priviledges are the same...
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
@@ -793,7 +793,7 @@ bool SpawnedProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/)
 			OOBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
-bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
+bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)
@@ -808,7 +808,7 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool SpawnedProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
 	assert(!m_bSandbox);
 
@@ -871,11 +871,11 @@ bool SpawnedProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::Stri
 	return true;
 }
 
-OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Alloc a new SpawnedProcess
-	SpawnedProcessWin32* pSpawn32 = new (std::nothrow) SpawnedProcessWin32();
-	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn(pSpawn32);
+	RootProcessWin32* pSpawn32 = new (std::nothrow) RootProcessWin32();
+	OOBase::SmartPtr<Root::Process> pSpawn(pSpawn32);
 
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
@@ -883,7 +883,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Get our module name
 	char szPath[MAX_PATH];
 	if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-		LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::Process>());
 	
 	// Strip off our name
 	PathRemoveFileSpecA(szPath);
@@ -891,7 +891,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	OOBase::String strAppName;
 	int err = strAppName.assign(szPath);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 
 	// If we are debugging, allow binary_path override
 	if (Root::is_debug())
@@ -903,23 +903,23 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOSvrBase::
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,session_id == NULL,bAgain))
-		return OOBase::SmartPtr<Root::SpawnedProcess>();
+		return OOBase::SmartPtr<Root::Process>();
 
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
-		return OOBase::SmartPtr<Root::SpawnedProcess>();
+		return OOBase::SmartPtr<Root::Process>();
 
 	// Connect up
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::SpawnedProcess>());
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 
 	hPipe.detach();
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
 	if (!channel_id)
-		return OOBase::SmartPtr<Root::SpawnedProcess>();
+		return OOBase::SmartPtr<Root::Process>();
 
 	return pSpawn;
 }

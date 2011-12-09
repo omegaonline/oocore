@@ -179,7 +179,8 @@ bool SpawnedProcessUnix::Spawn(OOBase::String& strAppName, const char* session_i
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 	char* rpath = realpath(strAppName.c_str(),NULL);
-	OOBase::Logger::log(OOBase::Logger::Warning,"Using oosvruser: %s",rpath);
+	OOBase::Logger::log(OOBase::Logger::Information,"Using oosvruser: %s",rpath);
+	::free(rpath);
 
 	// Check the file exists
 	if (access(strAppName.c_str(),X_OK) != 0)

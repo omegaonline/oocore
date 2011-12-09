@@ -60,7 +60,7 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 	{
 		char* rpath = realpath(strFile.c_str(),NULL);
 		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
-		free(rpath);
+		::free(rpath);
 	}
 
 	if (!load_config_file(strFile.empty() ? CONFIG_DIR "/ooserver.conf" : strFile.c_str()))

@@ -24,7 +24,7 @@
 
 #include "MessageConnection.h"
 #include "Protocol.h"
-#include "Channel.h"
+#include "UserChannel.h"
 #include "UserNet.h"
 
 int main(int, char**);

@@ -22,7 +22,7 @@
 #include "OOServer_User.h"
 #include "UserManager.h"
 #include "InterProcessService.h"
-#include "Channel.h"
+#include "UserChannel.h"
 
 #include <stdlib.h>
 

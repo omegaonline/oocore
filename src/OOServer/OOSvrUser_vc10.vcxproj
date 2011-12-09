@@ -195,7 +195,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Channel.cpp" />
+    <ClCompile Include="UserChannel.cpp" />
     <ClCompile Include="DebuggerWin32.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </PrecompiledHeader>
@@ -248,7 +248,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h" />
-    <ClInclude Include="Channel.h" />
+    <ClInclude Include="UserChannel.h" />
     <ClInclude Include="InterProcessService.h" />
     <ClInclude Include="MessageConnection.h" />
     <ClInclude Include="OOServer_User.h" />

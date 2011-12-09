@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Channel.cpp">
+    <ClCompile Include="UserChannel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DebuggerWin32.cpp">
@@ -53,7 +53,7 @@
     <ClInclude Include="..\OOCore\CDRMessage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Channel.h">
+    <ClInclude Include="UserChannel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="InterProcessService.h">

@@ -83,12 +83,12 @@ endif
 
 oosvruser_SOURCES = \
 	OOServer_User.h \
-	Channel.h \
-	Channel.cpp \
 	InterProcessService.h \
 	InterProcessService.cpp \
 	MirrorKey.inl \
 	RegistryCmn.h \
+	UserChannel.h \
+	UserChannel.cpp \
 	UserMain.cpp \
 	UserManager.h \
 	UserManager.cpp \

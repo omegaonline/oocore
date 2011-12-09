@@ -20,7 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_User.h"
-#include "Channel.h"
+#include "UserChannel.h"
 #include "UserManager.h"
 
 using namespace Omega;

@@ -8,7 +8,7 @@ cd ../src/OOCore
 
 server_launch="../OOServer/ooserverd"
 
-if test -n "$TERM"; then
+if test -n "$DISPLAY" && test -n "$TERM"; then
 	#Try to do something sensible with $TERM
 	case $TERM in
 		cygwin)

@@ -277,9 +277,8 @@ namespace
 				OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
 
 #if defined(_WIN32)
-
-				const wchar_t* environ = GetEnvironmentStringsW();
-				for (const wchar_t* e=environ;e != NULL && *e != L'\0';++envc)
+				const wchar_t* env = GetEnvironmentStringsW();
+				for (const wchar_t* e=env;e != NULL && *e != L'\0';++envc)
 					e = wcschr(e,L'\0')+1;
 
 				if (envc)
@@ -287,7 +286,7 @@ namespace
 					envp = new (OOCore::throwing) string_t[envc];
 
 					size_t i = 0;
-					for (const wchar_t* e=environ;e != NULL && *e != L'\0';++i)
+					for (const wchar_t* e=env;e != NULL && *e != L'\0';++i)
 					{
 						envp[i] = string_t(e,string_t::npos,false);
 						e = wcschr(e,L'\0')+1;

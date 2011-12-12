@@ -1,6 +1,8 @@
 #include "../include/Omega/Remoting.h"
 #include "Test.h"
 
+#include <string>
+
 bool string_tests()
 {
 	const wchar_t sz1[] = L"abcdef";
@@ -107,12 +109,12 @@ struct loc_holder
 #else
 	loc_holder()
 	{
-		m_loc = setlocale(LC_ALL,"C");
+		m_loc = setlocale(LC_ALL,NULL);
 	}
 
 	~loc_holder()
 	{
-		setlocale(LC_ALL,"C");
+		setlocale(LC_ALL,m_loc.c_str());
 	}
 
 	std::string m_loc;

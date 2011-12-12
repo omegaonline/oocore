@@ -22,7 +22,10 @@
 #include "OOCore_precomp.h"
 
 #include <limits.h>
+#include <ctype.h>
 #include <wctype.h>
+#include <wchar.h>
+#include <locale.h>
 
 #if !defined(PRId64)
 #if defined(__MINGW32__)

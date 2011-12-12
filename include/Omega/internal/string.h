@@ -22,8 +22,6 @@
 #ifndef OMEGA_STRING_H_INCLUDED_
 #define OMEGA_STRING_H_INCLUDED_
 
-#include <string>
-
 namespace Omega
 {
 	// Forward declare friend types

@@ -235,7 +235,7 @@ namespace Omega
 				enum { result = is_c_abi<T>::result };
 			};
 
-			// Optimal paramater passing
+			// Optimal parameter passing
 			template <typename T> struct optimal_param
 			{
 				typedef typename if_else_t<is_c_abi<T>::result,

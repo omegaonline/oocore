@@ -11,6 +11,10 @@
 #include <vld.h>
 #endif
 
+#if !defined(_WIN32)
+extern "C" void _exit(int);
+#endif
+
 namespace Omega
 {
 	namespace TestSuite

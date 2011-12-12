@@ -31,6 +31,7 @@
 #endif
 
 #include <wctype.h>
+#include <wchar.h>
 
 using namespace Omega;
 

@@ -41,6 +41,14 @@
 #endif
 #endif
 
+#if defined(_WIN32)
+#define EXTRA_LCID const lconv* lc,LCID lcid
+#define PASS_LCID lc,lcid
+#else
+#define EXTRA_LCID const lconv* lc
+#define PASS_LCID lc
+#endif
+
 using namespace Omega;
 using namespace OTL;
 
@@ -224,17 +232,13 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	string_t do_intl_mon(OOBase::LocalString& str, bool negative)
+	string_t do_intl_mon(OOBase::LocalString& str, bool negative, EXTRA_LCID)
 	{
-		const lconv* lc = localeconv();
-
 		const char* src_decimal_point = ".";
 		if (lc)
 			src_decimal_point = lc->decimal_point;
 
 #if defined(_WIN32)
-		LCID lcid = GetThreadLocale();
-
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SMONDECIMALSEP,decimal_point,sizeof(decimal_point)))
 		{
@@ -496,13 +500,9 @@ namespace
 		return ret;
 	}
 
-	size_t do_intl(OOBase::LocalString& str, bool bThou)
+	size_t do_intl(OOBase::LocalString& str, bool bThou, EXTRA_LCID)
 	{
-		const lconv* lc = localeconv();
-
 #if defined(_WIN32)
-		LCID lcid = GetThreadLocale();
-
 		const char* src_decimal_point = ".";
 		if (lc)
 			src_decimal_point = lc->decimal_point;
@@ -596,6 +596,23 @@ namespace
 		return dp;
 	}
 
+	void undo_intl(OOBase::LocalString& str, EXTRA_LCID)
+	{
+		if (lc)
+			replace(str,lc->decimal_point,".");
+
+#if defined(_WIN32)
+		char decimal_point[5] = {0};
+		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
+
+		size_t dp = replace(str,decimal_point,".");
+#endif
+	}
+
 	void fmt_fixed_i(OOBase::LocalString& str, const int64_t& val, long precision)
 	{
 		int err = str.printf("%" PRId64,val);
@@ -661,13 +678,11 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_currency(const T& val, long precision)
+	string_t fmt_currency(const T& val, long precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
 #if defined(_WIN32)
-			LCID lcid = GetThreadLocale();
-
 			DWORD v = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
 			{
@@ -678,7 +693,6 @@ namespace
 			precision = static_cast<long>(v);
 #else
 			precision = 2;
-			const lconv* lc = localeconv();
 			if (lc && lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
 #endif
@@ -689,17 +703,15 @@ namespace
 		if (!ret.empty() && (ret[0]=='-' || ret[0]=='+'))
 			erase(ret,0,1);
 
-		return do_intl_mon(ret,val < 0.0);
+		return do_intl_mon(ret,val < 0.0,PASS_LCID);
 	}
 
 	template <typename T>
-	string_t fmt_number(const T& val, long precision)
+	string_t fmt_number(const T& val, long precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
 #if defined(_WIN32)
-			LCID lcid = GetThreadLocale();
-
 			DWORD v = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
 			{
@@ -710,7 +722,6 @@ namespace
 			precision = static_cast<long>(v);
 #else
 			precision = 2;
-			const lconv* lc = localeconv();
 			if (lc && lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
 #endif
@@ -719,7 +730,7 @@ namespace
 		OOBase::LocalString ret;
 		fmt_fixed_i(ret,val,precision);
 
-		do_intl(ret,true);
+		do_intl(ret,true,PASS_LCID);
 
 		return string_t(ret.c_str(),false);
 	}
@@ -792,13 +803,11 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_fixed(const T& val, long precision)
+	string_t fmt_fixed(const T& val, long precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
 #if defined(_WIN32)
-			LCID lcid = GetThreadLocale();
-
 			DWORD v = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
 			{
@@ -809,7 +818,6 @@ namespace
 			precision = static_cast<long>(v);
 #else
 			precision = 2;
-			const lconv* lc = localeconv();
 			if (lc && lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
 #endif
@@ -818,7 +826,7 @@ namespace
 		OOBase::LocalString ret;
 		fmt_fixed_i(ret,val,precision);
 
-		do_intl(ret,false);
+		do_intl(ret,false,PASS_LCID);
 
 		return string_t(ret.c_str(),false);
 	}
@@ -852,7 +860,7 @@ namespace
 			insert(str,pos,pos+precision-str.length(),'0');
 	}
 
-	void fmt_scientific_i(OOBase::LocalString& str, const double& val, bool capital, long precision)
+	void fmt_scientific_i(OOBase::LocalString& str, const double& val, bool capital, long precision, EXTRA_LCID)
 	{
 		int err;
 		if (precision >= 0)
@@ -863,28 +871,28 @@ namespace
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		do_intl(str,false);
+		do_intl(str,false,PASS_LCID);
 		exp_strip(str,3,true);
 	}
 
 	template <typename T>
-	void fmt_scientific_i(OOBase::LocalString& str, const T& val, bool capital, long precision)
+	void fmt_scientific_i(OOBase::LocalString& str, const T& val, bool capital, long precision, EXTRA_LCID)
 	{
-		fmt_scientific_i(str,static_cast<double>(val),capital,precision);
+		fmt_scientific_i(str,static_cast<double>(val),capital,precision,PASS_LCID);
 	}
 
 	template <typename T>
-	string_t fmt_scientific(const T& val, bool capital, long precision)
+	string_t fmt_scientific(const T& val, bool capital, long precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 			precision = 6;
 
 		OOBase::LocalString str;
-		fmt_scientific_i(str,val,capital,precision);
+		fmt_scientific_i(str,val,capital,precision,PASS_LCID);
 		return string_t(str.c_str(),false);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, long precision)
+	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, long precision, bool use_locale, EXTRA_LCID)
 	{
 		int err;
 		if (precision >= 0)
@@ -896,7 +904,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, long precision)
+	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, long precision, bool use_locale, EXTRA_LCID)
 	{
 		int err;
 		if (precision >= 0)
@@ -908,7 +916,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, long precision)
+	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, long precision, bool use_locale, EXTRA_LCID)
 	{
 		int err;
 		if (precision >= 0)
@@ -919,34 +927,38 @@ namespace
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		do_intl(str,false);
+		if (use_locale)
+			do_intl(str,false,PASS_LCID);
+		else
+			undo_intl(str,PASS_LCID);
+
 		exp_strip(str,2,true);
 	}
 
 	template <typename T>
-	string_t fmt_general(const T& val, bool capital, long precision)
+	string_t fmt_general(const T& val, bool capital, long precision, bool use_locale, EXTRA_LCID)
 	{
 		OOBase::LocalString str;
-		fmt_general_i(str,val,capital,precision);
+		fmt_general_i(str,val,capital,precision,use_locale,PASS_LCID);
 		return string_t(str.c_str(),false);
 	}
 
 	template <typename T>
-	string_t fmt_round_trip(const T& val, long /*precision*/)
+	string_t fmt_round_trip(const T& val, long /*precision*/, EXTRA_LCID)
 	{
 		return fmt_decimal(val,0);
 	}
 
-	string_t fmt_round_trip(const double& val, long precision)
+	string_t fmt_round_trip(const double& val, long precision, EXTRA_LCID)
 	{
 		string_t s;
-		double p = 0.0;
-		for (int i=0; i<10 && val != p; ++i)
+		for (int i=0; i<2; i+=2)
 		{
-			s = fmt_general(val,false,precision+i);
+			s = fmt_general(val,false,precision+i,false,PASS_LCID);
 
 			const wchar_t* end = NULL;
-			p = OOCore::wcstod(s.c_wstr(),end);
+			if (val == OOCore::wcstod(s.c_wstr(),end))
+				break;
 		}
 
 		return s;
@@ -1028,10 +1040,10 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision);
+	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision, EXTRA_LCID);
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse);
+	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse, EXTRA_LCID);
 
 	template <typename T>
 	string_t fmt_rnd_away(const T& val)
@@ -1058,30 +1070,19 @@ namespace
 		return val;
 	}
 
+	bool priv_isdigit(char c)
+	{
+		return (c >= '0' && c <= '9');
+	}
+
 	template <typename T>
-	string_t fmt_custom_i(const T& val, const string_t& strFormat)
+	string_t fmt_custom_i(const T& val, const string_t& strFormat, EXTRA_LCID)
 	{
 		if (strFormat == L"##" || strFormat == L"00")
 			return fmt_rnd_away(val);
 
 		bool negative;
 		T abs_val = quick_abs(val,negative);
-
-#if defined(_WIN32)
-		LCID lcid = GetThreadLocale();
-
-		char decimal_char[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_char,5))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
-#else
-		const char* decimal_char = ".";
-		const lconv* lc = localeconv();
-		if (lc)
-			decimal_char = lc->decimal_point;
-#endif
 
 		// Work out precision and mode...
 		size_t sci = string_t::npos;
@@ -1158,7 +1159,7 @@ namespace
 		OOBase::LocalString strNumber;
 		if (sci != string_t::npos)
 		{
-			fmt_scientific_i(strNumber,abs_val,strFormat[sci] == L'E',precision);
+			fmt_scientific_i(strNumber,abs_val,strFormat[sci] == L'E',precision,PASS_LCID);
 			exp_strip(strNumber,exp_digits,strFormat[sci+1] == L'+');
 		}
 		else if (seen_decimal)
@@ -1166,6 +1167,18 @@ namespace
 		else
 			fmt_decimal_i(strNumber,abs_val,width);
 
+#if defined(_WIN32)
+		char decimal_char[5] = {0};
+		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_char,5))
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
+#else
+		const char* decimal_char = ".";
+		if (lc)
+			decimal_char = lc->decimal_point;
+#endif
 		size_t dp = strNumber.find(decimal_char);
 
 		if (sci != string_t::npos || dp != strNumber.npos)
@@ -1187,7 +1200,7 @@ namespace
 			insert(strNumber,0,"-");
 
 		// Translate to intl format
-		dp = do_intl(strNumber,group);
+		dp = do_intl(strNumber,group,PASS_LCID);
 
 		// Transpose strNumber into format
 		string_t res;
@@ -1239,7 +1252,7 @@ namespace
 				break;
 
 			case L'#':
-				while (!isdigit((unsigned char)strNumber[numpos]))
+				while (!priv_isdigit(strNumber[numpos]))
 				{
 					if (sig_zero)
 						res += string_t(strNumber.c_str()+numpos,false,1);
@@ -1256,7 +1269,7 @@ namespace
 				break;
 
 			case L'0':
-				while (!isdigit((unsigned char)strNumber[numpos]))
+				while (!priv_isdigit(strNumber[numpos]))
 				{
 					res += string_t(strNumber.c_str()+numpos,false,1);
 					++numpos;
@@ -1331,7 +1344,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse)
+	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse, EXTRA_LCID)
 	{
 		num_fmt fmt;
 		bool capital;
@@ -1341,74 +1354,74 @@ namespace
 			switch (fmt)
 			{
 			case currency:
-				return fmt_currency(val,precision);
+				return fmt_currency(val,precision,PASS_LCID);
 
 			case decimal:
 				return fmt_decimal(val,precision);
 
 			case scientific:
-				return fmt_scientific(val,capital,precision);
+				return fmt_scientific(val,capital,precision,PASS_LCID);
 
 			case fixed_point:
-				return fmt_fixed(val,precision);
+				return fmt_fixed(val,precision,PASS_LCID);
 
 			case number:
-				return fmt_number(val,precision);
+				return fmt_number(val,precision,PASS_LCID);
 
 			case hexadecimal:
 				return fmt_hex(val,capital,precision);
 
 			case round_trip:
-				return fmt_round_trip(val,def_precision);
+				return fmt_round_trip(val,def_precision,PASS_LCID);
 
 			case general:
 				if (precision <= 0)
 					precision = def_precision;
 
-				return fmt_general(val,capital,precision);
+				return fmt_general(val,capital,precision,true,PASS_LCID);
 
 			default:
-				return fmt_general(val,capital,-1);
+				return fmt_general(val,capital,-1,true,PASS_LCID);
 			}
 		}
 		else if (bRecurse)
 		{
-			return fmt_custom(val,strFormat,def_precision);
+			return fmt_custom(val,strFormat,def_precision,PASS_LCID);
 		}
 		else
 		{
-			return fmt_custom_i(val,strFormat);
+			return fmt_custom_i(val,strFormat,PASS_LCID);
 		}
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision)
+	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision, EXTRA_LCID)
 	{
 		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
 			if (val == 0)
-				return fmt_recurse(val,*parts.at(2),def_precision,false);
+				return fmt_recurse(val,*parts.at(2),def_precision,false,PASS_LCID);
 
 		case 2:
 #if defined(__clang__)
 			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),neg ? *parts.at(1) : *parts.at(0),def_precision,false);
+				return fmt_recurse(quick_abs(val,neg),neg ? *parts.at(1) : *parts.at(0),def_precision,false,PASS_LCID);
  			}
 #else
 			if (val < 0)
  			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),*parts.at(1),def_precision,false);
+				return fmt_recurse(quick_abs(val,neg),*parts.at(1),def_precision,false,PASS_LCID);
  			}
 			else
-				return fmt_recurse(val,*parts.at(0),def_precision,false);
+				return fmt_recurse(val,*parts.at(0),def_precision,false,PASS_LCID);
 #endif
 
 		default:
-			return fmt_custom_i(val,strFormat);
+			return fmt_custom_i(val,strFormat,PASS_LCID);
 		}
 	}
 }
@@ -1443,7 +1456,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,v
 		break;
 	}
 
-	return fmt_recurse(val,strFormat,def_precision,true);
+#if defined(_WIN32)
+	LCID lcid = GetThreadLocale();
+#endif
+	const lconv* lc = localeconv();
+
+	return fmt_recurse(val,strFormat,def_precision,true,PASS_LCID);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
@@ -1469,7 +1487,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t
 		break;
 	}
 
-	return fmt_recurse(val,strFormat,def_precision,true);
+#if defined(_WIN32)
+	LCID lcid = GetThreadLocale();
+#endif
+	const lconv* lc = localeconv();
+
+	return fmt_recurse(val,strFormat,def_precision,true,PASS_LCID);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
@@ -1487,7 +1510,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_
 		break;
 	}
 
-	return fmt_recurse(val,strFormat,def_precision,true);
+#if defined(_WIN32)
+	LCID lcid = GetThreadLocale();
+#endif
+	const lconv* lc = localeconv();
+
+	return fmt_recurse(val,strFormat,def_precision,true,PASS_LCID);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,val,(in),const string_t&,strFormat))

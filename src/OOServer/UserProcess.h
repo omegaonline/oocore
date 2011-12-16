@@ -32,8 +32,8 @@ namespace User
 		virtual bool running() = 0;
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code) = 0;
 
-		static Process* exec(const wchar_t* pszProcess, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
-		static bool is_relative_path(const wchar_t* pszPath);
+		static Process* exec(const char* pszProcess, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
+		static bool is_relative_path(const char* pszPath);
 
 	protected:
 		Process() {}

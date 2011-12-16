@@ -403,7 +403,7 @@ namespace Omega
 						&MarshalStub_Wire       // 2
 					};
 
-					uint32_t method_id = pParamsIn->ReadValue(L"$method_id").cast<uint32_t>() + 1;
+					uint32_t method_id = pParamsIn->ReadValue(Omega::string_t::constant("$method_id")).cast<uint32_t>() + 1;
 
 					if (method_id < 4)
 						return MethodTable[method_id](this,pParamsIn,pParamsOut);
@@ -418,13 +418,13 @@ namespace Omega
 
 				static void QueryInterface_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 				{
-					pParamsOut->WriteValue(L"$retval",pThis->m_pController->RemoteQueryInterface(pParamsIn->ReadValue(L"iid").cast<guid_t>()));
+					pParamsOut->WriteValue(Omega::string_t::constant("$retval"),pThis->m_pController->RemoteQueryInterface(pParamsIn->ReadValue(Omega::string_t::constant("iid")).cast<guid_t>()));
 				}
 
 				static void QueryIObject_Wire(Wire_Stub_Base* pThis, Remoting::IMessage*, Remoting::IMessage* pParamsOut)
 				{
 					auto_iface_ptr<IObject> ptrObj = pThis->m_ptrI->QueryInterface(OMEGA_GUIDOF(IObject));
-					pThis->m_ptrMarshaller->MarshalInterface(L"$retval",pParamsOut,OMEGA_GUIDOF(IObject),ptrObj);
+					pThis->m_ptrMarshaller->MarshalInterface(Omega::string_t::constant("$retval"),pParamsOut,OMEGA_GUIDOF(IObject),ptrObj);
 				}
 
 				static void MarshalStub_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

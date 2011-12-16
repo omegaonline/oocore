@@ -85,7 +85,7 @@ bool User::Manager::start_services()
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription().c_wstr()));
+		LOG_ERROR(("Sending message to root failed: %s",pE->GetDescription().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -128,7 +128,7 @@ bool User::Manager::start_services()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("Failed to start network service %s: %ls",pServ->strKey.c_str(),pE->GetDescription().c_wstr()));
+			LOG_ERROR(("Failed to start network service %s: %s",pServ->strKey.c_str(),pE->GetDescription().c_str()));
 		}
 
 		guard.acquire();
@@ -178,7 +178,7 @@ void User::Manager::start_service(const OOBase::LocalString& strKey, const OOBas
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("Failed to start service %s: %ls",strKey.c_str(),pE->GetDescription().c_wstr()));
+		LOG_ERROR(("Failed to start service %s: %s",strKey.c_str(),pE->GetDescription().c_str()));
 		pE->Release();
 	}
 }
@@ -231,7 +231,7 @@ void User::Manager::stop_services()
 		catch (IException* pE)
 		{
 			// ignore stop errors
-			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
+			LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
 			pE->Release();
 		}
 
@@ -317,7 +317,7 @@ void User::Manager::on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStre
 			}
 			catch (IException* pE)
 			{
-				LOG_ERROR(("Sending message to root failed: %ls",pE->GetDescription().c_wstr()));
+				LOG_ERROR(("Sending message to root failed: %s",pE->GetDescription().c_str()));
 				pE->Release();
 				err = EINVAL;
 			}

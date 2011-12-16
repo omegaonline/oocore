@@ -51,13 +51,13 @@ inline void Omega::System::Internal::wire_rtti_holder::destroy(void* param)
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid));
-inline const Omega::System::Internal::wire_rtti* Omega::System::Internal::get_wire_rtti_info(const Omega::guid_t& iid)
+inline const Omega::System::Internal::wire_rtti* Omega::System::Internal::get_wire_rtti_info(const guid_t& iid)
 {
 	return OOCore_wire_rtti_holder_find(wire_rtti_holder::handle(),&iid);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::wire_rtti*,pRtti));
-inline void Omega::System::Internal::register_wire_rtti_info(const Omega::guid_t& iid, const Omega::System::Internal::wire_rtti* pRtti)
+inline void Omega::System::Internal::register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti)
 {
 	OOCore_wire_rtti_holder_insert(wire_rtti_holder::handle(),&iid,pRtti);
 }
@@ -106,18 +106,18 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 	bool unpack = false;
 	try
 	{
-		ptrMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
+		ptrMessage->WriteStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
 		unpack = true;
 		m_ptrProxy->WriteKey(ptrMessage);
-		ptrMessage->WriteValue(L"$iid",iid);
-		ptrMessage->WriteValue(L"$method_id",method_id);
+		ptrMessage->WriteValue(string_t::constant("$iid"),iid);
+		ptrMessage->WriteValue(string_t::constant("$method_id"),method_id);
 		return ptrMessage;
 	}
 	catch (...)
 	{
 		if (unpack)
 		{
-			ptrMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
+			ptrMessage->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
 			m_ptrProxy->UnpackKey(ptrMessage);
 		}
 		throw;
@@ -126,10 +126,10 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 
 inline void Omega::System::Internal::Wire_Proxy_Base::UnpackHeader(Remoting::IMessage* pMessage)
 {
-	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
+	pMessage->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
 	m_ptrProxy->UnpackKey(pMessage);
-	pMessage->ReadValue(L"$iid");
-	pMessage->ReadValue(L"$method_id");
+	pMessage->ReadValue(string_t::constant("$iid"));
+	pMessage->ReadValue(string_t::constant("$method_id"));
 }
 
 inline Omega::IObject* Omega::System::Internal::Wire_Proxy_Base::QueryInterface(const guid_t& iid)
@@ -169,7 +169,7 @@ inline Omega::IException* Omega::System::Internal::Wire_Proxy_Base::Throw(const 
 	return static_cast<IException*>(create_wire_proxy(m_ptrProxy,iid,OMEGA_GUIDOF(IException)));
 }
 
-inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Omega::Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
+inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
 {
 	IObject* obj = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))
@@ -207,7 +207,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_St
 	return create_safe_stub(ptrStub,OMEGA_GUIDOF(Remoting::IStub));
 }
 
-inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Omega::Remoting::IStubController* pController, Omega::Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
+inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
 {
 	Remoting::IStub* pStub = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))

@@ -58,13 +58,13 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IInternalException* pE)
 	{
-		OOBase::stderr_write(pE->GetDescription().c_nstr());
+		OOBase::stderr_write(pE->GetDescription().c_str());
 
 		Omega::string_t strSource = pE->GetSource();
 		if (!strSource.IsEmpty())
 		{
 			OOBase::stderr_write("\nAt: ");
-			OOBase::stderr_write(strSource.c_nstr());
+			OOBase::stderr_write(strSource.c_str());
 		}
 
 		report_cause(pE);
@@ -72,7 +72,7 @@ static void exception_details(Omega::IException* pOrig)
 	}
 	catch (Omega::IException* pE)
 	{
-		OOBase::stderr_write(pE->GetDescription().c_nstr());
+		OOBase::stderr_write(pE->GetDescription().c_str());
 
 		report_cause(pE);
 		pE->Release();
@@ -123,7 +123,7 @@ static bool key_path(const OOBase::String& str, Omega::string_t& key)
 	if (str.empty() || str[str.length()-1] != '/')
 		return false;
 
-	key = Omega::string_t(str.c_str(),false,str.length()-1);
+	key = Omega::string_t(str.c_str(),str.length()-1);
 	return true;
 }
 
@@ -135,8 +135,8 @@ static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::s
 	const char* r = strrchr(str.c_str(),'/');
 	if (r)
 	{
-		key = Omega::string_t(str.c_str(),false,r-str.c_str());
-		value = Omega::string_t(r+1,false);
+		key = Omega::string_t(str.c_str(),r-str.c_str());
+		value = Omega::string_t(r+1);
 	}
 	else
 	{
@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
 				OOBase::stderr_write("get requires a value_path, use --help for information.");
 			else
 			{
-				OOBase::stdout_write(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_nstr());
+				OOBase::stdout_write(OTL::ObjectPtr<Omega::Registry::IKey>(key)->GetValue(value).cast<Omega::string_t>().c_str());
 				result = EXIT_SUCCESS;
 			}
 		}
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 		{
 			if (key_path(params[0],key))
 			{
-				OTL::ObjectPtr<Omega::Registry::IKey>(L"")->DeleteKey(key);
+				OTL::ObjectPtr<Omega::Registry::IKey>("")->DeleteKey(key);
 				result = EXIT_SUCCESS;
 			}
 			if (value_path(params[0],key,value))
@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 		else if (method == "exists")
 		{
 			if (key_path(params[0],key))
-				result = (OTL::ObjectPtr<Omega::Registry::IKey>(L"")->IsSubKey(key) ? EXIT_SUCCESS : EXIT_FAILURE);
+				result = (OTL::ObjectPtr<Omega::Registry::IKey>("")->IsSubKey(key) ? EXIT_SUCCESS : EXIT_FAILURE);
 			if (value_path(params[0],key,value))
 				result = (OTL::ObjectPtr<Omega::Registry::IKey>(key)->IsValue(value) ? EXIT_SUCCESS : EXIT_FAILURE);
 			else
@@ -288,7 +288,7 @@ int main(int argc, char* argv[])
 					{
 						if (i != v.begin())
 							OOBase::stdout_write("\n");
-						OOBase::stdout_write(i->c_nstr());
+						OOBase::stdout_write(i->c_str());
 						OOBase::stdout_write("/");
 					}
 					v = ptrKey->EnumValues();
@@ -296,7 +296,7 @@ int main(int argc, char* argv[])
 					{
 						if (i != v.begin())
 							OOBase::stdout_write("\n");
-						OOBase::stdout_write(i->c_nstr());
+						OOBase::stdout_write(i->c_str());
 					}
 					result = EXIT_SUCCESS;
 				}

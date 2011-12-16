@@ -44,10 +44,13 @@ namespace User
 
 			static void ValidateSubKey(const string_t& strSubKey)
 			{
+				static const string_t slash = string_t::constant("/");
+				static const string_t dblslash = string_t::constant("//");
+
 				if (strSubKey.IsEmpty() ||
-						strSubKey == L"/" ||
-						strSubKey.Right(1) == L"/" ||
-						strSubKey.Find(L"//") != string_t::npos)
+						strSubKey == slash ||
+						strSubKey.Right(1) == slash ||
+						strSubKey.Find(dblslash) != string_t::npos)
 				{
 					Throw(strSubKey);
 				}
@@ -56,7 +59,7 @@ namespace User
 			static void ValidateValue(const string_t& strName)
 			{
 				if (strName.IsEmpty() ||
-						strName.Find(L'/') != string_t::npos)
+						strName.Find('/') != string_t::npos)
 				{
 					Throw(strName);
 				}
@@ -66,7 +69,7 @@ namespace User
 			{
 				ObjectPtr<ObjectImpl<BadNameException> > pRE = ObjectImpl<BadNameException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"Invalid name for registry key or value: '{0}'." % name;
+				pRE->m_strDesc = string_t::constant("Invalid name for registry key or value: '{0}'.") % name;
 				throw static_cast<IBadNameException*>(pRE.AddRef());
 			}
 		};
@@ -91,7 +94,7 @@ namespace User
 			{
 				ObjectPtr<ObjectImpl<NotFoundException> > pRE = ObjectImpl<NotFoundException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"'{0}' not found." % name;
+				pRE->m_strDesc = string_t::constant("'{0}' not found.") % name;
 				throw static_cast<INotFoundException*>(pRE.AddRef());
 			}
 		};
@@ -116,7 +119,7 @@ namespace User
 			{
 				ObjectPtr<ObjectImpl<AlreadyExistsException> > pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"Key '{0}' already exists." % name;
+				pRE->m_strDesc = string_t::constant("Key '{0}' already exists.") % name;
 				throw static_cast<IAlreadyExistsException*>(pRE.AddRef());
 			}
 		};
@@ -141,7 +144,7 @@ namespace User
 			{
 				ObjectPtr<ObjectImpl<AccessDeniedException> > pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 				pRE->m_strName = name;
-				pRE->m_strDesc = L"Write attempt illegal for '{0}'." % name;
+				pRE->m_strDesc = string_t::constant("Write attempt illegal for '{0}'.") % name;
 				throw static_cast<IAccessDeniedException*>(pRE.AddRef());
 			}
 		};

@@ -164,18 +164,6 @@ inline Omega::any_t::any_t(const string_t& val) :
 	strVal = val;
 }
 
-inline Omega::any_t::any_t(const wchar_t* wsz, size_t length, bool copy) :
-		m_type(TypeInfo::typeString)
-{
-	strVal = string_t(wsz,length,copy);
-}
-
-inline Omega::any_t::any_t(const char* sz, bool bUTF8, size_t length) :
-		m_type(TypeInfo::typeString)
-{
-	strVal = string_t(sz,bUTF8,length);
-}
-
 inline Omega::any_t::~any_t()
 {
 	clear();
@@ -554,10 +542,10 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v, const string
 		v = Formatting::ToString(u.ui64Val,strFormat);
 		break;
 	case TypeInfo::typeFloat4:
-		v = Formatting::ToString(u.fl4Val,strFormat.IsEmpty() ? L"R" : strFormat);
+		v = Formatting::ToString(u.fl4Val,strFormat.IsEmpty() ? string_t::constant("R") : strFormat);
 		break;
 	case TypeInfo::typeFloat8:
-		v = Formatting::ToString(u.fl8Val,strFormat.IsEmpty() ? L"R" : strFormat);
+		v = Formatting::ToString(u.fl8Val,strFormat.IsEmpty() ? string_t::constant("R") : strFormat);
 		break;
 	case TypeInfo::typeGuid:
 		v = guid_t(u.gVal).ToString(strFormat);

@@ -54,7 +54,7 @@ namespace User
 void User::DuplicateRegistrationException::Throw(const any_t& oid)
 {
 	ObjectPtr<ObjectImpl<DuplicateRegistrationException> > pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
-	pRE->m_strDesc = L"Duplicate registration of oid {0} in running object table." % oid;
+	pRE->m_strDesc = string_t::constant("Duplicate registration of oid {0} in running object table.") % oid;
 	pRE->m_oid = oid;
 	throw static_cast<IDuplicateRegistrationException*>(pRE.AddRef());
 }

@@ -212,7 +212,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 
 	// Unpack the payload
 	ObjectPtr<Remoting::IMessage> ptrRequest;
-	ptrRequest.Unmarshal(ptrMarshaller,L"payload",ptrEnvelope);
+	ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
 
 	// Check timeout - at the last possible moment...
 	uint32_t timeout = 0;
@@ -232,7 +232,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 	{
 		// Wrap the response...
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
-		ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+		ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 		// Send it back...
 		try
@@ -241,7 +241,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 		}
 		catch (...)
 		{
-			ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+			ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 			throw;
 		}
 	}

@@ -79,7 +79,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 
 	WriteStubInfo(ptrParamsOut,0);
 
-	ptrParamsOut->WriteValue(L"iid",iid);
+	ptrParamsOut->WriteValue(string_t::constant("iid"),iid);
 	ptrParamsOut->WriteStructEnd();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
@@ -87,7 +87,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	if (pE)
 		pE->Rethrow();
 
-	bool bOk = ptrParamsIn->ReadValue(L"$retval").cast<bool_t>();
+	bool bOk = ptrParamsIn->ReadValue(string_t::constant("$retval")).cast<bool_t>();
 
 	guard.acquire();
 
@@ -118,13 +118,13 @@ IObject* OOCore::Proxy::QueryIObject()
 		pE->Rethrow();
 
 	IObject* pRet = NULL;
-	m_pManager->UnmarshalInterface(L"$retval",ptrParamsIn,OMEGA_GUIDOF(IObject),pRet);
+	m_pManager->UnmarshalInterface(string_t::constant("$retval"),ptrParamsIn,OMEGA_GUIDOF(IObject),pRet);
 	return pRet;
 }
 
 IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 {
-	guid_t iid = pMessage->ReadValue(L"iid").cast<guid_t>();
+	guid_t iid = pMessage->ReadValue(string_t::constant("iid")).cast<guid_t>();
 
 	// Add to the cache map...
 	{
@@ -157,18 +157,18 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
 {
-	pMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
-	pMessage->WriteValue(L"$stub_id",m_proxy_id);
-	pMessage->WriteValue(L"$iid",OMEGA_GUIDOF(IObject));
-	pMessage->WriteValue(L"$method_id",method_id);
+	pMessage->WriteStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	pMessage->WriteValue(string_t::constant("$stub_id"),m_proxy_id);
+	pMessage->WriteValue(string_t::constant("$iid"),OMEGA_GUIDOF(IObject));
+	pMessage->WriteValue(string_t::constant("$method_id"),method_id);
 }
 
 void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 {
-	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-	pMessage->ReadValue(L"$stub_id");
-	pMessage->ReadValue(L"$iid");
-	pMessage->ReadValue(L"$method_id");
+	pMessage->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	pMessage->ReadValue(string_t::constant("$stub_id"));
+	pMessage->ReadValue(string_t::constant("$iid"));
+	pMessage->ReadValue(string_t::constant("$method_id"));
 }
 
 Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* pMarshaller, const guid_t& iid)
@@ -177,7 +177,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 
 	WriteStubInfo(ptrParamsOut,2);
 
-	ptrParamsOut->WriteValue(L"iid",iid);
+	ptrParamsOut->WriteValue(string_t::constant("iid"),iid);
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	IException* pERet = NULL;
@@ -192,7 +192,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	catch (...)
 	{
 		ReadStubInfo(ptrParamsOut);
-		ptrParamsOut->ReadValue(L"iid");
+		ptrParamsOut->ReadValue(string_t::constant("iid"));
 		m_pManager->UndoMarshalChannel(pMarshaller,ptrParamsOut);	
 		throw;
 	}
@@ -201,7 +201,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 		pERet->Rethrow();
 
 	Omega::IObject* pObj = NULL;
-	m_pManager->UnmarshalInterface(L"pReflect",ptrParamsIn,OMEGA_GUIDOF(Remoting::IMessage),pObj);
+	m_pManager->UnmarshalInterface(string_t::constant("pReflect"),ptrParamsIn,OMEGA_GUIDOF(Remoting::IMessage),pObj);
 	return static_cast<Remoting::IMessage*>(pObj);
 }
 
@@ -230,7 +230,7 @@ void OOCore::Proxy::MarshalInterface(Remoting::IMarshaller* pMarshaller, Remotin
 	// Tell the stub to expect incoming requests from a different channel...
 	ObjectPtr<Remoting::IMessage> ptrReflect = CallRemoteStubMarshal(pMarshaller,iid);
 
-	return pMarshaller->MarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
+	return pMarshaller->MarshalInterface(string_t::constant("pReflect"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
 void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags)
@@ -248,13 +248,13 @@ void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMar
 {
 	// Unmarshal the reflect package
 	ObjectPtr<Remoting::IMessage> ptrReflect;
-	ptrReflect.Unmarshal(pMarshaller,L"pReflect",pMessage);
+	ptrReflect.Unmarshal(pMarshaller,string_t::constant("pReflect"),pMessage);
 	if (!ptrReflect)
 		OMEGA_THROW("No package");
 
 	// Unmarshal the manager
 	ObjectPtr<Remoting::IChannel> ptrChannel;
-	ptrChannel.Unmarshal(pMarshaller,L"m_ptrChannel",ptrReflect);
+	ptrChannel.Unmarshal(pMarshaller,string_t::constant("m_ptrChannel"),ptrReflect);
 	if (!ptrChannel)
 		OMEGA_THROW("No channel");
 
@@ -266,5 +266,5 @@ void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMar
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal the new proxy on the new manager
-	ptrMarshaller->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
+	ptrMarshaller->UnmarshalInterface(string_t::constant("stub"),ptrReflect,iid,pObject);
 }

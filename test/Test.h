@@ -14,7 +14,7 @@
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();
 void add_success();
-void add_failure(const wchar_t* pszText);
+void add_failure(const char* pszText);
 void output_exception(Omega::IException* pE);
 
 typedef bool (*pfnTest)();

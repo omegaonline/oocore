@@ -39,7 +39,7 @@ namespace
 		TypeInfoImpl();
 		virtual ~TypeInfoImpl();
 
-		void init(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
+		void init(const guid_t& iid, const string_t& strName, const System::Internal::typeinfo_rtti* type_info);
 
 		BEGIN_INTERFACE_MAP(TypeInfoImpl)
 			INTERFACE_ENTRY(TypeInfo::IInterfaceInfo)
@@ -83,7 +83,7 @@ namespace
 	class TIMapImpl
 	{
 	public:
-		void insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
+		void insert(const guid_t& iid, const char* pszName, const System::Internal::typeinfo_rtti* type_info);
 		void remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info);
 
 		TypeInfo::IInterfaceInfo* get_type_info(const guid_t& iid);
@@ -93,7 +93,7 @@ namespace
 
 		struct ti_t
 		{
-			const wchar_t*                         pszName;
+			const char*                            pszName;
 			const System::Internal::typeinfo_rtti* type_info;
 		};
 
@@ -136,14 +136,14 @@ namespace
 
 	void BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const System::Internal::type_holder* th)
 	{
-		td->WriteValue(L"type",th->type);
+		td->WriteValue(string_t::constant("type"),th->type);
 
 		if (th->type == TypeInfo::typeObject)
 		{
-			td->WriteValue(L"iid",guid_t(*(const guid_base_t*)(th->next)));
+			td->WriteValue(string_t::constant("iid"),guid_t(*(const guid_base_t*)(th->next)));
 
 			// Add terminating void if not already written...
-			td->WriteValue(L"type",TypeInfo::Type_t(TypeInfo::typeVoid));
+			td->WriteValue(string_t::constant("type"),TypeInfo::Type_t(TypeInfo::typeVoid));
 		}
 		else if (th->next)
 		{
@@ -152,7 +152,7 @@ namespace
 		else if (th->type != TypeInfo::typeVoid)
 		{
 			// Add terminating void if not already written...
-			td->WriteValue(L"type",TypeInfo::Type_t(TypeInfo::typeVoid));
+			td->WriteValue(string_t::constant("type"),TypeInfo::Type_t(TypeInfo::typeVoid));
 		}
 
 		if (th->type == TypeInfo::typeSTLMap ||
@@ -172,50 +172,50 @@ namespace
 		switch (th->type)
 		{
 		case TypeInfo::typeVoid:
-			return string_t(L"void");
+			return string_t::constant("void");
 
 		case TypeInfo::typeBool:
-			return string_t(L"Omega::bool_t");
+			return string_t::constant("Omega::bool_t");
 
 		case TypeInfo::typeByte:
-			return string_t(L"Omega::byte_t");
+			return string_t::constant("Omega::byte_t");
 
 		case TypeInfo::typeInt16:
-			return string_t(L"Omega::int16_t");
+			return string_t::constant("Omega::int16_t");
 
 		case TypeInfo::typeUInt16:
-			return string_t(L"Omega::uint16_t");
+			return string_t::constant("Omega::uint16_t");
 
 		case TypeInfo::typeInt32:
-			return string_t(L"Omega::int32_t");
+			return string_t::constant("Omega::int32_t");
 
 		case TypeInfo::typeUInt32:
-			return string_t(L"Omega::uint32_t");
+			return string_t::constant("Omega::uint32_t");
 
 		case TypeInfo::typeInt64:
-			return string_t(L"Omega::int64_t");
+			return string_t::constant("Omega::int64_t");
 
 		case TypeInfo::typeUInt64:
-			return string_t(L"Omega::uint64_t");
+			return string_t::constant("Omega::uint64_t");
 
 		case TypeInfo::typeFloat4:
-			return string_t(L"Omega::float4_t");
+			return string_t::constant("Omega::float4_t");
 
 		case TypeInfo::typeFloat8:
-			return string_t(L"Omega::float8_t");
+			return string_t::constant("Omega::float8_t");
 
 		case TypeInfo::typeString:
-			return string_t(L"Omega::string_t");
+			return string_t::constant("Omega::string_t");
 
 		case TypeInfo::typeGuid:
-			return string_t(L"Omega::guid_t");
+			return string_t::constant("Omega::guid_t");
 
 		case TypeInfo::typeAny:
-			return string_t(L"Omega::any_t");
+			return string_t::constant("Omega::any_t");
 
 		case TypeInfo::typeObject:
 			{
-				string_t strIID = string_t(L"Unknown interface {0}") % guid_t(*(const guid_base_t*)(th->next)).ToString();
+				string_t strIID = System::Internal::get_text("Unknown interface {0}") % guid_t(*(const guid_base_t*)(th->next)).ToString();
 				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF = OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next));
 				if (ptrIF)
 					strIID = ptrIF->GetName();
@@ -223,43 +223,43 @@ namespace
 			}
 
 		case TypeInfo::typeSTLVector:
-			return L"std::vector<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+			return "std::vector<" + strNext + (strNext.Right(1)==">" ? " >" : ">");
 
 		case TypeInfo::typeSTLDeque:
-			return L"std::deque<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+			return "std::deque<" + strNext + (strNext.Right(1)==">" ? " >" : ">");
 
 		case TypeInfo::typeSTLList:
-			return L"std::list<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+			return "std::list<" + strNext + (strNext.Right(1)==">" ? " >" : ">");
 
 		case TypeInfo::typeSTLSet:
-			return L"std::set<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+			return "std::set<" + strNext + (strNext.Right(1)==">" ? " >" : ">");
 
 		case TypeInfo::typeSTLMultiset:
-			return L"std::multiset<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+			return "std::multiset<" + strNext + (strNext.Right(1)==">" ? " >" : ">");
 
 		case TypeInfo::typeSTLMap:
 			{
 				string_t strNext2 = BuildTypeString(th[1].next);
-				return L"std::map<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
+				return "std::map<" + strNext + ',' + strNext2 + (strNext2.Right(1)==">" ? " >" : ">");
 			}
 
 		case TypeInfo::typeSTLMultimap:
 			{
 				string_t strNext2 = BuildTypeString(th[1].next);
-				return L"std::multimap<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
+				return "std::multimap<" + strNext + ',' + strNext2 + (strNext2.Right(1)==">" ? " >" : ">");
 			}
 
 		case TypeInfo::modifierConst:
-			return strNext + L" const";
+			return strNext + string_t::constant(" const");
 
 		case TypeInfo::modifierPointer:
-			return strNext + L'*';
+			return strNext + '*';
 
 		case TypeInfo::modifierReference:
-			return strNext + L'&';
+			return strNext + '&';
 
 		default:
-			return string_t(L"Invalid type code: {0}") % th->type;
+			return System::Internal::get_text("Invalid type code: {0}") % th->type;
 		}
 	}
 }
@@ -277,10 +277,10 @@ TypeInfoImpl::~TypeInfoImpl()
 		delete mi.params;
 }
 
-void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
+void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System::Internal::typeinfo_rtti* type_info)
 {
 	m_iid = iid;
-	m_strName = string_t(pszName,string_t::npos);
+	m_strName = strName;
 
 	// Init the base class
 	if (type_info->base_type)
@@ -417,7 +417,7 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 	OMEGA_THROW("GetAttributeRef failed to find reference parameter");
 }
 
-void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
+void TIMapImpl::insert(const guid_t& iid, const char* pszName, const System::Internal::typeinfo_rtti* type_info)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -461,7 +461,7 @@ TypeInfo::IInterfaceInfo* OOCore::GetInterfaceInfo(const guid_t& iid)
 	return TIMap::instance().get_type_info(iid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const guid_t&,iid,(in),const char*,pszName,(in),const void*,type_info))
 {
 	TIMap::instance().insert(iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }
@@ -477,55 +477,55 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 	switch (value.GetType())
 	{
 	case TypeInfo::typeVoid:
-		strSource = L"void";
+		strSource = string_t::constant("void");
 		break;
 
 	case TypeInfo::typeBool:
-		strSource = L"Omega::bool_t";
+		strSource = string_t::constant("Omega::bool_t");
 		break;
 
 	case TypeInfo::typeByte:
-		strSource = L"Omega::byte_t";
+		strSource = string_t::constant("Omega::byte_t");
 		break;
 
 	case TypeInfo::typeInt16:
-		strSource = L"Omega::int16_t";
+		strSource = string_t::constant("Omega::int16_t");
 		break;
 
 	case TypeInfo::typeUInt16:
-		strSource = L"Omega::uint16_t";
+		strSource = string_t::constant("Omega::uint16_t");
 		break;
 
 	case TypeInfo::typeInt32:
-		strSource = L"Omega::int32_t";
+		strSource = string_t::constant("Omega::int32_t");
 		break;
 
 	case TypeInfo::typeUInt32:
-		strSource = L"Omega::uint32_t";
+		strSource = string_t::constant("Omega::uint32_t");
 		break;
 
 	case TypeInfo::typeInt64:
-		strSource = L"Omega::int64_t";
+		strSource = string_t::constant("Omega::int64_t");
 		break;
 
 	case TypeInfo::typeUInt64:
-		strSource = L"Omega::uint64_t";
+		strSource = string_t::constant("Omega::uint64_t");
 		break;
 
 	case TypeInfo::typeFloat4:
-		strSource = L"Omega::float4_t";
+		strSource = string_t::constant("Omega::float4_t");
 		break;
 
 	case TypeInfo::typeFloat8:
-		strSource = L"Omega::float8_t";
+		strSource = string_t::constant("Omega::float8_t");
 		break;
 
 	case TypeInfo::typeString:
-		strSource = L"Omega::string_t";
+		strSource = string_t::constant("Omega::string_t");
 		break;
 
 	case TypeInfo::typeGuid:
-		strSource = L"Omega::guid_t";
+		strSource = string_t::constant("Omega::guid_t");
 		break;
 
 	default:
@@ -538,22 +538,22 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 	switch (reason)
 	{
 	case any_t::castOverflow:
-		strReason = L"Source value would overflow";
+		strReason = System::Internal::get_text("Source value would overflow");
 		break;
 
 	case any_t::castPrecisionLoss:
-		strReason = L"Source value would lose precision";
+		strReason = System::Internal::get_text("Source value would lose precision");
 		break;
 
 	case any_t::castValid:
 	case any_t::castUnrelated:
 	default:
-		strReason = L"Data types are unrelated";
+		strReason = System::Internal::get_text("Data types are unrelated");
 		break;
 	}
 
 	ObjectPtr<ObjectImpl<CastException> > pNew = ObjectImpl<CastException>::CreateInstance();
-	pNew->m_strDesc = L"Failed to convert from {0} to {1}: {2}" % strSource % strDest % strReason;
+	pNew->m_strDesc = System::Internal::get_text("Failed to convert from {0} to {1}: {2}") % strSource % strDest % strReason;
 	pNew->m_value = value;
 	pNew->m_reason = reason;
 	pNew->m_type = Remoting::CreateMemoryMessage();

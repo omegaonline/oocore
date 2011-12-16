@@ -567,8 +567,9 @@ namespace Omega
 
 					void update(safe_type& dest)
 					{
-						string_t_safe_type::release(dest);
-						dest = string_t_safe_type::addref(m_val,true);
+						safe_type old = dest;
+						dest = string_t_safe_type::addref(m_val);
+						string_t_safe_type::release(old);
 					}
 
 					operator string_t&()
@@ -583,7 +584,7 @@ namespace Omega
 
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::addref(val,false))
+					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::addref(val))
 					{ }
 
 					~safe_type_wrapper()
@@ -613,7 +614,7 @@ namespace Omega
 
 				static safe_type clone(const string_t& s)
 				{
-					return addref(s,true);
+					return addref(s);
 				}
 
 				static string_t clone(safe_type v)
@@ -626,15 +627,9 @@ namespace Omega
 					return string_t(static_cast<string_t::handle_t*>(v),addref);
 				}
 
-				static safe_type addref(const string_t& val, bool own)
+				static safe_type addref(const string_t& val)
 				{
-					// We only need to take ownership if we are passing out of a dll that isn't OOCore
-#if !defined(OOCORE_INTERNAL)
-					return string_t::addref(val.m_handle,own);
-#else
-					OMEGA_UNUSED_ARG(own);
-					return string_t::addref(val.m_handle,false);
-#endif
+					return string_t::addref(val.m_handle);
 				}
 
 				static void release(safe_type val)
@@ -931,7 +926,7 @@ namespace Omega
 						ret.u.fl8Val = val.u.fl8Val;
 						break;
 					case TypeInfo::typeString:
-						ret.u.pstrVal = string_t_safe_type::addref(val.strVal,true);
+						ret.u.pstrVal = string_t_safe_type::addref(val.strVal);
 						break;
 					case TypeInfo::typeGuid:
 						ret.u.gVal = val.u.gVal;

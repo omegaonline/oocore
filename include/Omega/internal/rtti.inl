@@ -49,8 +49,8 @@ inline void Omega::System::UnpinObjectPointer(Omega::IObject* pObject)
 
 #if !defined(DOXYGEN)
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
-inline void Omega::System::Internal::register_typeinfo(const Omega::guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const char*,pszName,(in),const void*,type_info));
+inline void Omega::System::Internal::register_typeinfo(const Omega::guid_t& iid, const char* pszName, const typeinfo_rtti* type_info)
 {
 	OOCore_Internal_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
 }
@@ -73,8 +73,8 @@ inline Omega::IInternalException* Omega::IInternalException::Create(int32_t errn
 	return OOCore_IInternalException_Create_errno(errno_val,pszFile,nLine,pszFunc);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create,5,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
-inline Omega::IInternalException* Omega::IInternalException::Create(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc, IException* pCause)
+OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create,5,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
+inline Omega::IInternalException* Omega::IInternalException::Create(const string_t& desc, const char* pszFile, size_t nLine, const char* pszFunc, IException* pCause)
 {
 	return OOCore_IInternalException_Create(desc,pszFile,nLine,pszFunc,pCause);
 }

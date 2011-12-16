@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return version();
 
-	OOBase::stdout_write(Omega::guid_t::Create().ToString().c_nstr());
+	OOBase::stdout_write(Omega::guid_t::Create().ToString().c_str());
 
 	return EXIT_SUCCESS;
 }

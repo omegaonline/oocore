@@ -45,7 +45,7 @@ namespace Omega
 		guid_t(const guid_base_t& rhs = guid_t::Null()) : guid_base_t(rhs)
 		{}
 
-		guid_t(const wchar_t* wsz);
+		guid_t(const char* wsz);
 		guid_t(const string_t& str);
 
 		bool operator == (const guid_t& rhs) const { return Compare(rhs) == 0; }
@@ -58,7 +58,7 @@ namespace Omega
 
 		static guid_t Create();
 
-		static bool FromString(const wchar_t* wsz, guid_t& guid);
+		static bool FromString(const char* wsz, guid_t& guid);
 		static bool FromString(const string_t& str, guid_t& guid);
 
 		static const guid_t& Null()
@@ -205,12 +205,6 @@ namespace Omega
 				enum { result = 1 };
 			};
 			
-			// Platform specific - therefore safe
-			template <> struct is_c_abi<wchar_t>
-			{
-				enum { result = 1 };
-			};
-
 			// Simple structures
 			template <> struct is_c_abi<guid_base_t>
 			{

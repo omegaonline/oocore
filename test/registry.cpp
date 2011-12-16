@@ -8,16 +8,16 @@
 static bool test_values(Omega::Registry::IKey* pKey)
 {
 	// Generate a unique value name
-	Omega::string_t strTestValue(L"TestValue_{0}");
+	Omega::string_t strTestValue("TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
-		strTestValue = L"_" + strTestValue;
+		strTestValue = "_" + strTestValue;
 	}
 
 	try
 	{
-		pKey->SetValue(strTestValue,L"Yes");
+		pKey->SetValue(strTestValue,"Yes");
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
@@ -26,17 +26,17 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		return true;
 	}
 
-	TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
+	TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
 	TEST(pKey->IsValue(strTestValue));
-	TEST(pKey->GetValue(strTestValue) ==  L"Yes");
-	TEST_VOID(pKey->SetValue(strTestValue,L"No"));
-	TEST(pKey->GetValue(strTestValue) ==  L"No");
+	TEST(pKey->GetValue(strTestValue) ==  "Yes");
+	TEST_VOID(pKey->SetValue(strTestValue,"No"));
+	TEST(pKey->GetValue(strTestValue) ==  "No");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 
-	TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
-	TEST_VOID(pKey->SetValueDescription(strTestValue,L"A test description"));
-	TEST(pKey->GetValueDescription(strTestValue) == L"A test description");
+	TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
+	TEST_VOID(pKey->SetValueDescription(strTestValue,"A test description"));
+	TEST(pKey->GetValueDescription(strTestValue) == "A test description");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 
@@ -55,26 +55,26 @@ static bool test_values(Omega::Registry::IKey* pKey)
 
 	try
 	{
-		pKey->SetValue(L"",L"Invalid name");
+		pKey->SetValue("","Invalid name");
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"");
+		TEST(pE->GetName() == "");
 		pE->Release();
 	}
 	try
 	{
-		pKey->SetValue(L"/",0);
+		pKey->SetValue("/",0);
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"/");
+		TEST(pE->GetName() == "/");
 		pE->Release();
 	}
 
-	TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
+	TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
 
 	std::set<Omega::string_t> values = pKey->EnumValues();
 
@@ -94,11 +94,11 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	if (!test_values(pKey))
 		return false;
 
-	Omega::string_t strTestKey(L"TestKey_{0}");
+	Omega::string_t strTestKey("TestKey_{0}");
 	strTestKey %= GetCurrentProcessId();
 	while (pKey->IsSubKey(strTestKey))
 	{
-		strTestKey = L"_" + strTestKey;
+		strTestKey = "_" + strTestKey;
 	}
 
 	Omega::Registry::IKey* pSubKey;
@@ -119,8 +119,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	if (!test_values(pSubKey))
 		return false;
 
-	TEST_VOID(pSubKey->SetDescription(L"A test description"));
-	TEST(pSubKey->GetDescription() == L"A test description");
+	TEST_VOID(pSubKey->SetDescription("A test description"));
+	TEST(pSubKey->GetDescription() == "A test description");
 
 	pSubKey->Release();
 
@@ -141,13 +141,13 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"/",Omega::Registry::IKey::OpenCreate);
+		pSubKey = pKey->OpenSubKey("/",Omega::Registry::IKey::OpenCreate);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"/");
+		TEST(pE->GetName() == "/");
 		pE->Release();
 	}
 
@@ -163,7 +163,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
 		if (!strKey.IsEmpty())
-			TEST(pE->GetKeyName() == strKey + L"/" + strTestKey);
+			TEST(pE->GetKeyName() == strKey + "/" + strTestKey);
 		else
 			TEST(pE->GetKeyName() == strTestKey);
 		
@@ -181,7 +181,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	catch (Omega::Registry::INotFoundException* pE)
 	{
 		if (!strKey.IsEmpty())
-			TEST(pE->GetName() == strKey + L"/" + strTestKey);
+			TEST(pE->GetName() == strKey + "/" + strTestKey);
 		else
 			TEST(pE->GetName() == strTestKey);
 		
@@ -241,21 +241,21 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 
 static bool test_root_key(Omega::Registry::IKey* pKey)
 {
-	TEST(pKey->IsSubKey(L"System"));
-	TEST(pKey->IsSubKey(L"Local User"));
-	TEST(pKey->IsSubKey(L"All Users"));
+	TEST(pKey->IsSubKey("System"));
+	TEST(pKey->IsSubKey("Local User"));
+	TEST(pKey->IsSubKey("All Users"));
 
-	Omega::string_t strTestValue(L"TestValue_{0}");
+	Omega::string_t strTestValue("TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
-		strTestValue = L"_" + strTestValue;
+		strTestValue = "_" + strTestValue;
 	}
 
 	bool bCanWriteToRoot = true;
 	try
 	{
-		TEST_VOID(pKey->SetValue(strTestValue,L"Yes"));
+		TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
@@ -268,20 +268,20 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	{
 		TEST_VOID(pKey->DeleteValue(strTestValue));
 
-		if (!test_key2(pKey,L""))
+		if (!test_key2(pKey,""))
 			return false;
 	}
 
 	// Test the private root keys
-	test_privates(pKey,L"System");
-	test_privates(pKey,L"System/Sandbox");
-	test_privates(pKey,L"All Users/Objects");
-	test_privates(pKey,L"All Users/Objects/OIDs");
-	test_privates(pKey,L"All Users/Applications");
-	test_privates(pKey,L"Local User");
+	test_privates(pKey,"System");
+	test_privates(pKey,"System/Sandbox");
+	test_privates(pKey,"All Users/Objects");
+	test_privates(pKey,"All Users/Objects/OIDs");
+	test_privates(pKey,"All Users/Applications");
+	test_privates(pKey,"Local User");
 
 	if (bCanWriteToRoot)
-		test_privates(pKey,L"System");
+		test_privates(pKey,"System");
 
 	return true;
 }
@@ -309,14 +309,14 @@ bool registry_tests()
 		return false;
 		
 	// Check we can use the textual OID
-	pObj = Omega::CreateInstance(L"Omega.Registry",Omega::Activation::Default,NULL,OMEGA_GUIDOF(Omega::Registry::IKey));
+	pObj = Omega::CreateInstance("Omega.Registry",Omega::Activation::Default,NULL,OMEGA_GUIDOF(Omega::Registry::IKey));
 	TEST(pObj);
 	pObj->Release();
 
-	if (!test_key(L"System"))
+	if (!test_key("System"))
 		return false;
 
-	if (!test_key(L"Local User"))
+	if (!test_key("Local User"))
 		return false;
 
 	return true;

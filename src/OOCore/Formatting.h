@@ -24,11 +24,11 @@
 
 namespace OOCore
 {
-	long wcstol(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
-	unsigned long wcstoul(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
-	Omega::int64_t wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
-	Omega::uint64_t wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
-	Omega::float8_t wcstod(const wchar_t* sz, wchar_t const*& endptr);
+	long strtol(const char* sz, char const*& endptr, unsigned int base);
+	unsigned long strtoul(const char* sz, char const*& endptr, unsigned int base);
+	Omega::int64_t strto64(const char* sz, char const*& endptr, unsigned int base);
+	Omega::uint64_t strtou64(const char* sz, char const*& endptr, unsigned int base);
+	Omega::float8_t strtod(const char* sz, char const*& endptr);
 }
 
 #endif // OOCORE_FORMATTING_H_INCLUDED_

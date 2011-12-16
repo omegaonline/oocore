@@ -239,7 +239,7 @@ namespace OTL
 				ObjectPtrBase<OBJECT>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
+		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
@@ -281,7 +281,7 @@ namespace OTL
 				ObjectPtrBase<Omega::IObject>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
+		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
 				ObjectPtrBase<Omega::IObject>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 

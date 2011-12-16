@@ -66,11 +66,11 @@ void SimpleMarshaller::init(Remoting::MarshalFlags_t marshal_flags)
 void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	// Write a header
-	pMessage->WriteStructStart(strName,L"$iface_marshal");
+	pMessage->WriteStructStart(strName,string_t::constant("$iface_marshal"));
 
 	// See if object is NULL
 	if (!pObject)
-		pMessage->WriteValue(L"$marshal_type",byte_t(0));
+		pMessage->WriteValue(string_t::constant("$marshal_type"),byte_t(0));
 	else
 	{
 		ObjectPtr<Remoting::IMarshal> ptrMarshal;
@@ -93,8 +93,8 @@ void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMess
 			OMEGA_THROW("Attempting to marshal incompatible object via SimpleMarshaller");
 
 		// Write the marshalling oid
-		pMessage->WriteValue(L"$marshal_type",byte_t(2));
-		pMessage->WriteValue(L"$oid",oid);
+		pMessage->WriteValue(string_t::constant("$marshal_type"),byte_t(2));
+		pMessage->WriteValue(string_t::constant("$oid"),oid);
 
 		try
 		{
@@ -103,8 +103,8 @@ void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMess
 		}
 		catch (...)
 		{
-			pMessage->ReadValue(L"$marshal_type");
-			pMessage->ReadValue(L"$oid");
+			pMessage->ReadValue(string_t::constant("$marshal_type"));
+			pMessage->ReadValue(string_t::constant("$oid"));
 			ptrMarshal->ReleaseMarshalData(this,pMessage,iid,m_marshal_flags);
 			throw;
 		}
@@ -117,9 +117,9 @@ void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMess
 void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	// Read the header
-	pMessage->ReadStructStart(strName,L"$iface_marshal");
+	pMessage->ReadStructStart(strName,string_t::constant("$iface_marshal"));
 
-	byte_t flag = pMessage->ReadValue(L"$marshal_type").cast<byte_t>();
+	byte_t flag = pMessage->ReadValue(string_t::constant("$marshal_type")).cast<byte_t>();
 	if (flag == 0)
 	{
 		/* NOP */
@@ -131,7 +131,7 @@ void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMe
 	else if (flag == 2)
 	{
 		// Skip the guid...
-		pMessage->ReadValue(L"oid");
+		pMessage->ReadValue(string_t::constant("$oid"));
 
 		// See if pObject does custom marshalling...
 		ObjectPtr<Remoting::IMarshal> ptrMarshal;
@@ -176,17 +176,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Remoting::IM
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 	ObjectPtr<ObjectImpl<SimpleMarshaller> > ptrMarshaller = ObjectImpl<SimpleMarshaller>::CreateInstance();
 
-	ptrPayload->WriteStructStart(L"ipc_response",L"$ipc_response_type");
-	ptrPayload->WriteValue(L"$throw",true);
+	ptrPayload->WriteStructStart(string_t::constant("ipc_response"),string_t::constant("$ipc_response_type"));
+	ptrPayload->WriteValue(string_t::constant("$throw"),true);
 
 	guid_t iid = pException->GetThrownIID();
 	ObjectPtr<IObject> ptrQI = pException->QueryInterface(iid);
 	if (ptrQI)
-		ptrMarshaller->MarshalInterface(L"exception",ptrPayload,iid,ptrQI);
+		ptrMarshaller->MarshalInterface(string_t::constant("exception"),ptrPayload,iid,ptrQI);
 	else
-		ptrMarshaller->MarshalInterface(L"exception",ptrPayload,OMEGA_GUIDOF(IException),pException);
+		ptrMarshaller->MarshalInterface(string_t::constant("exception"),ptrPayload,OMEGA_GUIDOF(IException),pException);
 
 	ptrPayload->WriteStructEnd();
 	
-	ptrMarshaller->MarshalInterface(L"payload",pMessage,OMEGA_GUIDOF(Remoting::IMessage),static_cast<Remoting::IMessage*>(ptrPayload));
+	ptrMarshaller->MarshalInterface(string_t::constant("payload"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),static_cast<Remoting::IMessage*>(ptrPayload));
 }

@@ -10,24 +10,23 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
+/* Define to 1 if you have the `strtoll' function. */
+#undef HAVE_STRTOLL
+
+/* Define to 1 if you have the `strtoull' function. */
+#undef HAVE_STRTOULL
+
+/* Define to 1 if you have the `_strtoi64' function. */
+#undef HAVE__STRTOI64
+
+/* Define to 1 if you have the `_strtoui64' function. */
+#undef HAVE__STRTOUI64
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
 /* Define to 1 if you have the <uuid/uuid.h> header file. */
 #undef HAVE_UUID_UUID_H
 
-/* Define to 1 if you have the `wcstoll' function. */
-#undef HAVE_WCSTOLL
-
-/* Define to 1 if you have the `wcstoull' function. */
-#undef HAVE_WCSTOULL
-
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H
-
-/* Define to 1 if you have the `_wcstoi64' function. */
-#undef HAVE__WCSTOI64
-
-/* Define to 1 if you have the `_wcstoui64' function. */
-#undef HAVE__WCSTOUI64
-

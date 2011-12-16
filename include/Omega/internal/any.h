@@ -48,11 +48,7 @@ namespace Omega
 		any_t(float4_t val);
 		any_t(const float8_t& val);
 		any_t(const guid_t& val);
-
-		// String constructors
 		any_t(const string_t& val);
-		any_t(const wchar_t* wsz, size_t length = string_t::npos, bool copy = true);
-		any_t(const char* sz, bool bUTF8, size_t length = string_t::npos);
 
 		any_t(const any_t& rhs);
 		any_t& operator = (const any_t& rhs);

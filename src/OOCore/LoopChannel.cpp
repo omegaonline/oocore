@@ -63,8 +63,8 @@ void LoopMarshaller::init(OOCore::LoopChannel* pChannel)
 
 void LoopMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
-	pMessage->WriteStructStart(strName,L"$loop_marshal");
-	pMessage->WriteValue(L"ptr",reinterpret_cast<ptrdiff_t>(pObject));
+	pMessage->WriteStructStart(strName,string_t::constant("$loop_marshal"));
+	pMessage->WriteValue(string_t::constant("ptr"),reinterpret_cast<ptrdiff_t>(pObject));
 	pMessage->WriteStructEnd();
 
 	// Make sure we AddRef()
@@ -76,16 +76,16 @@ void LoopMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMess
 	// Make sure we Release()
 	pObject->Release();
 
-	pMessage->ReadStructStart(strName,L"$loop_marshal");
-	pMessage->ReadValue(L"ptr");
+	pMessage->ReadStructStart(strName,string_t::constant("$loop_marshal"));
+	pMessage->ReadValue(string_t::constant("ptr"));
 	pMessage->ReadStructEnd();
 }
 
 void LoopMarshaller::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject*& pObject)
 {
-	pMessage->ReadStructStart(strName,L"$loop_marshal");
+	pMessage->ReadStructStart(strName,string_t::constant("$loop_marshal"));
 
-	pObject = reinterpret_cast<IObject*>(pMessage->ReadValue(L"ptr").cast<ptrdiff_t>());
+	pObject = reinterpret_cast<IObject*>(pMessage->ReadValue(string_t::constant("ptr")).cast<ptrdiff_t>());
 
 	pMessage->ReadStructEnd();
 }

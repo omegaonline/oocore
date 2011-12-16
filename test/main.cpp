@@ -113,8 +113,8 @@ static unsigned long fail_count = 0;
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
-	Omega::string_t err(L"Assertion '{0}' failed at {1}:{2}\n" % Omega::string_t(pszExpr,false) % Omega::string_t(pszSrc,false) % nLine);
-	add_failure(err.c_wstr());
+	Omega::string_t err("Assertion '{0}' failed at {1}:{2}\n" % Omega::string_t(pszExpr,false) % Omega::string_t(pszSrc,false) % nLine);
+	add_failure(err.c_str());
 	return false;
 }
 
@@ -123,7 +123,7 @@ void add_success()
 	++pass_count;
 }
 
-void add_failure(const wchar_t* pszText)
+void add_failure(const char* pszText)
 {
 	output("[Failed]\n%ls",pszText);
 	++fail_count;
@@ -150,7 +150,7 @@ static void recurse_output_exception(Omega::IException* pE)
 	{
 		try
 		{
-			output("Cause:\t%ls\n",pCause->GetDescription().c_wstr());
+			output("Cause:\t%s\n",pCause->GetDescription().c_str());
 			recurse_output_exception(pCause);
 		}
 		catch (Omega::IException* pE2)
@@ -168,12 +168,12 @@ static void recurse_output_exception(Omega::IException* pE)
 
 void output_exception(Omega::IException* pE)
 {
-	output("Desc:\t%ls\n",pE->GetDescription().c_wstr());
+	output("Desc:\t%s\n",pE->GetDescription().c_str());
 
 	Omega::IInternalException* pInt = static_cast<Omega::IInternalException*>(pE->QueryInterface(OMEGA_GUIDOF(Omega::IInternalException)));
 	if (pInt)
 	{
-		output("Src:\t%ls\n",pInt->GetSource().c_wstr());
+		output("Src:\t%s\n",pInt->GetSource().c_str());
 		pInt->Release();
 	}
 

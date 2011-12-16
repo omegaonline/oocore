@@ -116,14 +116,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 
 namespace OOCore
 {
-	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const char* desc, const char* pszFile, size_t nLine, const char* pszFunc, IException* pCause)
+	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const string_t& desc, const char* pszFile, size_t nLine, const char* pszFunc, IException* pCause)
 	{
 		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstance();
 
-		// Make this use gettext etc...
-		void* ISSUE_6;
-
-		pExcept->m_strDesc = string_t(desc,false);
+		pExcept->m_strDesc = desc;
 		pExcept->m_ptrCause = pCause;
 		pExcept->m_ptrCause.AddRef();
 
@@ -147,12 +144,12 @@ namespace OOCore
 			if (nLine != size_t(-1))
 			{
 				if (pszFunc)
-					pExcept->m_strSource = (L"{0}({1}): {2}" % Omega::string_t(pszFile,false) % nLine % Omega::string_t(pszFunc,false));
+					pExcept->m_strSource = string_t::constant("{0}({1}): {2}") % Omega::string_t(pszFile,false) % nLine % Omega::string_t(pszFunc,false);
 				else
-					pExcept->m_strSource = (L"{0}({1})" % Omega::string_t(pszFile,false) % nLine);
+					pExcept->m_strSource = string_t::constant("{0}({1})") % Omega::string_t(pszFile,false) % nLine;
 			}
 			else
-				pExcept->m_strSource = (L"{0}" % Omega::string_t(pszFile,false));
+				pExcept->m_strSource = string_t::constant("{0}") % Omega::string_t(pszFile,false);
 		}
 
 		return pExcept;
@@ -165,7 +162,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Cre
 	return OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc,ptrE).AddRef();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,5,((in),const char*,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,5,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
 {
 	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).AddRef();
 }
@@ -174,13 +171,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 {
 	ObjectPtr<ObjectImpl<OOCore::NoInterfaceException> > pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
-	string_t strIID = string_t(L"Unknown interface {0}") % iid.ToString();
+	string_t strIID = System::Internal::get_text("Unknown interface {0}") % iid.ToString();
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)
 		strIID = ptrII->GetName();
 
-	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
+	pExcept->m_strDesc = System::Internal::get_text("Object does not support the requested interface {0}") % strIID;
 	pExcept->m_iid = iid;
 	return pExcept.AddRef();
 }
@@ -188,7 +185,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
 	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
-	pExcept->m_strDesc = L"The operation timed out";
+	pExcept->m_strDesc = System::Internal::get_text("The operation timed out");
 	return pExcept.AddRef();
 }
 
@@ -197,6 +194,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remotin
 	ObjectPtr<ObjectImpl<OOCore::ChannelClosedException> > pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
-	pExcept->m_strDesc = L"The remoting channel has closed";
+	pExcept->m_strDesc = System::Internal::get_text("The remoting channel has closed");
 	return pExcept.AddRef();
 }

@@ -88,19 +88,19 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_oid = pMessage->ReadValue(L"m_oid");
+			m_oid = pMessage->ReadValue(Omega::string_t::constant("m_oid"));
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteValue(L"m_oid",m_oid);
+			pMessage->WriteValue(Omega::string_t::constant("m_oid"),m_oid);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			pMessage->ReadValue(L"m_oid");
+			pMessage->ReadValue(Omega::string_t::constant("m_oid"));
 		}
 
 	// Activation::IOidNotFoundException members

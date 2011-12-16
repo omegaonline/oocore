@@ -18,7 +18,6 @@ AC_CONFIG_FILES([
 	tools/Makefile
 	tools/OOCOMLite/Makefile
 	tools/OOGuidgen/Makefile
-	tools/OOLaunch/Makefile
 	tools/OOReg/Makefile
 	test/Makefile
 	test/TestLibrary/Makefile
@@ -134,8 +133,8 @@ AS_IF([test -n "$PKG_CONFIG"],[PKG_CHECK_MODULES([DBUS],[dbus-1 >= 1.0],
 ])
 AS_IF([test -z "$win32" && test -z "$DBUS_LIBS"],[AC_MSG_WARN([Cannot find libdbus, you probably want it])])
 
-# Check for wcstoull and friends
-AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
+# Check for strtoull and friends
+AC_CHECK_FUNCS([_strtoui64 _strtoi64 strtoull strtoll])
 
 # Set up libtool correctly
 m4_ifdef([LT_PREREQ],,[AC_MSG_ERROR([Need libtool version 2.2.6 or later])])

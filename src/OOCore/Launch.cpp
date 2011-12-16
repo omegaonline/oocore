@@ -45,18 +45,18 @@ namespace
 		for (size_t start = 0;;)
 		{
 			// Skip leading whitespace
-			while (start < str.Length() && (str[start] == L'\t' || str[start] == L' '))
+			while (start < str.Length() && (str[start] == '\t' || str[start] == ' '))
 				++start;
 
 			if (start == str.Length())
 				return;
 
 			// Find the next linefeed
-			size_t end = str.Find(L',',start);
+			size_t end = str.Find(',',start);
 
 			// Trim trailing whitespace
 			size_t valend = (end == string_t::npos ? str.Length() : end);
-			while (valend > start && (str[valend-1] == L'\t' || str[valend-1] == L' '))
+			while (valend > start && (str[valend-1] == '\t' || str[valend-1] == ' '))
 				--valend;
 
 			if (valend > start)
@@ -64,12 +64,12 @@ namespace
 				string_t strKey, strValue;
 
 				// Split on first =
-				size_t eq = str.Find(L'=',start);
+				size_t eq = str.Find('=',start);
 				if (eq != string_t::npos)
 				{
 					// Trim trailing whitespace before =
 					size_t keyend = eq;
-					while (keyend > start && (str[keyend-1] == L'\t' || str[keyend-1] == L' '))
+					while (keyend > start && (str[keyend-1] == '\t' || str[keyend-1] == ' '))
 						--keyend;
 
 					if (keyend > start)
@@ -78,7 +78,7 @@ namespace
 
 						// Skip leading whitespace after =
 						size_t valpos = eq+1;
-						while (valpos < valend && (str[valpos] == L'\t' || str[valpos] == L' '))
+						while (valpos < valend && (str[valpos] == '\t' || str[valpos] == ' '))
 							++valpos;
 
 						if (valpos < valend)
@@ -88,7 +88,7 @@ namespace
 				else
 				{
 					strKey = str.Mid(start,valend-start);
-					strValue = L"true";
+					strValue = string_t::constant("true");
 				}
 
 				if (!strKey.IsEmpty())
@@ -223,12 +223,12 @@ void OOCore::UserSession::start(const string_t& strArgs)
 
 	bool bStandalone = false;
 	bool bStandaloneAlways = false;
-	string_t* parg = args.find(L"standalone");
+	string_t* parg = args.find("standalone");
 	if (parg)
 	{
-		if (*parg == L"true")
+		if (*parg == "true")
 			bStandalone = true;
-		else if (*parg == L"always")
+		else if (*parg == "always")
 		{
 			bStandalone = true;
 			bStandaloneAlways = true;

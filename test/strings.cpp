@@ -5,9 +5,9 @@
 
 bool string_tests()
 {
-	const wchar_t sz1[] = L"abcdef";
-	const wchar_t sz1_1[] = L"abcdef";
-	const wchar_t sz1_2[] = L"ABCDEF";
+	const char sz1[] = "abcdef";
+	const char sz1_1[] = "abcdef";
+	const char sz1_2[] = "ABCDEF";
 
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
@@ -19,10 +19,10 @@ bool string_tests()
 
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
-	TEST(s1.Compare(sz1_2,0,Omega::string_t::npos,true) == 0);
+	TEST(s1.Compare(sz1_2) == 0);
 
-	const wchar_t sz2[] = L"ghijk";
-	Omega::string_t s2(L"ghijk");
+	const char sz2[] = "ghijk";
+	Omega::string_t s2("ghijk");
 	TEST(s2 == sz2);
 
 	Omega::string_t s3(s1);
@@ -33,60 +33,60 @@ bool string_tests()
 
 	s3 = s2;
 	TEST(s3 == s2);
-	TEST(wcscmp(s3.c_wstr(),sz2) == 0);
+	TEST(strcmp(s3.c_str(),sz2) == 0);
 
 	s3.Clear();
 	TEST(s3.IsEmpty());
 
-	TEST(s2 != L"ghijklmno");
+	TEST(s2 != "ghijklmno");
 
 	s3 = sz1_2;
-	TEST(s1.Compare(s3,0,Omega::string_t::npos,true) == 0);
+	TEST(s1.Compare(s3) == 0);
 
-	s1 = L"abcdefghijabcdefghij";
-	TEST(s1.Find(L'a') == 0);
-	TEST(s1.Find(L'a',1) == 10);
-	TEST(s1.Find(L'A',0,true) == 0);
-	TEST(s1.Find(L'A',1,true) == 10);
+	s1 = "abcdefghijabcdefghij";
+	TEST(s1.Find('a') == 0);
+	TEST(s1.Find('a',1) == 10);
+	TEST(s1.Find('A',0) == 0);
+	TEST(s1.Find('A',1) == 10);
 
-	TEST(s1.FindNot(L'a') == 1);
-	TEST(s1.FindNot(L'a',1) == 1);
-	TEST(s1.FindNot(L'A',0,true) == 1);
-	TEST(s1.FindNot(L'A',1,true) == 1);
+	TEST(s1.FindNot('a') == 1);
+	TEST(s1.FindNot('a',1) == 1);
+	TEST(s1.FindNot('A',0) == 1);
+	TEST(s1.FindNot('A',1) == 1);
 
-	TEST(s1.FindOneOf(L"edf") == 3);
+	TEST(s1.FindOneOf("edf") == 3);
 
-	TEST(s1.ReverseFind(L'a') == 10);
-	TEST(s1.ReverseFind(L'a',9) == 0);
-	TEST(s1.ReverseFind(L'A',Omega::string_t::npos,true) == 10);
-	TEST(s1.ReverseFind(L'A',9,true) == 0);
+	TEST(s1.ReverseFind('a') == 10);
+	TEST(s1.ReverseFind('a',9) == 0);
+	TEST(s1.ReverseFind('A',Omega::string_t::npos) == 10);
+	TEST(s1.ReverseFind('A',9) == 0);
 
 	s2 = sz1;
 	TEST(s1.Find(s2) == 0);
 	TEST(s1.Find(s2,1) == 10);
 
-	TEST(s1.Left(5) == L"abcde");
-	TEST(s1.Mid(15) == L"fghij");
-	TEST(s1.Mid(15,3) == L"fgh");
-	TEST(s1.Right(3) == L"hij");
+	TEST(s1.Left(5) == "abcde");
+	TEST(s1.Mid(15) == "fghij");
+	TEST(s1.Mid(15,3) == "fgh");
+	TEST(s1.Right(3) == "hij");
 
 	Omega::string_t s4;
-	TEST(s4 == L"");
-	TEST(s4 == (wchar_t*)0);
-	TEST(s4 == L"");
+	TEST(s4 == "");
+	TEST(s4 == (char*)0);
+	TEST(s4 == "");
 	TEST(s4 == Omega::string_t());
 
-	TEST(Omega::string_t(L"1111H").TrimLeft(L'1') == L"H");
-	TEST(Omega::string_t(L"1111").TrimLeft(L'1').IsEmpty());
-	TEST(Omega::string_t(L"123321H").TrimLeft(L"123") == L"H");
-	TEST(Omega::string_t(L"123321").TrimLeft(L"123").IsEmpty());
+	TEST(Omega::string_t("1111H").TrimLeft("1") == "H");
+	TEST(Omega::string_t("1111").TrimLeft("1").IsEmpty());
+	TEST(Omega::string_t("123321H").TrimLeft("123") == "H");
+	TEST(Omega::string_t("123321").TrimLeft("123").IsEmpty());
 
-	TEST(Omega::string_t(L"H1111").TrimRight(L'1') == L"H");
-	TEST(Omega::string_t(L"1111").TrimRight(L'1').IsEmpty());
-	TEST(Omega::string_t(L"H123321").TrimRight(L"123") == L"H");
-	TEST(Omega::string_t(L"123321").TrimRight(L"123").IsEmpty());
+	TEST(Omega::string_t("H1111").TrimRight("1") == "H");
+	TEST(Omega::string_t("1111").TrimRight("1").IsEmpty());
+	TEST(Omega::string_t("H123321").TrimRight("123") == "H");
+	TEST(Omega::string_t("123321").TrimRight("123").IsEmpty());
 
-	TEST(Omega::string_t(L"Hell") + L'o' == L"Hello");
+	TEST(Omega::string_t("Hell") + 'o' == "Hello");
 
 	return true;
 }
@@ -137,112 +137,112 @@ static bool set_locale_helper_crt(const char* posix_loc)
 
 bool string_tests_format()
 {
-	TEST(Omega::string_t(L"1st:{0} 2nd:{1}") % 1 % 2 == L"1st:1 2nd:2");
-	TEST(Omega::string_t(L"2nd:{1} 1st:{0}") % 1 % 2 == L"2nd:2 1st:1");
-	TEST(Omega::string_t(L"1st:{0,10} 2nd:{1}") % 1 % 2 ==  L"1st:         1 2nd:2");
-	TEST(Omega::string_t(L"1st:{0,-10} 2nd:{1}") % 1 % 2 == L"1st:1          2nd:2");
+	TEST(Omega::string_t("1st:{0} 2nd:{1}") % 1 % 2 == "1st:1 2nd:2");
+	TEST(Omega::string_t("2nd:{1} 1st:{0}") % 1 % 2 == "2nd:2 1st:1");
+	TEST(Omega::string_t("1st:{0,10} 2nd:{1}") % 1 % 2 ==  "1st:         1 2nd:2");
+	TEST(Omega::string_t("1st:{0,-10} 2nd:{1}") % 1 % 2 == "1st:1          2nd:2");
 
 	{
 		loc_holder lh;
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:C}") % 12345.6789 == L"$12,345.68");
+			TEST(Omega::string_t("{0:C}") % 12345.6789 == "$12,345.68");
 		}
 
 		if (set_locale_helper(1031,"de_DE.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:C}") % 12345.678 == L"12.345,68 \x20AC");
+			TEST(Omega::string_t("{0:C}") % 12345.678 == "12.345,68 \x20AC");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:D}") % 12345 == L"12345");
-			TEST(Omega::string_t(L"{0:D8}") % 12345 == L"00012345");
-			TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1.234568E+004");
-			TEST(Omega::string_t(L"{0:E10}") % 12345.6789 == L"1.2345678900E+004");
+			TEST(Omega::string_t("{0:D}") % 12345 == "12345");
+			TEST(Omega::string_t("{0:D8}") % 12345 == "00012345");
+			TEST(Omega::string_t("{0:E}") % 12345.6789 == "1.234568E+004");
+			TEST(Omega::string_t("{0:E10}") % 12345.6789 == "1.2345678900E+004");
 		}
 
 		if (set_locale_helper(1036,"fr_FR.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1,234568E+004");
+			TEST(Omega::string_t("{0:E}") % 12345.6789 == "1,234568E+004");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:e4}") % 12345.6789 == L"1.2346e+004");
-			TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345.68");
+			TEST(Omega::string_t("{0:e4}") % 12345.6789 == "1.2346e+004");
+			TEST(Omega::string_t("{0:F}") % 12345.6789 == "12345.68");
 		}
 
 		if (set_locale_helper(1034,"es_ES.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345,68");
+			TEST(Omega::string_t("{0:F}") % 12345.6789 == "12345,68");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:F0}") % 12345.6789 == L"12346");
-			TEST(Omega::string_t(L"{0:F6}") % 12345.6789 == L"12345.678900");
-			TEST(Omega::string_t(L"{0:G}") % 12345.6789 == L"12345.6789");
-			TEST(Omega::string_t(L"{0:G7}") % 12345.6789 == L"12345.68");
-			TEST(Omega::string_t(L"{0:G}") % 0.0000023 == L"2.3E-06");
-			TEST(Omega::string_t(L"{0:G}") % 0.0023 == L"0.0023");
-			TEST(Omega::string_t(L"{0:G2}") % 1234.0 == L"1.2E+03");
-			TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12,345.68");
+			TEST(Omega::string_t("{0:F0}") % 12345.6789 == "12346");
+			TEST(Omega::string_t("{0:F6}") % 12345.6789 == "12345.678900");
+			TEST(Omega::string_t("{0:G}") % 12345.6789 == "12345.6789");
+			TEST(Omega::string_t("{0:G7}") % 12345.6789 == "12345.68");
+			TEST(Omega::string_t("{0:G}") % 0.0000023 == "2.3E-06");
+			TEST(Omega::string_t("{0:G}") % 0.0023 == "0.0023");
+			TEST(Omega::string_t("{0:G2}") % 1234.0 == "1.2E+03");
+			TEST(Omega::string_t("{0:N}") % 12345.6789 == "12,345.68");
 		}
 
 		if (set_locale_helper(1053,"sv_SE.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12\xa0" L"345,68");
+			TEST(Omega::string_t("{0:N}") % 12345.6789 == "12\xa0" "345,68");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
-			TEST(Omega::string_t(L"{0:N4}") % 123456789 == L"123,456,789.0000");
-			TEST(Omega::string_t(L"{0:N4}") % 123456789.0 == L"123,456,789.0000");
+			TEST(Omega::string_t("{0:N4}") % 123456789 == "123,456,789.0000");
+			TEST(Omega::string_t("{0:N4}") % 123456789.0 == "123,456,789.0000");
 		}
 	}
 
-	TEST(Omega::string_t(L"{0:x}") % 0x2c45e == L"2c45e");
-	TEST(Omega::string_t(L"{0:X}") % 0x2c45e == L"2C45E");
-	TEST(Omega::string_t(L"{0:X8}") % 0x2c45e == L"0002C45E");
-	TEST(Omega::string_t(L"{0:x}") % 123456789 == L"75bcd15");
+	TEST(Omega::string_t("{0:x}") % 0x2c45e == "2c45e");
+	TEST(Omega::string_t("{0:X}") % 0x2c45e == "2C45E");
+	TEST(Omega::string_t("{0:X8}") % 0x2c45e == "0002C45E");
+	TEST(Omega::string_t("{0:x}") % 123456789 == "75bcd15");
 
-	TEST(Omega::string_t(L"{0:R}") % 1.23456789 == L"1.23456789");
+	TEST(Omega::string_t("{0:R}") % 1.23456789 == "1.23456789");
 
-	TEST(Omega::string_t(L"{0}") % true == L"true");
-	TEST(Omega::string_t(L"{0}") % false == L"false");
+	TEST(Omega::string_t("{0}") % true == "true");
+	TEST(Omega::string_t("{0}") % false == "false");
 
-	TEST(Omega::string_t(L"{0:#####}") % 123 == L"123");
-	TEST(Omega::string_t(L"{0:00000}") % 123 == L"00123");
-	TEST(Omega::string_t(L"{0:(###) ### - ####}") % 1234567890 == L"(123) 456 - 7890");
+	TEST(Omega::string_t("{0:#####}") % 123 == "123");
+	TEST(Omega::string_t("{0:00000}") % 123 == "00123");
+	TEST(Omega::string_t("{0:(###) ### - ####}") % 1234567890 == "(123) 456 - 7890");
 
 	{
 		loc_holder lh;
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
-			Omega::string_t t = Omega::string_t(L"{0:#.##}") % 1.2;
+			Omega::string_t t = Omega::string_t("{0:#.##}") % 1.2;
 
-			TEST(Omega::string_t(L"{0:#.##}") % 1.2 == L"1.2");
-			TEST(Omega::string_t(L"{0:0.00}") % 1.2 == L"1.20");
-			TEST(Omega::string_t(L"{0:00.00}") % 1.2 == L"01.20");
-			TEST(Omega::string_t(L"{0:#,#}") % 1234567890 == L"1,234,567,890");
+			TEST(Omega::string_t("{0:#.##}") % 1.2 == "1.2");
+			TEST(Omega::string_t("{0:0.00}") % 1.2 == "1.20");
+			TEST(Omega::string_t("{0:00.00}") % 1.2 == "01.20");
+			TEST(Omega::string_t("{0:#,#}") % 1234567890 == "1,234,567,890");
 
-			TEST(Omega::string_t(L"{0:0.###E+0}") % 86000 == L"8.6E+4");
-			TEST(Omega::string_t(L"{0:0.###E+000}") % 86000 == L"8.6E+004");
-			TEST(Omega::string_t(L"{0:0.###E-000}") % 86000 == L"8.6E004");
+			TEST(Omega::string_t("{0:0.###E+0}") % 86000 == "8.6E+4");
+			TEST(Omega::string_t("{0:0.###E+000}") % 86000 == "8.6E+004");
+			TEST(Omega::string_t("{0:0.###E-000}") % 86000 == "8.6E004");
 		}
 	}
 
-	TEST(Omega::string_t(L"{0:[##-##-##]}") % 123456 == L"[12-34-56]");
-	TEST(Omega::string_t(L"{0:##;(##)}") % 12 == L"12");
-	TEST(Omega::string_t(L"{0:##;(##)}") % -12 == L"(12)");
+	TEST(Omega::string_t("{0:[##-##-##]}") % 123456 == "[12-34-56]");
+	TEST(Omega::string_t("{0:##;(##)}") % 12 == "12");
+	TEST(Omega::string_t("{0:##;(##)}") % -12 == "(12)");
 
-	TEST(Omega::string_t(L"{0:yes;no}") % true == L"yes");
-	TEST(Omega::string_t(L"{0:yes;no}") % false == L"no");
-	TEST(Omega::string_t(L"{0:'yes;';'no;'}") % true == L"'yes;'");
-	TEST(Omega::string_t(L"{0:\"yes;\";\"no;\"}") % false == L"\"no;\"");
+	TEST(Omega::string_t("{0:yes;no}") % true == "yes");
+	TEST(Omega::string_t("{0:yes;no}") % false == "no");
+	TEST(Omega::string_t("{0:'yes;';'no;'}") % true == "'yes;'");
+	TEST(Omega::string_t("{0:\"yes;\";\"no;\"}") % false == "\"no;\"");
 
 	return true;
 }
@@ -322,7 +322,7 @@ bool string_tests_utf8()
 	Omega::string_t str(strUTF8.c_str(),true);
 
 	//TEST(str == strUTF16.c_str());
-	const char* s = str.c_ustr();
+	const char* s = str.c_str();
 
 #if 0
 	FILE* pOutUTF8 = fopen("UTF-8-out.txt","wb");
@@ -341,15 +341,15 @@ bool guid_tests()
 {
 	Omega::guid_t guid(Omega::guid_t::Null());
 	TEST(guid == Omega::guid_t::Null());
-	TEST(guid.ToString() == L"{00000000-0000-0000-0000-000000000000}");
+	TEST(guid.ToString() == "{00000000-0000-0000-0000-000000000000}");
 
-	const wchar_t sz[] = L"{BCB02DAE-998A-4FC1-AB91-39290C237A37}";
+	const char sz[] = "{BCB02DAE-998A-4FC1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2(sz);
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
 	
-	TEST(guid2.ToString().Compare(sz,0,Omega::string_t::npos,true)==0);
+	TEST(guid2.ToString().Compare(sz)==0);
 	TEST(Omega::guid_t::FromString(sz,guid2));
 
 	// Create a load of unique guid_t's
@@ -370,7 +370,7 @@ bool guid_tests()
 	TEST(bTest);
 
 	// Check to see if we can export OID's properly
-	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t(L"{63EB243E-6AE3-43bd-B073-764E096775F8}"));
+	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t("{63EB243E-6AE3-43bd-B073-764E096775F8}"));
 
 	// Check whether OMEGA_GUIDOF works...
 	TEST(OMEGA_GUIDOF(Omega::IObject) == OMEGA_GUIDOF(Omega::IObject*));

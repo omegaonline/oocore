@@ -45,7 +45,7 @@ public:
 
 	Omega::string_t WhereAmI()
 	{
-		return Omega::string_t(L"Outer");
+		return Omega::string_t("Outer");
 	}
 
 private:

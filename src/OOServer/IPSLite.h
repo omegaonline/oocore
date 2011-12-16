@@ -31,7 +31,7 @@ class InterProcessService :
 public:
 	void Load(const Omega::string_t& args);
 	
-	Omega::string_t GetArg(const Omega::string_t& arg);
+	Omega::string_t GetArg(const char* arg);
 
 protected:
 	BEGIN_INTERFACE_MAP(InterProcessService)

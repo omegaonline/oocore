@@ -46,8 +46,8 @@ void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& 
 	// Make sure we can support the outgoing interface...
 	assert(RemoteQueryInterface(iid));
 
-	pMessage->WriteValue(L"id",m_stub_id);
-	pMessage->WriteValue(L"iid",iid);
+	pMessage->WriteValue(string_t::constant("id"),m_stub_id);
+	pMessage->WriteValue(string_t::constant("iid"),iid);
 
 	++m_marshal_count;
 }
@@ -57,13 +57,13 @@ void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t
 	// Deref safely
 	RemoteRelease();
 
-	pMessage->ReadValue(L"id");
-	pMessage->ReadValue(L"iid");
+	pMessage->ReadValue(string_t::constant("id"));
+	pMessage->ReadValue(string_t::constant("iid"));
 }
 
 void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	ObjectPtr<Remoting::IStub> ptrStub = FindStub(pParamsIn->ReadValue(L"$iid").cast<guid_t>());
+	ObjectPtr<Remoting::IStub> ptrStub = FindStub(pParamsIn->ReadValue(string_t::constant("$iid")).cast<guid_t>());
 	if (!ptrStub)
 		OMEGA_THROW("Invoke on unsupported interface");
 
@@ -136,11 +136,11 @@ bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
+	guid_t iid = pParamsIn->ReadValue(string_t::constant("iid")).cast<guid_t>();
 
 	// Unmarshal the channel
 	ObjectPtr<Remoting::IChannel> ptrChannel;
-	ptrChannel.Unmarshal(m_pManager,L"m_ptrChannel",pParamsIn);
+	ptrChannel.Unmarshal(m_pManager,string_t::constant("m_ptrChannel"),pParamsIn);
 	if (!ptrChannel)
 		OMEGA_THROW("No channel");
 
@@ -149,9 +149,9 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 
 	// Reflect the channel
 	// The following format is the same as IObjectManager::UnmarshalInterface...
-	ptrMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
-	ptrMessage->WriteValue(L"$marshal_type",byte_t(2));
-	ptrMessage->WriteValue(L"$oid",ptrChannel->GetReflectUnmarshalFactoryOID());
+	ptrMessage->WriteStructStart(string_t::constant("m_ptrChannel"),string_t::constant("$iface_marshal"));
+	ptrMessage->WriteValue(string_t::constant("$marshal_type"),byte_t(2));
+	ptrMessage->WriteValue(string_t::constant("$oid"),ptrChannel->GetReflectUnmarshalFactoryOID());
 
 	ptrChannel->ReflectMarshal(ptrMessage);
 
@@ -165,15 +165,15 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Marshal the stub
-	ptrMarshaller->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);
+	ptrMarshaller->MarshalInterface(string_t::constant("stub"),ptrMessage,iid,m_ptrObj);
 
 	try
 	{
-		m_pManager->MarshalInterface(L"pReflect",pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
+		m_pManager->MarshalInterface(string_t::constant("pReflect"),pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
 	}
 	catch (...)
 	{
-		ptrMarshaller->ReleaseMarshalData(L"stub",ptrMessage,iid,m_ptrObj);
+		ptrMarshaller->ReleaseMarshalData(string_t::constant("stub"),ptrMessage,iid,m_ptrObj);
 		throw;
 	}
 }

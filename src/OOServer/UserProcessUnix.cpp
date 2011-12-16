@@ -42,19 +42,19 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
+		void exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 
 	private:
 		pid_t m_pid;
 	};
 }
 
-bool User::Process::is_relative_path(const wchar_t* pszPath)
+bool User::Process::is_relative_path(const char* pszPath)
 {
-	return (pszPath[0] != L'/');
+	return (pszPath[0] != '/');
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
@@ -64,7 +64,7 @@ User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega:
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+void UserProcessUnix::exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	pid_t pid = fork();
 	if (pid < 0)
@@ -91,19 +91,10 @@ void UserProcessUnix::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_
 				set = (setlocale(LC_CTYPE,v) != NULL);
 		}*/
 
-		char szBuf[1024] = {0};
-		size_t clen = OOBase::to_native(szBuf,sizeof(szBuf),pszExeName,size_t(-1));
-		if (clen >= sizeof(szBuf))
-		{
-			OOBase::stderr_write("exec filename > 1024\n");
-			_exit(127);
-		}
-		szBuf[clen] = '\0';
-
 		// Use execve()
 
 		// Just use the system() call
-		int ret = system(szBuf);
+		int ret = system(pszExeName);
 		if (WIFEXITED(ret))
 			_exit(WEXITSTATUS(ret));
 

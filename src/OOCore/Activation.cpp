@@ -144,9 +144,9 @@ namespace
 		dll = new (OOCore::throwing) OOBase::DLL();
 			
 		// Load the new DLL
-		int err = dll->load(name.c_ustr());
+		int err = dll->load(name.c_str());
 		if (err != 0)
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL((L"Loading library: " + name).c_ustr()));
+			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(System::Internal::get_text("Loading library: {0}") % name));
 				
 		// Add to the map
 		if ((err = m_dll_map.insert(name,dll)) != 0)
@@ -200,7 +200,7 @@ namespace
 	{
 		ObjectPtr<ObjectImpl<LibraryNotFoundException> > pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
 		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed." % strName;
+		pRE->m_strDesc = System::Internal::get_text("Dynamic library '{0}' not found or malformed") % strName;
 		pRE->m_dll_name = strName;
 		throw static_cast<ILibraryNotFoundException*>(pRE.AddRef());
 	}
@@ -238,7 +238,7 @@ namespace
 #if defined(_WIN32)
 		return (PathIsRelativeW(strPath.c_wstr()) != FALSE);
 #else
-		return (strPath[0] != L'/');
+		return (strPath[0] != '/');
 #endif
 	}
 
@@ -250,15 +250,12 @@ namespace
 		if (sub_type == Activation::Default || sub_type == Activation::Library)
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/OIDs/" + oid.ToString());
-			if (ptrOidKey->IsValue(L"Library"))
+			ObjectPtr<Registry::IKey> ptrOidKey("Local User/Objects/OIDs/" + oid.ToString());
+			if (ptrOidKey->IsValue(Omega::string_t::constant("Library")))
 			{
-				string_t strLib = ptrOidKey->GetValue(L"Library").cast<string_t>();
+				string_t strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
 				if (strLib.IsEmpty() || IsRelativePath(strLib))
-				{
-					string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
-					OMEGA_THROW(strErr.c_ustr());
-				}
+					OMEGA_THROW(System::Internal::get_text("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid);
 
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
@@ -277,19 +274,19 @@ namespace
 				OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
 
 #if defined(_WIN32)
-				const wchar_t* env = GetEnvironmentStringsW();
-				for (const wchar_t* e=env;e != NULL && *e != L'\0';++envc)
-					e = wcschr(e,L'\0')+1;
+				const char* env = GetEnvironmentStringsA();
+				for (const char* e=env;e != NULL && *e != '\0';++envc)
+					e += strlen(e)+1;
 
 				if (envc)
 				{
 					envp = new (OOCore::throwing) string_t[envc];
 
 					size_t i = 0;
-					for (const wchar_t* e=env;e != NULL && *e != L'\0';++i)
+					for (const char* e=env;e != NULL && *e != '\0';++i)
 					{
-						envp[i] = string_t(e,string_t::npos,false);
-						e = wcschr(e,L'\0')+1;
+						envp[i] = string_t(e);
+						e += strlen(e)+1;
 					}
 				}
 #elif defined(HAVE_UNISTD_H)
@@ -302,7 +299,7 @@ namespace
 
 					size_t i = 0;
 					for (char** e=environ;*e != NULL;++e)
-						envp[i++] = string_t(*e,false,string_t::npos);
+						envp[i++] = string_t(*e);
 				}
 #else
 #error Fix me!
@@ -362,14 +359,14 @@ namespace
 		{
 			try
 			{
-				ObjectPtr<Registry::IKey> ptrOidKey(L"Local User/Objects/" + strCurName);
-				if (ptrOidKey->IsValue(L"CurrentVersion"))
+				ObjectPtr<Registry::IKey> ptrOidKey("Local User/Objects/" + strCurName);
+				if (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
 				{
-					strCurName = ptrOidKey->GetValue(L"CurrentVersion").cast<string_t>();
+					strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
 					continue;
 				}
 
-				return ptrOidKey->GetValue(L"OID").cast<guid_t>();
+				return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
 			}
 			catch (IException* pE)
 			{
@@ -384,7 +381,7 @@ template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestruct
 void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 {
 	ObjectPtr<ObjectImpl<OidNotFoundException> > pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: {0}" % oid;
+	pNew->m_strDesc = System::Internal::get_text("The identified object {0} could not be found") % oid;
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw static_cast<IOidNotFoundException*>(pNew.AddRef());
@@ -393,7 +390,7 @@ void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
 {
 	ObjectPtr<ObjectImpl<NoAggregationException> > pNew = ObjectImpl<NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = L"Object does not support aggregation.";
+	pNew->m_strDesc = System::Internal::get_text("Object {0} does not support aggregation") % oid;
 	pNew->m_oid = oid;
 	return pNew.AddRef();
 }
@@ -401,7 +398,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activ
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
 {
 	ObjectPtr<ObjectImpl<OOCore::OidNotFoundException> > pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: {0}" % oid;
+	pNew->m_strDesc = System::Internal::get_text("The identified object {0} could not be found") % oid;
 	pNew->m_oid = oid;
 	return pNew.AddRef();
 }
@@ -423,13 +420,13 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 
 		string_t strObject = oid.cast<string_t>();
 		string_t strEndpoint;
-		size_t pos = strObject.Find(L'@');
+		size_t pos = strObject.Find('@');
 		if (pos != string_t::npos)
 		{
 			strEndpoint = strObject.Mid(pos+1);
 			strObject = strObject.Left(pos);
 
-			if (strEndpoint == L"local")
+			if (strEndpoint == "local")
 				strEndpoint.Clear();
 		}
 

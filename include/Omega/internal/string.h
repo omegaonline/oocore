@@ -45,30 +45,22 @@ namespace Omega
 
 		string_t();
 		string_t(const string_t& s);
-
-		template <size_t S>
-		string_t(const wchar_t (&arr)[S], bool copy = false);
-		string_t(const wchar_t (&arr)[1]);
-		string_t(const wchar_t* wsz, size_t length, bool copy = true);
-
-		string_t(const char* sz, bool bUTF8, size_t length = npos);
-
+		string_t(const char* sz, size_t length = npos);
 		~string_t();
 
+		template <size_t S>
+		static string_t constant(const char (&arr)[S]);
+		static string_t constant(const char (&arr)[1]);
+
 		string_t& operator = (const string_t& s);
+		string_t& operator = (const char* sz);
 
 		string_t& operator += (const string_t& s);
-		string_t& operator += (const wchar_t* wsz);
-		string_t& operator += (wchar_t c);
+		string_t& operator += (const char* sz);
+		string_t& operator += (char c);
 
-		const wchar_t* c_wstr() const;
-		const char* c_ustr(size_t* len = NULL) const;
-		const char* c_nstr(size_t* len = NULL) const;
-
-		const wchar_t operator[](size_t i) const
-		{
-			return c_wstr()[i];
-		}
+		const char* c_str() const;
+		const char operator[](size_t i) const;
 
 		template <typename T> bool operator == (T v) const { return Compare(v) == 0; }
 		template <typename T> bool operator != (T v) const { return Compare(v) != 0; }
@@ -77,33 +69,27 @@ namespace Omega
 		template <typename T> bool operator > (T v) const  { return Compare(v) > 0;  }
 		template <typename T> bool operator >= (T v) const { return Compare(v) >= 0; }
 
-		int Compare(const string_t& s) const;
-		int Compare(const string_t& s, size_t pos, size_t length = npos, bool bIgnoreCase = false) const;
-		int Compare(const wchar_t* wsz, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
+		int Compare(const string_t& s, size_t pos = 0, size_t length = npos) const;
+		int Compare(const char* sz) const;
 
 		bool IsEmpty() const;
-		bool operator !() const
-		{
-			return IsEmpty();
-		}
+		bool operator !() const;
 
 		size_t Length() const;
 		string_t& Clear();
 
-		size_t Find(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t FindNot(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t ReverseFind(wchar_t c, size_t pos = npos, bool bIgnoreCase = false) const;
-		size_t FindOneOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t FindNotOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
+		size_t Find(char c, size_t pos = 0) const;
+		size_t Find(const string_t& str, size_t pos = 0) const;
+		size_t FindNot(char c, size_t pos = 0) const;
+		size_t ReverseFind(char c, size_t pos = npos) const;
+		size_t FindOneOf(const string_t& str, size_t pos = 0) const;
+		size_t FindNotOf(const string_t& str, size_t pos = 0) const;
 
 		string_t Left(size_t length) const;
 		string_t Mid(size_t start, size_t length = npos) const;
 		string_t Right(size_t length) const;
 
-		string_t TrimLeft(wchar_t c = L' ') const;
 		string_t TrimLeft(const string_t& str) const;
-		string_t TrimRight(wchar_t c = L' ') const;
 		string_t TrimRight(const string_t& str) const;
 
 		template <typename T>
@@ -124,20 +110,20 @@ namespace Omega
 
 		explicit string_t(handle_t*, bool addref);
 
-		static handle_t* addref(handle_t* h, bool own);
+		static handle_t* addref(handle_t* h);
 		static void release(handle_t* h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
 
 #if !defined(NDEBUG)
-		const wchar_t* m_debug_value;
+		const char* m_debug_value;
 #endif
 	};
 
 	namespace Formatting
 	{
 		string_t ToString(const string_t& val, const string_t& = string_t());
-		string_t ToString(const wchar_t* val, const string_t& = string_t());
+		string_t ToString(const char* val, const string_t& = string_t());
 		string_t ToString(bool_t val, const string_t& strFormat = string_t());
 
 		template <typename T>
@@ -190,16 +176,24 @@ namespace Omega
 			static void free_handle(handle_t* h);
 		};
 	}
+
+	namespace System
+	{
+		namespace Internal
+		{
+			string_t get_text(const char* sz);
+		}
+	}
 }
 
 Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs);
-Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs);
-Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs);
-Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs);
-Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs);
+Omega::string_t operator + (const char* lhs, const Omega::string_t& rhs);
+Omega::string_t operator + (const Omega::string_t& lhs, const char* rhs);
+Omega::string_t operator + (char lhs, const Omega::string_t& rhs);
+Omega::string_t operator + (const Omega::string_t& lhs, char rhs);
 
 template <typename T>
 Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, T rhs);
-Omega::Formatting::formatter_t operator % (const wchar_t* lhs, const Omega::string_t& rhs);
+Omega::Formatting::formatter_t operator % (const char* lhs, const Omega::string_t& rhs);
 
 #endif // OMEGA_STRING_H_INCLUDED_

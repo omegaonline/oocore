@@ -39,11 +39,11 @@ namespace OTL
 				ObjectPtrBase<Omega::Registry::IKey>(rhs.m_ptr,true)
 		{ }
 
-		ObjectPtr(const wchar_t* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
+		ObjectPtr(const char* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL)
 		{
-			if (key && key[0] != L'\0')
-				replace(this->m_ptr->OpenSubKey(Omega::string_t(key,size_t(-1),false),flags),false);
+			if (key && key[0] != '\0')
+				replace(this->m_ptr->OpenSubKey(key,flags),false);
 			else
 				replace(NULL,false);
 		}

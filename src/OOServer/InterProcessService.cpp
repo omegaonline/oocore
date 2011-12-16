@@ -88,26 +88,26 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	// Find the OID key...
 	string_t strProcess;
-	ObjectPtr<Omega::Registry::IKey> ptrKey(L"Local User/Objects/OIDs/" + oid.ToString());
-	if (ptrKey->IsValue(L"Application"))
+	ObjectPtr<Omega::Registry::IKey> ptrKey("Local User/Objects/OIDs/" + oid.ToString());
+	if (ptrKey->IsValue(string_t::constant("Application")))
 	{
 		// Find the name of the executable to run...
-		string_t strAppName = ptrKey->GetValue(L"Application").cast<string_t>();
-		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"Local User/Applications/" + strAppName + L"/Activation");
-		strProcess = ptrKey->GetValue(L"Path").cast<string_t>();
-		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess.c_wstr()))
+		string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
+		ptrKey = ObjectPtr<Omega::Registry::IKey>("Local User/Applications/" + strAppName + "/Activation");
+		strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
+		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess.c_str()))
 		{
-			string_t strErr = L"Relative path \"{0}\" in application '{1}' activation registry value." % strProcess % strAppName;
-			OMEGA_THROW(strErr.c_ustr());
+			string_t strErr = string_t::constant("Relative path \"{0}\" in application '{1}' activation registry value.") % strProcess % strAppName;
+			OMEGA_THROW(strErr.c_str());
 		}
 	}
-	else if (ptrKey->IsValue(L"Library"))
+	else if (ptrKey->IsValue(string_t::constant("Library")))
 	{
-		string_t strLib = ptrKey->GetValue(L"Library").cast<string_t>();
-		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib.c_wstr()))
+		string_t strLib = ptrKey->GetValue(string_t::constant("Library")).cast<string_t>();
+		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib.c_str()))
 		{
-			string_t strErr(L"Relative path \"{0}\" in object library '{1}' activation registry value." % strLib % oid);
-			OMEGA_THROW(strErr.c_ustr());
+			string_t strErr = string_t::constant("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid;
+			OMEGA_THROW(strErr.c_str());
 		}
 		
 		void* ISSUE_8; // Surrogates here?!?
@@ -161,10 +161,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		if (!ptrProcess)
 		{
-			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %ls",strProcess.c_wstr());
+			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
 
 			// Create a new process
-			ptrProcess = User::Process::exec(strProcess.c_wstr(),setEnv);
+			ptrProcess = User::Process::exec(strProcess.c_str(),setEnv);
 
 			int err = m_mapInProgress.insert(strProcess,ptrProcess);
 			if (err != 0)

@@ -89,51 +89,51 @@ namespace
 		{
 			switch (str[0])
 			{
-			case L'c':
+			case 'c':
 				capital = false;
-			case L'C':
+			case 'C':
 				fmt = currency;
 				break;
 
-			case L'd':
+			case 'd':
 				capital = false;
-			case L'D':
+			case 'D':
 				fmt = decimal;
 				break;
 
-			case L'e':
+			case 'e':
 				capital = false;
-			case L'E':
+			case 'E':
 				fmt = scientific;
 				break;
 
-			case L'f':
+			case 'f':
 				capital = false;
-			case L'F':
+			case 'F':
 				fmt = fixed_point;
 				break;
 
-			case L'g':
+			case 'g':
 				capital = false;
-			case L'G':
+			case 'G':
 				fmt = general;
 				break;
 
-			case L'n':
+			case 'n':
 				capital = false;
-			case L'N':
+			case 'N':
 				fmt = number;
 				break;
 
-			case L'r':
+			case 'r':
 				capital = false;
-			case L'R':
+			case 'R':
 				fmt = round_trip;
 				break;
 
-			case L'x':
+			case 'x':
 				capital = false;
-			case L'X':
+			case 'X':
 				fmt = hexadecimal;
 				break;
 
@@ -146,9 +146,9 @@ namespace
 		{
 			if (iswdigit(str[1]))
 			{
-				const wchar_t* endp = 0;
-				precision = OOCore::wcstol(str.c_wstr()+1,endp,10);
-				if (*endp != L'\0')
+				const char* endp = 0;
+				precision = OOCore::strtol(str.c_str()+1,endp,10);
+				if (*endp != '\0')
 					return false;
 			}
 		}
@@ -417,16 +417,16 @@ namespace
 			if (cs_precedes)
 			{
 				if (sep_by_space)
-					ret += L' ';
+					ret += ' ';
 				ret += string_t(str.c_str(),false);
 			}
 			else
 			{
 				if (sep_by_space)
-					ret = L' ' + ret;
+					ret = ' ' + ret;
 				ret = string_t(str.c_str(),false) + ret;
 			}
-			ret = L'(' + ret + L')';
+			ret = '(' + ret + ')';
 			break;
 
 		case 1:
@@ -434,13 +434,13 @@ namespace
 			if (cs_precedes)
 			{
 				if (sep_by_space)
-					ret += L' ';
+					ret += ' ';
 				ret += string_t(str.c_str(),false);
 			}
 			else
 			{
 				if (sep_by_space)
-					ret = L' ' + ret;
+					ret = ' ' + ret;
 				ret = string_t(str.c_str(),false) + ret;
 			}
 			ret = string_t(sign,false) + ret;
@@ -451,13 +451,13 @@ namespace
 			if (cs_precedes)
 			{
 				if (sep_by_space)
-					ret += L' ';
+					ret += ' ';
 				ret += string_t(str.c_str(),false);
 			}
 			else
 			{
 				if (sep_by_space)
-					ret = L' ' + ret;
+					ret = ' ' + ret;
 				ret = string_t(str.c_str(),false) + ret;
 			}
 			ret += string_t(sign,false);
@@ -468,13 +468,13 @@ namespace
 			if (cs_precedes)
 			{
 				if (sep_by_space)
-					ret += L' ';
+					ret += ' ';
 				ret += string_t(str.c_str(),false);
 			}
 			else
 			{
 				if (sep_by_space)
-					ret = L' ' + ret;
+					ret = ' ' + ret;
 				ret = string_t(str.c_str(),false) + ret;
 			}
 			break;
@@ -485,13 +485,13 @@ namespace
 			if (cs_precedes)
 			{
 				if (sep_by_space)
-					ret += L' ';
+					ret += ' ';
 				ret += string_t(str.c_str(),false);
 			}
 			else
 			{
 				if (sep_by_space)
-					ret = L' ' + ret;
+					ret = ' ' + ret;
 				ret = string_t(str.c_str(),false) + ret;
 			}
 			break;
@@ -956,8 +956,8 @@ namespace
 		{
 			s = fmt_general(val,false,precision+i,false,PASS_LCID);
 
-			const wchar_t* end = NULL;
-			if (val == OOCore::wcstod(s.c_wstr(),end))
+			const char* end = NULL;
+			if (val == OOCore::strtod(s.c_str(),end))
 				break;
 		}
 
@@ -968,38 +968,38 @@ namespace
 	{
 		for (size_t pos = start;;)
 		{
-			size_t found = str.FindOneOf(strFind + L"'\"",pos);
+			size_t found = str.FindOneOf(strFind + string_t::constant("'\""),pos);
 			if (found == string_t::npos)
 				return found;
 
-			if (str[found] == L'\'')
+			if (str[found] == '\'')
 			{
-				if (found==0 || str[found-1] != L'\\')
+				if (found==0 || str[found-1] != '\\')
 				{
 					for (;;)
 					{
-						found = str.Find(L'\'',found+1);
+						found = str.Find('\'',found+1);
 						if (found == string_t::npos)
 							return found;
 
-						if (str[found-1] != L'\\')
+						if (str[found-1] != '\\')
 							break;
 					}
 				}
 
 				pos = found+1;
 			}
-			else if (str[found] == L'"')
+			else if (str[found] == '"')
 			{
-				if (found==0 || str[found-1] != L'\\')
+				if (found==0 || str[found-1] != '\\')
 				{
 					for (;;)
 					{
-						found = str.Find(L'"',found+1);
+						found = str.Find('"',found+1);
 						if (found == string_t::npos)
 							return found;
 
-						if (str[found-1] != L'\\')
+						if (str[found-1] != '\\')
 							break;
 					}
 				}
@@ -1014,7 +1014,7 @@ namespace
 	size_t parse_custom(const string_t& str, OOBase::Stack<string_t,OOBase::LocalAllocator>& parts)
 	{
 		int err = 0;
-		size_t pos = find_skip_quote(str,0,L";");
+		size_t pos = find_skip_quote(str,0,string_t::constant(";"));
 		if (pos == string_t::npos)
 			err = parts.push(str);
 		else
@@ -1022,7 +1022,7 @@ namespace
 			err = parts.push(str.Left(pos++));
 			if (err == 0)
 			{
-				size_t pos2 = find_skip_quote(str,pos,L";");
+				size_t pos2 = find_skip_quote(str,pos,string_t::constant(";"));
 				if (pos2 == string_t::npos)
 					err = parts.push(str.Mid(pos));
 				else
@@ -1078,7 +1078,7 @@ namespace
 	template <typename T>
 	string_t fmt_custom_i(const T& val, const string_t& strFormat, EXTRA_LCID)
 	{
-		if (strFormat == L"##" || strFormat == L"00")
+		if (strFormat == "##" || strFormat == "00")
 			return fmt_rnd_away(val);
 
 		bool negative;
@@ -1094,29 +1094,29 @@ namespace
 
 		for (size_t pos = 0; pos < strFormat.Length();)
 		{
-			size_t found = find_skip_quote(strFormat,pos,L"0#Ee.,\\");
+			size_t found = find_skip_quote(strFormat,pos,string_t::constant("0#Ee.,\\"));
 			if (found == string_t::npos)
 				break;
 
 			switch (strFormat[found])
 			{
-			case L'\\':
+			case '\\':
 				++found;
 				break;
 
-			case L'E':
-			case L'e':
+			case 'E':
+			case 'e':
 				if (found < strFormat.Length()-1)
 				{
-					if (strFormat[found+1] == L'-' || strFormat[found+1] == L'+')
+					if (strFormat[found+1] == '-' || strFormat[found+1] == '+')
 					{
-						if (found < strFormat.Length()-2 && strFormat[found+2] == L'0')
+						if (found < strFormat.Length()-2 && strFormat[found+2] == '0')
 						{
 							sci = found;
 							found += 2;
 						}
 					}
-					else if (strFormat[found+1] == L'0')
+					else if (strFormat[found+1] == '0')
 					{
 						sci = found;
 						++found;
@@ -1124,7 +1124,7 @@ namespace
 
 					if (sci != string_t::npos)
 					{
-						for (; strFormat[found] == L'0' && found<strFormat.Length(); ++found)
+						for (; strFormat[found] == '0' && found<strFormat.Length(); ++found)
 							++exp_digits;
 
 						break;
@@ -1132,19 +1132,19 @@ namespace
 				}
 				break;
 
-			case L'#':
-			case L'0':
+			case '#':
+			case '0':
 				if (seen_decimal)
 					++precision;
 				else
 					++width;
 				break;
 
-			case L'.':
+			case '.':
 				seen_decimal = true;
 				break;
 
-			case L',':
+			case ',':
 				group = true;
 				break;
 
@@ -1159,8 +1159,8 @@ namespace
 		OOBase::LocalString strNumber;
 		if (sci != string_t::npos)
 		{
-			fmt_scientific_i(strNumber,abs_val,strFormat[sci] == L'E',precision,PASS_LCID);
-			exp_strip(strNumber,exp_digits,strFormat[sci+1] == L'+');
+			fmt_scientific_i(strNumber,abs_val,strFormat[sci] == 'E',precision,PASS_LCID);
+			exp_strip(strNumber,exp_digits,strFormat[sci+1] == '+');
 		}
 		else if (seen_decimal)
 			fmt_fixed_i(strNumber,abs_val,precision);
@@ -1210,23 +1210,23 @@ namespace
 
 		for (size_t pos = 0; pos < strFormat.Length(); ++pos)
 		{
-			wchar_t wc = strFormat[pos];
-			switch (wc)
+			char c = strFormat[pos];
+			switch (c)
 			{
-			case L'\\':
+			case '\\':
 				res += strFormat[++pos];
 				break;
 
-			case L'\'':
+			case '\'':
 				{
 					size_t start = pos + 1;
 					for (;;)
 					{
-						pos = strFormat.Find(L'\'',pos+1);
+						pos = strFormat.Find('\'',pos+1);
 						if (pos == string_t::npos)
 							break;
 
-						if (strFormat[pos-1] != L'\\')
+						if (strFormat[pos-1] != '\\')
 							break;
 					}
 
@@ -1234,16 +1234,16 @@ namespace
 				}
 				break;
 
-			case L'"':
+			case '"':
 				{
 					size_t start = pos + 1;
 					for (;;)
 					{
-						pos = strFormat.Find(L'"',pos+1);
+						pos = strFormat.Find('"',pos+1);
 						if (pos == string_t::npos)
 							break;
 
-						if (strFormat[pos-1] != L'\\')
+						if (strFormat[pos-1] != '\\')
 							break;
 					}
 
@@ -1251,63 +1251,63 @@ namespace
 				}
 				break;
 
-			case L'#':
+			case '#':
 				while (!priv_isdigit(strNumber[numpos]))
 				{
 					if (sig_zero)
-						res += string_t(strNumber.c_str()+numpos,false,1);
+						res += string_t(strNumber.c_str()+numpos,1);
 
 					++numpos;
 				}
 
 				if (sig_zero || strNumber[numpos] != '0')
 				{
-					res += string_t(strNumber.c_str()+numpos,false,1);
+					res += string_t(strNumber.c_str()+numpos,1);
 					sig_zero = !seen_decimal;
 				}
 				++numpos;
 				break;
 
-			case L'0':
+			case '0':
 				while (!priv_isdigit(strNumber[numpos]))
 				{
-					res += string_t(strNumber.c_str()+numpos,false,1);
+					res += string_t(strNumber.c_str()+numpos,1);
 					++numpos;
 				}
 
-				res += string_t(strNumber.c_str()+numpos,false,1);
+				res += string_t(strNumber.c_str()+numpos,1);
 				++numpos;
 				sig_zero = !seen_decimal;
 				break;
 
-			case L'E':
-			case L'e':
+			case 'E':
+			case 'e':
 				if (sci != strNumber.npos)
 				{
 					size_t len = 1;
-					if (strFormat[pos+1] == L'-' || strFormat[pos+1] == L'+')
+					if (strFormat[pos+1] == '-' || strFormat[pos+1] == '+')
 						++pos;
 
-					if (strNumber[numpos+1] == L'-' || strFormat[numpos+1] == L'+')
+					if (strNumber[numpos+1] == '-' || strFormat[numpos+1] == '+')
 						++len;
 
 					len += exp_digits;
 					pos += exp_digits;
 
-					res += string_t(strNumber.c_str()+numpos,false,len);
+					res += string_t(strNumber.c_str()+numpos,len);
 					numpos += len;
 
 					sci = strNumber.npos;
 				}
 				else
-					res += wc;
+					res += c;
 				break;
 
-			case L'.':
+			case '.':
 				if (!seen_decimal)
 				{
 					if (numpos < dp)
-						res += string_t(strNumber.c_str()+numpos,false,dp-numpos);
+						res += string_t(strNumber.c_str()+numpos,dp-numpos);
 
 					res += string_t(decimal_char,false);
 					numpos = dp + strlen(decimal_char);
@@ -1316,23 +1316,23 @@ namespace
 					seen_decimal = true;
 				}
 				else
-					res += wc;
+					res += c;
 				break;
 
-			case L',':
+			case ',':
 				if (!seen_decimal &&
 						pos > 0 && pos < strFormat.Length()-1 &&
-						(strFormat[pos-1]==L'#' || strFormat[pos-1]==L'0') &&
-						(strFormat[pos+1]==L'#' || strFormat[pos+1]==L'0'))
+						(strFormat[pos-1]=='#' || strFormat[pos-1]=='0') &&
+						(strFormat[pos+1]=='#' || strFormat[pos+1]=='0'))
 				{
 					// Already added
 				}
 				else
-					res += wc;
+					res += c;
 				break;
 
 			default:
-				res += wc;
+				res += c;
 				break;
 			}
 		}
@@ -1522,67 +1522,71 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 {
 	// These need internationalisation...
 	if (strFormat.IsEmpty())
-		return (val ? string_t(L"true") : string_t(L"false"));
+		return (val ? string_t::constant("true") : string_t::constant("false"));
 
 	OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 	if (parse_custom(strFormat,parts) != 2)
-		throw Formatting::IFormattingException::Create(L"Invalid Omega::bool_t format string: {0}" % strFormat);
+		throw Formatting::IFormattingException::Create(System::Internal::get_text("Invalid Omega::bool_t format string: {0}") % strFormat);
 
 	return val ? *parts.at(0) : *parts.at(1);
 }
 
-long OOCore::wcstol(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+long OOCore::strtol(const char* sz, char const*& endptr, unsigned int base)
 {
-	return ::wcstol(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::strtol(sz,const_cast<char**>(&endptr),base);
 }
 
-unsigned long OOCore::wcstoul(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+unsigned long OOCore::strtoul(const char* sz, char const*& endptr, unsigned int base)
 {
-	return ::wcstoul(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::strtoul(sz,const_cast<char**>(&endptr),base);
 }
 
-int64_t OOCore::wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+int64_t OOCore::strto64(const char* sz, char const*& endptr, unsigned int base)
 {
-#if defined(HAVE_WCSTOLL)
-	static_assert(sizeof(::wcstoll(0,0,0)) == sizeof(int64_t),"Non-standard wcstoll");
+#if defined(HAVE_STRTOLL)
+	static_assert(sizeof(::strtoll(sz,const_cast<char**>(&endptr),base),"Non-standard strtoll");
 
-	return ::wcstoll(sz,const_cast<wchar_t**>(&endptr),base);
-#elif defined(HAVE__WCSTOI64)
-	static_assert(sizeof(::_wcstoi64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoi64");
+	return ::strtoll(sz,const_cast<char**>(&endptr),base);
+#elif defined(HAVE__STRTOI64)
+	static_assert(sizeof(::_strtoi64(sz,const_cast<char**>(&endptr),base)) == sizeof(int64_t),"Non-standard _strtoi64");
 
-	return ::_wcstoi64(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::_strtoi64(sz,const_cast<char**>(&endptr),base);
 #else
-#error Fix me!
+	static_assert(sizeof(::strtol(sz,const_cast<char**>(&endptr),base)) == sizeof(int64_t),"long is too short!");
+
+	return ::strtol(sz,const_cast<char**>(&endptr),base);
 #endif
 }
 
-uint64_t OOCore::wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+uint64_t OOCore::strtou64(const char* sz, char const*& endptr, unsigned int base)
 {
-#if defined(HAVE_WCSTOULL)
-	static_assert(sizeof(::wcstoull(0,0,0)) == sizeof(int64_t),"Non-standard wcstoull");
+#if defined(HAVE_STRTOULL)
+	static_assert(sizeof(::strtoull(sz,const_cast<char**>(&endptr),base)) == sizeof(int64_t),"Non-standard strtoull");
 
-	return ::wcstoull(sz,const_cast<wchar_t**>(&endptr),base);
-#elif defined(HAVE__WCSTOUI64)
-	static_assert(sizeof(::_wcstoui64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoui64");
+	return ::strtoull(sz,const_cast<char**>(&endptr),base);
+#elif defined(HAVE__STRTOUI64)
+	static_assert(sizeof(::_strtoui64(sz,const_cast<char**>(&endptr),base)) == sizeof(int64_t),"Non-standard _strtoui64");
 
-	return ::_wcstoui64(sz,const_cast<wchar_t**>(&endptr),base);
+	return ::_strtoui64(sz,const_cast<char**>(&endptr),base);
 #else
-#error Fix me!
+	static_assert(sizeof(::strtoul(sz,const_cast<char**>(&endptr),base)) == sizeof(int64_t),"long is too short!");
+
+	return ::strtoul(sz,const_cast<char**>(&endptr),base);
 #endif
 }
 
-float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
+float8_t OOCore::strtod(const char* sz, char const*& endptr)
 {
-	static_assert(sizeof(::wcstod(0,0)) == sizeof(float8_t),"Non-standard wcstod");
+	static_assert(sizeof(::strtod(sz,const_cast<char**>(&endptr))) == sizeof(float8_t),"Non-standard strtod");
 
-	return ::wcstod(sz,const_cast<wchar_t**>(&endptr));
+	return ::strtod(sz,const_cast<char**>(&endptr));
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_strto64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
-	const wchar_t* start = str.c_wstr();
-	const wchar_t* end = start;
-	int64_t v = OOCore::wcsto64(start,end,base);
+	const char* start = str.c_str();
+	const char* end = start;
+	int64_t v = OOCore::strto64(start,end,base);
 
 	end_pos = static_cast<size_t>(end - start);
 	if (end_pos >= str.Length())
@@ -1593,9 +1597,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int64_t,OOCore_strto64,3,((in),const string_t&,st
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_strtou64,3,((in),const string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
-	const wchar_t* start = str.c_wstr();
-	const wchar_t* end = start;
-	uint64_t v = OOCore::wcstou64(start,end,base);
+	const char* start = str.c_str();
+	const char* end = start;
+	uint64_t v = OOCore::strtou64(start,end,base);
 
 	end_pos = static_cast<size_t>(end - start);
 	if (end_pos >= str.Length())
@@ -1606,9 +1610,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint64_t,OOCore_strtou64,3,((in),const string_t&,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(float8_t,OOCore_strtod,2,((in),const string_t&,str,(out),size_t&,end_pos))
 {
-	const wchar_t* start = str.c_wstr();
-	const wchar_t* end = start;
-	float8_t v = OOCore::wcstod(start,end);
+	const char* start = str.c_str();
+	const char* end = start;
+	float8_t v = OOCore::strtod(start,end);
 
 	end_pos = static_cast<size_t>(end - start);
 	if (end_pos >= str.Length())
@@ -1633,7 +1637,7 @@ namespace
 		string_t                 m_strPrefix;
 	};
 
-	size_t find_brace(const string_t& strIn, size_t start, wchar_t brace)
+	size_t find_brace(const string_t& strIn, size_t start, char brace)
 	{
 		for (;;)
 		{
@@ -1653,7 +1657,7 @@ namespace
 	{
 		for (size_t pos = 0;;)
 		{
-			pos = str.Find(L'{',pos);
+			pos = str.Find('{',pos);
 			if (pos == string_t::npos)
 				break;
 
@@ -1662,7 +1666,7 @@ namespace
 
 		for (size_t pos = 0;;)
 		{
-			pos = str.Find(L'}',pos);
+			pos = str.Find('}',pos);
 			if (pos == string_t::npos)
 				break;
 
@@ -1672,23 +1676,23 @@ namespace
 
 	void parse_arg(const string_t& strIn, size_t& pos, insert_t& ins)
 	{
-		size_t end = find_brace(strIn,pos,L'}');
+		size_t end = find_brace(strIn,pos,'}');
 		if (end == string_t::npos)
-			throw Formatting::IFormattingException::Create(L"Missing matching '}' in format string: {0}" % strIn);
+			throw Formatting::IFormattingException::Create(System::Internal::get_text("Missing matching '}' in format string: {0}") % strIn);
 
-		size_t comma = strIn.Find(L',',pos,0);
-		size_t colon = strIn.Find(L':',pos,0);
+		size_t comma = strIn.Find(',',pos);
+		size_t colon = strIn.Find(':',pos);
 		if (comma == pos || colon == pos)
-			throw Formatting::IFormattingException::Create(L"Missing index in format string: {0}" % strIn);
+			throw Formatting::IFormattingException::Create(System::Internal::get_text("Missing index in format string: {0}") % strIn);
 
-		const wchar_t* endp = 0;
-		ins.index = OOCore::wcstoul(strIn.c_wstr()+pos,endp,10);
+		const char* endp = 0;
+		ins.index = OOCore::strtoul(strIn.c_str()+pos,endp,10);
 
 		ins.alignment = 0;
 		if (comma < end && comma < colon)
 		{
 			pos = comma++;
-			ins.alignment = OOCore::wcstol(strIn.c_wstr()+comma,endp,10);
+			ins.alignment = OOCore::strtol(strIn.c_str()+comma,endp,10);
 		}
 
 		if (colon < end)
@@ -1703,7 +1707,7 @@ namespace
 	void parse_format(const string_t& strIn, string_t& strPrefix, OOBase::Stack<insert_t>& listInserts)
 	{
 		// Prefix first
-		size_t pos = find_brace(strIn,0,L'{');
+		size_t pos = find_brace(strIn,0,'{');
 		if (pos == string_t::npos)
 			return;
 
@@ -1716,7 +1720,7 @@ namespace
 			insert_t ins;
 			parse_arg(strIn,pos,ins);
 
-			size_t found = find_brace(strIn,pos,L'{');
+			size_t found = find_brace(strIn,pos,'{');
 
 			if (found == string_t::npos)
 				ins.strSuffix = strIn.Mid(pos);
@@ -1744,7 +1748,7 @@ namespace
 
 		string_t strFill;
 		for (unsigned long i=0;i<width-str.Length();++i)
-			strFill += L' ';
+			strFill += ' ';
 
 		if (align < 0)
 			return str + strFill;
@@ -1863,11 +1867,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),c
 			insert_t* ins = s->m_listInserts->at(i);
 			if (ins->index != (unsigned long)-1)
 			{
-				strPrefix += L"{" + Formatting::ToString(ins->index);
+				strPrefix += '{' + Formatting::ToString(ins->index);
 				if (ins->alignment != 0)
-					strPrefix += L"," + Formatting::ToString(ins->alignment);
+					strPrefix += ',' + Formatting::ToString(ins->alignment);
 
-				strPrefix += ins->strFormat + L"}";
+				strPrefix += ins->strFormat + '}';
 			}
 			else
 			{

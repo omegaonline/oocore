@@ -61,7 +61,7 @@ namespace Omega
 		virtual string_t GetSource() = 0;
 
 		static IInternalException* Create(int32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL);
-		static IInternalException* Create(const char* desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL, IException* pCause = NULL);
+		static IInternalException* Create(const string_t& desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL, IException* pCause = NULL);
 	};
 
 	interface INoInterfaceException : public IException
@@ -194,13 +194,21 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace Internal { \
-				template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(OMEGA_WIDEN_STRING(guid)); return v; } }; \
+				template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(guid); return v; } }; \
 			} } }
 
 #endif
 
 /// Return the guid_t value associated with a type
 #define OMEGA_GUIDOF(type)     Omega::System::Internal::uid_traits<type>::GetUID()
+
+#define OMEGA_DECLARE_CONSTANT_STRING(name,text) \
+	namespace Omega { namespace System { namespace Internal { \
+				struct ConstantString_##name { inline static const string_t& value() { static const string_t s_##name = string_t::constant(text); return s_##name; } }; \
+			} } }
+
+#define OMEGA_CONSTANT_STRING(name) \
+		(Omega::System::Internal::ConstantString_##name::value())
 
 #if !defined(DOXYGEN)
 
@@ -211,7 +219,7 @@ namespace Omega
 	extern "C" OMEGA_IMPORT const Omega::guid_t name;
 
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
-	extern "C" const Omega::guid_t n_space::name(OMEGA_WIDEN_STRING(guid));
+	extern "C" const Omega::guid_t n_space::name(guid);
 
 #else // DOXYGEN
 

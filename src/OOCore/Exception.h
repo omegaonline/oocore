@@ -41,19 +41,19 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_errno = pMessage->ReadValue(L"m_errno").cast<Omega::uint32_t>();
+			m_errno = pMessage->ReadValue(Omega::string_t::constant("m_errno")).cast<Omega::uint32_t>();
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteValue(L"m_errno",m_errno);
+			pMessage->WriteValue(Omega::string_t::constant("m_errno"),m_errno);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			pMessage->ReadValue(L"m_errno");
+			pMessage->ReadValue(Omega::string_t::constant("m_errno"));
 		}
 
 	// ISystemException memebers
@@ -85,19 +85,19 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_strSource = pMessage->ReadValue(L"m_strSource").cast<Omega::string_t>();
+			m_strSource = pMessage->ReadValue(Omega::string_t::constant("m_strSource")).cast<Omega::string_t>();
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteValue(L"m_strSource",m_strSource);
+			pMessage->WriteValue(Omega::string_t::constant("m_strSource"),m_strSource);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			pMessage->ReadValue(L"m_strSource");
+			pMessage->ReadValue(Omega::string_t::constant("m_strSource"));
 		}
 
 		Omega::string_t m_strSource;
@@ -133,19 +133,19 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_iid = pMessage->ReadValue(L"m_iid").cast<Omega::guid_t>();
+			m_iid = pMessage->ReadValue(Omega::string_t::constant("m_iid")).cast<Omega::guid_t>();
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteValue(L"m_iid",m_iid);
+			pMessage->WriteValue(Omega::string_t::constant("m_iid"),m_iid);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			pMessage->ReadValue(L"m_iid");
+			pMessage->ReadValue(Omega::string_t::constant("m_iid"));
 		}
 
 	// INoInterfaceException members

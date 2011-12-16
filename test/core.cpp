@@ -4,11 +4,11 @@
 void normalise_path(Omega::string_t& strPath)
 {
 #if defined(_WIN32)
-	wchar_t from = L'/';
-	wchar_t to = L'\\';
+	char from = '/';
+	char to = '\\';
 #else
-	wchar_t from = L'\\';
-	wchar_t to = L'/';
+	char from = '\\';
+	char to = '/';
 #endif
 
 	for (;;)
@@ -24,16 +24,16 @@ void normalise_path(Omega::string_t& strPath)
 bool init_standalone_tests()
 {
 #if defined(_MSC_VER)
-	Omega::string_t regdb_path = L"..\\..\\..\\debug\\data\\";
+	Omega::string_t regdb_path = "..\\..\\..\\debug\\data\\";
 #else
-	Omega::string_t regdb_path = OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/../data/";
+	Omega::string_t regdb_path = OMEGA_STRINGIZE(BUILD_DIR) "/../data/";
 #endif
 
 	normalise_path(regdb_path);
 	
-	Omega::string_t args(L"standalone=always");
-	args += L" , regdb_path=" + regdb_path;
-	args += L"\t,user_regdb = " + regdb_path + L"default_user.regdb";
+	Omega::string_t args("standalone=always");
+	args += " , regdb_path=" + regdb_path;
+	args += "\t,user_regdb = " + regdb_path + "default_user.regdb";
 	
 	Omega::IException* pE = Omega::Initialize(args);
 	if (pE)
@@ -52,7 +52,7 @@ bool init_server_tests()
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		if (pE->GetDescription() == L"Failed to connect to network daemon")
+		if (pE->GetDescription() == "Failed to connect to network daemon")
 		{
 			pE->Release();
 			output("[No server]\n");

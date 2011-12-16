@@ -330,7 +330,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
+		LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
 		pE->Release();
 
 		return false;
@@ -529,7 +529,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
+		LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
 		pE->Release();
 	}
 
@@ -572,7 +572,7 @@ void User::Manager::do_quit_i()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %ls",pE->GetDescription().c_wstr()));
+			LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
 			pE->Release();
 		}
 
@@ -665,7 +665,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 
 		// Unpack the payload
 		ObjectPtr<Remoting::IMessage> ptrRequest;
-		ptrRequest.Unmarshal(ptrMarshaller,L"payload",ptrEnvelope);
+		ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
 
 		// Check timeout
 		uint32_t timeout = 0;
@@ -691,12 +691,12 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
-			ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
 			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
-				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
 	}
 	catch (IException* pE)

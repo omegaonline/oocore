@@ -44,18 +44,18 @@ void InterProcessService::Load(const string_t& str)
 	for (size_t start = 0;;)
 	{
 		// Skip leading whitespace
-		while (start < str.Length() && (str[start] == L'\t' || str[start] == L' '))
+		while (start < str.Length() && (str[start] == '\t' || str[start] == ' '))
 			++start;
 
 		if (start == str.Length())
 			return;
 
 		// Find the next linefeed
-		size_t end = str.Find(L',',start);
+		size_t end = str.Find(',',start);
 
 		// Trim trailing whitespace
 		size_t valend = (end == string_t::npos ? str.Length() : end);
-		while (valend > start && (str[valend-1] == L'\t' || str[valend-1] == L' '))
+		while (valend > start && (str[valend-1] == '\t' || str[valend-1] == ' '))
 			--valend;
 
 		if (valend > start)
@@ -63,12 +63,12 @@ void InterProcessService::Load(const string_t& str)
 			string_t strKey, strValue;
 
 			// Split on first =
-			size_t eq = str.Find(L'=',start);
+			size_t eq = str.Find('=',start);
 			if (eq != string_t::npos)
 			{
 				// Trim trailing whitespace before =
 				size_t keyend = eq;
-				while (keyend > start && (str[keyend-1] == L'\t' || str[keyend-1] == L' '))
+				while (keyend > start && (str[keyend-1] == '\t' || str[keyend-1] == ' '))
 					--keyend;
 
 				if (keyend > start)
@@ -77,7 +77,7 @@ void InterProcessService::Load(const string_t& str)
 
 					// Skip leading whitespace after =
 					size_t valpos = eq+1;
-					while (valpos < valend && (str[valpos] == L'\t' || str[valpos] == L' '))
+					while (valpos < valend && (str[valpos] == '\t' || str[valpos] == ' '))
 						++valpos;
 
 					if (valpos < valend)
@@ -87,7 +87,7 @@ void InterProcessService::Load(const string_t& str)
 			else
 			{
 				strKey = str.Mid(start,valend-start);
-				strValue = L"true";
+				strValue = string_t::constant("true");
 			}
 
 			if (!strKey.IsEmpty())
@@ -111,7 +111,7 @@ void InterProcessService::Load(const string_t& str)
 	}
 }
 
-string_t InterProcessService::GetArg(const string_t& arg)
+string_t InterProcessService::GetArg(const char* arg)
 {
 	string_t ret;
 	m_args.find(arg,ret);

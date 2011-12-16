@@ -487,7 +487,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	try
 	{
 		// Write the magic prolog
-		ptrMsg->WriteStructStart(L"ipc_request",L"$ipc_request_type");
+		ptrMsg->WriteStructStart(L"ipc_request",OMEGA_CONSTANT_STRING(ipc_request_type));
 		m_ptrProxy->WriteKey(ptrMsg);
 		ptrMsg->WriteValue(L"$iid",m_iid);
 		ptrMsg->WriteValue(L"$method_id",static_cast<Omega::uint32_t>(dispIdMember));

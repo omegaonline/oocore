@@ -71,9 +71,9 @@ namespace OOCore
 				OMEGA_THROW(m_stream.last_error());
 		}
 
-		void write(const char* pszText, size_t len)
+		void write(const Omega::string_t& strText)
 		{
-			if (!m_stream.write(pszText,len))
+			if (!m_stream.write(strText.c_str(),strText.Length()))
 				OMEGA_THROW(m_stream.last_error());
 		}
 
@@ -96,24 +96,24 @@ namespace OOCore
 				OMEGA_THROW("Message too long to marshal");
 
 			Omega::uint32_t len = static_cast<Omega::uint32_t>(m_stream.buffer()->length());
-			pMessage->WriteValue(L"length",len);
-			pMessage->WriteBytes(L"data",len,reinterpret_cast<const Omega::byte_t*>(m_stream.buffer()->rd_ptr()));
+			pMessage->WriteValue(Omega::string_t::constant("length"),len);
+			pMessage->WriteBytes(Omega::string_t::constant("data"),len,reinterpret_cast<const Omega::byte_t*>(m_stream.buffer()->rd_ptr()));
 		}
 
 		void ReleaseMarshalData(Omega::Remoting::IMarshaller*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			Omega::uint32_t len = pMessage->ReadValue(L"length").cast<Omega::uint32_t>();
+			Omega::uint32_t len = pMessage->ReadValue(Omega::string_t::constant("length")).cast<Omega::uint32_t>();
 			if (len <= 256)
 			{
 				Omega::byte_t szBuf[256];
-				pMessage->ReadBytes(L"data",len,szBuf);
+				pMessage->ReadBytes(Omega::string_t::constant("data"),len,szBuf);
 			}
 			else
 			{
 				Omega::byte_t* szBuf = static_cast<Omega::byte_t*>(::Omega::System::Allocate(len));
 				try
 				{
-					pMessage->ReadBytes(L"data",len,szBuf);
+					pMessage->ReadBytes(Omega::string_t::constant("data"),len,szBuf);
 				}
 				catch (...)
 				{
@@ -233,12 +233,7 @@ namespace OOCore
 			case Omega::TypeInfo::typeFloat8:
 				return write(value.cast<Omega::float8_t>());
 			case Omega::TypeInfo::typeString:
-				{
-					size_t len = 0;
-					const char* sz = value.cast<Omega::string_t>().c_ustr(&len);
-					return write(sz,len);
-				}
-				break;
+				return write(value.cast<Omega::string_t>());
 
 			case Omega::TypeInfo::typeGuid:
 				{

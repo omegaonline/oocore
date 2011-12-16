@@ -205,7 +205,7 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 	
 	string_t strFullKey = GetName();
 	if (!strFullKey.IsEmpty())
-		strFullKey += L"/";
+		strFullKey += '/';
 	strFullKey += strSubKey;
 
 	if (!ptrNewLocal && !ptrNewSystem)

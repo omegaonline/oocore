@@ -1544,7 +1544,7 @@ unsigned long OOCore::strtoul(const char* sz, char const*& endptr, unsigned int 
 int64_t OOCore::strto64(const char* sz, char const*& endptr, unsigned int base)
 {
 #if defined(HAVE_STRTOLL)
-	static_assert(sizeof(::strtoll(sz,const_cast<char**>(&endptr),base),"Non-standard strtoll");
+	static_assert(sizeof(::strtoll(sz,const_cast<char**>(&endptr),base)),"Non-standard strtoll");
 
 	return ::strtoll(sz,const_cast<char**>(&endptr),base);
 #elif defined(HAVE__STRTOI64)

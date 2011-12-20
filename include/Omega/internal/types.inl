@@ -79,12 +79,12 @@ OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__const_ctor,2,((in),const cha
 template <size_t S>
 inline Omega::string_t Omega::string_t::constant(const char (&arr)[S])
 {
-	return string_t(static_cast<handle_t*>(OOCore_string_t__const_ctor(arr,S)),false);
+	return string_t(static_cast<handle_t*>(OOCore_string_t__const_ctor(arr,S-1)),false);
 }
 
-inline Omega::string_t Omega::string_t::constant(const char (&arr)[1])
+inline Omega::string_t Omega::string_t::constant(const char* sz, size_t len)
 {
-	return string_t(static_cast<handle_t*>(OOCore_string_t__const_ctor(arr,1)),false);
+	return string_t(static_cast<handle_t*>(OOCore_string_t__const_ctor(sz,len)),false);
 }
 
 inline Omega::string_t::~string_t()
@@ -132,21 +132,21 @@ inline const char Omega::string_t::operator[](size_t i) const
 	return buf[i];
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,h,(in),const void*,h2));
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append1,2,((in),void*,h,(in),const void*,h2));
 inline Omega::string_t& Omega::string_t::operator += (const string_t& s)
 {
 	if (s.m_handle)
 	{
-		m_handle = static_cast<handle_t*>(OOCore_string_t_add1(m_handle,s.m_handle));
+		m_handle = static_cast<handle_t*>(OOCore_string_t_append1(m_handle,s.m_handle));
 		OMEGA_DEBUG_STASH_STRING();
 	}
 	return *this;
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,3,((in),void*,h,(in),const char*,sz,(in),size_t,len));
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append2,3,((in),void*,h,(in),const char*,sz,(in),size_t,len));
 inline Omega::string_t& Omega::string_t::operator += (char c)
 {
-	m_handle = static_cast<handle_t*>(OOCore_string_t_add2(m_handle,&c,1));
+	m_handle = static_cast<handle_t*>(OOCore_string_t_append2(m_handle,&c,1));
 	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }
@@ -155,7 +155,7 @@ inline Omega::string_t& Omega::string_t::operator += (const char* sz)
 {
 	if (sz)
 	{
-		m_handle = static_cast<handle_t*>(OOCore_string_t_add2(m_handle,sz,string_t::npos));
+		m_handle = static_cast<handle_t*>(OOCore_string_t_append2(m_handle,sz,string_t::npos));
 		OMEGA_DEBUG_STASH_STRING();
 	}
 	return *this;
@@ -315,7 +315,7 @@ inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::stri
 
 inline Omega::string_t operator + (const char* lhs, const Omega::string_t& rhs)
 {
-	return (Omega::string_t(lhs) += rhs);
+	return (Omega::string_t::constant(lhs,strlen(lhs)) += rhs);
 }
 
 inline Omega::string_t operator + (const Omega::string_t& lhs, const char* rhs)
@@ -325,23 +325,12 @@ inline Omega::string_t operator + (const Omega::string_t& lhs, const char* rhs)
 
 inline Omega::string_t operator + (char lhs, const Omega::string_t& rhs)
 {
-	return (Omega::string_t(&lhs,1) += rhs);
+	return (Omega::string_t::constant(&lhs,1) += rhs);
 }
 
 inline Omega::string_t operator + (const Omega::string_t& lhs, char rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
-}
-
-template <typename T>
-inline Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, T rhs)
-{
-	return Omega::Formatting::formatter_t(lhs) % rhs;
-}
-
-inline Omega::Formatting::formatter_t operator % (const char* lhs, const Omega::string_t& rhs)
-{
-	return Omega::Formatting::formatter_t(Omega::string_t(lhs)) % rhs;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_int_t,3,((in),Omega::int64_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
@@ -592,6 +581,17 @@ OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),const v
 inline Omega::Formatting::formatter_t::operator Omega::string_t() const
 {
 	return OOCore_formatter_t_cast(m_handle);
+}
+
+template <typename T>
+inline Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, T rhs)
+{
+	return Omega::Formatting::formatter_t(lhs) % rhs;
+}
+
+inline Omega::Formatting::formatter_t operator % (const char* lhs, const Omega::string_t& rhs)
+{
+	return Omega::Formatting::formatter_t(Omega::string_t(lhs)) % rhs;
 }
 
 #endif // OOCORE_TYPES_INL_INCLUDED_

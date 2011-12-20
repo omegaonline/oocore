@@ -56,7 +56,7 @@ namespace
 		}
 
 		StringNode(const char* sz, size_t len) :
-			m_refcount(1), m_flags(eConst), m_len(len-1)
+			m_refcount(1), m_flags(eConst), m_len(len)
 		{
 			m_u.m_const_buffer = sz;
 		}
@@ -280,7 +280,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_cast,2,((in),cons
 	return buffer;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append1,2,((in),void*,s1,(in),const void*,s2))
 {
 	if (!s2)
 		return s1;
@@ -321,7 +321,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,3,((in),void*,s1,(in),const char*,sz,(in),size_t,len))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append2,3,((in),void*,s1,(in),const char*,sz,(in),size_t,len))
 {
 	if (len == string_t::npos)
 		len = strlen(sz);

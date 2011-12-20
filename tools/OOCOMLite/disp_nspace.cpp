@@ -106,6 +106,6 @@ STDMETHODIMP IDispatchNSpaceImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID 
 	}
 	catch (Omega::IException* pE)
 	{
-		return FillExcepInfo(m_pDefn[dispIdMember].pszNames[0],pE,pExcepInfo);
+		return FillExcepInfo(FromBSTR(m_pDefn[dispIdMember].pszNames[0]),pE,pExcepInfo);
 	}
 }

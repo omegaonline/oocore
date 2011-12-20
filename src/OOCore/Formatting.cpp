@@ -76,6 +76,11 @@ namespace
 		hexadecimal
 	};
 
+	bool priv_isdigit(char c)
+	{
+		return (c >= '0' && c <= '9');
+	}
+
 	bool parse_numfmt(const string_t& str, num_fmt& fmt, bool& capital, long& precision)
 	{
 		if (str.Length() > 3)
@@ -144,7 +149,7 @@ namespace
 
 		if (str.Length() >= 2)
 		{
-			if (iswdigit(str[1]))
+			if (priv_isdigit(str[1]))
 			{
 				const char* endp = 0;
 				precision = OOCore::strtol(str.c_str()+1,endp,10);
@@ -413,86 +418,86 @@ namespace
 		switch (posn)
 		{
 		case 0:
-			ret = string_t(currency,false);
+			ret = currency;
 			if (cs_precedes)
 			{
 				if (sep_by_space)
 					ret += ' ';
-				ret += string_t(str.c_str(),false);
+				ret += str.c_str();
 			}
 			else
 			{
 				if (sep_by_space)
 					ret = ' ' + ret;
-				ret = string_t(str.c_str(),false) + ret;
+				ret = str.c_str() + ret;
 			}
 			ret = '(' + ret + ')';
 			break;
 
 		case 1:
-			ret = string_t(currency,false);
+			ret = currency;
 			if (cs_precedes)
 			{
 				if (sep_by_space)
 					ret += ' ';
-				ret += string_t(str.c_str(),false);
+				ret += str.c_str();
 			}
 			else
 			{
 				if (sep_by_space)
 					ret = ' ' + ret;
-				ret = string_t(str.c_str(),false) + ret;
+				ret = str.c_str() + ret;
 			}
-			ret = string_t(sign,false) + ret;
+			ret = sign + ret;
 			break;
 
 		case 2:
-			ret = string_t(currency,false);
+			ret = currency;
 			if (cs_precedes)
 			{
 				if (sep_by_space)
 					ret += ' ';
-				ret += string_t(str.c_str(),false);
+				ret += str.c_str();
 			}
 			else
 			{
 				if (sep_by_space)
 					ret = ' ' + ret;
-				ret = string_t(str.c_str(),false) + ret;
+				ret = str.c_str() + ret;
 			}
-			ret += string_t(sign,false);
+			ret += sign;
 			break;
 
 		case 3:
-			ret = string_t(sign,false) + string_t(currency,false);
+			ret = string_t(sign) + currency;
 			if (cs_precedes)
 			{
 				if (sep_by_space)
 					ret += ' ';
-				ret += string_t(str.c_str(),false);
+				ret += str.c_str();
 			}
 			else
 			{
 				if (sep_by_space)
 					ret = ' ' + ret;
-				ret = string_t(str.c_str(),false) + ret;
+				ret = str.c_str() + ret;
 			}
 			break;
 
 		case 4:
 		default:
-			ret = string_t(currency,false) + string_t(sign,false);
+			ret = string_t(currency) + sign;
 			if (cs_precedes)
 			{
 				if (sep_by_space)
 					ret += ' ';
-				ret += string_t(str.c_str(),false);
+				ret += str.c_str();
 			}
 			else
 			{
 				if (sep_by_space)
 					ret = ' ' + ret;
-				ret = string_t(str.c_str(),false) + ret;
+				ret = str.c_str() + ret;
 			}
 			break;
 		}
@@ -609,7 +614,7 @@ namespace
 			OMEGA_THROW(dwErr);
 		}
 
-		size_t dp = replace(str,decimal_point,".");
+		replace(str,decimal_point,".");
 #endif
 	}
 
@@ -732,7 +737,7 @@ namespace
 
 		do_intl(ret,true,PASS_LCID);
 
-		return string_t(ret.c_str(),false);
+		return ret.c_str();
 	}
 
 	void fmt_decimal_i(OOBase::LocalString& str, const int64_t& val, long precision)
@@ -769,7 +774,7 @@ namespace
 	{
 		OOBase::LocalString str;
 		fmt_decimal_i(str,val,precision);
-		return string_t(str.c_str(),false);
+		return str.c_str();
 	}
 
 	void fmt_hex_i(OOBase::LocalString& str, const uint64_t& val, bool capital, long precision)
@@ -799,7 +804,7 @@ namespace
 	{
 		OOBase::LocalString str;
 		fmt_hex_i(str,val,capital,precision);
-		return string_t(str.c_str(),false);
+		return str.c_str();
 	}
 
 	template <typename T>
@@ -828,7 +833,7 @@ namespace
 
 		do_intl(ret,false,PASS_LCID);
 
-		return string_t(ret.c_str(),false);
+		return ret.c_str();
 	}
 
 	void exp_strip(OOBase::LocalString& str, long precision, bool show_plus)
@@ -889,10 +894,10 @@ namespace
 
 		OOBase::LocalString str;
 		fmt_scientific_i(str,val,capital,precision,PASS_LCID);
-		return string_t(str.c_str(),false);
+		return str.c_str();
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, long precision, bool use_locale, EXTRA_LCID)
+	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -904,7 +909,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, long precision, bool use_locale, EXTRA_LCID)
+	void fmt_general_i(OOBase::LocalString& str, const uint64_t& val, bool /*capital*/, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -916,7 +921,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, long precision, bool use_locale, EXTRA_LCID)
+	void fmt_general_i(OOBase::LocalString& str, const double& val, bool capital, long precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -927,11 +932,6 @@ namespace
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		if (use_locale)
-			do_intl(str,false,PASS_LCID);
-		else
-			undo_intl(str,PASS_LCID);
-
 		exp_strip(str,2,true);
 	}
 
@@ -939,13 +939,23 @@ namespace
 	string_t fmt_general(const T& val, bool capital, long precision, bool use_locale, EXTRA_LCID)
 	{
 		OOBase::LocalString str;
-		fmt_general_i(str,val,capital,precision,use_locale,PASS_LCID);
-		return string_t(str.c_str(),false);
+		fmt_general_i(str,val,capital,precision);
+
+		if (use_locale)
+			do_intl(str,false,PASS_LCID);
+		else
+			undo_intl(str,PASS_LCID);
+
+		return string_t(str.c_str());
 	}
 
 	template <typename T>
 	string_t fmt_round_trip(const T& val, long /*precision*/, EXTRA_LCID)
 	{
+		OMEGA_UNUSED_ARG(lc);
+#if defined(_WIN32)
+		OMEGA_UNUSED_ARG(lcid);
+#endif
 		return fmt_decimal(val,0);
 	}
 
@@ -1068,11 +1078,6 @@ namespace
 	{
 		negative = false;
 		return val;
-	}
-
-	bool priv_isdigit(char c)
-	{
-		return (c >= '0' && c <= '9');
 	}
 
 	template <typename T>
@@ -1309,7 +1314,7 @@ namespace
 					if (numpos < dp)
 						res += string_t(strNumber.c_str()+numpos,dp-numpos);
 
-					res += string_t(decimal_char,false);
+					res += decimal_char;
 					numpos = dp + strlen(decimal_char);
 
 					sig_zero = true;
@@ -1338,7 +1343,7 @@ namespace
 		}
 
 		if (numpos < strNumber.length())
-			res += string_t(strNumber.c_str()+numpos,false);
+			res += strNumber.c_str()+numpos;
 
 		return res;
 	}
@@ -1645,7 +1650,7 @@ namespace
 			if (found == string_t::npos)
 				return string_t::npos;
 
-			if (found < strIn.Length() && strIn[found+1] != brace)
+			if (found == strIn.Length()-1 || strIn[found+1] != brace)
 				return found;
 
 			// Skip {{
@@ -1813,25 +1818,25 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,hand
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt))
 {
-	const format_state_t* s = static_cast<const format_state_t*>(handle);
-	if (!s || !s->m_listInserts)
-		return 0;
-
-	// Find the lowest index (from left to right)
 	index = (unsigned long)-1;
-	for (size_t i=0; i!=s->m_listInserts->size(); ++i)
+	fmt.Clear();
+
+	const format_state_t* s = static_cast<const format_state_t*>(handle);
+	if (s && s->m_listInserts)
 	{
-		insert_t* ins = s->m_listInserts->at(i);
-		if (ins->index < index)
+		// Find the lowest index (from left to right)
+		for (size_t i=0; i!=s->m_listInserts->size(); ++i)
 		{
-			index = ins->index;
-			fmt = ins->strFormat;
+			insert_t* ins = s->m_listInserts->at(i);
+			if (ins->index < index)
+			{
+				index = ins->index;
+				fmt = ins->strFormat;
+			}
 		}
 	}
-
-	return (index == (unsigned long)-1 ? 0 : 1);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),unsigned long,index,(in),const Omega::string_t&,arg))
@@ -1847,9 +1852,19 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 			{
 				ins->strFormat = align(arg,ins->alignment);
 				ins->index = (unsigned long)-1;
-				break;
+				return;
 			}
 		}
+	
+		// Just append it
+		insert_t ins2;
+		ins2.alignment = 0;
+		ins2.index = (unsigned long)-1;
+		ins2.strFormat = " " + arg;
+
+		int err = s->m_listInserts->push(ins2);
+		if (err != 0)
+			OMEGA_THROW(err);
 	}
 }
 

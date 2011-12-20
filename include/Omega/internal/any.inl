@@ -164,6 +164,12 @@ inline Omega::any_t::any_t(const string_t& val) :
 	strVal = val;
 }
 
+inline Omega::any_t::any_t(const char* val) :
+		m_type(TypeInfo::typeString)
+{
+	strVal = val;
+}
+
 inline Omega::any_t::~any_t()
 {
 	clear();

@@ -141,7 +141,7 @@ void User::Manager::start_service(const OOBase::LocalString& strKey, const OOBas
 {
 	try
 	{
-		ObjectPtr<System::IService> ptrService(string_t(strOid.c_str(),true),Activation::Process);
+		ObjectPtr<System::IService> ptrService(strOid.c_str(),Activation::Process);
 
 		// Get the service's source channel
 		uint32_t src = Remoting::GetSource(ptrService);
@@ -210,7 +210,7 @@ Registry::IKey* User::Manager::get_service_key(const OOBase::LocalString& strKey
 	}
 
 	ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstance();
-	ptrKey->Init(this,string_t(strKeyPath.c_str(),true),uKey,0);
+	ptrKey->Init(this,strKeyPath.c_str(),uKey,0);
 
 	return ptrKey.AddRef();
 }

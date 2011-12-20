@@ -141,7 +141,7 @@ static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::s
 	else
 	{
 		key.Clear();
-		value = Omega::string_t(str.c_str(),false);
+		value = str.c_str();
 	}
 
 	return true;
@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
 	}
 	args.find("@2",params[1]);
 
-	Omega::IException* pE = Omega::Initialize(Omega::string_t(oo_args.c_str(),false));
+	Omega::IException* pE = Omega::Initialize(oo_args.c_str());
 	if (pE)
 	{
 		report_exception(pE);
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 				OOBase::stderr_write("set requires a value_path, use --help for information.");
 			else
 			{
-				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,Omega::string_t(params[1].c_str(),false));
+				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,params[1].c_str());
 				result = EXIT_SUCCESS;
 			}
 		}

@@ -45,7 +45,9 @@ namespace Omega
 
 		string_t();
 		string_t(const string_t& s);
+		
 		string_t(const char* sz, size_t length = npos);
+		
 		~string_t();
 
 		template <size_t S>
@@ -53,8 +55,7 @@ namespace Omega
 		static string_t constant(const char (&arr)[1]);
 
 		string_t& operator = (const string_t& s);
-		string_t& operator = (const char* sz);
-
+		
 		string_t& operator += (const string_t& s);
 		string_t& operator += (const char* sz);
 		string_t& operator += (char c);

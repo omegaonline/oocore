@@ -205,7 +205,7 @@ any_t HiveKey::GetValue(const string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	return string_t(strValue.c_str(),true);
+	return strValue.c_str();
 }
 
 void HiveKey::SetValue(const string_t& strName, const any_t& value)
@@ -236,7 +236,7 @@ string_t HiveKey::GetDescription()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	return string_t(strValue.c_str(),true);
+	return strValue.c_str();
 }
 
 string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
@@ -254,7 +254,7 @@ string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	return string_t(strValue.c_str(),true);
+	return strValue.c_str();
 }
 
 void HiveKey::SetDescription(const Omega::string_t& strDesc)
@@ -327,7 +327,7 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 	std::set<Omega::string_t> setOutSubKeys;
 
 	for (OOBase::String i;setSubKeys.pop(&i);)
-		setOutSubKeys.insert(string_t(i.c_str(),true));
+		setOutSubKeys.insert(i.c_str());
 
 	return setOutSubKeys;
 }
@@ -348,7 +348,7 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 	std::set<Omega::string_t> setOutValues;
 
 	for (OOBase::String i;setValues.pop(&i);)
-		setOutValues.insert(string_t(i.c_str(),true));
+		setOutValues.insert(i.c_str());
 
 	return setOutValues;
 }

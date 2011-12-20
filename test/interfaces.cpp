@@ -26,7 +26,7 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(strLibName.c_nstr(),0) != 0)
+	if (access(strLibName.c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -65,7 +65,7 @@ bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 	bSkipped = false;
 
 #if defined(_WIN32)
-	if (access(strExeName.c_nstr(),0) != 0)
+	if (access(strExeName.c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -547,7 +547,7 @@ static bool do_library_test(const Omega::string_t& strLibName, const char* pszEn
 	if (bSkipped)
 		return true;
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest("Test.Library@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest("Test.Library@" + Omega::string_t(pszEndpoint));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -563,7 +563,7 @@ static bool do_process_test(const Omega::string_t& strModulePath, const char* ps
 	if (bSkipped)
 		return true;
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest("Test.Process@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest("Test.Process@" + Omega::string_t(pszEndpoint));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 

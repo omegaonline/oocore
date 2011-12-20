@@ -28,7 +28,7 @@ namespace
 		bool seen_pointer = false;
 		for (;;)
 		{
-			type = pType->ReadValue(L"type").cast<Omega::TypeInfo::Type_t>();
+			type = pType->ReadValue(Omega::string_t::constant("type")).cast<Omega::TypeInfo::Type_t>();
 			switch (type)
 			{
 				case Omega::TypeInfo::typeVoid:
@@ -61,7 +61,7 @@ namespace
 					if (!seen_pointer)
 						return DISP_E_TYPEMISMATCH; // Must be an Omega::IObject*
 					
-					iid = pType->ReadValue(L"iid").cast<Omega::guid_t>();
+					iid = pType->ReadValue(Omega::string_t::constant("iid")).cast<Omega::guid_t>();
 					return S_OK;
 				
 				case Omega::TypeInfo::modifierPointer:
@@ -147,7 +147,7 @@ HRESULT variant_to_any(LCID lcid, const VARIANTARG& arg, Omega::any_t& value)
 		}
 
 	case VT_BSTR:
-		value = Omega::any_t(arg.bstrVal);
+		value = Omega::any_t(FromBSTR(arg.bstrVal));
 		break;
 
 	case VT_BYREF|VT_UI1:
@@ -216,7 +216,7 @@ HRESULT variant_to_any(LCID lcid, const VARIANTARG& arg, Omega::any_t& value)
 	case VT_BYREF|VT_BSTR:
 		if (!arg.pbstrVal)
 			return E_POINTER;
-		value = Omega::any_t(*arg.pbstrVal);
+		value = Omega::any_t(FromBSTR(*arg.pbstrVal));
 		break;
 
 	case VT_BYREF|VT_VARIANT:
@@ -366,7 +366,7 @@ STDMETHODIMP IDispatchObjImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, U
 				if (return_type)
 					return_type->Release();
 				
-				if (strName == rgszNames[0])
+				if (strName == FromBSTR(rgszNames[0]))
 					break;
 			}
 			
@@ -390,7 +390,7 @@ STDMETHODIMP IDispatchObjImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, U
 				if (type)
 					type->Release();
 				
-				if (strName == rgszNames[idx])
+				if (strName == FromBSTR(rgszNames[idx]))
 				{
 					rgDispId[idx] = param_idx;		
 					break;
@@ -481,16 +481,16 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	}
 	catch (Omega::IException* pE)
 	{
-		return FillExcepInfo(strName.c_wstr(),pE,pExcepInfo);
+		return FillExcepInfo(strName.c_str(),pE,pExcepInfo);
 	}
 		
 	try
 	{
 		// Write the magic prolog
-		ptrMsg->WriteStructStart(L"ipc_request",OMEGA_CONSTANT_STRING(ipc_request_type));
+		ptrMsg->WriteStructStart(Omega::string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
 		m_ptrProxy->WriteKey(ptrMsg);
-		ptrMsg->WriteValue(L"$iid",m_iid);
-		ptrMsg->WriteValue(L"$method_id",static_cast<Omega::uint32_t>(dispIdMember));
+		ptrMsg->WriteValue(Omega::string_t::constant("$iid"),m_iid);
+		ptrMsg->WriteValue(Omega::string_t::constant("$method_id"),static_cast<Omega::uint32_t>(dispIdMember));
 						
 		// See http://msdn.microsoft.com/en-us/library/ms221653.aspx for details of DISPPARAMS
 		// Key points: args are in reverse order (right to left)
@@ -550,7 +550,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		// Now make the call...
 		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,ptrResult,timeout);
 		if (pE)
-			return FillExcepInfo(strName.c_wstr(),pE,pExcepInfo);			
+			return FillExcepInfo(strName.c_str(),pE,pExcepInfo);			
 	}
 	catch (Omega::IException* pE)
 	{
@@ -564,14 +564,14 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			pE2->Release();
 		}
 		
-		return FillExcepInfo(strName.c_wstr(),pE,pExcepInfo);
+		return FillExcepInfo(strName.c_str(),pE,pExcepInfo);
 	}
 	
 	// Read results...
 	try
 	{
 		// Read $retval
-		ReadArgByType(lcid,L"$retval",ptrMsg,ptrRetType,pVarResult);
+		ReadArgByType(lcid,Omega::string_t::constant("$retval"),ptrMsg,ptrRetType,pVarResult);
 		
 		Omega::byte_t params_read = 0;
 		if (pDispParams)
@@ -608,7 +608,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	}
 	catch (Omega::IException* pE)
 	{
-		return FillExcepInfo(strName.c_wstr(),pE,pExcepInfo);
+		return FillExcepInfo(strName.c_str(),pE,pExcepInfo);
 	}
 		
 	return S_OK;	

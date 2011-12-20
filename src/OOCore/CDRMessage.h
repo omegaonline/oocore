@@ -177,7 +177,7 @@ namespace OOCore
 					if (!m_stream.read(str))
 						OMEGA_THROW(m_stream.last_error());
 
-					return Omega::string_t(str.c_str(),true);
+					return str.c_str();
 				}
 
 			case Omega::TypeInfo::typeGuid:

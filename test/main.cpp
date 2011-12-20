@@ -13,7 +13,6 @@ bool init_standalone_tests();
 bool init_server_tests();
 bool string_tests();
 bool string_tests_format();
-bool string_tests_utf8();
 bool guid_tests();
 bool any_tests();
 bool exception_tests();
@@ -35,7 +34,6 @@ int main(int /*argc*/, char* /*argv*/[])
 
 	RUN_TEST(string_tests);
 	RUN_TEST(string_tests_format);
-	RUN_TEST(string_tests_utf8);
 	RUN_TEST(guid_tests);
 	RUN_TEST(any_tests);
 	RUN_TEST(exception_tests);
@@ -113,7 +111,7 @@ static unsigned long fail_count = 0;
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
-	Omega::string_t err("Assertion '{0}' failed at {1}:{2}\n" % Omega::string_t(pszExpr,false) % Omega::string_t(pszSrc,false) % nLine);
+	Omega::string_t err(Omega::string_t("Assertion '{0}' failed at {1}:{2}\n") % pszExpr % pszSrc % nLine);
 	add_failure(err.c_str());
 	return false;
 }

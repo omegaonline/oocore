@@ -50,10 +50,10 @@
 	#error What else can MSVC compile?
 #endif
 
-/* Define to 1 if you have the `_wcstoi64' function. */
-#define HAVE__WCSTOI64 1
+/* Define to 1 if you have the `_strtoi64' function. */
+#define HAVE__STRTOI64 1
 
-/* Define to 1 if you have the `_wcstoui64' function. */
-#define HAVE__WCSTOUI64 1
+/* Define to 1 if you have the `_strtoui64' function. */
+#define HAVE__STRTOUI64 1
 
 #endif // OOCORE_MSVC_H_INCLUDED_

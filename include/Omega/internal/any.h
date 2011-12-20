@@ -49,6 +49,7 @@ namespace Omega
 		any_t(const float8_t& val);
 		any_t(const guid_t& val);
 		any_t(const string_t& val);
+		any_t(const char* val);
 
 		any_t(const any_t& rhs);
 		any_t& operator = (const any_t& rhs);

@@ -293,7 +293,7 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 	for (const System::Internal::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)(); pmi->pszName!=0; ++pmi)
 	{
 		MethodInfo mi;
-		mi.strName = string_t(pmi->pszName,false);
+		mi.strName = pmi->pszName;
 		mi.attribs = pmi->attribs;
 		mi.timeout = pmi->timeout;
 		mi.return_type = Remoting::CreateMemoryMessage();
@@ -304,9 +304,9 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)(); ppi->pszName!=0; ++ppi)
 		{
 			ParamInfo pi;
-			pi.strName = string_t(ppi->pszName,false);
+			pi.strName = ppi->pszName;
 			pi.attribs = ppi->attribs;
-			pi.strRef = string_t(ppi->attrib_ref,string_t::npos);
+			pi.strRef = ppi->attrib_ref;
 			pi.type = Remoting::CreateMemoryMessage();
 
 			BuildTypeDetail(pi.type,ppi->type);

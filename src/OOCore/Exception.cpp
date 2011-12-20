@@ -36,10 +36,8 @@ namespace
 	class OutOfMemoryException : public ISystemException
 	{
 	public:
-		OutOfMemoryException()
-		{
-			m_strError = string_t(OOBase::system_error_text(ERROR_OUTOFMEMORY),false);
-		}
+		OutOfMemoryException() : m_strError(OOBase::system_error_text(ERROR_OUTOFMEMORY))
+		{ }
 
 		static OutOfMemoryException s_instance;
 		
@@ -107,7 +105,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 		OutOfMemoryException::s_instance.Rethrow();
 
 	ObjectPtr<ObjectImpl<OOCore::SystemException> > pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
-	pExcept->m_strDesc = string_t(OOBase::system_error_text(e),false);
+	pExcept->m_strDesc = OOBase::system_error_text(e);
 	pExcept->m_errno = e;
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
@@ -144,12 +142,12 @@ namespace OOCore
 			if (nLine != size_t(-1))
 			{
 				if (pszFunc)
-					pExcept->m_strSource = string_t::constant("{0}({1}): {2}") % Omega::string_t(pszFile,false) % nLine % Omega::string_t(pszFunc,false);
+					pExcept->m_strSource = string_t::constant("{0}({1}): {2}") % pszFile % nLine % pszFunc;
 				else
-					pExcept->m_strSource = string_t::constant("{0}({1})") % Omega::string_t(pszFile,false) % nLine;
+					pExcept->m_strSource = string_t::constant("{0}({1})") % pszFile % nLine;
 			}
 			else
-				pExcept->m_strSource = string_t::constant("{0}") % Omega::string_t(pszFile,false);
+				pExcept->m_strSource = string_t::constant("{0}") % pszFile;
 		}
 
 		return pExcept;

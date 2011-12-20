@@ -236,7 +236,7 @@ namespace
 	bool IsRelativePath(const string_t& strPath)
 	{
 #if defined(_WIN32)
-		return (PathIsRelativeW(strPath.c_wstr()) != FALSE);
+		return (PathIsRelativeA(strPath.c_str()) != FALSE);
 #else
 		return (strPath[0] != '/');
 #endif

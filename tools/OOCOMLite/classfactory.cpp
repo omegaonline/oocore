@@ -51,11 +51,11 @@ namespace
 		
 		OTL::ObjectPtr<Omega::IInternalException> ptrInternal = OTL::QueryInterface<Omega::IInternalException>(pE);
 		if (ptrInternal)
-			desc += L" at " + ptrInternal->GetSource();
+			desc += Omega::string_t::constant(" at ") + ptrInternal->GetSource();
 		
 		OTL::ObjectPtr<Omega::IException> ptrCause = pE->GetCause();
 		if (ptrCause)
-			desc += L". Cause: " + GetDesc(ptrCause);
+			desc += Omega::string_t::constant(". Cause: ") + GetDesc(ptrCause);
 			
 		return desc;
 	}	
@@ -143,12 +143,12 @@ IDispatchImpl::~IDispatchImpl()
 static HRESULT GetInitArgs(LCID /*lcid*/, VARIANT* pVarResult, EXCEPINFO* /*pExcepInfo*/)
 {
 	pVarResult->vt = VT_BSTR;
-	pVarResult->bstrVal = SysAllocString(s_init_args.c_wstr());
+	pVarResult->bstrVal = ToBSTR(s_init_args);
 	
 	return S_OK;
 }
 
-static HRESULT PutInitArgs(LCID lcid, DISPPARAMS* pDispParams, UINT* puArgErr, EXCEPINFO* pExcepInfo, bool byRef)
+static HRESULT PutInitArgs(LCID lcid, DISPPARAMS* pDispParams, UINT* puArgErr, EXCEPINFO* /*pExcepInfo*/, bool /*bByRef*/)
 {
 	VARIANTARG v;
 	VariantInit(&v);
@@ -161,7 +161,7 @@ static HRESULT PutInitArgs(LCID lcid, DISPPARAMS* pDispParams, UINT* puArgErr, E
 		return hr;
 	}
 		
-	s_init_args = Omega::string_t(v.bstrVal,size_t(-1),true);
+	s_init_args = FromBSTR(v.bstrVal);
 	
 	return S_OK;
 }
@@ -181,7 +181,7 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	{
 		Omega::IException* pE = Omega::Initialize(s_init_args);
 		if (pE)
-			return FillExcepInfo(L"CreateInstance",pE,pExcepInfo);
+			return FillExcepInfo("CreateInstance",pE,pExcepInfo);
 					
 		try
 		{
@@ -189,7 +189,7 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 		}
 		catch (Omega::IException* pE2)
 		{
-			return FillExcepInfo(L"CreateInstance",pE2,pExcepInfo);
+			return FillExcepInfo("CreateInstance",pE2,pExcepInfo);
 		}			
 	}
 	
@@ -320,7 +320,61 @@ STDMETHODIMP ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFIID riid, void
 	return S_OK;
 }
 
-HRESULT FillExcepInfo(const wchar_t* wszSource, Omega::IException* pE, EXCEPINFO* pExcepInfo)
+BSTR ToBSTR(const Omega::string_t& str)
+{
+	BSTR ret = NULL;
+	wchar_t szBuf[1024] = {0};
+	int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,szBuf,(sizeof(szBuf)/sizeof(szBuf[0]))-1);
+	if (len == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+	{
+		len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
+		wchar_t* wsz = (wchar_t*)malloc((len+1) *sizeof(wchar_t));
+		if (wsz)
+		{
+			MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
+			wsz[len] = L'\0';
+
+			ret = SysAllocString(wsz);
+
+			free(wsz);
+		}
+	}
+	else
+	{
+		ret = SysAllocString(szBuf);
+	}
+
+	return ret;
+}
+
+Omega::string_t FromBSTR(const OLECHAR* bstr)
+{
+	Omega::string_t ret;
+	char szBuf[1024] = {0};
+	int len = WideCharToMultiByte(CP_UTF8,0,bstr,-1,szBuf,sizeof(szBuf)-1,NULL,NULL);
+	if (len == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+	{
+		len = WideCharToMultiByte(CP_UTF8,0,bstr,-1,NULL,0,NULL,NULL);
+		char* sz = (char*)malloc(len + 1);
+		if (sz)
+		{
+			WideCharToMultiByte(CP_UTF8,0,bstr,-1,sz,len,NULL,NULL);
+			sz[len] = '\0';
+
+			ret = sz;
+
+			free(sz);
+		}
+	}
+	else
+	{
+		ret = szBuf;
+	}
+
+	return ret;
+}
+
+HRESULT FillExcepInfo(const Omega::string_t& strSource, Omega::IException* pE, EXCEPINFO* pExcepInfo)
 {
 	pExcepInfo->wCode = 1001;
 	pExcepInfo->wReserved = 0;
@@ -331,7 +385,7 @@ HRESULT FillExcepInfo(const wchar_t* wszSource, Omega::IException* pE, EXCEPINFO
 	pExcepInfo->pvReserved = NULL;
 	pExcepInfo->pfnDeferredFillIn = NULL;
 	pExcepInfo->scode = 0;
-	pExcepInfo->bstrSource = SysAllocString(wszSource);
+	pExcepInfo->bstrSource = ToBSTR(strSource);
 	pExcepInfo->bstrDescription = SysAllocString(L"Omega exception thrown");
 	
 	try
@@ -339,7 +393,7 @@ HRESULT FillExcepInfo(const wchar_t* wszSource, Omega::IException* pE, EXCEPINFO
 		Omega::string_t desc = GetDesc(pE);
 		
 		SysFreeString(pExcepInfo->bstrDescription);
-		pExcepInfo->bstrDescription = SysAllocString(desc.c_wstr());
+		pExcepInfo->bstrDescription = ToBSTR(desc);
 	}
 	catch (Omega::IException* pE2)
 	{

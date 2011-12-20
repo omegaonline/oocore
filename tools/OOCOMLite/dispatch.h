@@ -34,7 +34,9 @@
 
 HRESULT variant_to_any(LCID lcid, const VARIANTARG& arg, Omega::any_t& value);
 void any_to_variant(LCID lcid, const Omega::any_t& value, VARIANTARG* pArg);
-HRESULT FillExcepInfo(const wchar_t* wszSource, Omega::IException* pE, EXCEPINFO* pExcepInfo);
+HRESULT FillExcepInfo(const Omega::string_t& strSource, Omega::IException* pE, EXCEPINFO* pExcepInfo);
+BSTR ToBSTR(const Omega::string_t& str);
+Omega::string_t FromBSTR(const OLECHAR* bstr);
 
 class IDispatchImpl : public IDispatch
 {

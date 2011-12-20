@@ -79,10 +79,7 @@ OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__const_ctor,2,((in),const cha
 template <size_t S>
 inline Omega::string_t Omega::string_t::constant(const char (&arr)[S])
 {
-	if (S)
-		return string_t(static_cast<handle_t*>(OOCore_string_t__const_ctor(arr,S)),false);
-	else
-		return string_t(NULL,false);
+	return string_t(static_cast<handle_t*>(OOCore_string_t__const_ctor(arr,S)),false);
 }
 
 inline Omega::string_t Omega::string_t::constant(const char (&arr)[1])
@@ -102,22 +99,14 @@ inline Omega::string_t::~string_t()
 	}
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,h1,(in),const void*,h2));
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign,2,((in),void*,h1,(in),const void*,h2));
 inline Omega::string_t& Omega::string_t::operator = (const string_t& s)
 {
 	if (this != &s && m_handle != s.m_handle)
 	{
-		m_handle = static_cast<handle_t*>(OOCore_string_t_assign1(m_handle,s.m_handle));
+		m_handle = static_cast<handle_t*>(OOCore_string_t_assign(m_handle,s.m_handle));
 		OMEGA_DEBUG_STASH_STRING();
 	}
-	return *this;
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,h1,(in),const char*,sz));
-inline Omega::string_t& Omega::string_t::operator = (const char* sz)
-{
-	m_handle = static_cast<handle_t*>(OOCore_string_t_assign1(m_handle,sz));
-	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }
 
@@ -352,7 +341,7 @@ inline Omega::Formatting::formatter_t operator % (const Omega::string_t& lhs, T 
 
 inline Omega::Formatting::formatter_t operator % (const char* lhs, const Omega::string_t& rhs)
 {
-	return Omega::Formatting::formatter_t(Omega::string_t(lhs,Omega::string_t::npos)) % rhs;
+	return Omega::Formatting::formatter_t(Omega::string_t(lhs)) % rhs;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_int_t,3,((in),Omega::int64_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
@@ -584,7 +573,7 @@ inline void Omega::Formatting::formatter_t::free_handle(handle_t* h)
 	OOCore_formatter_t__dctor(h);
 }
 
-OOCORE_EXPORTED_FUNCTION(int,OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt));
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),unsigned long,index,(in),const Omega::string_t&,arg));
 
 template <typename T>
@@ -592,9 +581,8 @@ inline Omega::Formatting::formatter_t& Omega::Formatting::formatter_t::operator 
 {
 	unsigned long index;
 	string_t strFormat;
-	if (!OOCore_formatter_t_get_arg(m_handle,index,strFormat))
-		throw Formatting::IFormattingException::Create(System::Internal::get_text("No more formatting arguments"));
 
+	OOCore_formatter_t_get_arg(m_handle,index,strFormat);
 	OOCore_formatter_t_set_arg(m_handle,index,Formatting::ToString(rhs,strFormat));
 
 	return *this;

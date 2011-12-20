@@ -101,12 +101,12 @@ namespace
 	}
 }
 
-bool User::Process::is_relative_path(const wchar_t* pszPath)
+bool User::Process::is_relative_path(const char* pszPath)
 {
-	return (PathIsRelativeW(pszPath) != FALSE);
+	return (PathIsRelativeA(pszPath) != FALSE);
 }
 
-User::Process* User::Process::exec(const wchar_t* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	// Sort envrionment block - UNICODE, no-locale, case-insensitive (from MSDN)
 	env.sort(&env_sort);

@@ -156,7 +156,7 @@ any_t Key::GetValue(const string_t& strName)
 	if (!response.read(strValue))
 		OMEGA_THROW(response.last_error());
 
-	return string_t(strValue.c_str(),true);
+	return strValue.c_str();
 }
 
 void Key::SetValue(const string_t& strName, const any_t& value)
@@ -219,7 +219,7 @@ string_t Key::GetDescription()
 	if (!response.read(strValue))
 		OMEGA_THROW(response.last_error());
 
-	return string_t(strValue.c_str(),true);
+	return strValue.c_str();
 }
 
 string_t Key::GetValueDescription(const Omega::string_t& strName)
@@ -255,7 +255,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	if (!response.read(strValue))
 		OMEGA_THROW(response.last_error());
 
-	return string_t(strValue.c_str(),true);
+	return strValue.c_str();
 }
 
 void Key::SetDescription(const Omega::string_t& strDesc)
@@ -376,7 +376,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 		ptrLocal->Init(m_pManager,string_t::constant("Local User"),0,local_type);
 
 		ObjectPtr<ObjectImpl<Key> > ptrMirror = ObjectImpl<Key>::CreateInstance();
-		ptrMirror->Init(m_pManager,string_t(strName.c_str(),true),mirror_key,0);
+		ptrMirror->Init(m_pManager,strName.c_str(),mirror_key,0);
 
 		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
 		ptrNew->Init(string_t::constant("Local User"),ptrLocal,ptrMirror);
@@ -469,7 +469,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 			if (strName.empty())
 				break;
 
-			sub_keys.insert(string_t(strName.c_str(),true));
+			sub_keys.insert(strName.c_str());
 
 			if (m_key == 0 && m_type == 0)
 			{
@@ -523,7 +523,7 @@ std::set<Omega::string_t> Key::EnumValues()
 			if (strName.empty())
 				break;
 
-			values.insert(string_t(strName.c_str(),true));
+			values.insert(strName.c_str());
 		}
 
 		return values;

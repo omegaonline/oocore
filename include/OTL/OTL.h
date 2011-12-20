@@ -240,7 +240,7 @@ namespace OTL
 		{ }
 
 		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
-				ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
+				ObjectPtrBase<OBJECT>(Omega::string_t(name),flags,pOuter)
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
@@ -282,7 +282,7 @@ namespace OTL
 		{ }
 
 		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
-				ObjectPtrBase<Omega::IObject>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
+				ObjectPtrBase<Omega::IObject>(Omega::string_t(name),flags,pOuter)
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)

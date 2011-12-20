@@ -23,7 +23,7 @@
 
 struct NSpaceDefn
 {
-	const wchar_t** pszNames;
+	const OLECHAR** pszNames;
 	HRESULT (*pfnInvoke)(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarResult, UINT* puArgErr, EXCEPINFO* pExcepInfo);
 	HRESULT (*pfnGet)(LCID lcid, VARIANT* pVarResult, EXCEPINFO* pExcepInfo);
 	HRESULT (*pfnPut)(LCID lcid, DISPPARAMS* pDispParams, UINT* puArgErr, EXCEPINFO* pExcepInfo, bool byRef);

@@ -7,8 +7,7 @@ bool string_tests()
 {
 	const char sz1[] = "abcdef";
 	const char sz1_1[] = "abcdef";
-	const char sz1_2[] = "ABCDEF";
-
+	
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
 	TEST(!s1);
@@ -19,11 +18,16 @@ bool string_tests()
 
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
-	TEST(s1.Compare(sz1_2) == 0);
+	TEST(s1.Compare("ABCDEF") != 0);
 
 	const char sz2[] = "ghijk";
 	Omega::string_t s2("ghijk");
 	TEST(s2 == sz2);
+	TEST(s2 != "ghi");
+	TEST(s2 != "ghijklmno");
+
+	TEST(s2.Length() == 5);
+	TEST((s1 + s2).Length() == 11);
 
 	Omega::string_t s3(s1);
 	TEST(s3 == sz1);
@@ -38,29 +42,22 @@ bool string_tests()
 	s3.Clear();
 	TEST(s3.IsEmpty());
 
-	TEST(s2 != "ghijklmno");
-
-	s3 = sz1_2;
-	TEST(s1.Compare(s3) == 0);
-
 	s1 = "abcdefghijabcdefghij";
 	TEST(s1.Find('a') == 0);
 	TEST(s1.Find('a',1) == 10);
-	TEST(s1.Find('A',0) == 0);
-	TEST(s1.Find('A',1) == 10);
 
 	TEST(s1.FindNot('a') == 1);
-	TEST(s1.FindNot('a',1) == 1);
-	TEST(s1.FindNot('A',0) == 1);
-	TEST(s1.FindNot('A',1) == 1);
+	TEST(s1.FindNot('a',10) == 11);
 
 	TEST(s1.FindOneOf("edf") == 3);
+	TEST(s1.FindOneOf("edf",10) == 13);
 
 	TEST(s1.ReverseFind('a') == 10);
 	TEST(s1.ReverseFind('a',9) == 0);
-	TEST(s1.ReverseFind('A',Omega::string_t::npos) == 10);
-	TEST(s1.ReverseFind('A',9) == 0);
 
+	TEST(s1.FindNotOf("abcde",0) == 5);
+	TEST(s1.FindNotOf("abcde",10) == 15);
+	
 	s2 = sz1;
 	TEST(s1.Find(s2) == 0);
 	TEST(s1.Find(s2,1) == 10);
@@ -72,7 +69,7 @@ bool string_tests()
 
 	Omega::string_t s4;
 	TEST(s4 == "");
-	TEST(s4 == (char*)0);
+	TEST(s4 == (char*)NULL);
 	TEST(s4 == "");
 	TEST(s4 == Omega::string_t());
 
@@ -152,7 +149,7 @@ bool string_tests_format()
 
 		if (set_locale_helper(1031,"de_DE.utf8"))
 		{
-			TEST(Omega::string_t("{0:C}") % 12345.678 == "12.345,68 \x20AC");
+			TEST(Omega::string_t("{0:C}") % 12345.678 == "12.345,68 \u20AC");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
@@ -243,96 +240,6 @@ bool string_tests_format()
 	TEST(Omega::string_t("{0:yes;no}") % false == "no");
 	TEST(Omega::string_t("{0:'yes;';'no;'}") % true == "'yes;'");
 	TEST(Omega::string_t("{0:\"yes;\";\"no;\"}") % false == "\"no;\"");
-
-	return true;
-}
-
-bool string_tests_utf8()
-{
-#if defined(_MSC_VER)
-	FILE* pInUTF8 = fopen("..\\..\\..\\test\\UTF-8-test.txt","rb");
-#else
-	FILE* pInUTF8 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/UTF-8-test.txt","rb");
-#endif
-
-	if (!pInUTF8)
-	{
-		output("[Skipped]\n");
-		return false;
-	}
-
-	// Loop reading and converting...
-	std::string strUTF8;
-	for (;;)
-	{
-		char szBuf[129];
-		if (!fgets(szBuf,128,pInUTF8))
-			break;
-
-		szBuf[128] = '\0';
-		strUTF8 += szBuf;
-	}
-	fclose(pInUTF8);
-
-#if defined(_MSC_VER)
-	FILE* pInUTF16 = fopen("..\\..\\..\\test\\UTF-16-test.txt","rb");
-#else
-	FILE* pInUTF16 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/UTF-16-test.txt","rb");
-#endif
-
-	if (!pInUTF16)
-	{
-		output("[Skipped]\n");
-		return false;
-	}
-
-	// Loop reading and converting...
-	std::wstring strUTF16;
-	strUTF16.reserve(strUTF8.size());
-	for (;;)
-	{
-		Omega::uint16_t szBuf[128];
-		if (!fread(szBuf,sizeof(Omega::uint16_t),128,pInUTF16))
-			break;
-
-		for (int i=0; i<128; ++i)
-		{
-			unsigned int v = szBuf[i];
-			if (sizeof(wchar_t) == 4)
-			{
-				if (v >= 0xD800 && v <= 0xDBFF)
-				{
-					// Surrogate pair
-					v = (v & 0x27FF) << 10;
-					v += ((szBuf[++i] & 0x23FF) >> 10) + 0x10000;
-				}
-				else if (v >= 0xDC00 && v <= 0xDFFF)
-				{
-					// Surrogate pair
-					v = (v & 0x23FF) >> 10;
-					v += ((szBuf[++i] & 0x27FF) << 10) + 0x10000;
-				}
-			}
-
-			strUTF16.append(1,wchar_t(v));
-		}
-	}
-	fclose(pInUTF16);
-
-	Omega::string_t str(strUTF8.c_str(),true);
-
-	//TEST(str == strUTF16.c_str());
-	const char* s = str.c_str();
-
-#if 0
-	FILE* pOutUTF8 = fopen("UTF-8-out.txt","wb");
-
-	fputs(s,pOutUTF8);
-	fclose(pOutUTF8);
-
-#endif
-
-	TEST(s == strUTF8);
 
 	return true;
 }

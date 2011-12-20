@@ -216,6 +216,7 @@
     <ClCompile Include="Safe.cpp" />
     <ClCompile Include="SimpleMarshaller.cpp" />
     <ClCompile Include="StdObjectManager.cpp" />
+    <ClCompile Include="Text.cpp" />
     <ClCompile Include="Threading.cpp" />
     <ClCompile Include="TypeInfo.cpp" />
     <ClCompile Include="Types.cpp" />

@@ -42,30 +42,32 @@ namespace
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
 
-		void exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
+		void exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 
 	private:
 		pid_t m_pid;
 	};
 }
 
-bool User::Process::is_relative_path(const char* pszPath)
+bool User::Process::is_relative_path(const Omega::string_t& strPath)
 {
-	return (pszPath[0] != '/');
+	return (strPath[0] != '/');
 }
 
-User::Process* User::Process::exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	ptrProcess->exec(pszExeName,env);
+	ptrProcess->exec(strExeName,env);
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
+	const char* pszExeName = strExeName.c_str();
+
 	pid_t pid = fork();
 	if (pid < 0)
 		OMEGA_THROW(errno);
@@ -76,20 +78,7 @@ void UserProcessUnix::exec(const char* pszExeName, OOBase::Set<Omega::string_t,O
 
 		// Sort out environment block and split args
 
-		// We need to set the LC_CTYPE before the conversion...
-		void* TODO;
-		/*if (env_var(LC_ALL))
-			setlocale(LC_ALL,v);
-		else
-		{
-			if (env_var(LANG))
-				setlocale(LC_ALL,v);
-			else
-				setlocale(LC_ALL,"C");
-
-			if (env_var(LC_CTYPE))
-				set = (setlocale(LC_CTYPE,v) != NULL);
-		}*/
+		// Update PWD?
 
 		// Use execve()
 

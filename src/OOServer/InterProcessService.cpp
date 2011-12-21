@@ -95,7 +95,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
 		ptrKey = ObjectPtr<Omega::Registry::IKey>("Local User/Applications/" + strAppName + "/Activation");
 		strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
-		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess.c_str()))
+		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess))
 		{
 			string_t strErr = string_t::constant("Relative path \"{0}\" in application '{1}' activation registry value.") % strProcess % strAppName;
 			OMEGA_THROW(strErr.c_str());
@@ -104,7 +104,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	else if (ptrKey->IsValue(string_t::constant("Library")))
 	{
 		string_t strLib = ptrKey->GetValue(string_t::constant("Library")).cast<string_t>();
-		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib.c_str()))
+		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib))
 		{
 			string_t strErr = string_t::constant("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid;
 			OMEGA_THROW(strErr.c_str());

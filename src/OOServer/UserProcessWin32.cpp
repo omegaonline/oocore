@@ -95,9 +95,29 @@ namespace
 		return ptrCmdLine;
 	}
 
-	bool env_sort(const Omega::string_t& s1, const Omega::string_t& s2)
+	bool env_sort(const OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>& s1, const OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>& s2)
 	{
-		return (_wcsicmp(s1.c_wstr(),s2.c_wstr()) < 0);
+		return (_wcsicmp(s1,s2) < 0);
+	}
+
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const Omega::string_t& str)
+	{
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
+		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
+		if (len == 0)
+		{
+			DWORD dwErr = GetLastError();
+			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
+				OMEGA_THROW(dwErr);
+		}
+
+		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
+		if (!wsz)
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+		
+		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
+		wsz[len] = L'\0';
+		return wsz;
 	}
 }
 
@@ -106,27 +126,32 @@ bool User::Process::is_relative_path(const char* pszPath)
 	return (PathIsRelativeA(pszPath) != FALSE);
 }
 
-User::Process* User::Process::exec(const char* pszExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
+	// Copy and widen to UNICODE
+	OOBase::Set<OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>,OOBase::LocalAllocator> wenv;
+	for (size_t i=0;i<env.size();++i)
+		wenv.insert(to_wchar_t(*env.at(i)));
+
 	// Sort envrionment block - UNICODE, no-locale, case-insensitive (from MSDN)
-	env.sort(&env_sort);
+	wenv.sort(&env_sort);
 
 	// Build environment block
 	OOBase::RefPtr<OOBase::Buffer> env_block = new (std::nothrow) OOBase::Buffer();
 	if (!env_block)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-	for (size_t i=0;i<env.size();++i)
+	for (size_t i=0;i<wenv.size();++i)
 	{
-		Omega::string_t e = *env.at(i);
-		if (!e.IsEmpty())
+		wchar_t* e = *wenv.at(i);
+		if (e)
 		{
-			size_t len = (e.Length() + 1)*sizeof(wchar_t);
+			size_t len = (wcslen(e) + 1)*sizeof(wchar_t);
 			int err = env_block->space(len);
 			if (err != 0)
 				OMEGA_THROW(err);
 
-			memcpy(env_block->wr_ptr(),e.c_wstr(),len);
+			memcpy(env_block->wr_ptr(),e,len);
 			env_block->wr_ptr()[len-1] = L'\0';
 			env_block->wr_ptr(len);
 		}
@@ -144,7 +169,7 @@ User::Process* User::Process::exec(const char* pszExeName, OOBase::Set<Omega::st
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 	// Do a ShellExecute style lookup for the actual thing to call..
-	ptrProcess->exec(ShellParse(pszExeName),env_block);
+	ptrProcess->exec(ShellParse(to_wchar_t(strExeName)),env_block);
 	return ptrProcess.detach();
 }
 

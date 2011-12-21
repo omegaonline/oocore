@@ -164,7 +164,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
 
 			// Create a new process
-			ptrProcess = User::Process::exec(strProcess.c_str(),setEnv);
+			ptrProcess = User::Process::exec(strProcess,setEnv);
 
 			int err = m_mapInProgress.insert(strProcess,ptrProcess);
 			if (err != 0)

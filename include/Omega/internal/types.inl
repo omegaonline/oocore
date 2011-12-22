@@ -31,6 +31,8 @@
 #define OMEGA_DEBUG_STASH_STRING()  (void)0
 #endif
 
+#include <string.h>
+
 OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_cast,2,((in),const void*,h,(in),size_t*,plen));
 
 inline Omega::string_t::string_t(handle_t* h, bool bAddref) :

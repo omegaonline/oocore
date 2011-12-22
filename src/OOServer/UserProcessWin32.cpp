@@ -121,9 +121,9 @@ namespace
 	}
 }
 
-bool User::Process::is_relative_path(const char* pszPath)
+bool User::Process::is_relative_path(const Omega::string_t& strPath)
 {
-	return (PathIsRelativeA(pszPath) != FALSE);
+	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
 }
 
 User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
@@ -133,7 +133,7 @@ User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Se
 	for (size_t i=0;i<env.size();++i)
 		wenv.insert(to_wchar_t(*env.at(i)));
 
-	// Sort envrionment block - UNICODE, no-locale, case-insensitive (from MSDN)
+	// Sort environment block - UNICODE, no-locale, case-insensitive (from MSDN)
 	wenv.sort(&env_sort);
 
 	// Build environment block

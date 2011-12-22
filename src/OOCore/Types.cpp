@@ -220,7 +220,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor,2,((in),const cha
 	if (!buffer || err != 0)
 	{
 		delete pNode;
-		OMEGA_THROW(err);
+		OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
 	}
 
 	memcpy(buffer,sz,len);
@@ -310,7 +310,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append1,2,((in),void*,s
 		if (!buffer || err != 0)
 		{
 			delete pNode;
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
+			OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
 		}
 
 		memcpy(buffer,pOrig->buffer(),orig_len);
@@ -330,7 +330,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append2,3,((in),void*,s
 		return s1;
 
 	if (!s1)
-		return OOCore_string_t__ctor(sz,string_t::npos);
+		return OOCore_string_t__ctor(sz,len);
 
 	StringNode* pOrig = static_cast<StringNode*>(s1);
 
@@ -352,12 +352,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append2,3,((in),void*,s
 		if (!buffer || err != 0)
 		{
 			delete pNode;
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
+			OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
 		}
 
 		memcpy(buffer,pOrig->buffer(),orig_len);
 		memcpy(buffer+orig_len,sz,len);
-
+		
 		pOrig->release();
 		return pNode;
 	}

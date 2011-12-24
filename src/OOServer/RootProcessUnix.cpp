@@ -279,11 +279,11 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 		else
 			strTitle.concat("oosvruser:",m_sid.c_str());
 
-		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
-		OOBase::LocalString params;
-		params.printf("--log-file=vallog%d.txt",getpid());
-		execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		//OOBase::LocalString params;
+		//params.printf("--log-file=vallog%d.txt",getpid());
+		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
 		//OOBase::LocalString gdb;
 		//gdb.printf("run %s --debug",strPipe.c_str());

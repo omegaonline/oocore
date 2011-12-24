@@ -464,9 +464,7 @@ Omega::string_t make_absolute(const char* sz)
 	GetFullPathNameA(sz,MAX_PATH,szBuf,NULL);
 	return Omega::string_t(szBuf);
 #else
-	char szBuf1[PATH_MAX+1] = {0};
-
-	char* ret = realpath(sz,szBuf1);
+	char* ret = realpath(sz,NULL);
 	if (!ret)
 		return Omega::string_t(sz);
 

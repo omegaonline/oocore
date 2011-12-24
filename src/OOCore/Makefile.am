@@ -30,7 +30,7 @@ common = \
 	SimpleMarshaller.cpp \
 	StdObjectManager.cpp \
 	StdObjectManager.h \
-	Text.cpp \	
+	Text.cpp \
 	Threading.cpp \
 	TypeInfo.cpp \
 	Types.cpp \

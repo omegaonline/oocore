@@ -239,7 +239,8 @@ bool UserProcessWin32::wait_for_exit(const OOBase::timeval_t* wait, int& exit_co
 
 		return true;
 	}
-	else if (dwWait != WAIT_TIMEOUT)
+	
+	if (dwWait != WAIT_TIMEOUT)
 		OOBase_CallCriticalFailure(GetLastError());
 
 	return false;

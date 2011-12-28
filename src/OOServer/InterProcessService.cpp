@@ -190,7 +190,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			}
 
 			// Check the process is still alive
-			OOBase::timeval_t short_wait(0,100000);
+			OOBase::timeval_t short_wait(0,1);
 			int ec = 0;
 			if (ptrProcess->wait_for_exit(&short_wait,ec))
 				break;

@@ -92,7 +92,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	{
 		uint32_t src_id = 0;
 		ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-		if (ptrCC != 0)
+		if (ptrCC)
 			src_id = ptrCC->SourceId();
 
 		// Check if we have someone registered already
@@ -181,9 +181,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 			// Check its still alive...
 			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
 			{
-				int err = revoke_list.push(*m_mapObjectsByOid.at(i));
-				if (err != 0)
-					OMEGA_THROW(err);
+				revoke_list.push(*m_mapObjectsByOid.at(i));
 			}
 			else
 			{
@@ -209,14 +207,11 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	for (uint32_t i = 0;revoke_list.pop(&i);)
 		RevokeObject_i(i,0);
 
-	// If we have an object, get out now
 	if (ptrObject)
 	{
 		pObject = ptrObject.AddRef();
-		return;
 	}
-
-	if (m_ptrROT && (flags & ~Activation::UserScope))
+	else if (m_ptrROT && (flags & ~Activation::UserScope))
 	{
 		// Route to global rot
 		m_ptrROT->GetObject(oid,flags,iid,pObject);
@@ -247,12 +242,11 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 	}
 }
 
-
 void User::RunningObjectTable::RevokeObject(uint32_t cookie)
 {
 	uint32_t src_id = 0;
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-	if (ptrCC != 0)
+	if (ptrCC)
 		src_id = ptrCC->SourceId();
 
 	RevokeObject_i(cookie,src_id);

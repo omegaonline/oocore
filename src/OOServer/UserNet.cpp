@@ -242,7 +242,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)
 		{
-			OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+			OOBase::timeval_t now = OOBase::timeval_t::now();
 			if (deadline <= now)
 				throw ITimeoutException::Create();
 
@@ -332,7 +332,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	uint32_t timeout = 0;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::now();
 		if (deadline <= now)
 			return;
 
@@ -345,7 +345,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	{
 		if (deadline != OOBase::timeval_t::MaxTime)
 		{
-			if (deadline <= OOBase::timeval_t::gettimeofday())
+			if (deadline <= OOBase::timeval_t::now())
 				return;
 		}
 

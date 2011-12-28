@@ -177,7 +177,7 @@ template class OOBase::TLSSingleton<CallContext,OOCore::DLL>;
 
 uint32_t StdCallContext::Timeout()
 {
-	OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+	OOBase::timeval_t now = OOBase::timeval_t::now();
 	if (m_cc.m_deadline <= now)
 		return 0;
 
@@ -189,7 +189,7 @@ uint32_t StdCallContext::Timeout()
 
 bool_t StdCallContext::HasTimedOut()
 {
-	return (m_cc.m_deadline <= OOBase::timeval_t::gettimeofday());
+	return (m_cc.m_deadline <= OOBase::timeval_t::now());
 }
 
 uint32_t StdCallContext::SourceId()

@@ -671,7 +671,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)
 		{
-			OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+			OOBase::timeval_t now = OOBase::timeval_t::now();
 			if (deadline <= now)
 				return;
 
@@ -685,7 +685,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 		{
 			if (deadline != OOBase::timeval_t::MaxTime)
 			{
-				if (deadline <= OOBase::timeval_t::gettimeofday())
+				if (deadline <= OOBase::timeval_t::now())
 					return;
 			}
 

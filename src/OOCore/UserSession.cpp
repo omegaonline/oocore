@@ -702,7 +702,7 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::now();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
 
@@ -757,7 +757,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_chan
 	OOBase::timeval_t wait = deadline;
 	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::now();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
 
@@ -1009,7 +1009,7 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pT
 
 	if (pTimeout)
 	{
-		OOBase::timeval_t now = OOBase::timeval_t::gettimeofday();
+		OOBase::timeval_t now = OOBase::timeval_t::now();
 		OOBase::timeval_t deadline = pContext->m_deadline;
 		if (*pTimeout > 0)
 		{

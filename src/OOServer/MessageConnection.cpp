@@ -376,7 +376,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 			return true;
 		}
 
-		if (deadline <= OOBase::timeval_t::gettimeofday())
+		if (deadline <= OOBase::timeval_t::now())
 			return true;
 
 		// Reset the buffer all the way to the start
@@ -1201,7 +1201,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		return io_result::channel_closed;
 
 	// Check the timeout
-	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::gettimeofday())
+	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::now())
 		return io_result::timedout;
 
 	return ((ptrMC->send(header.buffer(),msg_len ? msg.m_payload.buffer() : NULL) == 0) ? io_result::success : io_result::failed);

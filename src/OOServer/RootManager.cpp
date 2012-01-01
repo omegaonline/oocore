@@ -135,7 +135,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(15));
+		OOBase::Thread::sleep(150000);
 	}
 
 	return ret;
@@ -683,7 +683,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 	return channel_id;
 }
 
-void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	request.read(op_code);
@@ -784,12 +784,12 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 	}
 
 	if (response.last_error() == 0 && !(attribs & 1))
-		send_response(src_channel_id,src_thread_id,response,deadline,attribs);
+		send_response(src_channel_id,src_thread_id,response,timeout,attribs);
 }
 
-OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs)
+OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs)
 {
-	return send_request(m_sandbox_channel,&request,response,deadline,attribs);
+	return send_request(m_sandbox_channel,&request,response,OOBase::Timeout(),attribs);
 }
 
 void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)

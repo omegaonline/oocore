@@ -341,7 +341,7 @@ Omega::uint32_t Root::Manager::add_socket(Omega::uint32_t acceptor_id, Socket* p
 	}
 
 	OOBase::CDRStream response;
-	if (sendrecv_sandbox(request,&response,0,0) != io_result::success)
+	if (sendrecv_sandbox(request,&response,0) != io_result::success)
 	{
 		remove_socket(id);
 		LOG_ERROR_RETURN(("Failed to send request to sandbox"),0);
@@ -620,7 +620,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		buffer->mark_wr_ptr(mark);
 
 		// Just forward on...
-		m_pManager->sendrecv_sandbox(request,NULL,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,1);
 	}
 	else if (err)
 	{
@@ -636,7 +636,7 @@ void AsyncSocket::on_recv(OOBase::Buffer* buffer, int err)
 		}
 
 		// Just forward on...
-		m_pManager->sendrecv_sandbox(request,NULL,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,1);
 	}
 }
 
@@ -649,7 +649,7 @@ int AsyncSocket::send(OOBase::Buffer* buffer, Omega::bool_t /*bReliable*/)
 	return err;
 }
 
-void AsyncSocket::on_sent(int err)
+void AsyncSocket::on_sent(int /*err*/)
 {
 	/*if (buffer)
 	{
@@ -673,7 +673,7 @@ void AsyncSocket::on_sent(int err)
 		buffer->mark_wr_ptr(mark);
 
 		// Just forward on...
-		m_pManager->sendrecv_sandbox(request,NULL,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,1);
 	}
 	else
 	{
@@ -689,7 +689,7 @@ void AsyncSocket::on_sent(int err)
 		}
 
 		// Just forward on...
-		m_pManager->sendrecv_sandbox(request,NULL,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,1);
 	}*/
 }
 
@@ -702,6 +702,6 @@ void AsyncSocket::on_closed()
 	if (request.last_error() != 0)
 		LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())));
 	else
-		m_pManager->sendrecv_sandbox(request,NULL,0,1);
+		m_pManager->sendrecv_sandbox(request,NULL,1);
 }
 

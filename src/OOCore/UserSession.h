@@ -62,7 +62,7 @@ namespace OOCore
 		Omega::uint32_t    m_attribs;
 		Omega::uint16_t    m_type;
 		Omega::uint16_t    m_dest_cmpt_id;
-		OOBase::timeval_t  m_deadline;
+		OOBase::Timeout  m_timeout;
 		OOBase::CDRStream  m_payload;
 	};
 
@@ -79,8 +79,8 @@ namespace OOCore
 
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
-		void send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t timeout, Omega::uint32_t attribs);
-		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
+		void send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t millisecs, Omega::uint32_t attribs);
+		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint32_t attribs = Message::synchronous);
 		Omega::uint32_t get_channel_id() const;
 
 		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment();
@@ -125,7 +125,7 @@ namespace OOCore
 
 			// 'Private' thread-local data
 			OOBase::Atomic<size_t>        m_usage_count;
-			OOBase::timeval_t             m_deadline;
+			OOBase::Timeout             m_timeout;
 			Omega::uint16_t               m_current_cmpt;
 
 			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator> m_mapChannelThreads;
@@ -175,10 +175,10 @@ namespace OOCore
 		int run_read_loop();
 		void respond_exception(OOBase::CDRStream& response, Omega::IException* pE);
 		void send_response_catch(const Message& msg, OOBase::CDRStream* response, Omega::uint32_t attribs = Message::synchronous);
-		bool pump_request(const OOBase::timeval_t* deadline = 0);
-		void process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline);
-		void wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
-		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
+		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
+		void process_request(ThreadContext* pContext, const Message& msg, const OOBase::Timeout& timeout);
+		void wait_for_response(OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t from_channel_id);
+		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Omega::uint16_t flags, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::Atomic<size_t>& usage);
 

@@ -129,9 +129,9 @@ void InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&, Acti
 	throw Activation::IOidNotFoundException::Create(oid);
 }
 
-bool_t InterProcessService::HandleRequest(uint32_t timeout)
+bool_t InterProcessService::HandleRequest(uint32_t millisecs)
 {
-	return Omega::HandleRequest(timeout);
+	return Omega::HandleRequest(millisecs);
 }
 
 Remoting::IChannel* InterProcessService::OpenRemoteChannel(const string_t&)

@@ -41,7 +41,7 @@ namespace Omega
 		interface IChannel : public IObject
 		{
 			virtual IMessage* CreateMessage() = 0;
-			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
+			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t millisecs) = 0;
 			virtual MarshalFlags_t GetMarshalFlags() = 0;
 			virtual uint32_t GetSource() = 0;
 			virtual bool_t IsConnected() = 0;
@@ -66,7 +66,7 @@ namespace Omega
 		interface IObjectManager : public IObject
 		{
 			virtual void Connect(IChannel* pChannel) = 0;
-			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t timeout) = 0;
+			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t millisecs) = 0;
 			virtual void Shutdown() = 0;
 			virtual void GetRemoteInstance(const Omega::any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
 			virtual TypeInfo::IInterfaceInfo* GetInterfaceInfo(const guid_t& iid) = 0;
@@ -91,7 +91,7 @@ namespace Omega
 
 		interface IChannelSink : public IObject
 		{
-			virtual void Send(TypeInfo::MethodAttributes_t attribs, IMessage* pMsg, uint32_t timeout) = 0;
+			virtual void Send(TypeInfo::MethodAttributes_t attribs, IMessage* pMsg, uint32_t millisecs) = 0;
 			virtual void Close() = 0;
 
 			static IChannelSink* OpenServerSink(const guid_t& message_oid, IChannelSink* pSink);
@@ -116,7 +116,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	Omega::Remoting, IChannel, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
 
 	OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
-	OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
+	OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,millisecs))
 	OMEGA_METHOD(Remoting::MarshalFlags_t,GetMarshalFlags,0,())
 	OMEGA_METHOD(uint32_t,GetSource,0,())
 	OMEGA_METHOD(bool_t,IsConnected,0,())
@@ -173,7 +173,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IChannelSink, "{C395066A-05D1-45f2-95C5-272319CF1394}",
 
-	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,0,Send,3,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pMsg,(in),uint32_t,timeout))
+	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,0,Send,3,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pMsg,(in),uint32_t,millisecs))
 	OMEGA_METHOD_VOID(Close,0,())
 )
 

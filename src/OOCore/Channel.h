@@ -96,7 +96,7 @@ namespace OOCore
 
 	public:
 		Omega::bool_t IsConnected();
-		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t millisecs);
 		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
 	};
 

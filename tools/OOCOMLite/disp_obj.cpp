@@ -548,7 +548,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		ptrMsg->WriteStructEnd();
 			
 		// Now make the call...
-		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,ptrResult,timeout);
+		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,ptrResult,0xFFFFFFFF);
 		if (pE)
 			return FillExcepInfo(strName.c_str(),pE,pExcepInfo);			
 	}

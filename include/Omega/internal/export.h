@@ -625,7 +625,7 @@
 #define OMEGA_UNPACK_PARAMS_WIRE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_UNPACK_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,millisecs,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
@@ -637,7 +637,7 @@
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 			pParamsOut__wire__->WriteStructEnd(); \
-			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,timeout); \
+			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,millisecs); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
@@ -648,7 +648,7 @@
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +
 
-#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,millisecs,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
@@ -660,7 +660,7 @@
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 			pParamsOut__wire__->WriteStructEnd(); \
-			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,timeout); \
+			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,millisecs); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
@@ -780,10 +780,10 @@
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
 
 #define OMEGA_METHOD_VOID(name,param_count,params) \
-	(DECLARED_METHOD_VOID(TypeInfo::Synchronous,0,name,param_count,params))
+	(DECLARED_METHOD_VOID(TypeInfo::Synchronous,0xFFFFFFFF,name,param_count,params))
 
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
-	(DECLARED_METHOD(TypeInfo::Synchronous,0,ret_type,name,param_count,params))
+	(DECLARED_METHOD(TypeInfo::Synchronous,0xFFFFFFFF,ret_type,name,param_count,params))
 
 #define OMEGA_NO_METHODS() \
 	(DECLARED_NO_METHODS())

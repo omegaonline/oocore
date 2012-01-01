@@ -164,7 +164,7 @@ int User::Manager::run(const char* pszPipe)
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(OOBase::timeval_t(15));
+		OOBase::Thread::sleep(15000);
 	}
 
 	return ret;
@@ -181,8 +181,8 @@ bool User::Manager::connect_root(const char* pszPipe)
 #if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
-	OOBase::timeval_t wait(20);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().connect_local_socket(pszPipe,err,&wait));
+	OOBase::Timeout timeout(20,0);
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().connect_local_socket(pszPipe,err,timeout));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -591,15 +591,15 @@ void User::Manager::do_quit_i()
 	quit();
 }
 
-void User::Manager::process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::Timeout& timeout, uint32_t attribs)
 {
 	if (src_channel_id == m_uUpstreamChannel)
-		process_root_request(request,src_thread_id,deadline,attribs);
+		process_root_request(request,src_thread_id,timeout,attribs);
 	else
-		process_user_request(request,src_channel_id,src_thread_id,deadline,attribs);
+		process_user_request(request,src_channel_id,src_thread_id,timeout,attribs);
 }
 
-void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, const OOBase::Timeout& timeout, uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
@@ -635,13 +635,13 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 
 	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
 	{
-		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,deadline,attribs);
+		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,timeout,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)
 			LOG_ERROR(("Root response sending failed"));
 	}
 }
 
-void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::timeval_t& deadline, uint32_t attribs)
+void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::Timeout& timeout, uint32_t attribs)
 {
 	try
 	{
@@ -668,33 +668,20 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 		ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
 
 		// Check timeout
-		uint32_t timeout = 0;
-		if (deadline != OOBase::timeval_t::MaxTime)
-		{
-			OOBase::timeval_t now = OOBase::timeval_t::now();
-			if (deadline <= now)
-				return;
-
-			timeout = (deadline - now).msec();
-		}
+		if (timeout.has_expired())
+			return;
 
 		// Make the call
-		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout);
+		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.millisecs());
 
 		if (!(attribs & OOServer::Message_t::asynchronous))
 		{
-			if (deadline != OOBase::timeval_t::MaxTime)
-			{
-				if (deadline <= OOBase::timeval_t::now())
-					return;
-			}
-
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
 			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
-			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
+			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),timeout,attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
 				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
@@ -750,16 +737,16 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
-	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
+	OOBase::Timeout timeout;
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{
 		uint32_t msecs = ptrCC->Timeout();
-		if (msecs != (uint32_t)-1)
-			deadline = OOBase::timeval_t::deadline(msecs);
+		if (msecs != 0xFFFFFFFF)
+			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
 	}
 
-	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
+	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,timeout,attribs);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)

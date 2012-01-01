@@ -243,19 +243,16 @@ void OOCore::UserSession::start(const string_t& strArgs)
 	if (!bStandalone)
 	{
 		// Connect up to the user process...
-		OOBase::Countdown countdown(15,0);
+		OOBase::Timeout timeout(15,0);
 		do
 		{
-			OOBase::timeval_t timeout;
-			countdown.timeout(timeout);
-
-			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,&timeout);
+			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
 			if (!err || (err != ENOENT && err != ECONNREFUSED))
 				break;
 
 			// We ignore the error, and try again until we timeout
 		}
-		while (!countdown.has_ended());
+		while (!timeout.has_expired());
 
 		if (err)
 			OMEGA_THROW(err);

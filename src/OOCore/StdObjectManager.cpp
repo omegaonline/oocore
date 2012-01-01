@@ -140,7 +140,6 @@ namespace
 	struct CallContext
 	{
 		CallContext() :
-				m_deadline(OOBase::timeval_t::MaxTime),
 				m_src_id(0),
 				m_flags(0)
 		{}
@@ -149,7 +148,7 @@ namespace
 		{
 		}
 
-		OOBase::timeval_t        m_deadline;
+		OOBase::Timeout        m_timeout;
 		uint32_t                 m_src_id;
 		Remoting::MarshalFlags_t m_flags;
 	};
@@ -177,19 +176,12 @@ template class OOBase::TLSSingleton<CallContext,OOCore::DLL>;
 
 uint32_t StdCallContext::Timeout()
 {
-	OOBase::timeval_t now = OOBase::timeval_t::now();
-	if (m_cc.m_deadline <= now)
-		return 0;
-
-	if (m_cc.m_deadline == OOBase::timeval_t::MaxTime)
-		return (uint32_t)-1;
-
-	return (m_cc.m_deadline - now).msec();
+	return m_cc.m_timeout.millisecs();
 }
 
 bool_t StdCallContext::HasTimedOut()
 {
-	return (m_cc.m_deadline <= OOBase::timeval_t::now());
+	return m_cc.m_timeout.has_expired();
 }
 
 uint32_t StdCallContext::SourceId()
@@ -264,7 +256,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	MarshalInterface(string_t::constant("$retval"),pResponse,iid,ptrObject);
 }
 
-Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
+Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t millisecs)
 {
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Invoke() called on disconnected ObjectManager"));
@@ -281,13 +273,13 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 	else
 		pCC = &old_context;
 
+	if (millisecs != 0xFFFFFFFF)
+		pCC->m_timeout = OOBase::Timeout(millisecs / 1000, (millisecs % 1000) * 1000);
+
 	try
 	{
-		if (timeout)
-			pCC->m_deadline = OOBase::timeval_t::deadline(timeout);
-		else
-			pCC->m_deadline = OOBase::timeval_t::MaxTime;
-
+		
+		
 		pCC->m_src_id = m_ptrChannel->GetSource();
 		pCC->m_flags = m_ptrChannel->GetMarshalFlags();
 
@@ -390,7 +382,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 
 	try
 	{
-		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
 	}
 	catch (...)
 	{
@@ -426,7 +418,7 @@ Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 	return m_ptrChannel->CreateMessage();
 }
 
-IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
 {
 	pRecv = NULL;
 
@@ -434,7 +426,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected ObjectManager"));
 
 	ObjectPtr<Remoting::IMessage> ptrRecv;
-	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,ptrRecv,timeout);
+	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,ptrRecv,millisecs);
 	if (pE)
 		return pE;
 
@@ -488,7 +480,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 
 	try
 	{
-		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
 	}
 	catch (...)
 	{

@@ -290,12 +290,12 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	Omega::uint32_t src_channel_id = 0;
 	input.read(src_channel_id);
 
-	// Read the deadline
-	Omega::int64_t req_dline_secs;
-	input.read(req_dline_secs);
-	Omega::int32_t req_dline_usecs;
-	input.read(req_dline_usecs);
-	OOBase::timeval_t deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
+	// Read the timeout
+	Omega::uint32_t timeout_msecs;
+	input.read(timeout_msecs);
+	OOBase::Timeout timeout;
+	if (timeout_msecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
 
 	// Did everything make sense?
 	int err = input.last_error();
@@ -346,7 +346,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 
 		// Read in the message info
 		MessageHandler::Message msg(input);
-		msg.m_deadline = deadline;
+		msg.m_timeout = timeout;
 		msg.m_src_channel_id = src_channel_id;
 
 		// Read the rest of the message
@@ -376,7 +376,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 			return true;
 		}
 
-		if (deadline <= OOBase::timeval_t::now())
+		if (timeout.has_expired())
 			return true;
 
 		// Reset the buffer all the way to the start
@@ -386,23 +386,23 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	}
 }
 
-int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnce)
+int OOServer::MessageHandler::pump_requests(const OOBase::Timeout& timeout, bool bOnce)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
 	do
 	{
 		// Wait up to 15 secs
-		OOBase::timeval_t wait2 = OOBase::timeval_t(15);
-		if (wait)
-			wait2 = *wait;
-
+		OOBase::Timeout timeout2(15,0);
+		if (!timeout.is_infinite())
+			timeout2 = timeout;
+		
 		// Inc usage count
 		++m_waiting_threads;
 
 		// Get the next message
 		Message msg;
-		OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.pop(msg,&wait2);
+		OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.pop(msg,timeout2);
 		
 		// Dec usage count
 		size_t waiters = --m_waiting_threads;
@@ -412,7 +412,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		else if (res != OOBase::BoundedQueue<Message>::success)
 		{
 			// If we have too many threads running, or we were waiting or closed, exit this thread
-			if (wait || res == OOBase::BoundedQueue<Message>::closed || (waiters > 2 && !bOnce))
+			if (!timeout.is_infinite() || res == OOBase::BoundedQueue<Message>::closed || (waiters > 2 && !bOnce))
 				return 0;
 
 			// Wait again...
@@ -438,9 +438,9 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 		{
 			if (msg.m_attribs & Message_t::system_message)
 			{
-				// Set deadline
-				OOBase::timeval_t old_deadline = pContext->m_deadline;
-				pContext->m_deadline = msg.m_deadline;
+				// Set timeout
+				OOBase::Timeout old_timeout = pContext->m_timeout;
+				pContext->m_timeout = msg.m_timeout;
 
 				if ((msg.m_attribs & Message_t::system_message) == Message_t::async_function)
 					process_async_function(msg);
@@ -452,7 +452,7 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 					OOBase::CDRStream response;
 					response.write(msg.m_src_channel_id);
 
-					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_reflect);
+					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_timeout,Message_t::synchronous | Message_t::channel_reflect);
 				}
 				else if ((msg.m_attribs & Message_t::system_message) == Message_t::channel_ping)
 				{
@@ -460,18 +460,18 @@ int OOServer::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool 
 					OOBase::CDRStream response;
 					response.write(Omega::byte_t(1));
 
-					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_ping);
+					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_timeout,Message_t::synchronous | Message_t::channel_ping);
 				}
 				else
 					LOG_ERROR(("Unrecognised system message"));
 
-				// Reset deadline
-				pContext->m_deadline = old_deadline;
+				// Reset timeout
+				pContext->m_timeout = old_timeout;
 			}
 			else
 			{
 				// Process the message...
-				process_request_context(pContext,msg);
+				process_request_context(pContext,msg,timeout);
 			}
 		}
 		else
@@ -565,12 +565,12 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	Omega::uint32_t src_channel_id = 0;
 	input.read(src_channel_id);
 
-	// Read the deadline
-	Omega::int64_t req_dline_secs;
-	input.read(req_dline_secs);
-	Omega::int32_t req_dline_usecs;
-	input.read(req_dline_usecs);
-	OOBase::timeval_t deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
+	// Read the timeout
+	Omega::uint32_t timeout_msecs;
+	input.read(timeout_msecs);
+	OOBase::Timeout timeout;
+	if (timeout_msecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
 
 	Omega::uint32_t attribs = 0;
 	input.read(attribs);
@@ -593,11 +593,11 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 		if (input.buffer()->length() > 0)
 			input.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
-		pThis->route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
+		pThis->route_off(input,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::timeval_t&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::Timeout&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t)
 {
 	// We have nowhere to route!
 	return io_result::channel_closed;
@@ -688,7 +688,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 
 		ThreadContext* pContext = NULL;
 		if (m_mapThreadContexts.find(msg.m_dest_thread_id,pContext))
-			res = pContext->m_msg_queue.push(msg,msg.m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg.m_deadline);
+			res = pContext->m_msg_queue.push(msg,msg.m_timeout);
 
 		if (res == OOBase::BoundedQueue<Message>::error)
 			LOG_ERROR_RETURN(("Message pump failed: %s",OOBase::system_error_text(pContext->m_msg_queue.last_error())),io_result::failed);
@@ -697,7 +697,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_messag
 	{
 		size_t waiting = m_waiting_threads;
 
-		res = m_default_msg_queue.push(msg,msg.m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg.m_deadline);
+		res = m_default_msg_queue.push(msg,msg.m_timeout);
 
 		if (res == OOBase::BoundedQueue<Message>::success && waiting <= 1)
 			start_request_threads(1);
@@ -730,8 +730,7 @@ OOServer::MessageHandler::ThreadContext* OOServer::MessageHandler::ThreadContext
 
 OOServer::MessageHandler::ThreadContext::ThreadContext() :
 		m_thread_id(0),
-		m_pHandler(0),
-		m_deadline(OOBase::timeval_t::MaxTime)
+		m_pHandler(0)
 {
 }
 
@@ -789,7 +788,7 @@ void OOServer::MessageHandler::stop_request_threads()
 	m_threadpool.join();
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_response(OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -810,7 +809,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		
 		// Get the next message
 		Message msg;
-		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg,deadline);
+		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg,timeout);
 
 		if (res == OOBase::BoundedQueue<Message>::error)
 			LOG_ERROR_RETURN(("Message pump failed: %s",OOBase::system_error_text(pContext->m_msg_queue.last_error())),io_result::failed);
@@ -843,7 +842,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		{
 			if (type == Message_t::Request)
 			{
-				process_request_context(pContext,msg,deadline);
+				process_request_context(pContext,msg,timeout);
 			}
 			else if (type == Message_t::Response)
 			{
@@ -859,7 +858,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 	return ret;
 }
 
-bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, Message& msg, const OOBase::timeval_t* deadline)
+bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, Message& msg, const OOBase::Timeout& timeout)
 {
 	// Set per channel thread id
 	Omega::uint16_t old_thread_id = 0;
@@ -876,16 +875,16 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 			LOG_ERROR_RETURN(("Failed to update thread channel information: %s",OOBase::system_error_text(err)),false);
 	}
 
-	// Update deadline
-	OOBase::timeval_t old_deadline = pContext->m_deadline;
-	pContext->m_deadline = msg.m_deadline;
-	if (deadline && *deadline < pContext->m_deadline)
-		pContext->m_deadline = *deadline;
+	// Update timeout
+	OOBase::Timeout old_timeout = pContext->m_timeout;
+	pContext->m_timeout = msg.m_timeout;
+	if (timeout.millisecs() < pContext->m_timeout.millisecs())
+		pContext->m_timeout = timeout;
 
 	// Process the message...
-	process_request(msg.m_payload,msg.m_src_channel_id,msg.m_src_thread_id,pContext->m_deadline,msg.m_attribs);
+	process_request(msg.m_payload,msg.m_src_channel_id,msg.m_src_thread_id,pContext->m_timeout,msg.m_attribs);
 	
-	pContext->m_deadline = old_deadline;
+	pContext->m_timeout = old_timeout;
 
 	// Restore old per channel thread id
 	if (v)
@@ -952,7 +951,7 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 {
 	OOBase::CDRStream msg;
 	if (msg.write(closed_channel_id))
-		send_request(dest_channel_id,&msg,NULL,0,Message_t::asynchronous | Message_t::channel_close);
+		send_request(dest_channel_id,&msg,NULL,OOBase::Timeout(),Message_t::asynchronous | Message_t::channel_close);
 }
 
 bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
@@ -963,7 +962,6 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 
 	// Create a new message
 	MessageHandler::Message msg(24 + (stream ? stream->buffer()->length() : 0));	
-	msg.m_deadline = OOBase::timeval_t::MaxTime;
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_dest_thread_id = 0;
 	msg.m_src_thread_id = 0;
@@ -992,14 +990,14 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 	return (queue_message(msg) == io_result::success);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
 {
 	// Build a header
 	Message msg(request ? *request : OOBase::CDRStream());
 	msg.m_dest_thread_id = 0;
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_src_thread_id = 0;
-	msg.m_deadline = deadline ? *deadline : OOBase::timeval_t::MaxTime;
+	msg.m_timeout = timeout;
 	msg.m_attribs = attribs;
 	
 	// Only use thread context if we are a synchronous call
@@ -1010,7 +1008,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 		pContext->m_mapChannelThreads.find(dest_channel_id,msg.m_dest_thread_id);
 		
 		msg.m_src_thread_id = pContext->m_thread_id;
-		msg.m_deadline = pContext->m_deadline;
+		msg.m_timeout = pContext->m_timeout;
 	}
 
 	// Find the destination channel
@@ -1024,7 +1022,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request);
+		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_timeout,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request);
 		if (res != io_result::success)
 			return res;
 	}
@@ -1040,10 +1038,10 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 		return io_result::success;
 
 	// Wait for response...
-	return wait_for_response(*response,msg.m_deadline != OOBase::timeval_t::MaxTime ? &msg.m_deadline : 0,actual_dest_channel_id);
+	return wait_for_response(*response,msg.m_timeout,actual_dest_channel_id);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1053,9 +1051,9 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_src_thread_id = pContext->m_thread_id;
 	msg.m_attribs = attribs;
-	msg.m_deadline = pContext->m_deadline;
-	if (deadline < msg.m_deadline)
-		msg.m_deadline = deadline;
+	msg.m_timeout = pContext->m_timeout;
+	if (timeout.millisecs() < msg.m_timeout.millisecs())
+		msg.m_timeout = timeout;
 
 	// Find the destination channel
 	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;
@@ -1068,7 +1066,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response);
+		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_timeout,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response);
 	}
 	else
 	{
@@ -1077,7 +1075,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, OOBase::CDRStream& message)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, OOBase::CDRStream& message)
 {
 	// Check the destination
 	bool bRoute = true;
@@ -1105,7 +1103,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		return route_off(message,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags);
+		return route_off(message,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
 	}
 
 	if (!bRoute)
@@ -1117,7 +1115,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		msg.m_src_channel_id = src_channel_id;
 		msg.m_src_thread_id = src_thread_id;
 		msg.m_attribs = attribs;
-		msg.m_deadline = deadline;
+		msg.m_timeout = timeout;
 
 		// Build a message
 		msg.m_payload.write(flags);
@@ -1141,7 +1139,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		msg.m_src_channel_id = src_channel_id;
 		msg.m_src_thread_id = src_thread_id;
 		msg.m_attribs = attribs;
-		msg.m_deadline = deadline;
+		msg.m_timeout = timeout;
 		
 		return send_message(flags,actual_dest_channel_id,dest_channel_id,msg);
 	}
@@ -1161,10 +1159,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
-
-	header.write(static_cast<Omega::int64_t>(msg.m_deadline.tv_sec()));
-	header.write(static_cast<Omega::int32_t>(msg.m_deadline.tv_usec()));
-
+	header.write(static_cast<Omega::uint32_t>(msg.m_timeout.millisecs()));
 	header.write(msg.m_attribs);
 	header.write(msg.m_dest_thread_id);
 	header.write(msg.m_src_thread_id);
@@ -1201,7 +1196,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 		return io_result::channel_closed;
 
 	// Check the timeout
-	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::timeval_t::now())
+	if (msg.m_timeout.has_expired())
 		return io_result::timedout;
 
 	return ((ptrMC->send(header.buffer(),msg_len ? msg.m_payload.buffer() : NULL) == 0) ? io_result::success : io_result::failed);

@@ -77,7 +77,7 @@ namespace
 		if (Root::is_debug())
 		{
 			// Give us a chance to read the errors!
-			OOBase::Thread::sleep(OOBase::timeval_t(15));
+			OOBase::Thread::sleep(15000);
 		}
 
 		return true;

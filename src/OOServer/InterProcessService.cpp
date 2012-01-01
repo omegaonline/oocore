@@ -137,19 +137,19 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		reg_mask |= Activation::ExternalPublic;
 
 	// The timeout needs to be related to the request timeout...
-	OOBase::Countdown countdown(15,0);
+	OOBase::Timeout timeout(15,0);
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{
 		uint32_t msecs = ptrCC->Timeout();
-		if (msecs != (uint32_t)-1)
-			countdown = OOBase::Countdown(msecs / 1000,(msecs % 1000) * 1000);
+		if (msecs != 0xFFFFFFFF)
+			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
 	}
 
 	for (bool bStarted = false;!bStarted;)
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
-		if (!guard.acquire(countdown))
+		if (!guard.acquire(timeout))
 			throw ITimeoutException::Create();
 
 		OOBase::SmartPtr<User::Process> ptrProcess;
@@ -177,7 +177,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		// Wait for the process to start and register its parts...
 		
-		while (!countdown.has_ended())
+		while (!timeout.has_expired())
 		{
 			m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
 			if (pObject)
@@ -190,9 +190,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			}
 
 			// Check the process is still alive
-			OOBase::timeval_t short_wait(0,1);
 			int ec = 0;
-			if (ptrProcess->wait_for_exit(&short_wait,ec))
+			if (ptrProcess->wait_for_exit(OOBase::Timeout(0,1),ec))
 				break;
 		}
 
@@ -205,11 +204,13 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	throw Activation::IOidNotFoundException::Create(oid);
 }
 
-bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
+bool_t User::InterProcessService::HandleRequest(uint32_t millisecs)
 {
-	OOBase::timeval_t wait(timeout/1000,(timeout % 1000) * 1000);
+	OOBase::Timeout timeout;
+	if (millisecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
 
-	int ret = m_pManager->pump_requests((timeout ? &wait : NULL),true);
+	int ret = m_pManager->pump_requests(timeout,true);
 	if (ret == -1)
 		OMEGA_THROW("Request processing failed");
 	else

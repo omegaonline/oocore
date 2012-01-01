@@ -38,7 +38,7 @@ namespace
 	{
 	public:
 		virtual bool running();
-		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
+		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 
 		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, OOBase::RefPtr<OOBase::Buffer>& env_block);
 
@@ -223,12 +223,12 @@ bool UserProcessWin32::running()
 	return false;
 }
 
-bool UserProcessWin32::wait_for_exit(const OOBase::timeval_t* wait, int& exit_code)
+bool UserProcessWin32::wait_for_exit(const OOBase::Timeout& timeout, int& exit_code)
 {
 	if (!m_hProcess.is_valid())
 		return true;
 
-	DWORD dwWait = WaitForSingleObject(m_hProcess,(wait ? wait->msec() : INFINITE));
+	DWORD dwWait = WaitForSingleObject(m_hProcess,timeout.millisecs());
 	if (dwWait == WAIT_OBJECT_0)
 	{
 		DWORD dwCode;

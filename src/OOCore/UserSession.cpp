@@ -201,8 +201,8 @@ void OOCore::UserSession::stop()
 	}
 
 	// Wait for the io worker thread to finish
-	OOBase::timeval_t wait(15);
-	if (!m_worker_thread.join(&wait))
+	OOBase::Timeout wait(15,0);
+	if (!m_worker_thread.join(wait))
 	{
 		m_stream->close();
 		m_worker_thread.join();
@@ -332,13 +332,13 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 {
 	// Make this value configurable somehow...
-	OOBase::Countdown countdown(0,500000);
+	OOBase::Timeout timeout(0,500000);
 	do
 	{
 		// The tinyest sleep
 		OOBase::Thread::yield();
 	}
-	while (usage == 0 && !countdown.has_ended());
+	while (usage == 0 && !timeout.has_expired());
 
 	if (usage == 0)
 	{
@@ -398,12 +398,11 @@ int OOCore::UserSession::run_read_loop()
 		msg.m_payload.read(dest_channel_id);
 		msg.m_payload.read(msg.m_src_channel_id);
 
-		// Read the deadline
-		int64_t req_dline_secs;
-		msg.m_payload.read(req_dline_secs);
-		int32_t req_dline_usecs;
-		msg.m_payload.read(req_dline_usecs);
-		msg.m_deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
+		// Read the timeout
+		uint32_t timeout_msecs;
+		msg.m_payload.read(timeout_msecs);
+		if (timeout_msecs != 0xFFFFFFFF)
+			msg.m_timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
 
 		// Read the rest of the message
 		msg.m_payload.read(msg.m_attribs);
@@ -472,7 +471,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				size_t waiting = pContext->m_usage_count;
 
-				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg,msg.m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg.m_deadline);
+				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg,msg.m_timeout);
 				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = pContext->m_msg_queue.last_error();
@@ -492,7 +491,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				size_t waiting = m_usage_count;
 
-				OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.push(msg,msg.m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg.m_deadline);
+				OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.push(msg,msg.m_timeout);
 				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = m_default_msg_queue.last_error();
@@ -519,16 +518,16 @@ int OOCore::UserSession::run_read_loop()
 	return err;
 }
 
-bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
+bool OOCore::UserSession::pump_request(const OOBase::Timeout& timeout)
 {
 	for (;;)
 	{
 		// Increment the consumers...
 		++m_usage_count;
 
-		// Get the next message - use a fresh Countdown each time
+		// Get the next message - use a fresh Timeout each time
 		Message msg;
-		OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.pop(msg,wait);
+		OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.pop(msg,timeout);
 
 		// Decrement the consumers...
 		--m_usage_count;
@@ -545,8 +544,8 @@ bool OOCore::UserSession::pump_request(const OOBase::timeval_t* wait)
 
 		if (msg.m_type == Message::Request)
 		{
-			// Don't confuse the wait deadline with the message processing deadline
-			process_request(ThreadContext::instance(),msg,NULL);
+			// Don't confuse the wait timeout with the message processing timeout
+			process_request(ThreadContext::instance(),msg,OOBase::Timeout());
 
 			// We processed something
 			return true;
@@ -573,7 +572,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	}
 }
 
-void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const OOBase::timeval_t* deadline, uint32_t from_channel_id)
+void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const OOBase::Timeout& timeout, uint32_t from_channel_id)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -596,11 +595,9 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 		// Increment the usage count
 		++pContext->m_usage_count;
 
-		void* TODO; // Timeouts are all wrong!
-
 		// Get the next message
 		Message msg;
-		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg,deadline);
+		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg,timeout);
 
 		// Decrement the usage count
 		--pContext->m_usage_count;
@@ -611,7 +608,7 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 		{
 			if (msg.m_type == Message::Request)
 			{
-				process_request(pContext,msg,deadline);
+				process_request(pContext,msg,timeout);
 			}
 			else if (msg.m_type == Message::Response)
 			{
@@ -638,7 +635,6 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 OOCore::UserSession::ThreadContext::ThreadContext() :
 		m_thread_id(0),
 		m_usage_count(0),
-		m_deadline(OOBase::timeval_t::MaxTime),
 		m_current_cmpt(0)
 {
 }
@@ -669,14 +665,17 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.remove(thread_id);
 }
 
-void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t timeout, uint32_t attribs)
+void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t millisecs, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
 	uint16_t src_thread_id = 0;
 	uint16_t dest_thread_id = 0;
-	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
-
+	
+	OOBase::Timeout timeout;
+	if (millisecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(millisecs / 1000,(millisecs % 1000) * 1000);
+	
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message::asynchronous))
 	{
@@ -684,41 +683,25 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 		pContext->m_mapChannelThreads.find(dest_channel_id,dest_thread_id);
 
 		src_thread_id = pContext->m_thread_id;
-		deadline = pContext->m_deadline;
-	}
-
-	if (timeout > 0)
-	{
-		OOBase::timeval_t deadline2 = OOBase::timeval_t::deadline(timeout);
-		if (deadline2 < deadline)
-			deadline = deadline2;
+		timeout = pContext->m_timeout;
 	}
 
 	// Write the header info
 	OOBase::CDRStream header;
-	build_header(header,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
+	build_header(header,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,timeout,Message::Request,attribs);
 
 	// Send to the handle
-	OOBase::timeval_t wait = deadline;
-	if (deadline != OOBase::timeval_t::MaxTime)
-	{
-		OOBase::timeval_t now = OOBase::timeval_t::now();
-		if (deadline <= now)
-			throw ITimeoutException::Create();
-
-		wait = deadline - now;
-	}
+	if (timeout.has_expired())
+		throw ITimeoutException::Create();
 
 	int err = 0;
 	if (request)
 	{
 		OOBase::Buffer* bufs[2] = { header.buffer(), request->buffer() };
-		err = m_stream->send_v(bufs,2,wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
+		err = m_stream->send_v(bufs,2,timeout);
 	}
 	else
-		err = m_stream->send(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
-
-	void* TODO; // TIMEOUT!
+		err = m_stream->send(header.buffer(),timeout);
 
 	if (err != 0)
 	{
@@ -729,7 +712,7 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 	if (!(attribs & TypeInfo::Asynchronous))
 	{
 		// Wait for response...
-		wait_for_response(*response,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+		wait_for_response(*response,timeout,dest_channel_id);
 	}
 }
 
@@ -737,7 +720,7 @@ void OOCore::UserSession::send_response_catch(const Message& msg, OOBase::CDRStr
 {
 	try
 	{
-		send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_deadline,Message::synchronous | attribs);
+		send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_timeout,Message::synchronous | attribs);
 	}
 	catch (IException* pE)
 	{
@@ -746,26 +729,19 @@ void OOCore::UserSession::send_response_catch(const Message& msg, OOBase::CDRStr
 	}
 }
 
-void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
+void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_channel_id, uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::Timeout& timeout, uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
 	// Write the header info
 	OOBase::CDRStream header;
-	build_header(header,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
+	build_header(header,m_channel_id | src_cmpt_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,response,timeout,Message::Response,attribs);
 
-	OOBase::timeval_t wait = deadline;
-	if (deadline != OOBase::timeval_t::MaxTime)
-	{
-		OOBase::timeval_t now = OOBase::timeval_t::now();
-		if (deadline <= now)
-			throw ITimeoutException::Create();
-
-		wait = deadline - now;
-	}
+	if (timeout.has_expired())
+		throw ITimeoutException::Create();
 
 	OOBase::Buffer* bufs[2] = { header.buffer(), response->buffer() };
-	int err = m_stream->send_v(bufs,2,wait != OOBase::timeval_t::MaxTime ? &wait : NULL);
+	int err = m_stream->send_v(bufs,2,timeout);
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
@@ -773,7 +749,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_chan
 	}
 }
 
-void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
+void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, uint16_t flags, uint32_t attribs)
 {
 	header.write_endianess();
 	header.write(byte_t(1));     // version
@@ -785,10 +761,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 
 	header.write(dest_channel_id);
 	header.write(src_channel_id);
-
-	header.write(static_cast<int64_t>(deadline.tv_sec()));
-	header.write(static_cast<int32_t>(deadline.tv_usec()));
-
+	header.write(static_cast<uint32_t>(timeout.millisecs()));
 	header.write(attribs);
 	header.write(dest_thread_id);
 	header.write(src_thread_id);
@@ -847,7 +820,7 @@ void OOCore::UserSession::respond_exception(OOBase::CDRStream& response, IExcept
 	response = *ptrResponse->GetCDRStream();
 }
 
-void OOCore::UserSession::process_request(ThreadContext* pContext, const Message& msg, const OOBase::timeval_t* deadline)
+void OOCore::UserSession::process_request(ThreadContext* pContext, const Message& msg, const OOBase::Timeout& timeout)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -893,16 +866,16 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	uint16_t old_id = pContext->m_current_cmpt;
 	pContext->m_current_cmpt = msg.m_dest_cmpt_id;
 
-	// Update deadline
-	OOBase::timeval_t old_deadline = pContext->m_deadline;
-	pContext->m_deadline = msg.m_deadline;
-	if (deadline && *deadline < pContext->m_deadline)
-		pContext->m_deadline = *deadline;
+	// Update timeout
+	OOBase::Timeout old_timeout = pContext->m_timeout;
+	pContext->m_timeout = msg.m_timeout;
+	if (timeout.millisecs() < pContext->m_timeout.millisecs())
+		pContext->m_timeout = timeout;
 
 	try
 	{
 		// Process the message...
-		ptrCompt->process_request(msg,pContext->m_deadline);
+		ptrCompt->process_request(msg,pContext->m_timeout);
 	}
 	catch (IException* pE)
 	{
@@ -928,27 +901,29 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	else
 		pContext->m_mapChannelThreads.remove(msg.m_src_channel_id);
 
-	pContext->m_deadline = old_deadline;
+	pContext->m_timeout = old_timeout;
 	pContext->m_current_cmpt = old_id;
 }
 
-bool OOCore::UserSession::handle_request(uint32_t timeout)
+bool OOCore::UserSession::handle_request(uint32_t millisecs)
 {
-	OOBase::timeval_t wait(timeout/1000,(timeout % 1000) * 1000);
+	OOBase::Timeout timeout;
+	if (millisecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
 
-	return USER_SESSION::instance().pump_request((timeout ? &wait : 0));
+	return USER_SESSION::instance().pump_request(timeout);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
 {
 	if (OOCore::HostedByOOServer())
 	{
 		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 		if (ptrIPS)
-			return ptrIPS->HandleRequest(timeout);
+			return ptrIPS->HandleRequest(millisecs);
 	}
 		
-	return OOCore::UserSession::handle_request(timeout);
+	return OOCore::UserSession::handle_request(millisecs);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
@@ -1008,20 +983,8 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pT
 	pContext->m_current_cmpt = compartment_id;
 
 	if (pTimeout)
-	{
-		OOBase::timeval_t now = OOBase::timeval_t::now();
-		OOBase::timeval_t deadline = pContext->m_deadline;
-		if (*pTimeout > 0)
-		{
-			OOBase::timeval_t deadline2 = now + OOBase::timeval_t(*pTimeout / 1000,(*pTimeout % 1000) * 1000);
-			if (deadline2 < deadline)
-				deadline = deadline2;
-		}
-
-		if (deadline != OOBase::timeval_t::MaxTime)
-			*pTimeout = (deadline - now).msec();
-	}
-
+		*pTimeout = pContext->m_timeout.millisecs();
+	
 	return old_id;
 }
 

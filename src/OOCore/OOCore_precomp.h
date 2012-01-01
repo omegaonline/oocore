@@ -27,7 +27,7 @@
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/CDRStream.h>
-#include <OOBase/TimeVal.h>
+#include <OOBase/Timeout.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>
 #include <OOBase/BoundedQueue.h>

@@ -112,7 +112,7 @@ namespace Root
 		// Message handling members
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
 		virtual void on_channel_closed(Omega::uint32_t channel);
-		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
+		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs);
 
 		// Registry members
 		OOBase::SmartPtr<Registry::Hive> m_registry;
@@ -154,7 +154,7 @@ namespace Root
 		void remove_socket(Omega::uint32_t id);
 		void remove_listener(Omega::uint32_t id);
 
-		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::timeval_t* deadline, Omega::uint16_t attribs);
+		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs);
 
 	private:
 		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket> >         m_mapSockets;

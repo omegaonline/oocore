@@ -51,7 +51,7 @@ namespace
 		void ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
 		void UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
 		Remoting::IMessage* CreateMessage();
-		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0);
+		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs);
 		uint32_t GetSource();
 	};
 }
@@ -95,9 +95,9 @@ Remoting::IMessage* LoopMarshaller::CreateMessage()
 	return m_pChannel->CreateMessage();
 }
 
-IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
 {
-	return m_pChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
+	return m_pChannel->SendAndReceive(attribs,pSend,pRecv,millisecs);
 }
 
 uint32_t LoopMarshaller::GetSource()

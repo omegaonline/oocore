@@ -194,7 +194,7 @@ ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_ch
 	return info.m_ptrChannel.AddRef();
 }
 
-void OOCore::Compartment::process_request(const Message& msg, const OOBase::timeval_t& deadline)
+void OOCore::Compartment::process_request(const Message& msg, const OOBase::Timeout& timeout)
 {
 	assert(msg.m_dest_cmpt_id == m_id);
 
@@ -215,18 +215,11 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 	ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
 
 	// Check timeout - at the last possible moment...
-	uint32_t timeout = 0;
-	if (deadline != OOBase::timeval_t::MaxTime)
-	{
-		OOBase::timeval_t now = OOBase::timeval_t::now();
-		if (deadline <= now)
-			return;
-
-		timeout = (deadline - now).msec();
-	}
+	if (timeout.has_expired())
+		throw ITimeoutException::Create();
 
 	// Make the call
-	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout);
+	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.millisecs());
 
 	if (!(msg.m_attribs & TypeInfo::Asynchronous))
 	{
@@ -237,7 +230,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::time
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
+			m_pSession->send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,ptrResponse->GetCDRStream(),timeout);
 		}
 		catch (...)
 		{
@@ -283,7 +276,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::Compartment::create_compartment_channe
 	return ptrChannel.AddRef();
 }
 
-IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
 {
 	// Switch state...
 	ComptState compt_state(this);
@@ -296,7 +289,7 @@ IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 
 		// Make the call
-		pRecv = ptrOM->Invoke(pSend,timeout);
+		pRecv = ptrOM->Invoke(pSend,millisecs);
 	}
 	catch (IException* pE)
 	{
@@ -326,9 +319,9 @@ Omega::bool_t OOCore::ComptChannel::IsConnected()
 	return true;
 }
 
-IException* OOCore::ComptChannel::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::ComptChannel::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
 {
-	return m_ptrCompt->compartment_message(m_src_compt_id,pSend,pRecv,timeout);
+	return m_ptrCompt->compartment_message(m_src_compt_id,pSend,pRecv,millisecs);
 }
 
 namespace OOCore

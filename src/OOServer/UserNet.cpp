@@ -278,13 +278,8 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	// Read the header
 	uint32_t src_channel_id;
 	input.read(src_channel_id);
-	uint32_t timeout_msecs = 0;
-	input.read(timeout_msecs);
-	
 	OOBase::Timeout timeout;
-	if (timeout_msecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
-	
+	input.read(timeout);
 	uint32_t ex_attribs = 0;
 	input.read(ex_attribs);
 	uint16_t dest_thread_id;
@@ -330,8 +325,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	uint32_t src_channel_id = pMsg->ReadValue(string_t::constant("src_channel_id")).cast<uint32_t>();
 	uint32_t dest_channel_id = pMsg->ReadValue(string_t::constant("dest_channel_id")).cast<uint32_t>();
 	uint32_t timeout_msecs = pMsg->ReadValue(string_t::constant("timeout_msecs")).cast<uint32_t>();
-	uint32_t ex_attribs = pMsg->ReadValue(string_t::constant("attribs")).cast<uint32_t>();
-
+	
 	OOBase::Timeout timeout;
 	if (millisecs < timeout_msecs)
 		timeout_msecs = millisecs;
@@ -339,6 +333,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	if (timeout_msecs != 0xFFFFFFFF)
 		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
 
+	uint32_t ex_attribs = pMsg->ReadValue(string_t::constant("attribs")).cast<uint32_t>();
 	uint16_t dest_thread_id = pMsg->ReadValue(string_t::constant("dest_thread_id")).cast<uint16_t>();
 	uint16_t src_thread_id = pMsg->ReadValue(string_t::constant("src_thread_id")).cast<uint16_t>();
 	uint16_t flags = pMsg->ReadValue(string_t::constant("flags")).cast<uint16_t>();
@@ -417,7 +412,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			// Need to queue this as an async func...
 			OOBase::CDRStream output;
 			output.write(src_channel_id);
-			output.write(static_cast<uint32_t>(timeout.millisecs()));
+			output.write(timeout);
 			output.write(ex_attribs);
 			output.write(dest_thread_id);
 			output.write(src_thread_id);

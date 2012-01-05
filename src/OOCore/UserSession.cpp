@@ -195,7 +195,7 @@ void OOCore::UserSession::stop()
 		OOBase::CDRStream header;
 		header.write_endianess();
 		header.write(byte_t(1));     // version
-		header.write(byte_t('c'));   // signature
+		header.write(byte_t('C'));   // signature
 		header.write(uint32_t(0));
 		m_stream->send(header.buffer());
 	}
@@ -399,11 +399,8 @@ int OOCore::UserSession::run_read_loop()
 		msg.m_payload.read(msg.m_src_channel_id);
 
 		// Read the timeout
-		uint32_t timeout_msecs;
-		msg.m_payload.read(timeout_msecs);
-		if (timeout_msecs != 0xFFFFFFFF)
-			msg.m_timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
-
+		msg.m_payload.read(msg.m_timeout);
+		
 		// Read the rest of the message
 		msg.m_payload.read(msg.m_attribs);
 		msg.m_payload.read(msg.m_dest_thread_id);
@@ -412,11 +409,8 @@ int OOCore::UserSession::run_read_loop()
 
 		// Align to the next boundary
 		if (msg.m_payload.buffer()->length() > 0)
-		{
-			// 6 Bytes padding here!
 			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-		}
-
+		
 		// Did everything make sense?
 		err = msg.m_payload.last_error();
 		if (err != 0)
@@ -667,14 +661,14 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 
 void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t millisecs, uint32_t attribs)
 {
+	OOBase::Timeout timeout;
+	if (millisecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(millisecs / 1000,(millisecs % 1000) * 1000);
+
 	ThreadContext* pContext = ThreadContext::instance();
 
 	uint16_t src_thread_id = 0;
 	uint16_t dest_thread_id = 0;
-	
-	OOBase::Timeout timeout;
-	if (millisecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(millisecs / 1000,(millisecs % 1000) * 1000);
 	
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message::asynchronous))
@@ -753,7 +747,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 {
 	header.write_endianess();
 	header.write(byte_t(1));     // version
-	header.write(byte_t('c'));   // signature
+	header.write(byte_t('C'));   // signature
 
 	// Write out the header length and remember where we wrote it
 	size_t msg_len_mark = header.buffer()->mark_wr_ptr();
@@ -761,7 +755,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 
 	header.write(dest_channel_id);
 	header.write(src_channel_id);
-	header.write(static_cast<uint32_t>(timeout.millisecs()));
+	header.write(timeout);
 	header.write(attribs);
 	header.write(dest_thread_id);
 	header.write(src_thread_id);
@@ -869,7 +863,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	// Update timeout
 	OOBase::Timeout old_timeout = pContext->m_timeout;
 	pContext->m_timeout = msg.m_timeout;
-	if (timeout.millisecs() < pContext->m_timeout.millisecs())
+	if (timeout < pContext->m_timeout)
 		pContext->m_timeout = timeout;
 
 	try
@@ -975,7 +969,7 @@ void OOCore::UserSession::remove_compartment(uint16_t id)
 	m_mapCompartments.remove(id);
 }
 
-uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pTimeout)
+uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, OOBase::Timeout* pTimeout)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
@@ -983,7 +977,7 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, uint32_t* pT
 	pContext->m_current_cmpt = compartment_id;
 
 	if (pTimeout)
-		*pTimeout = pContext->m_timeout.millisecs();
+		*pTimeout = pContext->m_timeout;
 	
 	return old_id;
 }

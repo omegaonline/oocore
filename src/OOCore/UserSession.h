@@ -86,7 +86,7 @@ namespace OOCore
 		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment();
 		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
 		void remove_compartment(Omega::uint16_t id);
-		Omega::uint16_t update_state(Omega::uint16_t compartment_id, Omega::uint32_t* pTimeout);
+		Omega::uint16_t update_state(Omega::uint16_t compartment_id, OOBase::Timeout* pTimeout);
 
 	private:
 		friend class ThreadContext;

@@ -86,6 +86,16 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
 		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
 
+	// The timeout needs to be related to the request timeout...
+	OOBase::Timeout timeout(15,0);
+	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
+	if (ptrCC)
+	{
+		uint32_t msecs = ptrCC->Timeout();
+		if (msecs != 0xFFFFFFFF)
+			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
+	}
+
 	// Find the OID key...
 	string_t strProcess;
 	ObjectPtr<Omega::Registry::IKey> ptrKey("Local User/Objects/OIDs/" + oid.ToString());
@@ -135,16 +145,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	// Remote activation, add ExternalPublic flag
 	if (flags & Activation::RemoteActivation)
 		reg_mask |= Activation::ExternalPublic;
-
-	// The timeout needs to be related to the request timeout...
-	OOBase::Timeout timeout(15,0);
-	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-	if (ptrCC)
-	{
-		uint32_t msecs = ptrCC->Timeout();
-		if (msecs != 0xFFFFFFFF)
-			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
-	}
 
 	for (bool bStarted = false;!bStarted;)
 	{

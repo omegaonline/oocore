@@ -39,14 +39,14 @@ void OOCore::Compartment::set_id(Omega::uint16_t id)
 	m_id = id;
 }
 
-OOCore::Compartment::ComptState::ComptState(Compartment* cmpt, uint32_t* timeout) : m_cmpt(cmpt)
+OOCore::Compartment::ComptState::ComptState(Compartment* cmpt, OOBase::Timeout* pTimeout) : m_cmpt(cmpt)
 {
-	m_prev_id = m_cmpt->m_pSession->update_state(m_cmpt->m_id,timeout);
+	m_prev_id = m_cmpt->m_pSession->update_state(m_cmpt->m_id,pTimeout);
 }
 
 OOCore::Compartment::ComptState::~ComptState()
 {
-	m_cmpt->m_pSession->update_state(m_prev_id,0);
+	m_cmpt->m_pSession->update_state(m_prev_id,NULL);
 }
 
 void OOCore::Compartment::shutdown()

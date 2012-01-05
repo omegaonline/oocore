@@ -77,7 +77,7 @@ namespace OOCore
 
 		struct ComptState
 		{
-			ComptState(Compartment* cmpt, Omega::uint32_t* timeout = 0);
+			ComptState(Compartment* cmpt, OOBase::Timeout* pTimeout = NULL);
 			~ComptState();
 
 		private:

@@ -291,12 +291,9 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 	input.read(src_channel_id);
 
 	// Read the timeout
-	Omega::uint32_t timeout_msecs;
-	input.read(timeout_msecs);
 	OOBase::Timeout timeout;
-	if (timeout_msecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
-
+	input.read(timeout);
+	
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
@@ -425,11 +422,8 @@ int OOServer::MessageHandler::pump_requests(const OOBase::Timeout& timeout, bool
 
 		// Align to the next boundary
 		if (msg.m_payload.buffer()->length() > 0)
-		{
-			// 6 Bytes padding here!
 			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-		}
-
+		
 		// Did everything make sense?
 		int err = msg.m_payload.last_error();
 		if (err != 0)
@@ -566,12 +560,9 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	input.read(src_channel_id);
 
 	// Read the timeout
-	Omega::uint32_t timeout_msecs;
-	input.read(timeout_msecs);
 	OOBase::Timeout timeout;
-	if (timeout_msecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
-
+	input.read(timeout);
+	
 	Omega::uint32_t attribs = 0;
 	input.read(attribs);
 
@@ -830,11 +821,8 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 		msg.m_payload.read(type);
 
 		if (msg.m_payload.buffer()->length() > 0)
-		{
-			// 6 Bytes of padding here
 			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-		}
-
+		
 		int err = msg.m_payload.last_error();
 		if (err != 0)
 			LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
@@ -878,7 +866,7 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 	// Update timeout
 	OOBase::Timeout old_timeout = pContext->m_timeout;
 	pContext->m_timeout = msg.m_timeout;
-	if (timeout.millisecs() < pContext->m_timeout.millisecs())
+	if (timeout < pContext->m_timeout)
 		pContext->m_timeout = timeout;
 
 	// Process the message...
@@ -970,7 +958,6 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 	Omega::uint16_t type = Message_t::Request;
 	msg.m_payload.write(type);
 
-	// 2 Bytes of padding here
 	msg.m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 	msg.m_payload.write(pszFn);
@@ -1052,7 +1039,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	msg.m_src_thread_id = pContext->m_thread_id;
 	msg.m_attribs = attribs;
 	msg.m_timeout = pContext->m_timeout;
-	if (timeout.millisecs() < msg.m_timeout.millisecs())
+	if (timeout < msg.m_timeout)
 		msg.m_timeout = timeout;
 
 	// Find the destination channel
@@ -1120,7 +1107,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		// Build a message
 		msg.m_payload.write(flags);
 
-		// 2 Bytes of padding here
 		msg.m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 		msg.m_payload.write_buffer(message.buffer());
 
@@ -1159,7 +1145,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
-	header.write(static_cast<Omega::uint32_t>(msg.m_timeout.millisecs()));
+	header.write(msg.m_timeout);
 	header.write(msg.m_attribs);
 	header.write(msg.m_dest_thread_id);
 	header.write(msg.m_src_thread_id);

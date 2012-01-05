@@ -93,6 +93,10 @@ Remoting::IMessage* User::Channel::CreateMessage()
 
 IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
 {
+	OOBase::Timeout timeout;
+	if (millisecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(millisecs / 1000,(millisecs % 1000) * 1000);
+
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -109,10 +113,6 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	OOBase::CDRStream response;
 	try
 	{
-		OOBase::Timeout timeout;
-		if (millisecs != 0xFFFFFFFF)
-			timeout = OOBase::Timeout(millisecs / 1000,(millisecs % 1000) * 1000);
-
 		OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,timeout,attribs);
 		if (res != OOServer::MessageHandler::io_result::success)
 		{

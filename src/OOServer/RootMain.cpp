@@ -50,6 +50,11 @@
 #include <sys/stat.h>
 #endif
 
+#if defined(_MSC_VER)
+// Shutup VS leak
+extern "C" int _setenvp() { return 0; }
+#endif
+
 namespace
 {
 	int Version();

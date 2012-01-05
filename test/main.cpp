@@ -5,6 +5,11 @@
 #include <vld.h>
 #endif
 
+#if defined(_MSC_VER)
+// Shutup VS leak
+extern "C" int _setenvp() { return 0; }
+#endif
+
 ////////////////////////////////////////////////////////////
 // List the test entry points here rather than using header files...
 // cos I'm lazy ;)
@@ -73,6 +78,7 @@ int main(int /*argc*/, char* /*argv*/[])
 // The following are the functions that actually do the tests
 
 #if defined(_WIN32)
+
 void output(const char* sz, ...)
 {
 	va_list argptr;

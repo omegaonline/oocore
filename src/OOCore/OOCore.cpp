@@ -31,8 +31,12 @@
 using namespace Omega;
 using namespace OTL;
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
+// Shutup VS leak
+extern "C" int _setenvp() { return 0; }
+#endif
 
+#if defined(_WIN32)
 extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpreserved*/)
 {
 	if (reason == DLL_THREAD_DETACH)
@@ -41,7 +45,6 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 	}
 	return TRUE;
 }
-
 #endif
 
 extern "C" OMEGA_EXPORT const char* OOCore_GetVersion()

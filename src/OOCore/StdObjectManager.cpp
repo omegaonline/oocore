@@ -278,8 +278,6 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 	try
 	{
-		
-		
 		pCC->m_src_id = m_ptrChannel->GetSource();
 		pCC->m_flags = m_ptrChannel->GetMarshalFlags();
 

@@ -40,7 +40,7 @@ namespace
 		{}
 
 		virtual bool running();
-		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int& exit_code);
+		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 
 		void exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 
@@ -112,23 +112,25 @@ bool UserProcessUnix::running()
 	return false;
 }
 
-bool UserProcessUnix::wait_for_exit(const OOBase::timeval_t* wait, int& exit_code)
+bool UserProcessUnix::wait_for_exit(const OOBase::Timeout& timeout, int& exit_code)
 {
 	if (m_pid == 0)
 		return true;
 
-	if (wait)
-		OOBase::Thread::sleep(*wait);
-
-	int status = 0;
-	pid_t retv = waitpid(m_pid,&status,WNOHANG);
-	if (retv != 0)
+	while (!timeout.has_expired())
 	{
-		if (WIFEXITED(status))
-			exit_code = WEXITSTATUS(status);
-		else
-			exit_code = -1;
-		return true;
+		int status = 0;
+		pid_t retv = waitpid(m_pid,&status,WNOHANG);
+		if (retv != 0)
+		{
+			if (WIFEXITED(status))
+				exit_code = WEXITSTATUS(status);
+			else
+				exit_code = -1;
+			return true;
+		}
+
+		OOBase::Thread::sleep(0);
 	}
 
 	return false;

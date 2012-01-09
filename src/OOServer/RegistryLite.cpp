@@ -135,13 +135,7 @@ namespace
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
-
-	const string_t s_strAllUsers;
-	const string_t s_strLocalUser;
 }
-
-const string_t s_strAllUsers = string_t::constant("All Users");
-const string_t s_strLocalUser = string_t::constant("Local User");
 
 void HiveKey::Init(::Registry::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
 {
@@ -421,7 +415,7 @@ void RootKey::Init_Once()
 	m_ptrSystemKey = ptrKey.AddRef();
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstance();
-	ptrKey->Init(m_localuser_hive,s_strLocalUser,0);
+	ptrKey->Init(m_localuser_hive,string_t::constant("Local User"),0);
 	m_ptrLocalUserKey = ptrKey.AddRef();
 }
 
@@ -442,10 +436,10 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, IKey*& pKey)
 		if (strSubKey.Length() > 10)
 			strMirror = strSubKey.Mid(11);
 
-		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(s_strAllUsers);
+		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(string_t::constant("All Users"));
 
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstance();
-		ptrNew->Init(s_strLocalUser,m_ptrLocalUserKey,ptrMirror);
+		ptrNew->Init(string_t::constant("Local User"),m_ptrLocalUserKey,ptrMirror);
 		pKey = ptrNew.AddRef();
 
 		return strMirror;
@@ -547,7 +541,7 @@ std::set<Omega::string_t> RootKey::EnumSubKeys()
 	std::set<Omega::string_t> ret = m_ptrSystemKey->EnumSubKeys();
 
 	// Add the local user key, although it doesn't really exist...
-	ret.insert(s_strLocalUser);
+	ret.insert(string_t::constant("Local User"));
 
 	return ret;
 }

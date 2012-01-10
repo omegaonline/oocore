@@ -36,7 +36,7 @@
 OOCORE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_cast,2,((in),const void*,h,(in),size_t*,plen));
 
 inline Omega::string_t::string_t(handle_t* h, bool bAddref) :
-		m_handle(bAddref ? addref(h) : h)
+		m_handle(bAddref ? addref(h,false) : h)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -56,15 +56,15 @@ inline Omega::string_t::string_t(const char* sz, size_t length) :
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,1,((in),void*,s1));
-inline Omega::string_t::handle_t* Omega::string_t::addref(handle_t* h)
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),void*,s1,(in),int,own));
+inline Omega::string_t::handle_t* Omega::string_t::addref(handle_t* h, bool own)
 {
-	OOCore_string_t_addref(h);
+	OOCore_string_t_addref(h,own ? 1 : 0);
 	return h;
 }
 
 inline Omega::string_t::string_t(const Omega::string_t& s) :
-		m_handle(addref(s.m_handle))
+		m_handle(addref(s.m_handle,false))
 {
 	OMEGA_DEBUG_STASH_STRING();
 }

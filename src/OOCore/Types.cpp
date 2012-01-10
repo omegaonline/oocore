@@ -236,7 +236,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__const_ctor,2,((in),con
 	return new (OOCore::throwing) StringNode(sz,len);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,1,((in),void*,s1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),void*,s1,(in),int,own))
 {
 	if (s1)
 		static_cast<StringNode*>(s1)->addref();

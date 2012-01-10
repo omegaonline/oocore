@@ -157,7 +157,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
 {
-	pMessage->WriteStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	pMessage->WriteStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 	pMessage->WriteValue(string_t::constant("$stub_id"),m_proxy_id);
 	pMessage->WriteValue(string_t::constant("$iid"),OMEGA_GUIDOF(IObject));
 	pMessage->WriteValue(string_t::constant("$method_id"),method_id);
@@ -165,7 +165,7 @@ void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_
 
 void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 {
-	pMessage->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	pMessage->ReadStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 	pMessage->ReadValue(string_t::constant("$stub_id"));
 	pMessage->ReadValue(string_t::constant("$iid"));
 	pMessage->ReadValue(string_t::constant("$method_id"));

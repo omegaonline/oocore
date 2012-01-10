@@ -202,14 +202,6 @@ namespace Omega
 /// Return the guid_t value associated with a type
 #define OMEGA_GUIDOF(type)     Omega::System::Internal::uid_traits<type>::GetUID()
 
-#define OMEGA_DECLARE_CONSTANT_STRING(name,text) \
-	namespace Omega { namespace System { namespace Internal { \
-				struct ConstantString_##name { inline static const string_t& value() { static const string_t s_##name = string_t::constant(text); return s_##name; } }; \
-			} } }
-
-#define OMEGA_CONSTANT_STRING(name) \
-		(Omega::System::Internal::ConstantString_##name::value())
-
 #if !defined(DOXYGEN)
 
 #define OMEGA_EXPORT_OID(name) \

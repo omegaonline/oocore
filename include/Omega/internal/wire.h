@@ -92,8 +92,6 @@ OMEGA_SET_GUIDOF(Omega::Remoting, IStubController, "{B9AD6795-72FA-45a4-9B91-68C
 OMEGA_SET_GUIDOF(Omega::Remoting, IProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
 OMEGA_SET_GUIDOF(Omega::Remoting, IMarshaller, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
-OMEGA_DECLARE_CONSTANT_STRING(ipc_request_type,"$ipc_request_type")
-
 namespace Omega
 {
 	namespace System
@@ -812,33 +810,6 @@ namespace Omega
 				}
 			};
 
-			struct stl_coll2_strings
-			{
-				const string_t& pair()
-				{
-					static const string_t s = string_t::constant("pair");
-					return s;
-				}
-
-				const string_t& pair_type()
-				{
-					static const string_t s = string_t::constant("$pair_type");
-					return s;
-				}
-
-				const string_t& first()
-				{
-					static const string_t s = string_t::constant("first");
-					return s;
-				}
-
-				const string_t& second()
-				{
-					static const string_t s = string_t::constant("second");
-					return s;
-				}
-			};
-
 			template <typename Coll>
 			struct stl_wire_type_coll2
 			{
@@ -853,13 +824,13 @@ namespace Omega
 					uint32_t count = pMessage->ReadArrayStart(strName);
 					for (uint32_t c = 0; c<count; ++c)
 					{
-						pMessage->ReadStructStart(stl_coll2_strings::pair(),stl_coll2_strings::pair_type());
+						pMessage->ReadStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 
 						typename Coll::key_type v_k = default_value<typename Coll::key_type>::value();
-						marshal_info<typename Coll::key_type>::wire_type::read(stl_coll2_strings::first(),pMarshaller,pMessage,v_k);
+						marshal_info<typename Coll::key_type>::wire_type::read(string_t::constant("first"),pMarshaller,pMessage,v_k);
 
 						typename Coll::mapped_type v_m = default_value<typename Coll::mapped_type>::value();
-						marshal_info<typename Coll::mapped_type>::wire_type::read(stl_coll2_strings::second(),pMarshaller,pMessage,v_m);
+						marshal_info<typename Coll::mapped_type>::wire_type::read(string_t::constant("second"),pMarshaller,pMessage,v_m);
 
 						val.insert(val.end(),typename Coll::value_type(v_k,v_m));
 
@@ -874,10 +845,10 @@ namespace Omega
 
 					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 					{
-						pMessage->WriteStructStart(stl_coll2_strings::pair(),stl_coll2_strings::pair_type());
+						pMessage->WriteStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 
-						marshal_info<typename Coll::key_type>::wire_type::write(stl_coll2_strings::first(),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::write(stl_coll2_strings::second(),pMarshaller,pMessage,i->second);
+						marshal_info<typename Coll::key_type>::wire_type::write(string_t::constant("first"),pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::write(string_t::constant("second"),pMarshaller,pMessage,i->second);
 
 						pMessage->WriteStructEnd();
 					}
@@ -890,10 +861,10 @@ namespace Omega
 
 					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 					{
-						pMessage->ReadStructStart(stl_coll2_strings::pair(),stl_coll2_strings::pair_type());
+						pMessage->ReadStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 
-						marshal_info<typename Coll::key_type>::wire_type::unpack(stl_coll2_strings::first(),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::unpack(stl_coll2_strings::second(),pMarshaller,pMessage,i->second);
+						marshal_info<typename Coll::key_type>::wire_type::unpack(string_t::constant("first"),pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::unpack(string_t::constant("second"),pMarshaller,pMessage,i->second);
 
 						pMessage->ReadStructEnd();
 					}

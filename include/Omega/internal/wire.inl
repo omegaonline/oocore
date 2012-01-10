@@ -106,7 +106,7 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 	bool unpack = false;
 	try
 	{
-		ptrMessage->WriteStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+		ptrMessage->WriteStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 		unpack = true;
 		m_ptrProxy->WriteKey(ptrMessage);
 		ptrMessage->WriteValue(string_t::constant("$iid"),iid);
@@ -117,7 +117,7 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 	{
 		if (unpack)
 		{
-			ptrMessage->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+			ptrMessage->ReadStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 			m_ptrProxy->UnpackKey(ptrMessage);
 		}
 		throw;
@@ -126,7 +126,7 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 
 inline void Omega::System::Internal::Wire_Proxy_Base::UnpackHeader(Remoting::IMessage* pMessage)
 {
-	pMessage->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	pMessage->ReadStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 	m_ptrProxy->UnpackKey(pMessage);
 	pMessage->ReadValue(string_t::constant("$iid"));
 	pMessage->ReadValue(string_t::constant("$method_id"));

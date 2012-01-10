@@ -291,7 +291,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		try
 		{
 			// Read the header start
-			pParamsIn->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+			pParamsIn->ReadStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 
 			// Read the stub id
 			uint32_t stub_id = pParamsIn->ReadValue(string_t::constant("$stub_id")).cast<uint32_t>();
@@ -365,7 +365,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 
 	ObjectPtr<Remoting::IMessage> ptrParamsOut = CreateMessage();
 
-	ptrParamsOut->WriteStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	ptrParamsOut->WriteStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 
 	ptrParamsOut->WriteValue(string_t::constant("$stub_id"),uint32_t(0));
 	ptrParamsOut->WriteValue(string_t::constant("$method_id"),uint32_t(0));
@@ -384,7 +384,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 	}
 	catch (...)
 	{
-		ptrParamsOut->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+		ptrParamsOut->ReadStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 		ptrParamsOut->ReadValue(string_t::constant("$stub_id"));
 		ptrParamsOut->ReadValue(string_t::constant("$method_id"));
 		ptrParamsOut->ReadValue(string_t::constant("oid"));
@@ -466,7 +466,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 {
 	ObjectPtr<Remoting::IMessage> ptrParamsOut = CreateMessage();
 
-	ptrParamsOut->WriteStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+	ptrParamsOut->WriteStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 
 	ptrParamsOut->WriteValue(string_t::constant("$stub_id"),uint32_t(0));
 	ptrParamsOut->WriteValue(string_t::constant("$method_id"),uint32_t(1));
@@ -482,7 +482,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	}
 	catch (...)
 	{
-		ptrParamsOut->ReadStructStart(string_t::constant("ipc_request"),OMEGA_CONSTANT_STRING(ipc_request_type));
+		ptrParamsOut->ReadStructStart(string_t::constant("ipc_request"),string_t::constant("$ipc_request_type"));
 		ptrParamsOut->ReadValue(string_t::constant("$stub_id"));
 		ptrParamsOut->ReadValue(string_t::constant("$method_id"));
 		ptrParamsOut->ReadValue(string_t::constant("iid"));

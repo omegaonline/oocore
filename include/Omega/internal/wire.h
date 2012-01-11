@@ -579,6 +579,12 @@ namespace Omega
 					val = msg->ReadValue(string_t()).template cast<guid_t>();
 				}
 
+				static void read(Remoting::IMessage* msg, string_t::handle_t& val)
+				{
+					read(msg,val.p0);
+					read(msg,val.p1);
+				}
+
 				template <typename T>
 				static void read(Remoting::IMessage* msg, T*& pval)
 				{
@@ -595,6 +601,12 @@ namespace Omega
 				static void write(Remoting::IMessage* msg, const guid_base_t& val)
 				{
 					msg->WriteValue(string_t(),guid_t(val));
+				}
+
+				static void write(Remoting::IMessage* msg, const string_t::handle_t& val)
+				{
+					write(msg,val.p0);
+					write(msg,val.p1);
 				}
 
 				template <typename T>

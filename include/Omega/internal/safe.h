@@ -558,7 +558,7 @@ namespace Omega
 
 			struct string_t_safe_type
 			{
-				typedef void* safe_type;
+				typedef string_t::handle_t safe_type;
 
 				struct type_wrapper
 				{
@@ -624,23 +624,24 @@ namespace Omega
 
 				static string_t create(safe_type v, bool addref)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v),addref);
+					return string_t(v,addref);
 				}
 
-				static safe_type addref(const string_t& val, bool own)
+				static safe_type addref(const string_t& v, bool own)
 				{
 					// We only need to take ownership if we are passing out of a dll that isn't OOCore
 #if !defined(OOCORE_INTERNAL)
-					return string_t::addref(val.m_handle,own);
+					string_t::addref(v.m_handle,own);
 #else
 					OMEGA_UNUSED_ARG(own);
-					return string_t::addref(val.m_handle,false);
+					string_t::addref(v.m_handle,false);
 #endif
+					return v.m_handle;
 				}
 
-				static void release(safe_type val)
+				static void release(safe_type v)
 				{
-					string_t::release(static_cast<string_t::handle_t*>(val));
+					string_t::release(v);
 				}
 			};
 

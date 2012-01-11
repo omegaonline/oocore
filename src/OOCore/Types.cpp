@@ -39,31 +39,33 @@ namespace
 		return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
 	}
 
+	struct string_vtbl
+	{
+		char* (*grow)(void* p, size_t extra, int& err);
+		const char* (*buffer)(const void* p);
+		size_t (*length)(const void* p);
+		void (*addref)(const void* p);
+		void (*release)(void* p);
+	};
+
+	struct string_handle
+	{
+		const string_vtbl* m_vtbl;
+		void*              m_ptr;
+	};
+
 	class StringNode
 	{
-		enum Flags
-		{
-			eConst = 0,
-			eLocal = 1,
-			eHeap = 2
-		};
-
 	public:
 		StringNode() :
-			m_refcount(1), m_flags(eLocal), m_len(0)
+			m_refcount(1), m_len(0)
 		{
 			m_u.m_local_buffer[0] = '\0';
 		}
 
-		StringNode(const char* sz, size_t len) :
-			m_refcount(1), m_flags(eConst), m_len(len)
-		{
-			m_u.m_const_buffer = sz;
-		}
-
 		~StringNode()
 		{
-			if (m_flags & eHeap)
+			if (m_len >= sizeof(m_u.m_local_buffer))
 				OOBase::HeapAllocator::free(m_u.m_alloc_buffer);
 		}
 
@@ -71,15 +73,10 @@ namespace
 
 		const char* buffer() const
 		{
-			switch (m_flags)
-			{
-			case eLocal:
+			if (m_len < sizeof(m_u.m_local_buffer))
 				return m_u.m_local_buffer;
-			case eHeap:
-				return m_u.m_alloc_buffer;
-			default:
-				return m_u.m_const_buffer;
-			}
+
+			return m_u.m_alloc_buffer;
 		}
 
 		size_t length() const
@@ -101,13 +98,11 @@ namespace
 
 	private:
 		mutable OOBase::Atomic<size_t> m_refcount;
-		unsigned int                   m_flags;
 		size_t                         m_len;
 		union U
 		{
 			char*       m_alloc_buffer;
 			char        m_local_buffer[24];
-			const char* m_const_buffer;
 		} m_u;
 	};
 
@@ -146,273 +141,298 @@ namespace
 
 		return 0;
 	}
+
+	char* sn_grow(void* p, size_t extra, int& err) { return static_cast<StringNode*>(p)->grow(extra,err); }
+	const char* sn_buffer(const void* p) { return static_cast<const StringNode*>(p)->buffer(); }
+	size_t sn_length(const void* p) { return static_cast<const StringNode*>(p)->length(); }
+	void sn_addref(const void* p) { static_cast<const StringNode*>(p)->addref(); }
+	void sn_release(void* p) { static_cast<StringNode*>(p)->release(); }
+
+	const struct string_vtbl s_string_vtbl =
+	{
+		&sn_grow,
+		&sn_buffer,
+		&sn_length,
+		&sn_addref,
+		&sn_release
+	};
+
+	const char* const_buffer(const void* p) { return static_cast<const char*>(p); }
+	size_t const_length(const void* p) { return strlen(static_cast<const char*>(p)); }
+
+	const struct string_vtbl s_const_string_vtbl =
+	{
+		NULL,
+		&const_buffer,
+		&const_length,
+		NULL,
+		NULL
+	};
+
+	char* string_grow(void* s, size_t extra, int& err)
+	{
+		err = 0;
+		string_handle* h = static_cast<string_handle*>(s);
+		if (h && h->m_ptr && h->m_vtbl && h->m_vtbl->grow)
+			return (*h->m_vtbl->grow)(h->m_ptr,extra,err);
+		return NULL;
+	}
 }
 
 char* StringNode::grow(size_t extra, int& err)
 {
-	err = 0;
 	char* buffer = NULL;
-	if (m_flags != eConst)
+
+	if (++m_refcount == 2)
 	{
-		if (++m_refcount == 2)
+		// We have only one reference, so we can grow
+		if (m_len < sizeof(m_u.m_local_buffer))
 		{
-			// We have only one reference, so we can grow
-			if (m_flags == eLocal)
-			{
-				if (m_len + extra < sizeof(m_u.m_local_buffer))
-					buffer = m_u.m_local_buffer + m_len;
-				else
-				{
-					char local_buffer[sizeof(m_u.m_local_buffer)] = {0};
-					if (m_len)
-						memcpy(local_buffer,m_u.m_local_buffer,m_len);
-
-					m_u.m_alloc_buffer = static_cast<char*>(OOBase::HeapAllocator::allocate(m_len + extra + 1));
-					if (!m_u.m_alloc_buffer)
-						err = ERROR_OUTOFMEMORY;
-					else
-					{
-						m_flags = eHeap;
-
-						if (m_len)
-							memcpy(m_u.m_alloc_buffer,local_buffer,m_len);
-
-						buffer = m_u.m_alloc_buffer + m_len;
-					}
-				}
-			}
+			if (m_len + extra < sizeof(m_u.m_local_buffer))
+				buffer = m_u.m_local_buffer + m_len;
 			else
 			{
-				// Reallocate
-				char* new_buffer = static_cast<char*>(OOBase::HeapAllocator::reallocate(m_u.m_alloc_buffer,m_len + extra + 1));
-				if (!new_buffer)
+				char local_buffer[sizeof(m_u.m_local_buffer)] = {0};
+				if (m_len)
+					memcpy(local_buffer,m_u.m_local_buffer,m_len);
+
+				m_u.m_alloc_buffer = static_cast<char*>(OOBase::HeapAllocator::allocate(m_len + extra + 1));
+				if (!m_u.m_alloc_buffer)
 					err = ERROR_OUTOFMEMORY;
 				else
 				{
-					m_u.m_alloc_buffer = new_buffer;
+					if (m_len)
+						memcpy(m_u.m_alloc_buffer,local_buffer,m_len);
+
 					buffer = m_u.m_alloc_buffer + m_len;
 				}
 			}
-
-			if (buffer)
+		}
+		else
+		{
+			// Reallocate
+			char* new_buffer = static_cast<char*>(OOBase::HeapAllocator::reallocate(m_u.m_alloc_buffer,m_len + extra + 1));
+			if (!new_buffer)
+				err = ERROR_OUTOFMEMORY;
+			else
 			{
-				m_len += extra;
-				buffer[extra] = '\0';
+				m_u.m_alloc_buffer = new_buffer;
+				buffer = m_u.m_alloc_buffer + m_len;
 			}
 		}
-		--m_refcount;
-	}
 
-	return buffer;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor,2,((in),const char*,sz,(in),size_t,len))
-{
-	if (sz && len == string_t::npos)
-		len = strlen(sz);
-
-	if (!sz || !len)
-		return NULL;
-
-	StringNode* pNode = new (OOCore::throwing) StringNode();
-	int err = 0;
-	char* buffer = pNode->grow(len,err);
-	if (!buffer || err != 0)
-	{
-		delete pNode;
-		OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
-	}
-
-	memcpy(buffer,sz,len);
-
-	return pNode;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__const_ctor,2,((in),const char*,sz,(in),size_t,len))
-{
-	if (!sz || !len)
-		return NULL;
-
-	return new (OOCore::throwing) StringNode(sz,len);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),void*,s1,(in),int,own))
-{
-	if (s1)
-		static_cast<StringNode*>(s1)->addref();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,s1))
-{
-	if (s1)
-		static_cast<StringNode*>(s1)->release();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign,2,((in),void*,s1,(in),const void*,s2))
-{
-	if (s2)
-		static_cast<const StringNode*>(s2)->addref();
-
-	if (s1)
-		static_cast<StringNode*>(s1)->release();
-
-	return const_cast<void*>(s2);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_cast,2,((in),const void*,s1,(in),size_t*,plen))
-{
-	const char* buffer = NULL;
-	if (s1)
-	{
-		if (plen)
-			*plen = static_cast<const StringNode*>(s1)->length();
-
-		buffer = static_cast<const StringNode*>(s1)->buffer();
-	}
-
-	if (!buffer)
-	{
-		buffer = "";
-		if (plen)
-			*plen = 0;
-	}
-
-	return buffer;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append1,2,((in),void*,s1,(in),const void*,s2))
-{
-	if (!s2)
-		return s1;
-
-	const StringNode* pAdd = static_cast<const StringNode*>(s2);
-	StringNode* pOrig = static_cast<StringNode*>(s1);
-	if (!pOrig)
-		return pAdd->addref();
-
-	size_t add_len = pAdd->length();
-
-	int err = 0;
-	char* buffer = pOrig->grow(add_len,err);
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	if (buffer)
-	{
-		memcpy(buffer,pAdd->buffer(),add_len);
-		return pOrig;
-	}
-	else
-	{
-		size_t orig_len = pOrig->length();
-		StringNode* pNode = new (OOCore::throwing) StringNode();
-		buffer = pNode->grow(orig_len + add_len,err);
-		if (!buffer || err != 0)
+		if (buffer)
 		{
-			delete pNode;
-			OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
+			m_len += extra;
+			buffer[extra] = '\0';
 		}
+	}
+	--m_refcount;
 
-		memcpy(buffer,pOrig->buffer(),orig_len);
-		memcpy(buffer+orig_len,pAdd->buffer(),add_len);
+	return buffer;
+}
 
-		pOrig->release();
-		return pNode;
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__ctor,3,((in),void*,s,(in),const char*,sz,(in),size_t,len))
+{
+	string_handle* h = static_cast<string_handle*>(s);
+	if (h)
+	{
+		if (sz && len == string_t::npos)
+			len = strlen(sz);
+
+		if (!sz || !len)
+		{
+			h->m_vtbl = NULL;
+			h->m_ptr = NULL;
+		}
+		else
+		{
+			StringNode* pNode = new (OOCore::throwing) StringNode();
+			int err = 0;
+			char* buffer = pNode->grow(len,err);
+			if (!buffer || err != 0)
+			{
+				delete pNode;
+				OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
+			}
+
+			memcpy(buffer,sz,len);
+
+			h->m_vtbl = &s_string_vtbl;
+			h->m_ptr = pNode;
+		}
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_append2,3,((in),void*,s1,(in),const char*,sz,(in),size_t,len))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__const_ctor,3,((in),void*,s,(in),const char*,sz,(in),size_t,len))
+{
+	string_handle* h = static_cast<string_handle*>(s);
+	if (h)
+	{
+		if (!sz || !len)
+		{
+			h->m_vtbl = NULL;
+			h->m_ptr = NULL;
+		}
+		else
+		{
+			h->m_vtbl = &s_const_string_vtbl;
+			h->m_ptr = const_cast<char*>(sz);
+		}
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),const void*,s,(in),int,own))
+{
+	const string_handle* h = static_cast<const string_handle*>(s);
+	if (h && h->m_ptr && h->m_vtbl && h->m_vtbl->addref)
+		(*h->m_vtbl->addref)(h->m_ptr);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,s))
+{
+	string_handle* h = static_cast<string_handle*>(s);
+	if (h && h->m_ptr && h->m_vtbl && h->m_vtbl->release)
+		(*h->m_vtbl->release)(h->m_ptr);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_assign,2,((in),void*,s1,(in),const void*,s2))
+{
+	OOCore_string_t_addref(s2,false);
+	OOCore_string_t_release(s1);
+
+	*static_cast<string_handle*>(s1) = *static_cast<const string_handle*>(s2);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_cast,2,((in),const void*,s,(in),size_t*,plen))
+{
+	const string_handle* h = static_cast<const string_handle*>(s);
+	if (h && h->m_ptr && h->m_vtbl)
+	{
+		if (plen)
+			*plen = (*h->m_vtbl->length)(h->m_ptr);
+
+		return (*h->m_vtbl->buffer)(h->m_ptr);
+	}
+
+	if (plen)
+		*plen = 0;
+
+	return "";
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_append1,2,((in),void*,s1,(in),const void*,s2))
+{
+	if (s1)
+	{
+		size_t add_len = 0;
+		const char* add_buffer = OOCore_string_t_cast(s2,&add_len);
+		if (add_len > 0)
+		{
+			int err = 0;
+			char* buffer = string_grow(s1,add_len,err);
+			if (err != 0)
+				OMEGA_THROW(err);
+
+			if (buffer)
+				memcpy(buffer,add_buffer,add_len);
+			else
+			{
+				size_t orig_len = 0;
+				const char* orig_buffer = OOCore_string_t_cast(s1,&orig_len);
+
+				StringNode* pNode = new (OOCore::throwing) StringNode();
+				buffer = pNode->grow(orig_len + add_len,err);
+				if (!buffer || err != 0)
+				{
+					delete pNode;
+					OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
+				}
+
+				memcpy(buffer,orig_buffer,orig_len);
+				memcpy(buffer+orig_len,add_buffer,add_len);
+
+				OOCore_string_t_release(s1);
+
+				string_handle* h = static_cast<string_handle*>(s1);
+				h->m_vtbl = &s_string_vtbl;
+				h->m_ptr = pNode;
+			}
+		}
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_append2,3,((in),void*,s,(in),const char*,sz,(in),size_t,len))
 {
 	if (len == string_t::npos)
 		len = strlen(sz);
 
-	if (len == 0)
-		return s1;
-
-	if (!s1)
-		return OOCore_string_t__ctor(sz,len);
-
-	StringNode* pOrig = static_cast<StringNode*>(s1);
-
-	int err = 0;
-	char* buffer = pOrig->grow(len,err);
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	if (buffer)
+	if (len > 0)
 	{
-		memcpy(buffer,sz,len);
-		return pOrig;
-	}
-	else
-	{
-		size_t orig_len = pOrig->length();
-		StringNode* pNode = new (OOCore::throwing) StringNode();
-		buffer = pNode->grow(orig_len + len,err);
-		if (!buffer || err != 0)
+		if (!s)
+			OOCore_string_t__ctor(s,sz,len);
+		else
 		{
-			delete pNode;
-			OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
-		}
+			int err = 0;
+			char* buffer = string_grow(s,len,err);
+			if (err != 0)
+				OMEGA_THROW(err);
 
-		memcpy(buffer,pOrig->buffer(),orig_len);
-		memcpy(buffer+orig_len,sz,len);
-		
-		pOrig->release();
-		return pNode;
+			if (buffer)
+				memcpy(buffer,sz,len);
+			else
+			{
+				size_t orig_len = 0;
+				const char* orig_buffer = OOCore_string_t_cast(s,&orig_len);
+
+				StringNode* pNode = new (OOCore::throwing) StringNode();
+				buffer = pNode->grow(orig_len + len,err);
+				if (!buffer || err != 0)
+				{
+					delete pNode;
+					OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
+				}
+
+				memcpy(buffer,orig_buffer,orig_len);
+				memcpy(buffer+orig_len,sz,len);
+
+				OOCore_string_t_release(s);
+
+				string_handle* h = static_cast<string_handle*>(s);
+				h->m_vtbl = &s_string_vtbl;
+				h->m_ptr = pNode;
+			}
+		}
 	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,4,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),size_t,length))
 {
-	const char* buf1 = NULL;
-	const char* buf2 = NULL;
 	size_t len1 = 0;
+	const char* buf1 = OOCore_string_t_cast(s1,&len1);
+
 	size_t len2 = 0;
-
-	if (s1)
-	{
-		const StringNode* str1 = static_cast<const StringNode*>(s1);
-		buf1 = str1->buffer();
-		len1 = str1->length();
-	}
-
-	if (s2)
-	{
-		const StringNode* str2 = static_cast<const StringNode*>(s2);
-		buf2 = str2->buffer();
-		len2 = str2->length();
-	}
+	const char* buf2 = OOCore_string_t_cast(s2,&len2);
 
 	return compare(buf1,len1,buf2,len2,pos,length);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,2,((in),const void*,s1,(in),const char*,sz))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,2,((in),const void*,s,(in),const char*,sz))
 {
-	const char* buf = NULL;
 	size_t len1 = 0;
+	const char* buf = OOCore_string_t_cast(s,&len1);
+
 	size_t len2 = 0;
-
-	if (s1)
-	{
-		const StringNode* str1 = static_cast<const StringNode*>(s1);
-		buf = str1->buffer();
-		len1 = str1->length();
-	}
-
 	if (sz)
 		len2 = strlen(sz);
 
 	return compare(buf,len1,sz,len2,0,len1);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,3,((in),const void*,s1,(in),char,c,(in),size_t,pos))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,3,((in),const void*,s,(in),char,c,(in),size_t,pos))
 {
-	if (!s1)
-		return string_t::npos;
-
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	size_t len = str1->length();
+	size_t len = 0;
+	const char* start = OOCore_string_t_cast(s,&len);
 	if (pos >= len)
 		len = 0;
 	else
@@ -421,7 +441,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,3,((in),const vo
 	if (len == 0)
 		return string_t::npos;
 
-	const char* start = str1->buffer();
 	const char* found = static_cast<const char*>(memchr(start + pos,c,len));
 	if (!found)
 		return string_t::npos;
@@ -431,30 +450,21 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,3,((in),const vo
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,3,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos))
 {
-	if (!s1)
-		return string_t::npos;
-
-	if (!s2)
-		return 0;
-
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	const StringNode* str2 = static_cast<const StringNode*>(s2);
-
-	size_t len = str1->length();
+	size_t len = 0;
+	const char* start = OOCore_string_t_cast(s1,&len) + pos;
 	if (pos >= len)
 		len = 0;
 	else
 		len -= pos;
 
-	if (len == 0)
-		return string_t::npos;
+	size_t search_len = 0;
+	const char* search = OOCore_string_t_cast(s2,&search_len);
 
-	size_t search_len = str2->length();
 	if (search_len > len)
 		return string_t::npos;
 
-	const char* search = str2->buffer();
-	const char* start = str1->buffer() + pos;
+	if (search_len == 0)
+		return 0;
 
 	for (size_t offset = pos;len != 0;start += offset + 1)
 	{
@@ -477,15 +487,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,3,((in),const vo
 	return string_t::npos;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,3,((in),const void*,s1,(in),char,c,(in),size_t,pos))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,3,((in),const void*,s,(in),char,c,(in),size_t,pos))
 {
-	if (!s1)
-		return string_t::npos;
-
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	
-	size_t len = str1->length();
-	const char* start = str1->buffer() + pos;
+	size_t len = 0;
+	const char* start = OOCore_string_t_cast(s,&len) + pos;
 	
 	for (size_t i=pos;i < len;++i)
 	{
@@ -498,13 +503,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,3,((in),const
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,3,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos))
 {
-	if (!s1 || !s2)
-		return string_t::npos;
-
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	const StringNode* str2 = static_cast<const StringNode*>(s2);
-
-	size_t len = str1->length();
+	size_t len = 0;
+	const char* start = OOCore_string_t_cast(s1,&len) + pos;
 	if (pos >= len)
 		len = 0;
 	else
@@ -513,18 +513,21 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,3,((in),con
 	if (len == 0)
 		return string_t::npos;
 
-	const char* search = str2->buffer();
-	const char* start = str1->buffer() + pos;
+	size_t search_len = 0;
+	const char* search = OOCore_string_t_cast(s2,&search_len);
 
-	for (size_t offset = pos;len != 0;start += offset + 1)
+	if (search_len > 0)
 	{
-		const char* found = strpbrk(start,search);
-		if (found)
-			return offset + static_cast<size_t>(found - start);
+		for (size_t offset = pos;len != 0;start += offset + 1)
+		{
+			const char* found = strpbrk(start,search);
+			if (found)
+				return offset + static_cast<size_t>(found - start);
 
-		size_t p = strlen(start);
-		offset += p;
-		len -= p;
+			size_t p = strlen(start);
+			offset += p;
+			len -= p;
+		}
 	}
 
 	return string_t::npos;
@@ -532,13 +535,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,3,((in),con
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_notof,3,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos))
 {
-	if (!s1 || !s2)
-		return string_t::npos;
+	size_t len = 0;
+	const char* start = OOCore_string_t_cast(s1,&len) + pos;
 
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	const StringNode* str2 = static_cast<const StringNode*>(s2);
-
-	size_t len = str1->length();
 	if (pos >= len)
 		len = 0;
 	else
@@ -547,36 +546,37 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_notof,3,((in),con
 	if (len == 0)
 		return string_t::npos;
 
-	const char* search = str2->buffer();
-	const char* start = str1->buffer() + pos;
+	size_t search_len = 0;
+	const char* search = OOCore_string_t_cast(s2,&search_len);
 
-	for (size_t offset = pos;len != 0;start += offset + 1)
+	if (search_len > 0)
 	{
-		size_t p = strlen(start);
-		size_t f = strspn(start,search);
-		if (f < p)
-			return offset + f;
+		for (size_t offset = pos;len != 0;start += offset + 1)
+		{
+			size_t p = strlen(start);
+			size_t f = strspn(start,search);
+			if (f < p)
+				return offset + f;
 
-		offset += p;
-		len -= p;
+			offset += p;
+			len -= p;
+		}
 	}
 
 	return string_t::npos;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,3,((in),const void*,s1,(in),char,c,(in),size_t,pos))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,3,((in),const void*,s,(in),char,c,(in),size_t,pos))
 {
-	if (!s1)
-		return string_t::npos;
+	size_t len = 0;
+	const char* start = OOCore_string_t_cast(s,&len);
 
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	size_t len = str1->length();
 	if (pos >= len)
 		pos = len-1;
 	
 	if (len > 0)
 	{
-		const char* start = str1->buffer() + pos;
+		start += pos;
 		for (size_t i=pos+1;i > 0;--i)
 		{
 			if (*(start--) == c)
@@ -587,44 +587,42 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,3,((in),const vo
 	return string_t::npos;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_left,2,((in),const void*,s1,(in),size_t,length))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_left,4,((in),void*,s1,(in),const void*,s2,(in),size_t,start,(in),size_t,length))
 {
-	if (!s1 || !length)
-		return NULL;
+	size_t orig_len = 0;
+	const char* buffer = OOCore_string_t_cast(s2,&orig_len);
 
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	if (str1->length() <= length)
-		return str1->addref();
+	if (start < orig_len)
+	{
+		if (length > orig_len - start)
+			length = orig_len - start;
 
-	return OOCore_string_t__ctor(str1->buffer(),length);
+		if (start == 0 && orig_len == length)
+		{
+			OOCore_string_t_addref(s2,false);
+			*static_cast<string_handle*>(s1) = *static_cast<const string_handle*>(s2);
+		}
+		else
+		{
+			OOCore_string_t__ctor(s1,buffer+start,length);
+		}
+	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_mid,3,((in),const void*,s1,(in),size_t,start,(in),size_t,length))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_right,3,((in),void*,s1,(in),const void*,s2,(in),size_t,length))
 {
-	if (!s1 || !length)
-		return NULL;
+	size_t orig_len = 0;
+	const char* buffer = OOCore_string_t_cast(s2,&orig_len);
 
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-
-	if (start > str1->length())
-		return NULL;
-
-	if (length > str1->length() - start)
-		length = str1->length() - start;
-
-	return OOCore_string_t__ctor(str1->buffer()+start,length);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const void*,s1,(in),size_t,length))
-{
-	if (!s1 || !length)
-		return NULL;
-
-	const StringNode* str1 = static_cast<const StringNode*>(s1);
-	if (str1->length() <= length)
-		return str1->addref();
-
-	return OOCore_string_t__ctor(str1->buffer()+(str1->length() - length),length);
+	if (orig_len <= length)
+	{
+		OOCore_string_t_addref(s2,false);
+		*static_cast<string_handle*>(s1) = *static_cast<const string_handle*>(s2);
+	}
+	else
+	{
+		OOCore_string_t__ctor(s1,buffer+(orig_len - length),length);
+	}
 }
 
 #if !defined(_WIN32)

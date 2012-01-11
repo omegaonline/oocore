@@ -38,23 +38,24 @@ namespace Omega
 		class formatter_t;
 	}
 
+	namespace Remoting
+	{
+		struct IMessage;
+	}
+
 	class string_t
 	{
 	public:
 		static const size_t npos = size_t(-1);
 
-		string_t();
+		string_t(const char* sz = NULL, size_t length = npos);
 		string_t(const string_t& s);
-		
-		string_t(const char* sz, size_t length = npos);
-		
 		~string_t();
+		string_t& operator = (const string_t& s);
 
 		template <size_t S>
 		static string_t constant(const char (&arr)[S]);
 		static string_t constant(const char* sz, size_t len);
-		
-		string_t& operator = (const string_t& s);
 		
 		string_t& operator += (const string_t& s);
 		string_t& operator += (const char* sz);
@@ -106,15 +107,20 @@ namespace Omega
 	private:
 		struct handle_t
 		{
-			int unused;
-		}* m_handle;
+			const void* p0;
+			const void* p1;
+		};
+		handle_t m_handle;
 
-		explicit string_t(handle_t*, bool addref);
+		explicit string_t(const handle_t& h, bool addref);
 
-		static handle_t* addref(handle_t* h, bool own);
-		static void release(handle_t* h);
+		static void addref(const handle_t& h, bool own);
+		static void release(handle_t& h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
+
+		friend void read(Remoting::IMessage* msg, handle_t& val);
+		friend void write(Remoting::IMessage* msg, const handle_t& val);
 
 #if !defined(NDEBUG)
 		const char* m_debug_value;

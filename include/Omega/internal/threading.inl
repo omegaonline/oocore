@@ -244,10 +244,10 @@ inline size_t Omega::Threading::AtomicRefCount::Release()
 	return OOCore_atomic_release(&m_value);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_is_zero,1,((in),size_t*,v));
+OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_is_zero,1,((in),const size_t*,v));
 inline bool Omega::Threading::AtomicRefCount::IsZero() const
 {
-	return (OOCore_atomic_is_zero(const_cast<size_t*>(&m_value)) != 0);
+	return (OOCore_atomic_is_zero(&m_value) != 0);
 }
 
 #endif // OMEGA_THREADING_INL_INCLUDED_

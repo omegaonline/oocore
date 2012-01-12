@@ -104,9 +104,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_atomic_release,1,((in),size_t*,
 	return OOBase::Atomic<size_t>::Decrement(*v);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_is_zero,1,((in),size_t*,v))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_is_zero,1,((in),const size_t*,v))
 {
-	return (OOBase::Atomic<size_t>::CompareAndSwap(*v,0,0) == 0 ? 1 : 0);
+	return (OOBase::Atomic<size_t>::CompareAndSwap(*const_cast<size_t*>(v),0,0) == 0 ? 1 : 0);
 }
 
 namespace

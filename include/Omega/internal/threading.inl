@@ -53,49 +53,6 @@ inline void Omega::Threading::Mutex::Release()
 	OOCore_cs_unlock(m_handle);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,());
-inline Omega::Threading::ReaderWriterLock::ReaderWriterLock() :
-		m_handle(static_cast<handle_t*>(OOCore_rw_lock__ctor()))
-{
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,h));
-inline Omega::Threading::ReaderWriterLock::~ReaderWriterLock()
-{
-	try
-	{
-		OOCore_rw_lock__dctor(m_handle);
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,h));
-inline void Omega::Threading::ReaderWriterLock::AcquireRead()
-{
-	OOCore_rw_lock_lockread(m_handle);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockwrite,1,((in),void*,h));
-inline void Omega::Threading::ReaderWriterLock::Acquire()
-{
-	OOCore_rw_lock_lockwrite(m_handle);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockread,1,((in),void*,h));
-inline void Omega::Threading::ReaderWriterLock::ReleaseRead()
-{
-	OOCore_rw_lock_unlockread(m_handle);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*,h));
-inline void Omega::Threading::ReaderWriterLock::Release()
-{
-	OOCore_rw_lock_unlockwrite(m_handle);
-}
-
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**,phandle));
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*,handle));
 

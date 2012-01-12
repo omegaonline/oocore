@@ -148,7 +148,7 @@ namespace
 		{
 		}
 
-		OOBase::Timeout        m_timeout;
+		OOBase::Timeout          m_timeout;
 		uint32_t                 m_src_id;
 		Remoting::MarshalFlags_t m_flags;
 	};

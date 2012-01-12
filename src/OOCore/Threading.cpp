@@ -56,42 +56,26 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
 {
-	static_cast<OOBase::Mutex*>(m1)->acquire();
+	if (!static_cast<OOBase::Mutex*>(m1)->tryacquire())
+	{
+		OTL::ObjectPtr<Omega::Remoting::ICallContext> ptrCC = Omega::Remoting::GetCallContext();
+		uint32_t millisecs = ptrCC->Timeout();
+		if (millisecs != 0xFFFFFFFF)
+		{
+			OOBase::Timeout timeout(millisecs / 1000,(millisecs % 1000) * 1000);
+			if (!static_cast<OOBase::Mutex*>(m1)->acquire(timeout))
+				throw Omega::ITimeoutException::Create();
+		}
+		else
+		{
+			static_cast<OOBase::Mutex*>(m1)->acquire();
+		}
+	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,m1))
 {
 	static_cast<OOBase::Mutex*>(m1)->release();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
-{
-	return new (OOCore::throwing) OOBase::RWMutex();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,m1))
-{
-	delete static_cast<OOBase::RWMutex*>(m1);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,m1))
-{
-	static_cast<OOBase::RWMutex*>(m1)->acquire_read();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockwrite,1,((in),void*,m1))
-{
-	static_cast<OOBase::RWMutex*>(m1)->acquire();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockread,1,((in),void*,m1))
-{
-	static_cast<OOBase::RWMutex*>(m1)->release_read();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*,m1))
-{
-	static_cast<OOBase::RWMutex*>(m1)->release();
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_atomic_addref,1,((in),size_t*,v))

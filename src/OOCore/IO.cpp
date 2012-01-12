@@ -74,7 +74,7 @@ namespace
 	public:
 		uint32_t ReadBytes(uint32_t lenBytes, byte_t* data)
 		{
-			Threading::Guard<Threading::Mutex> guard(m_lock);
+			Threading::Guard guard(m_lock);
 
 			size_t r = lenBytes;
 			if (m_pos + r > m_len)

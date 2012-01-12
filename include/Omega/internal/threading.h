@@ -54,32 +54,10 @@ namespace Omega
 			}* m_handle;
 		};
 
-		class ReaderWriterLock
-		{
-		public:
-			ReaderWriterLock();
-			~ReaderWriterLock();
-
-			void AcquireRead();
-			void Acquire();
-			void ReleaseRead();
-			void Release();
-
-		private:
-			ReaderWriterLock(const ReaderWriterLock&);
-			ReaderWriterLock& operator = (const ReaderWriterLock&);
-
-			struct handle_t
-			{
-				int unused;
-			}* m_handle;
-		};
-
-		template <typename MUTEX>
 		class Guard
 		{
 		public:
-			Guard(MUTEX& mutex, bool acq = true) :
+			Guard(Mutex& mutex, bool acq = true) :
 					m_acquired(false),
 					m_mutex(mutex)
 			{
@@ -112,47 +90,7 @@ namespace Omega
 			Guard& operator = (const Guard&);
 
 			bool   m_acquired;
-			MUTEX& m_mutex;
-		};
-
-		template <typename MUTEX>
-		class ReadGuard
-		{
-		public:
-			ReadGuard(MUTEX& mutex, bool acq = true) :
-					m_acquired(false),
-					m_mutex(mutex)
-			{
-				if (acq)
-					Acquire();
-			}
-
-			~ReadGuard()
-			{
-				if (m_acquired)
-					Release();
-			}
-
-			void Acquire()
-			{
-				m_mutex.AcquireRead();
-
-				m_acquired = true;
-			}
-
-			void Release()
-			{
-				m_acquired = false;
-
-				m_mutex.ReleaseRead();
-			}
-
-		private:
-			ReadGuard(const ReadGuard&);
-			ReadGuard& operator = (const ReadGuard&);
-
-			bool   m_acquired;
-			MUTEX& m_mutex;
+			Mutex& m_mutex;
 		};
 
 		class AtomicRefCount

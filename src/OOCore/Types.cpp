@@ -39,12 +39,14 @@ namespace
 		return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
 	}
 
+	struct string_handle;
+
 	struct string_vtbl
 	{
 		char* (*grow)(void* p, size_t extra, int& err);
 		const char* (*buffer)(const void* p);
 		size_t (*length)(const void* p);
-		void (*addref)(const void* p);
+		void (*addref)(string_handle* p, int own);
 		void (*release)(void* p);
 	};
 
@@ -84,10 +86,10 @@ namespace
 			return m_len;
 		}
 
-		StringNode* addref() const
+		StringNode* addref()
 		{
 			++m_refcount;
-			return const_cast<StringNode*>(this);
+			return this;
 		}
 
 		void release()
@@ -97,8 +99,8 @@ namespace
 		}
 
 	private:
-		mutable OOBase::Atomic<size_t> m_refcount;
-		size_t                         m_len;
+		OOBase::Atomic<size_t> m_refcount;
+		size_t                 m_len;
 		union U
 		{
 			char*       m_alloc_buffer;
@@ -145,7 +147,7 @@ namespace
 	char* sn_grow(void* p, size_t extra, int& err) { return static_cast<StringNode*>(p)->grow(extra,err); }
 	const char* sn_buffer(const void* p) { return static_cast<const StringNode*>(p)->buffer(); }
 	size_t sn_length(const void* p) { return static_cast<const StringNode*>(p)->length(); }
-	void sn_addref(const void* p) { static_cast<const StringNode*>(p)->addref(); }
+	void sn_addref(string_handle* h, int) { static_cast<StringNode*>(h->m_ptr)->addref(); }
 	void sn_release(void* p) { static_cast<StringNode*>(p)->release(); }
 
 	const struct string_vtbl s_string_vtbl =
@@ -160,12 +162,18 @@ namespace
 	const char* const_buffer(const void* p) { return static_cast<const char*>(p); }
 	size_t const_length(const void* p) { return strlen(static_cast<const char*>(p)); }
 
+	void const_addref(string_handle* h, int own)
+	{
+		if (own)
+			OOCore_string_t__ctor(h,static_cast<char*>(h->m_ptr),string_t::npos);
+	}
+
 	const struct string_vtbl s_const_string_vtbl =
 	{
 		NULL,
 		&const_buffer,
 		&const_length,
-		NULL,
+		&const_addref,
 		NULL
 	};
 
@@ -282,26 +290,32 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__const_ctor,3,((in),void
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),const void*,s,(in),int,own))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),void*,s,(in),int,own))
 {
-	const string_handle* h = static_cast<const string_handle*>(s);
+	string_handle* h = static_cast<string_handle*>(s);
 	if (h && h->m_ptr && h->m_vtbl && h->m_vtbl->addref)
-		(*h->m_vtbl->addref)(h->m_ptr);
+		(*h->m_vtbl->addref)(h,own);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,s))
 {
 	string_handle* h = static_cast<string_handle*>(s);
-	if (h && h->m_ptr && h->m_vtbl && h->m_vtbl->release)
-		(*h->m_vtbl->release)(h->m_ptr);
+	if (h)
+	{
+		if (h->m_ptr && h->m_vtbl && h->m_vtbl->release)
+			(*h->m_vtbl->release)(h->m_ptr);
+
+		h->m_ptr = NULL;
+		h->m_vtbl = NULL;
+	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_assign,2,((in),void*,s1,(in),const void*,s2))
 {
-	OOCore_string_t_addref(s2,false);
+	string_handle h = *static_cast<const string_handle*>(s2);
+	OOCore_string_t_addref(&h,0);
 	OOCore_string_t_release(s1);
-
-	*static_cast<string_handle*>(s1) = *static_cast<const string_handle*>(s2);
+	*static_cast<string_handle*>(s1) = h;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const char*,OOCore_string_t_cast,2,((in),const void*,s,(in),size_t*,plen))
@@ -592,15 +606,17 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_left,4,((in),void*,s1,(i
 	size_t orig_len = 0;
 	const char* buffer = OOCore_string_t_cast(s2,&orig_len);
 
-	if (start < orig_len)
+	if (start >= orig_len)
+		OOCore_string_t__ctor(s1,NULL,0);
+	else
 	{
 		if (length > orig_len - start)
 			length = orig_len - start;
 
 		if (start == 0 && orig_len == length)
 		{
-			OOCore_string_t_addref(s2,false);
 			*static_cast<string_handle*>(s1) = *static_cast<const string_handle*>(s2);
+			OOCore_string_t_addref(s1,0);
 		}
 		else
 		{
@@ -616,8 +632,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_right,3,((in),void*,s1,(
 
 	if (orig_len <= length)
 	{
-		OOCore_string_t_addref(s2,false);
 		*static_cast<string_handle*>(s1) = *static_cast<const string_handle*>(s2);
+		OOCore_string_t_addref(s1,0);
 	}
 	else
 	{

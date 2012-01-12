@@ -630,13 +630,14 @@ namespace Omega
 				static safe_type addref(const string_t& v, bool own)
 				{
 					// We only need to take ownership if we are passing out of a dll that isn't OOCore
+					safe_type h = v.m_handle;
 #if !defined(OOCORE_INTERNAL)
-					string_t::addref(v.m_handle,own);
+					string_t::addref(h,own);
 #else
 					OMEGA_UNUSED_ARG(own);
-					string_t::addref(v.m_handle,false);
+					string_t::addref(h,false);
 #endif
-					return v.m_handle;
+					return h;
 				}
 
 				static void release(safe_type v)

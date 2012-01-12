@@ -43,8 +43,8 @@ inline Omega::string_t::string_t(const char* sz, size_t length)
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),const void*,h1,(in),int,own));
-inline void Omega::string_t::addref(const handle_t& h, bool own)
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,2,((in),void*,h1,(in),int,own));
+inline void Omega::string_t::addref(handle_t& h, bool own)
 {
 	OOCore_string_t_addref(&h,own ? 1 : 0);
 }
@@ -77,14 +77,14 @@ OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__const_ctor,3,((in),void*,h1,(
 template <size_t S>
 inline Omega::string_t Omega::string_t::constant(const char (&arr)[S])
 {
-	handle_t h = { NULL, NULL };
+	handle_t h;
 	OOCore_string_t__const_ctor(&h,arr,S-1);
 	return string_t(h,false);
 }
 
 inline Omega::string_t Omega::string_t::constant(const char* sz, size_t len)
 {
-	handle_t h = { NULL, NULL };
+	handle_t h;
 	OOCore_string_t__const_ctor(&h,sz,len);
 	return string_t(h,false);
 }
@@ -219,14 +219,14 @@ inline size_t Omega::string_t::ReverseFind(char c, size_t pos) const
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_left,4,((in),void*,h1,(in),const void*,h2,(in),size_t,a,(in),size_t,b));
 inline Omega::string_t Omega::string_t::Left(size_t length) const
 {
-	handle_t h = { NULL, NULL };
+	handle_t h;
 	OOCore_string_t_left(&h,&m_handle,0,length);
 	return string_t(h,false);
 }
 
 inline Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 {
-	handle_t h = { NULL, NULL };
+	handle_t h;
 	OOCore_string_t_left(&h,&m_handle,start,length);
 	return string_t(h,false);
 }
@@ -234,7 +234,7 @@ inline Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_right,3,((in),void*,h1,(in),const void*,h2,(in),size_t,b));
 inline Omega::string_t Omega::string_t::Right(size_t length) const
 {
-	handle_t h = { NULL, NULL };
+	handle_t h;
 	OOCore_string_t_right(&h,&m_handle,length);
 	return string_t(h,false);
 }
@@ -242,11 +242,7 @@ inline Omega::string_t Omega::string_t::Right(size_t length) const
 inline Omega::string_t& Omega::string_t::Clear()
 {
 	OOCore_string_t_release(&m_handle);
-	m_handle.p0 = NULL;
-	m_handle.p1 = NULL;
-
 	OMEGA_DEBUG_STASH_STRING();
-
 	return *this;
 }
 

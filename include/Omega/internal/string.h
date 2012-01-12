@@ -114,7 +114,7 @@ namespace Omega
 
 		explicit string_t(const handle_t& h, bool addref);
 
-		static void addref(const handle_t& h, bool own);
+		static void addref(handle_t& h, bool own);
 		static void release(handle_t& h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;

@@ -5,6 +5,10 @@ AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
+if WIN32
+AM_CPPFLAGS += -D_WIN32_WINNT=0x0502
+endif
+
 common = \
 	md5.c \
 	Activation.cpp \

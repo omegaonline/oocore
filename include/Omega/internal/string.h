@@ -33,19 +33,15 @@ namespace Omega
 		}
 	}
 
-	namespace Formatting
-	{
-		class formatter_t;
-	}
-
-	namespace Remoting
-	{
-		struct IMessage;
-	}
-
 	class string_t
 	{
 	public:
+		struct handle_t
+		{
+			const void* p0;
+			const void* p1;
+		};
+
 		static const size_t npos = size_t(-1);
 
 		string_t(const char* sz = NULL, size_t length = npos);
@@ -105,11 +101,6 @@ namespace Omega
 		static float8_t strtod(const string_t& str, size_t& end_pos);
 
 	private:
-		struct handle_t
-		{
-			const void* p0;
-			const void* p1;
-		};
 		handle_t m_handle;
 
 		explicit string_t(const handle_t& h, bool addref);
@@ -118,9 +109,6 @@ namespace Omega
 		static void release(handle_t& h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
-
-		friend void read(Remoting::IMessage* msg, handle_t& val);
-		friend void write(Remoting::IMessage* msg, const handle_t& val);
 
 #if !defined(NDEBUG)
 		const char* m_debug_value;

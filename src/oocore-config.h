@@ -45,7 +45,7 @@
 
 	// We support Vista API's
 	#if !defined(_WIN32_WINNT)
-	#define _WIN32_WINNT 0x0600
+	#define _WIN32_WINNT 0x0500
 	#elif _WIN32_WINNT < 0x0500
 	#error OOBase requires _WIN32_WINNT >= 0x0500!
 	#endif
@@ -57,19 +57,11 @@
 	#error OOBase requires _WIN32_IE >= 0x0500!
 	#endif
 
-	#include <windows.h>
-
 	#if !defined(WINVER)
-	#error No WINVER?!?
-	#elif (WINVER < 0x0500)
-	#if defined(__MINGW32__)
-	// MinGW gets WINVER wrong...
-	#undef WINVER
-	#define WINVER 0x0500
-	#else
-	#error OOBase requires WINVER >= 0x0500!
+	#define WINVER _WIN32_WINNT
 	#endif
-	#endif
+
+	#include <windows.h>
 
 	// Check for obsolete windows versions
 	#if defined(_WIN32_WINDOWS)

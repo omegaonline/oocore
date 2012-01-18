@@ -31,7 +31,7 @@
 
 // We support Vista API's
 #if !defined(_WIN32_WINNT)
-	#define _WIN32_WINNT 0x0600
+	#define _WIN32_WINNT 0x0500
 #elif _WIN32_WINNT < 0x0500
 	#error OOCore requires _WIN32_WINNT >= 0x0500!
 #endif
@@ -43,6 +43,10 @@
 	#error OOCore requires _WIN32_IE >= 0x0500!
 #endif
 
+#if !defined(WINVER)
+	#define WINVER _WIN32_WINNT
+#endif
+
 #include <windows.h>
 
 // Check for obsolete windows versions
@@ -50,26 +54,12 @@
 	#error You cannot build Omega Online for Windows 95/98/Me!
 #endif
 
-#if !defined(WINVER)
-	#error No WINVER?!?
-#elif (WINVER < 0x0500)
-	#if defined(__MINGW32__)
-		// MinGW gets WINVER wrong...
-		#undef WINVER
-		#define WINVER 0x0500
-	#else
-		#error OOCore requires WINVER >= 0x0500!
-	#endif
-#endif
-
 #if !defined(_WIN32)
 	#error No _WIN32?!?
 #endif
 
-#if defined(_WIN32)
-	// MS define interface as well...
-	#include <objbase.h>
-#endif
+// MS define interface as well...
+#include <objbase.h>
 
 // These play havoc with stl
 #if defined(min)

@@ -63,7 +63,12 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	OOBase::String strPidfile;
 	cmd_args.find("pidfile",strPidfile);
 
-	if (pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str()))
+	int err = pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str());
+	if (err == EACCES)
+		OOBase::Logger::log(OOBase::Logger::Warning,APPNAME " already running");
+	else if (err)
+		LOG_ERROR(("Faield to create pid_file: %s",OOBase::system_error_text(err)));
+	else
 	{
 		// Loop until we quit
 		for (bool bQuit=false; !bQuit;)
@@ -77,8 +82,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 				if (init_database())
 				{
 					// Start the proactor pool
-					int err = m_proactor_pool.run(&run_proactor,NULL,2);
-					if (err != 0)
+					if ((err = m_proactor_pool.run(&run_proactor,NULL,2)) != 0)
 						LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 					else
 					{

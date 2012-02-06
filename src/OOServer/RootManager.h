@@ -52,7 +52,7 @@ namespace Root
 	class Manager :
 			public OOServer::MessageHandler,
 			public Registry::Manager,
-			public OOSvrBase::Service
+			public OOBase::Service
 	{
 	public:
 		Manager();

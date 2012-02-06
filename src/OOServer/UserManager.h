@@ -39,7 +39,7 @@ namespace User
 {
 	class Manager :
 			public OOServer::MessageHandler,
-			public OOSvrBase::Server
+			public OOBase::Server
 	{
 	public:
 		Manager();

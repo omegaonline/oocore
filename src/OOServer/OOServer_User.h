@@ -38,9 +38,9 @@
 #include <OOBase/utf8.h>
 #include <OOBase/SecurityWin32.h>
 #include <OOBase/Logger.h>
+#include <OOBase/Service.h>
 
 #include <OOSvrBase/Proactor.h>
-#include <OOSvrBase/Service.h>
 
 //////////////////////////////////////////////
 

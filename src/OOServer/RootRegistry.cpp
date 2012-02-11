@@ -35,7 +35,7 @@
 #include "RootManager.h"
 #include "RootProcess.h"
 
-int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask)
+int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::Hive::access_rights_t access_mask)
 {
 	// Zero channel always has access...
 	if (channel_id == 0)
@@ -48,8 +48,8 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 	if (!pU)
 		return EINVAL;
 
-	bool bRead = (access_mask & Registry::Hive::read_check) == Registry::Hive::read_check;
-	bool bWrite = (access_mask & Registry::Hive::write_check) == Registry::Hive::write_check;
+	bool bRead = (access_mask & Db::Hive::read_check) == Db::Hive::read_check;
+	bool bWrite = (access_mask & Db::Hive::write_check) == Db::Hive::write_check;
 
 	// Check access
 	bool bAllowed = false;
@@ -61,7 +61,7 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 		return 0;
 }
 
-int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
+int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
@@ -135,7 +135,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 	}
 }
 
-int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey)
+int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey)
 {
 	Omega::byte_t nType;
 	return registry_open_hive(channel_id,request,ptrHive,uKey,nType);
@@ -143,7 +143,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 
 void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
@@ -161,7 +161,7 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 
 void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey = 0;
 	Omega::byte_t nType;
 	Omega::int64_t uSubKey;
@@ -177,7 +177,7 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 			if (!request.read(flags))
 				err = request.last_error();
 			else
-				err = ptrHive->create_key(uKey,uSubKey,strSubKey.c_str(),flags,Registry::Hive::inherit_checks,channel_id);
+				err = ptrHive->create_key(uKey,uSubKey,strSubKey.c_str(),flags,Db::Hive::inherit_checks,channel_id);
 		}
 	}
 
@@ -191,7 +191,7 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 
 void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
@@ -209,7 +209,7 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 
 void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
@@ -224,7 +224,7 @@ void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CD
 
 void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -243,7 +243,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 {
 	OOBase::LocalString val;
 
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -262,7 +262,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 
 void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -285,7 +285,7 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 
 void Root::Manager::registry_set_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -302,7 +302,7 @@ void Root::Manager::registry_set_description(Omega::uint32_t channel_id, OOBase:
 
 void Root::Manager::registry_set_value_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -327,7 +327,7 @@ void Root::Manager::registry_get_description(Omega::uint32_t channel_id, OOBase:
 {
 	OOBase::LocalString val;
 
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -342,7 +342,7 @@ void Root::Manager::registry_get_value_description(Omega::uint32_t channel_id, O
 {
 	OOBase::LocalString val;
 
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -361,7 +361,7 @@ void Root::Manager::registry_get_value_description(Omega::uint32_t channel_id, O
 
 void Root::Manager::registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -373,7 +373,7 @@ void Root::Manager::registry_enum_values(Omega::uint32_t channel_id, OOBase::CDR
 
 void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Registry::Hive> ptrHive;
+	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)

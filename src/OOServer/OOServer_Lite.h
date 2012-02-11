@@ -26,11 +26,11 @@
 #include <OOBase/Posix.h>
 #include <OOBase/Table.h>
 
-#include <OOSvrBase/Database.h>
-
 // Ensure we have the local Omega.h instead of the installed one...
 #include "../../include/Omega/Omega.h"
 #include "../../include/OTL/Exception.h"
 #include "../../include/OTL/Registry.h"
+
+#include "../../libdb/RegistryHive.h"
 
 #endif // OOSERVER_LITE_H_INCLUDED_

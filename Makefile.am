@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = oobase include src data tools test
+SUBDIRS = oobase include libdb src data tools test
 
 EXTRA_DIST = \
 	gpl3_0.txt \

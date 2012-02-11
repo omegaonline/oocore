@@ -112,7 +112,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 		}
 		else
 		{
-			Registry::Hive::registry_set_t setSubKeys;
+			Db::Hive::registry_set_t setSubKeys;
 			if ((err = m_registry->enum_subkeys(uKey,0,setSubKeys)) != 0)
 				LOG_ERROR(("Failed to enum subkeys of /System/Services key: %d",err));
 			else

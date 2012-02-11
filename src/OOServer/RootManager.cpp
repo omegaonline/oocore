@@ -163,7 +163,7 @@ bool Root::Manager::init_database()
 	if ((err = dir2.append("system.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
-	m_registry = new (std::nothrow) Registry::Hive(this,dir2.c_str());
+	m_registry = new (std::nothrow) Db::Hive(this,dir2.c_str());
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -175,7 +175,7 @@ bool Root::Manager::init_database()
 	if ((err = dir2.append("sandbox.regdb")) != 0)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
 
-	m_registry_sandbox = new (std::nothrow) Registry::Hive(this,dir2.c_str());
+	m_registry_sandbox = new (std::nothrow) Db::Hive(this,dir2.c_str());
 	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -574,7 +574,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	return false;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Registry::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Db::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
@@ -604,7 +604,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		if (process.m_ptrProcess->GetRegistryHive(strRegPath,strUsersPath,strHive))
 		{
 			// Create a new database
-			process.m_ptrRegistry = new (std::nothrow) Registry::Hive(this,strHive.c_str());
+			process.m_ptrRegistry = new (std::nothrow) Db::Hive(this,strHive.c_str());
 			if (!process.m_ptrRegistry)
 				LOG_ERROR(("Out of memory"));
 			else

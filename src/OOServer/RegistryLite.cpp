@@ -21,7 +21,6 @@
 
 #include "OOServer_Lite.h"
 #include "IPSLite.h"
-#include "RegistryHive.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
@@ -48,7 +47,7 @@ namespace
 			public IKey
 	{
 	public:
-		void Init(::Registry::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
+		void Init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
 
 		BEGIN_INTERFACE_MAP(HiveKey)
 			INTERFACE_ENTRY(IKey)
@@ -56,7 +55,7 @@ namespace
 		END_INTERFACE_MAP()
 
 	private:
-		::Registry::Hive* m_pHive;
+		Db::Hive* m_pHive;
 		Omega::string_t   m_strKey;
 		Omega::int64_t    m_key;
 
@@ -80,7 +79,7 @@ namespace
 
 	class RootKey :
 			public ObjectBase,
-			public ::Registry::Manager,
+			public Db::Manager,
 			public IProvideObjectInfoImpl<HiveKey>,
 			public IKey
 	{
@@ -93,14 +92,14 @@ namespace
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SmartPtr< ::Registry::Hive> m_system_hive;
-		OOBase::SmartPtr< ::Registry::Hive> m_localuser_hive;
+		OOBase::SmartPtr< Db::Hive> m_system_hive;
+		OOBase::SmartPtr< Db::Hive> m_localuser_hive;
 
 		ObjectPtr<IKey> m_ptrSystemKey;
 		ObjectPtr<IKey> m_ptrLocalUserKey;
 
 		string_t parse_subkey(const string_t& strSubKey, IKey*& pKey);
-		int registry_access_check(const char* pszdb, Omega::uint32_t channel_id, ::Registry::Hive::access_rights_t access_mask);
+		int registry_access_check(const char* pszdb, Omega::uint32_t channel_id, Db::Hive::access_rights_t access_mask);
 
 	// IKey members
 	public:
@@ -137,7 +136,7 @@ namespace
 	}
 }
 
-void HiveKey::Init(::Registry::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
+void HiveKey::Init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
 {
 	m_pHive = pHive;
 	m_strKey = strKey;
@@ -287,7 +286,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	strFullKey += strSubKey;
 
 	int64_t key;
-	int err = m_pHive->create_key(m_key,key,strSubKey.c_str(),flags,::Registry::Hive::inherit_checks,0);
+	int err = m_pHive->create_key(m_key,key,strSubKey.c_str(),flags,Db::Hive::inherit_checks,0);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(strFullKey);
 	else if (err==EEXIST)
@@ -307,7 +306,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 std::set<Omega::string_t> HiveKey::EnumSubKeys()
 {
-	::Registry::Hive::registry_set_t setSubKeys;
+	Db::Hive::registry_set_t setSubKeys;
 	int err = m_pHive->enum_subkeys(m_key,0,setSubKeys);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
@@ -328,7 +327,7 @@ std::set<Omega::string_t> HiveKey::EnumSubKeys()
 
 std::set<Omega::string_t> HiveKey::EnumValues()
 {
-	::Registry::Hive::registry_set_t setValues;
+	Db::Hive::registry_set_t setValues;
 	int err = m_pHive->enum_values(m_key,0,setValues);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
@@ -396,14 +395,14 @@ void RootKey::Init_Once()
 	if (err != 0)
 		OMEGA_THROW(err);
 
-	m_system_hive = new (std::nothrow) ::Registry::Hive(this,dir.c_str());
+	m_system_hive = new (std::nothrow) Db::Hive(this,dir.c_str());
 	if (!m_system_hive)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) && !m_system_hive->open(SQLITE_OPEN_READONLY))
 		OMEGA_THROW("Failed to open system registry database file");
 
-	m_localuser_hive = new (std::nothrow) ::Registry::Hive(this,ptrIPS->GetArg("user_regdb").c_str());
+	m_localuser_hive = new (std::nothrow) Db::Hive(this,ptrIPS->GetArg("user_regdb").c_str());
 	if (!m_localuser_hive)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
@@ -419,7 +418,7 @@ void RootKey::Init_Once()
 	m_ptrLocalUserKey = ptrKey.AddRef();
 }
 
-int RootKey::registry_access_check(const char* /*strdb*/, Omega::uint32_t /*channel_id*/, ::Registry::Hive::access_rights_t /*access_mask*/)
+int RootKey::registry_access_check(const char* /*strdb*/, Omega::uint32_t /*channel_id*/, Db::Hive::access_rights_t /*access_mask*/)
 {
 	// Allow sqlite's underlying protection mechanism to sort it out
 	return 0;

@@ -53,7 +53,6 @@
 #include <OOBase/Service.h>
 
 #include <OOSvrBase/Proactor.h>
-#include <OOSvrBase/Database.h>
 
 //////////////////////////////////////////////
 

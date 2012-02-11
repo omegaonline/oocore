@@ -1,42 +1,30 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2008 Rick Taylor
+// Copyright (C) 2012 Rick Taylor
 //
-// This file is part of OOServer, the Omega Online Server application.
+// This file is part of OOCore/libdb, the Omega Online Core db library.
 //
-// OOServer is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// OOCore/libdb is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// OOServer is distributed in the hope that it will be useful,
+// OOCore/libdb is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with OOServer.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with OOCore/libdb.  If not, see <http://www.gnu.org/licenses/>.
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////
-//
-//  ***** THIS IS A SECURE MODULE *****
-//
-//  It will be run as Administrator/setuid root
-//
-//  Therefore it needs to be SAFE AS HOUSES!
-//
-//  Do not include anything unnecessary
-//
-/////////////////////////////////////////////////////////////
+#ifndef OOCORE_LIBDB_REGISTRY_HIVE_H_INCLUDED_
+#define OOCORE_LIBDB_REGISTRY_HIVE_H_INCLUDED_
 
-#ifndef OOSERVER_REGISTRY_HIVE_H_INCLUDED_
-#define OOSERVER_REGISTRY_HIVE_H_INCLUDED_
+#include "Database.h"
 
-#include "OOServer_Root.h"
-
-namespace Registry
+namespace Db
 {
 	class Manager;
 
@@ -82,23 +70,23 @@ namespace Registry
 		OOBase::SpinLock       m_lock;
 		OOBase::String         m_strdb;
 		
-		OOBase::SmartPtr<OOSvrBase::Db::Database> m_db;
+		OOBase::SmartPtr<Database> m_db;
 
 		// Stashed prepared statements...
-		OOSvrBase::Db::Statement m_InsertKey_Stmt;
-		OOSvrBase::Db::Statement m_InsertValue_Stmt;
-		OOSvrBase::Db::Statement m_UpdateValue_Stmt;
-		OOSvrBase::Db::Statement m_UpdateDesc_Stmt;
-		OOSvrBase::Db::Statement m_UpdateValueDesc_Stmt;
-		OOSvrBase::Db::Statement m_CheckKey_Stmt;
-		OOSvrBase::Db::Statement m_GetKeyInfo_Stmt;
-		OOSvrBase::Db::Statement m_EnumKeyIds_Stmt;
-		OOSvrBase::Db::Statement m_EnumKeys_Stmt;
-		OOSvrBase::Db::Statement m_EnumValues_Stmt;
-		OOSvrBase::Db::Statement m_GetValue_Stmt;
-		OOSvrBase::Db::Statement m_DeleteKeys_Stmt;
-		OOSvrBase::Db::Statement m_DeleteKey_Stmt;
-		OOSvrBase::Db::Statement m_DeleteValue_Stmt;
+		Statement m_InsertKey_Stmt;
+		Statement m_InsertValue_Stmt;
+		Statement m_UpdateValue_Stmt;
+		Statement m_UpdateDesc_Stmt;
+		Statement m_UpdateValueDesc_Stmt;
+		Statement m_CheckKey_Stmt;
+		Statement m_GetKeyInfo_Stmt;
+		Statement m_EnumKeyIds_Stmt;
+		Statement m_EnumKeys_Stmt;
+		Statement m_EnumValues_Stmt;
+		Statement m_GetValue_Stmt;
+		Statement m_DeleteKeys_Stmt;
+		Statement m_DeleteKey_Stmt;
+		Statement m_DeleteValue_Stmt;
 
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
@@ -109,7 +97,7 @@ namespace Registry
 		int check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
 		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
 		int value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
-		bool prepare_statement(OOSvrBase::Db::Statement& stmt, const char* pszSql);
+		bool prepare_statement(Statement& stmt, const char* pszSql);
 	};
 
 	class Manager
@@ -122,4 +110,4 @@ namespace Registry
 	};
 }
 
-#endif // OOSERVER_REGISTRY_HIVE_H_INCLUDED_
+#endif // OOCORE_LIBDB_REGISTRY_HIVE_H_INCLUDED_

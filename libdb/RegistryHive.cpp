@@ -1,48 +1,40 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2008 Rick Taylor
+// Copyright (C) 2012 Rick Taylor
 //
-// This file is part of OOServer, the Omega Online Server application.
+// This file is part of OOCore/libdb, the Omega Online Core db library.
 //
-// OOServer is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// OOCore/libdb is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// OOServer is distributed in the hope that it will be useful,
+// OOCore/libdb is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with OOServer.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with OOCore/libdb.  If not, see <http://www.gnu.org/licenses/>.
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////
-//
-//  ***** THIS IS A SECURE MODULE *****
-//
-//  It will be run as Administrator/setuid root
-//
-//  Therefore it needs to be SAFE AS HOUSES!
-//
-//  Do not include anything unnecessary
-//
-/////////////////////////////////////////////////////////////
+#include <OOBase/GlobalNew.h>
 
-#include "OOServer_Root.h"
 #include "RegistryHive.h"
 
-Registry::Hive::Hive(Manager* pManager, const char* db_name) :
+#include <OOBase/Logger.h>
+#include <OOBase/CDRStream.h>
+
+Db::Hive::Hive(Manager* pManager, const char* db_name) :
 		m_pManager(pManager)
 {
 	m_strdb.assign(db_name);
 }
 
-bool Registry::Hive::open(int flags)
+bool Db::Hive::open(int flags)
 {
-	m_db = new (std::nothrow) OOSvrBase::Db::Database();
+	m_db = new (std::nothrow) Database();
 	if (!m_db)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -70,12 +62,12 @@ bool Registry::Hive::open(int flags)
 			prepare_statement(m_DeleteValue_Stmt,"DELETE FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;") );
 }
 
-bool Registry::Hive::prepare_statement(OOSvrBase::Db::Statement& stmt, const char* pszSql)
+bool Db::Hive::prepare_statement(Statement& stmt, const char* pszSql)
 {
 	return (stmt.prepare(*m_db,pszSql) == SQLITE_OK);
 }
 
-int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
+int Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
 {
 	// Lock must be held first...
 	if (uKey == 0)
@@ -84,7 +76,7 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 		return SQLITE_ROW;
 	}
 
-	OOSvrBase::Db::Resetter resetter(m_CheckKey_Stmt);
+	Resetter resetter(m_CheckKey_Stmt);
 
 	// Bind the key value
 	int err = m_CheckKey_Stmt.bind_int64(1,uKey);
@@ -99,11 +91,11 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 	return err;
 }
 
-int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t& access_mask)
+int Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t& access_mask)
 {
 	// Lock must be held first...
 
-	OOSvrBase::Db::Resetter resetter(m_GetKeyInfo_Stmt);
+	Resetter resetter(m_GetKeyInfo_Stmt);
 
 	// Bind the search values
 	int err = m_GetKeyInfo_Stmt.bind_string(1,pszSubKey,strlen(pszSubKey));
@@ -125,7 +117,7 @@ int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& 
 	return err;
 }
 
-int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id)
+int Db::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id)
 {
 	// Lock must be held first...
 	
@@ -198,9 +190,9 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	}
 }
 
-int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask)
+int Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask)
 {
-	OOSvrBase::Db::Resetter resetter(m_InsertKey_Stmt);
+	Resetter resetter(m_InsertKey_Stmt);
 	
 	int err = m_InsertKey_Stmt.bind_string(1,pszSubKey,strlen(pszSubKey));
 	if (err != SQLITE_OK)
@@ -221,7 +213,7 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 	return err;
 }
 
-int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
+int Db::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -231,7 +223,7 @@ int Registry::Hive::open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const
 	return find_key(uParent,uKey,pszSubKey,strSubKey,access_mask,channel_id);
 }
 
-int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
+int Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -265,7 +257,7 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, con
 	}
 
 	// Start a transaction..
-	OOSvrBase::Db::Transaction trans(*m_db);
+	Transaction trans(*m_db);
 	if (trans.begin() != SQLITE_OK)
 		return EIO;
 
@@ -302,7 +294,7 @@ int Registry::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, con
 	return 0;
 }
 
-int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
+int Db::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
 {
 	// This one is recursive, within a transaction and a lock...
 
@@ -331,7 +323,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	// Recurse down
 	OOBase::Stack<Omega::int64_t,OOBase::LocalAllocator> ids;
 	{
-		OOSvrBase::Db::Resetter resetter(m_EnumKeyIds_Stmt);
+		Resetter resetter(m_EnumKeyIds_Stmt);
 		
 		err = m_EnumKeyIds_Stmt.bind_int64(1,uKey);
 		if (err != SQLITE_OK)
@@ -364,7 +356,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 		}
 	
 		// Do the delete
-		OOSvrBase::Db::Resetter resetter(m_DeleteKeys_Stmt);
+		Resetter resetter(m_DeleteKeys_Stmt);
 		
 		err = m_DeleteKeys_Stmt.bind_int64(1,uKey);
 		if (err != SQLITE_OK)
@@ -377,7 +369,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	return 0;
 }
 
-int Registry::Hive::delete_key(const Omega::int64_t& uParent, const char* pszSubKey, Omega::uint32_t channel_id)
+int Db::Hive::delete_key(const Omega::int64_t& uParent, const char* pszSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -389,7 +381,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, const char* pszSub
 	if (err != 0)
 		return err;
 
-	OOSvrBase::Db::Transaction trans(*m_db);
+	Transaction trans(*m_db);
 	if (trans.begin() != SQLITE_OK)
 		return EIO;
 
@@ -398,7 +390,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, const char* pszSub
 	{
 		// Do the delete of this key
 		{
-			OOSvrBase::Db::Resetter resetter(m_DeleteKey_Stmt);
+			Resetter resetter(m_DeleteKey_Stmt);
 			
 			err = m_DeleteKey_Stmt.bind_int64(1,uKey);
 			if (err != SQLITE_OK)
@@ -415,7 +407,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, const char* pszSub
 	return err;
 }
 
-int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys)
+int Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -437,7 +429,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 			return acc;
 	}
 
-	OOSvrBase::Db::Resetter resetter(m_EnumKeys_Stmt);
+	Resetter resetter(m_EnumKeys_Stmt);
 	
 	err = m_EnumKeys_Stmt.bind_int64(1,uKey);
 	if (err != SQLITE_OK)
@@ -478,7 +470,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
 
-void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -514,7 +506,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	if (response.last_error() != 0)
 		return;
 
-	OOSvrBase::Db::Resetter resetter(m_EnumKeys_Stmt);
+	Resetter resetter(m_EnumKeys_Stmt);
 	
 	err = m_EnumKeys_Stmt.bind_int64(1,uKey);
 	if (err == SQLITE_OK)
@@ -557,7 +549,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	}
 }
 
-int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues)
+int Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -577,7 +569,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 			return acc;
 	}
 
-	OOSvrBase::Db::Resetter resetter(m_EnumValues_Stmt);
+	Resetter resetter(m_EnumValues_Stmt);
 	
 	err = m_EnumValues_Stmt.bind_int64(1,uKey);
 	if (err != SQLITE_OK)
@@ -602,7 +594,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
 
-void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -636,7 +628,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	if (response.last_error() != 0)
 		return;
 
-	OOSvrBase::Db::Resetter resetter(m_EnumValues_Stmt);
+	Resetter resetter(m_EnumValues_Stmt);
 	
 	err = m_EnumValues_Stmt.bind_int64(1,uKey);
 	if (err == SQLITE_OK)
@@ -670,7 +662,7 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	}
 }
 
-int Registry::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id)
+int Db::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -690,7 +682,7 @@ int Registry::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName
 			return acc;
 	}
 	
-	OOSvrBase::Db::Resetter resetter(m_DeleteValue_Stmt);
+	Resetter resetter(m_DeleteValue_Stmt);
 	
 	err = m_DeleteValue_Stmt.bind_string(1,pszName,strlen(pszName));
 	if (err != SQLITE_OK)
@@ -709,7 +701,7 @@ int Registry::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName
 	return 0;
 }
 
-int Registry::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id)
+int Db::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -732,9 +724,9 @@ int Registry::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValu
 	return value_exists_i(uKey,pszValue);
 }
 
-int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
+int Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
 {
-	OOSvrBase::Db::Resetter resetter(m_GetValue_Stmt);
+	Resetter resetter(m_GetValue_Stmt);
 
 	// Bind the values
 	int err = m_GetValue_Stmt.bind_string(1,pszValue,strlen(pszValue));
@@ -754,7 +746,7 @@ int Registry::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszVa
 		return EIO;
 }
 
-int Registry::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
+int Db::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -774,7 +766,7 @@ int Registry::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, 
 			return acc;
 	}
 
-	OOSvrBase::Db::Resetter resetter(m_GetValue_Stmt);
+	Resetter resetter(m_GetValue_Stmt);
 
 	// Bind the values
 	err = m_GetValue_Stmt.bind_string(1,pszValue,strlen(pszValue));
@@ -800,7 +792,7 @@ int Registry::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, 
 		return EIO;
 }
 
-int Registry::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
+int Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -821,7 +813,7 @@ int Registry::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, O
 	}
 	
 	// See if we have a value already
-	OOSvrBase::Db::Statement* pStmt = NULL;
+	Statement* pStmt = NULL;
 	err = value_exists_i(uKey,pszName);
 	if (err == 0)
 		pStmt = &m_UpdateValue_Stmt;
@@ -830,7 +822,7 @@ int Registry::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, O
 		
 	if (pStmt)
 	{
-		OOSvrBase::Db::Resetter resetter(*pStmt);
+		Resetter resetter(*pStmt);
 			
 		err = pStmt->bind_string(1,pszName,strlen(pszName));
 		if (err != SQLITE_OK)
@@ -855,7 +847,7 @@ int Registry::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, O
 	return 0;
 }
 
-int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& val)
+int Db::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -875,7 +867,7 @@ int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t 
 			return acc;
 	}
 
-	OOSvrBase::Db::Resetter resetter(m_CheckKey_Stmt);
+	Resetter resetter(m_CheckKey_Stmt);
 
 	// Bind the key value
 	err = m_CheckKey_Stmt.bind_int64(1,uKey);
@@ -897,7 +889,7 @@ int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t 
 		return EIO;
 }
 
-int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
+int Db::Hive::get_value_description(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -917,7 +909,7 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const char
 			return acc;
 	}
 
-	OOSvrBase::Db::Resetter resetter(m_GetValue_Stmt);
+	Resetter resetter(m_GetValue_Stmt);
 
 	// Bind the values
 	err = m_GetValue_Stmt.bind_string(1,pszValue,strlen(pszValue));
@@ -946,7 +938,7 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const char
 		return EIO;
 }
 
-int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const char* val)
+int Db::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const char* val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -966,7 +958,7 @@ int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t 
 			return acc;
 	}
 	
-	OOSvrBase::Db::Resetter resetter(m_UpdateDesc_Stmt);
+	Resetter resetter(m_UpdateDesc_Stmt);
 	
 	err = m_UpdateDesc_Stmt.bind_string(1,val,strlen(val));
 	if (err != SQLITE_OK)
@@ -986,7 +978,7 @@ int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t 
 	return 0;
 }
 
-int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
+int Db::Hive::set_value_description(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -1010,7 +1002,7 @@ int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const char
 	if ((err = value_exists_i(uKey,pszName)) != 0)
 		return err;
 	
-	OOSvrBase::Db::Resetter resetter(m_UpdateValueDesc_Stmt);
+	Resetter resetter(m_UpdateValueDesc_Stmt);
 	
 	err = m_UpdateValueDesc_Stmt.bind_string(1,pszName,strlen(pszName));
 	if (err != SQLITE_OK)

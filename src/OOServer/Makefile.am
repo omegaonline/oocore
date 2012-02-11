@@ -9,7 +9,7 @@ if WIN32
 AM_CPPFLAGS += -D_WIN32_WINNT=0x0502
 endif
 
-noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
+noinst_LTLIBRARIES = liboosvrcmn.la
 
 liboosvrcmn_la_SOURCES = \
 	DebuggerWin32.cpp \
@@ -17,16 +17,10 @@ liboosvrcmn_la_SOURCES = \
 	MessageConnection.cpp \
 	Protocol.h
 
-liboosvrdb_la_SOURCES = \
-	RegistryHive.h \
-	RegistryHive.cpp
-	
-liboosvrdb_la_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) 
-
 pkglibexec_LTLIBRARIES = oosvrlite.la
 
 oosvrlite_la_LDFLAGS = -module -no-undefined
-oosvrlite_la_LIBADD = liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+oosvrlite_la_LIBADD = @top_builddir@/libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32
 oosvrlite_la_LIBADD += ../OOCore/OOCore.la
@@ -55,7 +49,7 @@ ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) \
 	-DCONFIG_DIR=\"$(pkgdatadir)/\" \
 	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" 
 		
-ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+ooserverd_LDADD = liboosvrcmn.la @top_builddir@/libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \

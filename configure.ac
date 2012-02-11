@@ -2,7 +2,7 @@ AC_PREREQ(2.61)
 
 AC_INIT(omegaonline,0.5.0)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
-AC_CONFIG_HEADERS([autoheader_dummy.h src/oocore-autoconf.h])
+AC_CONFIG_HEADERS([autoheader_dummy.h oocore-autoconf.h])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SUBDIRS([oobase])

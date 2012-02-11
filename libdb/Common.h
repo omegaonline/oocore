@@ -30,7 +30,7 @@
 #include "../include/Omega/internal/base_types.h"
 
 #if !defined(_MSC_VER)
-#include "../src/oocore-autoconf.h"
+#include <oocore-autoconf.h>
 #endif
 
 #endif // OOCORE_LIBDB_COMMON_H_INCLUDED_

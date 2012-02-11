@@ -21,9 +21,6 @@
     <ClCompile Include="MessageConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RegistryHive.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RootMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,9 +48,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Protocol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RegistryHive.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RootManager.h">

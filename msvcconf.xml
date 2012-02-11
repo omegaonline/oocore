@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <MsvcConf>
-  <Project Name="OOSvrBase">
+  <Project Name="libDB">
     <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
   </Project>
   
@@ -14,7 +14,7 @@
   </Project>
   
   <Project Name="OOServer">
-    <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
+    <Include Name="sqlite3.h" Define="HAVE_SQLITE3_H" />
     <Configuration Name="Debug">
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
@@ -24,7 +24,7 @@
   </Project>
   
   <Project Name="OOSvrLite">
-    <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
+    <Include Name="sqlite3.h" Define="HAVE_SQLITE3_H" />
   </Project>
   
   <Project Name="OOSvrUser">

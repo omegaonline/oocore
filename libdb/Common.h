@@ -22,7 +22,9 @@
 #ifndef OOCORE_LIBDB_COMMON_H_INCLUDED_
 #define OOCORE_LIBDB_COMMON_H_INCLUDED_
 
+#if !defined(_MSC_VER)
 #include "../src/oocore-autoconf.h"
+#endif
 
 #include <OOBase/SmartPtr.h>
 #include <OOBase/String.h>

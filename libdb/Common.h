@@ -22,15 +22,15 @@
 #ifndef OOCORE_LIBDB_COMMON_H_INCLUDED_
 #define OOCORE_LIBDB_COMMON_H_INCLUDED_
 
-#if !defined(_MSC_VER)
-#include "../src/oocore-autoconf.h"
-#endif
-
 #include <OOBase/SmartPtr.h>
 #include <OOBase/String.h>
 #include <OOBase/Stack.h>
 #include <OOBase/Timeout.h>
 
 #include "../include/Omega/internal/base_types.h"
+
+#if !defined(_MSC_VER)
+#include "../src/oocore-autoconf.h"
+#endif
 
 #endif // OOCORE_LIBDB_COMMON_H_INCLUDED_

@@ -1,0 +1,4 @@
+*.ac	eol=lf
+*.am	eol=lf
+*.sh	eol=lf
+*.in	eol=lf

@@ -149,7 +149,7 @@ bool string_tests_format()
 
 		if (set_locale_helper(1031,"de_DE.utf8"))
 		{
-			TEST(Omega::string_t("{0:C}") % 12345.678 == "12.345,68 \u20AC");
+			TEST(Omega::string_t("{0:C}") % 12345.678 == "12.345,68\xe2\x82\xac");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))

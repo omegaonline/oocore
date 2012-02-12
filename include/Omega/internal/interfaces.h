@@ -140,10 +140,6 @@ namespace Omega
 			virtual bool_t IsValue(const string_t& name) = 0;
 			virtual any_t GetValue(const string_t& name) = 0;
 			virtual void SetValue(const string_t& name, const any_t& val) = 0;
-			virtual string_t GetDescription() = 0;
-			virtual string_t GetValueDescription(const string_t& name) = 0;
-			virtual void SetDescription(const string_t& desc) = 0;
-			virtual void SetValueDescription(const string_t& name, const string_t& desc) = 0;
 			virtual IKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 			virtual std::set<string_t> EnumSubKeys() = 0;
 			virtual std::set<string_t> EnumValues() = 0;
@@ -307,10 +303,6 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,IsValue,1,((in),const string_t&,name))
 	OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))
 	OMEGA_METHOD_VOID(SetValue,2,((in),const string_t&,name,(in),const any_t&,val))
-	OMEGA_METHOD(string_t,GetDescription,0,())
-	OMEGA_METHOD(string_t,GetValueDescription,1,((in),const string_t&,name))
-	OMEGA_METHOD_VOID(SetDescription,1,((in),const string_t&,desc))
-	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const string_t&,name,(in),const string_t&,desc))
 	OMEGA_METHOD(Registry::IKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
 	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())

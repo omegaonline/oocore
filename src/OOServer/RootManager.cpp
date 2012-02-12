@@ -729,22 +729,6 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		registry_set_value(src_channel_id,request,response);
 		break;
 
-	case OOServer::GetDescription:
-		registry_get_description(src_channel_id,request,response);
-		break;
-
-	case OOServer::GetValueDescription:
-		registry_get_value_description(src_channel_id,request,response);
-		break;
-
-	case OOServer::SetDescription:
-		registry_set_description(src_channel_id,request,response);
-		break;
-
-	case OOServer::SetValueDescription:
-		registry_set_value_description(src_channel_id,request,response);
-		break;
-
 	case OOServer::EnumValues:
 		registry_enum_values(src_channel_id,request,response);
 		break;

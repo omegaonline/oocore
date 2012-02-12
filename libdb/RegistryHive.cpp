@@ -26,6 +26,8 @@
 #include <OOBase/Logger.h>
 #include <OOBase/CDRStream.h>
 
+#include <stdlib.h>
+
 Db::Hive::Hive(Manager* pManager, const char* db_name) :
 		m_pManager(pManager)
 {
@@ -43,19 +45,17 @@ bool Db::Hive::open(int flags)
 	
 	// Now build the prepared statements...
 	return (
-			prepare_statement(m_InsertKey_Stmt,"INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (?1,?2,?3);") &&
+			prepare_statement(m_InsertKey_Stmt,"INSERT INTO RegistryKeys (Name,Parent) VALUES (?1,?2);") &&
 			prepare_statement(m_InsertValue_Stmt,"INSERT INTO RegistryValues (Name,Parent,Value) VALUES (?1,?2,?3);") &&
 		
 			prepare_statement(m_UpdateValue_Stmt,"UPDATE RegistryValues SET Value = ?3 WHERE Name = ?1 AND Parent = ?2;") &&
-			prepare_statement(m_UpdateDesc_Stmt,"UPDATE RegistryKeys SET Description = ?1 WHERE Id = ?2;") &&
-			prepare_statement(m_UpdateValueDesc_Stmt,"UPDATE RegistryValues SET Description = ?3 WHERE Name = ?1 AND Parent = ?2;") &&
-	
-			prepare_statement(m_CheckKey_Stmt,"SELECT Access, Description FROM RegistryKeys WHERE Id = ?1;") &&
-			prepare_statement(m_GetKeyInfo_Stmt,"SELECT Id, Access FROM RegistryKeys WHERE Name = ?1 AND Parent = ?2;") && 
+			
+			prepare_statement(m_CheckKey_Stmt,"SELECT Parent FROM RegistryKeys WHERE Id = ?1;") &&
+			prepare_statement(m_GetKeyInfo_Stmt,"SELECT Id FROM RegistryKeys WHERE Name = ?1 AND Parent = ?2;") && 
 			prepare_statement(m_EnumKeyIds_Stmt,"SELECT Id FROM RegistryKeys WHERE Parent = ?1;") &&
-			prepare_statement(m_EnumKeys_Stmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = ?1 ORDER BY Name;") &&
+			prepare_statement(m_EnumKeys_Stmt,"SELECT Id, Name FROM RegistryKeys WHERE Parent = ?1 ORDER BY Name;") &&
 			prepare_statement(m_EnumValues_Stmt,"SELECT Name FROM RegistryValues WHERE Parent = ?1 ORDER BY Name;") &&
-			prepare_statement(m_GetValue_Stmt,"SELECT Value,Description FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;") &&
+			prepare_statement(m_GetValue_Stmt,"SELECT Value FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;") &&
 				
 			prepare_statement(m_DeleteKeys_Stmt,"DELETE FROM RegistryKeys WHERE Parent = ?1;") &&
 			prepare_statement(m_DeleteKey_Stmt,"DELETE FROM RegistryKeys WHERE Id = ?1;") &&
@@ -67,9 +67,26 @@ bool Db::Hive::prepare_statement(Statement& stmt, const char* pszSql)
 	return (stmt.prepare(*m_db,pszSql) == SQLITE_OK);
 }
 
+void Db::Hive::get_access_mask(const Omega::int64_t& uKey, access_rights_t& access_mask)
+{
+	// Lock must be held first...
+
+	access_mask = 0;
+
+	OOBase::LocalString access;
+	if (get_value_i(uKey,".access",access) == 0)
+	{
+		char* end_ptr = NULL;
+		unsigned long ac = strtoul(access.c_str(),&end_ptr,10);
+		if (*end_ptr == '\0' && ac <= 0xFFFF)
+			access_mask = static_cast<access_rights_t>(ac);
+	}
+}
+
 int Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
 {
 	// Lock must be held first...
+
 	if (uKey == 0)
 	{
 		access_mask = static_cast<access_rights_t>(Hive::never_delete | Hive::write_check);
@@ -86,8 +103,8 @@ int Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& acce
 	// And run the statement
 	err = m_CheckKey_Stmt.step();
 	if (err == SQLITE_ROW)
-		access_mask = static_cast<access_rights_t>(m_CheckKey_Stmt.column_int(0));
-
+		get_access_mask(uKey,access_mask);
+	
 	return err;
 }
 
@@ -111,7 +128,8 @@ int Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, 
 	if (err == SQLITE_ROW)
 	{
 		uKey = m_GetKeyInfo_Stmt.column_int64(0);
-		access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
+
+		get_access_mask(uKey,access_mask);
 	}
 
 	return err;
@@ -201,14 +219,28 @@ int Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, co
 	err = m_InsertKey_Stmt.bind_int64(2,uParent);
 	if (err != SQLITE_OK)
 		return EIO;
-	
-	err = m_InsertKey_Stmt.bind_int64(3,access_mask);
-	if (err != SQLITE_OK)
-		return EIO;
 
 	err = m_InsertKey_Stmt.step();
 	if (err == SQLITE_DONE)
 		uKey = m_db->last_insert_rowid();
+
+	if (access_mask != 0)
+	{
+		OOBase::LocalString strAc;
+		if ((err = strAc.printf("%u",access_mask)) == 0)
+			err = set_value_i(uKey,".access",strAc.c_str());
+		
+		if (err != 0)
+		{
+			// Delete what the key we just added
+			Resetter resetter2(m_DeleteKeys_Stmt);
+		
+			if (m_DeleteKeys_Stmt.bind_int64(1,uKey) == SQLITE_OK)
+				m_DeleteKeys_Stmt.step();
+		}
+		else
+			err = SQLITE_DONE;
+	}
 
 	return err;
 }
@@ -420,11 +452,12 @@ int Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 		return EIO;
 
 	// Do the access check up front...
-	int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
+	int acc = -1;
 
 	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
+		acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -441,7 +474,7 @@ int Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 		if (err == SQLITE_ROW)
 		{
 			OOBase::String strSubKey;
-			const char* v = m_EnumKeys_Stmt.column_text(0);
+			const char* v = m_EnumKeys_Stmt.column_text(1);
 			if (v)
 			{
 				int err2 = strSubKey.assign(v);
@@ -449,10 +482,15 @@ int Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 					return err2;
 			}
 
-			access_mask = static_cast<access_rights_t>(m_EnumKeys_Stmt.column_int(1));
+			access_mask = 0;
+			get_access_mask(m_EnumKeys_Stmt.column_int64(0),access_mask);
+			
 			if (access_mask & Hive::read_check)
 			{
 				// Read not allowed - check access!
+				if (acc == -1)
+					acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
+
 				if (acc != 0)
 					strSubKey.clear();
 			}
@@ -489,11 +527,12 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 	}
 
 	// Do the access check up front...
-	Omega::int32_t acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
+	Omega::int32_t acc = -1;
 
 	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
+		acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
 		if (acc != 0)
 		{
 			response.write(acc);
@@ -516,12 +555,17 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 			err = m_EnumKeys_Stmt.step();
 			if (err == SQLITE_ROW)
 			{
-				const char* v = m_EnumKeys_Stmt.column_text(0);
+				const char* v = m_EnumKeys_Stmt.column_text(1);
 							
-				access_mask = static_cast<access_rights_t>(m_EnumKeys_Stmt.column_int(1));
+				access_mask = 0;
+				get_access_mask(m_EnumKeys_Stmt.column_int64(0),access_mask);
+
 				if (access_mask & Hive::read_check)
 				{
 					// Read not allowed - check access!
+					if (acc == -1)
+						acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
+
 					if (acc != 0)
 						v = NULL;
 				}
@@ -726,6 +770,8 @@ int Db::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValue, Ome
 
 int Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
 {
+	// Lock must be held first...
+
 	Resetter resetter(m_GetValue_Stmt);
 
 	// Bind the values
@@ -740,6 +786,36 @@ int Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
 	err = m_GetValue_Stmt.step();
 	if (err == SQLITE_ROW)
 		return 0;
+	else if (err == SQLITE_DONE)
+		return ENOENT;
+	else
+		return EIO;
+}
+
+int Db::Hive::get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val)
+{
+	// Lock must be held first...
+
+	Resetter resetter(m_GetValue_Stmt);
+
+	// Bind the values
+	int err = m_GetValue_Stmt.bind_string(1,pszValue,strlen(pszValue));
+	if (err != SQLITE_OK)
+		return EIO;
+
+	err = m_GetValue_Stmt.bind_int64(2,uKey);
+	if (err != SQLITE_OK)
+		return EIO;
+
+	err = m_GetValue_Stmt.step();
+	if (err == SQLITE_ROW)
+	{
+		const char* v = m_GetValue_Stmt.column_text(0);
+		if (v)
+			err = val.assign(v);
+			
+		return (v ? err : 0);
+	}
 	else if (err == SQLITE_DONE)
 		return ENOENT;
 	else
@@ -766,55 +842,16 @@ int Db::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, Omega:
 			return acc;
 	}
 
-	Resetter resetter(m_GetValue_Stmt);
-
-	// Bind the values
-	err = m_GetValue_Stmt.bind_string(1,pszValue,strlen(pszValue));
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = m_GetValue_Stmt.bind_int64(2,uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = m_GetValue_Stmt.step();
-	if (err == SQLITE_ROW)
-	{
-		const char* v = m_GetValue_Stmt.column_text(0);
-		if (v)
-			err = val.assign(v);
-			
-		return (v ? err : 0);
-	}
-	else if (err == SQLITE_DONE)
-		return ENOENT;
-	else
-		return EIO;
+	return get_value_i(uKey,pszValue,val);
 }
 
-int Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
+int Db::Hive::set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	// Lock must be held first...
 
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::write_check)
-	{
-		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-	
 	// See if we have a value already
 	Statement* pStmt = NULL;
-	err = value_exists_i(uKey,pszName);
+	int err = value_exists_i(uKey,pszName);
 	if (err == 0)
 		pStmt = &m_UpdateValue_Stmt;
 	else if (err == ENOENT)
@@ -847,98 +884,7 @@ int Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::
 	return 0;
 }
 
-int Db::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& val)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::read_check)
-	{
-		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	Resetter resetter(m_CheckKey_Stmt);
-
-	// Bind the key value
-	err = m_CheckKey_Stmt.bind_int64(1,uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = m_CheckKey_Stmt.step();
-	if (err == SQLITE_ROW)
-	{
-		const char* v = m_CheckKey_Stmt.column_text(1);
-		if (v)
-			err = val.assign(v);
-			
-		return (v ? err : 0);
-	}
-	else if (err == SQLITE_DONE)
-		return 0;
-	else
-		return EIO;
-}
-
-int Db::Hive::get_value_description(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::read_check)
-	{
-		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	Resetter resetter(m_GetValue_Stmt);
-
-	// Bind the values
-	err = m_GetValue_Stmt.bind_string(1,pszValue,strlen(pszValue));
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = m_GetValue_Stmt.bind_int64(2,uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = m_GetValue_Stmt.step();
-	if (err == SQLITE_ROW)
-	{
-		const char* v = m_GetValue_Stmt.column_text(1);
-		if (v)
-			err = val.assign(v);
-			
-		return (v ? err : 0);
-	}
-	else if (err == SQLITE_DONE)
-	{
-		// See if the value exists at all...
-		return value_exists_i(uKey,pszValue);
-	}
-	else
-		return EIO;
-}
-
-int Db::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const char* val)
+int Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -958,70 +904,5 @@ int Db::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channe
 			return acc;
 	}
 	
-	Resetter resetter(m_UpdateDesc_Stmt);
-	
-	err = m_UpdateDesc_Stmt.bind_string(1,val,strlen(val));
-	if (err != SQLITE_OK)
-		return EIO;
-	
-	err = m_UpdateDesc_Stmt.bind_int64(2,uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	// Insert the new value
-	err = m_UpdateDesc_Stmt.step();
-	if (err == SQLITE_READONLY)
-		return EACCES;
-	else if (err != SQLITE_DONE)
-		return EIO;
-
-	return 0;
-}
-
-int Db::Hive::set_value_description(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	// Check if the key still exists
-	access_rights_t access_mask;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::write_check)
-	{
-		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
-		if (acc != 0)
-			return acc;
-	}
-
-	// Check the value exists...
-	if ((err = value_exists_i(uKey,pszName)) != 0)
-		return err;
-	
-	Resetter resetter(m_UpdateValueDesc_Stmt);
-	
-	err = m_UpdateValueDesc_Stmt.bind_string(1,pszName,strlen(pszName));
-	if (err != SQLITE_OK)
-		return EIO;
-
-	err = m_UpdateValueDesc_Stmt.bind_int64(2,uKey);
-	if (err != SQLITE_OK)
-		return EIO;
-	
-	err = m_UpdateValueDesc_Stmt.bind_string(3,pszValue,strlen(pszValue));
-	if (err != SQLITE_OK)
-		return EIO;
-
-	// Insert the new value
-	err = m_UpdateValueDesc_Stmt.step();
-	if (err == SQLITE_READONLY)
-		return EACCES;
-	else if (err != SQLITE_DONE)
-		return EIO;
-	
-	return 0;
+	return set_value_i(uKey,pszName,pszValue);
 }

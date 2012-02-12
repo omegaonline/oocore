@@ -35,8 +35,6 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	TEST(!pKey->IsValue(strTestValue));
 
 	TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
-	TEST_VOID(pKey->SetValueDescription(strTestValue,"A test description"));
-	TEST(pKey->GetValueDescription(strTestValue) == "A test description");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 
@@ -118,9 +116,6 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	if (!test_values(pSubKey))
 		return false;
-
-	TEST_VOID(pSubKey->SetDescription("A test description"));
-	TEST(pSubKey->GetDescription() == "A test description");
 
 	pSubKey->Release();
 

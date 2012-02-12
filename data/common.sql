@@ -4,9 +4,7 @@ BEGIN TRANSACTION;
 	(
 		Id INTEGER PRIMARY KEY AUTOINCREMENT,
 		Name TEXT NOT NULL,
-		Description TEXT,
 		Parent INTEGER NOT NULL,
-		Access INTEGER DEFAULT 3,
 		UNIQUE(Name,Parent)
 	);
 	
@@ -17,7 +15,6 @@ BEGIN TRANSACTION;
 	CREATE TABLE RegistryValues 
 	(
 		Name TEXT NOT NULL,
-		Description TEXT,
 		Parent INTEGER NOT NULL,
 		Value,
 		UNIQUE(Name,Parent)

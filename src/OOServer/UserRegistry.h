@@ -57,10 +57,6 @@ namespace User
 			Omega::bool_t IsValue(const Omega::string_t& strName);
 			Omega::any_t GetValue(const Omega::string_t& strName);
 			void SetValue(const Omega::string_t& strName, const Omega::any_t& value);
-			Omega::string_t GetDescription();
-			Omega::string_t GetValueDescription(const Omega::string_t& strName);
-			void SetDescription(const Omega::string_t& strValue);
-			void SetValueDescription(const Omega::string_t& strName, const Omega::string_t& strValue);
 			Omega::Registry::IKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
 			std::set<Omega::string_t> EnumSubKeys();
 			std::set<Omega::string_t> EnumValues();

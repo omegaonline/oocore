@@ -172,10 +172,6 @@ namespace User
 			bool_t IsValue(const string_t& strName);
 			any_t GetValue(const string_t& strName);
 			void SetValue(const string_t& strName, const any_t& value);
-			string_t GetDescription();
-			string_t GetValueDescription(const string_t& strName);
-			void SetDescription(const string_t& strValue);
-			void SetValueDescription(const string_t& strName, const string_t& strValue);
 			IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 			std::set<Omega::string_t> EnumSubKeys();
 			std::set<Omega::string_t> EnumValues();

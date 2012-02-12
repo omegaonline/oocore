@@ -52,19 +52,12 @@ namespace Db
 		int enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys);
 		void enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
 		int value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
-		
-		int get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& val);
-		int set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const char* val);
-		
 		int enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues);
 		void enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
 		int delete_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
 		int get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val);
 		int set_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, const char* val);
 		
-		int get_value_description(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val);
-		int set_value_description(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, const char* val);
-
 	private:
 		Manager*               m_pManager;
 		OOBase::SpinLock       m_lock;
@@ -76,8 +69,6 @@ namespace Db
 		Statement m_InsertKey_Stmt;
 		Statement m_InsertValue_Stmt;
 		Statement m_UpdateValue_Stmt;
-		Statement m_UpdateDesc_Stmt;
-		Statement m_UpdateValueDesc_Stmt;
 		Statement m_CheckKey_Stmt;
 		Statement m_GetKeyInfo_Stmt;
 		Statement m_EnumKeyIds_Stmt;
@@ -91,6 +82,8 @@ namespace Db
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
 
+		void get_access_mask(const Omega::int64_t& uKey, access_rights_t& access_mask);
+		int get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
 		int get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t& access_mask);
 		int find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id);
 		int insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask);
@@ -98,6 +91,7 @@ namespace Db
 		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
 		int value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
 		bool prepare_statement(Statement& stmt, const char* pszSql);
+		int set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue);
 	};
 
 	class Manager

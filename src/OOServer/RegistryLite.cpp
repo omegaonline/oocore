@@ -66,10 +66,6 @@ namespace
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		string_t GetDescription();
-		string_t GetValueDescription(const string_t& strName);
-		void SetDescription(const string_t& strValue);
-		void SetValueDescription(const string_t& strName, const string_t& strValue);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
@@ -108,10 +104,6 @@ namespace
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		string_t GetDescription();
-		string_t GetValueDescription(const string_t& strName);
-		void SetDescription(const string_t& strValue);
-		void SetValueDescription(const string_t& strName, const string_t& strValue);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
@@ -208,66 +200,6 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 	int err = m_pHive->set_value(m_key,strName.c_str(),0,value.cast<string_t>().c_str());
 	if (err == ENOENT)
 		User::Registry::NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-string_t HiveKey::GetDescription()
-{
-	OOBase::LocalString strValue;
-	int err = m_pHive->get_description(m_key,0,strValue);
-	if (err==ENOENT)
-		User::Registry::NotFoundException::Throw(GetName());
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	return strValue.c_str();
-}
-
-string_t HiveKey::GetValueDescription(const Omega::string_t& strName)
-{
-	User::Registry::BadNameException::ValidateValue(strName);
-
-	OOBase::LocalString strValue;
-	int err = m_pHive->get_value_description(m_key,strName.c_str(),0,strValue);
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strName);
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	return strValue.c_str();
-}
-
-void HiveKey::SetDescription(const Omega::string_t& strDesc)
-{
-	int err = m_pHive->set_description(m_key,0,strDesc.c_str());
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(GetName());
-	else if (err==EACCES)
-		User::Registry::AccessDeniedException::Throw(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void HiveKey::SetValueDescription(const Omega::string_t& strValue, const Omega::string_t& strDesc)
-{
-	int err = m_pHive->set_value_description(m_key,strValue.c_str(),0,strDesc.c_str());
-	if (err == ENOENT)
-		User::Registry::NotFoundException::Throw(strValue);
 	else if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(GetName());
 	else if (err==EIO)
@@ -491,26 +423,6 @@ any_t RootKey::GetValue(const string_t& strName)
 void RootKey::SetValue(const string_t& strName, const any_t& value)
 {
 	m_ptrSystemKey->SetValue(strName,value);
-}
-
-string_t RootKey::GetDescription()
-{
-	return m_ptrSystemKey->GetDescription();
-}
-
-string_t RootKey::GetValueDescription(const Omega::string_t& strName)
-{
-	return m_ptrSystemKey->GetValueDescription(strName);
-}
-
-void RootKey::SetDescription(const Omega::string_t& strDesc)
-{
-	m_ptrSystemKey->SetDescription(strDesc);
-}
-
-void RootKey::SetValueDescription(const Omega::string_t& strValue, const Omega::string_t& strDesc)
-{
-	m_ptrSystemKey->SetValueDescription(strValue,strDesc);
 }
 
 IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)

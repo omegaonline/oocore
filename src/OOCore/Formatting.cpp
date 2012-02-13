@@ -1531,7 +1531,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 
 	OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 	if (parse_custom(strFormat,parts) != 2)
-		throw Formatting::IFormattingException::Create(System::Internal::get_text("Invalid Omega::bool_t format string: {0}") % strFormat);
+		throw Formatting::IFormattingException::Create(OOCore::get_text("Invalid Omega::bool_t format string: {0}") % strFormat);
 
 	return val ? *parts.at(0) : *parts.at(1);
 }
@@ -1683,12 +1683,12 @@ namespace
 	{
 		size_t end = find_brace(strIn,pos,'}');
 		if (end == string_t::npos)
-			throw Formatting::IFormattingException::Create(System::Internal::get_text("Missing matching '}' in format string: {0}") % strIn);
+			throw Formatting::IFormattingException::Create(OOCore::get_text("Missing matching '}' in format string: {0}") % strIn);
 
 		size_t comma = strIn.Find(',',pos);
 		size_t colon = strIn.Find(':',pos);
 		if (comma == pos || colon == pos)
-			throw Formatting::IFormattingException::Create(System::Internal::get_text("Missing index in format string: {0}") % strIn);
+			throw Formatting::IFormattingException::Create(OOCore::get_text("Missing index in format string: {0}") % strIn);
 
 		const char* endp = 0;
 		ins.index = OOCore::strtoul(strIn.c_str()+pos,endp,10);

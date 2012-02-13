@@ -21,7 +21,7 @@
 
 #include "OOCore_precomp.h"
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_get_text,1,((in),const char*,sz))
+Omega::string_t OOCore::get_text(const char* sz)
 {
 	Omega::string_t result = Omega::string_t::constant("Unknown");
 

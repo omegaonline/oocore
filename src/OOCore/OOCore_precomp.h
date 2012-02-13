@@ -107,6 +107,8 @@ namespace OOCore
 			return r;
 		}
 	};
+
+	Omega::string_t get_text(const char* sz);
 }
 
 // Operator new that throws Omega::ISystemException

@@ -146,7 +146,7 @@ namespace
 		// Load the new DLL
 		int err = dll->load(name.c_str());
 		if (err != 0)
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(System::Internal::get_text("Loading library: {0}") % name));
+			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(OOCore::get_text("Loading library: {0}") % name));
 				
 		// Add to the map
 		if ((err = m_dll_map.insert(name,dll)) != 0)
@@ -200,7 +200,7 @@ namespace
 	{
 		ObjectPtr<ObjectImpl<LibraryNotFoundException> > pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
 		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = System::Internal::get_text("Dynamic library '{0}' not found or malformed") % strName;
+		pRE->m_strDesc = OOCore::get_text("Dynamic library '{0}' not found or malformed") % strName;
 		pRE->m_dll_name = strName;
 		throw static_cast<ILibraryNotFoundException*>(pRE.AddRef());
 	}
@@ -283,7 +283,7 @@ namespace
 			{
 				string_t strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
 				if (strLib.IsEmpty() || IsRelativePath(strLib))
-					OMEGA_THROW(System::Internal::get_text("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid);
+					OMEGA_THROW(OOCore::get_text("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid);
 
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
@@ -409,7 +409,7 @@ template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestruct
 void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 {
 	ObjectPtr<ObjectImpl<OidNotFoundException> > pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = System::Internal::get_text("The identified object {0} could not be found") % oid;
+	pNew->m_strDesc = OOCore::get_text("The identified object {0} could not be found") % oid;
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw static_cast<IOidNotFoundException*>(pNew.AddRef());
@@ -418,7 +418,7 @@ void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
 {
 	ObjectPtr<ObjectImpl<NoAggregationException> > pNew = ObjectImpl<NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = System::Internal::get_text("Object {0} does not support aggregation") % oid;
+	pNew->m_strDesc = OOCore::get_text("Object {0} does not support aggregation") % oid;
 	pNew->m_oid = oid;
 	return pNew.AddRef();
 }
@@ -426,7 +426,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activ
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
 {
 	ObjectPtr<ObjectImpl<OOCore::OidNotFoundException> > pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = System::Internal::get_text("The identified object {0} could not be found") % oid;
+	pNew->m_strDesc = OOCore::get_text("The identified object {0} could not be found") % oid;
 	pNew->m_oid = oid;
 	return pNew.AddRef();
 }

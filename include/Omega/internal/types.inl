@@ -297,12 +297,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_uint_t,3,((in),Omega::
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_float_t,3,((in),Omega::float8_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_bool_t,2,((in),Omega::bool_t,val,(in),const Omega::string_t&,strFormat));
 
-OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_get_text,1,((in),const char*,sz));
-inline Omega::string_t Omega::System::Internal::get_text(const char* sz)
-{
-	return OOCore_get_text(sz);
-}
-
 namespace Omega
 {
 	namespace System
@@ -406,17 +400,11 @@ namespace Omega
 
 inline Omega::string_t Omega::Formatting::ToString(const Omega::string_t& val, const Omega::string_t& strFormat)
 {
-	if (!strFormat.IsEmpty())
-		throw Formatting::IFormattingException::Create(System::Internal::get_text("Invalid string_t format string: {0}") % strFormat);
-
 	return val;
 }
 
 inline Omega::string_t Omega::Formatting::ToString(const char* val, const Omega::string_t& strFormat)
 {
-	if (!strFormat.IsEmpty())
-		throw Formatting::IFormattingException::Create(System::Internal::get_text("Invalid string_t format string: {0}") % strFormat);
-
 	return string_t(val);
 }
 
@@ -460,10 +448,10 @@ inline Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat)
 	return OOCore_guid_t_to_string(*this,strFormat);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const char*,sz,(in_out),Omega::guid_base_t*,result));
+OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,3,((in),const char*,sz,(in),int,throws,(in_out),Omega::guid_base_t*,result));
 inline bool Omega::guid_t::FromString(const char* sz, Omega::guid_t& guid)
 {
-	return (OOCore_guid_t_from_string(sz,&guid) != 0);
+	return (OOCore_guid_t_from_string(sz,0,&guid) != 0);
 }
 
 inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
@@ -473,14 +461,12 @@ inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 
 inline Omega::guid_t::guid_t(const char* sz)
 {
-	if (!guid_t::FromString(sz,*this))
-		throw Formatting::IFormattingException::Create(System::Internal::get_text("{0} is not an Omega::guid_t string representation") % sz);
+	OOCore_guid_t_from_string(sz,1,this);
 }
 
 inline Omega::guid_t::guid_t(const string_t& str)
 {
-	if (!guid_t::FromString(str,*this))
-		throw Formatting::IFormattingException::Create(System::Internal::get_text("{0} is not an Omega::guid_t string representation") % str);
+	OOCore_guid_t_from_string(str.Length() == 38 ? str.c_str() : "\0",1,this);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());

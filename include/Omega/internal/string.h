@@ -171,14 +171,6 @@ namespace Omega
 			static void free_handle(handle_t* h);
 		};
 	}
-
-	namespace System
-	{
-		namespace Internal
-		{
-			string_t get_text(const char* sz);
-		}
-	}
 }
 
 Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs);

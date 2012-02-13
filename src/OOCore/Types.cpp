@@ -668,58 +668,72 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 	return str.c_str();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const char*,sz,(in_out),guid_base_t*,result))
+namespace
 {
-	// Do this manually...
-	result->Data1 = 0;
-	result->Data2 = 0;
-	result->Data3 = 0;
-	memset(result->Data4,sizeof(result->Data4),0);
-	
-	if (!sz || sz[0] != '{' || !priv_isxdigit(sz[1]))
-		return 0;
+	int guid_t_from_string(const char* sz, guid_base_t* result)
+	{
+		// Do this manually...
+		if (!sz || sz[0] != '{' || !priv_isxdigit(sz[1]))
+			return 0;
 
-	const char* endp = NULL;
-	result->Data1 = OOCore::strtoul(sz+1,endp,16);
-	if (endp != sz+9)
-		return 0;
+		const char* endp = NULL;
+		result->Data1 = OOCore::strtoul(sz+1,endp,16);
+		if (endp != sz+9)
+			return 0;
 
-	if (sz[9] != '-' || !priv_isxdigit(sz[10]))
-		return 0;
+		if (sz[9] != '-' || !priv_isxdigit(sz[10]))
+			return 0;
 
-	result->Data2 = static_cast<uint16_t>(OOCore::strtoul(sz+10,endp,16));
-	if (endp != sz+14 || sz[14] != '-' || !priv_isxdigit(sz[15]))
-		return 0;
+		result->Data2 = static_cast<uint16_t>(OOCore::strtoul(sz+10,endp,16));
+		if (endp != sz+14 || sz[14] != '-' || !priv_isxdigit(sz[15]))
+			return 0;
 
-	result->Data3 = static_cast<uint16_t>(OOCore::strtoul(sz+15,endp,16));
-	if (endp != sz+19 || sz[19] != '-' || !priv_isxdigit(sz[20]))
-		return 0;
+		result->Data3 = static_cast<uint16_t>(OOCore::strtoul(sz+15,endp,16));
+		if (endp != sz+19 || sz[19] != '-' || !priv_isxdigit(sz[20]))
+			return 0;
 
-	uint32_t v1 = OOCore::strtoul(sz+20,endp,16);
-	if (endp != sz+24)
-		return 0;
+		uint32_t v1 = OOCore::strtoul(sz+20,endp,16);
+		if (endp != sz+24)
+			return 0;
 
-	result->Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
-	result->Data4[1] = static_cast<byte_t>(v1 & 0xFF);
+		result->Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
+		result->Data4[1] = static_cast<byte_t>(v1 & 0xFF);
 
-	if (sz[24] != '-' && !priv_isxdigit(sz[25]))
-		return 0;
+		if (sz[24] != '-' && !priv_isxdigit(sz[25]))
+			return 0;
 
-	uint64_t v2 = OOCore::strtou64(sz+25,endp,16);
-	if (endp != sz+37)
-		return 0;
+		uint64_t v2 = OOCore::strtou64(sz+25,endp,16);
+		if (endp != sz+37)
+			return 0;
 
-	result->Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
-	result->Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
-	result->Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
-	result->Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
-	result->Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
-	result->Data4[7] = static_cast<byte_t>(v2 & 0xFF);
+		result->Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
+		result->Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
+		result->Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
+		result->Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
+		result->Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
+		result->Data4[7] = static_cast<byte_t>(v2 & 0xFF);
 
-	if (sz[37] != '}' || sz[38] != '\0')
-		return 0;
+		if (sz[37] != '}' || sz[38] != '\0')
+			return 0;
 
-	return 1;
+		return 1;
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,3,((in),const char*,sz,(in),int,throws,(in_out),guid_base_t*,result))
+{
+	int ret = guid_t_from_string(sz,result);
+	if (ret == 0)
+	{
+		result->Data1 = 0;
+		result->Data2 = 0;
+		result->Data3 = 0;
+		memset(result->Data4,sizeof(result->Data4),0);
+
+		if (throws)
+			throw Formatting::IFormattingException::Create(OOCore::get_text("{0} is not an Omega::guid_t string representation") % sz);
+	}
+	return ret;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())

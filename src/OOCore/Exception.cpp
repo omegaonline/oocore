@@ -169,13 +169,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 {
 	ObjectPtr<ObjectImpl<OOCore::NoInterfaceException> > pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
-	string_t strIID = System::Internal::get_text("Unknown interface {0}") % iid.ToString();
+	string_t strIID = OOCore::get_text("Unknown interface {0}") % iid.ToString();
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)
 		strIID = ptrII->GetName();
 
-	pExcept->m_strDesc = System::Internal::get_text("Object does not support the requested interface {0}") % strIID;
+	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface {0}") % strIID;
 	pExcept->m_iid = iid;
 	return pExcept.AddRef();
 }
@@ -183,7 +183,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
 	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
-	pExcept->m_strDesc = System::Internal::get_text("The operation timed out");
+	pExcept->m_strDesc = OOCore::get_text("The operation timed out");
 	return pExcept.AddRef();
 }
 
@@ -192,6 +192,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remotin
 	ObjectPtr<ObjectImpl<OOCore::ChannelClosedException> > pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
-	pExcept->m_strDesc = System::Internal::get_text("The remoting channel has closed");
+	pExcept->m_strDesc = OOCore::get_text("The remoting channel has closed");
 	return pExcept.AddRef();
 }

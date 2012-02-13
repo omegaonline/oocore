@@ -215,7 +215,7 @@ namespace
 
 		case TypeInfo::typeObject:
 			{
-				string_t strIID = System::Internal::get_text("Unknown interface {0}") % guid_t(*(const guid_base_t*)(th->next)).ToString();
+				string_t strIID = OOCore::get_text("Unknown interface {0}") % guid_t(*(const guid_base_t*)(th->next)).ToString();
 				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF = OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next));
 				if (ptrIF)
 					strIID = ptrIF->GetName();
@@ -259,7 +259,7 @@ namespace
 			return strNext + '&';
 
 		default:
-			return System::Internal::get_text("Invalid type code: {0}") % th->type;
+			return OOCore::get_text("Invalid type code: {0}") % th->type;
 		}
 	}
 }
@@ -538,22 +538,22 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 	switch (reason)
 	{
 	case any_t::castOverflow:
-		strReason = System::Internal::get_text("Source value would overflow");
+		strReason = OOCore::get_text("Source value would overflow");
 		break;
 
 	case any_t::castPrecisionLoss:
-		strReason = System::Internal::get_text("Source value would lose precision");
+		strReason = OOCore::get_text("Source value would lose precision");
 		break;
 
 	case any_t::castValid:
 	case any_t::castUnrelated:
 	default:
-		strReason = System::Internal::get_text("Data types are unrelated");
+		strReason = OOCore::get_text("Data types are unrelated");
 		break;
 	}
 
 	ObjectPtr<ObjectImpl<CastException> > pNew = ObjectImpl<CastException>::CreateInstance();
-	pNew->m_strDesc = System::Internal::get_text("Failed to convert from {0} to {1}: {2}") % strSource % strDest % strReason;
+	pNew->m_strDesc = OOCore::get_text("Failed to convert from {0} to {1}: {2}") % strSource % strDest % strReason;
 	pNew->m_value = value;
 	pNew->m_reason = reason;
 	pNew->m_type = Remoting::CreateMemoryMessage();

@@ -98,9 +98,6 @@ namespace Db
 	{
 	public:
 		virtual int registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Hive::access_rights_t access_mask) = 0;
-
-	protected:
-		virtual ~Manager() {}
 	};
 }
 

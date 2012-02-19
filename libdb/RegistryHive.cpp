@@ -50,10 +50,10 @@ bool Db::Hive::open(int flags)
 		
 			prepare_statement(m_UpdateValue_Stmt,"UPDATE RegistryValues SET Value = ?3 WHERE Name = ?1 AND Parent = ?2;") &&
 			
-			prepare_statement(m_CheckKey_Stmt,"SELECT Parent FROM RegistryKeys WHERE Id = ?1;") &&
-			prepare_statement(m_GetKeyInfo_Stmt,"SELECT Id FROM RegistryKeys WHERE Name = ?1 AND Parent = ?2;") && 
+			prepare_statement(m_CheckKey_Stmt,"SELECT Id, Value FROM RegistryKeys LEFT OUTER JOIN RegistryValues ON (RegistryValues.Parent = RegistryKeys.Id AND RegistryValues.Name = '.access') WHERE RegistryKeys.Id = ?1;") &&
+			prepare_statement(m_GetKeyInfo_Stmt,"SELECT Id, Value FROM RegistryKeys LEFT OUTER JOIN RegistryValues ON (RegistryValues.Parent = RegistryKeys.Id AND RegistryValues.Name = '.access') WHERE RegistryKeys.Name = ?1 AND RegistryKeys.Parent = ?2;") && 
 			prepare_statement(m_EnumKeyIds_Stmt,"SELECT Id FROM RegistryKeys WHERE Parent = ?1;") &&
-			prepare_statement(m_EnumKeys_Stmt,"SELECT Id, Name FROM RegistryKeys WHERE Parent = ?1 ORDER BY Name;") &&
+			prepare_statement(m_EnumKeys_Stmt,"SELECT Id, RegistryKeys.Name, Value FROM RegistryKeys LEFT OUTER JOIN RegistryValues ON (RegistryValues.Parent = RegistryKeys.Id AND RegistryValues.Name = '.access') WHERE RegistryKeys.Parent = ?1 ORDER BY RegistryKeys.Name;") &&
 			prepare_statement(m_EnumValues_Stmt,"SELECT Name FROM RegistryValues WHERE Parent = ?1 ORDER BY Name;") &&
 			prepare_statement(m_GetValue_Stmt,"SELECT Value FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;") &&
 				
@@ -65,22 +65,6 @@ bool Db::Hive::open(int flags)
 bool Db::Hive::prepare_statement(Statement& stmt, const char* pszSql)
 {
 	return (stmt.prepare(*m_db,pszSql) == SQLITE_OK);
-}
-
-void Db::Hive::get_access_mask(const Omega::int64_t& uKey, access_rights_t& access_mask)
-{
-	// Lock must be held first...
-
-	access_mask = 0;
-
-	OOBase::LocalString access;
-	if (get_value_i(uKey,".access",access) == 0)
-	{
-		char* end_ptr = NULL;
-		unsigned long ac = strtoul(access.c_str(),&end_ptr,10);
-		if (*end_ptr == '\0' && ac <= 0xFFFF)
-			access_mask = static_cast<access_rights_t>(ac);
-	}
 }
 
 int Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
@@ -103,7 +87,7 @@ int Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& acce
 	// And run the statement
 	err = m_CheckKey_Stmt.step();
 	if (err == SQLITE_ROW)
-		get_access_mask(uKey,access_mask);
+		access_mask = static_cast<access_rights_t>(m_CheckKey_Stmt.column_int(1));
 	
 	return err;
 }
@@ -128,8 +112,7 @@ int Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, 
 	if (err == SQLITE_ROW)
 	{
 		uKey = m_GetKeyInfo_Stmt.column_int64(0);
-
-		get_access_mask(uKey,access_mask);
+		access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
 	}
 
 	return err;
@@ -482,9 +465,7 @@ int Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 					return err2;
 			}
 
-			access_mask = 0;
-			get_access_mask(m_EnumKeys_Stmt.column_int64(0),access_mask);
-			
+			access_mask = static_cast<access_rights_t>(m_EnumKeys_Stmt.column_int64(2));
 			if (access_mask & Hive::read_check)
 			{
 				// Read not allowed - check access!
@@ -557,8 +538,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 			{
 				const char* v = m_EnumKeys_Stmt.column_text(1);
 							
-				access_mask = 0;
-				get_access_mask(m_EnumKeys_Stmt.column_int64(0),access_mask);
+				access_mask = static_cast<access_rights_t>(m_EnumKeys_Stmt.column_int64(2));
 
 				if (access_mask & Hive::read_check)
 				{

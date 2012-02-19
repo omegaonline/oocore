@@ -82,7 +82,6 @@ namespace Db
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
 
-		void get_access_mask(const Omega::int64_t& uKey, access_rights_t& access_mask);
 		int get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
 		int get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t& access_mask);
 		int find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id);

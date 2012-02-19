@@ -120,7 +120,10 @@ static int help()
 
 static bool key_path(const OOBase::String& str, Omega::string_t& key)
 {
-	if (str.empty() || str[str.length()-1] != '/')
+	if (str == "/")
+		return true;
+	
+	if (str.length() < 2 || str[str.length()-1] != '/')
 		return false;
 
 	key = Omega::string_t(str.c_str(),str.length()-1);
@@ -286,17 +289,14 @@ int main(int argc, char* argv[])
 					std::set<Omega::string_t> v = ptrKey->EnumSubKeys();
 					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
 					{
-						if (i != v.begin())
-							OOBase::stdout_write("\n");
 						OOBase::stdout_write(i->c_str());
-						OOBase::stdout_write("/");
+						OOBase::stdout_write("/\n");
 					}
 					v = ptrKey->EnumValues();
 					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
 					{
-						if (i != v.begin())
-							OOBase::stdout_write("\n");
 						OOBase::stdout_write(i->c_str());
+						OOBase::stdout_write("\n");
 					}
 					result = EXIT_SUCCESS;
 				}

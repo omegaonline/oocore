@@ -144,8 +144,14 @@ bool_t HiveKey::IsSubKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
+	OOBase::LocalString strLink;
+	OOBase::LocalString strSub;
+	int err = strSub.assign(strSubKey.c_str(),strSubKey.Length());
+	if (err != 0)
+		OMEGA_THROW(err);
+
 	int64_t uSubKey = 0;
-	int err = m_pHive->open_key(m_key,uSubKey,strSubKey.c_str(),0);
+	err = m_pHive->create_key(m_key,uSubKey,strSub,0,0,strLink);
 	if (err == ENOENT)
 		return false;
 	else if (err==EACCES)
@@ -217,8 +223,14 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		strFullKey += '/';
 	strFullKey += strSubKey;
 
+	OOBase::LocalString strSub;
+	OOBase::LocalString strLink;
+	int err = strSub.assign(strSubKey.c_str(),strSubKey.Length());
+	if (err != 0)
+		OMEGA_THROW(err);
+
 	int64_t key;
-	int err = m_pHive->create_key(m_key,key,strSubKey.c_str(),flags,Db::Hive::inherit_checks,0);
+	err = m_pHive->create_key(m_key,key,strSub,flags,0,strLink);
 	if (err==EACCES)
 		User::Registry::AccessDeniedException::Throw(strFullKey);
 	else if (err==EEXIST)
@@ -281,8 +293,20 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 void HiveKey::DeleteKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
+
+	OOBase::LocalString strSub;
+	OOBase::LocalString strLink;
+	int err = strSub.assign(strSubKey.c_str(),strSubKey.Length());
+	if (err != 0)
+		OMEGA_THROW(err);
 	
-	int err = m_pHive->delete_key(m_key,strSubKey.c_str(),0);
+	err = m_pHive->delete_key(m_key,strSub,0,strLink);
+	if (err == ENOEXEC && !strLink.empty() && strSub.empty())
+	{
+		// Attempt to delete link
+		err = EACCES;
+	}
+	
 	if (err != 0)
 	{
 		string_t strFullKey = GetName();

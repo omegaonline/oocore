@@ -10,8 +10,6 @@ BEGIN TRANSACTION;
 	
 	CREATE INDEX idx_RegistryKeys ON RegistryKeys(Parent);
 	
-	ANALYZE RegistryKeys;
-	
 	CREATE TABLE RegistryValues 
 	(
 		Name TEXT NOT NULL,
@@ -27,7 +25,5 @@ BEGIN TRANSACTION;
 		BEGIN 
 			DELETE FROM RegistryValues WHERE Parent = OLD.Id; 
 		END;
-
-	ANALYZE RegistryValues;
 	
 COMMIT;

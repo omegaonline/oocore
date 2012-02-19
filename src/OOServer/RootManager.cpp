@@ -192,7 +192,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 	if (m_registry)
 	{
 		Omega::int64_t key = 0;
-		int err = m_registry->open_key(0,key,"System/Server/Settings",0);
+		int err = registry_open_key(0,key,"System/Server/Settings",0);
 		if (err != 0)
 		{
 			if (err != ENOENT)
@@ -507,7 +507,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
-	for (bool bFirst = true;bFirst;bFirst = false)
+	for (int attempts = 0;attempts < 2;++attempts)
 	{
 		// See if we have a process already
 		OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
@@ -551,7 +551,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 		if (spawn_user(uid,session_id.c_str(),user_process.m_ptrRegistry,user_process.m_strPipe,bAgain) != 0)
 			return true;
 
-		if (bFirst && bAgain)
+		if (attempts == 0 && bAgain)
 		{
 			OOBase::String strUnsafe;
 			if (Root::is_debug() && get_config_arg("unsafe",strUnsafe) && strUnsafe == "true")
@@ -819,11 +819,6 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 						LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
 					else
 					{
-					#if defined(_WIN32)
-						// Make sure the handle is closed
-						OOBase::Win32::SmartHandle hUidToken(uid);
-					#endif
-
 						UserProcess user_process;
 						if (get_user_process(uid,strSid,user_process))
 						{
@@ -832,6 +827,11 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 							else
 								ptrSocket->send(stream.buffer());
 						}
+
+					#if defined(_WIN32)
+						// Make sure the handle is closed
+						CloseHandle(uid);
+					#endif
 					}
 				}
 			}

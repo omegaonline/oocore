@@ -35,8 +35,8 @@ namespace Db
 		{
 			read_check = 1,
 			write_check = 2,
-			never_delete = 4,
-			inherit_checks = 8
+			protect_key = 4,
+			protect_values = 8
 		};
 		typedef Omega::uint16_t access_rights_t;
 
@@ -46,9 +46,8 @@ namespace Db
 
 		typedef OOBase::Stack<OOBase::String,OOBase::LocalAllocator> registry_set_t;
 
-		int open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
-		int create_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id);
-		int delete_key(const Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
+		int create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink);
+		int delete_key(const Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink);
 		int enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys);
 		void enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
 		int value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
@@ -83,8 +82,8 @@ namespace Db
 		Hive& operator = (const Hive&);
 
 		int get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
-		int get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t& access_mask);
-		int find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id);
+		int get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink);
+		int find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink);
 		int insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask);
 		int check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
 		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);

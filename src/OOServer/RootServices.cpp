@@ -104,7 +104,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 	{
 		// Now loop through the installed services, telling the sandbox to create them
 		Omega::int64_t uKey = 0;
-		int err = m_registry->open_key(0,uKey,"System/Services",0);
+		int err = registry_open_key(0,uKey,"System/Services",0);
 		if (err != 0)
 		{
 			if (err != ENOENT)
@@ -121,7 +121,7 @@ void Root::Manager::services_start(Omega::uint32_t channel_id, OOBase::CDRStream
 				{
 					// Open the subkey
 					Omega::int64_t uSubKey = 0;
-					if ((err = m_registry->open_key(uKey,uSubKey,i.c_str(),0)) != 0)
+					if ((err = registry_open_key(uKey,uSubKey,i.c_str(),0)) != 0)
 					{
 						--count;
 						LOG_ERROR(("Failed to open /System/Services/%s: %d",i.c_str(),err));
@@ -176,7 +176,7 @@ void Root::Manager::get_service_key(Omega::uint32_t channel_id, OOBase::CDRStrea
 			if (!strKey.empty())
 			{
 				Omega::int64_t uKey = 0;
-				if ((err = m_registry->open_key(0,uKey,strKey.c_str(),0)) != 0)
+				if ((err = registry_open_key(0,uKey,strKey.c_str(),0)) != 0)
 					LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
 				else
 				{
@@ -229,12 +229,12 @@ void Root::Manager::listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream&
 			if (!strKey.empty())
 			{
 				Omega::int64_t uKey = 0;
-				if ((err = m_registry->open_key(0,uKey,strKey.c_str(),0)) != 0)
+				if ((err = registry_open_key(0,uKey,strKey.c_str(),0)) != 0)
 					LOG_ERROR(("Failed to open %s: %d",strKey.c_str(),err));
 				else
 				{
 					// Now we want to get the networking key
-					if ((err = m_registry->open_key(uKey,uKey,"Network",0)) != 0)
+					if ((err = registry_open_key(uKey,uKey,"Network",0)) != 0)
 						LOG_ERROR(("Failed to open %s/Network: %d",strKey.c_str(),err));
 					else
 					{

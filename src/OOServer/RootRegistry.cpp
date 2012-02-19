@@ -61,7 +61,7 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 		return 0;
 }
 
-int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
+int Root::Manager::registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
@@ -83,9 +83,6 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 
 		// Get the registry hive
 		ptrHive = pU->m_ptrRegistry;
-
-		// Clear channel id -  not used for user content
-		channel_id = 0;
 	}
 	else
 	{
@@ -94,6 +91,19 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 	}
 
 	return 0;
+}
+
+int Root::Manager::registry_open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
+{
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	OOBase::LocalString strSubKey;
+	int err = strSubKey.assign(pszSubKey);
+	if (err != 0)
+		return err;
+
+	OOBase::LocalString strLink;
+	return m_registry->create_key(uParent,uKey,strSubKey,0,channel_id,strLink);
 }
 
 void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& /*request*/, OOBase::CDRStream& response)
@@ -123,7 +133,7 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 
 		local_type = 1;
 
-		err = m_registry->open_key(0,uKey,pszName+1,channel_id);
+		err = registry_open_key(0,uKey,pszName+1,channel_id);
 	}
 
 	response.write(err);
@@ -135,10 +145,9 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 	}
 }
 
-int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey)
+int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
 {
-	Omega::byte_t nType;
-	return registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	return ENOEXEC;
 }
 
 void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -146,17 +155,31 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
+	OOBase::LocalString strLink;
+	OOBase::LocalString strSubKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		OOBase::LocalString strSubKey;
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
-			err = ptrHive->open_key(uKey,uKey,strSubKey.c_str(),channel_id);
+		{
+			err = ptrHive->create_key(uKey,uKey,strSubKey,0,channel_id,strLink);
+			if (err == ENOEXEC)
+			{
+				err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
+				if (err == 0)
+					err = ptrHive->create_key(0,uKey,strSubKey,0,channel_id,strLink);
+			}
+		}
 	}
 
 	response.write(err);
+	if (err == ENOEXEC && response.last_error() == 0)
+	{
+		response.write(strLink.c_str(),strLink.length());
+		response.write(strSubKey.c_str(),strSubKey.length());
+	}
 }
 
 void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -165,10 +188,11 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 	Omega::int64_t uKey = 0;
 	Omega::byte_t nType;
 	Omega::int64_t uSubKey;
+	OOBase::LocalString strLink;
+	OOBase::LocalString strSubKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		OOBase::LocalString strSubKey;
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
@@ -177,15 +201,31 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 			if (!request.read(flags))
 				err = request.last_error();
 			else
-				err = ptrHive->create_key(uKey,uSubKey,strSubKey.c_str(),flags,Db::Hive::inherit_checks,channel_id);
+			{
+				err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,channel_id,strLink);
+				if (err == ENOEXEC)
+				{
+					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
+					if (err == 0)
+						err = ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink);
+				}									
+			}
 		}
 	}
 
 	response.write(err);
-	if (err == 0 && response.last_error() == 0)
+	if (response.last_error() == 0)
 	{
-		response.write(uSubKey);
-		response.write(nType);
+		if (err == ENOEXEC)
+		{
+			response.write(strLink.c_str(),strLink.length());
+			response.write(strSubKey.c_str(),strSubKey.length());
+		}
+		else
+		{
+			response.write(uSubKey);
+			response.write(nType);
+		}
 	}
 }
 
@@ -194,17 +234,39 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
+	OOBase::LocalString strLink;
+	OOBase::LocalString strSubKey;
 	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		OOBase::LocalString strSubKey;
 		if (!request.read(strSubKey))
 			err = request.last_error();
 		else
-			err = ptrHive->delete_key(uKey,strSubKey.c_str(),channel_id);
+		{
+			err = ptrHive->delete_key(uKey,strSubKey,channel_id,strLink);
+			if (err == ENOEXEC)
+			{
+				if (!strLink.empty() && strSubKey.empty())
+				{
+					// Attempt to delete link
+					err = EACCES;
+				}
+				else if (err == ENOEXEC)
+				{
+					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
+					if (err == 0)
+						err = ptrHive->delete_key(0,strSubKey,channel_id,strLink);
+				}
+			}
+		}
 	}
 
 	response.write(err);
+	if (err == ENOEXEC && response.last_error() == 0)
+	{
+		response.write(strLink.c_str(),strLink.length());
+		response.write(strSubKey.c_str(),strSubKey.length());
+	}
 }
 
 void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -226,7 +288,8 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	Omega::byte_t nType;
+	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
 		OOBase::LocalString strValue;
@@ -245,7 +308,8 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	Omega::byte_t nType;
+	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
 		OOBase::LocalString strValue;
@@ -264,7 +328,8 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	Omega::byte_t nType;
+	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
 		OOBase::LocalString strValue;
@@ -287,7 +352,8 @@ void Root::Manager::registry_enum_values(Omega::uint32_t channel_id, OOBase::CDR
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	Omega::byte_t nType;
+	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 		ptrHive->enum_values(uKey,channel_id,response);
 
@@ -299,7 +365,8 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	Omega::byte_t nType;
+	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
 		OOBase::LocalString strValue;

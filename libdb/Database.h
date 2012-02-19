@@ -91,6 +91,11 @@ namespace Db
 			m_stmt.reset(false);
 		}
 
+		void reset()
+		{
+			m_stmt.reset(false);
+		}
+
 	private:
 		Resetter(const Resetter&);
 		Resetter& operator = (const Resetter&);

@@ -44,8 +44,6 @@ namespace OTL
 		{
 			if (key && key[0] != '\0')
 				replace(this->m_ptr->OpenSubKey(key,flags),false);
-			else
-				replace(NULL,false);
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
@@ -53,8 +51,6 @@ namespace OTL
 		{
 			if (!key.IsEmpty())
 				replace(this->m_ptr->OpenSubKey(key,flags),false);
-			else
-				replace(NULL,false);
 		}
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::Registry::IKey>& rhs)

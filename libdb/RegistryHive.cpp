@@ -98,54 +98,51 @@ int Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, 
 	
 	Resetter resetter(m_GetKeyInfo_Stmt);
 
-	// Bind the search values
-	int err = m_GetKeyInfo_Stmt.bind_string(1,".links",6);
-	if (err != SQLITE_OK)
-		return EIO;
+	int err = 0;
 
-	err = m_GetKeyInfo_Stmt.bind_int64(2,uParent);
-	if (err != SQLITE_OK)
-		return EIO;
-
-	// And run the statement
-	err = m_GetKeyInfo_Stmt.step();
-	if (err == SQLITE_ROW)
+	if (strSubKey != ".links" && strSubKey != ".access")
 	{
-		// We have a .links subkey
-		uKey = m_GetKeyInfo_Stmt.column_int64(0);
+		// Check for links in .links
 
-		// Check access
-		access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
-		if (access_mask & Hive::read_check)
+		// Bind the search values
+		err = m_GetKeyInfo_Stmt.bind_string(1,".links",6);
+		if (err != SQLITE_OK)
+			return EIO;
+
+		err = m_GetKeyInfo_Stmt.bind_int64(2,uParent);
+		if (err != SQLITE_OK)
+			return EIO;
+
+		// And run the statement
+		err = m_GetKeyInfo_Stmt.step();
+		if (err == SQLITE_ROW)
 		{
-			// Read must be checked
-			int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
-			if (acc != 0)
-				return acc;
-		}
+			// We have a .links subkey
+			uKey = m_GetKeyInfo_Stmt.column_int64(0);
 
-		err = get_value_i(uKey,strSubKey.c_str(),strLink);
-
-		// Ignore .access !
-		if (err == 0)
-		{
-			if (strLink == ".access")
+			// Check access
+			access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
+			if (access_mask & Hive::read_check)
 			{
-				strLink.clear();
-				err = ENOENT;
+				// Read must be checked
+				int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
+				if (acc != 0)
+					return acc;
 			}
-			else
+
+			err = get_value_i(uKey,strSubKey.c_str(),strLink);
+			if (err == 0)
 				err = SQLITE_ROW;
+			
+			if (err != ENOENT)
+				return err;
 		}
-
-		if (err != ENOENT)
+		else if (err != SQLITE_DONE)
 			return err;
-	}
-	else if (err != SQLITE_DONE)
-		return err;
 
-	// Reset and re-run
-	resetter.reset();
+		// Reset and re-run
+		resetter.reset();
+	}
 	
 	// Bind the search values
 	err = m_GetKeyInfo_Stmt.bind_string(1,strSubKey.c_str(),strSubKey.length());

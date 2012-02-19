@@ -398,12 +398,12 @@ namespace Omega
 	}
 }
 
-inline Omega::string_t Omega::Formatting::ToString(const Omega::string_t& val, const Omega::string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(const Omega::string_t& val, const Omega::string_t& /*strFormat*/)
 {
 	return val;
 }
 
-inline Omega::string_t Omega::Formatting::ToString(const char* val, const Omega::string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(const char* val, const Omega::string_t& /*strFormat*/)
 {
 	return string_t(val);
 }

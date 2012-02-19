@@ -192,7 +192,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 	if (m_registry)
 	{
 		Omega::int64_t key = 0;
-		int err = m_registry->open_key(0,key,"/System/Server/Settings",0);
+		int err = m_registry->open_key(0,key,"System/Server/Settings",0);
 		if (err != 0)
 		{
 			if (err != ENOENT)

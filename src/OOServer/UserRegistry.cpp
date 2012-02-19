@@ -64,10 +64,11 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	}
 
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::KeyExists));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.c_str());
+	request.write(static_cast<IKey::OpenFlags_t>(IKey::OpenExisting));
 	
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -79,10 +80,15 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
+	string_t strFullKey = GetName();
+	if (!strFullKey.IsEmpty())
+		strFullKey += "/";
+	strFullKey += strSubKey;
+	
 	if (err == ENOENT)
 		return false;
 	else if (err==EACCES)
-		AccessDeniedException::Throw(GetName());
+		AccessDeniedException::Throw(strFullKey);
 	else if (err==EIO)
 		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
@@ -264,12 +270,12 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 IKey* Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::CreateKey));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.c_str());
-
 	request.write(flags);
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 

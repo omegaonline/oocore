@@ -150,39 +150,7 @@ int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::
 	return ENOEXEC;
 }
 
-void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	OOBase::SmartPtr<Db::Hive> ptrHive;
-	Omega::int64_t uKey;
-	Omega::byte_t nType;
-	OOBase::LocalString strLink;
-	OOBase::LocalString strSubKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
-	{
-		if (!request.read(strSubKey))
-			err = request.last_error();
-		else
-		{
-			err = ptrHive->create_key(uKey,uKey,strSubKey,0,channel_id,strLink);
-			if (err == ENOEXEC)
-			{
-				err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
-				if (err == 0)
-					err = ptrHive->create_key(0,uKey,strSubKey,0,channel_id,strLink);
-			}
-		}
-	}
-
-	response.write(err);
-	if (err == ENOEXEC && response.last_error() == 0)
-	{
-		response.write(strLink.c_str(),strLink.length());
-		response.write(strSubKey.c_str(),strSubKey.length());
-	}
-}
-
-void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey = 0;

@@ -35,8 +35,7 @@ namespace OOServer
 		// User -> Root
 
 		// Registry opcodes
-		KeyExists = 0x80,
-		CreateKey,
+		OpenKey = 0x80,
 		DeleteKey,
 		EnumSubKeys,
 		ValueExists,

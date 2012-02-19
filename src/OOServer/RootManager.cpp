@@ -701,12 +701,8 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case OOServer::KeyExists:
-		registry_key_exists(src_channel_id,request,response);
-		break;
-
-	case OOServer::CreateKey:
-		registry_create_key(src_channel_id,request,response);
+	case OOServer::OpenKey:
+		registry_open_key(src_channel_id,request,response);
 		break;
 
 	case OOServer::DeleteKey:

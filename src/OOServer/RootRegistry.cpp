@@ -90,7 +90,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 	else
 	{
 		// What?!?
-		return EIO;
+		return EINVAL;
 	}
 
 	return 0;

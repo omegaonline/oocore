@@ -127,26 +127,31 @@ int Db::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, cons
 		return err;
 
 	// Check for root key
-	if (uParent==0 && strSubKey.empty())
+	if (uParent == 0)
 	{
-		access_mask = static_cast<access_rights_t>(Hive::never_delete | Hive::write_check);
-		uKey = 0;
-		return 0;
+		if (strSubKey.empty())
+		{
+			access_mask = static_cast<access_rights_t>(Hive::never_delete | Hive::write_check);
+			uKey = 0;
+			return 0;
+		}
 	}
-
-	// Check if the key still exists
-	err = check_key_exists(uParent,access_mask);
-	if (err == SQLITE_DONE)
-		return ENOENT;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (access_mask & Hive::read_check)
+	else
 	{
-		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
-		if (acc != 0)
-			return acc;
+		// Check if the parent still exists
+		err = check_key_exists(uParent,access_mask);
+		if (err == SQLITE_DONE)
+			return ENOENT;
+		else if (err != SQLITE_ROW)
+			return EIO;
+
+		if (access_mask & Hive::read_check)
+		{
+			// Read not allowed - check access!
+			int acc = m_pManager->registry_access_check(m_strdb.c_str(),channel_id,access_mask);
+			if (acc != 0)
+				return acc;
+		}
 	}
 
 	// Drill down looking for the key...

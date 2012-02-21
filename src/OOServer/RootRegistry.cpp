@@ -176,7 +176,7 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
 					if (err == 0)
 						err = ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink);
-				}									
+				}
 			}
 		}
 	}

@@ -362,7 +362,7 @@ namespace
 			reg_mask |= Activation::ExternalPublic;
 			
 		// See if we have it registered in the ROT
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 		ptrROT->GetObject(oid,reg_mask,iid,pObject);
 		if (pObject)
 			return pObject;

@@ -61,7 +61,7 @@ void DuplicateRegistrationException::Throw(const any_t& oid)
 OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,1,((in),IObject*,pIPS))
 {
 	// Get the zero cmpt service manager...
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
 	
 	// This forces the detection, so cleanup succeeds
@@ -75,15 +75,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 	// Get the zero cmpt service manager...
 	if (nCookie)
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 		ptrROT->RevokeObject(nCookie);
 	}
 }
 
 OOCore::IInterProcessService* OOCore::GetInterProcessService()
 {
-	ObjectPtr<SingletonObjectImpl<OOCore::ServiceManager> > ptrSM = SingletonObjectImpl<OOCore::ServiceManager>::CreateInstance();
-	return ptrSM->GetIPS();
+	ObjectPtr<SingletonObjectImpl<OOCore::LocalROT> > ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
+	return ptrROT->GetIPS();
 }
 
 bool OOCore::HostedByOOServer()
@@ -112,11 +112,11 @@ bool OOCore::HostedByOOServer()
 	return bHosted;
 }
 
-OOCore::ServiceManager::ServiceManager() : m_mapServicesByCookie(1)
+OOCore::LocalROT::LocalROT() : m_mapServicesByCookie(1)
 {
 }
 
-OOCore::ServiceManager::~ServiceManager()
+OOCore::LocalROT::~LocalROT()
 {
 	try
 	{
@@ -134,7 +134,7 @@ OOCore::ServiceManager::~ServiceManager()
 	}
 }
 
-OOCore::IInterProcessService* OOCore::ServiceManager::GetIPS()
+OOCore::IInterProcessService* OOCore::LocalROT::GetIPS()
 {
 	IObject* pIPS = NULL;
 	GetObject(OID_InterProcessService,Activation::ProcessScope,OMEGA_GUIDOF(IInterProcessService),pIPS);
@@ -145,7 +145,7 @@ OOCore::IInterProcessService* OOCore::ServiceManager::GetIPS()
 	return static_cast<IInterProcessService*>(pIPS);
 }
 
-uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	uint32_t rot_cookie = 0;
@@ -232,7 +232,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const any_t& oid, IObject* pObje
 	}
 }
 
-void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
+void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
 {
 	ObjectPtr<IObject> ptrObject;
 
@@ -302,7 +302,7 @@ void OOCore::ServiceManager::GetObject(const any_t& oid, Activation::RegisterFla
 	}
 }
 
-void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
+void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 	

@@ -30,8 +30,8 @@ namespace OOCore
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
-	// The instance wide ServiceManager instance
-	class ServiceManager : 
+	// The instance wide LocalROT instance
+	class LocalROT : 
 		public OTL::ObjectBase,
 		public Omega::Activation::IRunningObjectTable
 	{
@@ -39,16 +39,16 @@ namespace OOCore
 		OOCore::IInterProcessService* GetIPS();
 		
 	protected:
-		ServiceManager();
-		virtual ~ServiceManager();
+		LocalROT();
+		virtual ~LocalROT();
 	
-		BEGIN_INTERFACE_MAP(ServiceManager)
+		BEGIN_INTERFACE_MAP(LocalROT)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
 		END_INTERFACE_MAP()
 
 	private:
-		ServiceManager(const ServiceManager&);
-		ServiceManager& operator = (const ServiceManager&);
+		LocalROT(const LocalROT&);
+		LocalROT& operator = (const LocalROT&);
 
 		OOBase::RWMutex m_lock;
 		

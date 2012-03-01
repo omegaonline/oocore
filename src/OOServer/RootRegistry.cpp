@@ -147,7 +147,38 @@ void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase:
 
 int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
 {
-	return ENOEXEC;
+	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
+	{
+		/*OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		// Find the process info
+		Omega::int32_t err = 0;
+		const char* pszName = NULL;
+		Omega::int64_t uKey;
+
+		if (!m_mapUserProcesses.exists(channel_id))
+			err = EINVAL;
+		else
+		{
+			if (channel_id == m_sandbox_channel)
+			{
+				// Sandbox hive
+				pszName = "/System/Sandbox";
+			}
+			else
+			{
+				// Get the registry hive
+				pszName = "/All Users";
+			}
+
+			local_type = 1;
+
+			err = registry_open_key(0,uKey,pszName+1,channel_id);
+		}*/
+	}
+
+	// If it's not known, it's not found
+	return (strncmp(strLink.c_str(),"system:",7) == 0 ? ENOENT : ENOEXEC);
 }
 
 void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)

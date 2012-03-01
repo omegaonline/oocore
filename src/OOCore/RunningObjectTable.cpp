@@ -64,9 +64,19 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,1,((in),IObject*,pIPS
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
 	
-	// This forces the detection, so cleanup succeeds
-	OOCore::HostedByOOServer();
-	
+	try
+	{
+		// This forces the detection, so cleanup succeeds
+		OOCore::HostedByOOServer();
+
+		void* TODO; // Register all our local class factories here!
+	}
+	catch (...)
+	{
+		ptrROT->RevokeObject(nCookie);
+		throw;
+	}
+
 	return nCookie;
 }
 
@@ -76,6 +86,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 	if (nCookie)
 	{
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
+
+		void* TODO; // Unregister all our local class factories here!
+
 		ptrROT->RevokeObject(nCookie);
 	}
 }

@@ -82,7 +82,7 @@ namespace
 			public ExceptionImpl<Activation::ILibraryNotFoundException>
 	{
 	public:
-		static void Throw(const string_t& strName, IException* pE = 0);
+		static void Throw(const string_t& strName, IException* pE = NULL);
 
 		BEGIN_INTERFACE_MAP(LibraryNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
@@ -178,13 +178,17 @@ namespace
 
 					// Ignore exceptions
 					if (CanUnloadLibrary_Exception)
+					{
 						System::Internal::release_safe(CanUnloadLibrary_Exception);
+						erase = false;
+					}
 				}
 			}
 			catch (IException* pE)
 			{
 				// Ignore exceptions
 				pE->Release();
+				erase = false;
 			}
 
 			guard.acquire();
@@ -208,7 +212,7 @@ namespace
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
-		pfnGetLibraryObject pfn = 0;
+		pfnGetLibraryObject pfn = NULL;
 		OOBase::SmartPtr<OOBase::DLL> dll;
 
 		try
@@ -221,7 +225,7 @@ namespace
 			LibraryNotFoundException::Throw(dll_name,pE);
 		}
 
-		IObject* pObj = 0;
+		IObject* pObj = NULL;
 		const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
 					System::Internal::marshal_info<const guid_t&>::safe_type::coerce(oid),
 					System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
@@ -367,8 +371,6 @@ namespace
 		if (pObject)
 			return pObject;
 
-		void* ISSUE_10; // Allow injection of callback
-
 		// See if we are allowed to load...
 		if (!(flags & Activation::DontLaunch))
 		{
@@ -501,7 +503,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		OidNotFoundException::Throw(oid,pE);
 	}
 
-	return 0;
+	return NULL;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))

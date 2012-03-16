@@ -67,7 +67,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	if (err == EACCES)
 		OOBase::Logger::log(OOBase::Logger::Warning,APPNAME " already running");
 	else if (err)
-		LOG_ERROR(("Faield to create pid_file: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to create pid_file: %s",OOBase::system_error_text(err)));
 	else
 	{
 		// Loop until we quit

@@ -332,6 +332,8 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 {
 	// Make this value configurable somehow...
+	void* TODO;
+
 	OOBase::Timeout timeout(0,500000);
 	do
 	{

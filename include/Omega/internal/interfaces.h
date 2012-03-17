@@ -170,6 +170,14 @@ namespace Omega
 		
 		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
 		OOCORE_DECLARE_OID(OID_Registry);
+
+		interface IOverlayKeyFactory : public IObject
+		{
+			virtual IKey* Overlay(IKey* pOver, IKey* pUnder) = 0;
+		};
+
+		// {7A351233-8363-BA15-B443-31DD1C8FC587}
+		OOCORE_DECLARE_OID(OID_OverlayKeyFactory);
 	}
 
 	namespace TypeInfo
@@ -340,6 +348,14 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(string_t,GetKeyName,0,())
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::Registry, IOverlayKeyFactory, "{D83FC506-5939-AB15-6018-A55090AB03DE}",
+
+	// Methods
+	OMEGA_METHOD(Registry::IKey*,Overlay,2,((in),Registry::IKey*,pOver,(in),Registry::IKey*,pUnder))
 )
 
 OMEGA_DEFINE_INTERFACE

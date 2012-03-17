@@ -34,7 +34,7 @@ namespace User
 				public Omega::Registry::IKey
 		{
 		public:
-			void Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
+			void init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
 
 			BEGIN_INTERFACE_MAP(RootKey)
 				INTERFACE_ENTRY(Omega::Registry::IKey)

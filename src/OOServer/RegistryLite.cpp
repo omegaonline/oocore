@@ -47,7 +47,7 @@ namespace
 			public IKey
 	{
 	public:
-		void Init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
+		void init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
 
 		BEGIN_INTERFACE_MAP(HiveKey)
 			INTERFACE_ENTRY(IKey)
@@ -128,7 +128,7 @@ namespace
 	}
 }
 
-void HiveKey::Init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
+void HiveKey::init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
 {
 	m_pHive = pHive;
 	m_strKey = strKey;
@@ -244,7 +244,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstance();
-	ptrNew->Init(m_pHive,strFullKey,key);
+	ptrNew->init(m_pHive,strFullKey,key);
 	return ptrNew.AddRef();
 }
 
@@ -366,11 +366,11 @@ void RootKey::Init_Once()
 		OMEGA_THROW("Failed to open database files");
 
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstance();
-	ptrKey->Init(m_system_hive,string_t(),0);
+	ptrKey->init(m_system_hive,string_t(),0);
 	m_ptrSystemKey = ptrKey.AddRef();
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstance();
-	ptrKey->Init(m_localuser_hive,string_t::constant("Local User"),0);
+	ptrKey->init(m_localuser_hive,string_t::constant("Local User"),0);
 	m_ptrLocalUserKey = ptrKey.AddRef();
 }
 
@@ -394,7 +394,7 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, IKey*& pKey)
 		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(string_t::constant("All Users"));
 
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstance();
-		ptrNew->Init(string_t::constant("Local User"),m_ptrLocalUserKey,ptrMirror);
+		ptrNew->init(string_t::constant("Local User"),m_ptrLocalUserKey,ptrMirror);
 		pKey = ptrNew.AddRef();
 
 		return strMirror;

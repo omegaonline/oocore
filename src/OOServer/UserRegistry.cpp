@@ -33,7 +33,7 @@ using namespace OTL;
 using namespace User;
 using namespace User::Registry;
 
-void RootKey::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type)
+void RootKey::init(Manager* pManager, const string_t& strKey, const int64_t& key, byte_t type)
 {
 	m_pManager = pManager;
 	m_strKey = strKey;
@@ -254,13 +254,13 @@ IKey* RootKey::ParseSubKey(string_t& strSubKey)
 		}
 
 		ObjectPtr<ObjectImpl<RootKey> > ptrLocal = ObjectImpl<RootKey>::CreateInstance();
-		ptrLocal->Init(m_pManager,string_t::constant("Local User"),0,local_type);
+		ptrLocal->init(m_pManager,string_t::constant("Local User"),0,local_type);
 
 		ObjectPtr<ObjectImpl<RootKey> > ptrMirror = ObjectImpl<RootKey>::CreateInstance();
-		ptrMirror->Init(m_pManager,strName.c_str(),mirror_key,0);
+		ptrMirror->init(m_pManager,strName.c_str(),mirror_key,0);
 
 		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
-		ptrNew->Init(string_t::constant("Local User"),ptrLocal,ptrMirror);
+		ptrNew->init(string_t::constant("Local User"),ptrLocal,ptrMirror);
 		return ptrNew.Detach();
 	}
 
@@ -309,7 +309,7 @@ IKey* RootKey::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstance();
-	ptrNew->Init(m_pManager,strFullKey,key,type);
+	ptrNew->init(m_pManager,strFullKey,key,type);
 	return ptrNew.Detach();
 }
 

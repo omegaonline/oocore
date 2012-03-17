@@ -316,7 +316,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstance();
-		ptrIPS->Init(ptrOMSb,NULL,this);
+		ptrIPS->init(ptrOMSb,NULL,this);
 
 		// Register our interprocess service so we can react to activation requests
 		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);

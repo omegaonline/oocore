@@ -27,7 +27,7 @@
 using namespace Omega;
 using namespace OTL;
 
-void User::InterProcessService::Init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser, Manager* pManager)
+void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser, Manager* pManager)
 {
 	m_pManager = pManager;
 
@@ -53,7 +53,7 @@ void User::InterProcessService::Init(Remoting::IObjectManager* pOMSB, Remoting::
 	{
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
-		ptrKey->Init(m_pManager,string_t(),0,0);
+		ptrKey->init(m_pManager,string_t(),0,0);
 		m_ptrReg = ptrKey.AddRef();
 	}
 
@@ -61,7 +61,7 @@ void User::InterProcessService::Init(Remoting::IObjectManager* pOMSB, Remoting::
 	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstance();
 	try
 	{
-		m_ptrROT->Init(pOMSB);
+		m_ptrROT->init(pOMSB);
 	}
 	catch (...)
 	{

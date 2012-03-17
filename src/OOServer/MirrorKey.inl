@@ -19,7 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-void User::Registry::MirrorKey::Init(const string_t& strKey, IKey* pLocal, IKey* pSystem)
+void User::Registry::MirrorKey::init(const string_t& strKey, IKey* pLocal, IKey* pSystem)
 {
 	m_strKey = strKey;
 	m_ptrLocal = pLocal;
@@ -120,7 +120,7 @@ IKey* User::Registry::MirrorKey::OpenSubKey(const string_t& strSubKey, IKey::Ope
 		User::Registry::NotFoundException::Throw(strFullKey);
 
 	ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
-	ptrNew->Init(strFullKey,ptrNewLocal,ptrNewSystem);
+	ptrNew->init(strFullKey,ptrNewLocal,ptrNewSystem);
 	return ptrNew.AddRef();
 }
 

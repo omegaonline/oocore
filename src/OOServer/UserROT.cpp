@@ -63,7 +63,7 @@ User::RunningObjectTable::RunningObjectTable() : m_mapObjectsByCookie(1)
 {
 }
 
-void User::RunningObjectTable::Init(Remoting::IObjectManager* pOM)
+void User::RunningObjectTable::init(Remoting::IObjectManager* pOM)
 {
 	if (pOM)
 	{

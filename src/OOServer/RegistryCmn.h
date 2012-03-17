@@ -154,7 +154,7 @@ namespace User
 				public IKey
 		{
 		public:
-			void Init(const string_t& strKey, IKey* pLocal, IKey* pSystem);
+			void init(const string_t& strKey, IKey* pLocal, IKey* pSystem);
 
 			BEGIN_INTERFACE_MAP(MirrorKey)
 				INTERFACE_ENTRY(IKey)

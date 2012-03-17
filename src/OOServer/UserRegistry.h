@@ -28,15 +28,15 @@ namespace User
 
 	namespace Registry
 	{
-		class Key :
+		class RootKey :
 				public OTL::ObjectBase,
-				public OTL::IProvideObjectInfoImpl<Key>,
+				public OTL::IProvideObjectInfoImpl<RootKey>,
 				public Omega::Registry::IKey
 		{
 		public:
 			void Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
 
-			BEGIN_INTERFACE_MAP(Key)
+			BEGIN_INTERFACE_MAP(RootKey)
 				INTERFACE_ENTRY(Omega::Registry::IKey)
 				INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 			END_INTERFACE_MAP()

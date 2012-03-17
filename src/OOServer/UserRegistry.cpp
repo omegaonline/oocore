@@ -33,7 +33,7 @@ using namespace OTL;
 using namespace User;
 using namespace User::Registry;
 
-void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type)
+void RootKey::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type)
 {
 	m_pManager = pManager;
 	m_strKey = strKey;
@@ -41,12 +41,12 @@ void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::in
 	m_type = type;
 }
 
-string_t Key::GetName()
+string_t RootKey::GetName()
 {
 	return m_strKey;
 }
 
-bool_t Key::IsSubKey(const string_t& strSubKey)
+bool_t RootKey::IsSubKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
@@ -97,7 +97,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	return true;
 }
 
-bool_t Key::IsValue(const string_t& strName)
+bool_t RootKey::IsValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName);
 
@@ -129,7 +129,7 @@ bool_t Key::IsValue(const string_t& strName)
 	return true;
 }
 
-any_t Key::GetValue(const string_t& strName)
+any_t RootKey::GetValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName);
 
@@ -165,7 +165,7 @@ any_t Key::GetValue(const string_t& strName)
 	return strValue.c_str();
 }
 
-void Key::SetValue(const string_t& strName, const any_t& value)
+void RootKey::SetValue(const string_t& strName, const any_t& value)
 {
 	BadNameException::ValidateValue(strName);
 
@@ -196,7 +196,7 @@ void Key::SetValue(const string_t& strName, const any_t& value)
 		OMEGA_THROW(err);
 }
 
-IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
@@ -216,7 +216,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return OpenSubKey_i(strSubKey,flags);
 }
 
-IKey* Key::ParseSubKey(string_t& strSubKey)
+IKey* RootKey::ParseSubKey(string_t& strSubKey)
 {
 	// See if we need a mirror key
 	if (m_key == 0 && m_type == 0 && (strSubKey == "Local User" || strSubKey.Left(11) == "Local User/"))
@@ -253,10 +253,10 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 			OMEGA_THROW(response.last_error());
 		}
 
-		ObjectPtr<ObjectImpl<Key> > ptrLocal = ObjectImpl<Key>::CreateInstance();
+		ObjectPtr<ObjectImpl<RootKey> > ptrLocal = ObjectImpl<RootKey>::CreateInstance();
 		ptrLocal->Init(m_pManager,string_t::constant("Local User"),0,local_type);
 
-		ObjectPtr<ObjectImpl<Key> > ptrMirror = ObjectImpl<Key>::CreateInstance();
+		ObjectPtr<ObjectImpl<RootKey> > ptrMirror = ObjectImpl<RootKey>::CreateInstance();
 		ptrMirror->Init(m_pManager,strName.c_str(),mirror_key,0);
 
 		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
@@ -267,7 +267,7 @@ IKey* Key::ParseSubKey(string_t& strSubKey)
 	return 0;
 }
 
-IKey* Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* RootKey::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
@@ -308,12 +308,12 @@ IKey* Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		OMEGA_THROW(response.last_error());
 
 	// By the time we get here then we have successfully opened or created the key...
-	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstance();
+	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstance();
 	ptrNew->Init(m_pManager,strFullKey,key,type);
 	return ptrNew.AddRef();
 }
 
-std::set<Omega::string_t> Key::EnumSubKeys()
+std::set<Omega::string_t> RootKey::EnumSubKeys()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
@@ -367,7 +367,7 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	}
 }
 
-std::set<Omega::string_t> Key::EnumValues()
+std::set<Omega::string_t> RootKey::EnumValues()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
@@ -415,7 +415,7 @@ std::set<Omega::string_t> Key::EnumValues()
 	}
 }
 
-void Key::DeleteKey(const string_t& strSubKey)
+void RootKey::DeleteKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
@@ -473,7 +473,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	}
 }
 
-void Key::DeleteValue(const string_t& strName)
+void RootKey::DeleteValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName);
 

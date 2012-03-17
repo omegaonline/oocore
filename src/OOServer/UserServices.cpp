@@ -209,7 +209,7 @@ Registry::IKey* User::Manager::get_service_key(const OOBase::LocalString& strKey
 		OMEGA_THROW(response.last_error());
 	}
 
-	ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstance();
+	ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
 	ptrKey->Init(this,strKeyPath.c_str(),uKey,0);
 
 	return ptrKey.AddRef();

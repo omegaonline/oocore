@@ -36,7 +36,7 @@ template class OOBase::Singleton<OOSvrBase::Proactor,User::Manager>;
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
-	// We don't use the macro as we overide some behaviours
+	// We don't use the macro as we override some behaviours
 	namespace Module
 	{
 		class OOSvrUser_ProcessModuleImpl : public ProcessModule

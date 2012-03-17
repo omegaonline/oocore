@@ -349,7 +349,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		// Restore context
 		*pCC = old_context;
 
-		return ptrResponse.AddRef();
+		return ptrResponse.Detach();
 	}
 	catch (...)
 	{
@@ -444,11 +444,11 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 				if (!ptrE)
 					OMEGA_THROW("Null exception returned");
 
-				return ptrE.AddRef();
+				return ptrE.Detach();
 			}
 		}
 
-		pRecv = ptrRecv.AddRef();
+		pRecv = ptrRecv.Detach();
 		return NULL;
 	}
 	catch (IException* pE2)
@@ -846,7 +846,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallCo
 
 	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 
-	return ptrCC.AddRef();
+	return ptrCC.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Remoting_IsAlive,1,((in),IObject*,pObject))

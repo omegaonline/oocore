@@ -740,7 +740,7 @@ namespace OTL
 			if (iid != OMEGA_GUIDOF(Omega::IObject))
 				ret = ptr->QueryInterface(iid);
 			else
-				ret = ptr.AddRef();
+				ret = ptr.Detach();
 			if (!ret)
 				throw Omega::INoInterfaceException::Create(iid);
 			return ret;

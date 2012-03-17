@@ -206,7 +206,7 @@ namespace
 		pRE->m_ptrCause = pE;
 		pRE->m_strDesc = OOCore::get_text("Dynamic library '{0}' not found or malformed") % strName;
 		pRE->m_dll_name = strName;
-		throw static_cast<ILibraryNotFoundException*>(pRE.AddRef());
+		throw static_cast<ILibraryNotFoundException*>(pRE.Detach());
 	}
 
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
@@ -414,7 +414,7 @@ void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 	pNew->m_strDesc = OOCore::get_text("The identified object {0} could not be found") % oid;
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
-	throw static_cast<IOidNotFoundException*>(pNew.AddRef());
+	throw static_cast<IOidNotFoundException*>(pNew.Detach());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
@@ -422,7 +422,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activ
 	ObjectPtr<ObjectImpl<NoAggregationException> > pNew = ObjectImpl<NoAggregationException>::CreateInstance();
 	pNew->m_strDesc = OOCore::get_text("Object {0} does not support aggregation") % oid;
 	pNew->m_oid = oid;
-	return pNew.AddRef();
+	return pNew.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
@@ -430,7 +430,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activat
 	ObjectPtr<ObjectImpl<OOCore::OidNotFoundException> > pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
 	pNew->m_strDesc = OOCore::get_text("The identified object {0} could not be found") % oid;
 	pNew->m_oid = oid;
-	return pNew.AddRef();
+	return pNew.Detach();
 }
 
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)

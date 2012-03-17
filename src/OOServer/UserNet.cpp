@@ -75,7 +75,7 @@ ObjectImpl<User::Channel>* User::RemoteChannel::create_channel(uint32_t channel_
 			OMEGA_THROW(err);
 	}
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 Remoting::IObjectManager* User::RemoteChannel::create_object_manager(uint32_t channel_id)
@@ -643,7 +643,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 		ObjectPtr<Remoting::IChannel> ptrChannel;
 		if (m_mapRemoteChannels.find(channel.strEndpoint,ptrChannel))
-			return ptrChannel.AddRef();
+			return ptrChannel.Detach();
 	}
 
 	// Create a sink for the new endpoint
@@ -678,7 +678,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		OMEGA_THROW(err);
 	}
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 void User::Manager::close_all_remotes()

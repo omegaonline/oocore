@@ -296,7 +296,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t f
 	// If we have an object, get out now
 	if (ptrObject)
 	{
-		pObject = ptrObject.AddRef();
+		pObject = ptrObject.Detach();
 		return;
 	}
 

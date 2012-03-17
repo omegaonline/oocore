@@ -76,7 +76,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -113,7 +113,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -145,7 +145,7 @@ any_t RootKey::GetValue(const string_t& strName)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -182,7 +182,7 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -207,7 +207,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		if (ptrKey)
 		{
 			if (strSub.IsEmpty())
-				return ptrKey.AddRef();
+				return ptrKey.Detach();
 			else
 				return ptrKey->OpenSubKey(strSub,flags);
 		}
@@ -235,15 +235,15 @@ IKey* RootKey::ParseSubKey(string_t& strSubKey)
 		OOBase::CDRStream response;
 		m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 		
-		Omega::int32_t err = 0;
+		int32_t err = 0;
 		if (!response.read(err))
 			OMEGA_THROW(response.last_error());
 
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		Omega::byte_t local_type = 255;
-		Omega::int64_t mirror_key = 0;
+		byte_t local_type = 255;
+		int64_t mirror_key = 0;
 		OOBase::LocalString strName;
 
 		if (!response.read(local_type) ||
@@ -261,10 +261,10 @@ IKey* RootKey::ParseSubKey(string_t& strSubKey)
 
 		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
 		ptrNew->Init(string_t::constant("Local User"),ptrLocal,ptrMirror);
-		return ptrNew.AddRef();
+		return ptrNew.Detach();
 	}
 
-	return 0;
+	return NULL;
 }
 
 IKey* RootKey::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
@@ -282,7 +282,7 @@ IKey* RootKey::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -302,18 +302,18 @@ IKey* RootKey::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	Omega::int64_t key = 0;
-	Omega::byte_t type = 255;
+	int64_t key = 0;
+	byte_t type = 255;
 	if (!response.read(key) || !response.read(type))
 		OMEGA_THROW(response.last_error());
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstance();
 	ptrNew->Init(m_pManager,strFullKey,key,type);
-	return ptrNew.AddRef();
+	return ptrNew.Detach();
 }
 
-std::set<Omega::string_t> RootKey::EnumSubKeys()
+std::set<string_t> RootKey::EnumSubKeys()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
@@ -325,7 +325,7 @@ std::set<Omega::string_t> RootKey::EnumSubKeys()
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -340,7 +340,7 @@ std::set<Omega::string_t> RootKey::EnumSubKeys()
 
 	try
 	{
-		std::set<Omega::string_t> sub_keys;
+		std::set<string_t> sub_keys;
 		for (;;)
 		{
 			OOBase::LocalString strName;
@@ -367,7 +367,7 @@ std::set<Omega::string_t> RootKey::EnumSubKeys()
 	}
 }
 
-std::set<Omega::string_t> RootKey::EnumValues()
+std::set<string_t> RootKey::EnumValues()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
@@ -379,7 +379,7 @@ std::set<Omega::string_t> RootKey::EnumValues()
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -394,7 +394,7 @@ std::set<Omega::string_t> RootKey::EnumValues()
 
 	try
 	{
-		std::set<Omega::string_t> values;
+		std::set<string_t> values;
 		for (;;)
 		{
 			OOBase::LocalString strName;
@@ -451,7 +451,7 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
@@ -489,7 +489,7 @@ void RootKey::DeleteValue(const string_t& strName)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	Omega::int32_t err = 0;
+	int32_t err = 0;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 

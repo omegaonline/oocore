@@ -273,7 +273,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::Compartment::create_compartment_channe
 			OMEGA_THROW(err);
 	}
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
@@ -404,7 +404,7 @@ void OOCore::CompartmentFactory::CreateInstance(IObject* pOuter, const guid_t& i
 		ptrCompt->ContainedObject()->init(ptrChannel);
 
 		if (iid == OMEGA_GUIDOF(IObject))
-			pObject = ptrCompt.AddRef();
+			pObject = ptrCompt.Detach();
 		else
 			pObject = ptrCompt->QueryInterface(iid);
 	}

@@ -694,7 +694,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		if (m_mapChannels.find(src_channel_id,ptrChannel))
-			return ptrChannel.AddRef();
+			return ptrChannel.Detach();
 	}
 
 	// Create a new channel
@@ -710,7 +710,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)

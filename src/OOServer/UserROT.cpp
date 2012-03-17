@@ -56,7 +56,7 @@ void User::DuplicateRegistrationException::Throw(const any_t& oid)
 	ObjectPtr<ObjectImpl<DuplicateRegistrationException> > pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
 	pRE->m_strDesc = string_t::constant("Duplicate registration of oid {0} in running object table.") % oid;
 	pRE->m_oid = oid;
-	throw static_cast<IDuplicateRegistrationException*>(pRE.AddRef());
+	throw static_cast<IDuplicateRegistrationException*>(pRE.Detach());
 }
 
 User::RunningObjectTable::RunningObjectTable() : m_mapObjectsByCookie(1)
@@ -209,7 +209,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 
 	if (ptrObject)
 	{
-		pObject = ptrObject.AddRef();
+		pObject = ptrObject.Detach();
 	}
 	else if (m_ptrROT && (flags & ~Activation::UserScope))
 	{

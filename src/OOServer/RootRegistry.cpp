@@ -149,32 +149,28 @@ int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::
 {
 	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
 	{
-		/*OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		int err = strSubKey.concat(strLink.c_str()+11,strSubKey.c_str());
+		if (err != 0)
+			return err;
 
-		// Find the process info
-		Omega::int32_t err = 0;
-		const char* pszName = NULL;
-		Omega::int64_t uKey;
-
-		if (!m_mapUserProcesses.exists(channel_id))
-			err = EINVAL;
+		if (channel_id == m_sandbox_channel)
+		{
+			// We link to /System/Sandbox/
+			return strSubKey.concat("/System/Sandbox",strSubKey.c_str());
+		}
 		else
 		{
-			if (channel_id == m_sandbox_channel)
-			{
-				// Sandbox hive
-				pszName = "/System/Sandbox";
-			}
-			else
-			{
-				// Get the registry hive
-				pszName = "/All Users";
-			}
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			local_type = 1;
+			// Find the process info
+			UserProcess* pU = m_mapUserProcesses.find(channel_id);
+			if (!pU)
+				return ENOENT;
 
-			err = registry_open_key(0,uKey,pszName+1,channel_id);
-		}*/
+			nType = 1;
+			ptrHive = pU->m_ptrRegistry;
+			return 0;
+		}
 	}
 
 	// If it's not known, it's not found

@@ -45,8 +45,7 @@
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
-		m_sandbox_channel(0),
-		m_mapSockets(1)
+		m_sandbox_channel(0)
 {
 	// Root channel is fixed
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
@@ -107,9 +106,6 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 									// Stop accepting new clients
 									m_client_acceptor = NULL;
 								}
-
-								// Stop services
-								stop_services();
 
 								// Close all channels
 								shutdown_channels();
@@ -735,30 +731,6 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 	case OOServer::OpenMirrorKey:
 		registry_open_mirror_key(src_channel_id,request,response);
-		break;
-
-	case OOServer::ServicesStart:
-		services_start(src_channel_id,response);
-		break;
-
-	case OOServer::GetServiceKey:
-		get_service_key(src_channel_id,request,response);
-		break;
-
-	case OOServer::ListenSocket:
-		listen_socket(src_channel_id,request,response);
-		break;
-
-	case OOServer::SocketRecv:
-		socket_recv(src_channel_id,request,response);
-		break;
-
-	case OOServer::SocketSend:
-		socket_send(src_channel_id,request,response);
-		break;
-
-	case OOServer::SocketClose:
-		socket_close(src_channel_id,request);
 		break;
 
 	default:

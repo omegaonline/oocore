@@ -118,8 +118,7 @@ User::Manager* User::Manager::s_instance = NULL;
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
-		m_mapRemoteChannelIds(1),
-		m_mapServices(1)
+		m_mapRemoteChannelIds(1)
 {
 	s_instance = this;
 }
@@ -300,8 +299,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	else
 	{
 		bQuit = !pThis->bootstrap(sandbox_channel) ||
-			!pThis->start_acceptor(strPipe) ||
-			!pThis->start_services();
+			!pThis->start_acceptor(strPipe);
 	}
 
 	if (bQuit)
@@ -558,9 +556,6 @@ void User::Manager::do_quit_i()
 		// Close all the sinks
 		close_all_remotes();
 
-		// Stop services
-		stop_services();
-
 		try
 		{
 			// Unregister our object factories
@@ -609,29 +604,13 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	}
 
 	OOBase::CDRStream response;
-	switch (op_code)
-	{
-	case OOServer::OnSocketAccept:
-		on_socket_accept(request,response);
-		break;
-
-	case OOServer::OnSocketRecv:
-		on_socket_recv(request);
-		break;
-
-	case OOServer::OnSocketSent:
-		on_socket_sent(request);
-		break;
-
-	case OOServer::OnSocketClose:
-		on_socket_close(request);
-		break;
-
-	default:
+	//switch (op_code)
+	//{
+	//default:
 		response.write(int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
-		break;
-	}
+	//	break;
+	//}
 
 	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
 	{

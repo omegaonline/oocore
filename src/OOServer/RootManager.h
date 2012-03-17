@@ -135,37 +135,7 @@ namespace Root
 		void registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);		
 
-		// Services members
-	public:
-		struct ControlledObject
-		{
-			virtual ~ControlledObject() {}
-		};
-
-		struct Socket : public ControlledObject
-		{
-			virtual int recv(Omega::uint32_t lenBytes, Omega::bool_t bRecvAll) = 0;
-			virtual int send(OOBase::Buffer* buffer, Omega::bool_t bReliable) = 0;
-		};
-
-		Omega::uint32_t add_socket(Omega::uint32_t acceptor_id, Socket* pSocket);
-		void remove_socket(Omega::uint32_t id);
-		void remove_listener(Omega::uint32_t id);
-
 		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs);
-
-	private:
-		OOBase::HandleTable<Omega::uint32_t,OOBase::SmartPtr<Socket> >         m_mapSockets;
-		OOBase::HashTable<Omega::uint32_t,OOBase::SmartPtr<ControlledObject> > m_mapListeners;
-		
-		void stop_services();
-		int create_service_listener(Omega::uint32_t id, const OOBase::LocalString& strProtocol, const OOBase::LocalString& strAddress, const OOBase::LocalString& strPort);
-		void services_start(Omega::uint32_t channel_id, OOBase::CDRStream& response);
-		void get_service_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void listen_socket(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void socket_recv(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void socket_send(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void socket_close(Omega::uint32_t channel_id, OOBase::CDRStream& request);
 	};
 
 	typedef OOBase::Singleton<OOSvrBase::Proactor,Manager> Proactor;

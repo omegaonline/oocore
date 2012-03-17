@@ -98,8 +98,7 @@ oosvruser_SOURCES = \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \
-	UserROT.cpp \
-	UserServices.cpp
+	UserROT.cpp
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc

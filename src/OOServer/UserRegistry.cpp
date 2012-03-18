@@ -33,6 +33,40 @@ using namespace OTL;
 using namespace User;
 using namespace User::Registry;
 
+namespace
+{
+	class OverlayKey :
+			public ObjectBase,
+			public IProvideObjectInfoImpl<OverlayKey>,
+			public IKey
+	{
+	public:
+		void init(IKey* pOver, IKey* pUnder);
+
+		BEGIN_INTERFACE_MAP(OverlayKey)
+			INTERFACE_ENTRY(IKey)
+			INTERFACE_ENTRY(TypeInfo::IProvideObjectInfo)
+		END_INTERFACE_MAP()
+
+	private:
+		ObjectPtr<IKey> m_ptrOver;
+		ObjectPtr<IKey> m_ptrUnder;
+
+	// IKey members
+	public:
+		string_t GetName();
+		bool_t IsSubKey(const string_t& strSubKey);
+		bool_t IsValue(const string_t& strName);
+		any_t GetValue(const string_t& strName);
+		void SetValue(const string_t& strName, const any_t& value);
+		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		std::set<string_t> EnumSubKeys();
+		std::set<string_t> EnumValues();
+		void DeleteKey(const string_t& strSubKey);
+		void DeleteValue(const string_t& strName);
+	};
+}
+
 void RootKey::init(Manager* pManager, const string_t& strKey, const int64_t& key, byte_t type)
 {
 	m_pManager = pManager;
@@ -501,6 +535,117 @@ void RootKey::DeleteValue(const string_t& strName)
 		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
 		OMEGA_THROW(err);
+}
+
+void OverlayKey::init(IKey* pOver, IKey* pUnder)
+{
+	m_ptrOver = pOver;
+	m_ptrOver.AddRef();
+
+	m_ptrUnder = pUnder;
+	m_ptrUnder.AddRef();
+}
+
+string_t OverlayKey::GetName()
+{
+	return m_ptrOver->GetName();
+}
+
+bool_t OverlayKey::IsSubKey(const string_t& strSubKey)
+{
+	return (m_ptrOver->IsSubKey(strSubKey) || m_ptrUnder->IsSubKey(strSubKey));
+}
+
+bool_t OverlayKey::IsValue(const string_t& strName)
+{
+	return (m_ptrOver->IsValue(strName) || m_ptrUnder->IsValue(strName));
+}
+
+any_t OverlayKey::GetValue(const string_t& strName)
+{
+	try
+	{
+		return m_ptrOver->GetValue(strName);
+	}
+	catch (IException* pE)
+	{
+		pE->Release();
+	}
+	return m_ptrUnder->GetValue(strName);
+}
+
+void OverlayKey::SetValue(const string_t& strName, const any_t& value)
+{
+	AccessDeniedException::Throw("overlay:" + GetName());
+}
+
+IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+{
+	if (flags == IKey::CreateNew)
+		AccessDeniedException::Throw("overlay:" + GetName());
+
+	ObjectPtr<IKey> ptrSubOver = m_ptrOver->OpenSubKey(strSubKey,IKey::OpenExisting);
+	ObjectPtr<IKey> ptrSubUnder = m_ptrUnder->OpenSubKey(strSubKey,IKey::OpenExisting);
+
+	if (!ptrSubOver && !ptrSubUnder)
+		return NULL;
+	else if (!ptrSubOver)
+		return ptrSubUnder.Detach();
+	else if (!ptrSubUnder)
+		return ptrSubOver.Detach();
+
+	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
+	ptrKey->init(ptrSubOver,ptrSubUnder);
+	return ptrKey.Detach();
+}
+
+std::set<string_t> OverlayKey::EnumSubKeys()
+{
+	std::set<string_t> over_set = m_ptrOver->EnumSubKeys();
+	std::set<string_t> under_set = m_ptrUnder->EnumSubKeys();
+
+	std::copy(under_set.begin(),under_set.end(),std::inserter(over_set,over_set.begin()));
+	return over_set;
+}
+
+std::set<string_t> OverlayKey::EnumValues()
+{
+	std::set<string_t> over_set = m_ptrOver->EnumValues();
+	std::set<string_t> under_set = m_ptrUnder->EnumValues();
+
+	std::copy(under_set.begin(),under_set.end(),std::inserter(over_set,over_set.begin()));
+	return over_set;
+}
+
+void OverlayKey::DeleteKey(const string_t& strSubKey)
+{
+	AccessDeniedException::Throw("overlay:" + GetName());
+}
+
+void OverlayKey::DeleteValue(const string_t& strName)
+{
+	AccessDeniedException::Throw("overlay:" + GetName());
+}
+
+IKey* OverlayKeyFactory::Overlay(IKey* pOver, IKey* pUnder)
+{
+	// Check we have 2 keys to overlay
+	if (!pOver && !pUnder)
+		return NULL;
+	else if (!pOver)
+	{
+		pUnder->AddRef();
+		return pUnder;
+	}
+	else if (!pUnder)
+	{
+		pOver->AddRef();
+		return pOver;
+	}
+
+	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
+	ptrKey->init(pOver,pUnder);
+	return ptrKey.Detach();
 }
 
 #include "MirrorKey.inl"

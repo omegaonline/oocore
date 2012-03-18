@@ -63,6 +63,21 @@ namespace User
 			void DeleteKey(const Omega::string_t& strSubKey);
 			void DeleteValue(const Omega::string_t& strName);
 		};
+
+		class OverlayKeyFactory :
+				public OTL::ObjectBase,
+				public OTL::AutoObjectFactory<OverlayKeyFactory,&Omega::Registry::OID_OverlayKeyFactory,Omega::Activation::ProcessScope>,
+				public Omega::Registry::IOverlayKeyFactory
+		{
+		public:
+			BEGIN_INTERFACE_MAP(OverlayKeyFactory)
+				INTERFACE_ENTRY(Omega::Registry::IOverlayKeyFactory)
+			END_INTERFACE_MAP()
+
+		// IOverlayKeyFactory members
+		public:
+			Omega::Registry::IKey* Overlay(Omega::Registry::IKey* pOver, Omega::Registry::IKey* pUnder);
+		};
 	}
 }
 

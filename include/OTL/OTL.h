@@ -105,16 +105,12 @@
 #define OBJECT_MAP_FACTORY_ENTRY(obj) \
 		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj>::Create, 0 },
 
-#define END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
+#define END_LIBRARY_OBJECT_MAP() \
 		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
-	} \
-	}
-
-#define END_LIBRARY_OBJECT_MAP() \
-	END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT() \
+	} } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
 	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid); }
 

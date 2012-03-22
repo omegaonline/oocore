@@ -21,37 +21,11 @@
 
 #include "OOCore_precomp.h"
 
-#include "StdObjectManager.h"
-#include "WireProxy.h"
-#include "Channel.h"
-#include "Exception.h"
 #include "Activation.h"
-#include "Compartment.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
 #endif
-
-#if !defined(DOXYGEN)
-
-// Our library map
-BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
-	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
-	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
-	OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
-	OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
-	OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
-	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
-	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
-	OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
-	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
-	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
-	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
-	OBJECT_MAP_ENTRY(OOCore::OidNotFoundExceptionMarshalFactoryImpl)
-END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
-
-#endif // DOXYGEN
 
 using namespace Omega;
 using namespace OTL;
@@ -276,7 +250,7 @@ namespace
 
 	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
-		unsigned int sub_type = (flags & 0xF);
+		Activation::Flags_t sub_type = (flags & 0xF);
 		
 		// Try to load a library, if allowed
 		if (sub_type == Activation::Default || sub_type == Activation::Library)
@@ -347,17 +321,6 @@ namespace
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
-		IObject* pObject = NULL;
-		unsigned int sub_type = (flags & 0xF);
-				
-		// Try ourselves first... this prevents anyone overloading standard behaviours!
-		if (sub_type == Activation::Default || sub_type == Activation::Library)
-		{
-			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid);
-			if (pObject)
-				return pObject;
-		}
-		
 		// Build RegisterFlags
 		Activation::RegisterFlags_t reg_mask = Activation::PublicScope;
 		
@@ -367,19 +330,17 @@ namespace
 			
 		// See if we have it registered in the ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
-		ptrROT->GetObject(oid,reg_mask,iid,pObject);
-		if (pObject)
-			return pObject;
 
-		// See if we are allowed to load...
-		if (!(flags & Activation::DontLaunch))
+		IObject* pObject = NULL;
+		ptrROT->GetObject(oid,reg_mask,iid,pObject);
+		if (!pObject)
 		{
-			pObject = LoadObject(oid,flags,iid);
-			if (pObject)
-				return pObject;
+			// See if we are allowed to load...
+			if (!(flags & Activation::DontLaunch))
+				pObject = LoadObject(oid,flags,iid);
 		}
 
-		return NULL;
+		return pObject;
 	}
 
 	guid_t NameToOid(const string_t& strObjectName)

@@ -309,9 +309,11 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 
 bool User::Manager::bootstrap(uint32_t sandbox_channel)
 {
-	// Register our service
 	try
 	{
+		// Register our service
+		OOCore_ServerInit();
+
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());

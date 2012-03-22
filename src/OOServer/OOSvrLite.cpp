@@ -27,7 +27,7 @@ using namespace OTL;
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
-END_LIBRARY_OBJECT_MAP_NO_ENTRYPOINT()
+END_LIBRARY_OBJECT_MAP()
 
 #if defined(_WIN32)
 

@@ -270,6 +270,9 @@ void OOCore::UserSession::start(const string_t& strArgs)
 		m_worker_thread.run(io_worker_fn,this);
 	}
 
+	// Register built-ins
+	RegisterObjects();
+
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
 	

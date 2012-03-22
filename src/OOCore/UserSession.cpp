@@ -172,22 +172,25 @@ void OOCore::UserSession::term_i()
 
 void OOCore::UserSession::stop()
 {
-	// Unregister InterProcessService
 	try
 	{
+		// Unregister InterProcessService
 		OOCore_RevokeIPS(m_nIPSCookie);
 		m_nIPSCookie = 0;
+
+		// Unregister built-ins
+		OOCore::UnregisterObjects();
+
+		// Close all singletons
+		close_singletons_i();
+
+		// Close compartments
+		close_compartments();
 	}
 	catch (IException* pE)
 	{
 		pE->Release();
 	}
-
-	// Close all singletons
-	close_singletons_i();
-
-	// Close compartments
-	close_compartments();
 
 	// Stop the io thread...
 	if (m_stream)

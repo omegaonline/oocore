@@ -26,6 +26,9 @@
 
 namespace OOCore
 {
+	void RegisterObjects();
+	void UnregisterObjects();
+
 	IInterProcessService* GetInterProcessService();
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
@@ -37,7 +40,7 @@ namespace OOCore
 	{
 	public:
 		OOCore::IInterProcessService* GetIPS();
-		
+
 	protected:
 		LocalROT();
 		virtual ~LocalROT();

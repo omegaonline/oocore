@@ -753,7 +753,7 @@ void OOServer::MessageHandler::remove_thread_context(OOServer::MessageHandler::T
 
 void OOServer::MessageHandler::shutdown_channels()
 {
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	for (OOBase::RefPtr<MessageConnection> ptrConn;m_mapChannelIds.pop(NULL,&ptrConn);)
 	{

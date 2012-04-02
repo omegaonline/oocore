@@ -173,7 +173,7 @@ namespace Omega
 
 		interface IOverlayKeyFactory : public IObject
 		{
-			virtual IKey* Overlay(IKey* pOver, IKey* pUnder) = 0;
+			virtual IKey* Overlay(const string_t& strOver, const string_t& strUnder) = 0;
 		};
 
 		// {7A351233-8363-BA15-B443-31DD1C8FC587}
@@ -355,7 +355,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Registry, IOverlayKeyFactory, "{D83FC506-5939-AB15-6018-A55090AB03DE}",
 
 	// Methods
-	OMEGA_METHOD(Registry::IKey*,Overlay,2,((in),Registry::IKey*,pOver,(in),Registry::IKey*,pUnder))
+	OMEGA_METHOD(Registry::IKey*,Overlay,2,((in),const string_t&,strOver,(in),const string_t&,strUnder))
 )
 
 OMEGA_DEFINE_INTERFACE

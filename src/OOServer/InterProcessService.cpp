@@ -98,12 +98,14 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	// Find the OID key...
 	string_t strProcess;
-	ObjectPtr<Omega::Registry::IKey> ptrKey("Local User/Objects/OIDs/" + oid.ToString());
+	ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
+
+	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenSubKey("Objects/OIDs/" + oid.ToString());
 	if (ptrKey->IsValue(string_t::constant("Application")))
 	{
 		// Find the name of the executable to run...
 		string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
-		ptrKey = ObjectPtr<Omega::Registry::IKey>("Local User/Applications/" + strAppName + "/Activation");
+		ptrKey = ptrLU->OpenSubKey("Applications/" + strAppName + "/Activation");
 		strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
 		if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess))
 		{

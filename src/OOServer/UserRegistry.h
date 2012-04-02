@@ -76,7 +76,7 @@ namespace User
 
 		// IOverlayKeyFactory members
 		public:
-			Omega::Registry::IKey* Overlay(Omega::Registry::IKey* pOver, Omega::Registry::IKey* pUnder);
+			Omega::Registry::IKey* Overlay(const Omega::string_t& strOver, const Omega::string_t& strUnder);
 		};
 	}
 }

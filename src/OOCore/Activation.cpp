@@ -158,6 +158,12 @@ namespace
 	}
 #endif
 
+	ObjectPtr<Registry::IKey> GetObjectsKey(const string_t& strSubKey)
+	{
+		ObjectPtr<Registry::IKey> ptrObjects = ObjectPtr<Registry::IOverlayKeyFactory>(Registry::OID_OverlayKeyFactory)->Overlay("Local User/Objects","All Users/Objects");
+		return ptrObjects->OpenSubKey(strSubKey);
+	}
+
 	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		Activation::Flags_t sub_type = (flags & 0xF);
@@ -166,7 +172,7 @@ namespace
 		if (sub_type == Activation::Default || sub_type == Activation::Library)
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey("Local User/Objects/OIDs/" + oid.ToString());
+			ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey("OIDs/" + oid.ToString());
 			if (ptrOidKey->IsValue(Omega::string_t::constant("Library")))
 			{
 				string_t strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
@@ -260,7 +266,7 @@ namespace
 		{
 			try
 			{
-				ObjectPtr<Registry::IKey> ptrOidKey("Local User/Objects/" + strCurName);
+				ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
 				if (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
 				{
 					strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();

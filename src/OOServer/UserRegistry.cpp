@@ -584,12 +584,35 @@ IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (flags == IKey::CreateNew)
 		AccessDeniedException::Throw("overlay:" + GetName());
 
-	ObjectPtr<IKey> ptrSubOver = m_ptrOver->OpenSubKey(strSubKey,IKey::OpenExisting);
-	ObjectPtr<IKey> ptrSubUnder = m_ptrUnder->OpenSubKey(strSubKey,IKey::OpenExisting);
+	ObjectPtr<IKey> ptrSubOver,ptrSubUnder;
+	try
+	{
+		ptrSubOver = m_ptrOver->OpenSubKey(strSubKey,IKey::OpenExisting);
+	}
+	catch (INotFoundException* pE)
+	{
+		pE->Release();
+	}
+
+	try
+	{
+		ptrSubUnder = m_ptrUnder->OpenSubKey(strSubKey,IKey::OpenExisting);
+	}
+	catch (INotFoundException* pE)
+	{
+		pE->Release();
+	}
 
 	if (!ptrSubOver && !ptrSubUnder)
-		return NULL;
-	else if (!ptrSubOver)
+	{
+		string_t strFullKey = m_ptrOver->GetName();
+		if (!strFullKey.IsEmpty())
+			strFullKey += "/";
+
+		NotFoundException::Throw(strFullKey + strSubKey);
+	}
+
+	if (!ptrSubOver)
 		return ptrSubUnder.Detach();
 	else if (!ptrSubUnder)
 		return ptrSubOver.Detach();
@@ -627,24 +650,39 @@ void OverlayKey::DeleteValue(const string_t& strName)
 	AccessDeniedException::Throw("overlay:" + GetName());
 }
 
-IKey* OverlayKeyFactory::Overlay(IKey* pOver, IKey* pUnder)
+IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnder)
 {
-	// Check we have 2 keys to overlay
-	if (!pOver && !pUnder)
-		return NULL;
-	else if (!pOver)
+	ObjectPtr<IKey> ptrSubOver,ptrSubUnder;
+	try
 	{
-		pUnder->AddRef();
-		return pUnder;
+		ptrSubOver = ObjectPtr<IKey>(strOver,IKey::OpenExisting);
 	}
-	else if (!pUnder)
+	catch (INotFoundException* pE)
 	{
-		pOver->AddRef();
-		return pOver;
+		pE->Release();
 	}
 
+	try
+	{
+		ptrSubUnder = ObjectPtr<IKey>(strUnder,IKey::OpenExisting);
+	}
+	catch (INotFoundException* pE)
+	{
+		pE->Release();
+	}
+
+	if (!ptrSubOver && !ptrSubUnder)
+	{
+		NotFoundException::Throw("/" + strOver);
+	}
+
+	if (!ptrSubOver)
+		return ptrSubUnder.Detach();
+	else if (!ptrSubUnder)
+		return ptrSubOver.Detach();
+
 	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
-	ptrKey->init(pOver,pUnder);
+	ptrKey->init(ptrSubOver,ptrSubUnder);
 	return ptrKey.Detach();
 }
 

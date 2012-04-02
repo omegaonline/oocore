@@ -76,7 +76,9 @@ namespace
 	class DLLManagerImpl
 	{
 	public:
-		DLLManagerImpl();
+		DLLManagerImpl()
+		{ }
+
 		~DLLManagerImpl();
 
 		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
@@ -90,98 +92,6 @@ namespace
 		OOBase::Table<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
-
-	DLLManagerImpl::DLLManagerImpl()
-	{
-	}
-
-	DLLManagerImpl::~DLLManagerImpl()
-	{
-		OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-		// Clear out our map now, as the smart ptrs use m_lock
-		m_dll_map.clear();
-	}
-
-	OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
-	{
-		OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-		// See if we have it already
-		OOBase::SmartPtr<OOBase::DLL> dll;
-		if (m_dll_map.find(name,dll))
-			return dll;
-
-		// Try to unload any unused dlls
-		unload_unused();
-
-		dll = new (OOCore::throwing) OOBase::DLL();
-			
-		// Load the new DLL
-		int err = dll->load(name.c_str());
-		if (err != 0)
-			throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(OOCore::get_text("Loading library: {0}") % name));
-				
-		// Add to the map
-		if ((err = m_dll_map.insert(name,dll)) != 0)
-			OMEGA_THROW(err);
-
-		return dll;
-	}
-
-	void DLLManagerImpl::unload_unused()
-	{
-		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
-
-		OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-		for (size_t i=0; i<m_dll_map.size();)
-		{
-			string_t name = *m_dll_map.key_at(i);
-			OOBase::SmartPtr<OOBase::DLL> dll = *m_dll_map.at(i);
-
-			guard.release();
-
-			bool_t erase = false;
-			try
-			{
-				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(dll->symbol("Omega_CanUnloadLibrary_Safe"));
-				if (pfn)
-				{
-					System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
-
-					// Ignore exceptions
-					if (CanUnloadLibrary_Exception)
-					{
-						System::Internal::release_safe(CanUnloadLibrary_Exception);
-						erase = false;
-					}
-				}
-			}
-			catch (IException* pE)
-			{
-				// Ignore exceptions
-				pE->Release();
-				erase = false;
-			}
-
-			guard.acquire();
-
-			if (erase)
-				m_dll_map.remove(name);
-			else
-				++i;
-		}
-	}
-
-	void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
-	{
-		ObjectPtr<ObjectImpl<LibraryNotFoundException> > pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
-		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = OOCore::get_text("Dynamic library '{0}' not found or malformed") % strName;
-		pRE->m_dll_name = strName;
-		throw static_cast<ILibraryNotFoundException*>(pRE.Detach());
-	}
 
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
 	{
@@ -368,6 +278,94 @@ namespace
 }
 
 template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> >;
+
+DLLManagerImpl::~DLLManagerImpl()
+{
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	// Clear out our map now, as the smart ptrs use m_lock
+	m_dll_map.clear();
+}
+
+OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
+{
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	// See if we have it already
+	OOBase::SmartPtr<OOBase::DLL> dll;
+	if (m_dll_map.find(name,dll))
+		return dll;
+
+	// Try to unload any unused dlls
+	unload_unused();
+
+	dll = new (OOCore::throwing) OOBase::DLL();
+
+	// Load the new DLL
+	int err = dll->load(name.c_str());
+	if (err != 0)
+		throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(OOCore::get_text("Loading library: {0}") % name));
+
+	// Add to the map
+	if ((err = m_dll_map.insert(name,dll)) != 0)
+		OMEGA_THROW(err);
+
+	return dll;
+}
+
+void DLLManagerImpl::unload_unused()
+{
+	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
+
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	for (size_t i=0; i<m_dll_map.size();)
+	{
+		string_t name = *m_dll_map.key_at(i);
+		OOBase::SmartPtr<OOBase::DLL> dll = *m_dll_map.at(i);
+
+		guard.release();
+
+		bool_t erase = false;
+		try
+		{
+			pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(dll->symbol("Omega_CanUnloadLibrary_Safe"));
+			if (pfn)
+			{
+				System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
+
+				// Ignore exceptions
+				if (CanUnloadLibrary_Exception)
+				{
+					System::Internal::release_safe(CanUnloadLibrary_Exception);
+					erase = false;
+				}
+			}
+		}
+		catch (IException* pE)
+		{
+			// Ignore exceptions
+			pE->Release();
+			erase = false;
+		}
+
+		guard.acquire();
+
+		if (erase)
+			m_dll_map.remove(name);
+		else
+			++i;
+	}
+}
+
+void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
+{
+	ObjectPtr<ObjectImpl<LibraryNotFoundException> > pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
+	pRE->m_ptrCause = pE;
+	pRE->m_strDesc = OOCore::get_text("Dynamic library '{0}' not found or malformed") % strName;
+	pRE->m_dll_name = strName;
+	throw static_cast<ILibraryNotFoundException*>(pRE.Detach());
+}
 
 void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
 {

@@ -61,11 +61,11 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-IException* OOCore::UserSession::init(const string_t& args)
+IException* OOCore::UserSession::init()
 {
 	try
 	{
-		USER_SESSION::instance().init_i(args);
+		USER_SESSION::instance().init_i();
 	}
 	catch (IException* pE)
 	{
@@ -81,7 +81,7 @@ void OOCore::UserSession::term()
 	USER_SESSION::instance().term_i();
 }
 
-void OOCore::UserSession::init_i(const string_t& args)
+void OOCore::UserSession::init_i()
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -106,7 +106,7 @@ void OOCore::UserSession::init_i(const string_t& args)
 
 				try
 				{
-					start(args);
+					start();
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -211,9 +211,6 @@ void OOCore::UserSession::stop()
 		m_worker_thread.join();
 	}
 
-	// Unload the OOSvrLite dll if loaded
-	m_lite_dll.unload();
-	
 	// Clear our environment variable
 #if defined(_WIN32)
 	SetEnvironmentVariable("OMEGA_SESSION_ADDRESS",NULL);

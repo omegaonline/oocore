@@ -71,9 +71,9 @@ extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
 	return OOCORE_PATCH_VERSION;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),const string_t&,args))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,0,())
 {
-	return OOCore::UserSession::init(args);
+	return OOCore::UserSession::init();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

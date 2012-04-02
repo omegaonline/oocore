@@ -183,7 +183,7 @@ bool OOCore::HostedByOOServer()
 			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
 			if (!shim || !static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 			{
-				bHosted = !ptrIPS->IsStandalone();
+				bHosted = true;
 			}
 		}
 	

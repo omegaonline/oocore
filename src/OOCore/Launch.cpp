@@ -39,79 +39,6 @@ using namespace OTL;
 
 namespace
 {
-	void parse_args(const string_t& str, OOBase::Table<string_t,string_t>& args)
-	{
-		// Split out individual args
-		for (size_t start = 0;;)
-		{
-			// Skip leading whitespace
-			while (start < str.Length() && (str[start] == '\t' || str[start] == ' '))
-				++start;
-
-			if (start == str.Length())
-				return;
-
-			// Find the next linefeed
-			size_t end = str.Find(',',start);
-
-			// Trim trailing whitespace
-			size_t valend = (end == string_t::npos ? str.Length() : end);
-			while (valend > start && (str[valend-1] == '\t' || str[valend-1] == ' '))
-				--valend;
-
-			if (valend > start)
-			{
-				string_t strKey, strValue;
-
-				// Split on first =
-				size_t eq = str.Find('=',start);
-				if (eq != string_t::npos)
-				{
-					// Trim trailing whitespace before =
-					size_t keyend = eq;
-					while (keyend > start && (str[keyend-1] == '\t' || str[keyend-1] == ' '))
-						--keyend;
-
-					if (keyend > start)
-					{
-						strKey = str.Mid(start,keyend-start);
-
-						// Skip leading whitespace after =
-						size_t valpos = eq+1;
-						while (valpos < valend && (str[valpos] == '\t' || str[valpos] == ' '))
-							++valpos;
-
-						if (valpos < valend)
-							strValue = str.Mid(valpos,valend-valpos);
-					}
-				}
-				else
-				{
-					strKey = str.Mid(start,valend-start);
-					strValue = string_t::constant("true");
-				}
-
-				if (!strKey.IsEmpty())
-				{
-					string_t* v = args.find(strKey);
-					if (v)
-						*v = strValue;
-					else
-					{
-						int err = args.insert(strKey,strValue);
-						if (err != 0)
-							OMEGA_THROW(err);
-					}
-				}
-			}
-
-			if (end == string_t::npos)
-				return;
-
-			start = end + 1;
-		}
-	}
-	
 	void get_session_id(OOBase::LocalString& strId)
 	{
 		// We don't use session_id with Win32
@@ -168,7 +95,7 @@ namespace
 #endif // !WIN32
 	}
 
-	void discover_server_port(bool& bStandalone, OOBase::LocalString& strPipe)
+	void discover_server_port(OOBase::LocalString& strPipe)
 	{
 		int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
 		if (err != 0)
@@ -186,14 +113,9 @@ namespace
 		OOBase::SmartPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(name,err);
 		if (!root_socket)
 		{
-			if (err == ENOENT && bStandalone)
- 				return;
-
 			ObjectPtr<IException> ptrE = ISystemException::Create(err);
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
 		}
-
-		bStandalone = false;
 
 		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 
@@ -216,59 +138,39 @@ namespace
 	}
 }
 
-void OOCore::UserSession::start(const string_t& strArgs)
+void OOCore::UserSession::start()
 {
-	OOBase::Table<string_t,string_t> args;
-	parse_args(strArgs,args);
-
-	bool bStandalone = false;
-	bool bStandaloneAlways = false;
-	string_t* parg = args.find("standalone");
-	if (parg)
-	{
-		if (*parg == "true")
-			bStandalone = true;
-		else if (*parg == "always")
-		{
-			bStandalone = true;
-			bStandaloneAlways = true;
-		}
-	}
-
 	OOBase::LocalString strPipe;
-	if (!bStandaloneAlways)
-		discover_server_port(bStandalone,strPipe);
+	discover_server_port(strPipe);
 
 	int err = 0;
-	if (!bStandalone)
+
+	// Connect up to the user process...
+	OOBase::Timeout timeout(15,0);
+	do
 	{
-		// Connect up to the user process...
-		OOBase::Timeout timeout(15,0);
-		do
-		{
-			m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
-			if (!err || (err != ENOENT && err != ECONNREFUSED))
-				break;
+		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
+		if (!err || (err != ENOENT && err != ECONNREFUSED))
+			break;
 
-			// We ignore the error, and try again until we timeout
-		}
-		while (!timeout.has_expired());
-
-		if (err)
-			OMEGA_THROW(err);
-
-		// Send version information
-		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-		if ((err = m_stream->send(version)) != 0)
-			OMEGA_THROW(err);
-
-		// Read our channel id
-		if ((err = m_stream->recv(m_channel_id)) != 0)
-			OMEGA_THROW(err);
-
-		// Spawn off the io worker thread
-		m_worker_thread.run(io_worker_fn,this);
+		// We ignore the error, and try again until we timeout
 	}
+	while (!timeout.has_expired());
+
+	if (err)
+		OMEGA_THROW(err);
+
+	// Send version information
+	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+	if ((err = m_stream->send(version)) != 0)
+		OMEGA_THROW(err);
+
+	// Read our channel id
+	if ((err = m_stream->recv(m_channel_id)) != 0)
+		OMEGA_THROW(err);
+
+	// Spawn off the io worker thread
+	m_worker_thread.run(io_worker_fn,this);
 
 	// Register built-ins
 	RegisterObjects();
@@ -285,36 +187,13 @@ void OOCore::UserSession::start(const string_t& strArgs)
 		ptrZeroCompt->set_id(0);
 	}
 
-	// Remove standalone support eventually...
-	void* ISSUE_4;
+	// Create a new object manager for the user channel on the zero compartment
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
 
-	ObjectPtr<IInterProcessService> ptrIPS;
-	if (!bStandalone)
-	{
-		// Create a new object manager for the user channel on the zero compartment
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
-
-		// Create a proxy to the server interface
-		IObject* pIPS = NULL;
-		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
-		ptrIPS = static_cast<IInterProcessService*>(pIPS);
-	}
-	else
-	{
-		// Load up OOSvrLite and get the IPS from there...
-		if ((err = m_lite_dll.load("oosvrlite")) != 0)
-			OMEGA_THROW(err);
-
-		typedef const System::Internal::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::type OOSvrLite_GetIPS_RetVal, System::Internal::marshal_info<const string_t&>::safe_type::type args);
-
-		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
-		if (!pfn)
-			OMEGA_THROW("Corrupt OOSvrLite");
-
-		const System::Internal::SafeShim* pSE = (*pfn)(System::Internal::marshal_info<IInterProcessService*&>::safe_type::coerce(ptrIPS),System::Internal::marshal_info<const string_t&>::safe_type::coerce(strArgs));
-		if (pSE)
-			System::Internal::throw_correct_exception(pSE);
-	}
+	// Create a proxy to the server interface
+	IObject* pIPS = NULL;
+	ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
 
 	// Register locally...
 	m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);

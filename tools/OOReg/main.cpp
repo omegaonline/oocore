@@ -188,9 +188,6 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return version();
 
-	OOBase::String oo_args;
-	args.find("args",oo_args);
-
 	OOBase::String method;
 	if (!args.find("@0",method))
 	{
@@ -215,7 +212,7 @@ int main(int argc, char* argv[])
 	}
 	args.find("@2",params[1]);
 
-	Omega::IException* pE = Omega::Initialize(oo_args.c_str());
+	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
 		report_exception(pE);

@@ -336,9 +336,6 @@ namespace OTL
 			delete this;
 		}
 
-		virtual void Init_Once()
-		{}
-
 	public:
 		typedef Omega::IObject* (ObjectBase::*PFNMEMQI)(const Omega::guid_t& iid);
 
@@ -658,9 +655,7 @@ namespace OTL
 
 	protected:
 		SingletonObjectImpl() : ROOT()
-		{
-			ROOT::Init_Once();
-		}
+		{ }
 
 		virtual ~SingletonObjectImpl()
 		{ }

@@ -23,10 +23,6 @@
     </Configuration>
   </Project>
   
-  <Project Name="OOSvrLite">
-    <Include Name="sqlite3.h" Define="HAVE_SQLITE3_H" />
-  </Project>
-  
   <Project Name="OOSvrUser">
     <Configuration Name="Debug">
       <Platform Name="Win32">

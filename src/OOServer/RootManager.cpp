@@ -729,10 +729,6 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		registry_delete_value(src_channel_id,request,response);
 		break;
 
-	case OOServer::OpenMirrorKey:
-		registry_open_mirror_key(src_channel_id,request,response);
-		break;
-
 	default:
 		response.write(Omega::int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %d",op_code));

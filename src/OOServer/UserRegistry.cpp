@@ -84,19 +84,6 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
-	if (m_key == 0 && m_type == 0)
-	{
-		string_t strSub = strSubKey;
-		ObjectPtr<IKey> ptrKey = ParseSubKey(strSub);
-		if (ptrKey)
-		{
-			if (strSub.IsEmpty())
-				return true;
-			else
-				return ptrKey->IsSubKey(strSub);
-		}
-	}
-
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
 	request.write(m_key);
@@ -234,75 +221,6 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
-	if (m_key == 0 && m_type == 0)
-	{
-		string_t strSub = strSubKey;
-		ObjectPtr<IKey> ptrKey = ParseSubKey(strSub);
-		if (ptrKey)
-		{
-			if (strSub.IsEmpty())
-				return ptrKey.Detach();
-			else
-				return ptrKey->OpenSubKey(strSub,flags);
-		}
-	}
-
-	return OpenSubKey_i(strSubKey,flags);
-}
-
-IKey* RootKey::ParseSubKey(string_t& strSubKey)
-{
-	// See if we need a mirror key
-	if (m_key == 0 && m_type == 0 && (strSubKey == "Local User" || strSubKey.Left(11) == "Local User/"))
-	{
-		// Local user, strip the start...
-		if (strSubKey.Length() > 10)
-			strSubKey = strSubKey.Mid(11);
-		else
-			strSubKey.Clear();
-
-		OOBase::CDRStream request;
-		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenMirrorKey));
-		if (request.last_error() != 0)
-			OMEGA_THROW(request.last_error());
-
-		OOBase::CDRStream response;
-		m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
-		
-		int32_t err = 0;
-		if (!response.read(err))
-			OMEGA_THROW(response.last_error());
-
-		if (err != 0)
-			OMEGA_THROW(err);
-
-		byte_t local_type = 255;
-		int64_t mirror_key = 0;
-		OOBase::LocalString strName;
-
-		if (!response.read(local_type) ||
-				!response.read(mirror_key) ||
-				!response.read(strName))
-		{
-			OMEGA_THROW(response.last_error());
-		}
-
-		ObjectPtr<ObjectImpl<RootKey> > ptrLocal = ObjectImpl<RootKey>::CreateInstance();
-		ptrLocal->init(m_pManager,string_t::constant("Local User"),0,local_type);
-
-		ObjectPtr<ObjectImpl<RootKey> > ptrMirror = ObjectImpl<RootKey>::CreateInstance();
-		ptrMirror->init(m_pManager,strName.c_str(),mirror_key,0);
-
-		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstance();
-		ptrNew->init(string_t::constant("Local User"),ptrLocal,ptrMirror);
-		return ptrNew.Detach();
-	}
-
-	return NULL;
-}
-
-IKey* RootKey::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
-{
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
 	request.write(m_key);
@@ -453,26 +371,6 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
-	if (m_key == 0 && m_type == 0)
-	{
-		string_t strSub = strSubKey;
-		ObjectPtr<IKey> ptrKey = ParseSubKey(strSub);
-		if (ptrKey)
-		{
-			if (strSub.IsEmpty())
-			{
-				string_t strFullKey = GetName();
-				if (!strFullKey.IsEmpty())
-					strFullKey += "/";
-				strFullKey += strSubKey;
-				
-				AccessDeniedException::Throw(strFullKey);
-			}
-
-			return ptrKey->DeleteKey(strSub);
-		}
-	}
-
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteKey));
 	request.write(m_key);
@@ -563,14 +461,9 @@ bool_t OverlayKey::IsValue(const string_t& strName)
 
 any_t OverlayKey::GetValue(const string_t& strName)
 {
-	try
-	{
+	if (m_ptrOver->IsValue(strName))
 		return m_ptrOver->GetValue(strName);
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-	}
+
 	return m_ptrUnder->GetValue(strName);
 }
 
@@ -581,36 +474,24 @@ void OverlayKey::SetValue(const string_t& strName, const any_t& value)
 
 IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
+	string_t strFullKey = GetName();
+	if (!strFullKey.IsEmpty())
+		strFullKey += "/";
+	strFullKey += strSubKey;
+	strFullKey = "overlay:" + strFullKey;
+
 	if (flags == IKey::CreateNew)
-		AccessDeniedException::Throw("overlay:" + GetName());
+		AccessDeniedException::Throw(strFullKey);
 
 	ObjectPtr<IKey> ptrSubOver,ptrSubUnder;
-	try
-	{
+	if (m_ptrOver->IsSubKey(strSubKey))
 		ptrSubOver = m_ptrOver->OpenSubKey(strSubKey,IKey::OpenExisting);
-	}
-	catch (INotFoundException* pE)
-	{
-		pE->Release();
-	}
 
-	try
-	{
+	if (m_ptrUnder->IsSubKey(strSubKey))
 		ptrSubUnder = m_ptrUnder->OpenSubKey(strSubKey,IKey::OpenExisting);
-	}
-	catch (INotFoundException* pE)
-	{
-		pE->Release();
-	}
 
 	if (!ptrSubOver && !ptrSubUnder)
-	{
-		string_t strFullKey = m_ptrOver->GetName();
-		if (!strFullKey.IsEmpty())
-			strFullKey += "/";
-
-		NotFoundException::Throw(strFullKey + strSubKey);
-	}
+		NotFoundException::Throw(strFullKey);
 
 	if (!ptrSubOver)
 		return ptrSubUnder.Detach();
@@ -672,9 +553,7 @@ IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnd
 	}
 
 	if (!ptrSubOver && !ptrSubUnder)
-	{
-		NotFoundException::Throw("/" + strOver);
-	}
+		NotFoundException::Throw("overlay:/" + strOver);
 
 	if (!ptrSubOver)
 		return ptrSubUnder.Detach();
@@ -685,5 +564,3 @@ IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnd
 	ptrKey->init(ptrSubOver,ptrSubUnder);
 	return ptrKey.Detach();
 }
-
-#include "MirrorKey.inl"

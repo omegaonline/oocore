@@ -58,7 +58,6 @@ oosvruser_SOURCES = \
 	OOServer_User.h \
 	InterProcessService.h \
 	InterProcessService.cpp \
-	MirrorKey.inl \
 	RegistryCmn.h \
 	UserChannel.h \
 	UserChannel.cpp \

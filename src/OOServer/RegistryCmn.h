@@ -148,36 +148,6 @@ namespace User
 				throw static_cast<IAccessDeniedException*>(pRE.Detach());
 			}
 		};
-
-		class MirrorKey :
-				public ObjectBase,
-				public IKey
-		{
-		public:
-			void init(const string_t& strKey, IKey* pLocal, IKey* pSystem);
-
-			BEGIN_INTERFACE_MAP(MirrorKey)
-				INTERFACE_ENTRY(IKey)
-			END_INTERFACE_MAP()
-
-		private:
-			string_t        m_strKey;
-			ObjectPtr<IKey> m_ptrLocal;
-			ObjectPtr<IKey> m_ptrSystem;
-
-		// IKey members
-		public:
-			string_t GetName();
-			bool_t IsSubKey(const string_t& strSubKey);
-			bool_t IsValue(const string_t& strName);
-			any_t GetValue(const string_t& strName);
-			void SetValue(const string_t& strName, const any_t& value);
-			IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-			std::set<Omega::string_t> EnumSubKeys();
-			std::set<Omega::string_t> EnumValues();
-			void DeleteKey(const string_t& strSubKey);
-			void DeleteValue(const string_t& strName);
-		};
 	}
 }
 

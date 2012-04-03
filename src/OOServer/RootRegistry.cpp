@@ -106,60 +106,29 @@ int Root::Manager::registry_open_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	return m_registry->create_key(uParent,uKey,strSubKey,0,channel_id,strLink);
 }
 
-void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& /*request*/, OOBase::CDRStream& response)
-{
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-	// Find the process info
-	Omega::byte_t local_type = 0;
-	Omega::int32_t err = 0;
-	const char* pszName = NULL;
-	Omega::int64_t uKey;
-
-	if (!m_mapUserProcesses.exists(channel_id))
-		err = EINVAL;
-	else
-	{
-		if (channel_id == m_sandbox_channel)
-		{
-			// Sandbox hive
-			pszName = "/System/Sandbox";
-		}
-		else
-		{
-			// Get the registry hive
-			pszName = "/All Users";
-		}
-
-		local_type = 1;
-
-		err = registry_open_key(0,uKey,pszName+1,channel_id);
-	}
-
-	response.write(err);
-	if (err == 0 && response.last_error() == 0)
-	{
-		response.write(local_type);
-		response.write(uKey);
-		response.write(pszName);
-	}
-}
-
 int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
 {
 	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
 	{
-		int err = strSubKey.concat(strLink.c_str()+11,strSubKey.c_str());
-		if (err != 0)
-			return err;
-
 		if (channel_id == m_sandbox_channel)
 		{
 			// We link to /System/Sandbox/
-			return strSubKey.concat("/System/Sandbox",strSubKey.c_str());
+
+			OOBase::LocalString strNew;
+			int err = strNew.concat("/System/Sandbox",strSubKey.c_str());
+			if (err == 0)
+				err = strSubKey.assign(strNew.c_str());
+			return err;
 		}
 		else
 		{
+			OOBase::LocalString strNew;
+			int err = strNew.concat(strLink.c_str()+12,strSubKey.c_str());
+			if (err == 0)
+				err = strSubKey.assign(strNew.c_str());
+			if (err != 0)
+				return err;
+
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			// Find the process info
@@ -202,7 +171,10 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 				{
 					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
 					if (err == 0)
+					{
+						strLink.clear();
 						err = ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink);
+					}
 				}
 			}
 		}
@@ -250,7 +222,10 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 				{
 					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
 					if (err == 0)
+					{
+						strLink.clear();
 						err = ptrHive->delete_key(0,strSubKey,channel_id,strLink);
+					}
 				}
 			}
 		}

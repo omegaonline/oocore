@@ -38,8 +38,7 @@ namespace OOServer
 		GetValue,
 		SetValue,
 		EnumValues,
-		DeleteValue,
-		OpenMirrorKey,
+		DeleteValue
 	};
 	typedef Omega::uint16_t RootOpCode_t;
 }

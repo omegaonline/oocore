@@ -118,7 +118,7 @@ int OOServer::MessageConnection::recv()
 	// This buffer is reused...
 	OOBase::RefPtr<OOBase::Buffer> pBuffer = new (std::nothrow) OOBase::Buffer(s_default_buffer_size,OOBase::CDRStream::MaxAlignment);
 	if (!pBuffer)
-		LOG_ERROR_RETURN((OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
+		LOG_ERROR_RETURN(("%s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
 
 	addref();
 

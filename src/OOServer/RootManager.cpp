@@ -205,7 +205,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 			else 
 			{
 				if ((err = val.assign(str.c_str())) != 0)
-					LOG_ERROR_RETURN(("Failed to assign string: %s",name,OOBase::system_error_text(err)),false);
+					LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 			
 				return true;
 			}

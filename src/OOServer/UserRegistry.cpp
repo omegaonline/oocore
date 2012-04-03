@@ -469,7 +469,7 @@ any_t OverlayKey::GetValue(const string_t& strName)
 
 void OverlayKey::SetValue(const string_t& strName, const any_t& value)
 {
-	AccessDeniedException::Throw("overlay:" + GetName());
+	AccessDeniedException::Throw(GetName());
 }
 
 IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
@@ -478,7 +478,6 @@ IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (!strFullKey.IsEmpty())
 		strFullKey += "/";
 	strFullKey += strSubKey;
-	strFullKey = "overlay:" + strFullKey;
 
 	if (flags == IKey::CreateNew)
 		AccessDeniedException::Throw(strFullKey);
@@ -523,12 +522,12 @@ std::set<string_t> OverlayKey::EnumValues()
 
 void OverlayKey::DeleteKey(const string_t& strSubKey)
 {
-	AccessDeniedException::Throw("overlay:" + GetName());
+	AccessDeniedException::Throw(GetName());
 }
 
 void OverlayKey::DeleteValue(const string_t& strName)
 {
-	AccessDeniedException::Throw("overlay:" + GetName());
+	AccessDeniedException::Throw(GetName());
 }
 
 IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnder)
@@ -553,7 +552,7 @@ IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnd
 	}
 
 	if (!ptrSubOver && !ptrSubUnder)
-		NotFoundException::Throw("overlay:/" + strOver);
+		NotFoundException::Throw(strOver);
 
 	if (!ptrSubOver)
 		return ptrSubUnder.Detach();

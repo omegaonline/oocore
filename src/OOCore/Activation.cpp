@@ -256,6 +256,9 @@ namespace
 				pObject = LoadObject(oid,flags,iid);
 		}
 
+		if (!pObject)
+			OOCore::OidNotFoundException::Throw(oid);
+
 		return pObject;
 	}
 
@@ -405,13 +408,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		// First try to determine the protocol...
 		guid_t oid_guid;
 		if (oid.Coerce(oid_guid) == any_t::castValid)
-		{
-			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
-			if (!pObject)
-				OidNotFoundException::Throw(oid);
-			
-			return pObject;
-		}
+			return GetLocalInstance(oid_guid,flags,iid);
 
 		string_t strObject = oid.cast<string_t>();
 		string_t strEndpoint;
@@ -431,11 +428,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 			if (!guid_t::FromString(strObject,oid_guid))
 				oid_guid = NameToOid(strObject);
 
-			IObject* pObject = GetLocalInstance(oid_guid,flags,iid);
-			if (!pObject)
-				OidNotFoundException::Throw(oid);
-			
-			return pObject;
+			return GetLocalInstance(oid_guid,flags,iid);
 		}
 
 		// Open a remote channel

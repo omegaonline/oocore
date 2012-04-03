@@ -161,7 +161,7 @@ namespace
 	ObjectPtr<Registry::IKey> GetObjectsKey(const string_t& strSubKey)
 	{
 		ObjectPtr<Registry::IKey> ptrObjects = ObjectPtr<Registry::IOverlayKeyFactory>(Registry::OID_OverlayKeyFactory)->Overlay("Local User/Objects","All Users/Objects");
-		return ptrObjects->OpenSubKey(strSubKey);
+		return ptrObjects->OpenKey(strSubKey);
 	}
 
 	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)

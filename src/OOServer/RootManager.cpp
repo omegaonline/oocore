@@ -701,7 +701,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		registry_open_key(src_channel_id,request,response);
 		break;
 
-	case OOServer::DeleteKey:
+	case OOServer::DeleteSubKey:
 		registry_delete_key(src_channel_id,request,response);
 		break;
 

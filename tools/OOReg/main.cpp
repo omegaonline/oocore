@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 		{
 			if (key_path(params[0],key))
 			{
-				OTL::ObjectPtr<Omega::Registry::IKey>("")->DeleteKey(key);
+				OTL::ObjectPtr<Omega::Registry::IKey>("")->DeleteSubKey(key);
 				result = EXIT_SUCCESS;
 			}
 			if (value_path(params[0],key,value))

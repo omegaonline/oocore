@@ -66,10 +66,10 @@ namespace
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
-		void DeleteKey(const string_t& strSubKey);
+		void DeleteSubKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
 
@@ -104,7 +104,7 @@ namespace
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
@@ -214,7 +214,7 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 		OMEGA_THROW(err);
 }
 
-IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* HiveKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 	
@@ -290,7 +290,7 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 	return setOutValues;
 }
 
-void HiveKey::DeleteKey(const string_t& strSubKey)
+void HiveKey::DeleteSubKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
@@ -449,7 +449,7 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 	m_ptrSystemKey->SetValue(strName,value);
 }
 
-IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
@@ -468,7 +468,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		User::Registry::NotFoundException::Throw(strFullKey);
 	}
 
-	return ptrKey->OpenSubKey(strSubKey2,flags);
+	return ptrKey->OpenKey(strSubKey2,flags);
 }
 
 std::set<Omega::string_t> RootKey::EnumSubKeys()
@@ -486,7 +486,7 @@ std::set<Omega::string_t> RootKey::EnumValues()
 	return m_ptrSystemKey->EnumValues();
 }
 
-void RootKey::DeleteKey(const string_t& strSubKey)
+void RootKey::DeleteSubKey(const string_t& strSubKey)
 {
 	ObjectPtr<IKey> ptrKey;
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
@@ -510,7 +510,7 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 		User::Registry::NotFoundException::Throw(strFullKey);
 	}
 
-	return ptrKey->DeleteKey(strSubKey2);
+	return ptrKey->DeleteSubKey(strSubKey2);
 }
 
 void RootKey::DeleteValue(const string_t& strName)

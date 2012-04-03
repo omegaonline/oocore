@@ -614,7 +614,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	ObjectPtr<Registry::IKey> ptrKey(string_t::constant("Local User"));
 	if (ptrKey->IsSubKey("Networking/Protocols/" + strProtocol))
 	{
-		ptrKey = ptrKey->OpenSubKey("Networking/Protocols/" + strProtocol);
+		ptrKey = ptrKey->OpenKey("Networking/Protocols/" + strProtocol);
 		if (ptrKey->IsValue(string_t::constant("Endpoint")))
 			strHandler = ptrKey->GetValue(string_t::constant("Endpoint")).cast<string_t>();
 	}
@@ -624,7 +624,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		ptrKey = ObjectPtr<Registry::IKey>(string_t::constant("System"));
 		if (ptrKey->IsSubKey("Networking/Protocols/" + strProtocol))
 		{
-			ptrKey = ptrKey->OpenSubKey("Networking/Protocols/" + strProtocol);
+			ptrKey = ptrKey->OpenKey("Networking/Protocols/" + strProtocol);
 			if (ptrKey->IsValue(string_t::constant("Endpoint")))
 				strHandler = ptrKey->GetValue(string_t::constant("Endpoint")).cast<string_t>();
 		}

@@ -32,7 +32,7 @@ namespace OOServer
 
 		// Registry opcodes
 		OpenKey = 0x80,
-		DeleteKey,
+		DeleteSubKey,
 		EnumSubKeys,
 		ValueExists,
 		GetValue,

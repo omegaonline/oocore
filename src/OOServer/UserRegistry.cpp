@@ -56,13 +56,13 @@ namespace
 	public:
 		string_t GetName();
 		bool_t IsSubKey(const string_t& strSubKey);
+		std::set<string_t> EnumSubKeys();
+		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		void DeleteSubKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
+		std::set<string_t> EnumValues();
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-		std::set<string_t> EnumSubKeys();
-		std::set<string_t> EnumValues();
-		void DeleteKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
 }
@@ -217,7 +217,7 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 		OMEGA_THROW(err);
 }
 
-IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
@@ -367,12 +367,12 @@ std::set<string_t> RootKey::EnumValues()
 	}
 }
 
-void RootKey::DeleteKey(const string_t& strSubKey)
+void RootKey::DeleteSubKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey);
 
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteKey));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteSubKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.c_str());
@@ -472,7 +472,7 @@ void OverlayKey::SetValue(const string_t& strName, const any_t& value)
 	AccessDeniedException::Throw(GetName());
 }
 
-IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* OverlayKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	string_t strFullKey = GetName();
 	if (!strFullKey.IsEmpty())
@@ -484,10 +484,10 @@ IKey* OverlayKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 	ObjectPtr<IKey> ptrSubOver,ptrSubUnder;
 	if (m_ptrOver->IsSubKey(strSubKey))
-		ptrSubOver = m_ptrOver->OpenSubKey(strSubKey,IKey::OpenExisting);
+		ptrSubOver = m_ptrOver->OpenKey(strSubKey,IKey::OpenExisting);
 
 	if (m_ptrUnder->IsSubKey(strSubKey))
-		ptrSubUnder = m_ptrUnder->OpenSubKey(strSubKey,IKey::OpenExisting);
+		ptrSubUnder = m_ptrUnder->OpenKey(strSubKey,IKey::OpenExisting);
 
 	if (!ptrSubOver && !ptrSubUnder)
 		NotFoundException::Throw(strFullKey);
@@ -520,7 +520,7 @@ std::set<string_t> OverlayKey::EnumValues()
 	return over_set;
 }
 
-void OverlayKey::DeleteKey(const string_t& strSubKey)
+void OverlayKey::DeleteSubKey(const string_t& strSubKey)
 {
 	AccessDeniedException::Throw(GetName());
 }

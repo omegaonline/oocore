@@ -341,10 +341,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\UserChannel.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\DebuggerWin32.cpp"
 				>
 				<FileConfiguration
@@ -429,6 +425,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\UserChannel.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UserMain.cpp"
 				>
 				<FileConfiguration
@@ -484,10 +484,6 @@
 				RelativePath=".\UserROT.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\UserServices.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -499,19 +495,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\UserChannel.h"
-				>
-			</File>
-			<File
 				RelativePath=".\InterProcessService.h"
 				>
 			</File>
 			<File
 				RelativePath=".\MessageConnection.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MirrorKey.inl"
 				>
 			</File>
 			<File
@@ -528,6 +516,10 @@
 			</File>
 			<File
 				RelativePath="..\OOCore\Server.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserChannel.h"
 				>
 			</File>
 			<File

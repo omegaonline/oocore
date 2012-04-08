@@ -27,7 +27,6 @@ namespace
 	LONG s_moduleLockCount = 0;
 	OTL::ObjectPtr<Omega::Compartment::ICompartment> m_ptrCompt;
 	LONG s_bInitialised = 0;
-	Omega::string_t s_init_args;
 	
 	void IncModuleLockCount()
 	{
@@ -140,32 +139,6 @@ IDispatchImpl::~IDispatchImpl()
 	DecModuleLockCount();
 }
 
-static HRESULT GetInitArgs(LCID /*lcid*/, VARIANT* pVarResult, EXCEPINFO* /*pExcepInfo*/)
-{
-	pVarResult->vt = VT_BSTR;
-	pVarResult->bstrVal = ToBSTR(s_init_args);
-	
-	return S_OK;
-}
-
-static HRESULT PutInitArgs(LCID lcid, DISPPARAMS* pDispParams, UINT* puArgErr, EXCEPINFO* /*pExcepInfo*/, bool /*bByRef*/)
-{
-	VARIANTARG v;
-	VariantInit(&v);
-	
-	HRESULT hr = VariantChangeTypeEx(&v,&pDispParams->rgvarg[0],lcid,0,VT_BSTR);
-	if (hr != S_OK)
-	{
-		if (puArgErr)
-			*puArgErr = 0;
-		return hr;
-	}
-		
-	s_init_args = FromBSTR(v.bstrVal);
-	
-	return S_OK;
-}
-
 static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarResult, UINT* puArgErr, EXCEPINFO* pExcepInfo)
 {
 	if (!pDispParams || !pVarResult)
@@ -179,7 +152,7 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	
 	if (InterlockedCompareExchange(&s_bInitialised,0,1) == 0)
 	{
-		Omega::IException* pE = Omega::Initialize(s_init_args);
+		Omega::IException* pE = Omega::Initialize();
 		if (pE)
 			return FillExcepInfo("CreateInstance",pE,pExcepInfo);
 					
@@ -293,12 +266,10 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 }
 
 static const wchar_t* CreateInstance_names[] = { L"CreateInstance",L"oid",L"flags",NULL };
-static const wchar_t* InitializeArgs_names[] = { L"InitializeArgs",NULL };
 
 static const NSpaceDefn Omega_nspace[] = 
 {
 	{ CreateInstance_names, &CreateInstance, NULL, NULL },
-	{ InitializeArgs_names, NULL, &GetInitArgs, &PutInitArgs },
 	{ NULL, 0, NULL }
 };
 

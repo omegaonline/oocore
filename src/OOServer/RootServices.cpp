@@ -31,6 +31,7 @@
 //
 /////////////////////////////////////////////////////////////
 
+#include "OOServer_Root.h"
 
 /* This whole services implementation needs to:
  *

@@ -45,9 +45,6 @@
     <ClCompile Include="UserROT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UserServices.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h">
@@ -91,9 +88,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="MirrorKey.inl">
-      <Filter>Header Files</Filter>
-    </None>
     <None Include="logo.ico">
       <Filter>Resource Files</Filter>
     </None>

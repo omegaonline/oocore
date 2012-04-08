@@ -30,6 +30,8 @@ using namespace OTL;
 
 #include "RegistryCmn.h"
 
+#include <iterator>
+
 using namespace User;
 using namespace User::Registry;
 
@@ -467,7 +469,7 @@ any_t OverlayKey::GetValue(const string_t& strName)
 	return m_ptrUnder->GetValue(strName);
 }
 
-void OverlayKey::SetValue(const string_t& strName, const any_t& value)
+void OverlayKey::SetValue(const string_t& /*strName*/, const any_t& /*value*/)
 {
 	AccessDeniedException::Throw(GetName());
 }
@@ -522,10 +524,15 @@ std::set<string_t> OverlayKey::EnumValues()
 
 void OverlayKey::DeleteSubKey(const string_t& strSubKey)
 {
-	AccessDeniedException::Throw(GetName());
+	string_t strFullKey = GetName();
+	if (!strFullKey.IsEmpty())
+		strFullKey += "/";
+	strFullKey += strSubKey;
+
+	AccessDeniedException::Throw(strFullKey);
 }
 
-void OverlayKey::DeleteValue(const string_t& strName)
+void OverlayKey::DeleteValue(const string_t& /*strName*/)
 {
 	AccessDeniedException::Throw(GetName());
 }

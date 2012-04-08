@@ -28,15 +28,15 @@ namespace User
 
 	namespace Registry
 	{
-		class Key :
+		class RootKey :
 				public OTL::ObjectBase,
-				public OTL::IProvideObjectInfoImpl<Key>,
+				public OTL::IProvideObjectInfoImpl<RootKey>,
 				public Omega::Registry::IKey
 		{
 		public:
-			void Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
+			void init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
 
-			BEGIN_INTERFACE_MAP(Key)
+			BEGIN_INTERFACE_MAP(RootKey)
 				INTERFACE_ENTRY(Omega::Registry::IKey)
 				INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 			END_INTERFACE_MAP()
@@ -47,21 +47,33 @@ namespace User
 			Omega::int64_t  m_key;
 			Omega::byte_t   m_type;
 
-			Omega::Registry::IKey* ParseSubKey(Omega::string_t& strSubKey);
-			Omega::Registry::IKey* OpenSubKey_i(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags);
-
 		// IKey members
 		public:
 			Omega::string_t GetName();
 			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);
+			std::set<Omega::string_t> EnumSubKeys();
+			Omega::Registry::IKey* OpenKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
+			void DeleteSubKey(const Omega::string_t& strSubKey);
 			Omega::bool_t IsValue(const Omega::string_t& strName);
+			std::set<Omega::string_t> EnumValues();
 			Omega::any_t GetValue(const Omega::string_t& strName);
 			void SetValue(const Omega::string_t& strName, const Omega::any_t& value);
-			Omega::Registry::IKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
-			std::set<Omega::string_t> EnumSubKeys();
-			std::set<Omega::string_t> EnumValues();
-			void DeleteKey(const Omega::string_t& strSubKey);
 			void DeleteValue(const Omega::string_t& strName);
+		};
+
+		class OverlayKeyFactory :
+				public OTL::ObjectBase,
+				public OTL::AutoObjectFactory<OverlayKeyFactory,&Omega::Registry::OID_OverlayKeyFactory,Omega::Activation::ProcessScope>,
+				public Omega::Registry::IOverlayKeyFactory
+		{
+		public:
+			BEGIN_INTERFACE_MAP(OverlayKeyFactory)
+				INTERFACE_ENTRY(Omega::Registry::IOverlayKeyFactory)
+			END_INTERFACE_MAP()
+
+		// IOverlayKeyFactory members
+		public:
+			Omega::Registry::IKey* Overlay(const Omega::string_t& strOver, const Omega::string_t& strUnder);
 		};
 	}
 }

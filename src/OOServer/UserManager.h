@@ -110,27 +110,6 @@ namespace User
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
 		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator>& channels);
-
-		// Service handling
-		OOBase::RWMutex m_service_lock;
-		struct Service
-		{
-			OOBase::String                          strKey;
-			OTL::ObjectPtr<Omega::System::IService> ptrService;
-		};
-		OOBase::HandleTable<Omega::uint32_t,Service>                                 m_mapServices;
-		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Net::IAsyncSocket> > m_mapSockets;
-
-		bool start_services();
-		void start_service(const OOBase::LocalString& strKey, const OOBase::LocalString& strOid);
-		Omega::Registry::IKey* get_service_key(const OOBase::LocalString& strKey);
-		void listen_service_socket(const OOBase::String& strKey, Omega::uint32_t nServiceId);
-		void stop_services();
-
-		void on_socket_accept(OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void on_socket_recv(OOBase::CDRStream& request);
-		void on_socket_sent(OOBase::CDRStream& request);
-		void on_socket_close(OOBase::CDRStream& request);
 	};
 
 	typedef OOBase::Singleton<OOSvrBase::Proactor,Manager> Proactor;

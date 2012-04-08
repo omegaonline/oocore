@@ -84,6 +84,7 @@ int main(int argc, char* argv[])
 		return version();
 
 	OOBase::stdout_write(Omega::guid_t::Create().ToString().c_str());
+	OOBase::stdout_write("\n");
 
 	return EXIT_SUCCESS;
 }

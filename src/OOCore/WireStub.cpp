@@ -98,7 +98,7 @@ Remoting::IStub* OOCore::Stub::FindStub(const guid_t& iid)
 			OMEGA_THROW(err);
 	}
 
-	return ptrStub.AddRef();
+	return ptrStub.Detach();
 }
 
 Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)

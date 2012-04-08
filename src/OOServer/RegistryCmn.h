@@ -70,7 +70,7 @@ namespace User
 				ObjectPtr<ObjectImpl<BadNameException> > pRE = ObjectImpl<BadNameException>::CreateInstance();
 				pRE->m_strName = name;
 				pRE->m_strDesc = string_t::constant("Invalid name for registry key or value: '{0}'.") % name;
-				throw static_cast<IBadNameException*>(pRE.AddRef());
+				throw static_cast<IBadNameException*>(pRE.Detach());
 			}
 		};
 		
@@ -95,7 +95,7 @@ namespace User
 				ObjectPtr<ObjectImpl<NotFoundException> > pRE = ObjectImpl<NotFoundException>::CreateInstance();
 				pRE->m_strName = name;
 				pRE->m_strDesc = string_t::constant("'{0}' not found.") % name;
-				throw static_cast<INotFoundException*>(pRE.AddRef());
+				throw static_cast<INotFoundException*>(pRE.Detach());
 			}
 		};
 
@@ -120,7 +120,7 @@ namespace User
 				ObjectPtr<ObjectImpl<AlreadyExistsException> > pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 				pRE->m_strName = name;
 				pRE->m_strDesc = string_t::constant("Key '{0}' already exists.") % name;
-				throw static_cast<IAlreadyExistsException*>(pRE.AddRef());
+				throw static_cast<IAlreadyExistsException*>(pRE.Detach());
 			}
 		};
 
@@ -145,38 +145,8 @@ namespace User
 				ObjectPtr<ObjectImpl<AccessDeniedException> > pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 				pRE->m_strName = name;
 				pRE->m_strDesc = string_t::constant("Write attempt illegal for '{0}'.") % name;
-				throw static_cast<IAccessDeniedException*>(pRE.AddRef());
+				throw static_cast<IAccessDeniedException*>(pRE.Detach());
 			}
-		};
-
-		class MirrorKey :
-				public ObjectBase,
-				public IKey
-		{
-		public:
-			void Init(const string_t& strKey, IKey* pLocal, IKey* pSystem);
-
-			BEGIN_INTERFACE_MAP(MirrorKey)
-				INTERFACE_ENTRY(IKey)
-			END_INTERFACE_MAP()
-
-		private:
-			string_t        m_strKey;
-			ObjectPtr<IKey> m_ptrLocal;
-			ObjectPtr<IKey> m_ptrSystem;
-
-		// IKey members
-		public:
-			string_t GetName();
-			bool_t IsSubKey(const string_t& strSubKey);
-			bool_t IsValue(const string_t& strName);
-			any_t GetValue(const string_t& strName);
-			void SetValue(const string_t& strName, const any_t& value);
-			IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-			std::set<Omega::string_t> EnumSubKeys();
-			std::set<Omega::string_t> EnumValues();
-			void DeleteKey(const string_t& strSubKey);
-			void DeleteValue(const string_t& strName);
 		};
 	}
 }

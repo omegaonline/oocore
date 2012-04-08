@@ -450,7 +450,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 	{
 		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstance();
 		ptrTI->init(iid,ti.pszName,ti.type_info);
-		return ptrTI.AddRef();
+		return ptrTI.Detach();
 	}
 
 	return NULL;
@@ -559,7 +559,7 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 	pNew->m_type = Remoting::CreateMemoryMessage();
 	BuildTypeDetail(pNew->m_type,typeDest);
 
-	throw static_cast<ICastException*>(pNew.AddRef());
+	throw static_cast<ICastException*>(pNew.Detach());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const any_t&,value,(in),any_t::CastResult_t,reason,(in),const System::Internal::type_holder*,typeDest))

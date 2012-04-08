@@ -77,7 +77,7 @@ namespace
 
 	bool CriticalFailure(const char* msg)
 	{
-		OOBase::Logger::log(OOBase::Logger::Error,msg);
+		OOBase::Logger::log(OOBase::Logger::Error,"%s",msg);
 
 		if (Root::is_debug())
 		{

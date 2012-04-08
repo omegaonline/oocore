@@ -31,7 +31,7 @@ echo Running tests...
 echo
 cd ../../test
 
-../libtool --mode=execute -dlopen ../src/OOServer/oosvrlite.la -dlopen TestLibrary/testlibrary.la ./coretests
+../libtool --mode=execute -dlopen TestLibrary/testlibrary.la ./coretests
 ret=$?
 
 # Close our ooserver

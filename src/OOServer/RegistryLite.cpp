@@ -47,7 +47,7 @@ namespace
 			public IKey
 	{
 	public:
-		void Init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
+		void init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key);
 
 		BEGIN_INTERFACE_MAP(HiveKey)
 			INTERFACE_ENTRY(IKey)
@@ -66,10 +66,10 @@ namespace
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
-		void DeleteKey(const string_t& strSubKey);
+		void DeleteSubKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
 
@@ -80,7 +80,7 @@ namespace
 			public IKey
 	{
 	protected:
-		void Init_Once();
+		RootKey();
 
 		BEGIN_INTERFACE_MAP(RootKey)
 			INTERFACE_ENTRY(IKey)
@@ -104,7 +104,7 @@ namespace
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
-		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		std::set<Omega::string_t> EnumSubKeys();
 		std::set<Omega::string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
@@ -128,7 +128,7 @@ namespace
 	}
 }
 
-void HiveKey::Init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
+void HiveKey::init(Db::Hive* pHive, const Omega::string_t& strKey, const Omega::int64_t& key)
 {
 	m_pHive = pHive;
 	m_strKey = strKey;
@@ -214,7 +214,7 @@ void HiveKey::SetValue(const string_t& strName, const any_t& value)
 		OMEGA_THROW(err);
 }
 
-IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* HiveKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 	
@@ -244,7 +244,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<HiveKey> > ptrNew = ObjectImpl<HiveKey>::CreateInstance();
-	ptrNew->Init(m_pHive,strFullKey,key);
+	ptrNew->init(m_pHive,strFullKey,key);
 	return ptrNew.AddRef();
 }
 
@@ -290,7 +290,7 @@ std::set<Omega::string_t> HiveKey::EnumValues()
 	return setOutValues;
 }
 
-void HiveKey::DeleteKey(const string_t& strSubKey)
+void HiveKey::DeleteSubKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
@@ -340,7 +340,7 @@ void HiveKey::DeleteValue(const string_t& strName)
 		OMEGA_THROW(err);
 }
 
-void RootKey::Init_Once()
+RootKey::RootKey()
 {
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstance();
 
@@ -366,11 +366,11 @@ void RootKey::Init_Once()
 		OMEGA_THROW("Failed to open database files");
 
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstance();
-	ptrKey->Init(m_system_hive,string_t(),0);
+	ptrKey->init(m_system_hive,string_t(),0);
 	m_ptrSystemKey = ptrKey.AddRef();
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstance();
-	ptrKey->Init(m_localuser_hive,string_t::constant("Local User"),0);
+	ptrKey->init(m_localuser_hive,string_t::constant("Local User"),0);
 	m_ptrLocalUserKey = ptrKey.AddRef();
 }
 
@@ -394,7 +394,7 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, IKey*& pKey)
 		ObjectPtr<IKey> ptrMirror = ObjectPtr<IKey>(string_t::constant("All Users"));
 
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstance();
-		ptrNew->Init(string_t::constant("Local User"),m_ptrLocalUserKey,ptrMirror);
+		ptrNew->init(string_t::constant("Local User"),m_ptrLocalUserKey,ptrMirror);
 		pKey = ptrNew.AddRef();
 
 		return strMirror;
@@ -449,7 +449,7 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 	m_ptrSystemKey->SetValue(strName,value);
 }
 
-IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
+IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
@@ -468,7 +468,7 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		User::Registry::NotFoundException::Throw(strFullKey);
 	}
 
-	return ptrKey->OpenSubKey(strSubKey2,flags);
+	return ptrKey->OpenKey(strSubKey2,flags);
 }
 
 std::set<Omega::string_t> RootKey::EnumSubKeys()
@@ -486,7 +486,7 @@ std::set<Omega::string_t> RootKey::EnumValues()
 	return m_ptrSystemKey->EnumValues();
 }
 
-void RootKey::DeleteKey(const string_t& strSubKey)
+void RootKey::DeleteSubKey(const string_t& strSubKey)
 {
 	ObjectPtr<IKey> ptrKey;
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
@@ -510,7 +510,7 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 		User::Registry::NotFoundException::Throw(strFullKey);
 	}
 
-	return ptrKey->DeleteKey(strSubKey2);
+	return ptrKey->DeleteSubKey(strSubKey2);
 }
 
 void RootKey::DeleteValue(const string_t& strName)

@@ -27,31 +27,18 @@ namespace OOServer
 	enum RootOpCode
 	{
 		// Root -> User
-		OnSocketAccept = 1,
-		OnSocketRecv,
-		OnSocketSent,
-		OnSocketClose,
 
 		// User -> Root
 
 		// Registry opcodes
 		OpenKey = 0x80,
-		DeleteKey,
+		DeleteSubKey,
 		EnumSubKeys,
 		ValueExists,
 		GetValue,
 		SetValue,
 		EnumValues,
-		DeleteValue,
-		OpenMirrorKey,
-
-		// Service opcodes
-		ServicesStart = 0xa0,
-		GetServiceKey,
-		ListenSocket,
-		SocketRecv,
-		SocketSend,
-		SocketClose
+		DeleteValue
 	};
 	typedef Omega::uint16_t RootOpCode_t;
 }

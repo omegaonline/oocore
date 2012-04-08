@@ -61,11 +61,11 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-IException* OOCore::UserSession::init(const string_t& args)
+IException* OOCore::UserSession::init()
 {
 	try
 	{
-		USER_SESSION::instance().init_i(args);
+		USER_SESSION::instance().init_i();
 	}
 	catch (IException* pE)
 	{
@@ -81,7 +81,7 @@ void OOCore::UserSession::term()
 	USER_SESSION::instance().term_i();
 }
 
-void OOCore::UserSession::init_i(const string_t& args)
+void OOCore::UserSession::init_i()
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -106,7 +106,7 @@ void OOCore::UserSession::init_i(const string_t& args)
 
 				try
 				{
-					start(args);
+					start();
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -172,22 +172,25 @@ void OOCore::UserSession::term_i()
 
 void OOCore::UserSession::stop()
 {
-	// Unregister InterProcessService
 	try
 	{
+		// Unregister InterProcessService
 		OOCore_RevokeIPS(m_nIPSCookie);
 		m_nIPSCookie = 0;
+
+		// Unregister built-ins
+		OOCore::UnregisterObjects();
+
+		// Close all singletons
+		close_singletons_i();
+
+		// Close compartments
+		close_compartments();
 	}
 	catch (IException* pE)
 	{
 		pE->Release();
 	}
-
-	// Close all singletons
-	close_singletons_i();
-
-	// Close compartments
-	close_compartments();
 
 	// Stop the io thread...
 	if (m_stream)
@@ -208,9 +211,6 @@ void OOCore::UserSession::stop()
 		m_worker_thread.join();
 	}
 
-	// Unload the OOSvrLite dll if loaded
-	m_lite_dll.unload();
-	
 	// Clear our environment variable
 #if defined(_WIN32)
 	SetEnvironmentVariable("OMEGA_SESSION_ADDRESS",NULL);
@@ -332,6 +332,8 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 {
 	// Make this value configurable somehow...
+	void* TODO;
+
 	OOBase::Timeout timeout(0,500000);
 	do
 	{

@@ -75,7 +75,7 @@ ObjectImpl<User::Channel>* User::RemoteChannel::create_channel(uint32_t channel_
 			OMEGA_THROW(err);
 	}
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 Remoting::IObjectManager* User::RemoteChannel::create_object_manager(uint32_t channel_id)
@@ -614,7 +614,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	ObjectPtr<Registry::IKey> ptrKey(string_t::constant("Local User"));
 	if (ptrKey->IsSubKey("Networking/Protocols/" + strProtocol))
 	{
-		ptrKey = ptrKey->OpenSubKey("Networking/Protocols/" + strProtocol);
+		ptrKey = ptrKey->OpenKey("Networking/Protocols/" + strProtocol);
 		if (ptrKey->IsValue(string_t::constant("Endpoint")))
 			strHandler = ptrKey->GetValue(string_t::constant("Endpoint")).cast<string_t>();
 	}
@@ -624,7 +624,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		ptrKey = ObjectPtr<Registry::IKey>(string_t::constant("System"));
 		if (ptrKey->IsSubKey("Networking/Protocols/" + strProtocol))
 		{
-			ptrKey = ptrKey->OpenSubKey("Networking/Protocols/" + strProtocol);
+			ptrKey = ptrKey->OpenKey("Networking/Protocols/" + strProtocol);
 			if (ptrKey->IsValue(string_t::constant("Endpoint")))
 				strHandler = ptrKey->GetValue(string_t::constant("Endpoint")).cast<string_t>();
 		}
@@ -643,7 +643,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 		ObjectPtr<Remoting::IChannel> ptrChannel;
 		if (m_mapRemoteChannels.find(channel.strEndpoint,ptrChannel))
-			return ptrChannel.AddRef();
+			return ptrChannel.Detach();
 	}
 
 	// Create a sink for the new endpoint
@@ -678,7 +678,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 		OMEGA_THROW(err);
 	}
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 void User::Manager::close_all_remotes()

@@ -43,14 +43,14 @@ namespace OTL
 				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL)
 		{
 			if (key && key[0] != '\0')
-				replace(this->m_ptr->OpenSubKey(key,flags),false);
+				replace(this->m_ptr->OpenKey(key,flags),false);
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default,NULL)
 		{
 			if (!key.IsEmpty())
-				replace(this->m_ptr->OpenSubKey(key,flags),false);
+				replace(this->m_ptr->OpenKey(key,flags),false);
 		}
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::Registry::IKey>& rhs)

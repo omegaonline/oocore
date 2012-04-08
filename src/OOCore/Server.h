@@ -28,7 +28,6 @@ namespace OOCore
 {
 	interface IInterProcessService : public Omega::IObject
 	{
-		virtual Omega::bool_t IsStandalone() = 0;
 		virtual Omega::Registry::IKey* GetRegistry() = 0;
 		virtual Omega::Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
 		virtual void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, Omega::IObject*& pObject) = 0;
@@ -45,7 +44,6 @@ OMEGA_DEFINE_INTERFACE
 (
 	OOCore, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
 
-	OMEGA_METHOD(bool_t,IsStandalone,0,())
 	OMEGA_METHOD(Registry::IKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
 	OMEGA_METHOD_VOID(LaunchObjectApp,6,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(in),uint32_t,envc,(in)(size_is(envc)),const Omega::string_t*,envp,(out)(iid_is(iid)),IObject*&,pObject))
@@ -54,6 +52,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 )
 
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,());
 OOCORE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_RegisterIPS,1,((in),Omega::IObject*,pIPS));
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),Omega::uint32_t,nCookie));
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Omega::Remoting::IMessage*,pMessage,(in),Omega::IException*,pException));

@@ -109,7 +109,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 	pExcept->m_errno = e;
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
-	return pExcept.AddRef();
+	return pExcept.Detach();
 }
 
 namespace OOCore
@@ -157,12 +157,12 @@ namespace OOCore
 OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create_errno,4,((in),int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))
 {
 	ObjectPtr<IException> ptrE = OOCore_ISystemException_Create_errno(e,NULL);
-	return OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc,ptrE).AddRef();
+	return OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc,ptrE).Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,5,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
 {
-	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).AddRef();
+	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,1,((in),const guid_t&,iid))
@@ -177,14 +177,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 
 	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface {0}") % strIID;
 	pExcept->m_iid = iid;
-	return pExcept.AddRef();
+	return pExcept.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
 	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
 	pExcept->m_strDesc = OOCore::get_text("The operation timed out");
-	return pExcept.AddRef();
+	return pExcept.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,1,((in),IException*,pCause))
@@ -193,5 +193,5 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remotin
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
 	pExcept->m_strDesc = OOCore::get_text("The remoting channel has closed");
-	return pExcept.AddRef();
+	return pExcept.Detach();
 }

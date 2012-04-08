@@ -165,7 +165,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_1,3
 
 	ptrRet->init(lenBytes,data,bCopy);
 
-	return ptrRet.AddRef();
+	return ptrRet.Detach();
 }
 
 #if defined(_WIN32)
@@ -175,7 +175,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1
 
 	ptrRet->init(hFile);
 
-	return ptrRet.AddRef();
+	return ptrRet.Detach();
 }
 #else
 OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),int,fd))
@@ -184,6 +184,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1
 
 	ptrRet->init(fd);
 
-	return ptrRet.AddRef();
+	return ptrRet.Detach();
 }
 #endif

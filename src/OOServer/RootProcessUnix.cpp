@@ -324,7 +324,7 @@ bool RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 	// Get file info
 	struct stat sb;
 	if (stat(pszFName,&sb) != 0)
-		LOG_ERROR_RETURN(("stat() failed!",OOBase::system_error_text()),false);
+		LOG_ERROR_RETURN(("stat() failed: %s",OOBase::system_error_text()),false);
 
 	int mode = -1;
 	if (bRead && !bWrite)
@@ -357,7 +357,7 @@ bool RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 		// Get the supplied user's group see if that is the same as the file's group
 		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed!",OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
 		OOBase::SmartPtr<gid_t,OOBase::LocalAllocator> ptrGroups;
 		int ngroups = 0;

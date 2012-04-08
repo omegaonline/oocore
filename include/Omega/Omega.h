@@ -99,13 +99,7 @@
 
 namespace Omega
 {
-	/* args is a comma separated list of key=value pairs:)
-	 *    standalone         (Optional) The directory containing the system and sandbox registry files
-	 *                           If value = "always", ignore any running OOServer and only run standalone
-	 *    regdb_path         (Required if standalone=true) The directory containing the system and sandbox registry files
-	 *    user_regdb         (Required if standalone=true) The path to the current user's registry file, including filename
-	 */
-	IException* Initialize(const string_t& args = string_t());
+	IException* Initialize();
 	void Uninitialize();
 
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
@@ -125,8 +119,8 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),const Omega::string_t&,args))
-inline Omega::IException* Omega::Initialize(const string_t& args)
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,0,())
+inline Omega::IException* Omega::Initialize()
 {
 	try
 	{
@@ -137,7 +131,7 @@ inline Omega::IException* Omega::Initialize(const string_t& args)
 			return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
 #endif
 
-		return OOCore_Omega_Initialize(args);
+		return OOCore_Omega_Initialize();
 	}
 	catch (Omega::IException* pE)
 	{

@@ -137,14 +137,14 @@ namespace Omega
 
 			virtual string_t GetName() = 0;
 			virtual bool_t IsSubKey(const string_t& key) = 0;
+			virtual std::set<string_t> EnumSubKeys() = 0;
+			virtual IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
+			virtual void DeleteSubKey(const string_t& strKey) = 0;
+
 			virtual bool_t IsValue(const string_t& name) = 0;
+			virtual std::set<string_t> EnumValues() = 0;
 			virtual any_t GetValue(const string_t& name) = 0;
 			virtual void SetValue(const string_t& name, const any_t& val) = 0;
-			virtual IKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
-			virtual std::set<string_t> EnumSubKeys() = 0;
-			virtual std::set<string_t> EnumValues() = 0;
-
-			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
 		};
 
@@ -170,6 +170,14 @@ namespace Omega
 		
 		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
 		OOCORE_DECLARE_OID(OID_Registry);
+
+		interface IOverlayKeyFactory : public IObject
+		{
+			virtual IKey* Overlay(const string_t& strOver, const string_t& strUnder) = 0;
+		};
+
+		// {7A351233-8363-BA15-B443-31DD1C8FC587}
+		OOCORE_DECLARE_OID(OID_OverlayKeyFactory);
 	}
 
 	namespace TypeInfo
@@ -300,13 +308,13 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(string_t,GetName,0,())
 	OMEGA_METHOD(bool_t,IsSubKey,1,((in),const string_t&,key))
+	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
+	OMEGA_METHOD(Registry::IKey*,OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
+	OMEGA_METHOD_VOID(DeleteSubKey,1,((in),const string_t&,strKey))
 	OMEGA_METHOD(bool_t,IsValue,1,((in),const string_t&,name))
+	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())
 	OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))
 	OMEGA_METHOD_VOID(SetValue,2,((in),const string_t&,name,(in),const any_t&,val))
-	OMEGA_METHOD(Registry::IKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
-	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
-	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())
-	OMEGA_METHOD_VOID(DeleteKey,1,((in),const string_t&,strKey))
 	OMEGA_METHOD_VOID(DeleteValue,1,((in),const string_t&,strValue))
 )
 
@@ -340,6 +348,14 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(string_t,GetKeyName,0,())
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::Registry, IOverlayKeyFactory, "{D83FC506-5939-AB15-6018-A55090AB03DE}",
+
+	// Methods
+	OMEGA_METHOD(Registry::IKey*,Overlay,2,((in),const string_t&,strOver,(in),const string_t&,strUnder))
 )
 
 OMEGA_DEFINE_INTERFACE

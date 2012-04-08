@@ -45,8 +45,7 @@
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
-		m_sandbox_channel(0),
-		m_mapSockets(1)
+		m_sandbox_channel(0)
 {
 	// Root channel is fixed
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
@@ -67,7 +66,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	if (err == EACCES)
 		OOBase::Logger::log(OOBase::Logger::Warning,APPNAME " already running");
 	else if (err)
-		LOG_ERROR(("Faield to create pid_file: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to create pid_file: %s",OOBase::system_error_text(err)));
 	else
 	{
 		// Loop until we quit
@@ -107,9 +106,6 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 									// Stop accepting new clients
 									m_client_acceptor = NULL;
 								}
-
-								// Stop services
-								stop_services();
 
 								// Close all channels
 								shutdown_channels();
@@ -209,7 +205,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 			else 
 			{
 				if ((err = val.assign(str.c_str())) != 0)
-					LOG_ERROR_RETURN(("Failed to assign string: %s",name,OOBase::system_error_text(err)),false);
+					LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 			
 				return true;
 			}
@@ -705,7 +701,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		registry_open_key(src_channel_id,request,response);
 		break;
 
-	case OOServer::DeleteKey:
+	case OOServer::DeleteSubKey:
 		registry_delete_key(src_channel_id,request,response);
 		break;
 
@@ -731,34 +727,6 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 	case OOServer::DeleteValue:
 		registry_delete_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::OpenMirrorKey:
-		registry_open_mirror_key(src_channel_id,request,response);
-		break;
-
-	case OOServer::ServicesStart:
-		services_start(src_channel_id,response);
-		break;
-
-	case OOServer::GetServiceKey:
-		get_service_key(src_channel_id,request,response);
-		break;
-
-	case OOServer::ListenSocket:
-		listen_socket(src_channel_id,request,response);
-		break;
-
-	case OOServer::SocketRecv:
-		socket_recv(src_channel_id,request,response);
-		break;
-
-	case OOServer::SocketSend:
-		socket_send(src_channel_id,request,response);
-		break;
-
-	case OOServer::SocketClose:
-		socket_close(src_channel_id,request);
 		break;
 
 	default:

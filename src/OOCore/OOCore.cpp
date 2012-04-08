@@ -67,9 +67,9 @@ extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
 	return OOCORE_PATCH_VERSION;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),const string_t&,args))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,0,())
 {
-	return OOCore::UserSession::init(args);
+	return OOCore::UserSession::init();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
@@ -77,6 +77,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 	if (OOCore::HostedByOOServer())
 	{
 		// This is a short-cut close for use by the OOServer
+
+		// Unregister built-ins
+		OOCore::UnregisterObjects();
+
+		// Close all singletons
 		OOCore::UserSession::close_singletons();
 	}
 	else

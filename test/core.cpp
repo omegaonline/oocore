@@ -21,33 +21,7 @@ void normalise_path(Omega::string_t& strPath)
 	}
 }
 
-bool init_standalone_tests()
-{
-#if defined(_MSC_VER)
-	Omega::string_t regdb_path = "..\\..\\..\\debug\\data\\";
-#else
-	Omega::string_t regdb_path = OMEGA_STRINGIZE(BUILD_DIR) "/../data/";
-#endif
-
-	normalise_path(regdb_path);
-	
-	Omega::string_t args("standalone=always");
-	args += " , regdb_path=" + regdb_path;
-	args += "\t,user_regdb = " + regdb_path + "default_user.regdb";
-	
-	Omega::IException* pE = Omega::Initialize(args);
-	if (pE)
-	{
-		output("[Omega::IException]\n");
-		output_exception(pE);
-		pE->Release();
-		return false;
-	}
-
-	return true;
-}
-
-bool init_server_tests()
+bool init_tests()
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)

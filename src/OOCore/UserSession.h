@@ -69,7 +69,7 @@ namespace OOCore
 	class UserSession
 	{
 	public:
-		static Omega::IException* init(const Omega::string_t& args);
+		static Omega::IException* init();
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
 		
@@ -104,8 +104,7 @@ namespace OOCore
 		OOBase::SmartPtr<OOBase::Socket> m_stream;
 		Omega::uint32_t                  m_channel_id;
 		Omega::uint32_t                  m_nIPSCookie;
-		OOBase::DLL                      m_lite_dll;
-		
+
 		// Startup/shutdown data
 		OOBase::Condition                m_cond;
 		OOBase::Condition::Mutex         m_cond_mutex;
@@ -148,8 +147,8 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void init_i(const Omega::string_t& args);
-		void start(const Omega::string_t& args);
+		void init_i();
+		void start();
 		void term_i();
 		void stop();
 				

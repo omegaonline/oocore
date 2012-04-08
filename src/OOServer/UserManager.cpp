@@ -36,7 +36,7 @@ template class OOBase::Singleton<OOSvrBase::Proactor,User::Manager>;
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
-	// We don't use the macro as we overide some behaviours
+	// We don't use the macro as we override some behaviours
 	namespace Module
 	{
 		class OOSvrUser_ProcessModuleImpl : public ProcessModule
@@ -47,6 +47,7 @@ namespace OTL
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory)
+					OBJECT_MAP_ENTRY(User::Registry::OverlayKeyFactory)
 					{ 0,0,0,0 }
 				};
 				return CreatorEntries;
@@ -118,8 +119,7 @@ User::Manager* User::Manager::s_instance = NULL;
 User::Manager::Manager() :
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
-		m_mapRemoteChannelIds(1),
-		m_mapServices(1)
+		m_mapRemoteChannelIds(1)
 {
 	s_instance = this;
 }
@@ -300,8 +300,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	else
 	{
 		bQuit = !pThis->bootstrap(sandbox_channel) ||
-			!pThis->start_acceptor(strPipe) ||
-			!pThis->start_services();
+			!pThis->start_acceptor(strPipe);
 	}
 
 	if (bQuit)
@@ -310,15 +309,17 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 
 bool User::Manager::bootstrap(uint32_t sandbox_channel)
 {
-	// Register our service
 	try
 	{
+		// Register our service
+		OOCore_ServerInit();
+
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstance();
-		ptrIPS->Init(ptrOMSb,NULL,this);
+		ptrIPS->init(ptrOMSb,NULL,this);
 
 		// Register our interprocess service so we can react to activation requests
 		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
@@ -558,9 +559,6 @@ void User::Manager::do_quit_i()
 		// Close all the sinks
 		close_all_remotes();
 
-		// Stop services
-		stop_services();
-
 		try
 		{
 			// Unregister our object factories
@@ -609,29 +607,13 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	}
 
 	OOBase::CDRStream response;
-	switch (op_code)
-	{
-	case OOServer::OnSocketAccept:
-		on_socket_accept(request,response);
-		break;
-
-	case OOServer::OnSocketRecv:
-		on_socket_recv(request);
-		break;
-
-	case OOServer::OnSocketSent:
-		on_socket_sent(request);
-		break;
-
-	case OOServer::OnSocketClose:
-		on_socket_close(request);
-		break;
-
-	default:
+	//switch (op_code)
+	//{
+	//default:
 		response.write(int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
-		break;
-	}
+	//	break;
+	//}
 
 	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
 	{
@@ -715,7 +697,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		if (m_mapChannels.find(src_channel_id,ptrChannel))
-			return ptrChannel.AddRef();
+			return ptrChannel.Detach();
 	}
 
 	// Create a new channel
@@ -731,7 +713,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	return ptrChannel.AddRef();
+	return ptrChannel.Detach();
 }
 
 void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)

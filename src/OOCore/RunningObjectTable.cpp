@@ -22,6 +22,60 @@
 #include "OOCore_precomp.h"
 
 #include "Activation.h"
+#include "StdObjectManager.h"
+#include "WireProxy.h"
+#include "Channel.h"
+#include "Exception.h"
+#include "Activation.h"
+#include "Compartment.h"
+
+namespace OTL
+{
+	// The following is an expansion of BEGIN_LIBRARY_OBJECT_MAP
+	// We don't use the macro as we override some behaviours
+	namespace Module
+	{
+		class OOCore_LibraryModuleImpl : public LibraryModule
+		{
+		public:
+			void RegisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT);
+			void UnregisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT);
+
+		private:
+			ModuleBase::CreatorEntry* getCreatorEntries()
+			{
+				static ModuleBase::CreatorEntry CreatorEntries[] =
+				{
+					OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
+					OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
+					OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
+					OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
+					OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
+					OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
+					OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
+					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::OidNotFoundExceptionMarshalFactoryImpl)
+					{ 0,0,0,0 }
+				};
+				return CreatorEntries;
+			}
+		};
+
+		OMEGA_PRIVATE_FN_DECL(Module::OOCore_LibraryModuleImpl*,GetModule())
+		{
+			return Omega::Threading::Singleton<Module::OOCore_LibraryModuleImpl,Omega::Threading::ModuleDestructor<OOCore::DLL> >::instance();
+		}
+
+		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
+		{
+			return OMEGA_PRIVATE_FN_CALL(GetModule)();
+		}
+	}
+}
 
 using namespace Omega;
 using namespace OTL;
@@ -58,21 +112,48 @@ void DuplicateRegistrationException::Throw(const any_t& oid)
 	throw static_cast<IDuplicateRegistrationException*>(pRE);
 }
 
+void OOCore::RegisterObjects()
+{
+	// Register all our local class factories
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
+	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterObjectFactories(ptrROT);
+}
+
+void OOCore::UnregisterObjects()
+{
+	// Unregister all our local class factories
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
+	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(ptrROT);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,())
+{
+	OOCore::RegisterObjects();
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,1,((in),IObject*,pIPS))
 {
 	// Get the zero cmpt service manager...
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
 	
-	// This forces the detection, so cleanup succeeds
-	OOCore::HostedByOOServer();
-	
+	try
+	{
+		// This forces the detection, so cleanup succeeds
+		OOCore::HostedByOOServer();
+	}
+	catch (...)
+	{
+		ptrROT->RevokeObject(nCookie);
+		throw;
+	}
+
 	return nCookie;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 {
-	// Get the zero cmpt service manager...
+	// Get the zero compartment service manager...
 	if (nCookie)
 	{
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
@@ -102,7 +183,7 @@ bool OOCore::HostedByOOServer()
 			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
 			if (!shim || !static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 			{
-				bHosted = !ptrIPS->IsStandalone();
+				bHosted = true;
 			}
 		}
 	
@@ -283,7 +364,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t f
 	// If we have an object, get out now
 	if (ptrObject)
 	{
-		pObject = ptrObject.AddRef();
+		pObject = ptrObject.Detach();
 		return;
 	}
 
@@ -328,6 +409,27 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 					ptrROT->RevokeObject(info.m_rot_cookie);
 			}
 		}
+	}
+}
+
+void OTL::Module::OOCore_LibraryModuleImpl::RegisterObjectFactories(Activation::IRunningObjectTable* pROT)
+{
+	CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0; g[i].pfnOid!=0; ++i)
+	{
+		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Activation::IObjectFactory)));
+
+		g[i].cookie = pROT->RegisterObject(*(g[i].pfnOid)(),ptrOF,Activation::ProcessScope | Activation::MultipleUse);
+	}
+}
+
+void OTL::Module::OOCore_LibraryModuleImpl::UnregisterObjectFactories(Activation::IRunningObjectTable* pROT)
+{
+	CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0; g[i].pfnOid!=0; ++i)
+	{
+		pROT->RevokeObject(g[i].cookie);
+		g[i].cookie = 0;
 	}
 }
 

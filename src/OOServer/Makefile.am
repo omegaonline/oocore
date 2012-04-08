@@ -17,31 +17,6 @@ liboosvrcmn_la_SOURCES = \
 	MessageConnection.cpp \
 	Protocol.h
 
-pkglibexec_LTLIBRARIES = oosvrlite.la
-
-oosvrlite_la_LDFLAGS = -module -no-undefined
-oosvrlite_la_LIBADD = @top_builddir@/libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
-
-if WIN32
-oosvrlite_la_LIBADD += ../OOCore/OOCore.la
-oosvrlite_la_LDFLAGS += -avoid-version
-else
-oosvrlite_la_LIBADD += ../OOCore/liboocore.la
-oosvrlite_la_LDFLAGS += -release $(VERSION)
-endif
-
-oosvrlite_la_SOURCES = \
-	OOServer_Lite.h \
-	MirrorKey.inl \
-	RegistryCmn.h \
-	IPSLite.h \
-	OOSvrLite.cpp \
-	RegistryLite.cpp
-
-if WIN32
-oosvrlite_la_SOURCES += OOSvrLite_res.rc
-endif
-
 bin_PROGRAMS = ooserverd
 
 ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) \
@@ -83,7 +58,6 @@ oosvruser_SOURCES = \
 	OOServer_User.h \
 	InterProcessService.h \
 	InterProcessService.cpp \
-	MirrorKey.inl \
 	RegistryCmn.h \
 	UserChannel.h \
 	UserChannel.cpp \
@@ -98,8 +72,7 @@ oosvruser_SOURCES = \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \
-	UserROT.cpp \
-	UserServices.cpp
+	UserROT.cpp
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc

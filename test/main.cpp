@@ -14,8 +14,7 @@ extern "C" int _setenvp() { return 0; }
 // List the test entry points here rather than using header files...
 // cos I'm lazy ;)
 
-bool init_standalone_tests();
-bool init_server_tests();
+bool init_tests();
 bool string_tests();
 bool string_tests_format();
 bool guid_tests();
@@ -44,25 +43,15 @@ int main(int /*argc*/, char* /*argv*/[])
 	RUN_TEST(exception_tests);
 	RUN_TEST(otl_tests);
 
-	output("\nRunning %-40s","standalone tests");
-	if (init_standalone_tests())
+	output("\nRunning %-40s","server tests");
+	if (init_tests())
 	{
-		output("\n\n");
+		output("\n");
 
 		RUN_TEST(registry_tests);
 		RUN_TEST(interface_dll_tests);
-		RUN_TEST(compartment_dll_tests);
-
-		Omega::Uninitialize();
-	}
-
-	output("\nRunning %-40s","server tests");
-	if (init_server_tests())
-	{
-		output("\n\n");
-
-		RUN_TEST(registry_tests);
 		RUN_TEST(interface_process_tests);
+		RUN_TEST(compartment_dll_tests);
 		RUN_TEST(compartment_process_tests);
 
 		//RUN_TEST(net_tests);

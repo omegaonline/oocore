@@ -4,15 +4,6 @@
     <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION" />
   </Project>
   
-  <Project Name="OOCore">
-    <Configuration Name="Debug">
-      <Platform Name="Win32">
-        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
-        <Library Name="vld.lib" Optional="true" />
-      </Platform>
-    </Configuration>
-  </Project>
-  
   <Project Name="OOServer">
     <Include Name="sqlite3.h" Define="HAVE_SQLITE3_H" />
     <Configuration Name="Debug">

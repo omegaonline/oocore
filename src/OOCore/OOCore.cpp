@@ -21,10 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#if defined(HAVE_VLD_H)
-#include <vld.h>
-#endif
-
 #include "UserSession.h"
 #include "Activation.h"
 

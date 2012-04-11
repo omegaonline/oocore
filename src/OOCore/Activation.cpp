@@ -50,27 +50,6 @@ namespace
 		}
 	};
 
-	class LibraryNotFoundException :
-			public ExceptionImpl<Activation::ILibraryNotFoundException>
-	{
-	public:
-		static void Throw(const string_t& strName, IException* pE = NULL);
-
-		BEGIN_INTERFACE_MAP(LibraryNotFoundException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
-		END_INTERFACE_MAP()
-
-	private:
-		string_t m_dll_name;
-
-	// Activation::ILibraryNotFoundException members
-	public:
-		string_t GetLibraryName()
-		{
-			return m_dll_name;
-		}
-	};
-
 	class DLLManagerImpl
 	{
 	public:
@@ -94,18 +73,11 @@ namespace
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
-		pfnGetLibraryObject pfn = NULL;
-		OOBase::SmartPtr<OOBase::DLL> dll;
 
-		try
-		{
-			dll = DLLManager::instance()->load_dll(dll_name);
-			pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
-		}
-		catch (IException* pE)
-		{
-			LibraryNotFoundException::Throw(dll_name,pE);
-		}
+		OOBase::SmartPtr<OOBase::DLL> dll = DLLManager::instance()->load_dll(dll_name);
+		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
+		if (!pfn)
+			throw INotFoundException::Create(OOCore::get_text("The library {0} is not compatible") % dll_name);
 
 		IObject* pObj = NULL;
 		const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
@@ -356,15 +328,6 @@ void DLLManagerImpl::unload_unused()
 		else
 			++i;
 	}
-}
-
-void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
-{
-	ObjectPtr<ObjectImpl<LibraryNotFoundException> > pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
-	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = OOCore::get_text("Dynamic library '{0}' not found or malformed") % strName;
-	pRE->m_dll_name = strName;
-	throw static_cast<ILibraryNotFoundException*>(pRE.Detach());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))

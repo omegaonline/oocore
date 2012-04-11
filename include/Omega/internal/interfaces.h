@@ -90,11 +90,6 @@ namespace Omega
 			static INoAggregationException* Create(const any_t& oid);
 		};
 
-		interface ILibraryNotFoundException : public IException
-		{
-			virtual string_t GetLibraryName() = 0;
-		};
-
 		interface IDuplicateRegistrationException : public IException
 		{
 			virtual any_t GetOid() = 0;
@@ -255,14 +250,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(any_t,GetFailingOid,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Activation, ILibraryNotFoundException, Omega, IException, "{C7D970C0-D5D9-42e2-B927-E6E2E5624E50}",
-
-	// Methods
-	OMEGA_METHOD(string_t,GetLibraryName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

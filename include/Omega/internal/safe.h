@@ -863,8 +863,6 @@ namespace Omega
 				{
 					switch (v.type)
 					{
-					case TypeInfo::typeVoid:
-						return any_t();
 					case TypeInfo::typeBool:
 						return static_cast<bool_t>(v.u.bVal != 0);
 					case TypeInfo::typeByte:
@@ -889,9 +887,9 @@ namespace Omega
 						return string_t_safe_type::create(v.u.pstrVal,addref);
 					case TypeInfo::typeGuid:
 						return guid_t(v.u.gVal);
+					case TypeInfo::typeVoid:
 					default:
-						// Never going to happen ;)
-						OMEGA_THROW("Invalid any_t type!");
+						return any_t();
 					}
 				}
 
@@ -901,8 +899,6 @@ namespace Omega
 					ret.type = static_cast<TypeInfo::Type_t>(val.m_type);
 					switch (val.m_type)
 					{
-					case TypeInfo::typeVoid:
-						break;
 					case TypeInfo::typeBool:
 						ret.u.bVal = (val.u.bVal ? 1 : 0);
 						break;
@@ -939,10 +935,9 @@ namespace Omega
 					case TypeInfo::typeGuid:
 						ret.u.gVal = val.u.gVal;
 						break;
-
+					case TypeInfo::typeVoid:
 					default:
-						// Never going to happen ;)
-						OMEGA_THROW("Invalid any_t type!");
+						break;
 					}
 					return ret;
 				}

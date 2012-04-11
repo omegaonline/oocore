@@ -69,11 +69,10 @@ inline void Omega::any_t::swap(const any_t& rhs)
 	case TypeInfo::typeGuid:
 		u.gVal = rhs.u.gVal;
 		break;
-	case TypeInfo::typeVoid:
-		break;
 
 	default:
-		OMEGA_THROW("Invalid any_t type!");
+	case TypeInfo::typeVoid:
+		break;
 	}
 }
 

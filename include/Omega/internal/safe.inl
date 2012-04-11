@@ -219,11 +219,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 	if (!rtti)
 		OMEGA_THROW("Failed to create stub for interface - missing rtti");
 		
-	const SafeShim* shim = (*rtti->pfnCreateSafeStub)(pObj);
-	if (!shim)
-		OMEGA_THROW("Failed to create safe stub");
-
-	return shim;
+	return (*rtti->pfnCreateSafeStub)(pObj);
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_safe_exception(IException* pE)

@@ -162,7 +162,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshaller),pObj);
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(pObj);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Marshal the stub
 	ptrMarshaller->MarshalInterface(string_t::constant("stub"),ptrMessage,iid,m_ptrObj);

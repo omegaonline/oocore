@@ -43,9 +43,8 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		pKey->GetValue(strTestValue);
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::INotFoundException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
-		TEST(pE->GetName() == strTestValue);
 		pE->Release();
 	}
 
@@ -173,13 +172,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 		pKey->OpenKey(strTestKey,Omega::Registry::IKey::OpenExisting);
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::INotFoundException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
-		if (!strKey.IsEmpty())
-			TEST(pE->GetName() == strKey + "/" + strTestKey);
-		else
-			TEST(pE->GetName() == strTestKey);
-		
 		pE->Release();
 	}
 

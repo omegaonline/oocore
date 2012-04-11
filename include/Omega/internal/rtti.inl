@@ -79,11 +79,13 @@ inline Omega::IInternalException* Omega::IInternalException::Create(const string
 	return OOCore_IInternalException_Create(desc,pszFile,nLine,pszFunc,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::INoInterfaceException*,OOCore_INoInterfaceException_Create,1,((in),const Omega::guid_t&,iid))
-inline Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const guid_t& iid)
+OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_Create,1,((in),const Omega::string_t&,strDesc))
+inline Omega::INotFoundException* Omega::INotFoundException::Create(const string_t& strDesc)
 {
-	return OOCore_INoInterfaceException_Create(iid);
+	return OOCore_INotFoundException_Create(strDesc);
 }
+
+OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_MissingIID,1,((in),const Omega::guid_t&,iid))
 
 OOCORE_EXPORTED_FUNCTION(Omega::ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 inline Omega::ITimeoutException* Omega::ITimeoutException::Create()

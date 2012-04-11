@@ -99,9 +99,22 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	// Find the OID key...
 	string_t strProcess;
 	ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
-
 	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs/" + oid.ToString());
-	if (ptrKey->IsValue(string_t::constant("Application")))
+
+	if (ptrKey->IsValue(string_t::constant("Library")))
+	{
+		string_t strLib = ptrKey->GetValue(string_t::constant("Library")).cast<string_t>();
+		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib))
+		{
+			string_t strErr = string_t::constant("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid;
+			OMEGA_THROW(strErr.c_str());
+		}
+
+		void* ISSUE_8; // Surrogates here
+
+		OMEGA_THROW("No surrogate support!");
+	}
+	else
 	{
 		// Find the name of the executable to run...
 		string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
@@ -113,21 +126,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			OMEGA_THROW(strErr.c_str());
 		}
 	}
-	else if (ptrKey->IsValue(string_t::constant("Library")))
-	{
-		string_t strLib = ptrKey->GetValue(string_t::constant("Library")).cast<string_t>();
-		if (strLib.IsEmpty() || User::Process::is_relative_path(strLib))
-		{
-			string_t strErr = string_t::constant("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid;
-			OMEGA_THROW(strErr.c_str());
-		}
-		
-		void* ISSUE_8; // Surrogates here?!?
-
-		throw Activation::IOidNotFoundException::Create(oid);
-	}
-	else
-		throw Activation::IOidNotFoundException::Create(oid);
 
 	// Build the environment block
 	OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
@@ -148,62 +146,56 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (flags & Activation::RemoteActivation)
 		reg_mask |= Activation::ExternalPublic;
 
-	for (bool bStarted = false;!bStarted;)
+	OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
+	if (!guard.acquire(timeout))
+		throw ITimeoutException::Create();
+
+	OOBase::SmartPtr<User::Process> ptrProcess;
+	if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
 	{
-		OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
-		if (!guard.acquire(timeout))
-			throw ITimeoutException::Create();
-
-		OOBase::SmartPtr<User::Process> ptrProcess;
-		if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
-		{
-			m_mapInProgress.remove(strProcess);
-			ptrProcess = NULL;
-		}
-
-		if (!ptrProcess)
-		{
-			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
-
-			// Create a new process
-			ptrProcess = User::Process::exec(strProcess,setEnv);
-
-			int err = m_mapInProgress.insert(strProcess,ptrProcess);
-			if (err != 0)
-				OMEGA_THROW(err);
-
-			bStarted = true;
-		}
-
-		guard.release();
-
-		// Wait for the process to start and register its parts...
-		
-		while (!timeout.has_expired())
-		{
-			m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
-			if (pObject)
-			{
-				// The process has started - remove it from the starting list
-				guard.acquire();
-				m_mapInProgress.remove(strProcess);
-				guard.release();
-				return;
-			}
-
-			// Check the process is still alive
-			int ec = 0;
-			if (ptrProcess->wait_for_exit(OOBase::Timeout(0,1),ec))
-				break;
-		}
-
-		// Remove from the map
-		guard.acquire();
 		m_mapInProgress.remove(strProcess);
-		guard.release();
+		ptrProcess = NULL;
 	}
 
-	throw Activation::IOidNotFoundException::Create(oid);
+	if (!ptrProcess)
+	{
+		OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
+
+		// Create a new process
+		ptrProcess = User::Process::exec(strProcess,setEnv);
+
+		int err = m_mapInProgress.insert(strProcess,ptrProcess);
+		if (err != 0)
+			OMEGA_THROW(err);
+	}
+
+	guard.release();
+
+	// Wait for the process to start and register its parts...
+	int exit_code = 0;
+	while (!timeout.has_expired())
+	{
+		m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
+		if (pObject)
+			break;
+
+		// Check the process is still alive
+		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,1),exit_code))
+			break;
+	}
+
+	// Remove from the map
+	guard.acquire();
+	m_mapInProgress.remove(strProcess);
+	guard.release();
+
+	if (!pObject)
+	{
+		if (timeout.has_expired())
+			throw INotFoundException::Create(string_t::constant("The process {0} does not implement the object {1}") % strProcess % oid);
+		else
+			throw INotFoundException::Create(string_t::constant("The process {0} terminated unexpectedly with exit code {1}") % strProcess % exit_code);
+	}
 }
 
 bool_t User::InterProcessService::HandleRequest(uint32_t millisecs)

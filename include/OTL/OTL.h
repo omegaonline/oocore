@@ -733,7 +733,7 @@ namespace OTL
 			else
 				ret = ptr.Detach();
 			if (!ret)
-				throw Omega::INoInterfaceException::Create(iid);
+				throw OOCore_INotFoundException_MissingIID(iid);
 			return ret;
 		}
 
@@ -742,7 +742,7 @@ namespace OTL
 			ObjectPtr<T> ptr = T::CreateInstance();
 			Omega::IObject* ret = ptr->QueryInterface(iid);
 			if (!ret)
-				throw Omega::INoInterfaceException::Create(iid);
+				throw OOCore_INotFoundException_MissingIID(iid);
 			return ret;
 		}
 	};
@@ -816,7 +816,7 @@ namespace OTL
 				ObjectPtr<ObjectImpl<T> > ptr = ObjectImpl<T>::CreateInstance();
 				Omega::IObject* pObject = ptr->QueryInterface(iid);
 				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid);
+					throw OOCore_INotFoundException_MissingIID(iid);
 				return pObject;
 			}
 		};
@@ -844,7 +844,7 @@ namespace OTL
 				ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
 				Omega::IObject* pObject = ptr->QueryInterface(iid);
 				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid);
+					throw OOCore_INotFoundException_MissingIID(iid);
 				return pObject;
 			}
 		};

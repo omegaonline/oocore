@@ -187,7 +187,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 			// QI for IMarshaller
 			ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 			if (!ptrMarshaller)
-				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+				throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 			ptrPayload.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrInput);
 		}
@@ -221,7 +221,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 
@@ -297,7 +297,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload;
@@ -344,7 +344,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// QI for IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload;

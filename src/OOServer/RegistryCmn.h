@@ -74,31 +74,6 @@ namespace User
 			}
 		};
 		
-		class NotFoundException :
-				public ExceptionImpl<INotFoundException>
-		{
-		public:
-			BEGIN_INTERFACE_MAP(NotFoundException)
-				INTERFACE_ENTRY_CHAIN(ExceptionImpl<INotFoundException>)
-			END_INTERFACE_MAP()
-
-			string_t m_strName;
-
-		public:
-			string_t GetName()
-			{
-				return m_strName;
-			}
-
-			static void Throw(const string_t& name)
-			{
-				ObjectPtr<ObjectImpl<NotFoundException> > pRE = ObjectImpl<NotFoundException>::CreateInstance();
-				pRE->m_strName = name;
-				pRE->m_strDesc = string_t::constant("'{0}' not found.") % name;
-				throw static_cast<INotFoundException*>(pRE.Detach());
-			}
-		};
-
 		class AlreadyExistsException :
 				public ExceptionImpl<IAlreadyExistsException>
 		{

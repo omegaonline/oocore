@@ -24,6 +24,23 @@
 
 namespace Omega
 {
+	interface ISystemException : public IException
+	{
+		virtual uint32_t GetErrorCode() = 0;
+
+		static ISystemException* Create(uint32_t errno_val, IException* pCause = NULL);
+	};
+
+	interface ITimeoutException : public IException
+	{
+		static ITimeoutException* Create();
+	};
+
+	interface INotFoundException : public IException
+	{
+		static INotFoundException* Create(const string_t& strDesc);
+	};
+
 	interface ICastException : public IException
 	{
 		virtual any_t GetValue() = 0;
@@ -65,13 +82,6 @@ namespace Omega
 			MultipleRegistration = 0x20 // Allow multiple calls to Register with different flags
 		};
 		typedef uint16_t RegisterFlags_t;
-
-		interface IOidNotFoundException : public IException
-		{
-			virtual any_t GetMissingOid() = 0;
-
-			static IOidNotFoundException* Create(const any_t& oid);
-		};
 
 		interface INoAggregationException : public IException
 		{
@@ -138,11 +148,6 @@ namespace Omega
 			virtual any_t GetValue(const string_t& name) = 0;
 			virtual void SetValue(const string_t& name, const any_t& val) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
-		};
-
-		interface INotFoundException : public IException
-		{
-			virtual string_t GetName() = 0;
 		};
 
 		interface IAlreadyExistsException : public IException
@@ -232,9 +237,9 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
-	Omega, INoInterfaceException, Omega, IException, "{68778245-9EA7-49f7-9EF4-D5D742E781D5}",
+	Omega, INotFoundException, Omega, IException, "{A851A685-A3AB-430b-BA52-E277655AC9CF}",
 
-	OMEGA_METHOD(guid_t,GetUnsupportedIID,0,())
+	OMEGA_NO_METHODS()
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
@@ -242,14 +247,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 	Omega, ITimeoutException, Omega, IException, "{63E8BFDE-D7AA-4675-B628-A1579B5AD8C7}",
 
 	OMEGA_NO_METHODS()
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Activation, IOidNotFoundException, Omega, IException, "{162BBEBD-770B-4925-A8E7-48DEC7224ABE}",
-
-	// Methods
-	OMEGA_METHOD(any_t,GetMissingOid,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -305,14 +302,6 @@ OMEGA_DEFINE_INTERFACE
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
-	Omega::Registry, INotFoundException, Omega, IException, "{A851A685-A3AB-430b-BA52-E277655AC9CF}",
-
-	// Methods
-	OMEGA_METHOD(string_t,GetName,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
 	Omega::Registry, IBadNameException, Omega, IException, "{5ADD9FB6-2044-40fd-9F3C-31E9B66B865E}",
 
 	// Methods
@@ -355,12 +344,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Acti
 inline Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::any_t& oid)
 {
 	return OOCore_Activation_INoAggregationException_Create(oid);
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const Omega::any_t&,oid));
-inline Omega::Activation::IOidNotFoundException* Omega::Activation::IOidNotFoundException::Create(const Omega::any_t& oid)
-{
-	return OOCore_Activation_IOidNotFoundException_Create(oid);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInterfaceInfo,2,((in),const Omega::guid_t&,iid,(in),Omega::IObject*,pObject));

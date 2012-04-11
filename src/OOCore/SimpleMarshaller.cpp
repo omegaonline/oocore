@@ -139,7 +139,7 @@ void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMe
 			ptrMarshal = OTL::QueryInterface<Remoting::IMarshal>(pObject);
 
 		if (!ptrMarshal)
-			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
+			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshal));
 
 		ptrMarshal->ReleaseMarshalData(this,pMessage,iid,m_marshal_flags);
 	}

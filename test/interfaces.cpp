@@ -16,8 +16,8 @@ namespace Omega
 	}
 }
 
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48F5-A10E-1DCA3FADB9A6}");
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40C6-90F2-39C7C306FC69}");
 
 #include "Test.h"
 
@@ -270,17 +270,6 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();
 
-	// Now check for activation rules
-	try
-	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process);
-	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
-	{
-		add_success();
-		pE->Release();
-	}
-
 	// Test for local activation
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary.ToString());
 	TEST(ptrSimpleTest);
@@ -316,7 +305,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>("MyLittleTest");
 	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
 		add_success();
 		pE->Release();
@@ -329,7 +318,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>("Test.Library");
 	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
 		add_success();
 		pE->Release();
@@ -339,7 +328,7 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary);
 	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
 		add_success();
 		pE->Release();
@@ -381,18 +370,8 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	interface_tests(ptrSimpleTest);
 
 	ptrSimpleTest2.Release();
-	ptrSimpleTest.Release();
 
-	// Now check for activation rules
-	try
-	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
-	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
-	{
-		add_success();
-		pE->Release();
-	}
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
 
 	// Kill the running version
 	try
@@ -428,7 +407,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	{
 		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>("Test.Process");
 	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
 		add_success();
 		pE->Release();

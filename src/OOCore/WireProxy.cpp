@@ -263,7 +263,7 @@ void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMar
 	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshaller),pObj);
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(pObj);
 	if (!ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Unmarshal the new proxy on the new manager
 	ptrMarshaller->UnmarshalInterface(string_t::constant("stub"),ptrReflect,iid,pObject);

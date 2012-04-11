@@ -187,7 +187,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 			{
 				ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
 				if (!ptrObject)
-					throw INoInterfaceException::Create(iid);
+					throw OOCore_INotFoundException_MissingIID(iid);
 
 				// Remove the entry if Activation::SingleUse
 				if (pInfo->m_flags & Activation::SingleUse)

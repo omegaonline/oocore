@@ -30,8 +30,6 @@
 using namespace Omega;
 using namespace OTL;
 
-OMEGA_DEFINE_OID(OOCore,OID_OidNotFoundExceptionMarshalFactory, "{0CA3037F-08C0-442a-B4EC-84A9156839CD}");
-
 namespace
 {
 	class NoAggregationException :
@@ -250,12 +248,14 @@ namespace
 		if (!pObject)
 		{
 			// See if we are allowed to load...
-			if (!(flags & Activation::DontLaunch))
-				pObject = LoadObject(oid,flags,iid);
-		}
+			if (flags & Activation::DontLaunch)
+			{
+				void* TODO; // permission denied
+				throw INotFoundException::Create("Activation not allowed");
+			}
 
-		if (!pObject)
-			OOCore::OidNotFoundException::Throw(oid);
+			pObject = LoadObject(oid,flags,iid);
+		}
 
 		return pObject;
 	}
@@ -265,21 +265,14 @@ namespace
 		string_t strCurName = strObjectName;
 		for (;;)
 		{
-			try
+			ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
+			if (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
 			{
-				ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
-				if (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
-				{
-					strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
-					continue;
-				}
+				strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
+				continue;
+			}
 
-				return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
-			}
-			catch (IException* pE)
-			{
-				OOCore::OidNotFoundException::Throw(strCurName,pE);
-			}
+			return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
 		}
 	}
 }
@@ -374,15 +367,6 @@ void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
 	throw static_cast<ILibraryNotFoundException*>(pRE.Detach());
 }
 
-void OOCore::OidNotFoundException::Throw(const any_t& oid, IException* pE)
-{
-	ObjectPtr<ObjectImpl<OidNotFoundException> > pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = OOCore::get_text("The identified object {0} could not be found") % oid;
-	pNew->m_ptrCause = pE;
-	pNew->m_oid = oid;
-	throw static_cast<IOidNotFoundException*>(pNew.Detach());
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
 {
 	ObjectPtr<ObjectImpl<NoAggregationException> > pNew = ObjectImpl<NoAggregationException>::CreateInstance();
@@ -391,75 +375,47 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activ
 	return pNew.Detach();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IOidNotFoundException*,OOCore_Activation_IOidNotFoundException_Create,1,((in),const any_t&,oid))
-{
-	ObjectPtr<ObjectImpl<OOCore::OidNotFoundException> > pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = OOCore::get_text("The identified object {0} could not be found") % oid;
-	pNew->m_oid = oid;
-	return pNew.Detach();
-}
-
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	try
+	// First try to determine the protocol...
+	guid_t oid_guid;
+	if (oid.Coerce(oid_guid) == any_t::castValid)
+		return GetLocalInstance(oid_guid,flags,iid);
+
+	string_t strObject = oid.cast<string_t>();
+	string_t strEndpoint;
+	size_t pos = strObject.Find('@');
+	if (pos != string_t::npos)
 	{
-		// First try to determine the protocol...
-		guid_t oid_guid;
-		if (oid.Coerce(oid_guid) == any_t::castValid)
-			return GetLocalInstance(oid_guid,flags,iid);
+		strEndpoint = strObject.Mid(pos+1);
+		strObject = strObject.Left(pos);
 
-		string_t strObject = oid.cast<string_t>();
-		string_t strEndpoint;
-		size_t pos = strObject.Find('@');
-		if (pos != string_t::npos)
-		{
-			strEndpoint = strObject.Mid(pos+1);
-			strObject = strObject.Left(pos);
-
-			if (strEndpoint == "local")
-				strEndpoint.Clear();
-		}
-
-		if (strEndpoint.IsEmpty())
-		{
-			// Do a quick registry lookup
-			if (!guid_t::FromString(strObject,oid_guid))
-				oid_guid = NameToOid(strObject);
-
-			return GetLocalInstance(oid_guid,flags,iid);
-		}
-
-		// Open a remote channel
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		ObjectPtr<Remoting::IChannel> ptrChannel = ptrIPS->OpenRemoteChannel(strEndpoint);
-
-		// Get the ObjectManager
-		IObject* pObject = NULL;
-		ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IObjectManager),pObject);
-		ObjectPtr<Remoting::IObjectManager> ptrOM = static_cast<Remoting::IObjectManager*>(pObject);
-
-		// Get the remote instance
-		pObject = NULL;
-		ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
-		if (!pObject)
-			OidNotFoundException::Throw(oid);
-		
-		return pObject;
-	}
-	catch (Activation::IOidNotFoundException* pE)
-	{
-		pE->Rethrow();
-	}
-	catch (INoInterfaceException* pE)
-	{
-		pE->Rethrow();
-	}
-	catch (IException* pE)
-	{
-		OidNotFoundException::Throw(oid,pE);
+		if (strEndpoint == "local")
+			strEndpoint.Clear();
 	}
 
-	return NULL;
+	if (strEndpoint.IsEmpty())
+	{
+		// Do a quick registry lookup
+		if (!guid_t::FromString(strObject,oid_guid))
+			oid_guid = NameToOid(strObject);
+
+		return GetLocalInstance(oid_guid,flags,iid);
+	}
+
+	// Open a remote channel
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	ObjectPtr<Remoting::IChannel> ptrChannel = ptrIPS->OpenRemoteChannel(strEndpoint);
+
+	// Get the ObjectManager
+	IObject* pObject = NULL;
+	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IObjectManager),pObject);
+	ObjectPtr<Remoting::IObjectManager> ptrOM = static_cast<Remoting::IObjectManager*>(pObject);
+
+	// Get the remote instance
+	pObject = NULL;
+	ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
+	return pObject;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))

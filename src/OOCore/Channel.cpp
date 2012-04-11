@@ -145,7 +145,7 @@ void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting:
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM.QueryInterface<Remoting::IMarshaller>();
 	if (!m_ptrMarshaller)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 }
 
 void OOCore::Channel::disconnect()

@@ -117,48 +117,21 @@ namespace OOCore
 	};
 
 	// {1E127359-1542-4329-8E30-FED8FF810960}
-	extern "C" const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
+	extern "C" const Omega::guid_t OID_NotFoundExceptionMarshalFactory;
 
-	class NoInterfaceException :
-			public OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
+	class NotFoundException :
+			public OTL::ExceptionAutoMarshalImpl<Omega::INotFoundException, &OID_NotFoundExceptionMarshalFactory>
 	{
-		typedef OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory> baseClass;
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::INotFoundException, &OID_NotFoundExceptionMarshalFactory> baseClass;
 	public:
-		Omega::guid_t m_iid;
-
-		BEGIN_INTERFACE_MAP(NoInterfaceException)
+		BEGIN_INTERFACE_MAP(NotFoundException)
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
-
-		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
-		{
-			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_iid = pMessage->ReadValue(Omega::string_t::constant("m_iid")).cast<Omega::guid_t>();
-		}
-
-		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
-		{
-			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteValue(Omega::string_t::constant("m_iid"),m_iid);
-		}
-
-		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
-		{
-			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			pMessage->ReadValue(Omega::string_t::constant("m_iid"));
-		}
-
-	// INoInterfaceException members
-	public:
-		Omega::guid_t GetUnsupportedIID()
-		{
-			return m_iid;
-		}
 	};
 
-	class NoInterfaceExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::ProcessScope>,
-			public OTL::ExceptionMarshalFactoryImpl<NoInterfaceException>
+	class NotFoundExceptionMarshalFactoryImpl :
+			public OTL::AutoObjectFactorySingleton<NotFoundExceptionMarshalFactoryImpl,&OOCore::OID_NotFoundExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::ExceptionMarshalFactoryImpl<NotFoundException>
 	{
 	};
 

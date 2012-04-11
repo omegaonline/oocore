@@ -67,6 +67,16 @@ namespace
 		void SetValue(const string_t& strName, const any_t& value);
 		void DeleteValue(const string_t& strName);
 	};
+
+	void ThrowKeyNotFound(const string_t& strKey)
+	{
+		throw INotFoundException::Create(string_t::constant("The registry key {0} does not exist") % strKey);
+	}
+
+	void ThrowValueNotFound(const string_t& strValue)
+	{
+		throw INotFoundException::Create(string_t::constant("The registry value {0} does not exist") % strValue);
+	}
 }
 
 void RootKey::init(Manager* pManager, const string_t& strKey, const int64_t& key, byte_t type)
@@ -173,7 +183,7 @@ any_t RootKey::GetValue(const string_t& strName)
 		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
-		NotFoundException::Throw(strName);
+		ThrowValueNotFound(GetName() + "/" + strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
 	else if (err==EIO)
@@ -210,7 +220,7 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
-		NotFoundException::Throw(strName);
+		ThrowValueNotFound(GetName() + "/" + strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
 	else if (err==EIO)
@@ -250,7 +260,7 @@ IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	else if (err==EEXIST)
 		AlreadyExistsException::Throw(strFullKey);
 	else if (err==ENOENT)
-		NotFoundException::Throw(strFullKey);
+		ThrowKeyNotFound(strFullKey);
 	else if (err==EIO)
 		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
@@ -286,7 +296,7 @@ std::set<string_t> RootKey::EnumSubKeys()
 	if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
-		NotFoundException::Throw(GetName());
+		ThrowKeyNotFound(GetName());
 	else if (err==EIO)
 		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
@@ -340,7 +350,7 @@ std::set<string_t> RootKey::EnumValues()
 	if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
 	else if (err==ENOENT)
-		NotFoundException::Throw(GetName());
+		ThrowKeyNotFound(GetName());
 	else if (err==EIO)
 		OMEGA_THROW("Unexpected registry error");
 	else if (err != 0)
@@ -397,7 +407,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 		strFullKey += strSubKey;
 
 		if (err == ENOENT)
-			NotFoundException::Throw(strFullKey);
+			ThrowKeyNotFound(strFullKey);
 		else if (err==EACCES)
 			AccessDeniedException::Throw(strFullKey);
 		else if (err==EIO)
@@ -428,7 +438,7 @@ void RootKey::DeleteValue(const string_t& strName)
 		OMEGA_THROW(response.last_error());
 
 	if (err == ENOENT)
-		NotFoundException::Throw(strName);
+		ThrowValueNotFound(GetName() + "/" + strName);
 	else if (err==EACCES)
 		AccessDeniedException::Throw(GetName());
 	else if (err==EIO)
@@ -492,7 +502,7 @@ IKey* OverlayKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		ptrSubUnder = m_ptrUnder->OpenKey(strSubKey,IKey::OpenExisting);
 
 	if (!ptrSubOver && !ptrSubUnder)
-		NotFoundException::Throw(strFullKey);
+		ThrowKeyNotFound(strFullKey);
 
 	if (!ptrSubOver)
 		return ptrSubUnder.Detach();
@@ -559,7 +569,7 @@ IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnd
 	}
 
 	if (!ptrSubOver && !ptrSubUnder)
-		NotFoundException::Throw(strOver);
+		ThrowKeyNotFound(strOver);
 
 	if (!ptrSubOver)
 		return ptrSubUnder.Detach();

@@ -95,7 +95,7 @@ namespace
 
 OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
 OMEGA_DEFINE_OID(OOCore,OID_InternalExceptionMarshalFactory, "{47E86F31-E9E9-4667-89CA-40EB048DA2B7}");
-OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
+OMEGA_DEFINE_OID(OOCore,OID_NotFoundExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
 OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
 
@@ -165,18 +165,24 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Cre
 	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).Detach();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,1,((in),const guid_t&,iid))
+OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Create,1,((in),const string_t&,strDesc))
 {
-	ObjectPtr<ObjectImpl<OOCore::NoInterfaceException> > pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+	pExcept->m_strDesc = strDesc;
+	return pExcept.Detach();
+}
 
-	string_t strIID = OOCore::get_text("Unknown interface {0}") % iid.ToString();
+OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_MissingIID,1,((in),const guid_t&,iid))
+{
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+
+	string_t strIID = OOCore::get_text("Unknown interface {0}") % iid;
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)
 		strIID = ptrII->GetName();
 
 	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface {0}") % strIID;
-	pExcept->m_iid = iid;
 	return pExcept.Detach();
 }
 

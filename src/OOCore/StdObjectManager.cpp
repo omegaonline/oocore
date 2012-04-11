@@ -375,7 +375,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 	ptrParamsOut->WriteStructEnd();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
-	IException* pERet;
+	IException* pERet = NULL;
 
 	try
 	{
@@ -693,7 +693,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		// QI for the desired interface
 		pObject = ptrObj->QueryInterface(iid);
 		if (!pObject)
-			throw INoInterfaceException::Create(iid);
+			throw OOCore_INotFoundException_MissingIID(iid);
 	}
 	else if (flag == 2)
 	{
@@ -702,7 +702,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		// Create an instance of Oid
 		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::Library);
 		if (!ptrMarshalFactory)
-			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshalFactory));
+			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalFactory));
 
 		ptrMarshalFactory->UnmarshalInterface(this,pMessage,iid,m_ptrChannel->GetMarshalFlags(),pObject);
 	}
@@ -762,7 +762,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 			ptrMarshal = OTL::QueryInterface<Remoting::IMarshal>(pObject);
 
 		if (!ptrMarshal)
-			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
+			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshal));
 
 		ptrMarshal->ReleaseMarshalData(this,pMessage,iid,m_ptrChannel->GetMarshalFlags());
 	}
@@ -803,7 +803,7 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 
 	ObjectPtr<Remoting::IMarshal> ptrMarshal = m_ptrChannel.QueryInterface<Remoting::IMarshal>();
 	if (!ptrMarshal)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal));
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshal));
 
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	pMessage->WriteStructStart(string_t::constant("m_ptrChannel"),string_t::constant("$iface_marshal"));

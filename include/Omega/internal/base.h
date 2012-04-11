@@ -49,31 +49,12 @@ namespace Omega
 		virtual string_t GetDescription() = 0;
 	};
 
-	interface ISystemException : public IException
-	{
-		virtual uint32_t GetErrorCode() = 0;
-
-		static ISystemException* Create(uint32_t errno_val, IException* pCause = NULL);
-	};
-
 	interface IInternalException : public IException
 	{
 		virtual string_t GetSource() = 0;
 
 		static IInternalException* Create(int32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL);
 		static IInternalException* Create(const string_t& desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL, IException* pCause = NULL);
-	};
-
-	interface INoInterfaceException : public IException
-	{
-		virtual guid_t GetUnsupportedIID() = 0;
-
-		static INoInterfaceException* Create(const guid_t& iid);
-	};
-
-	interface ITimeoutException : public IException
-	{
-		static ITimeoutException* Create();
 	};
 
 	namespace TypeInfo

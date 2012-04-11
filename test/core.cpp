@@ -60,12 +60,11 @@ bool exception_tests()
 	// Try another simple throw
 	try
 	{
-		throw Omega::INoInterfaceException::Create(OMEGA_GUIDOF(Omega::IObject));
+		throw Omega::INotFoundException::Create("Bang!");
 	}
-	catch (Omega::INoInterfaceException* pE)
+	catch (Omega::INotFoundException* pE)
 	{
-		TEST(pE->GetThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
-		TEST(pE->GetUnsupportedIID() == OMEGA_GUIDOF(Omega::IObject));
+		TEST(pE->GetThrownIID() == OMEGA_GUIDOF(Omega::INotFoundException));
 		TEST(!pE->GetCause());
 		pE->Release();
 	}

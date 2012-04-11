@@ -55,10 +55,9 @@ namespace OTL
 					OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::OidNotFoundExceptionMarshalFactoryImpl)
 					{ 0,0,0,0 }
 				};
 				return CreatorEntries;
@@ -341,7 +340,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t f
 			{
 				ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
 				if (!ptrObject)
-					throw INoInterfaceException::Create(iid);
+					throw OOCore_INotFoundException_MissingIID(iid);
 
 				// Remove the entry if Activation::SingleUse
 				if (pInfo->m_flags & Activation::SingleUse)

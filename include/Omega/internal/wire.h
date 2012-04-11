@@ -413,7 +413,7 @@ namespace Omega
 			{
 				struct type
 				{
-					type(I* val = 0) : m_val(val)
+					type(I* val = NULL) : m_val(val)
 					{
 						if (m_val)
 							m_val->AddRef();
@@ -488,7 +488,7 @@ namespace Omega
 						auto_safe_shim shim = val;
 
 						if (m_val.empty())
-							val = 0;
+							val = NULL;
 						else
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
@@ -515,7 +515,7 @@ namespace Omega
 					safe_type_wrapper(const Coll& val)
 					{
 						if (val.empty())
-							m_shim = 0;
+							m_shim = NULL;
 						else
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
@@ -698,7 +698,7 @@ namespace Omega
 						auto_safe_shim shim = val;
 
 						if (m_val.empty())
-							val = 0;
+							val = NULL;
 						else
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
@@ -728,7 +728,7 @@ namespace Omega
 					safe_type_wrapper(const Coll& val)
 					{
 						if (val.empty())
-							m_shim = 0;
+							m_shim = NULL;
 						else
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();

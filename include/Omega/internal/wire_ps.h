@@ -177,12 +177,12 @@ namespace Omega
 
 				const SafeShim* CreateWireStub(const SafeShim* /*shim_Controller*/, const SafeShim* /*shim_Marshaller*/, const Omega::guid_t& /*iid*/)
 				{
-					return 0;
+					return NULL;
 				}
 
 				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
 				{
-					const SafeShim* except = 0;
+					const SafeShim* except = NULL;
 					try
 					{
 						static_cast<Wire_Proxy_Base*>(shim->m_stub)->AddRef();
@@ -196,7 +196,7 @@ namespace Omega
 
 				static const SafeShim* OMEGA_CALL Release_Safe(const SafeShim* shim)
 				{
-					const SafeShim* except = 0;
+					const SafeShim* except = NULL;
 					try
 					{
 						static_cast<Wire_Proxy_Base*>(shim->m_stub)->Release();
@@ -210,7 +210,7 @@ namespace Omega
 
 				static const SafeShim* OMEGA_CALL GetWireProxy_Safe(const SafeShim* shim, const SafeShim** retval)
 				{
-					const SafeShim* except = 0;
+					const SafeShim* except = NULL;
 					try
 					{
 						*retval = create_safe_stub(static_cast<Wire_Proxy_Base*>(shim->m_stub)->m_ptrProxy,OMEGA_GUIDOF(Remoting::IProxy));
@@ -390,7 +390,7 @@ namespace Omega
 						AddRef();
 						return this;
 					}
-					return 0;
+					return NULL;
 				}
 
 				void Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

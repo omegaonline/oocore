@@ -505,7 +505,7 @@ namespace Omega
 					// QI underlying interface
 					auto_iface_ptr<IObject> ptr = m_pI->QueryInterface(iid);
 					if (!ptr)
-						return 0;
+						return NULL;
 
 					return create_safe_stub(ptr,iid);
 				}

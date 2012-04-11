@@ -115,9 +115,7 @@ namespace
 					System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
 					System::Internal::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
 
-		if (GetLibraryObject_Exception)
-			System::Internal::throw_correct_exception(GetLibraryObject_Exception);
-
+		System::Internal::throw_correct_exception(GetLibraryObject_Exception);
 		return pObj;
 	}
 

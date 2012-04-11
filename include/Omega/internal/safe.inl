@@ -132,8 +132,7 @@ inline Omega::IObject* Omega::System::Internal::Safe_Proxy_Base::QueryInterface(
 	// QI m_shim
 	auto_safe_shim retval;
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnQueryInterface_Safe(m_shim,&retval,&iid);
-	if (except)
-		throw_correct_exception(except);
+	throw_correct_exception(except);
 
 	return create_safe_proxy(retval,iid);
 }
@@ -149,8 +148,7 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		// Retrieve the underlying proxy
 		auto_safe_shim proxy;
 		const SafeShim* pE = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
-		if (pE)
-			throw_correct_exception(pE);
+		throw_correct_exception(pE);
 
 		// Control its lifetime
 		auto_iface_ptr<Remoting::IProxy> ptrProxy = create_safe_proxy<Remoting::IProxy>(proxy);
@@ -181,13 +179,13 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 
 inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shim)
 {
-	if (!shim)
-		OMEGA_THROW("Attempt to throw NUL exception!");
+	if (shim)
+	{
+		// Ensure shim is released
+		auto_safe_shim ss = shim;
 
-	// Ensure shim is released
-	auto_safe_shim ss = shim;
-
-	create_safe_proxy<IException>(shim)->Rethrow();
+		create_safe_proxy<IException>(shim)->Rethrow();
+	}
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(IObject* pObj, const guid_t& iid)

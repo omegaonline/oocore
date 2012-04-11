@@ -64,8 +64,7 @@
 				System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsIn),
 				System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsOut));
 
-			if (pSE)
-				throw_correct_exception(pSE);
+			throw_correct_exception(pSE);
 		}
 		catch (IException* pE2)
 		{
@@ -918,8 +917,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in
 			// Retrieve the underlying wire proxy
 			System::Internal::auto_safe_shim proxy;
 			const System::Internal::SafeShim* pE = static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
-			if (pE)
-				System::Internal::throw_correct_exception(pE);
+			System::Internal::throw_correct_exception(pE);
 
 			return System::Internal::create_safe_proxy<Remoting::IProxy>(proxy);
 		}

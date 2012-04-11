@@ -532,8 +532,7 @@
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		const SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))(this->m_shim OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
-		if (OMEGA_CONCAT(name,_except)) \
-			throw_correct_exception(OMEGA_CONCAT(name,_except)); \
+		throw_correct_exception(OMEGA_CONCAT(name,_except)); \
 	}
 
 #define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
@@ -543,8 +542,7 @@
 		const SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))( \
 				this->m_shim,marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) \
 				OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
-		if (OMEGA_CONCAT(name,_except)) \
-			throw_correct_exception(OMEGA_CONCAT(name,_except)); \
+		throw_correct_exception(OMEGA_CONCAT(name,_except)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
 
@@ -799,7 +797,7 @@
 	inline void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
 	{ \
 		const Omega::System::Internal::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_PROXY_VOID(param_count,params)); \
-		if (OMEGA_CONCAT(name,_Exception)) Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+		Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 	}
 
 #define OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params) \
@@ -812,7 +810,7 @@
 		const Omega::System::Internal::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)( \
 			Omega::System::Internal::marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) \
 			OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
-		if (OMEGA_CONCAT(name,_Exception)) Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+		Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
 
@@ -821,7 +819,7 @@
 	inline void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
 	{ \
 		const Omega::System::Internal::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Raw)(OMEGA_EMIT_PARAMS_VOID(param_count,params)); \
-		if (OMEGA_CONCAT(name,_Exception)) Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+		Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 	}
 
 #define OMEGA_RAW_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params) \
@@ -832,7 +830,7 @@
 		const Omega::System::Internal::SafeShim* OMEGA_CONCAT(name,_Exception) = NULL; \
 		ret_type OMEGA_CONCAT(name,_RetVal) = OMEGA_CONCAT(name,_Raw)( \
 			&OMEGA_CONCAT(name,_Exception) OMEGA_EMIT_PARAMS(param_count,params)); \
-		if (OMEGA_CONCAT(name,_Exception)) Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+		Omega::System::Internal::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
 

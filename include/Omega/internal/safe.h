@@ -1135,8 +1135,7 @@ namespace Omega
 				if (shim)
 				{
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);
-					if (except)
-						throw_correct_exception(except);
+					throw_correct_exception(except);
 				}
 				return shim;
 			}
@@ -1146,8 +1145,7 @@ namespace Omega
 				if (shim)
 				{
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
-					if (except)
-						throw_correct_exception(except);
+					throw_correct_exception(except);
 				}
 			}
 

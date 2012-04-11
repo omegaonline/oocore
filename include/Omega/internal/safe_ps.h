@@ -308,8 +308,7 @@ namespace Omega
 					{
 						// Pin the shim
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
+						throw_correct_exception(except);
 					}
 				}
 
@@ -319,8 +318,7 @@ namespace Omega
 					{
 						// Unpin the shim
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnUnpin_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
+						throw_correct_exception(except);
 
 						if (m_intcount.IsZero() && m_refcount.IsZero())
 							Destruct__proxy__();
@@ -345,8 +343,7 @@ namespace Omega
 
 					const SafeShim* ret = NULL;
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe(m_shim,shim_Controller,shim_Marshaller,&iid,&ret);
-					if (except)
-						throw_correct_exception(except);
+					throw_correct_exception(except);
 
 					return ret;
 				}

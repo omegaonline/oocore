@@ -173,14 +173,14 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	// Wait for the process to start and register its parts...
 	int exit_code = 0;
-	while (!timeout.has_expired())
+	for (unsigned int msecs = 1;!timeout.has_expired();msecs = 1 << msecs)
 	{
-		m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
-		if (pObject)
+		// Check the process is still alive
+		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))
 			break;
 
-		// Check the process is still alive
-		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,1),exit_code))
+		m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
+		if (pObject)
 			break;
 	}
 
@@ -191,6 +191,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	if (!pObject)
 	{
+		OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
+
 		if (timeout.has_expired())
 			throw INotFoundException::Create(string_t::constant("The process {0} does not implement the object {1}") % strProcess % oid);
 		else

@@ -448,10 +448,10 @@ inline Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat)
 	return OOCore_guid_t_to_string(*this,strFormat);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,3,((in),const char*,sz,(in),int,throws,(in_out),Omega::guid_base_t*,result));
+OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const char*,sz,(in_out),Omega::guid_base_t*,result));
 inline bool Omega::guid_t::FromString(const char* sz, Omega::guid_t& guid)
 {
-	return (OOCore_guid_t_from_string(sz,0,&guid) != 0);
+	return (OOCore_guid_t_from_string(sz,&guid) != 0);
 }
 
 inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
@@ -461,12 +461,12 @@ inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 
 inline Omega::guid_t::guid_t(const char* sz)
 {
-	OOCore_guid_t_from_string(sz,1,this);
+	OOCore_guid_t_from_string(sz,this);
 }
 
 inline Omega::guid_t::guid_t(const string_t& str)
 {
-	OOCore_guid_t_from_string(str.Length() == 38 ? str.c_str() : "\0",1,this);
+	OOCore_guid_t_from_string(str.c_str(),this);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());

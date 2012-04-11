@@ -31,14 +31,6 @@ namespace Omega
 		virtual Remoting::IMessage* GetDestinationType() = 0;
 	};
 
-	namespace Formatting
-	{
-		interface IFormattingException : public IException
-		{
-			static IFormattingException* Create(const string_t& strMsg);
-		};
-	}
-
 	namespace Activation
 	{
 		interface IObjectFactory : public IObject
@@ -215,13 +207,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	OMEGA_METHOD(any_t,GetValue,0,())
 	OMEGA_METHOD(any_t::CastResult_t,GetReason,0,())
 	OMEGA_METHOD(Remoting::IMessage*,GetDestinationType,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Formatting, IFormattingException, Omega, IException, "{EBCD8903-5C9B-4d48-BC3B-0427A4E294C4}",
-
-	OMEGA_NO_METHODS()
 )
 
 OMEGA_DEFINE_INTERFACE

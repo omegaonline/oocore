@@ -54,15 +54,6 @@ using namespace OTL;
 
 namespace
 {
-	class FormattingException :
-			public ExceptionImpl<Formatting::IFormattingException>
-	{
-	public:
-		BEGIN_INTERFACE_MAP(FormattingException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Formatting::IFormattingException>)
-		END_INTERFACE_MAP()
-	};
-
 	enum num_fmt
 	{
 		unspecified,
@@ -1431,13 +1422,6 @@ namespace
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Formatting::IFormattingException*,OOCore_IFormattingException_Create,1,((in),const string_t&,msg))
-{
-	ObjectImpl<FormattingException>* pNew = ObjectImpl<FormattingException>::CreateInstance();
-	pNew->m_strDesc = msg;
-	return pNew;
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
 	long def_precision = 0;
@@ -1526,14 +1510,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,val,(in),const string_t&,strFormat))
 {
 	// These need internationalisation...
-	if (strFormat.IsEmpty())
-		return (val ? string_t::constant("true") : string_t::constant("false"));
+	if (!strFormat.IsEmpty())
+	{
+		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
+		if (parse_custom(strFormat,parts) == 2)
+			return val ? *parts.at(0) : *parts.at(1);
+	}
 
-	OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
-	if (parse_custom(strFormat,parts) != 2)
-		throw Formatting::IFormattingException::Create(OOCore::get_text("Invalid Omega::bool_t format string: {0}") % strFormat);
-
-	return val ? *parts.at(0) : *parts.at(1);
+	return (val ? string_t::constant("true") : string_t::constant("false"));
 }
 
 long OOCore::strtol(const char* sz, char const*& endptr, unsigned int base)
@@ -1679,16 +1663,19 @@ namespace
 		}
 	}
 
-	void parse_arg(const string_t& strIn, size_t& pos, insert_t& ins)
+	bool parse_arg(const string_t& strIn, size_t& pos, insert_t& ins)
 	{
 		size_t end = find_brace(strIn,pos,'}');
 		if (end == string_t::npos)
-			throw Formatting::IFormattingException::Create(OOCore::get_text("Missing matching '}' in format string: {0}") % strIn);
+			return false;
 
 		size_t comma = strIn.Find(',',pos);
 		size_t colon = strIn.Find(':',pos);
 		if (comma == pos || colon == pos)
-			throw Formatting::IFormattingException::Create(OOCore::get_text("Missing index in format string: {0}") % strIn);
+		{
+			pos = end + 1;
+			return false;
+		}
 
 		const char* endp = 0;
 		ins.index = OOCore::strtoul(strIn.c_str()+pos,endp,10);
@@ -1707,6 +1694,7 @@ namespace
 		}
 
 		pos = end + 1;
+		return true;
 	}
 
 	void parse_format(const string_t& strIn, string_t& strPrefix, OOBase::Stack<insert_t>& listInserts)
@@ -1723,14 +1711,18 @@ namespace
 		for (;;)
 		{
 			insert_t ins;
-			parse_arg(strIn,pos,ins);
+			size_t found = string_t::npos;
 
-			size_t found = find_brace(strIn,pos,'{');
-
-			if (found == string_t::npos)
+			if (!parse_arg(strIn,pos,ins))
 				ins.strSuffix = strIn.Mid(pos);
 			else
-				ins.strSuffix = strIn.Mid(pos,found-pos);
+			{
+				found = find_brace(strIn,pos,'{');
+				if (found == string_t::npos)
+					ins.strSuffix = strIn.Mid(pos);
+				else
+					ins.strSuffix = strIn.Mid(pos,found-pos);
+			}
 
 			merge_braces(ins.strSuffix);
 

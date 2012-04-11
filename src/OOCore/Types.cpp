@@ -720,7 +720,7 @@ namespace
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,3,((in),const char*,sz,(in),int,throws,(in_out),guid_base_t*,result))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const char*,sz,(in_out),guid_base_t*,result))
 {
 	int ret = guid_t_from_string(sz,result);
 	if (ret == 0)
@@ -729,9 +729,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,3,((in),const c
 		result->Data2 = 0;
 		result->Data3 = 0;
 		memset(result->Data4,sizeof(result->Data4),0);
-
-		if (throws)
-			throw Formatting::IFormattingException::Create(OOCore::get_text("{0} is not an Omega::guid_t string representation") % sz);
 	}
 	return ret;
 }

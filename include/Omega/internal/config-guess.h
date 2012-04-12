@@ -43,7 +43,7 @@
 #elif defined (__BORLANDC__)
 // Borland C++ Builder
 #include "config-borland.h"
-#elif defined (__GNUC__)
+#elif defined (__GNUC__) || defined(__CDT_PARSER__)
 // Keep this last, as a lot of compilers pretend...
 #include "config-gcc.h"
 #else

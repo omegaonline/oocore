@@ -1400,6 +1400,8 @@ namespace
 			if (val == 0)
 				return fmt_recurse(val,*parts.at(2),def_precision,false,PASS_LCID);
 
+			// Intentional fall-through
+
 		case 2:
 #if defined(__clang__)
 			{

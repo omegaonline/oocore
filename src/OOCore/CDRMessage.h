@@ -252,12 +252,9 @@ namespace OOCore
 					}
 				}
 				break;
-
 			case Omega::TypeInfo::typeVoid:
-				return;
-
 			default:
-				OMEGA_THROW("Invalid any_t type");
+				break;
 			}
 		}
 

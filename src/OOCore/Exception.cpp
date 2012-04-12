@@ -160,7 +160,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Cre
 	return OOCore::CreateInternalException("Operating system error",pszFile,nLine,pszFunc,ptrE).Detach();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,5,((in),const Omega::string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),Omega::IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Create,5,((in),const string_t&,desc,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc,(in),IException*,pCause))
 {
 	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).Detach();
 }

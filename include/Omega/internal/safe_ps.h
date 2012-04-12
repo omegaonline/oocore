@@ -367,6 +367,9 @@ namespace Omega
 						Safe_Proxy_Base(shim)
 				{ }
 
+				virtual ~Safe_Proxy()
+				{ }
+
 				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
 				{
 					// Don't return on OMEGA_GUIDOF(IObject)

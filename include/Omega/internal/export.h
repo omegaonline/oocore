@@ -215,7 +215,7 @@
 #define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	OMEGA_DECLARE_TYPE_PARAMS(param_count,params)
 
-#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_NO_METHODS() return 0;
+#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_NO_METHODS() return NULL;
 
 #define OMEGA_DECLARE_TYPE_METHOD_PARAM(index,method,d) \
 	static const typeinfo_rtti::ParamInfo* OMEGA_CONCAT_R(method_param_,index)() \
@@ -504,8 +504,9 @@
 				OMEGA_DECLARE_WIRE_STUB_METHODS(methods) \
 			}; \
 			if (method_id >= Wire_Stub<d_space::derived >::MethodCount && method_id < MethodCount) \
-				return MethodTable[method_id - Wire_Stub<d_space::derived >::MethodCount](this,pParamsIn,pParamsOut); \
-			return Wire_Stub<d_space::derived >::Invoke(method_id,pParamsIn,pParamsOut); \
+				MethodTable[method_id - Wire_Stub<d_space::derived >::MethodCount](this,pParamsIn,pParamsOut); \
+			else \
+				Wire_Stub<d_space::derived >::Invoke(method_id,pParamsIn,pParamsOut); \
 		} \
 		static const uint32_t MethodCount = Wire_Stub<d_space::derived >::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \

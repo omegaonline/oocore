@@ -213,7 +213,7 @@ namespace Omega
 					const SafeShim* except = NULL;
 					try
 					{
-						*retval = create_safe_stub(static_cast<Wire_Proxy_Base*>(shim->m_stub)->m_ptrProxy,OMEGA_GUIDOF(Remoting::IProxy));
+						*retval = create_safe_stub(static_cast<Wire_Proxy_Base*>(shim->m_stub)->m_ptrProxy,OMEGA_GUIDOF(Omega::Remoting::IProxy));
 					}
 					catch (IException* pE)
 					{
@@ -239,6 +239,9 @@ namespace Omega
 			protected:
 				Wire_Proxy(Remoting::IProxy* pProxy) :
 						Wire_Proxy_Base(pProxy)
+				{ }
+
+				virtual ~Wire_Proxy()
 				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
@@ -284,6 +287,8 @@ namespace Omega
 
 			class Wire_Proxy_IObject : public Wire_Proxy<IObject,IObject>
 			{
+				typedef Wire_Proxy<IObject,IObject> Base;
+
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
 				{
@@ -303,8 +308,7 @@ namespace Omega
 			private:
 				auto_iface_ptr<IObject> m_ptrProxyObj;
 
-				Wire_Proxy_IObject(Remoting::IProxy* pProxy) :
-						Wire_Proxy<IObject,IObject>(pProxy)
+				Wire_Proxy_IObject(Remoting::IProxy* pProxy) : Base(pProxy)
 				{
 					// QI for base object of pProxy
 					m_ptrProxyObj = pProxy->QueryInterface(OMEGA_GUIDOF(IObject));
@@ -458,7 +462,7 @@ namespace Omega
 
 				virtual void Invoke(uint32_t method_id, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 				{
-					return Wire_Stub_Base::Invoke(method_id,pParamsIn,pParamsOut);
+					Wire_Stub_Base::Invoke(method_id,pParamsIn,pParamsOut);
 				}
 
 				static const uint32_t MethodCount = Wire_Stub_Base::MethodCount;

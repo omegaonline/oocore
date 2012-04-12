@@ -631,11 +631,17 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 
 	wxTreeItemId tree_id = m_pTree->GetItemParent(evt.GetItem());
 	if (!tree_id)
-		return evt.Veto();
+	{
+		evt.Veto();
+		return;
+	}
 
 	TreeItemData* pItem = (TreeItemData*)m_pTree->GetItemData(tree_id);
 	if (!pItem)
-		return evt.Veto();
+	{
+		evt.Veto();
+		return;
+	}
 
 	wxString strOld = m_pTree->GetItemText(evt.GetItem());
 
@@ -695,11 +701,17 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 
 	wxTreeItemId tree_id = m_pTree->GetSelection();
 	if (!tree_id)
-		return evt.Veto();
+	{
+		evt.Veto();
+		return;
+	}
 
 	TreeItemData* pItem = (TreeItemData*)m_pTree->GetItemData(tree_id);
 	if (!pItem)
-		return evt.Veto();
+	{
+		evt.Veto();
+		return;
+	}
 
 	wxString strOld = m_pList->GetItemText(evt.GetIndex());
 

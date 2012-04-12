@@ -510,7 +510,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 		User::Registry::NotFoundException::Throw(strFullKey);
 	}
 
-	return ptrKey->DeleteSubKey(strSubKey2);
+	ptrKey->DeleteSubKey(strSubKey2);
 }
 
 void RootKey::DeleteValue(const string_t& strName)

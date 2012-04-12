@@ -230,7 +230,7 @@ void OOCore::Proxy::MarshalInterface(Remoting::IMarshaller* pMarshaller, Remotin
 	// Tell the stub to expect incoming requests from a different channel...
 	ObjectPtr<Remoting::IMessage> ptrReflect = CallRemoteStubMarshal(pMarshaller,iid);
 
-	return pMarshaller->MarshalInterface(string_t::constant("pReflect"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
+	pMarshaller->MarshalInterface(string_t::constant("pReflect"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
 void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags)

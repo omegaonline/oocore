@@ -74,31 +74,6 @@ namespace User
 			}
 		};
 		
-		class AlreadyExistsException :
-				public ExceptionImpl<IAlreadyExistsException>
-		{
-		public:
-			BEGIN_INTERFACE_MAP(AlreadyExistsException)
-				INTERFACE_ENTRY_CHAIN(ExceptionImpl<IAlreadyExistsException>)
-			END_INTERFACE_MAP()
-
-			string_t m_strName;
-
-		public:
-			string_t GetKeyName()
-			{
-				return m_strName;
-			}
-
-			static void Throw(const string_t& name)
-			{
-				ObjectPtr<ObjectImpl<AlreadyExistsException> > pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
-				pRE->m_strName = name;
-				pRE->m_strDesc = string_t::constant("Key '{0}' already exists.") % name;
-				throw static_cast<IAlreadyExistsException*>(pRE.Detach());
-			}
-		};
-
 		class AccessDeniedException :
 				public ExceptionImpl<IAccessDeniedException>
 		{

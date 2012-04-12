@@ -41,6 +41,11 @@ namespace Omega
 		static INotFoundException* Create(const string_t& strDesc);
 	};
 
+	interface IAlreadyExistsException : public IException
+	{
+		static IAlreadyExistsException* Create(const string_t& strDesc);
+	};
+
 	interface ICastException : public IException
 	{
 		virtual any_t GetValue() = 0;
@@ -88,11 +93,6 @@ namespace Omega
 			virtual any_t GetFailingOid() = 0;
 
 			static INoAggregationException* Create(const any_t& oid);
-		};
-
-		interface IDuplicateRegistrationException : public IException
-		{
-			virtual any_t GetOid() = 0;
 		};
 
 		interface IRunningObjectTable : public IObject
@@ -143,11 +143,6 @@ namespace Omega
 			virtual any_t GetValue(const string_t& name) = 0;
 			virtual void SetValue(const string_t& name, const any_t& val) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
-		};
-
-		interface IAlreadyExistsException : public IException
-		{
-			virtual string_t GetKeyName() = 0;
 		};
 
 		interface IBadNameException : public IException
@@ -246,18 +241,17 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
-	Omega::Activation, INoAggregationException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
+	Omega, IAlreadyExistsException, Omega, IException, "{5EC948EA-D7F1-4733-80A3-FF4BF5B2F4A7}",
 
-	// Methods
-	OMEGA_METHOD(any_t,GetFailingOid,0,())
+	OMEGA_NO_METHODS()
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
-	Omega::Activation, IDuplicateRegistrationException, Omega, IException, "{35495CBA-13B0-4d56-BAA4-3DF328A3F1EE}",
+	Omega::Activation, INoAggregationException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
 
 	// Methods
-	OMEGA_METHOD(any_t,GetOid,0,())
+	OMEGA_METHOD(any_t,GetFailingOid,0,())
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -293,14 +287,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(string_t,GetName,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Registry, IAlreadyExistsException, Omega, IException, "{5EC948EA-D7F1-4733-80A3-FF4BF5B2F4A7}",
-
-	// Methods
-	OMEGA_METHOD(string_t,GetKeyName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

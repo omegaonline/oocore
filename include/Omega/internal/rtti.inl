@@ -93,6 +93,12 @@ inline Omega::ITimeoutException* Omega::ITimeoutException::Create()
 	return OOCore_ITimeoutException_Create();
 }
 
+OOCORE_EXPORTED_FUNCTION(Omega::IAlreadyExistsException*,OOCore_IAlreadyExistsException_Create,1,((in),const Omega::string_t&,strDesc))
+inline Omega::IAlreadyExistsException* Omega::IAlreadyExistsException::Create(const string_t& strDesc)
+{
+	return OOCore_IAlreadyExistsException_Create(strDesc);
+}
+
 #endif // !defined(DOXYGEN)
 
 #endif // OOCORE_RTTI_INL_INCLUDED_

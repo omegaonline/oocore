@@ -650,7 +650,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	{
 		pItem->RenameKey(Omega::string_t(strOld.wc_str(),Omega::string_t::npos),Omega::string_t(evt.GetLabel().wc_str(),Omega::string_t::npos),(TreeItemData*)m_pTree->GetItemData(evt.GetItem()));
 	}
-	catch (Omega::Registry::IAlreadyExistsException* pE)
+	catch (Omega::IAlreadyExistsException* pE)
 	{
 		pE->Release();
 
@@ -723,7 +723,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 			evt.Veto();
 		}
 	}
-	catch (Omega::Registry::IAlreadyExistsException* pE)
+	catch (Omega::IAlreadyExistsException* pE)
 	{
 		pE->Release();
 

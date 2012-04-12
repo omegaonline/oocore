@@ -56,6 +56,7 @@ namespace OTL
 					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::AlreadyExistsExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
 					{ 0,0,0,0 }
@@ -78,38 +79,6 @@ namespace OTL
 
 using namespace Omega;
 using namespace OTL;
-
-namespace
-{
-	class DuplicateRegistrationException :
-			public ExceptionImpl<Activation::IDuplicateRegistrationException>
-	{
-	public:
-		static void Throw(const any_t& oid);
-
-		BEGIN_INTERFACE_MAP(DuplicateRegistrationException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IDuplicateRegistrationException>)
-		END_INTERFACE_MAP()
-
-	private:
-		any_t m_oid;
-
-	// Activation::IDuplicateRegistrationException members
-	public:
-		any_t GetOid()
-		{
-			return m_oid;
-		}
-	};
-}
-
-void DuplicateRegistrationException::Throw(const any_t& oid)
-{
-	ObjectImpl<DuplicateRegistrationException>* pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
-	pRE->m_strDesc = OOCore::get_text("Duplicate registration of oid {0} in running object table") % oid;
-	pRE->m_oid = oid;
-	throw static_cast<IDuplicateRegistrationException*>(pRE);
-}
 
 void OOCore::RegisterObjects()
 {
@@ -267,11 +236,8 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 				}
 				else
 				{
-					if (!(pInfo->m_flags & Activation::MultipleRegistration))
-						DuplicateRegistrationException::Throw(oid);
-
-					if (pInfo->m_flags == flags)
-						DuplicateRegistrationException::Throw(oid);
+					if (!(pInfo->m_flags & Activation::MultipleRegistration) || pInfo->m_flags == flags)
+						throw IAlreadyExistsException::Create(OOCore::get_text("The OID {0} has already been registered") % oid);
 				}
 			}
 		}

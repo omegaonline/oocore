@@ -98,6 +98,7 @@ OMEGA_DEFINE_OID(OOCore,OID_InternalExceptionMarshalFactory, "{47E86F31-E9E9-466
 OMEGA_DEFINE_OID(OOCore,OID_NotFoundExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
 OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
+OMEGA_DEFINE_OID(OOCore,OID_AlreadyExistsExceptionMarshalFactory, "{BA90E55F-E0B6-0528-C45F-32DD9C3A414E}");
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),IException*,pCause))
 {
@@ -183,6 +184,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 		strIID = ptrII->GetName();
 
 	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface {0}") % strIID;
+	return pExcept.Detach();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IAlreadyExistsException*,OOCore_IAlreadyExistsException_Create,1,((in),const string_t&,strDesc))
+{
+	ObjectPtr<ObjectImpl<OOCore::AlreadyExistsException> > pExcept = ObjectImpl<OOCore::AlreadyExistsException>::CreateInstance();
+	pExcept->m_strDesc = strDesc;
 	return pExcept.Detach();
 }
 

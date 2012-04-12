@@ -135,6 +135,25 @@ namespace OOCore
 	{
 	};
 
+	// {BA90E55F-E0B6-0528-C45F-32DD9C3A414E}
+	extern "C" const Omega::guid_t OID_AlreadyExistsExceptionMarshalFactory;
+
+	class AlreadyExistsException :
+			public OTL::ExceptionAutoMarshalImpl<Omega::IAlreadyExistsException, &OID_AlreadyExistsExceptionMarshalFactory>
+	{
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::IAlreadyExistsException, &OID_AlreadyExistsExceptionMarshalFactory> baseClass;
+	public:
+		BEGIN_INTERFACE_MAP(AlreadyExistsException)
+			INTERFACE_ENTRY_CHAIN(baseClass)
+		END_INTERFACE_MAP()
+	};
+
+	class AlreadyExistsExceptionMarshalFactoryImpl :
+			public OTL::AutoObjectFactorySingleton<AlreadyExistsExceptionMarshalFactoryImpl,&OOCore::OID_AlreadyExistsExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::ExceptionMarshalFactoryImpl<AlreadyExistsException>
+	{
+	};
+
 	// {8FA37F2C-8252-437e-9C54-F07C13152E94}
 	extern "C" const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 

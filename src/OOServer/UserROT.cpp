@@ -27,38 +27,6 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace User
-{
-	class DuplicateRegistrationException :
-			public ExceptionImpl<Activation::IDuplicateRegistrationException>
-	{
-	public:
-		static void Throw(const any_t& oid);
-
-		BEGIN_INTERFACE_MAP(DuplicateRegistrationException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IDuplicateRegistrationException>)
-		END_INTERFACE_MAP()
-
-	private:
-		any_t m_oid;
-
-	// Activation::IDuplicateRegistrationException members
-	public:
-		any_t GetOid()
-		{
-			return m_oid;
-		}
-	};
-}
-
-void User::DuplicateRegistrationException::Throw(const any_t& oid)
-{
-	ObjectPtr<ObjectImpl<DuplicateRegistrationException> > pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
-	pRE->m_strDesc = string_t::constant("Duplicate registration of oid {0} in running object table.") % oid;
-	pRE->m_oid = oid;
-	throw static_cast<IDuplicateRegistrationException*>(pRE.Detach());
-}
-
 User::RunningObjectTable::RunningObjectTable() : m_mapObjectsByCookie(1)
 {
 }
@@ -115,11 +83,8 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 				}
 				else
 				{
-					if (!(pInfo->m_flags & Activation::MultipleRegistration))
-						DuplicateRegistrationException::Throw(oid);
-
-					if (pInfo->m_flags == flags)
-						DuplicateRegistrationException::Throw(oid);
+					if (!(pInfo->m_flags & Activation::MultipleRegistration) || pInfo->m_flags == flags)
+						throw IAlreadyExistsException::Create(string_t::constant("The OID {0} has already been registered") % oid);
 				}
 			}
 		}

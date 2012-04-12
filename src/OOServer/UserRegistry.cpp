@@ -77,6 +77,11 @@ namespace
 	{
 		throw INotFoundException::Create(string_t::constant("The registry value {0} does not exist") % strValue);
 	}
+
+	void ThrowAlreadyExists(const string_t& strKey)
+	{
+		throw INotFoundException::Create(string_t::constant("The registry key {0} already exists") % strKey);
+	}
 }
 
 void RootKey::init(Manager* pManager, const string_t& strKey, const int64_t& key, byte_t type)
@@ -258,7 +263,7 @@ IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (err==EACCES)
 		AccessDeniedException::Throw(strFullKey);
 	else if (err==EEXIST)
-		AlreadyExistsException::Throw(strFullKey);
+		ThrowAlreadyExists(strFullKey);
 	else if (err==ENOENT)
 		ThrowKeyNotFound(strFullKey);
 	else if (err==EIO)
@@ -302,9 +307,9 @@ std::set<string_t> RootKey::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
+	std::set<string_t> sub_keys;
 	try
 	{
-		std::set<string_t> sub_keys;
 		for (;;)
 		{
 			OOBase::LocalString strName;
@@ -322,13 +327,12 @@ std::set<string_t> RootKey::EnumSubKeys()
 				sub_keys.insert(string_t::constant("Local User"));
 			}
 		}
-
-		return sub_keys;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e.what());
 	}
+	return sub_keys;
 }
 
 std::set<string_t> RootKey::EnumValues()
@@ -356,9 +360,9 @@ std::set<string_t> RootKey::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
+	std::set<string_t> values;
 	try
 	{
-		std::set<string_t> values;
 		for (;;)
 		{
 			OOBase::LocalString strName;
@@ -370,13 +374,13 @@ std::set<string_t> RootKey::EnumValues()
 
 			values.insert(strName.c_str());
 		}
-
-		return values;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e.what());
 	}
+
+	return values;
 }
 
 void RootKey::DeleteSubKey(const string_t& strSubKey)

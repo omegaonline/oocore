@@ -695,6 +695,7 @@
 		} \
 	protected: \
 		Safe_Proxy(const SafeShim* shim) : Safe_Proxy<d_space::derived,D>(shim) {} \
+		virtual ~Safe_Proxy() {} \
 		virtual bool IsDerived__proxy__(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
@@ -717,6 +718,7 @@
 		} \
 	protected: \
 		Wire_Proxy(Remoting::IProxy* pProxy) : Base(pProxy) {} \
+		virtual ~Wire_Proxy() {} \
 		virtual bool IsDerived__proxy__(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \

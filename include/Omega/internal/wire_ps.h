@@ -507,6 +507,9 @@ namespace Omega
 						Base(pProxy)
 				{ }
 
+				virtual ~Wire_Proxy()
+				{ }
+
 				virtual bool IsDerived__proxy__(const guid_t& iid) const
 				{
 					if (iid == OMEGA_GUIDOF(IException))

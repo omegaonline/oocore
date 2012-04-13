@@ -740,7 +740,10 @@ namespace Omega
 			protected:
 				Safe_Proxy(const SafeShim* shim) :
 						Safe_Proxy<IObject,D>(shim)
-				{}
+				{ }
+
+				virtual ~Safe_Proxy()
+				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const
 				{

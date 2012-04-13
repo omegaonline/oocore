@@ -166,10 +166,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Cre
 	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).Detach();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Create,1,((in),const string_t&,strDesc))
+OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Create,2,((in),const string_t&,strDesc,(in),Omega::IException*,pCause))
 {
 	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
 	pExcept->m_strDesc = strDesc;
+	pExcept->m_ptrCause = pCause;
+	pExcept->m_ptrCause.AddRef();
 	return pExcept.Detach();
 }
 

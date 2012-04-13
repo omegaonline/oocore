@@ -77,7 +77,7 @@ namespace
 		OOBase::SmartPtr<OOBase::DLL> dll = DLLManager::instance()->load_dll(dll_name);
 		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
 		if (!pfn)
-			throw INotFoundException::Create(OOCore::get_text("The library {0} is not compatible") % dll_name);
+			throw INotFoundException::Create(OOCore::get_text("The library {0} is missing the Omega_GetLibraryObject_Safe entrypoint") % dll_name);
 
 		IObject* pObj = NULL;
 		const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
@@ -145,7 +145,7 @@ namespace
 			{
 				string_t strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
 				if (strLib.IsEmpty() || IsRelativePath(strLib))
-					OMEGA_THROW(OOCore::get_text("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid);
+					throw INotFoundException::Create(OOCore::get_text("Relative path \"{0}\" in library registry value.") % strLib);
 
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
@@ -274,7 +274,10 @@ OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 	// Load the new DLL
 	int err = dll->load(name.c_str());
 	if (err != 0)
-		throw ISystemException::Create(err,OMEGA_CREATE_INTERNAL(OOCore::get_text("Loading library: {0}") % name));
+	{
+		ObjectPtr<IException> ptrE = ISystemException::Create(err);
+		throw INotFoundException::Create(OOCore::get_text("Failed to load library {0}") % name,ptrE);
+	}
 
 	// Add to the map
 	if ((err = m_dll_map.insert(name,dll)) != 0)
@@ -338,45 +341,53 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activ
 
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	// First try to determine the protocol...
-	guid_t oid_guid;
-	if (oid.Coerce(oid_guid) == any_t::castValid)
-		return GetLocalInstance(oid_guid,flags,iid);
-
-	string_t strObject = oid.cast<string_t>();
-	string_t strEndpoint;
-	size_t pos = strObject.Find('@');
-	if (pos != string_t::npos)
+	try
 	{
-		strEndpoint = strObject.Mid(pos+1);
-		strObject = strObject.Left(pos);
+		// First try to determine the protocol...
+		guid_t oid_guid;
+		if (oid.Coerce(oid_guid) == any_t::castValid)
+			return GetLocalInstance(oid_guid,flags,iid);
 
-		if (strEndpoint == "local")
-			strEndpoint.Clear();
+		string_t strObject = oid.cast<string_t>();
+		string_t strEndpoint;
+		size_t pos = strObject.Find('@');
+		if (pos != string_t::npos)
+		{
+			strEndpoint = strObject.Mid(pos+1);
+			strObject = strObject.Left(pos);
+
+			if (strEndpoint == "local")
+				strEndpoint.Clear();
+		}
+
+		if (strEndpoint.IsEmpty())
+		{
+			// Do a quick registry lookup
+			if (!guid_t::FromString(strObject,oid_guid))
+				oid_guid = NameToOid(strObject);
+
+			return GetLocalInstance(oid_guid,flags,iid);
+		}
+
+		// Open a remote channel
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ObjectPtr<Remoting::IChannel> ptrChannel = ptrIPS->OpenRemoteChannel(strEndpoint);
+
+		// Get the ObjectManager
+		IObject* pObject = NULL;
+		ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IObjectManager),pObject);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = static_cast<Remoting::IObjectManager*>(pObject);
+
+		// Get the remote instance
+		pObject = NULL;
+		ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
+		return pObject;
 	}
-
-	if (strEndpoint.IsEmpty())
+	catch (IException* pE)
 	{
-		// Do a quick registry lookup
-		if (!guid_t::FromString(strObject,oid_guid))
-			oid_guid = NameToOid(strObject);
-
-		return GetLocalInstance(oid_guid,flags,iid);
+		ObjectPtr<IException> ptrE = pE;
+		throw INotFoundException::Create(OOCore::get_text("The requested object {0} could not be created") % oid,pE);
 	}
-
-	// Open a remote channel
-	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-	ObjectPtr<Remoting::IChannel> ptrChannel = ptrIPS->OpenRemoteChannel(strEndpoint);
-
-	// Get the ObjectManager
-	IObject* pObject = NULL;
-	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IObjectManager),pObject);
-	ObjectPtr<Remoting::IObjectManager> ptrOM = static_cast<Remoting::IObjectManager*>(pObject);
-
-	// Get the remote instance
-	pObject = NULL;
-	ptrOM->GetRemoteInstance(strObject,flags,iid,pObject);
-	return pObject;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))

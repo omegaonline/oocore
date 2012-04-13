@@ -38,7 +38,7 @@ namespace Omega
 
 	interface INotFoundException : public IException
 	{
-		static INotFoundException* Create(const string_t& strDesc);
+		static INotFoundException* Create(const string_t& strDesc, IException* pCause = NULL);
 	};
 
 	interface IAlreadyExistsException : public IException

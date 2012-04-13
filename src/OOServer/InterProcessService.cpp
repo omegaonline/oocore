@@ -104,13 +104,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		if (ptrKey->IsValue(string_t::constant("Library")))
 		{
-			string_t strLib = ptrKey->GetValue(string_t::constant("Library")).cast<string_t>();
-			if (strLib.IsEmpty() || User::Process::is_relative_path(strLib))
-			{
-				string_t strErr = string_t::constant("Relative path \"{0}\" in object library '{1}' activation registry value.") % strLib % oid;
-				OMEGA_THROW(strErr.c_str());
-			}
-
 			void* ISSUE_8; // Surrogates here
 
 			OMEGA_THROW("No surrogate support!");
@@ -122,10 +115,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
 			strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
 			if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess))
-			{
-				string_t strErr = string_t::constant("Relative path \"{0}\" in application '{1}' activation registry value.") % strProcess % strAppName;
-				OMEGA_THROW(strErr.c_str());
-			}
+				throw INotFoundException::Create(string_t::constant("Relative path \"{0}\" in application activation registry value.") % strProcess);
 		}
 
 		// Build the environment block
@@ -195,9 +185,9 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
 
 			if (timeout.has_expired())
-				throw INotFoundException::Create(string_t::constant("The process {0} does not implement the object {1}") % strProcess % oid);
-			else
-				throw INotFoundException::Create(string_t::constant("The process {0} terminated unexpectedly with exit code {1}") % strProcess % exit_code);
+				throw ITimeoutException::Create();
+
+			throw INotFoundException::Create(string_t::constant("The process {0} terminated unexpectedly with exit code {1}") % strProcess % exit_code);
 		}
 	}
 }

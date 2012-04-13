@@ -80,7 +80,7 @@ namespace
 
 	void ThrowAlreadyExists(const string_t& strKey)
 	{
-		throw INotFoundException::Create(string_t::constant("The registry key {0} already exists") % strKey);
+		throw IAlreadyExistsException::Create(string_t::constant("The registry key {0} already exists") % strKey);
 	}
 }
 

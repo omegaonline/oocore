@@ -87,48 +87,56 @@ namespace
 			{
 			case 'c':
 				capital = false;
+				// Intentional fall-through
 			case 'C':
 				fmt = currency;
 				break;
 
 			case 'd':
 				capital = false;
+				// Intentional fall-through
 			case 'D':
 				fmt = decimal;
 				break;
 
 			case 'e':
 				capital = false;
+				// Intentional fall-through
 			case 'E':
 				fmt = scientific;
 				break;
 
 			case 'f':
 				capital = false;
+				// Intentional fall-through
 			case 'F':
 				fmt = fixed_point;
 				break;
 
 			case 'g':
 				capital = false;
+				// Intentional fall-through
 			case 'G':
 				fmt = general;
 				break;
 
 			case 'n':
 				capital = false;
+				// Intentional fall-through
 			case 'N':
 				fmt = number;
 				break;
 
 			case 'r':
 				capital = false;
+				// Intentional fall-through
 			case 'R':
 				fmt = round_trip;
 				break;
 
 			case 'x':
 				capital = false;
+				// Intentional fall-through
 			case 'X':
 				fmt = hexadecimal;
 				break;

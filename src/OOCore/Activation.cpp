@@ -235,17 +235,15 @@ namespace
 	guid_t NameToOid(const string_t& strObjectName)
 	{
 		string_t strCurName = strObjectName;
-		for (;;)
-		{
-			ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
-			if (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
-			{
-				strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
-				continue;
-			}
+		ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
 
-			return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
+		while (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
+		{
+			strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
+			ptrOidKey = GetObjectsKey(strCurName);
 		}
+
+		return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
 	}
 }
 

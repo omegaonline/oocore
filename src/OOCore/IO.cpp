@@ -141,16 +141,15 @@ namespace
 
 		uint32_t ReadBytes(uint32_t lenBytes, byte_t* data)
 		{
-			for (;;)
+			do
 			{
 				ssize_t r = ::read(m_fd,data,lenBytes);
 				if (r != -1)
 					return static_cast<uint32_t>(r);
-
-				int err = errno;
-				if (err != EINTR)
-					throw ISystemException::Create(err);
 			}
+			while (errno == EINTR);
+
+			throw ISystemException::Create(errno);
 		}
 
 	private:

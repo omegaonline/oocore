@@ -19,7 +19,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	{
 		pKey->SetValue(strTestValue,"Yes");
 	}
-	catch (Omega::Registry::IAccessDeniedException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
 		// We have insufficient permissions to write here
 		pE->Release();
@@ -55,9 +55,8 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		pKey->SetValue("","Invalid name");
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::IBadNameException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetName() == "");
 		pE->Release();
 	}
 	try
@@ -65,9 +64,8 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		pKey->SetValue("/",0);
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::IBadNameException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetName() == "/");
 		pE->Release();
 	}
 
@@ -103,7 +101,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	{
 		pSubKey = pKey->OpenKey(strTestKey,Omega::Registry::IKey::OpenCreate);
 	}
-	catch (Omega::Registry::IAccessDeniedException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
 		// We have insufficient permissions to write here
 		pE->Release();
@@ -128,9 +126,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::IBadNameException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetName().IsEmpty());
 		pE->Release();
 	}
 	try
@@ -139,9 +136,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::IBadNameException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetName() == "/");
 		pE->Release();
 	}
 
@@ -214,9 +210,8 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 		pKey->DeleteSubKey(strSubKey);
 		TEST_FAIL("No exception thrown!");
 	}
-	catch (Omega::Registry::IAccessDeniedException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetKeyName() == strSubKey);
 		pE->Release();
 	}
 
@@ -241,7 +236,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	{
 		TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
 	}
-	catch (Omega::Registry::IAccessDeniedException* pE)
+	catch (Omega::IAccessDeniedException* pE)
 	{
 		// We don't have permission - skip this test...
 		pE->Release();

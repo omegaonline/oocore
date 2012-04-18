@@ -46,6 +46,11 @@ namespace Omega
 		static IAlreadyExistsException* Create(const string_t& strDesc);
 	};
 
+	interface IAccessDeniedException : public IException
+	{
+		static IAccessDeniedException* Create(const string_t& strDesc, IException* pCause = NULL);
+	};
+
 	interface ICastException : public IException
 	{
 		virtual any_t GetValue() = 0;
@@ -87,13 +92,6 @@ namespace Omega
 			MultipleRegistration = 0x20 // Allow multiple calls to Register with different flags
 		};
 		typedef uint16_t RegisterFlags_t;
-
-		interface INoAggregationException : public IException
-		{
-			virtual any_t GetFailingOid() = 0;
-
-			static INoAggregationException* Create(const any_t& oid);
-		};
 
 		interface IRunningObjectTable : public IObject
 		{
@@ -147,12 +145,6 @@ namespace Omega
 
 		interface IBadNameException : public IException
 		{
-			virtual string_t GetName() = 0;
-		};
-
-		interface IAccessDeniedException : public IException
-		{
-			virtual string_t GetKeyName() = 0;
 		};
 		
 		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
@@ -248,10 +240,9 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
-	Omega::Activation, INoAggregationException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
+	Omega, IAccessDeniedException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
 
-	// Methods
-	OMEGA_METHOD(any_t,GetFailingOid,0,())
+	OMEGA_NO_METHODS()
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -285,16 +276,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, IBadNameException, Omega, IException, "{5ADD9FB6-2044-40fd-9F3C-31E9B66B865E}",
 
-	// Methods
-	OMEGA_METHOD(string_t,GetName,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Registry, IAccessDeniedException, Omega, IException, "{08AE0A04-1765-493b-93A3-8738768F09BC}",
-
-	// Methods
-	OMEGA_METHOD(string_t,GetKeyName,0,())
+	OMEGA_NO_METHODS()
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -312,12 +294,6 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(Omega::TypeInfo::IProvideObjectInfo::iid_list_t,EnumInterfaces,0,())
 )
-
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const Omega::any_t&,oid));
-inline Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::any_t& oid)
-{
-	return OOCore_Activation_INoAggregationException_Create(oid);
-}
 
 OOCORE_EXPORTED_FUNCTION(Omega::TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInterfaceInfo,2,((in),const Omega::guid_t&,iid,(in),Omega::IObject*,pObject));
 inline Omega::TypeInfo::IInterfaceInfo* Omega::TypeInfo::GetInterfaceInfo(const Omega::guid_t& iid, Omega::IObject* pObject)

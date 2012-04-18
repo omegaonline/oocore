@@ -99,6 +99,14 @@ inline Omega::IAlreadyExistsException* Omega::IAlreadyExistsException::Create(co
 	return OOCore_IAlreadyExistsException_Create(strDesc);
 }
 
+OOCORE_EXPORTED_FUNCTION(Omega::IAccessDeniedException*,OOCore_IAccessDeniedException_Create,2,((in),const Omega::string_t&,strDesc,(in),Omega::IException*,pCause))
+inline Omega::IAccessDeniedException* Omega::IAccessDeniedException::Create(const string_t& strDesc, IException* pCause)
+{
+	return OOCore_IAccessDeniedException_Create(strDesc,pCause);
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::IAccessDeniedException*,OOCore_IAccessDeniedException_NoAggregation,1,((in),const Omega::guid_t&,oid))
+
 #endif // !defined(DOXYGEN)
 
 #endif // OOCORE_RTTI_INL_INCLUDED_

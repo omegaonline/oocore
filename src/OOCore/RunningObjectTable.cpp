@@ -404,7 +404,7 @@ OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable,"{F67F5A41-BA32-48C9-BFD2-7B3
 void OOCore::RunningObjectTableFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
-		throw Omega::Activation::INoAggregationException::Create(Activation::OID_RunningObjectTable);
+		throw OOCore_IAccessDeniedException_NoAggregation(Activation::OID_RunningObjectTable);
 
 	ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 	if (ptrIPS)

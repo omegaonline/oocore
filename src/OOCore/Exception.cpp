@@ -96,6 +96,7 @@ namespace
 OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
 OMEGA_DEFINE_OID(OOCore,OID_InternalExceptionMarshalFactory, "{47E86F31-E9E9-4667-89CA-40EB048DA2B7}");
 OMEGA_DEFINE_OID(OOCore,OID_NotFoundExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
+OMEGA_DEFINE_OID(OOCore,OID_AccessDeniedExceptionMarshalFactory, "{5CA887CE-648C-BBE4-9B66-14F275879CFB}");
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
 OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
 OMEGA_DEFINE_OID(OOCore,OID_AlreadyExistsExceptionMarshalFactory, "{BA90E55F-E0B6-0528-C45F-32DD9C3A414E}");
@@ -193,6 +194,22 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IAlreadyExistsException*,OOCore_IAlreadyExistsExc
 {
 	ObjectPtr<ObjectImpl<OOCore::AlreadyExistsException> > pExcept = ObjectImpl<OOCore::AlreadyExistsException>::CreateInstance();
 	pExcept->m_strDesc = strDesc;
+	return pExcept.Detach();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IAccessDeniedException*,OOCore_IAccessDeniedException_Create,2,((in),const string_t&,strDesc,(in),Omega::IException*,pCause))
+{
+	ObjectPtr<ObjectImpl<OOCore::AccessDeniedException> > pExcept = ObjectImpl<OOCore::AccessDeniedException>::CreateInstance();
+	pExcept->m_strDesc = strDesc;
+	pExcept->m_ptrCause = pCause;
+	pExcept->m_ptrCause.AddRef();
+	return pExcept.Detach();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IAccessDeniedException*,OOCore_IAccessDeniedException_NoAggregation,1,((in),const Omega::guid_t&,oid))
+{
+	ObjectPtr<ObjectImpl<OOCore::AccessDeniedException> > pExcept = ObjectImpl<OOCore::AccessDeniedException>::CreateInstance();
+	pExcept->m_strDesc = OOCore::get_text("Object {0} does not support aggregation") % oid;
 	return pExcept.Detach();
 }
 

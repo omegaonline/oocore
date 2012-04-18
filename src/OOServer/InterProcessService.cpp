@@ -115,7 +115,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
 			strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
 			if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess))
-				throw INotFoundException::Create(string_t::constant("Relative path \"{0}\" in application activation registry value.") % strProcess);
+				throw IAccessDeniedException::Create(string_t::constant("Relative path \"{0}\" in application activation registry value.") % strProcess);
 		}
 
 		// Build the environment block

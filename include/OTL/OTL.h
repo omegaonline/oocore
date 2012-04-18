@@ -753,7 +753,7 @@ namespace OTL
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject*, const Omega::guid_t&)
 		{
-			throw Omega::Activation::INoAggregationException::Create(*pOID);
+			throw OOCore_IAccessDeniedException_NoAggregation(*pOID);
 		}
 	};
 

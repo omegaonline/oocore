@@ -154,6 +154,25 @@ namespace OOCore
 	{
 	};
 
+	// {5CA887CE-648C-BBE4-9B66-14F275879CFB}
+	extern "C" const Omega::guid_t OID_AccessDeniedExceptionMarshalFactory;
+
+	class AccessDeniedException :
+			public OTL::ExceptionAutoMarshalImpl<Omega::IAccessDeniedException, &OID_AccessDeniedExceptionMarshalFactory>
+	{
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::IAccessDeniedException, &OID_AccessDeniedExceptionMarshalFactory> baseClass;
+	public:
+		BEGIN_INTERFACE_MAP(AccessDeniedException)
+			INTERFACE_ENTRY_CHAIN(baseClass)
+		END_INTERFACE_MAP()
+	};
+
+	class AccessDeniedExceptionMarshalFactoryImpl :
+			public OTL::AutoObjectFactorySingleton<AccessDeniedExceptionMarshalFactoryImpl,&OOCore::OID_AccessDeniedExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::ExceptionMarshalFactoryImpl<AccessDeniedException>
+	{
+	};
+
 	// {8FA37F2C-8252-437e-9C54-F07C13152E94}
 	extern "C" const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 

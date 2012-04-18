@@ -58,7 +58,6 @@ oosvruser_SOURCES = \
 	OOServer_User.h \
 	InterProcessService.h \
 	InterProcessService.cpp \
-	RegistryCmn.h \
 	UserChannel.h \
 	UserChannel.cpp \
 	UserMain.cpp \

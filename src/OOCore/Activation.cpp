@@ -32,24 +32,6 @@ using namespace OTL;
 
 namespace
 {
-	class NoAggregationException :
-			public ExceptionImpl<Activation::INoAggregationException>
-	{
-	public:
-		any_t  m_oid;
-
-		BEGIN_INTERFACE_MAP(NoAggregationException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
-		END_INTERFACE_MAP()
-
-	// Activation::INoAggregationException members
-	public:
-		any_t GetFailingOid()
-		{
-			return m_oid;
-		}
-	};
-
 	class DLLManagerImpl
 	{
 	public:
@@ -145,7 +127,7 @@ namespace
 			{
 				string_t strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
 				if (strLib.IsEmpty() || IsRelativePath(strLib))
-					throw INotFoundException::Create(OOCore::get_text("Relative path \"{0}\" in library registry value.") % strLib);
+					throw IAccessDeniedException::Create(OOCore::get_text("Relative path \"{0}\" in library registry value.") % strLib);
 
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
@@ -221,10 +203,7 @@ namespace
 		{
 			// See if we are allowed to load...
 			if (flags & Activation::DontLaunch)
-			{
-				void* TODO; // permission denied
-				throw INotFoundException::Create("Activation not allowed");
-			}
+				throw INotFoundException::Create(OOCore::get_text("A library or running instance of object {0} could not be found") % oid);
 
 			pObject = LoadObject(oid,flags,iid);
 		}
@@ -331,14 +310,6 @@ void DLLManagerImpl::unload_unused()
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const any_t&,oid))
-{
-	ObjectPtr<ObjectImpl<NoAggregationException> > pNew = ObjectImpl<NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = OOCore::get_text("Object {0} does not support aggregation") % oid;
-	pNew->m_oid = oid;
-	return pNew.Detach();
-}
-
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	try
@@ -404,7 +375,7 @@ OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C
 void OOCore::RegistryFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
-		throw Omega::Activation::INoAggregationException::Create(Registry::OID_Registry);
+		throw OOCore_IAccessDeniedException_NoAggregation(Registry::OID_Registry);
 		
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 	if (ptrIPS)

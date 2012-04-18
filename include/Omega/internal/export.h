@@ -462,6 +462,7 @@
 	protected: \
 		Safe_Stub(n_space::name* pI, const guid_t& iid) : Safe_Stub<d_space::derived >(pI,iid) \
 		{ m_shim.m_vtable = get_vt(); } \
+		virtual ~Safe_Stub() { } \
 		static const vtable_info<n_space::name >::type* get_vt() \
 		{ \
 			static const vtable_info<n_space::name >::type vt = { \

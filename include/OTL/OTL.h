@@ -528,6 +528,9 @@ namespace OTL
 			this->AddRef();
 		}
 
+		virtual ~NoLockObjectImpl()
+		{ }
+
 	// IObject members
 	public:
 		virtual void AddRef()
@@ -687,6 +690,9 @@ namespace OTL
 	{
 	public:
 		StackObjectImpl() : ROOT()
+		{ }
+
+		virtual ~StackObjectImpl()
 		{ }
 
 	// IObject members

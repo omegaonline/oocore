@@ -49,12 +49,12 @@ bool unregister_library()
 {
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("Local User/Objects");
 
-	if (ptrKey->IsSubKey("Test.Library"))
+	if (ptrKey->IsKey("Test.Library"))
 		ptrKey->DeleteSubKey("Test.Library");
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
-	if (ptrKey->IsSubKey("OIDs/" + strOid))
+	if (ptrKey->IsKey("OIDs/" + strOid))
 		ptrKey->DeleteSubKey("OIDs/" + strOid);
 
 	return true;
@@ -92,16 +92,16 @@ bool unregister_process()
 {
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("Local User/Objects");
 
-	if (ptrKey->IsSubKey("Test.Process"))
+	if (ptrKey->IsKey("Test.Process"))
 		ptrKey->DeleteSubKey("Test.Process");
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
 
-	if (ptrKey->IsSubKey("OIDs/" + strOid))
+	if (ptrKey->IsKey("OIDs/" + strOid))
 		ptrKey->DeleteSubKey("OIDs/" + strOid);
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>("Local User/Applications",Omega::Registry::IKey::OpenCreate);
-	if (ptrKey->IsSubKey("CoreTests.TestProcess"))
+	if (ptrKey->IsKey("CoreTests.TestProcess"))
 		ptrKey->DeleteSubKey("CoreTests.TestProcess");
 
 	return true;

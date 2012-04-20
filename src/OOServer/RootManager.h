@@ -40,6 +40,7 @@
 
 #include "MessageConnection.h"
 #include "RootProcess.h"
+#include "Protocol.h"
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define APPNAME "OOServer"
@@ -95,11 +96,11 @@ namespace Root
 		// Spawned process members
 		struct UserProcess
 		{
-			OOBase::String                   m_strPipe;
-			OOBase::SmartPtr<Process>        m_ptrProcess;
+			OOBase::String             m_strPipe;
+			OOBase::SmartPtr<Process>  m_ptrProcess;
 			OOBase::SmartPtr<Db::Hive> m_ptrRegistry;
 		};
-		Omega::uint32_t                      m_sandbox_channel;
+		Omega::uint32_t                m_sandbox_channel;
 
 		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
 		mapUserProcessesType                                   m_mapUserProcesses;
@@ -120,11 +121,10 @@ namespace Root
 		OOBase::SmartPtr<Db::Hive> m_registry;
 		OOBase::SmartPtr<Db::Hive> m_registry_sandbox;
 
-		int registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::Hive::access_rights_t access_mask);
-
-		int registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
-		int registry_open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
-		int registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
+		Db::hive_errors_t registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
+		bool registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::access_rights_t access_mask, int& err);
+		OOServer::RootErrCode_t registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
+		OOServer::RootErrCode_t registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
 		void registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);

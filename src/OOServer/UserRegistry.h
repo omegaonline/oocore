@@ -22,6 +22,8 @@
 #ifndef OOSERVER_USER_REGISTRY_H_INCLUDED_
 #define OOSERVER_USER_REGISTRY_H_INCLUDED_
 
+#include "Protocol.h"
+
 namespace User
 {
 	class Manager;
@@ -47,10 +49,12 @@ namespace User
 			Omega::int64_t  m_key;
 			Omega::byte_t   m_type;
 
+			OOServer::RootErrCode_t open_key(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags, Omega::int64_t& key, Omega::byte_t& type, Omega::string_t& strFullKey);
+
 		// IKey members
 		public:
 			Omega::string_t GetName();
-			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);
+			Omega::bool_t IsKey(const Omega::string_t& strSubKey);
 			std::set<Omega::string_t> EnumSubKeys();
 			Omega::Registry::IKey* OpenKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
 			void DeleteSubKey(const Omega::string_t& strSubKey);

@@ -58,7 +58,7 @@ namespace
 		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain);
 
 		bool IsRunning() const;
-		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
+		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive);
@@ -317,14 +317,17 @@ bool RootProcessUnix::IsRunning() const
 	return (waitpid(m_pid,&status,WNOHANG) == 0);
 }
 
-bool RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
+int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
 
 	// Get file info
 	struct stat sb;
 	if (stat(pszFName,&sb) != 0)
-		LOG_ERROR_RETURN(("stat() failed: %s",OOBase::system_error_text()),false);
+	{
+		int err = errno;
+		LOG_ERROR_RETURN(("stat() failed: %s",OOBase::system_error_text(err)),err);
+	}
 
 	int mode = -1;
 	if (bRead && !bWrite)
@@ -357,14 +360,17 @@ bool RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 		// Get the supplied user's group see if that is the same as the file's group
 		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
+		{
+			int err = errno;
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(err)),err);
+		}
 
 		OOBase::SmartPtr<gid_t,OOBase::LocalAllocator> ptrGroups;
 		int ngroups = 0;
 		if (getgrouplist(pw->pw_name,pw->pw_gid,NULL,&ngroups) == -1)
 		{
 			if (!ptrGroups.allocate(ngroups * sizeof(gid_t)))
-				LOG_ERROR_RETURN(("Out of memory!"),false);
+				LOG_ERROR_RETURN(("Out of memory!"),ENOMEM);
 
 			getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups);
 		}
@@ -384,7 +390,7 @@ bool RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 		}
 	}
 
-	return true;
+	return 0;
 }
 
 bool RootProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const

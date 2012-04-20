@@ -59,15 +59,6 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	{
 		pE->Release();
 	}
-	try
-	{
-		pKey->SetValue("/",0);
-		TEST_FAIL("No exception thrown!");
-	}
-	catch (Omega::IAccessDeniedException* pE)
-	{
-		pE->Release();
-	}
 
 	TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
 
@@ -91,7 +82,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	Omega::string_t strTestKey("TestKey_{0}");
 	strTestKey %= GetCurrentProcessId();
-	while (pKey->IsSubKey(strTestKey))
+	while (pKey->IsKey(strTestKey))
 	{
 		strTestKey = "_" + strTestKey;
 	}
@@ -109,7 +100,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 
 	TEST(pSubKey);
-	TEST(pKey->IsSubKey(strTestKey));
+	TEST(pKey->IsKey(strTestKey));
 
 	if (!test_values(pSubKey))
 		return false;
@@ -119,27 +110,6 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	pSubKey = pKey->OpenKey(strTestKey,Omega::Registry::IKey::OpenExisting);
 	TEST(pSubKey);
 	pSubKey->Release();
-
-	try
-	{
-		pSubKey = pKey->OpenKey(Omega::string_t(),Omega::Registry::IKey::OpenCreate);
-		pSubKey->Release();
-		TEST_FAIL("No exception thrown!");
-	}
-	catch (Omega::IAccessDeniedException* pE)
-	{
-		pE->Release();
-	}
-	try
-	{
-		pSubKey = pKey->OpenKey("/",Omega::Registry::IKey::OpenCreate);
-		pSubKey->Release();
-		TEST_FAIL("No exception thrown!");
-	}
-	catch (Omega::IAccessDeniedException* pE)
-	{
-		pE->Release();
-	}
 
 	std::set<Omega::string_t> keys = pKey->EnumSubKeys();
 	TEST(!keys.empty());
@@ -154,9 +124,14 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	{
 		pE->Release();
 	}
+	catch (Omega::IException* pE)
+	{
+		output_exception(pE);
+		pE->Release();
+	}
 
 	TEST_VOID(pKey->DeleteSubKey(strTestKey));
-	TEST(!pKey->IsSubKey(strTestKey));
+	TEST(!pKey->IsKey(strTestKey));
 
 	try
 	{
@@ -220,9 +195,9 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 
 static bool test_root_key(Omega::Registry::IKey* pKey)
 {
-	TEST(pKey->IsSubKey("System"));
-	TEST(pKey->IsSubKey("Local User"));
-	TEST(pKey->IsSubKey("All Users"));
+	TEST(pKey->IsKey("System"));
+	TEST(pKey->IsKey("Local User"));
+	TEST(pKey->IsKey("All Users"));
 
 	Omega::string_t strTestValue("TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();

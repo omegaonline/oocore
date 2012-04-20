@@ -35,8 +35,6 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "RootProcess.h"
-#include "Protocol.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -188,24 +186,25 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 	if (m_registry)
 	{
 		Omega::int64_t key = 0;
-		int err = registry_open_key(0,key,"System/Server/Settings",0);
-		if (err != 0)
+		Db::hive_errors_t err = registry_open_key(key,"/System/Server/Settings",0);
+		if (err)
 		{
-			if (err != ENOENT)
-				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry: %s",OOBase::system_error_text(err)),false);
+			if (err != Db::HIVE_NOTFOUND)
+				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry"),false);
 		}
 		else
 		{
 			OOBase::LocalString str;
-			if ((err = m_registry->get_value(key,name,0,str)) != 0)
+			if ((err = m_registry->get_value(key,name,0,str)))
 			{
-				if (err != ENOENT)
-					LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry: %s",name,OOBase::system_error_text(err)),false);
+				if (err != Db::HIVE_NOTFOUND)
+					LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry",name),false);
 			}
 			else 
 			{
-				if ((err = val.assign(str.c_str())) != 0)
-					LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+				int err2 = val.assign(str.c_str());
+				if (err2 != 0)
+					LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
 			
 				return true;
 			}

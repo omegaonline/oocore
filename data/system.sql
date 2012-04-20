@@ -39,7 +39,7 @@ BEGIN TRANSACTION;
 	      INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 11, 6 ); 
 
 	INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 13, '.links', 0 );
-	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 13, 15 );
+	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 13, 7 );
 	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Local User', 13, 'system:user/' );
 	
 COMMIT;

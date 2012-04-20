@@ -52,10 +52,12 @@ namespace
 		ObjectPtr<IKey> m_ptrOver;
 		ObjectPtr<IKey> m_ptrUnder;
 
+		void ThrowOverlay();
+
 	// IKey members
 	public:
 		string_t GetName();
-		bool_t IsSubKey(const string_t& strSubKey);
+		bool_t IsKey(const string_t& strSubKey);
 		std::set<string_t> EnumSubKeys();
 		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		void DeleteSubKey(const string_t& strSubKey);
@@ -66,24 +68,40 @@ namespace
 		void DeleteValue(const string_t& strName);
 	};
 
-	void ThrowKeyNotFound(const string_t& strKey)
+	void ThrowValueNotFound(const string_t& strKey, const string_t& strValue)
 	{
-		throw INotFoundException::Create(string_t::constant("The registry key {0} does not exist") % strKey);
+		throw INotFoundException::Create(string_t::constant("The registry key '{0}' does not have a value named '{1}'") % strKey % strValue);
 	}
 
-	void ThrowValueNotFound(const string_t& strValue)
+	void ThrowCorrectException(OOServer::RootErrCode_t err, const string_t& strKey)
 	{
-		throw INotFoundException::Create(string_t::constant("The registry value {0} does not exist") % strValue);
-	}
+		switch (err)
+		{
+		case OOServer::Ok:
+			break;
 
-	void ThrowAlreadyExists(const string_t& strKey)
-	{
-		throw IAlreadyExistsException::Create(string_t::constant("The registry key {0} already exists") % strKey);
-	}
+		case OOServer::NotFound:
+			throw INotFoundException::Create(string_t::constant("The registry key '{0}' does not exist") % strKey);
 
-	void ThrowAccessDenied(const string_t& strKey)
-	{
-		throw IAccessDeniedException::Create(string_t::constant("You do not have permission to access the registry key {0}") % strKey);
+		case OOServer::AlreadyExists:
+			throw IAlreadyExistsException::Create(string_t::constant("The registry key '{0}' already exists") % strKey);
+
+		case OOServer::ReadOnlyHive:
+			throw IAccessDeniedException::Create(string_t::constant("The registry database is read-only ({0})") % strKey);
+
+		case OOServer::NoRead:
+			throw IAccessDeniedException::Create(string_t::constant("You do not have read permissions for the registry key '{0}'") % strKey);
+
+		case OOServer::NoWrite:
+			throw IAccessDeniedException::Create(string_t::constant("You do not have write permissions for the registry key '{0}'") % strKey);
+
+		case OOServer::ProtectedKey:
+			throw IAccessDeniedException::Create(string_t::constant("The registry key '{0}' has the 'protect' bit set") % strKey);
+
+		case OOServer::Errored:
+		default:
+			throw IInternalException::Create(string_t::constant("Internal registry failure.  Check server log for details"),strKey.c_str(),0,NULL,NULL);
+		}
 	}
 }
 
@@ -100,39 +118,74 @@ string_t RootKey::GetName()
 	return m_strKey;
 }
 
-bool_t RootKey::IsSubKey(const string_t& strSubKey)
+OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags, int64_t& key, byte_t& type, string_t& strFullKey)
 {
+	key = m_key;
+	type = m_type;
+
+	if (strSubKey.c_str()[0] == '/')
+	{
+		key = 0;
+		type = 0;
+	}
+
+	if (key != 0 && type != 0)
+		strFullKey = m_strKey;
+
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
-	request.write(m_key);
-	request.write(m_type);
+	request.write(key);
+	request.write(type);
 	request.write(strSubKey.c_str());
-	request.write(static_cast<IKey::OpenFlags_t>(IKey::OpenExisting));
-	
+	request.write(flags);
+
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	string_t strFullKey = GetName();
-	if (!strFullKey.IsEmpty())
-		strFullKey += "/";
-	strFullKey += strSubKey;
-	
-	if (err == ENOENT)
-		return false;
-	else if (err==EACCES)
-		ThrowAccessDenied(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	if (err != OOServer::Errored)
+	{
+		OOBase::LocalString strFullKeyName;
+		if (!response.read(strFullKeyName))
+			OMEGA_THROW(response.last_error());
 
+		strFullKey += strFullKeyName.c_str();
+
+		if (err == OOServer::Linked)
+		{
+			OOBase::LocalString strLink,strLinkSubKey;
+			if (!response.read(strLink) || !response.read(strLinkSubKey))
+				OMEGA_THROW(response.last_error());
+
+			OMEGA_THROW("No registry mount-point support!");
+		}
+		else if (err == OOServer::Ok)
+		{
+			if (!response.read(key) || !response.read(type))
+				OMEGA_THROW(response.last_error());
+		}
+	}
+
+	return err;
+}
+
+bool_t RootKey::IsKey(const string_t& strSubKey)
+{
+	int64_t key;
+	byte_t type;
+	string_t strFullKey;
+
+	OOServer::RootErrCode_t err = open_key(strSubKey,IKey::OpenExisting,key,type,strFullKey);
+	if (err == OOServer::NotFound)
+		return false;
+
+	ThrowCorrectException(err,strFullKey);
 	return true;
 }
 
@@ -150,19 +203,14 @@ bool_t RootKey::IsValue(const string_t& strName)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err==ENOENT)
+	if (err == OOServer::NotFound)
 		return false;
-	else if (err==EACCES)
-		ThrowAccessDenied(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
 
+	ThrowCorrectException(err,m_strKey);
 	return true;
 }
 
@@ -180,18 +228,14 @@ any_t RootKey::GetValue(const string_t& strName)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err == ENOENT)
-		ThrowValueNotFound(GetName() + "/" + strName);
-	else if (err==EACCES)
-		ThrowAccessDenied(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	if (err == OOServer::NotFound)
+		ThrowValueNotFound(m_strKey,strName);
+	else
+		ThrowCorrectException(err,m_strKey);
 
 	OOBase::LocalString strValue;
 	if (!response.read(strValue))
@@ -215,59 +259,32 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err == ENOENT)
-		ThrowValueNotFound(GetName() + "/" + strName);
-	else if (err==EACCES)
-		throw IAccessDeniedException::Create(string_t::constant("You do not have permission to modify the registry key {0}") % GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	if (err == OOServer::NotFound)
+		ThrowValueNotFound(m_strKey,strName);
+	else if (err == OOServer::BadName)
+		throw IAccessDeniedException::Create(string_t::constant("Invalid value name '{0}'") % strName);
+	else
+		ThrowCorrectException(err,m_strKey);
 }
 
 IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
-	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
-	request.write(m_key);
-	request.write(m_type);
-	request.write(strSubKey.c_str());
-	request.write(flags);
+	int64_t key;
+	byte_t type;
+	string_t strFullKey;
 
-	if (request.last_error() != 0)
-		OMEGA_THROW(request.last_error());
+	OOServer::RootErrCode_t err = open_key(strSubKey,flags,key,type,strFullKey);
+	ThrowCorrectException(err,strFullKey);
 
-	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
-	
-	int32_t err = 0;
-	if (!response.read(err))
-		OMEGA_THROW(response.last_error());
-
-	string_t strFullKey = GetName();
-	if (!strFullKey.IsEmpty())
-		strFullKey += "/";
-	strFullKey += strSubKey;
-	
-	if (err==EACCES)
-		throw IAccessDeniedException::Create(string_t::constant("You do not have permission to create the registry key {0}") % strFullKey);
-	else if (err==EEXIST)
-		ThrowAlreadyExists(strFullKey);
-	else if (err==ENOENT)
-		ThrowKeyNotFound(strFullKey);
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	int64_t key = 0;
-	byte_t type = 255;
-	if (!response.read(key) || !response.read(type))
-		OMEGA_THROW(response.last_error());
+	if (key == m_key && type == m_type)
+	{
+		Internal_AddRef();
+		return this;
+	}
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstance();
@@ -287,18 +304,11 @@ std::set<string_t> RootKey::EnumSubKeys()
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err==EACCES)
-		ThrowAccessDenied(GetName());
-	else if (err==ENOENT)
-		ThrowKeyNotFound(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	ThrowCorrectException(err,m_strKey);
 
 	try
 	{
@@ -313,12 +323,6 @@ std::set<string_t> RootKey::EnumSubKeys()
 				break;
 
 			sub_keys.insert(strName.c_str());
-
-			if (m_key == 0 && m_type == 0)
-			{
-				// Add the local user key, although it doesn't really exist...
-				sub_keys.insert(string_t::constant("Local User"));
-			}
 		}
 		return sub_keys;
 	}
@@ -340,18 +344,11 @@ std::set<string_t> RootKey::EnumValues()
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err==EACCES)
-		ThrowAccessDenied(GetName());
-	else if (err==ENOENT)
-		ThrowKeyNotFound(GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	ThrowCorrectException(err,m_strKey);
 
 	try
 	{
@@ -389,26 +386,30 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err != 0)
+	string_t strFullKey = m_strKey;
+	if (err != OOServer::Errored)
 	{
-		string_t strFullKey = GetName();
-		if (!strFullKey.IsEmpty())
-			strFullKey += "/";
-		strFullKey += strSubKey;
+		OOBase::LocalString strFullKeyName;
+		if (!response.read(strFullKeyName))
+			OMEGA_THROW(response.last_error());
 
-		if (err == ENOENT)
-			ThrowKeyNotFound(strFullKey);
-		else if (err==EACCES)
-			throw IAccessDeniedException::Create(string_t::constant("You do not have permission to delete the registry key {0} or one of its subkeys") % strFullKey);
-		else if (err==EIO)
-			OMEGA_THROW("Unexpected registry error");
-		else
-			OMEGA_THROW(err);
+		strFullKey += strFullKeyName.c_str();
+
+		if (err == OOServer::Linked)
+		{
+			OOBase::LocalString strLink,strLinkSubKey;
+			if (!response.read(strLink) || !response.read(strLinkSubKey))
+				OMEGA_THROW(response.last_error());
+
+			OMEGA_THROW("No registry mount-point support!");
+		}
 	}
+
+	ThrowCorrectException(err,strFullKey);
 }
 
 void RootKey::DeleteValue(const string_t& strName)
@@ -425,18 +426,14 @@ void RootKey::DeleteValue(const string_t& strName)
 	OOBase::CDRStream response;
 	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
-	int32_t err = 0;
+	OOServer::RootErrCode_t err;
 	if (!response.read(err))
 		OMEGA_THROW(response.last_error());
 
-	if (err == ENOENT)
-		ThrowValueNotFound(GetName() + "/" + strName);
-	else if (err==EACCES)
-		throw IAccessDeniedException::Create(string_t::constant("You do not have permission to modify the registry key {0}") % GetName());
-	else if (err==EIO)
-		OMEGA_THROW("Unexpected registry error");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	if (err == OOServer::NotFound)
+		ThrowValueNotFound(m_strKey,strName);
+	else
+		ThrowCorrectException(err,m_strKey);
 }
 
 void OverlayKey::init(IKey* pOver, IKey* pUnder)
@@ -448,14 +445,19 @@ void OverlayKey::init(IKey* pOver, IKey* pUnder)
 	m_ptrUnder.AddRef();
 }
 
+void OverlayKey::ThrowOverlay()
+{
+	throw IAccessDeniedException::Create(string_t::constant("The registry key '{0}' is an overlay") % GetName());
+}
+
 string_t OverlayKey::GetName()
 {
 	return m_ptrOver->GetName();
 }
 
-bool_t OverlayKey::IsSubKey(const string_t& strSubKey)
+bool_t OverlayKey::IsKey(const string_t& strSubKey)
 {
-	return (m_ptrOver->IsSubKey(strSubKey) || m_ptrUnder->IsSubKey(strSubKey));
+	return (m_ptrOver->IsKey(strSubKey) || m_ptrUnder->IsKey(strSubKey));
 }
 
 bool_t OverlayKey::IsValue(const string_t& strName)
@@ -465,41 +467,33 @@ bool_t OverlayKey::IsValue(const string_t& strName)
 
 any_t OverlayKey::GetValue(const string_t& strName)
 {
-	if (m_ptrOver->IsValue(strName))
+	if (!m_ptrUnder->IsValue(strName))
 		return m_ptrOver->GetValue(strName);
 
-	return m_ptrUnder->GetValue(strName);
+	if (!m_ptrOver->IsValue(strName))
+		return m_ptrUnder->IsValue(strName);
+
+	return m_ptrOver->GetValue(strName);
 }
 
 void OverlayKey::SetValue(const string_t& /*strName*/, const any_t& /*value*/)
 {
-	throw IAccessDeniedException::Create(string_t::constant("The registry key {0} is an overlay") % GetName());
+	ThrowOverlay();
 }
 
 IKey* OverlayKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
-	string_t strFullKey = GetName();
-	if (!strFullKey.IsEmpty())
-		strFullKey += "/";
-	strFullKey += strSubKey;
+	if (flags != IKey::OpenExisting)
+		ThrowOverlay();
 
-	if (flags == IKey::CreateNew)
-		throw IAccessDeniedException::Create(string_t::constant("The registry key {0} is an overlay") % GetName());
+	if (!m_ptrUnder->IsKey(strSubKey))
+		return m_ptrOver->OpenKey(strSubKey,IKey::OpenExisting);
 
-	ObjectPtr<IKey> ptrSubOver,ptrSubUnder;
-	if (m_ptrOver->IsSubKey(strSubKey))
-		ptrSubOver = m_ptrOver->OpenKey(strSubKey,IKey::OpenExisting);
+	if (!m_ptrOver->IsKey(strSubKey))
+		return m_ptrUnder->OpenKey(strSubKey,IKey::OpenExisting);
 
-	if (m_ptrUnder->IsSubKey(strSubKey))
-		ptrSubUnder = m_ptrUnder->OpenKey(strSubKey,IKey::OpenExisting);
-
-	if (!ptrSubOver && !ptrSubUnder)
-		ThrowKeyNotFound(strFullKey);
-
-	if (!ptrSubOver)
-		return ptrSubUnder.Detach();
-	else if (!ptrSubUnder)
-		return ptrSubOver.Detach();
+	ObjectPtr<IKey> ptrSubOver = m_ptrOver->OpenKey(strSubKey,IKey::OpenExisting);
+	ObjectPtr<IKey> ptrSubUnder = m_ptrUnder->OpenKey(strSubKey,IKey::OpenExisting);
 
 	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
 	ptrKey->init(ptrSubOver,ptrSubUnder);
@@ -526,42 +520,26 @@ std::set<string_t> OverlayKey::EnumValues()
 
 void OverlayKey::DeleteSubKey(const string_t& strSubKey)
 {
-	throw IAccessDeniedException::Create(string_t::constant("The registry key {0} is an overlay") % GetName());
+	ThrowOverlay();
 }
 
 void OverlayKey::DeleteValue(const string_t& /*strName*/)
 {
-	throw IAccessDeniedException::Create(string_t::constant("The registry key {0} is an overlay") % GetName());
+	ThrowOverlay();
 }
 
 IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnder)
 {
-	ObjectPtr<IKey> ptrSubOver,ptrSubUnder;
-	try
-	{
-		ptrSubOver = ObjectPtr<IKey>(strOver,IKey::OpenExisting);
-	}
-	catch (INotFoundException* pE)
-	{
-		pE->Release();
-	}
+	ObjectPtr<IKey> ptrRoot("/");
 
-	try
-	{
-		ptrSubUnder = ObjectPtr<IKey>(strUnder,IKey::OpenExisting);
-	}
-	catch (INotFoundException* pE)
-	{
-		pE->Release();
-	}
+	if (!ptrRoot->IsKey(strUnder))
+		return ptrRoot->OpenKey(strOver,IKey::OpenExisting);
 
-	if (!ptrSubOver && !ptrSubUnder)
-		ThrowKeyNotFound(strOver);
+	if (!ptrRoot->IsKey(strOver))
+		return ptrRoot->OpenKey(strUnder,IKey::OpenExisting);
 
-	if (!ptrSubOver)
-		return ptrSubUnder.Detach();
-	else if (!ptrSubUnder)
-		return ptrSubOver.Detach();
+	ObjectPtr<IKey> ptrSubOver = ptrRoot->OpenKey(strOver,IKey::OpenExisting);
+	ObjectPtr<IKey> ptrSubUnder = ptrRoot->OpenKey(strUnder,IKey::OpenExisting);
 
 	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
 	ptrKey->init(ptrSubOver,ptrSubUnder);

@@ -35,7 +35,7 @@
 #include "RootManager.h"
 #include "RootProcess.h"
 
-int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::Hive::access_rights_t access_mask)
+bool Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::access_rights_t access_mask, int& err)
 {
 	// Zero channel always has access...
 	if (channel_id == 0)
@@ -48,65 +48,64 @@ int Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t chan
 	if (!pU)
 		return EINVAL;
 
-	bool bRead = (access_mask & Db::Hive::read_check) == Db::Hive::read_check;
-	bool bWrite = (access_mask & Db::Hive::write_check) == Db::Hive::write_check;
+	bool bRead = (access_mask & Db::read_check) == Db::read_check;
+	bool bWrite = (access_mask & Db::write_check) == Db::write_check;
 
 	// Check access
 	bool bAllowed = false;
-	if (!pU->m_ptrProcess->CheckAccess(pszDb,bRead,bWrite,bAllowed))
-		return EIO;
-	else if (!bAllowed)
-		return EACCES;
-	else
-		return 0;
+	err = pU->m_ptrProcess->CheckAccess(pszDb,bRead,bWrite,bAllowed);
+	return bAllowed;
 }
 
-int Root::Manager::registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
+OOServer::RootErrCode_t Root::Manager::registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
-		return request.last_error();
+		LOG_ERROR_RETURN(("Failed to read registry request parameters: %s",OOBase::system_error_text(request.last_error())),OOServer::Errored);
 
-	if (nType == 0)
+	switch (nType)
 	{
+	case 0:
 		// Return the system hive
 		ptrHive = m_registry;
-	}
-	else if (nType == 1)
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		break;
 
-		// Find the process info
-		UserProcess* pU = m_mapUserProcesses.find(channel_id);
-		if (!pU)
-			return EINVAL;
+	case 1:
+		{
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		// Get the registry hive
-		ptrHive = pU->m_ptrRegistry;
-	}
-	else
-	{
+			// Find the process info
+			UserProcess* pU = m_mapUserProcesses.find(channel_id);
+			if (!pU)
+				return OOServer::NoRead;
+
+			// Get the registry hive
+			ptrHive = pU->m_ptrRegistry;
+		}
+		break;
+
+	default:
 		// What?!?
-		return EINVAL;
+		LOG_ERROR_RETURN(("Invalid hive type %u received",nType),OOServer::Errored);
 	}
 
-	return 0;
+	return OOServer::Ok;
 }
 
-int Root::Manager::registry_open_key(Omega::int64_t uParent, Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
+Db::hive_errors_t Root::Manager::registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::LocalString strSubKey;
 	int err = strSubKey.assign(pszSubKey);
-	if (err != 0)
-		return err;
+	if (err)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),Db::HIVE_ERRORED);
 
-	OOBase::LocalString strLink;
-	return m_registry->create_key(uParent,uKey,strSubKey,0,channel_id,strLink);
+	OOBase::LocalString strLink,strFullKeyName;
+	return m_registry->create_key(0,uKey,strSubKey,0,channel_id,strLink,strFullKeyName);
 }
 
-int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
+OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
 {
 	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
 	{
@@ -116,34 +115,37 @@ int Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::
 
 			OOBase::LocalString strNew;
 			int err = strNew.concat("/System/Sandbox",strSubKey.c_str());
-			if (err == 0)
+			if (!err)
 				err = strSubKey.assign(strNew.c_str());
-			return err;
+
+			if (err)
+				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::Errored);
 		}
 		else
 		{
 			OOBase::LocalString strNew;
 			int err = strNew.concat(strLink.c_str()+12,strSubKey.c_str());
-			if (err == 0)
+			if (!err)
 				err = strSubKey.assign(strNew.c_str());
-			if (err != 0)
-				return err;
+			if (err)
+				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			// Find the process info
 			UserProcess* pU = m_mapUserProcesses.find(channel_id);
 			if (!pU)
-				return ENOENT;
+				return OOServer::NoRead;
 
 			nType = 1;
 			ptrHive = pU->m_ptrRegistry;
-			return 0;
 		}
+
+		return OOServer::Ok;
 	}
 
 	// If it's not known, it's not found
-	return (strncmp(strLink.c_str(),"system:",7) == 0 ? ENOENT : ENOEXEC);
+	return (strncmp(strLink.c_str(),"system:",7) == 0 ? OOServer::NotFound : OOServer::Linked);
 }
 
 void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -154,26 +156,34 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 	Omega::int64_t uSubKey;
 	OOBase::LocalString strLink;
 	OOBase::LocalString strSubKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
+	OOBase::LocalString strFullKeyName;
+
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (!err)
 	{
 		if (!request.read(strSubKey))
-			err = request.last_error();
+		{
+			LOG_ERROR(("Failed to read key name from request: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
 		else
 		{
 			Omega::uint16_t flags = 0;
 			if (!request.read(flags))
-				err = request.last_error();
+			{
+				LOG_ERROR(("Failed to read open flags from request: %s",OOBase::system_error_text(request.last_error())));
+				err = OOServer::Errored;
+			}
 			else
 			{
-				err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,channel_id,strLink);
-				if (err == ENOEXEC)
+				err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,channel_id,strLink,strFullKeyName);
+				if (err == Db::HIVE_LINK)
 				{
 					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
-					if (err == 0)
+					if (!err)
 					{
 						strLink.clear();
-						err = ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink);
+						err = ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink,strFullKeyName);
 					}
 				}
 			}
@@ -181,19 +191,24 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 	}
 
 	response.write(err);
-	if (response.last_error() == 0)
+	if (err != Db::HIVE_ERRORED)
 	{
-		if (err == ENOEXEC)
+		response.write(strFullKeyName.c_str(),strFullKeyName.length());
+
+		if (err == Db::HIVE_LINK)
 		{
 			response.write(strLink.c_str(),strLink.length());
 			response.write(strSubKey.c_str(),strSubKey.length());
 		}
-		else
+		else if (err == Db::HIVE_OK)
 		{
 			response.write(uSubKey);
 			response.write(nType);
 		}
 	}
+
+	if (response.last_error() != 0)
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -203,40 +218,45 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	Omega::byte_t nType;
 	OOBase::LocalString strLink;
 	OOBase::LocalString strSubKey;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
+	OOBase::LocalString strFullKeyName;
+
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (!err)
 	{
 		if (!request.read(strSubKey))
-			err = request.last_error();
+		{
+			LOG_ERROR(("Failed to read key name from request: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
 		else
 		{
-			err = ptrHive->delete_key(uKey,strSubKey,channel_id,strLink);
-			if (err == ENOEXEC)
+			err = ptrHive->delete_key(uKey,strSubKey,channel_id,strLink,strFullKeyName);
+			if (err == Db::HIVE_LINK)
 			{
-				if (!strLink.empty() && strSubKey.empty())
+				err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
+				if (!err)
 				{
-					// Attempt to delete link
-					err = EACCES;
-				}
-				else if (err == ENOEXEC)
-				{
-					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
-					if (err == 0)
-					{
-						strLink.clear();
-						err = ptrHive->delete_key(0,strSubKey,channel_id,strLink);
-					}
+					strLink.clear();
+					err = ptrHive->delete_key(uKey,strSubKey,channel_id,strLink,strFullKeyName);
 				}
 			}
 		}
 	}
 
 	response.write(err);
-	if (err == ENOEXEC && response.last_error() == 0)
+	if (err != Db::HIVE_ERRORED)
 	{
-		response.write(strLink.c_str(),strLink.length());
-		response.write(strSubKey.c_str(),strSubKey.length());
+		response.write(strFullKeyName.c_str(),strFullKeyName.length());
+
+		if (err == Db::HIVE_LINK)
+		{
+			response.write(strLink.c_str(),strLink.length());
+			response.write(strSubKey.c_str(),strSubKey.length());
+		}
 	}
+
+	if (response.last_error() != 0)
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -244,14 +264,15 @@ void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CD
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err != 0)
-	{
-		response.write(err);
-		return;
-	}
 
-	ptrHive->enum_subkeys(uKey,channel_id,response);
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (err)
+	{
+		if (!response.write(err))
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	}
+	else
+		ptrHive->enum_subkeys(uKey,channel_id,response);
 }
 
 void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -259,39 +280,50 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
 		OOBase::LocalString strValue;
 		if (!request.read(strValue))
-			err = request.last_error();
+		{
+			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
 		else
 			err = ptrHive->value_exists(uKey,strValue.c_str(),channel_id);
 	}
 
-	response.write(err);
+	if (!response.write(err))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::LocalString val;
-
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
+
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (!err)
 	{
 		OOBase::LocalString strValue;
 		if (!request.read(strValue))
-			err = request.last_error();
+		{
+			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
 		else
 			err = ptrHive->get_value(uKey,strValue.c_str(),channel_id,val);
 	}
 
 	response.write(err);
-	if (err == 0)
+	if (!err)
 		response.write(val.c_str());
+
+	if (response.last_error())
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -299,23 +331,33 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
+
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (!err)
 	{
 		OOBase::LocalString strValue;
 		if (!request.read(strValue))
-			err = request.last_error();
+		{
+			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
 		else
 		{
 			OOBase::LocalString val;
 			if (!request.read(val))
-				err = request.last_error();
+			{
+				LOG_ERROR(("Failed to read value data from request: %s",OOBase::system_error_text(request.last_error())));
+				err = OOServer::Errored;
+			}
+			else if (strValue.empty())
+				err = OOServer::BadName;
 			else
 				err = ptrHive->set_value(uKey,strValue.c_str(),channel_id,val.c_str());
 		}
 	}
 
-	response.write(err);
+	if (!response.write(err))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -323,12 +365,15 @@ void Root::Manager::registry_enum_values(Omega::uint32_t channel_id, OOBase::CDR
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
-		ptrHive->enum_values(uKey,channel_id,response);
 
-	if (err != 0)
-		response.write(err);
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (err)
+	{
+		if (!response.write(err))
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	}
+	else
+		ptrHive->enum_values(uKey,channel_id,response);
 }
 
 void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -336,15 +381,20 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	Omega::int32_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
-	if (err == 0)
+
+	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
+	if (!err)
 	{
 		OOBase::LocalString strValue;
 		if (!request.read(strValue))
-			err = request.last_error();
+		{
+			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
 		else
 			err = ptrHive->delete_value(uKey,strValue.c_str(),channel_id);
 	}
 
-	response.write(err);
+	if (!response.write(err))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }

@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 		else if (method == "exists")
 		{
 			if (key_path(params[0],key))
-				result = (OTL::ObjectPtr<Omega::Registry::IKey>("")->IsSubKey(key) ? EXIT_SUCCESS : EXIT_FAILURE);
+				result = (OTL::ObjectPtr<Omega::Registry::IKey>("")->IsKey(key) ? EXIT_SUCCESS : EXIT_FAILURE);
 			if (value_path(params[0],key,value))
 				result = (OTL::ObjectPtr<Omega::Registry::IKey>(key)->IsValue(value) ? EXIT_SUCCESS : EXIT_FAILURE);
 			else

@@ -105,12 +105,20 @@ int Db::Statement::column_bytes(int iCol)
 
 int Db::Statement::bind_int64(int index, const sqlite3_int64& val)
 {
-	return sqlite3_bind_int64(m_pStmt,index,val);
+	int err = sqlite3_bind_int64(m_pStmt,index,val);
+	if (err != SQLITE_OK)
+		LOG_ERROR(("sqlite3_bind_int64 failed: %s",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
+
+	return err;
 }
 
 int Db::Statement::bind_string(int index, const char* val, size_t len)
 {
-	return sqlite3_bind_text(m_pStmt,index,val,static_cast<int>(len),NULL);
+	int err = sqlite3_bind_text(m_pStmt,index,val,static_cast<int>(len),NULL);
+	if (err != SQLITE_OK)
+		LOG_ERROR(("sqlite3_bind_int64 failed: %s",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
+
+	return err;
 }
 
 Db::Database::Database() :
@@ -134,7 +142,7 @@ Db::Database::~Database()
 	}
 }
 
-bool Db::Database::open(const char* pszDb, int flags)
+int Db::Database::open(const char* pszDb, int flags)
 {
 	assert(!m_db);
 
@@ -142,19 +150,19 @@ bool Db::Database::open(const char* pszDb, int flags)
 	if (err != SQLITE_OK)
 	{
 		if (!m_db)
-			LOG_ERROR_RETURN(("sqlite3_open failed: Out of memory"),false);
+			LOG_ERROR_RETURN(("sqlite3_open failed: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),SQLITE_NOMEM);
 		else
 		{
 			LOG_ERROR(("sqlite3_open(%s) failed: %s",pszDb,sqlite3_errmsg(m_db)));
 			sqlite3_close(m_db);
 			m_db = NULL;
-			return false;
 		}
 	}
 
-	sqlite3_busy_timeout(m_db,500);
+	if (m_db)
+		sqlite3_busy_timeout(m_db,500);
 
-	return true;
+	return err;
 }
 
 int Db::Database::exec(const char* szSQL)
@@ -162,6 +170,7 @@ int Db::Database::exec(const char* szSQL)
 	int err = sqlite3_exec(m_db,szSQL,NULL,NULL,NULL);
 	if (err != SQLITE_OK && err != SQLITE_READONLY)
 		LOG_ERROR(("sqlite3_exec failed: %s",sqlite3_errmsg(m_db)));
+
 	return err;
 }
 

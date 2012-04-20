@@ -56,6 +56,7 @@ namespace OTL
 					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)
+					OBJECT_MAP_ENTRY(OOCore::AccessDeniedExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::AlreadyExistsExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)

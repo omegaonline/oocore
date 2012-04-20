@@ -131,7 +131,7 @@ namespace Omega
 			typedef uint16_t OpenFlags_t;
 
 			virtual string_t GetName() = 0;
-			virtual bool_t IsSubKey(const string_t& key) = 0;
+			virtual bool_t IsKey(const string_t& key) = 0;
 			virtual std::set<string_t> EnumSubKeys() = 0;
 			virtual IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 			virtual void DeleteSubKey(const string_t& strKey) = 0;
@@ -261,7 +261,7 @@ OMEGA_DEFINE_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(string_t,GetName,0,())
-	OMEGA_METHOD(bool_t,IsSubKey,1,((in),const string_t&,key))
+	OMEGA_METHOD(bool_t,IsKey,1,((in),const string_t&,key))
 	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
 	OMEGA_METHOD(Registry::IKey*,OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 	OMEGA_METHOD_VOID(DeleteSubKey,1,((in),const string_t&,strKey))

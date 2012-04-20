@@ -62,7 +62,7 @@ namespace
 	// IKey members
 	public:
 		string_t GetName();
-		bool_t IsSubKey(const string_t& strSubKey);
+		bool_t IsKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
@@ -100,7 +100,7 @@ namespace
 	// IKey members
 	public:
 		string_t GetName();
-		bool_t IsSubKey(const string_t& strSubKey);
+		bool_t IsKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
@@ -140,7 +140,7 @@ string_t HiveKey::GetName()
 	return m_strKey;
 }
 
-bool_t HiveKey::IsSubKey(const string_t& strSubKey)
+bool_t HiveKey::IsKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
@@ -412,7 +412,7 @@ string_t RootKey::GetName()
 	return string_t();
 }
 
-bool_t RootKey::IsSubKey(const string_t& strSubKey)
+bool_t RootKey::IsKey(const string_t& strSubKey)
 {
 	User::Registry::BadNameException::ValidateSubKey(strSubKey);
 
@@ -431,7 +431,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 		User::Registry::NotFoundException::Throw(strFullKey);
 	}
 
-	return ptrKey->IsSubKey(strSubKey2);
+	return ptrKey->IsKey(strSubKey2);
 }
 
 bool_t RootKey::IsValue(const string_t& strName)

@@ -53,7 +53,7 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::
 	{
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
-		ptrKey->init(m_pManager,string_t(),0,0);
+		ptrKey->init(m_pManager,string_t::constant("/"),0,0);
 		m_ptrReg = ptrKey.AddRef();
 	}
 

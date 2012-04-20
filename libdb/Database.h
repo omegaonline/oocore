@@ -41,7 +41,7 @@ namespace Db
 		Database();
 		~Database();
 
-		bool open(const char* pszDb, int flags);
+		int open(const char* pszDb, int flags);
 		int exec(const char* pszSQL);
 
 		sqlite3_int64 last_insert_rowid();

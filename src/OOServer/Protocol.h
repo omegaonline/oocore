@@ -41,6 +41,22 @@ namespace OOServer
 		DeleteValue
 	};
 	typedef Omega::uint16_t RootOpCode_t;
+
+	enum RootErrCode
+	{
+		// These must match Db::hive_errors
+		Ok = 0,
+		Errored,
+		NotFound,
+		AlreadyExists,
+		ReadOnlyHive,
+		NoRead,
+		NoWrite,
+		ProtectedKey,
+		BadName,
+		Linked
+	};
+	typedef Omega::uint16_t RootErrCode_t;
 }
 
 #endif // OOSERVER_PROTOCOL_H_INCLUDED_

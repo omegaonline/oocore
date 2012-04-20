@@ -54,7 +54,7 @@ namespace
 
 		bool IsRunning() const;
 		bool Spawn(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
-		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
+		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 		bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive);
@@ -725,7 +725,7 @@ bool RootProcessWin32::IsRunning() const
 	return (WaitForSingleObject(m_hProcess,0) == WAIT_TIMEOUT);
 }
 
-bool RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
+int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
 {
 	bAllowed = false;
 
@@ -734,13 +734,14 @@ bool RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite
 	{
 		pSD = OOBase::LocalAllocator::allocate(cbNeeded);
 		if (!pSD)
-			LOG_ERROR_RETURN(("Out of memory"),false);
+			LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
 
 		if (GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,cbNeeded,&cbNeeded))
 			break;
 
-		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::system_error_text()),false);
+		DWORD err = GetLastError();
+		if (err != ERROR_INSUFFICIENT_BUFFER)
+			LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::system_error_text(err)),err);
 	}
 
 	// Map the generic access rights
@@ -768,12 +769,11 @@ bool RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite
 	BOOL bAllowedVal = FALSE;
 	BOOL bRes = ::AccessCheck((PSECURITY_DESCRIPTOR)pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 	DWORD err = GetLastError();
-
 	if (!bRes && err != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("AccessCheck failed: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("AccessCheck failed: %s",OOBase::system_error_text(err)),err);
 
 	bAllowed = (bAllowedVal == TRUE);
-	return true;
+	return 0;
 }
 
 bool RootProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const

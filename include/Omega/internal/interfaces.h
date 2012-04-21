@@ -143,10 +143,6 @@ namespace Omega
 			virtual void DeleteValue(const string_t& strValue) = 0;
 		};
 
-		interface IBadNameException : public IException
-		{
-		};
-		
 		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
 		OOCORE_DECLARE_OID(OID_Registry);
 
@@ -270,13 +266,6 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))
 	OMEGA_METHOD_VOID(SetValue,2,((in),const string_t&,name,(in),const any_t&,val))
 	OMEGA_METHOD_VOID(DeleteValue,1,((in),const string_t&,strValue))
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Registry, IBadNameException, Omega, IException, "{5ADD9FB6-2044-40fd-9F3C-31E9B66B865E}",
-
-	OMEGA_NO_METHODS()
 )
 
 OMEGA_DEFINE_INTERFACE

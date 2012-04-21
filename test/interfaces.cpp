@@ -425,7 +425,7 @@ const char** get_dlls()
 		"..\\Release\\TestLibrary_msvc.dll",
 		"..\\..\\..\\debug\\test\\TestLibrary\\.libs\\TestLibrary.dll",
 #elif defined(_WIN32)
-		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Release.TestLibrary_msvc.dll",
+		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Release/TestLibrary_msvc.dll",
 		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Debug/TestLibrary_msvc.dll",
 		"TestLibrary/.libs/TestLibrary.dll",
 #else

@@ -408,7 +408,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
 {
 	// This one is recursive, within a transaction and a lock...
 
@@ -458,7 +458,7 @@ Db::hive_errors Db::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32
 	{
 		for (Omega::int64_t id;ids.pop(&id);)
 		{
-			err = delete_key_i(id,channel_id);
+			err = delete_subkeys(id,channel_id);
 			if (err)
 				return err;
 		}
@@ -494,13 +494,42 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	if (err)
 		return err;
 
+	// Write must be checked
+	err = access_check(channel_id,access_mask,Db::write_check);
+	if (err)
+		return err;
+
+	if (access_mask & Db::protect_key)
+	{
+		// Not allowed to delete!
+		return HIVE_PROTKEY;
+	}
+
 	Transaction trans(*m_db);
 	if (trans.begin() != SQLITE_OK)
 		return HIVE_ERRORED;
 
-	err = delete_key_i(uKey,channel_id);
+	err = delete_subkeys(uKey,channel_id);
 	if (err)
 		return err;
+
+	// Do the delete
+	Resetter resetter(m_DeleteKey_Stmt);
+
+	if (m_DeleteKey_Stmt.bind_int64(1,uKey) != SQLITE_OK)
+		return HIVE_ERRORED;
+
+	switch (m_DeleteKey_Stmt.step())
+	{
+	case SQLITE_READONLY:
+		return HIVE_READONLY;
+
+	case SQLITE_DONE:
+		break;
+		
+	default:
+		return HIVE_ERRORED;
+	}
 
 	if (trans.commit() != SQLITE_OK)
 		return HIVE_ERRORED;

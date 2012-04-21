@@ -388,7 +388,7 @@ void OOCore::CompartmentFactory::CreateInstance(IObject* pOuter, const guid_t& i
 		OMEGA_THROW("Compartments are not supported by the user service");
 
 	// Create a new compartment and get the channel to it...
-	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment();
+	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment(guid_t::Null());
 
 	// Create a CompartmentImpl
 	if (!pOuter)

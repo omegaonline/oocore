@@ -928,12 +928,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServe
 	return ptrIPS->OpenServerSink(message_oid,pSink);
 }
 
-ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment()
+ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment(const guid_t& channel_oid)
 {
-	return USER_SESSION::instance().create_compartment_i();
+	return USER_SESSION::instance().create_compartment_i(channel_oid);
 }
 
-ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i()
+ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i(const guid_t& channel_oid)
 {
 	// Create the new object
 	OOBase::SmartPtr<Compartment> ptrCompt = new (OOCore::throwing) Compartment(this);
@@ -951,7 +951,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i()
 
 	write_guard.release();
 	
-	return ptrCompt->create_compartment_channel(ThreadContext::instance()->m_current_cmpt,guid_t::Null());
+	return ptrCompt->create_compartment_channel(ThreadContext::instance()->m_current_cmpt,channel_oid);
 }
 
 OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)

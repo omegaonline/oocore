@@ -83,7 +83,7 @@ namespace OOCore
 		void send_response(Omega::uint16_t src_cmpt_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint32_t attribs = Message::synchronous);
 		Omega::uint32_t get_channel_id() const;
 
-		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment();
+		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment(const Omega::guid_t& channel_oid);
 		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
 		void remove_compartment(Omega::uint16_t id);
 		Omega::uint16_t update_state(Omega::uint16_t compartment_id, OOBase::Timeout* pTimeout);
@@ -186,7 +186,7 @@ namespace OOCore
 		// Compartment members
 		OOBase::HandleTable<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
 
-		OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment_i();
+		OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment_i(const Omega::guid_t& channel_oid);
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 	};
 }

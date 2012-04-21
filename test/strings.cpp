@@ -149,7 +149,16 @@ bool string_tests_format()
 
 		if (set_locale_helper(1031,"de_DE.utf8"))
 		{
-			TEST(Omega::string_t("{0:C}") % 12345.678 == "12.345,68\xe2\x82\xac");
+			Omega::string_t s = "12.345,68";
+			char c[20] = "\xe2\x82\xac";
+#if defined(_WIN32)
+			wchar_t b[10] = {0};
+			MultiByteToWideChar(CP_UTF8,0,c,-1,b,sizeof(b)/sizeof(b[0]));
+			WideCharToMultiByte(CP_THREAD_ACP,0,b,-1,c,sizeof(c),NULL,NULL);
+			s += " ";
+#endif
+			s += c;
+			TEST(Omega::string_t("{0:C}") % 12345.678 == s);
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))

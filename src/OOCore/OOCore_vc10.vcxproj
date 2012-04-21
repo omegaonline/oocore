@@ -292,6 +292,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\oobase\src\OOBase_vc10.vcxproj">
       <Project>{10616ef7-6939-463a-9af6-8a1f3e9f5b16}</Project>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

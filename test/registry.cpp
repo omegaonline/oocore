@@ -124,12 +124,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	{
 		pE->Release();
 	}
-	catch (Omega::IException* pE)
-	{
-		output_exception(pE);
-		pE->Release();
-	}
-
+	
 	TEST_VOID(pKey->DeleteSubKey(strTestKey));
 	TEST(!pKey->IsKey(strTestKey));
 

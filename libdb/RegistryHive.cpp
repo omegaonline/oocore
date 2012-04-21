@@ -63,7 +63,7 @@ bool Db::Hive::open(int flags)
 		prepare_statement(m_DeleteKey_Stmt,"DELETE FROM RegistryKeys WHERE Id = ?1;");
 		prepare_statement(m_DeleteValue_Stmt,"DELETE FROM RegistryValues WHERE Name = ?1 AND Parent = ?2;");
 	}
-	catch (int& r)
+	catch (int&)
 	{
 		return false;
 	}
@@ -78,7 +78,7 @@ void Db::Hive::prepare_statement(Statement& stmt, const char* pszSql)
 		throw err;
 }
 
-Db::hive_errors_t Db::Hive::access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check)
+Db::hive_errors Db::Hive::access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check)
 {
 	if (access_mask & check)
 	{
@@ -98,7 +98,7 @@ Db::hive_errors_t Db::Hive::access_check(Omega::uint32_t channel_id, access_righ
 	return HIVE_OK;
 }
 
-Db::hive_errors_t Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
+Db::hive_errors Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
 {
 	// Lock must be held first...
 
@@ -129,7 +129,7 @@ Db::hive_errors_t Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_
 	}
 }
 
-Db::hive_errors_t Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink)
+Db::hive_errors Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink)
 {
 	// Lock must be held first...
 	
@@ -147,27 +147,34 @@ Db::hive_errors_t Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::i
 		}
 
 		// And run the statement
-		int err = m_GetKeyInfo_Stmt.step();
-		if (err == SQLITE_ROW)
+		switch (m_GetKeyInfo_Stmt.step())
 		{
-			// We have a .links subkey
-			Omega::int64_t uLinksKey = m_GetKeyInfo_Stmt.column_int64(0);
+		case SQLITE_ROW:
+			{
+				// We have a .links subkey
+				Omega::int64_t uLinksKey = m_GetKeyInfo_Stmt.column_int64(0);
 
-			// Check access
-			access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
-			hive_errors_t err = access_check(channel_id,access_mask,Db::read_check);
-			if (err)
-				return err;
+				// Check access
+				access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
+				hive_errors err = access_check(channel_id,access_mask,Db::read_check);
+				if (err)
+					return err;
 
-			err = get_value_i(uLinksKey,strSubKey.c_str(),strLink);
-			if (err == HIVE_OK)
-				return HIVE_LINK;
+				err = get_value_i(uLinksKey,strSubKey.c_str(),strLink);
+				if (err == HIVE_OK)
+					return HIVE_LINK;
 
-			if (err != HIVE_NOTFOUND)
-				return err;
-		}
-		else if (err != SQLITE_DONE)
+				if (err != HIVE_NOTFOUND)
+					return err;
+			}
+			break;
+
+		case SQLITE_DONE:
+			break;
+
+		default:
 			return HIVE_ERRORED;
+		}
 
 		// Reset and re-run
 		resetter.reset();
@@ -196,12 +203,12 @@ Db::hive_errors_t Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::i
 	}
 }
 
-Db::hive_errors_t Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
 {
 	// Lock must be held first...
 
 	// Check if the parent still exists
-	hive_errors_t err = check_key_exists(uParent,access_mask);
+	hive_errors err = check_key_exists(uParent,access_mask);
 	if (err)
 		return err;
 
@@ -253,7 +260,10 @@ Db::hive_errors_t Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKe
 				{
 					// Assign remains of strSubKey to strSubKey
 					OOBase::LocalString strSecond;
-					if ((err2 = strSecond.assign(strSubKey.c_str()+pos)) || (err2 = strSubKey.assign(strSecond.c_str())))
+					err2 = strSecond.assign(strSubKey.c_str()+pos);
+					if (!err2)
+						err2 = strSubKey.assign(strSecond.c_str());
+					if (err2)
 						LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 				}
 			}
@@ -261,7 +271,10 @@ Db::hive_errors_t Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKe
 			{
 				// Assign remains of strSubKey to strSubKey
 				OOBase::LocalString strSecond;
-				if ((err2 = strSecond.assign(strSubKey.c_str()+start)) || (err2 = strSubKey.assign(strSecond.c_str())))
+				err2 = strSecond.assign(strSubKey.c_str()+start);
+				if (!err2)
+					err2 = strSubKey.assign(strSecond.c_str());
+				if (err2)
 					LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 			}
 
@@ -281,7 +294,7 @@ Db::hive_errors_t Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	}
 }
 
-Db::hive_errors_t Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask)
+Db::hive_errors Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask)
 {
 	// Lock must be held first...
 
@@ -314,7 +327,7 @@ Db::hive_errors_t Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int
 	return HIVE_OK;
 }
 
-Db::hive_errors_t Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -322,7 +335,7 @@ Db::hive_errors_t Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& u
 
 	// Check if the key still exists
 	access_rights_t access_mask = 0;
-	hive_errors_t err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
+	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 
 	if (flags == 0 /*OpenExisting*/)
 		return err;
@@ -395,13 +408,13 @@ Db::hive_errors_t Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& u
 	return HIVE_OK;
 }
 
-Db::hive_errors_t Db::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
 {
 	// This one is recursive, within a transaction and a lock...
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err != HIVE_NOTFOUND)
 		return err;
 
@@ -470,14 +483,14 @@ Db::hive_errors_t Db::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint
 	}
 }
 
-Db::hive_errors_t Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Get the start key
 	Omega::int64_t uKey;
 	access_rights_t access_mask;
-	hive_errors_t err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
+	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 	if (err)
 		return err;
 
@@ -495,13 +508,13 @@ Db::hive_errors_t Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Lo
 	return HIVE_OK;
 }
 
-Db::hive_errors_t Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys)
+Db::hive_errors Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 		return err;
 
@@ -554,8 +567,12 @@ Db::hive_errors_t Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint
 						bAllow = allowed_access;
 					}
 
-					if (bAllow && (err3 = setSubKeys.push(strSubKey)))
-						LOG_ERROR_RETURN(("Failed to stack push: %s",OOBase::system_error_text(err3)),HIVE_ERRORED);
+					if (bAllow)
+					{
+						err3 = setSubKeys.push(strSubKey);
+						if (err3)
+							LOG_ERROR_RETURN(("Failed to stack push: %s",OOBase::system_error_text(err3)),HIVE_ERRORED);
+					}
 				}
 			}
 			break;
@@ -575,7 +592,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 	{
 		response.write(err);
@@ -600,7 +617,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 	}
 
 	// Write out success first
-	if (!response.write(hive_errors_t(HIVE_OK)))
+	if (!response.write(Omega::uint16_t(HIVE_OK)))
 	{
 		LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 		return;
@@ -611,7 +628,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 	if (m_EnumKeys_Stmt.bind_int64(1,uKey) != SQLITE_OK)
 	{
 		response.reset();
-		response.write(hive_errors_t(HIVE_ERRORED));
+		response.write(Omega::uint16_t(HIVE_ERRORED));
 		return;
 	}
 
@@ -644,7 +661,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 					{
 						LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 						response.reset();
-						response.write(hive_errors_t(HIVE_ERRORED));
+						response.write(Omega::uint16_t(HIVE_ERRORED));
 						return;
 					}
 				}
@@ -657,25 +674,25 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 			{
 				LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 				response.reset();
-				response.write(hive_errors_t(HIVE_ERRORED));
+				response.write(Omega::uint16_t(HIVE_ERRORED));
 			}
 			return;
 
 		default:
 			response.reset();
-			response.write(hive_errors_t(HIVE_ERRORED));
+			response.write(Omega::uint16_t(HIVE_ERRORED));
 			return;
 		}
 	}
 }
 
-Db::hive_errors_t Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues)
+Db::hive_errors Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 		return err;
 
@@ -707,7 +724,8 @@ Db::hive_errors_t Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint3
 					if (err2)
 						LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 
-					if ((err2 = setValues.push(val)))
+					err2 = setValues.push(val);
+					if (err2)
 						LOG_ERROR_RETURN(("Failed to stack push: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 				}
 			}
@@ -728,7 +746,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 	{
 		response.write(err);
@@ -748,7 +766,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 	}
 
 	// Write out success first
-	if (!response.write(hive_errors_t(HIVE_OK)))
+	if (!response.write(Omega::uint16_t(HIVE_OK)))
 	{
 		LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 		return;
@@ -759,7 +777,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 	if (m_EnumValues_Stmt.bind_int64(1,uKey) != SQLITE_OK)
 	{
 		response.reset();
-		response.write(hive_errors_t(HIVE_ERRORED));
+		response.write(Omega::uint16_t(HIVE_ERRORED));
 		return;
 	}
 
@@ -774,7 +792,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 				{
 					LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 					response.reset();
-					response.write(hive_errors_t(HIVE_ERRORED));
+					response.write(Omega::uint16_t(HIVE_ERRORED));
 					return;
 				}
 			}
@@ -786,25 +804,25 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 			{
 				LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 				response.reset();
-				response.write(hive_errors_t(HIVE_ERRORED));
+				response.write(Omega::uint16_t(HIVE_ERRORED));
 			}
 			return;
 
 		default:
 			response.reset();
-			response.write(hive_errors_t(HIVE_ERRORED));
+			response.write(Omega::uint16_t(HIVE_ERRORED));
 			return;
 		}
 	}
 }
 
-Db::hive_errors_t Db::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 		return err;
 
@@ -834,7 +852,7 @@ Db::hive_errors_t Db::Hive::delete_value(const Omega::int64_t& uKey, const char*
 	}
 }
 
-Db::hive_errors_t Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
+Db::hive_errors Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
 {
 	// Lock must be held first...
 
@@ -860,13 +878,13 @@ Db::hive_errors_t Db::Hive::value_exists_i(const Omega::int64_t& uKey, const cha
 	}
 }
 
-Db::hive_errors_t Db::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 		return err;
 
@@ -878,7 +896,7 @@ Db::hive_errors_t Db::Hive::value_exists(const Omega::int64_t& uKey, const char*
 	return value_exists_i(uKey,pszValue);
 }
 
-Db::hive_errors_t Db::Hive::get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val)
+Db::hive_errors Db::Hive::get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val)
 {
 	// Lock must be held first...
 
@@ -913,13 +931,13 @@ Db::hive_errors_t Db::Hive::get_value_i(const Omega::int64_t& uKey, const char* 
 	}
 }
 
-Db::hive_errors_t Db::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
+Db::hive_errors Db::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 		return err;
 
@@ -930,13 +948,13 @@ Db::hive_errors_t Db::Hive::get_value(const Omega::int64_t& uKey, const char* ps
 	return get_value_i(uKey,pszValue,val);
 }
 
-Db::hive_errors_t Db::Hive::set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue)
+Db::hive_errors Db::Hive::set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue)
 {
 	// Lock must be held first...
 
 	// See if we have a value already
 	Statement* pStmt = NULL;
-	hive_errors_t err = value_exists_i(uKey,pszName);
+	hive_errors err = value_exists_i(uKey,pszName);
 	if (err == HIVE_OK)
 		pStmt = &m_UpdateValue_Stmt;
 	else if (err == HIVE_NOTFOUND)
@@ -966,13 +984,13 @@ Db::hive_errors_t Db::Hive::set_value_i(const Omega::int64_t& uKey, const char* 
 	}
 }
 
-Db::hive_errors_t Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
+Db::hive_errors Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
-	hive_errors_t err = check_key_exists(uKey,access_mask);
+	hive_errors err = check_key_exists(uKey,access_mask);
 	if (err)
 		return err;
 

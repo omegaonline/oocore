@@ -39,14 +39,20 @@ bool Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t cha
 {
 	// Zero channel always has access...
 	if (channel_id == 0)
-		return 0;
+	{
+		err = 0;
+		return true;
+	}
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Find the process info
 	const UserProcess* pU = m_mapUserProcesses.find(channel_id);
 	if (!pU)
-		return EINVAL;
+	{
+		err = EINVAL;
+		return false;
+	}
 
 	bool bRead = (access_mask & Db::read_check) == Db::read_check;
 	bool bWrite = (access_mask & Db::write_check) == Db::write_check;
@@ -61,7 +67,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_hive(Omega::uint32_t channe
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
-		LOG_ERROR_RETURN(("Failed to read registry request parameters: %s",OOBase::system_error_text(request.last_error())),OOServer::Errored);
+		LOG_ERROR_RETURN(("Failed to read registry request parameters: %s",OOBase::system_error_text(request.last_error())),OOServer::RootErrCode_t(OOServer::Errored));
 
 	switch (nType)
 	{
@@ -86,13 +92,13 @@ OOServer::RootErrCode_t Root::Manager::registry_open_hive(Omega::uint32_t channe
 
 	default:
 		// What?!?
-		LOG_ERROR_RETURN(("Invalid hive type %u received",nType),OOServer::Errored);
+		LOG_ERROR_RETURN(("Invalid hive type %u received",nType),OOServer::RootErrCode_t(OOServer::Errored));
 	}
 
 	return OOServer::Ok;
 }
 
-Db::hive_errors_t Root::Manager::registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
+Db::hive_errors Root::Manager::registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -119,7 +125,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 				err = strSubKey.assign(strNew.c_str());
 
 			if (err)
-				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::Errored);
+				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::RootErrCode_t(OOServer::Errored));
 		}
 		else
 		{
@@ -128,7 +134,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 			if (!err)
 				err = strSubKey.assign(strNew.c_str());
 			if (err)
-				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::Errored);
+				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::RootErrCode_t(OOServer::Errored));
 
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -145,7 +151,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 	}
 
 	// If it's not known, it's not found
-	return (strncmp(strLink.c_str(),"system:",7) == 0 ? OOServer::NotFound : OOServer::Linked);
+	return (strncmp(strLink.c_str(),"system:",7) == 0 ? OOServer::RootErrCode_t(OOServer::NotFound) : OOServer::RootErrCode_t(OOServer::Linked));
 }
 
 void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -176,14 +182,14 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 			}
 			else
 			{
-				err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,channel_id,strLink,strFullKeyName);
+				err = OOServer::RootErrCode_t(ptrHive->create_key(uKey,uSubKey,strSubKey,flags,channel_id,strLink,strFullKeyName));
 				if (err == Db::HIVE_LINK)
 				{
 					err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
 					if (!err)
 					{
 						strLink.clear();
-						err = ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink,strFullKeyName);
+						err = OOServer::RootErrCode_t(ptrHive->create_key(0,uSubKey,strSubKey,flags,channel_id,strLink,strFullKeyName));
 					}
 				}
 			}
@@ -230,14 +236,14 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 		}
 		else
 		{
-			err = ptrHive->delete_key(uKey,strSubKey,channel_id,strLink,strFullKeyName);
+			err = OOServer::RootErrCode_t(ptrHive->delete_key(uKey,strSubKey,channel_id,strLink,strFullKeyName));
 			if (err == Db::HIVE_LINK)
 			{
 				err = registry_open_link(channel_id,strLink,strSubKey,nType,ptrHive);
 				if (!err)
 				{
 					strLink.clear();
-					err = ptrHive->delete_key(uKey,strSubKey,channel_id,strLink,strFullKeyName);
+					err = OOServer::RootErrCode_t(ptrHive->delete_key(uKey,strSubKey,channel_id,strLink,strFullKeyName));
 				}
 			}
 		}
@@ -291,7 +297,7 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 			err = OOServer::Errored;
 		}
 		else
-			err = ptrHive->value_exists(uKey,strValue.c_str(),channel_id);
+			err = OOServer::RootErrCode_t(ptrHive->value_exists(uKey,strValue.c_str(),channel_id));
 	}
 
 	if (!response.write(err))
@@ -315,7 +321,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 			err = OOServer::Errored;
 		}
 		else
-			err = ptrHive->get_value(uKey,strValue.c_str(),channel_id,val);
+			err = OOServer::RootErrCode_t(ptrHive->get_value(uKey,strValue.c_str(),channel_id,val));
 	}
 
 	response.write(err);
@@ -352,7 +358,7 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 			else if (strValue.empty())
 				err = OOServer::BadName;
 			else
-				err = ptrHive->set_value(uKey,strValue.c_str(),channel_id,val.c_str());
+				err = OOServer::RootErrCode_t(ptrHive->set_value(uKey,strValue.c_str(),channel_id,val.c_str()));
 		}
 	}
 
@@ -392,7 +398,7 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 			err = OOServer::Errored;
 		}
 		else
-			err = ptrHive->delete_value(uKey,strValue.c_str(),channel_id);
+			err = OOServer::RootErrCode_t(ptrHive->delete_value(uKey,strValue.c_str(),channel_id));
 	}
 
 	if (!response.write(err))

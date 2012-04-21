@@ -65,9 +65,6 @@
     <ClInclude Include="Protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RegistryCmn.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\OOCore\Server.h">
       <Filter>Header Files</Filter>
     </ClInclude>

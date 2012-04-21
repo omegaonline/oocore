@@ -51,8 +51,7 @@ namespace Db
 		HIVE_BADNAME,
 		HIVE_LINK
 	};
-	typedef Omega::uint16_t hive_errors_t;
-
+	
 	class Hive
 	{
 	public:
@@ -62,16 +61,16 @@ namespace Db
 
 		typedef OOBase::Stack<OOBase::String,OOBase::LocalAllocator> registry_set_t;
 
-		hive_errors_t create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
-		hive_errors_t delete_key(const Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
-		hive_errors_t enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys);
+		hive_errors create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
+		hive_errors delete_key(const Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
+		hive_errors enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys);
 		void enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
-		hive_errors_t value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
-		hive_errors_t enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues);
+		hive_errors value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
+		hive_errors enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues);
 		void enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
-		hive_errors_t delete_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
-		hive_errors_t get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val);
-		hive_errors_t set_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, const char* val);
+		hive_errors delete_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id);
+		hive_errors get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val);
+		hive_errors set_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, const char* val);
 		
 	private:
 		Manager*               m_pManager;
@@ -97,16 +96,16 @@ namespace Db
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
 
-		hive_errors_t get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
-		hive_errors_t get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink);
-		hive_errors_t find_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
-		hive_errors_t insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask);
-		hive_errors_t check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
-		hive_errors_t delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
-		hive_errors_t value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
-		hive_errors_t set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue);
+		hive_errors get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
+		hive_errors get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink);
+		hive_errors find_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
+		hive_errors insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask);
+		hive_errors check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
+		hive_errors delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
+		hive_errors value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
+		hive_errors set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue);
 		void prepare_statement(Statement& stmt, const char* pszSql);
-		hive_errors_t access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
+		hive_errors access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
 	};
 
 	class Manager

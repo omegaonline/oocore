@@ -121,7 +121,7 @@ namespace Root
 		OOBase::SmartPtr<Db::Hive> m_registry;
 		OOBase::SmartPtr<Db::Hive> m_registry_sandbox;
 
-		Db::hive_errors_t registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
+		Db::hive_errors registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
 		bool registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::access_rights_t access_mask, int& err);
 		OOServer::RootErrCode_t registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
 		OOServer::RootErrCode_t registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);

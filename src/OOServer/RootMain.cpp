@@ -188,7 +188,6 @@ int main(int argc, const char* argv[])
 	// Set critical failure handler to the logging handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
 
-
 #if defined(_WIN32)
 	if (!s_is_debug)
 	{
@@ -221,7 +220,16 @@ int main(int argc, const char* argv[])
 #endif
 
 	// Run the one and only Root::Manager instance
-	return Root::Manager().run(args);
+	err = Root::Manager().run(args);
+
+#if defined(HAVE_UNISTD_H)
+
+	void* TODO2; // Do something like use a destructing singleton to unlink()
+	unlink(strPidfile.empty() ? "/var/run/" APPNAME ".pid" : strPidfile.c_str());
+
+#endif
+
+	return err;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

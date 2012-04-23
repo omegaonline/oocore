@@ -75,6 +75,21 @@ namespace
 		return EXIT_SUCCESS;
 	}
 
+	bool CriticalFailure_early(const char* msg)
+	{
+		OOBase::stderr_write("Critical error in " APPNAME ":");
+		OOBase::stderr_write(msg);
+		OOBase::stderr_write("\n");
+
+		if (Root::is_debug())
+		{
+			// Give us a chance to read the errors!
+			OOBase::Thread::sleep(15000);
+		}
+
+		return true;
+	}
+
 	bool CriticalFailure(const char* msg)
 	{
 		OOBase::Logger::log(OOBase::Logger::Error,"%s",msg);
@@ -88,6 +103,22 @@ namespace
 		return true;
 	}
 
+	int Failure(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args,fmt);
+
+		OOBase::LocalString msg;
+		int err = msg.vprintf(fmt,args);
+
+		va_end(args);
+
+		if (err == 0)
+			OOBase::stderr_write(msg.c_str());
+
+		return EXIT_FAILURE;
+	}
+
 	static bool s_is_debug = false;
 }
 
@@ -96,20 +127,17 @@ bool Root::is_debug()
 	return s_is_debug;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
+	// Set critical failure handler
+	OOBase::SetCriticalFailure(&CriticalFailure_early);
+
 	// Get the debug ENV var
 	{
 		OOBase::LocalString str;
 		str.getenv("OMEGA_DEBUG");
 		s_is_debug = (str == "true");
 	}
-
-	// Start the logger
-	OOBase::Logger::open("OOServer",__FILE__);
-
-	// Set critical failure handler
-	OOBase::SetCriticalFailure(&CriticalFailure);
 
 	// Set up the command line args
 	OOBase::CmdArgs cmd_args;
@@ -126,13 +154,11 @@ int main(int argc, char* argv[])
 	{
 		OOBase::String strErr;
 		if (args.find("missing",strErr))
-			OOBase::Logger::log(OOBase::Logger::Error,"Missing value for option %s",strErr.c_str());
+			return Failure("Missing value for option %s\n",strErr.c_str());
 		else if (args.find("unknown",strErr))
-			OOBase::Logger::log(OOBase::Logger::Error,"Unknown option %s",strErr.c_str());
+			return Failure("Unknown option %s\n",strErr.c_str());
 		else
-			OOBase::Logger::log(OOBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
-			
-		return EXIT_FAILURE;
+			return Failure("Failed to parse command line: %s\n",OOBase::system_error_text(err));
 	}
 
 	if (args.exists("debug"))
@@ -144,9 +170,29 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return Version();
 
+	OOBase::String strPidfile;
+	args.find("pidfile",strPidfile);
+
+	// Change this to OOServer::daemonize(strPidfile.c_str())
+	void* TODO;
+
+	err = OOBase::Server::pid_file(strPidfile.empty() ? "/var/run/" APPNAME ".pid" : strPidfile.c_str());
+	if (err == EACCES)
+		return Failure(APPNAME " is already running\n");
+	else if (err)
+		return Failure("Failed to create pid_file: %s\n",OOBase::system_error_text(err));
+
+	// Start the logger - delayed because we may have forked
+	OOBase::Logger::open("OOServer",__FILE__);
+
+	// Set critical failure handler to the logging handler
+	OOBase::SetCriticalFailure(&CriticalFailure);
+
+
 #if defined(_WIN32)
 	if (!s_is_debug)
 	{
+		// Change working directory to the location of the executable (we know it's valid!)
 		char szPath[MAX_PATH];
 		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
 			LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
@@ -159,6 +205,7 @@ int main(int argc, char* argv[])
 	}
 
 #elif defined(HAVE_UNISTD_H)
+
 	// Ignore SIGCHLD
 	sigset_t sigset;
 	sigemptyset(&sigset);
@@ -167,9 +214,10 @@ int main(int argc, char* argv[])
 
 	umask(0);
 
-	// Change dir to a known location
+	// Change working directory to a known location
 	if (!s_is_debug && chdir("/") != 0)
-		LOG_ERROR_RETURN(("chdir(/) failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
+		LOG_ERROR_RETURN(("Failed to change current directory to /: %s",OOBase::system_error_text()),EXIT_FAILURE);
+
 #endif
 
 	// Run the one and only Root::Manager instance

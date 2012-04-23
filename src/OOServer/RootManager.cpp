@@ -57,75 +57,65 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	int ret = EXIT_FAILURE;
 
-	OOBase::String strPidfile;
-	cmd_args.find("pidfile",strPidfile);
-
-	int err = pid_file(strPidfile.empty() ? "/var/run/ooserverd.pid" : strPidfile.c_str());
-	if (err == EACCES)
-		OOBase::Logger::log(OOBase::Logger::Warning,APPNAME " already running");
-	else if (err)
-		LOG_ERROR(("Failed to create pid_file: %s",OOBase::system_error_text(err)));
-	else
+	// Loop until we quit
+	for (bool bQuit=false; !bQuit;)
 	{
-		// Loop until we quit
-		for (bool bQuit=false; !bQuit;)
+		ret = EXIT_FAILURE;
+
+		// Load the config
+		if (load_config(cmd_args))
 		{
-			ret = EXIT_FAILURE;
-
-			// Load the config
-			if (load_config(cmd_args))
+			// Open the root registry
+			if (init_database())
 			{
-				// Open the root registry
-				if (init_database())
+				// Start the proactor pool
+				int err = m_proactor_pool.run(&run_proactor,NULL,2);
+				if (err)
+					LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+				else
 				{
-					// Start the proactor pool
-					if ((err = m_proactor_pool.run(&run_proactor,NULL,2)) != 0)
-						LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
-					else
+					// Start the handler
+					if (start_request_threads(2))
 					{
-						// Start the handler
-						if (start_request_threads(2))
+						// Spawn the sandbox
+						if (spawn_sandbox())
 						{
-							// Spawn the sandbox
-							if (spawn_sandbox())
+							// Start listening for clients
+							if (start_client_acceptor())
 							{
-								// Start listening for clients
-								if (start_client_acceptor())
-								{
-									OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
+								OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
 
-									ret = EXIT_SUCCESS;
+								ret = EXIT_SUCCESS;
 
-									// Wait for quit
-									bQuit = wait_to_quit();
+								// Wait for quit
+								bQuit = wait_to_quit();
 
-									OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
+								OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
 
-									// Stop accepting new clients
-									m_client_acceptor = NULL;
-								}
-
-								// Close all channels
-								shutdown_channels();
-
-								// Wait for all user processes to terminate
-								m_mapUserProcesses.clear();
+								// Stop accepting new clients
+								m_client_acceptor = NULL;
 							}
-						}
 
-						// Stop the MessageHandler
-						stop_request_threads();
+							// Close all channels
+							shutdown_channels();
+
+							// Wait for all user processes to terminate
+							m_mapUserProcesses.clear();
+						}
 					}
 
-					// Stop any proactor threads
-					Proactor::instance().stop();
-					m_proactor_pool.join();
+					// Stop the MessageHandler
+					stop_request_threads();
 				}
-			}
 
-			if (ret == EXIT_FAILURE)
-				break;
+				// Stop any proactor threads
+				Proactor::instance().stop();
+				m_proactor_pool.join();
+			}
 		}
+
+		if (ret == EXIT_FAILURE)
+			break;
 	}
 
 	if (is_debug() && ret != EXIT_SUCCESS)
@@ -133,7 +123,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
-		OOBase::Thread::sleep(150000);
+		OOBase::Thread::sleep(15000);
 	}
 
 	return ret;

@@ -55,7 +55,7 @@ namespace Root
 	class Manager :
 			public OOServer::MessageHandler,
 			public Db::Manager,
-			public OOBase::Service
+			public OOBase::Server
 	{
 	public:
 		Manager();

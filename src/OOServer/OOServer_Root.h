@@ -50,7 +50,7 @@
 #include <OOBase/CmdArgs.h>
 #include <OOBase/SecurityWin32.h>
 #include <OOBase/Logger.h>
-#include <OOBase/Service.h>
+#include <OOBase/Server.h>
 
 #include <OOSvrBase/Proactor.h>
 

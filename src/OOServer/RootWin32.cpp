@@ -45,6 +45,24 @@
 #define PROTECTED_DACL_SECURITY_INFORMATION  (0x80000000L)
 #endif
 
+bool Root::platform_init()
+{
+	if (!is_debug())
+	{
+		// Change working directory to the location of the executable (we know it's valid!)
+		char szPath[MAX_PATH];
+		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),false);
+
+		// Strip off our name
+		PathRemoveFileSpecA(szPath);
+
+		if (!SetCurrentDirectoryA(szPath))
+			LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),false);
+	}
+	return true;
+}
+
 /*bool Root::Manager::secure_file(const char* pszFile, bool bPublicRead)
 {
     // Create a SID for the BUILTIN\Users group.

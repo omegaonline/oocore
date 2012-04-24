@@ -35,19 +35,10 @@
 
 #include "RootManager.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #ifdef HAVE_VLD_H
 #include <vld.h>
-#endif
-
-#if defined(_WIN32)
-#include <shlwapi.h>
-#endif
-
-#if defined(HAVE_UNISTD_H)
-#include <sys/stat.h>
 #endif
 
 #if defined(_MSC_VER)
@@ -188,36 +179,9 @@ int main(int argc, const char* argv[])
 	// Set critical failure handler to the logging handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
 
-#if defined(_WIN32)
-	if (!s_is_debug)
-	{
-		// Change working directory to the location of the executable (we know it's valid!)
-		char szPath[MAX_PATH];
-		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-			LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
-
-		// Strip off our name
-		PathRemoveFileSpecA(szPath);
-
-		if (!SetCurrentDirectoryA(szPath))
-			LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),EXIT_FAILURE);
-	}
-
-#elif defined(HAVE_UNISTD_H)
-
-	// Ignore SIGCHLD
-	sigset_t sigset;
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGCHLD);
-	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
-
-	umask(0);
-
-	// Change working directory to a known location
-	if (!s_is_debug && chdir("/") != 0)
-		LOG_ERROR_RETURN(("Failed to change current directory to /: %s",OOBase::system_error_text()),EXIT_FAILURE);
-
-#endif
+	// Run the per-platform init routines
+	if (!Root::platform_init())
+		return EXIT_FAILURE;
 
 	// Run the one and only Root::Manager instance
 	err = Root::Manager().run(args);

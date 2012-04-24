@@ -33,12 +33,30 @@
 
 #include "OOServer_Root.h"
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && defined(HAVE_UNISTD_H)
 
 #include "RootManager.h"
 
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+
+bool Root::platform_init()
+{
+	// Ignore SIGCHLD
+	sigset_t sigset;
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGCHLD);
+	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+
+	umask(0);
+
+	// Change working directory to a known location
+	if (!is_debug() && chdir("/") != 0)
+		LOG_ERROR_RETURN(("Failed to change current directory to /: %s",OOBase::system_error_text()),false);
+
+	return true;
+}
 
 /*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {

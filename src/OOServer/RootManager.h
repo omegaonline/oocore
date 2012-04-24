@@ -51,6 +51,7 @@
 namespace Root
 {
 	bool is_debug();
+	bool platform_init();
 
 	class Manager :
 			public OOServer::MessageHandler,

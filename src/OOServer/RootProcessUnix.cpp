@@ -404,7 +404,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 	LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-	int fd_to = ::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR);
+	int fd_to = OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR);
 	if (fd_to == -1)
 	{
 		if (errno != EEXIST)
@@ -419,7 +419,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 		}
 
-		int fd_from = ::open(strSysDir.c_str(),O_RDONLY);
+		int fd_from = OOBase::POSIX::open(strSysDir.c_str(),O_RDONLY);
 		if (fd_from == -1)
 		{
 			err = errno;

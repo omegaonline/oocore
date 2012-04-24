@@ -762,9 +762,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 
 #elif defined(HAVE_UNISTD_H)
 
-	int fd = open("/dev/urandom",O_RDONLY);
+	int fd = OOBase::POSIX::open("/dev/urandom",O_RDONLY);
 	if (fd == -1)
-		fd = open("/dev/random",O_RDONLY);
+		fd = OOBase::POSIX::open("/dev/random",O_RDONLY);
 
 	if (fd == -1)
 		OMEGA_THROW(errno);

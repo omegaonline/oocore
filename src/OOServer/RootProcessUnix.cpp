@@ -468,7 +468,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 		// If we get here, then we have a brand new file...
 		if ((err = strSysDir.append("default_user.regdb")) != 0)
 		{
-			::close(fd_to);
+			OOBase::POSIX::close(fd_to);
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 		}
 
@@ -476,7 +476,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 		if (fd_from == -1)
 		{
 			err = errno;
-			::close(fd_to);
+			OOBase::POSIX::close(fd_to);
 			::unlink(strHive.c_str());
 			LOG_ERROR_RETURN(("Failed to open %s: %s",strSysDir.c_str(),OOBase::system_error_text(err)),false);
 		}
@@ -485,41 +485,36 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 		ssize_t r = 0;
 		do
 		{
-			do
-			{
-				r = read(fd_from,buffer,sizeof(buffer));
-			} while (r==-1 && errno==EINTR);
-
+			r = OOBase::POSIX::read(fd_from,buffer,sizeof(buffer));
 			if (r == -1)
 			{
 				err = errno;
-				::close(fd_from);
-				::close(fd_to);
+				OOBase::POSIX::close(fd_from);
+				OOBase::POSIX::close(fd_to);
 				::unlink(strHive.c_str());
 				LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
 			}
 
 			if (r > 0)
 			{
-				ssize_t s = 0;
-				do
-				{
-					s = write(fd_to,buffer,r);
-				} while (s==-1 && errno==EINTR);
-
+				ssize_t s = OOBase::POSIX::write(fd_to,buffer,r);
 				if (s != r)
 				{
-					err = errno;
-					::close(fd_from);
-					::close(fd_to);
+					if (s != -1)
+						err = EIO;
+					else
+						err = errno;
+
+					OOBase::POSIX::close(fd_from);
+					OOBase::POSIX::close(fd_to);
 					::unlink(strHive.c_str());
 					LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
 				}
 			}
 		} while (r != 0);
 
-		::close(fd_from);
-		::close(fd_to);
+		OOBase::POSIX::close(fd_from);
+		OOBase::POSIX::close(fd_to);
 
 		if (chown(strHive.c_str(),m_uid,pw->pw_gid) == -1)
 		{
@@ -543,8 +538,8 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLo
 	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
 	if (err != 0)
 	{
-		::close(fd[0]);
-		::close(fd[1]);
+		OOBase::POSIX::close(fd[0]);
+		OOBase::POSIX::close(fd[1]);
 		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 	}
 
@@ -552,8 +547,8 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLo
 	RootProcessUnix* pSpawnUnix = new (std::nothrow) RootProcessUnix(uid);
 	if (!pSpawnUnix)
 	{
-		::close(fd[0]);
-		::close(fd[1]);
+		OOBase::POSIX::close(fd[0]);
+		OOBase::POSIX::close(fd[1]);
 		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::Process>());
 	}
 
@@ -571,19 +566,19 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLo
 	// Spawn the process
 	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
 	{
-		::close(fd[0]);
-		::close(fd[1]);
+		OOBase::POSIX::close(fd[0]);
+		OOBase::POSIX::close(fd[1]);
 		return OOBase::SmartPtr<Root::Process>();
 	}
 
 	// Done with fd[1]
-	::close(fd[1]);
+	OOBase::POSIX::close(fd[1]);
 
 	// Create an async socket wrapper
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance().attach_local_socket(fd[0],err);
 	if (err != 0)
 	{
-		::close(fd[0]);
+		OOBase::POSIX::close(fd[0]);
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 	}
 

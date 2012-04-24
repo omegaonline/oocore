@@ -770,14 +770,18 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 		OMEGA_THROW(errno);
 
 	guid_base_t res;
-	if (read(fd,&res,sizeof(res)) != sizeof(res))
+	ssize_t r = OOBase::POSIX::read(fd,&res,sizeof(res));
+	if (r != sizeof(res))
 	{
 		int err = errno;
-		close(fd);
+		if (r != -1)
+			err = EIO;
+
+		OOBase::POSIX::close(fd);
 		OMEGA_THROW(err);
 	}
 
-	close(fd);
+	OOBase::POSIX::close(fd);
 	return res;
 
 #else

@@ -131,7 +131,7 @@ namespace
 		virtual ~FileInputStream()
 		{
 			if (m_fd != -1)
-				::close(m_fd);
+				OOBase::POSIX::close(m_fd);
 		}
 
 		void init(int fd)
@@ -141,15 +141,11 @@ namespace
 
 		uint32_t ReadBytes(uint32_t lenBytes, byte_t* data)
 		{
-			do
-			{
-				ssize_t r = ::read(m_fd,data,lenBytes);
-				if (r != -1)
-					return static_cast<uint32_t>(r);
-			}
-			while (errno == EINTR);
+			ssize_t r = OOBase::POSIX::read(m_fd,data,lenBytes);
+			if (r == -1)
+				throw ISystemException::Create(errno);
 
-			throw ISystemException::Create(errno);
+			return static_cast<uint32_t>(r);
 		}
 
 	private:

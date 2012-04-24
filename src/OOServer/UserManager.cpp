@@ -195,14 +195,14 @@ bool User::Manager::connect_root(const char* pszPipe)
 	int err = OOBase::POSIX::set_close_on_exec(fd,true);
 	if (err != 0)
 	{
-		::close(fd);
+		OOBase::POSIX::close(fd);
 		LOG_ERROR_RETURN(("set_close_on_exec failed: %s",OOBase::system_error_text(err)),false);
 	}
 
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().attach_local_socket(fd,err));
 	if (err != 0)
 	{
-		::close(fd);
+		OOBase::POSIX::close(fd);
 		LOG_ERROR_RETURN(("Failed to attach to root pipe: %s",OOBase::system_error_text(err)),false);
 	}
 

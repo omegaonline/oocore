@@ -26,6 +26,6 @@
 #include "config-gcc.h"
 
 #undef OMEGA_COMPILER_STRING
-#define OMEGA_COMPILER_STRING   __VERSION__ ": verion "__clang_version__
+#define OMEGA_COMPILER_STRING   __VERSION__ ": version "__clang_version__
 
 #endif // OOCORE_CONFIG_CLANG_H_INCLUDED_

@@ -122,8 +122,8 @@ int main(int argc, char* argv[])
 
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
-	// Scope it...
 	{
+		// Scope it...
 		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
 		if (hDebugEvent)
 		{

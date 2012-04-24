@@ -232,8 +232,8 @@ int main(int argc, const char* argv[])
 	return err;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////
-// Leave this function last because we includes a lot of headers, which might be dangerous!
+//////////////////////////////////////////////////////////////////////////////////////////
+// Leave this function last because we include a lot of headers, which might be dangerous!
 
 #include "../../include/Omega/internal/config-guess.h"
 #include "../../include/Omega/OOCore_version.h"

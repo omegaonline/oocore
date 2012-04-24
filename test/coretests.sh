@@ -22,7 +22,7 @@ if test -n "$DISPLAY" && test -n "$TERM"; then
 	esac
 fi
 
-$server_launch --debug --conf-file $PWD/../$srcdir/test.conf --pidfile $PWD/../../test/ooserverd.pid &
+$server_launch --debug --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
 
 echo Giving ooserverd a chance to start...
 sleep 3s
@@ -36,8 +36,7 @@ ret=$?
 
 # Close our ooserver
 if test -f ./ooserverd.pid; then
-	pid=$(cat "./ooserverd.pid")
-	kill $pid
+	kill `cat ./ooserverd.pid`
 fi
 
 exit $ret

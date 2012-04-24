@@ -71,13 +71,6 @@ namespace
 		OOBase::stderr_write("Critical error in " APPNAME ":");
 		OOBase::stderr_write(msg);
 		OOBase::stderr_write("\n");
-
-		if (Root::is_debug())
-		{
-			// Give us a chance to read the errors!
-			OOBase::Thread::sleep(15000);
-		}
-
 		return true;
 	}
 
@@ -164,14 +157,19 @@ int main(int argc, const char* argv[])
 	OOBase::String strPidfile;
 	args.find("pidfile",strPidfile);
 
-	// Change this to OOServer::daemonize(strPidfile.c_str())
-	void* TODO;
+	bool already_running = false;
+	const char* pszPidFile = strPidfile.empty() ? "/var/run/" APPNAME ".pid" : strPidfile.c_str();
 
-	err = OOBase::Server::pid_file(strPidfile.empty() ? "/var/run/" APPNAME ".pid" : strPidfile.c_str());
-	if (err == EACCES)
-		return Failure(APPNAME " is already running\n");
-	else if (err)
+	// Daemonize if not debug
+	if (!s_is_debug)
+		err = OOBase::Server::daemonize(pszPidFile,already_running);
+	else
+		err = OOBase::Server::create_pid_file(pszPidFile,already_running);
+
+	if (err)
 		return Failure("Failed to create pid_file: %s\n",OOBase::system_error_text(err));
+	else if (already_running)
+		return Failure(APPNAME " is already running\n");
 
 	// Start the logger - delayed because we may have forked
 	OOBase::Logger::open("OOServer",__FILE__);
@@ -184,16 +182,7 @@ int main(int argc, const char* argv[])
 		return EXIT_FAILURE;
 
 	// Run the one and only Root::Manager instance
-	err = Root::Manager().run(args);
-
-#if defined(HAVE_UNISTD_H)
-
-	void* TODO2; // Do something like use a destructing singleton to unlink()
-	unlink(strPidfile.empty() ? "/var/run/" APPNAME ".pid" : strPidfile.c_str());
-
-#endif
-
-	return err;
+	return Root::Manager().run(args);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor, Jamal Natour
+// Copyright (C) 2007 Rick Taylor
 //
 // This file is part of OOServer, the OmegaOnline Server application.
 //
@@ -38,7 +38,6 @@
 #if defined(HAVE_UNISTD_H)
 
 #include <grp.h>
-#include <dirent.h>
 #include <fcntl.h>
 #include <stdlib.h>
 
@@ -68,8 +67,6 @@ namespace
 		bool           m_bSandbox;
 		uid_t          m_uid;
 		pid_t          m_pid;
-
-		void close_all_fds(int except_fd);
 	};
 }
 
@@ -109,56 +106,6 @@ RootProcessUnix::~RootProcessUnix()
 			kill(m_pid,SIGKILL);
 
 		m_pid = 0;
-	}
-}
-
-void RootProcessUnix::close_all_fds(int except_fd)
-{
-	int mx = -1;
-
-#if defined(_POSIX_OPEN_MAX) && (_POSIX_OPEN_MAX >= 0)
-#if (_POSIX_OPEN_MAX == 0)
-	/* value available at runtime only */
-	mx = sysconf(_SC_OPEN_MAX);
-#else
-	/* value available at compile time */
-	mx = _POSIX_OPEN_MAX;
-#endif
-#endif
-
-	if (mx >= 4)
-	{
-		for (int fd_i=STDERR_FILENO+1; fd_i<mx && fd_i != except_fd; ++fd_i)
-			close(fd_i);
-	}
-	else
-	{
-		/* based on lsof style walk of proc filesystem so should
-		 * work on anything with a proc filesystem i.e. a OSx/BSD */
-		/* walk proc, closing all descriptors from stderr onwards for our pid */
-
-		OOBase::LocalString str;
-		int err = str.printf("/proc/%u/fd/",getpid());
-		if (err != 0)
-			LOG_ERROR(("Failed to format string: %s",OOBase::system_error_text(err)));
-		else
-		{
-			DIR* pdir = NULL;
-			if (!(pdir = opendir(str.c_str())))
-				LOG_ERROR(("opendir failed for %s %s",str.c_str(),OOBase::system_error_text()));
-			else
-			{
-				/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
-				for (dirent* pfile; (pfile = readdir(pdir));)
-				{
-					int fd;
-					if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
-						close(fd);
-				}
-			}
-
-			closedir(pdir);
-		}
 	}
 }
 
@@ -213,7 +160,7 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	// We are the child...
 
 	// Close all open handles - not that we should have any ;)
-	close_all_fds(pass_fd);
+	OOBase::POSIX::close_file_descriptors(&pass_fd,1);
 
 	if (bChangeUid)
 	{

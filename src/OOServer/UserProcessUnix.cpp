@@ -72,31 +72,30 @@ void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega:
 	if (pid < 0)
 		OMEGA_THROW(errno);
 
-	if (pid == 0)
-	{
-		// We are the child
-
-		// Sort out environment block and split args
-
-		// Update PWD?
-
-		// Use execve()
-
-		// Just use the system() call
-		int ret = system(pszExeName);
-		if (WIFEXITED(ret))
-			_exit(WEXITSTATUS(ret));
-
-		OOBase::stderr_write("Failed to launch process\n");
-		_exit(127);
-	}
-	else
+	if (pid != 0)
 	{
 		if (User::is_debug())
 			AttachDebugger(pid);
+
+		m_pid = pid;
+		return;
 	}
 
-	m_pid = pid;
+	// We are the child
+
+	// Sort out environment block and split args
+
+	// Update PWD?
+
+	// Use execve()
+
+	// Just use the system() call
+	int ret = system(pszExeName);
+	if (WIFEXITED(ret))
+		_exit(WEXITSTATUS(ret));
+
+	OOBase::stderr_write("Failed to launch process\n");
+	_exit(127);
 }
 
 bool UserProcessUnix::running()

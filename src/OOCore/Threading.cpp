@@ -23,7 +23,7 @@
 
 template class OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>;
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),size_t,n,(in),Omega::Threading::SingletonCallback,pfn_init))
 {
 	// The value pointed to is definitely volatile under race conditions
 	volatile void* pVal = *val;
@@ -36,9 +36,17 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 
 		if (!pVal)
 		{
+			// Allocate
+			*val = Omega::System::Allocate(n);
+
 			// Call the init function
 			const Omega::System::Internal::SafeShim* pE = (*pfn_init)(val);
-			Omega::System::Internal::throw_correct_exception(pE);
+			if (pE)
+			{
+				Omega::System::Free(*val);
+				*val = NULL;
+				Omega::System::Internal::throw_correct_exception(pE);
+			}
 		}
 	}
 }

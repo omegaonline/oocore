@@ -143,12 +143,12 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	System::Free(p);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init));
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),size_t,n,(in),Omega::Threading::SingletonCallback,pfn_init));
 template <typename T, typename Lifetime>
 inline T* Omega::Threading::Singleton<T,Lifetime>::instance()
 {
 	static void* instance = NULL;
-	OOCore_sngtn_once(&instance,&do_init);
+	OOCore_sngtn_once(&instance,sizeof(T),&do_init);
 	return static_cast<T*>(instance);
 }
 
@@ -157,10 +157,9 @@ inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Li
 {
 	try
 	{
-		*param = new T();
-
+		::new (*param) T();
 		Lifetime::add_destructor(do_term,param);
-		return 0;
+		return NULL;
 	}
 	catch (Omega::IException* pE)
 	{
@@ -178,7 +177,8 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void* param)
 	try
 	{
 		T** p = static_cast<T**>(param);
-		delete *p;
+		(*p)->~T();
+		System::Free(*p);
 		*p = NULL;
 	}
 	catch (Omega::IException* pE)

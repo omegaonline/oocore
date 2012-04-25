@@ -171,29 +171,19 @@ inline Omega::IException* Omega::System::Internal::Wire_Proxy_Base::Throw(const 
 
 inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
 {
-	IObject* obj = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))
+		return Wire_Proxy_IObject::bind(pProxy);
+
+	// Find rtti...
+	const wire_rtti* rtti = get_wire_rtti_info(iid);
+	if (!rtti)
 	{
-		obj = Wire_Proxy_IObject::bind(pProxy);
-	}
-	else
-	{
-		// Find rtti...
-		const wire_rtti* rtti = get_wire_rtti_info(iid);
+		rtti = get_wire_rtti_info(fallback_iid);
 		if (!rtti)
-		{
-			rtti = get_wire_rtti_info(fallback_iid);
-			if (!rtti)
-				rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
-		}
-
-		obj = (*rtti->pfnCreateWireProxy)(pProxy);
+			rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
 	}
 
-	if (!obj)
-		OMEGA_THROW("Failed to create proxy");
-
-	return obj;
+	return (*rtti->pfnCreateWireProxy)(pProxy);
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
@@ -209,30 +199,20 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_St
 
 inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
 {
-	Remoting::IStub* pStub = NULL;
 	if (iid == OMEGA_GUIDOF(IObject))
-	{
-		pStub = Wire_Stub<IObject>::create(pController,pMarshaller,pObj);
-	}
-	else
-	{
-		// Check that pObj supports the interface...
-		auto_iface_ptr<IObject> ptrQI = pObj->QueryInterface(iid);
-		if (!ptrQI)
-			return NULL;
+		return Wire_Stub<IObject>::create(pController,pMarshaller,pObj);
 
-		// Wrap it in a proxy and add it...
-		const wire_rtti* rtti = get_wire_rtti_info(iid);
-		if (!rtti)
-			OMEGA_THROW("Failed to create wire stub for interface - missing rtti");
+	// Check that pObj supports the interface...
+	auto_iface_ptr<IObject> ptrQI = pObj->QueryInterface(iid);
+	if (!ptrQI)
+		return NULL;
 
-		pStub = (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
-	}
+	// Wrap it in a proxy and add it...
+	const wire_rtti* rtti = get_wire_rtti_info(iid);
+	if (!rtti)
+		OMEGA_THROW("Failed to create wire stub for interface - missing rtti");
 
-	if (!pStub)
-		OMEGA_THROW("Failed to create wire stub for interface");
-
-	return pStub;
+	return (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
 }
 
 #if !defined(DOXYGEN)

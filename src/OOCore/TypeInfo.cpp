@@ -476,10 +476,6 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 	string_t strSource;
 	switch (value.GetType())
 	{
-	case TypeInfo::typeVoid:
-		strSource = string_t::constant("void");
-		break;
-
 	case TypeInfo::typeBool:
 		strSource = string_t::constant("Omega::bool_t");
 		break;
@@ -528,8 +524,10 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 		strSource = string_t::constant("Omega::guid_t");
 		break;
 
+	case TypeInfo::typeVoid:
 	default:
-		OMEGA_THROW("Invalid any_t");
+		strSource = string_t::constant("void");
+		break;
 	}
 
 	string_t strDest = BuildTypeString(typeDest);

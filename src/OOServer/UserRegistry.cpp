@@ -28,8 +28,6 @@ using namespace Omega;
 using namespace Omega::Registry;
 using namespace OTL;
 
-#include <iterator>
-
 using namespace User;
 using namespace User::Registry;
 
@@ -514,7 +512,7 @@ std::set<string_t> OverlayKey::EnumValues()
 	std::set<string_t> over_set = m_ptrOver->EnumValues();
 	std::set<string_t> under_set = m_ptrUnder->EnumValues();
 
-	std::copy(under_set.begin(),under_set.end(),std::inserter(over_set,over_set.begin()));
+	over_set.insert(under_set.begin(),under_set.end());
 	return over_set;
 }
 

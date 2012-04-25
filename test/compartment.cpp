@@ -2,7 +2,6 @@
 #include "../include/OTL/OTL.h"
 #include "../include/Omega/Remoting.h"
 #include "interfaces.h"
-#include "aggregator.h"
 
 #include "Test.h"
 
@@ -26,35 +25,13 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = NULL;
-	ptrCompartment->CreateInstance("Test.Library",Omega::Activation::Library,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateInstance("Test.Library",Omega::Activation::Library,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest = static_cast<Omega::TestSuite::ISimpleTest*>(pObj);
 
 	// Test the interface
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 	
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
-	TEST(ptrSimpleTest2->WhereAmI() == "Inner");
-	
-	ptrSimpleTest.Release();
-	ptrSimpleTest2.Release();
-	
-	// Test aggregation
-	Aggregator* pAgg = new Aggregator();
-	
-	pObj = NULL;
-	ptrCompartment->CreateInstance("Test.Library",Omega::Activation::Library,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
-	TEST(pObj);
-
-	pAgg->SetInner(pObj);
-	
-	ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg);
-	TEST(ptrSimpleTest2->WhereAmI() == "Outer");
-
-	ptrSimpleTest = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
-	TEST(ptrSimpleTest);
-	interface_tests(ptrSimpleTest); 
-
 	return true;
 }
 
@@ -94,38 +71,12 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = NULL;
-	ptrCompartment->CreateInstance("Test.Process",Omega::Activation::Process,NULL,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateInstance("Test.Process",Omega::Activation::Process,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest = static_cast<Omega::TestSuite::ISimpleTest*>(pObj);
 
 	// Test the interface
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
-	
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest.QueryInterface<Omega::TestSuite::ISimpleTest2>();
-	TEST(ptrSimpleTest2->WhereAmI() == "Inner");
-	
-	void* ISSUE_14;
-
-	/*ptrSimpleTest.Release();
-	ptrSimpleTest2.Release();
-
-	// Test aggregation
-	Aggregator* pAgg = new Aggregator();
-	
-	pObj = NULL;
-	ptrCompartment->CreateInstance("Test.Process",Omega::Activation::Process,pAgg,OMEGA_GUIDOF(Omega::IObject),pObj);
-	TEST(pObj);
-
-	pAgg->SetInner(pObj);
-
-	ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg);
-	TEST(ptrSimpleTest2->WhereAmI() == "Outer");
-
-	ptrSimpleTest = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
-	TEST(ptrSimpleTest);
-	interface_tests(ptrSimpleTest);
-
-	ptrSimpleTest2.Release(); */
 	
 	// Kill the running version
 	try

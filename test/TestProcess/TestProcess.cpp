@@ -39,7 +39,6 @@ public:
 
 	BEGIN_INTERFACE_MAP(TestProcessImpl)
 		INTERFACE_ENTRY(Omega::TestSuite::ISimpleTest)
-		INTERFACE_ENTRY(Omega::TestSuite::ISimpleTest2)
 		INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 	END_INTERFACE_MAP()
 };

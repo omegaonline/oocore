@@ -8,8 +8,7 @@
 #endif
 
 class SimpleTestImpl :
-		public Omega::TestSuite::ISimpleTest,
-		public Omega::TestSuite::ISimpleTest2
+		public Omega::TestSuite::ISimpleTest
 {
 public:
 	Omega::bool_t BoolNot1(Omega::bool_t v)
@@ -105,11 +104,6 @@ public:
 	void Throw(Omega::uint32_t err)
 	{
 		throw Omega::ISystemException::Create(err);
-	}
-
-	Omega::string_t WhereAmI()
-	{
-		return Omega::string_t::constant("Inner");
 	}
 
 	Omega::uint32_t ListUInt32_Count(const std::list<Omega::uint32_t>& list)

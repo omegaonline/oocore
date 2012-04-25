@@ -105,7 +105,7 @@ namespace OOCore
 	{
 	// IObjectFactory members
 	public:
-		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		void CreateInstance(const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }
 

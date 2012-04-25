@@ -345,7 +345,7 @@ namespace OOCore
 
 	// ICompartment members
 	public:
-		void CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject);
+		void CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 	};
 }
 
@@ -361,11 +361,8 @@ void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > 
 	m_ptrChannel = ptrChannel;
 }
 
-void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
+void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
-	if (pOuter && iid != OMEGA_GUIDOF(Omega::IObject))
-		throw Omega::IInternalException::Create("Aggregation must use iid of OMEGA_GUIDOF(Omega::IObject)","Omega::ICompartment::CreateInstance");
-	
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
 	// Get the remote instance IObjectFactory
@@ -374,14 +371,13 @@ void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags
 	ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObjF);
 	
 	// Call CreateInstance
-	pObject = NULL;
-	ptrOF->CreateInstance(pOuter,iid,pObject);
+	ptrOF->CreateInstance(iid,pObject);
 }
 
 // {3BE419D7-52D9-4873-95E7-836D33523C51}
 OMEGA_DEFINE_OID(Compartment,OID_Compartment,"{3BE419D7-52D9-4873-95E7-836D33523C51}");
 
-void OOCore::CompartmentFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
+void OOCore::CompartmentFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
 	// Compartments are not supported in the OOSvrUser process!
 	if (OOCore::HostedByOOServer())
@@ -391,21 +387,8 @@ void OOCore::CompartmentFactory::CreateInstance(IObject* pOuter, const guid_t& i
 	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment(guid_t::Null());
 
 	// Create a CompartmentImpl
-	if (!pOuter)
-	{
-		ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstance();
-		ptrCompt->init(ptrChannel);
+	ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstance();
+	ptrCompt->init(ptrChannel);
 
-		pObject = ptrCompt->QueryInterface(iid);
-	}
-	else
-	{
-		ObjectPtr<AggregatedObjectImpl<OOCore::CompartmentImpl> > ptrCompt = AggregatedObjectImpl<OOCore::CompartmentImpl>::CreateInstance(pOuter);
-		ptrCompt->ContainedObject()->init(ptrChannel);
-
-		if (iid == OMEGA_GUIDOF(IObject))
-			pObject = ptrCompt.Detach();
-		else
-			pObject = ptrCompt->QueryInterface(iid);
-	}
+	pObject = ptrCompt->QueryInterface(iid);
 }

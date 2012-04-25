@@ -146,9 +146,9 @@ namespace OTL
 				m_ptr->AddRef();
 		}
 
-		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter)
+		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,OMEGA_GUIDOF(OBJECT)));
 		}
 
 		virtual ~ObjectPtrBase()
@@ -231,12 +231,12 @@ namespace OTL
 				ObjectPtrBase<OBJECT>(rhs.m_ptr,true)
 		{ }
 
-		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
-				ObjectPtrBase<OBJECT>(oid,flags,pOuter)
+		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
+				ObjectPtrBase<OBJECT>(oid,flags)
 		{ }
 
-		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
-				ObjectPtrBase<OBJECT>(Omega::string_t(name),flags,pOuter)
+		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
+				ObjectPtrBase<OBJECT>(Omega::string_t(name),flags)
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
@@ -273,12 +273,12 @@ namespace OTL
 				ObjectPtrBase<Omega::IObject>(rhs.m_ptr,true)
 		{ }
 
-		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter = NULL) :
-				ObjectPtrBase<Omega::IObject>(oid,flags,pOuter)
+		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags) :
+				ObjectPtrBase<Omega::IObject>(oid,flags)
 		{ }
 
-		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default, Omega::IObject* pOuter = NULL) :
-				ObjectPtrBase<Omega::IObject>(Omega::string_t(name),flags,pOuter)
+		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
+				ObjectPtrBase<Omega::IObject>(Omega::string_t(name),flags)
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
@@ -550,100 +550,6 @@ namespace OTL
 	};
 
 	template <typename ROOT>
-	class AggregatedObjectImpl;
-
-	template <typename ROOT>
-	class ContainedObjectImpl : public ROOT
-	{
-		friend class AggregatedObjectImpl<ROOT>;
-
-	public:
-		ContainedObjectImpl(Omega::IObject* pOuter) :
-				m_pOuter(pOuter)
-		{
-			Omega::System::PinObjectPointer(m_pOuter);
-		}
-
-		Omega::IObject* m_pOuter;
-
-	private:
-		ContainedObjectImpl(const ContainedObjectImpl& rhs);
-		ContainedObjectImpl& operator = (const ContainedObjectImpl& rhs);
-
-		virtual ~ContainedObjectImpl()
-		{
-			Omega::System::UnpinObjectPointer(m_pOuter);
-		}
-
-	// IObject members
-	public:
-		virtual void AddRef()
-		{
-			m_pOuter->AddRef();
-		}
-
-		virtual void Release()
-		{
-			m_pOuter->Release();
-		}
-
-		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
-		{
-			return m_pOuter->QueryInterface(iid);
-		}
-	};
-
-	template <typename ROOT>
-	class AggregatedObjectImpl : public Omega::IObject, public Omega::System::Internal::ThrowingNew
-	{
-		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter)
-		{
-			GetModule()->IncLockCount();
-			AddRef();
-		}
-
-		virtual ~AggregatedObjectImpl()
-		{
-			GetModule()->DecLockCount();
-		}
-
-		// If the line below is flagged as the source of a compiler warning then
-		// you have missed out at least one virtual function in an interface that
-		// <ROOT> derives from
-		ContainedObjectImpl<ROOT>        m_contained;
-		Omega::Threading::AtomicRefCount m_refcount;
-
-	public:
-		static AggregatedObjectImpl* CreateInstance(Omega::IObject* pOuter)
-		{
-			return new AggregatedObjectImpl(pOuter);
-		}
-
-		ROOT* ContainedObject()
-		{
-			return &m_contained;
-		}
-
-	// IObject members
-	public:
-		virtual void AddRef()
-		{
-			m_refcount.AddRef();
-		}
-
-		virtual void Release()
-		{
-			if (m_refcount.Release() == 0)
-				delete this;
-		}
-
-		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
-		{
-			return m_contained.Internal_QueryInterface(iid,ROOT::getQIEntries());
-		}
-	};
-
-	template <typename ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
 		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >;
@@ -730,19 +636,6 @@ namespace OTL
 	class AutoObjectFactoryCallCreate
 	{
 	public:
-		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
-		{
-			Omega::IObject* ret = NULL;
-			ObjectPtr<T> ptr = T::CreateInstance(pOuter);
-			if (iid != OMEGA_GUIDOF(Omega::IObject))
-				ret = ptr->QueryInterface(iid);
-			else
-				ret = ptr.Detach();
-			if (!ret)
-				throw OOCore_INotFoundException_MissingIID(iid);
-			return ret;
-		}
-
 		static Omega::IObject* CreateInstance(const Omega::guid_t& iid)
 		{
 			ObjectPtr<T> ptr = T::CreateInstance();
@@ -753,17 +646,7 @@ namespace OTL
 		}
 	};
 
-	template <const Omega::guid_t* pOID>
-	class AutoObjectFactoryCallCreateThrow
-	{
-	public:
-		static Omega::IObject* CreateInstance(Omega::IObject*, const Omega::guid_t&)
-		{
-			throw OOCore_IAccessDeniedException_NoAggregation(*pOID);
-		}
-	};
-
-	template <typename T1, typename T2>
+	template <typename T>
 	class AutoObjectFactoryImpl :
 			public ObjectBase,
 			public Omega::Activation::IObjectFactory
@@ -775,12 +658,9 @@ namespace OTL
 
 	// IObjectFactory members
 	public:
-		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject)
+		void CreateInstance(const Omega::guid_t& iid, Omega::IObject*& pObject)
 		{
-			if (pOuter)
-				pObject = T1::CreateInstance(pOuter,iid);
-			else
-				pObject = T2::CreateInstance(iid);
+			pObject = T::CreateInstance(iid);
 		}
 	};
 
@@ -788,7 +668,7 @@ namespace OTL
 	class AutoObjectFactory
 	{
 	public:
-		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,AutoObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 		static const Omega::guid_t* GetOid()
 		{
@@ -805,7 +685,7 @@ namespace OTL
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags>
 	{
 	public:
-		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreateThrow<pOID>,AutoObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef AutoObjectFactoryImpl<AutoObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 	protected:
 		virtual ~AutoObjectFactorySingleton() {}

@@ -206,13 +206,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IAccessDeniedException*,OOCore_IAccessDeniedExcep
 	return pExcept.Detach();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IAccessDeniedException*,OOCore_IAccessDeniedException_NoAggregation,1,((in),const Omega::guid_t&,oid))
-{
-	ObjectPtr<ObjectImpl<OOCore::AccessDeniedException> > pExcept = ObjectImpl<OOCore::AccessDeniedException>::CreateInstance();
-	pExcept->m_strDesc = OOCore::get_text("Object {0} does not support aggregation") % oid;
-	return pExcept.Detach();
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
 	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();

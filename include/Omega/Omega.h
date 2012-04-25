@@ -102,7 +102,7 @@ namespace Omega
 	IException* Initialize();
 	void Uninitialize();
 
-	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
 	bool_t HandleRequest(uint32_t millisecs = 0xFFFFFFFF);
 }
 
@@ -152,15 +152,12 @@ inline Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(co
 	return OOCore_GetObjectFactory(oid,flags);
 }
 
-inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	if (pOuter && iid != OMEGA_GUIDOF(Omega::IObject))
-		throw Omega::IInternalException::Create("Aggregation must use iid of OMEGA_GUIDOF(Omega::IObject)","Omega::CreateInstance");
-	
 	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(oid,flags));
 
 	IObject* pObject = 0;
-	ptrOF->CreateInstance(pOuter,iid,pObject);
+	ptrOF->CreateInstance(iid,pObject);
 	return pObject;
 }
 

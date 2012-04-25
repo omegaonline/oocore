@@ -30,7 +30,7 @@ namespace Omega
 	{
 		interface ICompartment : public IObject
 		{
-			virtual void CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
 		};
 		
 		// {3BE419D7-52D9-4873-95E7-836D33523C51}
@@ -42,9 +42,9 @@ namespace Omega
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::Compartment, ICompartment, "{9D92BFD7-631C-46dd-A123-E9CEB18A2285}",
+	Omega::Compartment, ICompartment, "{9D92BFD7-631C-46DD-A123-E9CEB18A2285}",
 
-	OMEGA_METHOD_VOID(CreateInstance,5,((in),const any_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,4,((in),const any_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 #endif // !defined(DOXYGEN)

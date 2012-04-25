@@ -105,8 +105,6 @@ inline Omega::IAccessDeniedException* Omega::IAccessDeniedException::Create(cons
 	return OOCore_IAccessDeniedException_Create(strDesc,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IAccessDeniedException*,OOCore_IAccessDeniedException_NoAggregation,1,((in),const Omega::guid_t&,oid))
-
 #endif // !defined(DOXYGEN)
 
 #endif // OOCORE_RTTI_INL_INCLUDED_

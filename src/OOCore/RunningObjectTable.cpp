@@ -402,11 +402,8 @@ void OTL::Module::OOCore_LibraryModuleImpl::UnregisterObjectFactories(Activation
 // {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
 OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable,"{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}");
 
-void OOCore::RunningObjectTableFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
+void OOCore::RunningObjectTableFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	if (pOuter)
-		throw OOCore_IAccessDeniedException_NoAggregation(Activation::OID_RunningObjectTable);
-
 	ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 	if (ptrIPS)
 	{

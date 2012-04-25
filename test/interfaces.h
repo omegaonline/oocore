@@ -40,11 +40,6 @@ namespace Omega
 			virtual Omega::uint32_t ListUInt32_Count(const std::list<Omega::uint32_t>& list) = 0;
 			virtual std::list<Omega::uint32_t> ListUInt32_Fill() = 0;
 		};
-
-		interface ISimpleTest2 : public Omega::IObject
-		{
-			virtual Omega::string_t WhereAmI() = 0;
-		};
 	}
 }
 
@@ -85,14 +80,6 @@ OMEGA_DEFINE_INTERFACE
 
 	OMEGA_METHOD(Omega::uint32_t,ListUInt32_Count,1,((in),const std::list<Omega::uint32_t>&,list))
 	OMEGA_METHOD(std::list<Omega::uint32_t>,ListUInt32_Fill,0,())
-)
-
-OMEGA_DEFINE_INTERFACE
-(
-	Omega::TestSuite, ISimpleTest2, "{AFD23012-F948-47e9-A3EB-76FECBAE30A4}",
-
-	// Methods
-	OMEGA_METHOD(Omega::string_t,WhereAmI,0,())
 )
 
 #endif // TEST_INTERFACES_INCLUDED

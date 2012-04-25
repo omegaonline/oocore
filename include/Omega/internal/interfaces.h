@@ -62,7 +62,7 @@ namespace Omega
 	{
 		interface IObjectFactory : public IObject
 		{
-			virtual void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void CreateInstance(const guid_t& iid, IObject*& pObject) = 0;
 		};
 
 		enum Flags
@@ -196,7 +196,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
-	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,2,((in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL

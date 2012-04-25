@@ -372,11 +372,8 @@ OMEGA_DEFINE_OID(Registry,OID_Registry,"{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}")
 // {7A351233-8363-BA15-B443-31DD1C8FC587}
 OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C8FC587}");
 
-void OOCore::RegistryFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
+void OOCore::RegistryFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	if (pOuter)
-		throw OOCore_IAccessDeniedException_NoAggregation(Registry::OID_Registry);
-		
 	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 	if (ptrIPS)
 	{

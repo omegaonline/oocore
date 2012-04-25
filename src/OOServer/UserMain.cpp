@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("debug");
-	cmd_args.add_option("fork-slave",0,true);
+	cmd_args.add_option("pipe",0,true);
 
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 #endif
 
 	OOBase::String strPipe;
-	if (!args.find("fork-slave",strPipe))
+	if (!args.find("pipe",strPipe))
 	{
 		// Ooops...
 		OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");

@@ -68,6 +68,22 @@ namespace
 		uid_t          m_uid;
 		pid_t          m_pid;
 	};
+
+	void exit_msg(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args,fmt);
+
+		OOBase::LocalString msg;
+		int err = msg.vprintf(fmt,args);
+
+		va_end(args);
+
+		if (err == 0)
+			OOBase::stderr_write(msg.c_str());
+
+		_exit(127);
+	}
 }
 
 RootProcessUnix::RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
@@ -160,61 +176,42 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	// We are the child...
 
 	// Close all open handles - not that we should have any ;)
-	OOBase::POSIX::close_file_descriptors(&pass_fd,1);
+	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, pass_fd };
+	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
+	if (err)
+		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+
+	int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
+	if (n == -1)
+		exit_msg("Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
+
+	// Now close off stdin
+	dup2(n,STDIN_FILENO);
 
 	if (bChangeUid)
 	{
 		// get our pw_info
 		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
-		{
-			err = errno;
-			OOBase::stderr_write("getpwuid() failed: ");
-			OOBase::stderr_write(OOBase::system_error_text(err));
-			OOBase::stderr_write("\n");
-			_exit(127);
-		}
+			exit_msg("getpwuid() failed: %s\n",OOBase::system_error_text());
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
-		{
-			err = errno;
-			OOBase::stderr_write("setgid() failed: ");
-			OOBase::stderr_write(OOBase::system_error_text(err));
-			OOBase::stderr_write("\n");
-			_exit(127);
-		}
+			exit_msg("setgid() failed: %s\n",OOBase::system_error_text());
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-		{
-			err = errno;
-			OOBase::stderr_write("initgroups() failed: ");
-			OOBase::stderr_write(OOBase::system_error_text(err));
-			OOBase::stderr_write("\n");
-			_exit(127);
-		}
+			exit_msg("initgroups() failed: %s\n",OOBase::system_error_text());
 
 		// Stop being privileged!
 		if (setuid(m_uid) != 0)
-		{
-			err = errno;
-			OOBase::stderr_write("setuid() failed: ");
-			OOBase::stderr_write(OOBase::system_error_text(err));
-			OOBase::stderr_write("\n");
-			_exit(127);
-		}
+			exit_msg("setuid() failed: %s\n",OOBase::system_error_text());
 	}
 
 	// Exec the user process
 	OOBase::LocalString strPipe;
-	if ((err = strPipe.printf("--fork-slave=%u",pass_fd)) != 0)
-	{
-		OOBase::stderr_write("Failed to concatenate strings: ");
-		OOBase::stderr_write(OOBase::system_error_text(err));
-		OOBase::stderr_write("\n");
-		_exit(127);
-	}
+	if ((err = strPipe.printf("--pipe=%u",pass_fd)) != 0)
+		exit_msg("Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
 
 	OOBase::LocalString display;
 	display.getenv("DISPLAY");
@@ -244,15 +241,8 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	execv(strAppName.c_str(),(char* const*)argv);
 
 	err = errno;
-	OOBase::stderr_write("Failed to launch '");
-	OOBase::stderr_write(strAppName.c_str());
-	OOBase::stderr_write("' cwd '");
-	OOBase::stderr_write(get_current_dir_name());
-	OOBase::stderr_write("' - ");
-	OOBase::stderr_write(OOBase::system_error_text(err));
-	OOBase::stderr_write("\n");
-
-	_exit(127);
+	exit_msg("Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
+	return false;
 }
 
 bool RootProcessUnix::IsRunning() const

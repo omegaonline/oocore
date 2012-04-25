@@ -541,7 +541,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 		err = strCmdLine.assign(strAppName.c_str());
 
 	if (err == 0)
-		err = strCmdLine.append(" --fork-slave=");
+		err = strCmdLine.append(" --pipe=");
 	if (err == 0)
 		err = strCmdLine.append(strPipe.c_str());
 	if (err == 0 && Root::is_debug())

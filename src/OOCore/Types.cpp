@@ -762,7 +762,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 
 #elif defined(HAVE_UNISTD_H)
 
-	int fd = OOBase::POSIX::open("/dev/urandom",O_RDONLY);
+	OOBase::POSIX::SmartFD fd(OOBase::POSIX::open("/dev/urandom",O_RDONLY));
 	if (fd == -1)
 		fd = OOBase::POSIX::open("/dev/random",O_RDONLY);
 
@@ -777,11 +777,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 		if (r != -1)
 			err = EIO;
 
-		OOBase::POSIX::close(fd);
 		OMEGA_THROW(err);
 	}
 
-	OOBase::POSIX::close(fd);
 	return res;
 
 #else

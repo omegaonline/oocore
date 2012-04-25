@@ -187,6 +187,7 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 
 	// Now close off stdin
 	dup2(n,STDIN_FILENO);
+	OOBase::POSIX::close(n);
 
 	if (bChangeUid)
 	{
@@ -394,7 +395,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 	LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
 
 	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-	int fd_to = OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR);
+	OOBase::POSIX::SmartFD fd_to(OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR));
 	if (fd_to == -1)
 	{
 		if (errno != EEXIST)
@@ -404,16 +405,12 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 	{
 		// If we get here, then we have a brand new file...
 		if ((err = strSysDir.append("default_user.regdb")) != 0)
-		{
-			OOBase::POSIX::close(fd_to);
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
-		}
 
-		int fd_from = OOBase::POSIX::open(strSysDir.c_str(),O_RDONLY);
+		OOBase::POSIX::SmartFD fd_from(OOBase::POSIX::open(strSysDir.c_str(),O_RDONLY));
 		if (fd_from == -1)
 		{
 			err = errno;
-			OOBase::POSIX::close(fd_to);
 			::unlink(strHive.c_str());
 			LOG_ERROR_RETURN(("Failed to open %s: %s",strSysDir.c_str(),OOBase::system_error_text(err)),false);
 		}
@@ -426,8 +423,6 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 			if (r == -1)
 			{
 				err = errno;
-				OOBase::POSIX::close(fd_from);
-				OOBase::POSIX::close(fd_to);
 				::unlink(strHive.c_str());
 				LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
 			}
@@ -442,16 +437,11 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 					else
 						err = errno;
 
-					OOBase::POSIX::close(fd_from);
-					OOBase::POSIX::close(fd_to);
 					::unlink(strHive.c_str());
 					LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
 				}
 			}
 		} while (r != 0);
-
-		OOBase::POSIX::close(fd_from);
-		OOBase::POSIX::close(fd_to);
 
 		if (chown(strHive.c_str(),m_uid,pw->pw_gid) == -1)
 		{

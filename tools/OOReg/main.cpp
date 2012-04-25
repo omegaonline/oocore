@@ -283,14 +283,14 @@ int main(int argc, char* argv[])
 				OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(key);
 				if (ptrKey)
 				{
-					std::set<Omega::string_t> v = ptrKey->EnumSubKeys();
-					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
+					Omega::Registry::IKey::string_set_t v = ptrKey->EnumSubKeys();
+					for (Omega::Registry::IKey::string_set_t::const_iterator i=v.begin();i!=v.end();++i)
 					{
 						OOBase::stdout_write(i->c_str());
 						OOBase::stdout_write("/\n");
 					}
 					v = ptrKey->EnumValues();
-					for (std::set<Omega::string_t>::const_iterator i=v.begin();i!=v.end();++i)
+					for (Omega::Registry::IKey::string_set_t::const_iterator i=v.begin();i!=v.end();++i)
 					{
 						OOBase::stdout_write(i->c_str());
 						OOBase::stdout_write("\n");

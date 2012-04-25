@@ -55,11 +55,11 @@ namespace User
 		public:
 			Omega::string_t GetName();
 			Omega::bool_t IsKey(const Omega::string_t& strSubKey);
-			std::set<Omega::string_t> EnumSubKeys();
+			Omega::Registry::IKey::string_set_t EnumSubKeys();
 			Omega::Registry::IKey* OpenKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
 			void DeleteSubKey(const Omega::string_t& strSubKey);
 			Omega::bool_t IsValue(const Omega::string_t& strName);
-			std::set<Omega::string_t> EnumValues();
+			Omega::Registry::IKey::string_set_t EnumValues();
 			Omega::any_t GetValue(const Omega::string_t& strName);
 			void SetValue(const Omega::string_t& strName, const Omega::any_t& value);
 			void DeleteValue(const Omega::string_t& strName);

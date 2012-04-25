@@ -746,45 +746,38 @@ namespace OTL
 	private:
 		Omega::TypeInfo::IProvideObjectInfo::iid_list_t WalkEntries(const ObjectBase::QIEntry* pEntries)
 		{
-			try
-			{
-				Omega::TypeInfo::IProvideObjectInfo::iid_list_t retval;
+			Omega::TypeInfo::IProvideObjectInfo::iid_list_t retval;
 
-				for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
+			for (size_t i=0; pEntries && pEntries[i].pGuid!=0; ++i)
+			{
+				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
 				{
-					if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
+					if (!pEntries[i].pfnMemQI)
+						retval.push_back(*(pEntries[i].pGuid));
+					else
 					{
-						if (!pEntries[i].pfnMemQI)
+						ObjectPtr<Omega::IObject> ptrObj = pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI);
+						if (ptrObj)
 							retval.push_back(*(pEntries[i].pGuid));
-						else
-						{
-							ObjectPtr<Omega::IObject> ptrObj = pEntries[i].pfnQI(*(pEntries[i].pGuid),this,pEntries[i].offset-1,pEntries[i].pfnMemQI);
-							if (ptrObj)
-								retval.push_back(*(pEntries[i].pGuid));
-						}
-					}
-					else if (pEntries[i].offset != 0)
-					{
-						ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrAgg = static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
-						if (ptrAgg)
-						{
-							Omega::TypeInfo::IProvideObjectInfo::iid_list_t agg = ptrAgg->EnumInterfaces();
-							retval.insert(retval.end(),agg.begin(),agg.end());
-						}
-					}
-					else if (pEntries[i].baseEntries)
-					{
-						Omega::TypeInfo::IProvideObjectInfo::iid_list_t base = WalkEntries(pEntries[i].baseEntries);
-						retval.insert(retval.end(),base.begin(),base.end());
 					}
 				}
+				else if (pEntries[i].offset != 0)
+				{
+					ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrAgg = static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset-1,pEntries[i].pfnMemQI));
+					if (ptrAgg)
+					{
+						Omega::TypeInfo::IProvideObjectInfo::iid_list_t agg = ptrAgg->EnumInterfaces();
+						retval.insert(retval.end(),agg.begin(),agg.end());
+					}
+				}
+				else if (pEntries[i].baseEntries)
+				{
+					Omega::TypeInfo::IProvideObjectInfo::iid_list_t base = WalkEntries(pEntries[i].baseEntries);
+					retval.insert(retval.end(),base.begin(),base.end());
+				}
+			}
 
-				return retval;
-			}
-			catch (std::exception& e)
-			{
-				OMEGA_THROW(e.what());
-			}
+			return retval;
 		}
 
 	// IProvideObjectInfo members

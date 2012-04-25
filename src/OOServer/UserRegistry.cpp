@@ -56,11 +56,11 @@ namespace
 	public:
 		string_t GetName();
 		bool_t IsKey(const string_t& strSubKey);
-		std::set<string_t> EnumSubKeys();
+		IKey::string_set_t EnumSubKeys();
 		IKey* OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
 		void DeleteSubKey(const string_t& strSubKey);
 		bool_t IsValue(const string_t& strName);
-		std::set<string_t> EnumValues();
+		IKey::string_set_t EnumValues();
 		any_t GetValue(const string_t& strName);
 		void SetValue(const string_t& strName, const any_t& value);
 		void DeleteValue(const string_t& strName);
@@ -290,7 +290,7 @@ IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrNew.Detach();
 }
 
-std::set<string_t> RootKey::EnumSubKeys()
+IKey::string_set_t RootKey::EnumSubKeys()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
@@ -308,29 +308,22 @@ std::set<string_t> RootKey::EnumSubKeys()
 
 	ThrowCorrectException(err,m_strKey);
 
-	try
+	IKey::string_set_t sub_keys;
+	for (;;)
 	{
-		std::set<string_t> sub_keys;
-		for (;;)
-		{
-			OOBase::LocalString strName;
-			if (!response.read(strName))
-				OMEGA_THROW(response.last_error());
+		OOBase::LocalString strName;
+		if (!response.read(strName))
+			OMEGA_THROW(response.last_error());
 
-			if (strName.empty())
-				break;
+		if (strName.empty())
+			break;
 
-			sub_keys.insert(strName.c_str());
-		}
-		return sub_keys;
+		sub_keys.insert(strName.c_str());
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e.what());
-	}
+	return sub_keys;
 }
 
-std::set<string_t> RootKey::EnumValues()
+IKey::string_set_t RootKey::EnumValues()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
@@ -348,26 +341,19 @@ std::set<string_t> RootKey::EnumValues()
 
 	ThrowCorrectException(err,m_strKey);
 
-	try
+	IKey::string_set_t values;
+	for (;;)
 	{
-		std::set<string_t> values;
-		for (;;)
-		{
-			OOBase::LocalString strName;
-			if (!response.read(strName))
-				OMEGA_THROW(response.last_error());
+		OOBase::LocalString strName;
+		if (!response.read(strName))
+			OMEGA_THROW(response.last_error());
 
-			if (strName.empty())
-				break;
+		if (strName.empty())
+			break;
 
-			values.insert(strName.c_str());
-		}
-		return values;
+		values.insert(strName.c_str());
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e.what());
-	}
+	return values;
 }
 
 void RootKey::DeleteSubKey(const string_t& strSubKey)
@@ -498,19 +484,19 @@ IKey* OverlayKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrKey.Detach();
 }
 
-std::set<string_t> OverlayKey::EnumSubKeys()
+IKey::string_set_t OverlayKey::EnumSubKeys()
 {
-	std::set<string_t> over_set = m_ptrOver->EnumSubKeys();
-	std::set<string_t> under_set = m_ptrUnder->EnumSubKeys();
+	IKey::string_set_t over_set = m_ptrOver->EnumSubKeys();
+	IKey::string_set_t under_set = m_ptrUnder->EnumSubKeys();
 
-	std::copy(under_set.begin(),under_set.end(),std::inserter(over_set,over_set.begin()));
+	over_set.insert(under_set.begin(),under_set.end());
 	return over_set;
 }
 
-std::set<string_t> OverlayKey::EnumValues()
+IKey::string_set_t OverlayKey::EnumValues()
 {
-	std::set<string_t> over_set = m_ptrOver->EnumValues();
-	std::set<string_t> under_set = m_ptrUnder->EnumValues();
+	IKey::string_set_t over_set = m_ptrOver->EnumValues();
+	IKey::string_set_t under_set = m_ptrUnder->EnumValues();
 
 	over_set.insert(under_set.begin(),under_set.end());
 	return over_set;

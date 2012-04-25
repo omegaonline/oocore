@@ -62,7 +62,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 
 	TEST_VOID(pKey->SetValue(strTestValue,"Yes"));
 
-	std::set<Omega::string_t> values = pKey->EnumValues();
+	Omega::Registry::IKey::string_set_t values = pKey->EnumValues();
 
 	TEST(!values.empty());
 	TEST(values.find(strTestValue) != values.end());
@@ -111,7 +111,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	TEST(pSubKey);
 	pSubKey->Release();
 
-	std::set<Omega::string_t> keys = pKey->EnumSubKeys();
+	Omega::Registry::IKey::string_set_t keys = pKey->EnumSubKeys();
 	TEST(!keys.empty());
 	TEST(keys.find(strTestKey) != keys.end());
 

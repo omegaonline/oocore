@@ -130,14 +130,16 @@ namespace Omega
 			};
 			typedef uint16_t OpenFlags_t;
 
+			typedef std::set<string_t,std::less<string_t>,System::STLAllocator<string_t> > string_set_t;
+
 			virtual string_t GetName() = 0;
 			virtual bool_t IsKey(const string_t& key) = 0;
-			virtual std::set<string_t> EnumSubKeys() = 0;
+			virtual string_set_t EnumSubKeys() = 0;
 			virtual IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 			virtual void DeleteSubKey(const string_t& strKey) = 0;
 
 			virtual bool_t IsValue(const string_t& name) = 0;
-			virtual std::set<string_t> EnumValues() = 0;
+			virtual string_set_t EnumValues() = 0;
 			virtual any_t GetValue(const string_t& name) = 0;
 			virtual void SetValue(const string_t& name, const any_t& val) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
@@ -159,7 +161,7 @@ namespace Omega
 	{
 		interface IProvideObjectInfo : public IObject
 		{
-			typedef std::vector<guid_t> iid_list_t;
+			typedef std::vector<guid_t,System::STLAllocator<guid_t> > iid_list_t;
 
 			virtual iid_list_t EnumInterfaces() = 0;
 		};
@@ -258,11 +260,11 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(string_t,GetName,0,())
 	OMEGA_METHOD(bool_t,IsKey,1,((in),const string_t&,key))
-	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
+	OMEGA_METHOD(Omega::Registry::IKey::string_set_t,EnumSubKeys,0,())
 	OMEGA_METHOD(Registry::IKey*,OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 	OMEGA_METHOD_VOID(DeleteSubKey,1,((in),const string_t&,strKey))
 	OMEGA_METHOD(bool_t,IsValue,1,((in),const string_t&,name))
-	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())
+	OMEGA_METHOD(Omega::Registry::IKey::string_set_t,EnumValues,0,())
 	OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))
 	OMEGA_METHOD_VOID(SetValue,2,((in),const string_t&,name,(in),const any_t&,val))
 	OMEGA_METHOD_VOID(DeleteValue,1,((in),const string_t&,strValue))

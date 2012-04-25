@@ -114,7 +114,7 @@ struct loc_holder
 		setlocale(LC_ALL,m_loc.c_str());
 	}
 
-	std::string m_loc;
+	Omega::string_t m_loc;
 #endif
 };
 

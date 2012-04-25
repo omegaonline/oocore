@@ -119,19 +119,12 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,0,())
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::uint32_t,version))
 inline Omega::IException* Omega::Initialize()
 {
 	try
 	{
-#if !defined(OOCORE_INTERNAL)
-		// Check the versions are correct
-		Omega::uint32_t version = (OOCore::GetMajorVersion() << 24) | (OOCore::GetMinorVersion() << 16) | OOCore::GetPatchVersion();
-		if (version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-			return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
-#endif
-
-		return OOCore_Omega_Initialize();
+		return OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16));
 	}
 	catch (Omega::IException* pE)
 	{

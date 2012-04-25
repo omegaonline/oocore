@@ -36,9 +36,8 @@ extern "C" int _setenvp() { return 0; }
 extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpreserved*/)
 {
 	if (reason == DLL_THREAD_DETACH)
-	{
 		OOBase::TLS::ThreadExit();
-	}
+
 	return TRUE;
 }
 #endif
@@ -67,8 +66,12 @@ extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
 	return OOCORE_PATCH_VERSION;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::uint32_t,version))
 {
+	// Check the versions are correct
+	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+		return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
+
 	return OOCore::UserSession::init();
 }
 

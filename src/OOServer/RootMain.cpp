@@ -202,13 +202,6 @@ namespace
 	#endif
 
 		OOBase::stdout_write("\n\tCompiler: " OMEGA_COMPILER_STRING "\n");
-
-		OOBase::stdout_write("\tSQLite library version: ");
-		OOBase::stdout_write(sqlite3_libversion());
-		OOBase::stdout_write(", built with ");
-		OOBase::stdout_write(sqlite3_version);
-		OOBase::stdout_write(" headers\n");
-
 		return EXIT_SUCCESS;
 	}
 }

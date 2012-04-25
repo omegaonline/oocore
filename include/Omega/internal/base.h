@@ -154,6 +154,8 @@ namespace Omega
 					return uid_traits<T>::GetUID();
 				}
 			};
+
+			IInternalException* unrecognized_exception(const char* location);
 		}
 	}
 }

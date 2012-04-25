@@ -35,7 +35,7 @@ inline Omega::Threading::Mutex::~Mutex()
 	{
 		OOCore_cs__dctor(m_handle);
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		pE->Release();
 	}
@@ -119,7 +119,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 	{
 		ModuleDestructor<DLL>::remove_destructor(destruct,param);
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		pE->Release();
 	}
@@ -133,7 +133,7 @@ inline void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 		// Now call the destructor
 		(*(p->pfn_dctor))(p->param);
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		pE->Release();
 	}
@@ -161,13 +161,13 @@ inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Li
 		Lifetime::add_destructor(do_term,param);
 		return NULL;
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		return System::Internal::return_safe_exception(pE);
 	}
 	catch (...)
 	{
-		return System::Internal::return_safe_exception(IInternalException::Create("Unhandled exception","Omega::Threading::Singleton::constructor()"));
+		return System::Internal::return_safe_exception(System::Internal::unrecognized_exception("Omega::Threading::Singleton::constructor()"));
 	}
 }
 
@@ -181,7 +181,7 @@ inline void Omega::Threading::Singleton<T,Lifetime>::do_term(void* param)
 		System::Free(*p);
 		*p = NULL;
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		pE->Release();
 	}

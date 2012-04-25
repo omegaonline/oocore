@@ -85,6 +85,12 @@ inline void Omega::System::Internal::throw_null_reference()
 	throw OOCore_IInternalException_NullReference();
 }
 
+OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_BadException,1,((in),const char*,location))
+inline Omega::IInternalException* Omega::System::Internal::unrecognized_exception(const char* location)
+{
+	return OOCore_IInternalException_BadException(location);
+}
+
 OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_Create,2,((in),const Omega::string_t&,strDesc,(in),Omega::IException*,pCause))
 inline Omega::INotFoundException* Omega::INotFoundException::Create(const string_t& strDesc, IException* pCause)
 {

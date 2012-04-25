@@ -172,6 +172,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Nul
 	return OOCore::CreateInternalException(OOCore::get_text("NULL pointer passed as reference"),NULL,0,NULL,NULL).Detach();
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_BadException,1,((in),const char*,location))
+{
+	return OOCore::CreateInternalException(OOCore::get_text("An unrecognized C++ exception was caught in {0}") % location,NULL,0,NULL,NULL).Detach();
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Create,2,((in),const string_t&,strDesc,(in),Omega::IException*,pCause))
 {
 	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();

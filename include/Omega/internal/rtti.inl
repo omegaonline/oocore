@@ -79,6 +79,12 @@ inline Omega::IInternalException* Omega::IInternalException::Create(const string
 	return OOCore_IInternalException_Create(desc,pszFile,nLine,pszFunc,pCause);
 }
 
+OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_NullReference,0,())
+inline void Omega::System::Internal::throw_null_reference()
+{
+	throw OOCore_IInternalException_NullReference();
+}
+
 OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_Create,2,((in),const Omega::string_t&,strDesc,(in),Omega::IException*,pCause))
 inline Omega::INotFoundException* Omega::INotFoundException::Create(const string_t& strDesc, IException* pCause)
 {
@@ -86,6 +92,13 @@ inline Omega::INotFoundException* Omega::INotFoundException::Create(const string
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_MissingIID,1,((in),const Omega::guid_t&,iid))
+OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_MissingRTTI,1,((in),const Omega::guid_t&,iid))
+
+OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_BadInvoke,1,((in),uint32_t,method_id))
+inline void Omega::System::Internal::Wire_Stub_Base::Invoke(uint32_t method_id, Remoting::IMessage* /*pParamsIn*/, Remoting::IMessage* /*pParamsOut*/)
+{
+	throw OOCore_INotFoundException_BadInvoke(method_id);
+}
 
 OOCORE_EXPORTED_FUNCTION(Omega::ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 inline Omega::ITimeoutException* Omega::ITimeoutException::Create()

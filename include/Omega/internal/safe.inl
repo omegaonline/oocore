@@ -213,7 +213,7 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_
 	// Find the rtti info...
 	const qi_rtti* rtti = get_qi_rtti_info(iid);
 	if (!rtti)
-		OMEGA_THROW("Failed to create stub for interface - missing rtti");
+		throw OOCore_INotFoundException_MissingRTTI(iid);
 		
 	return (*rtti->pfnCreateSafeStub)(pObj);
 }

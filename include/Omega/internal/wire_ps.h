@@ -359,10 +359,7 @@ namespace Omega
 
 				typedef void (*MethodTableEntry)(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut);
 
-				virtual void Invoke(uint32_t /*method_id*/, Remoting::IMessage* /*pParamsIn*/, Remoting::IMessage* /*pParamsOut*/)
-				{
-					OMEGA_THROW("Invoke called with invalid method index");
-				}
+				virtual void Invoke(uint32_t method_id, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut);
 
 				static const uint32_t MethodCount = 3;  // This must match the proxy
 

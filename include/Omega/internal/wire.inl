@@ -210,7 +210,7 @@ inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remotin
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);
 	if (!rtti)
-		OMEGA_THROW("Failed to create wire stub for interface - missing rtti");
+		throw OOCore_INotFoundException_MissingRTTI(iid);
 
 	return (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
 }

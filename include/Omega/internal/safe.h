@@ -28,6 +28,8 @@ namespace Omega
 	{
 		namespace Internal
 		{
+			void throw_null_reference();
+
 			template <typename T>
 			struct std_safe_type
 			{
@@ -57,7 +59,7 @@ namespace Omega
 				static T& coerce(type val)
 				{
 					if (!val)
-						OMEGA_THROW("Null pointer passed for reference");
+						throw_null_reference();
 
 					return *val;
 				}
@@ -268,7 +270,7 @@ namespace Omega
 				static ref_holder_lite coerce(type val)
 				{
 					if (!val)
-						OMEGA_THROW("Null pointer passed for reference");
+						throw_null_reference();
 
 					return ref_holder_lite(val);
 				}
@@ -276,7 +278,7 @@ namespace Omega
 				static ref_holder_full coerce(type val, const guid_base_t* piid)
 				{
 					if (!val)
-						OMEGA_THROW("Null pointer passed for reference");
+						throw_null_reference();
 
 					return ref_holder_full(val,piid);
 				}
@@ -310,7 +312,7 @@ namespace Omega
 				static typename impl::type_wrapper coerce(type val)
 				{
 					if (!val)
-						OMEGA_THROW("Null pointer passed for reference");
+						throw_null_reference();
 
 					return typename impl::type_wrapper(*val);
 				}

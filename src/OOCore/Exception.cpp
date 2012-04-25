@@ -167,6 +167,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Cre
 	return OOCore::CreateInternalException(desc,pszFile,nLine,pszFunc,pCause).Detach();
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_NullReference,0,())
+{
+	return OOCore::CreateInternalException(OOCore::get_text("NULL pointer passed as reference"),NULL,0,NULL,NULL).Detach();
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Create,2,((in),const string_t&,strDesc,(in),Omega::IException*,pCause))
 {
 	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
@@ -187,6 +192,27 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 		strIID = ptrII->GetName();
 
 	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface {0}") % strIID;
+	return pExcept.Detach();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_MissingRTTI,1,((in),const guid_t&,iid))
+{
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+
+	string_t strIID = OOCore::get_text("Unknown interface {0}") % iid;
+
+	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
+	if (ptrII)
+		strIID = ptrII->GetName();
+
+	pExcept->m_strDesc = OOCore::get_text("Failed to find required type information for interface {0}") % strIID;
+	return pExcept.Detach();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_BadInvoke,1,((in),uint32_t,method_id))
+{
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+	pExcept->m_strDesc = OOCore::get_text("Invoke called with invalid method index {0}") % method_id;
 	return pExcept.Detach();
 }
 

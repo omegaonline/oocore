@@ -75,6 +75,8 @@
 /////////////////////////////////////////////////
 // Some helpers and globals
 
+#define OMEGA_CREATE_INTERNAL(e)  (Omega::System::Internal::auto_iface_ptr<Omega::IInternalException>(Omega::IInternalException::Create(OOCore::get_text(e),__FILE__,__LINE__,OMEGA_FUNCNAME)))
+
 namespace OOCore
 {
 	bool HostedByOOServer();

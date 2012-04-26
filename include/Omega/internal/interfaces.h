@@ -97,7 +97,7 @@ namespace Omega
 		{
 			virtual uint32_t RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
 			virtual void RevokeObject(uint32_t cookie) = 0;
-			virtual void GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject, bool_t remote = false) = 0;
 		};
 		
 		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
@@ -250,7 +250,7 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(uint32_t,RegisterObject,3,((in),const any_t&,oid,(in),IObject*,pObject,(in),Activation::RegisterFlags_t,flags))
 	OMEGA_METHOD_VOID(RevokeObject,1,((in),uint32_t,cookie))
-	OMEGA_METHOD_VOID(GetObject,4,((in),const any_t&,oid,(in),Activation::RegisterFlags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(GetObject,4,((in),const any_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject,(in),bool_t,remote))
 )
 
 OMEGA_DEFINE_INTERFACE

@@ -68,7 +68,7 @@ namespace OOCore
 	// IRunningObjectTable members
 	public:
 		Omega::uint32_t RegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
-		void GetObject(const Omega::any_t& oid, Omega::Activation::RegisterFlags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		void GetObject(const Omega::any_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject, Omega::bool_t remote);
 		void RevokeObject(Omega::uint32_t cookie);
 	};
 

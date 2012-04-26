@@ -124,12 +124,14 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	}
 }
 
-void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
+void User::RunningObjectTable::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject, bool_t remote)
 {
 	ObjectPtr<IObject> ptrObject;
 
-	// Strip off the option flags
-	Activation::RegisterFlags_t search_flags = flags & 0xF;
+	// Compose search flags
+	Activation::RegisterFlags_t search_flags = Activation::PublicScope;
+	if (remote && !m_ptrROT)
+		search_flags = Activation::PublicScope | Activation::ExternalPublic;
 
 	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
 	string_t strOid = oid.cast<string_t>();
@@ -139,7 +141,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	for (size_t i=m_mapObjectsByOid.find_first(strOid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid;++i)
 	{
 		Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
-		if (pInfo && (pInfo->m_flags & search_flags))
+		if (pInfo && (!remote || (pInfo->m_flags & search_flags)))
 		{
 			// Check its still alive...
 			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
@@ -174,10 +176,10 @@ void User::RunningObjectTable::GetObject(const any_t& oid, Activation::RegisterF
 	{
 		pObject = ptrObject.Detach();
 	}
-	else if (m_ptrROT && (flags & ~Activation::UserScope))
+	else if (m_ptrROT)
 	{
 		// Route to global rot
-		m_ptrROT->GetObject(oid,flags,iid,pObject);
+		m_ptrROT->GetObject(oid,iid,pObject,remote);
 	}
 }
 

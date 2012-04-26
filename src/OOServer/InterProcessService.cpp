@@ -130,12 +130,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 				OMEGA_THROW(err);
 		}
 
-		// Build RegisterFlags
-		Activation::RegisterFlags_t reg_mask = Activation::PublicScope;
-			
-		// Remote activation, add ExternalPublic flag
+		// Check for remote activation
+		bool remote_activation = false;
 		if (flags & Activation::RemoteActivation)
-			reg_mask |= Activation::ExternalPublic;
+			remote_activation = true;
 
 		OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
 		if (!guard.acquire(timeout))
@@ -170,7 +168,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))
 				break;
 
-			m_ptrROT->GetObject(oid,reg_mask,iid,pObject);
+			m_ptrROT->GetObject(oid,iid,pObject,remote_activation);
 			if (pObject)
 				break;
 		}
@@ -183,6 +181,9 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		if (!pObject)
 		{
 			OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
+
+			void* TODO;
+			//ptrProcess->kill();
 
 			if (timeout.has_expired())
 				throw ITimeoutException::Create();

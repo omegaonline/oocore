@@ -187,18 +187,16 @@ namespace
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
-		// Build RegisterFlags
-		Activation::RegisterFlags_t reg_mask = Activation::PublicScope;
-		
-		// Remote activation, add ExternalPublic flag
+		// Check for remote activation
+		bool remote_activation = false;
 		if (flags & Activation::RemoteActivation)
-			reg_mask |= Activation::ExternalPublic;
+			remote_activation = true;
 			
 		// See if we have it registered in the ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 
 		IObject* pObject = NULL;
-		ptrROT->GetObject(oid,reg_mask,iid,pObject);
+		ptrROT->GetObject(oid,iid,pObject,remote_activation);
 		if (!pObject)
 		{
 			// See if we are allowed to load...

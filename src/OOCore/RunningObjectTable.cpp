@@ -185,7 +185,7 @@ OOCore::LocalROT::~LocalROT()
 OOCore::IInterProcessService* OOCore::LocalROT::GetIPS()
 {
 	IObject* pIPS = NULL;
-	GetObject(OID_InterProcessService,Activation::ProcessScope,OMEGA_GUIDOF(IInterProcessService),pIPS);
+	GetObject(OID_InterProcessService,OMEGA_GUIDOF(IInterProcessService),pIPS,false);
 	
 	if (!pIPS)
 		throw IInternalException::Create("Omega::Initialize not called","OOCore");
@@ -277,12 +277,9 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	}
 }
 
-void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t flags, const guid_t& iid, IObject*& pObject)
+void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject, bool_t remote)
 {
 	ObjectPtr<IObject> ptrObject;
-
-	// Strip off the option flags
-	Activation::RegisterFlags_t search_flags = flags & 0xF;
 
 	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
 	string_t strOid = oid.cast<string_t>();
@@ -292,7 +289,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t f
 	for (size_t i=m_mapServicesByOid.find_first(strOid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
 	{
 		Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
-		if (pInfo && (pInfo->m_flags & search_flags))
+		if (pInfo)
 		{
 			// Check its still alive...
 			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
@@ -332,17 +329,14 @@ void OOCore::LocalROT::GetObject(const any_t& oid, Activation::RegisterFlags_t f
 		return;
 	}
 
-	if (flags & ~Activation::ProcessScope)
+	ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
+	if (ptrIPS)
 	{
-		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
-		if (ptrIPS)
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
+		if (ptrROT)
 		{
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
-			if (ptrROT)
-			{
-				// Route to global rot
-				ptrROT->GetObject(oid,flags,iid,pObject);
-			}
+			// Route to global rot
+			ptrROT->GetObject(oid,iid,pObject,remote);
 		}
 	}
 }

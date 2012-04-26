@@ -175,20 +175,6 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 
 	// We are the child...
 
-	// Close all open handles - not that we should have any ;)
-	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, pass_fd };
-	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
-	if (err)
-		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
-
-	int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
-	if (n == -1)
-		exit_msg("Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
-
-	// Now close off stdin
-	dup2(n,STDIN_FILENO);
-	OOBase::POSIX::close(n);
-
 	if (bChangeUid)
 	{
 		// get our pw_info
@@ -209,10 +195,26 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 			exit_msg("setuid() failed: %s\n",OOBase::system_error_text());
 	}
 
-	// Exec the user process
+	// Build the pipe name
 	OOBase::LocalString strPipe;
 	if ((err = strPipe.printf("--pipe=%u",pass_fd)) != 0)
 		exit_msg("Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
+
+	// Close all open handles
+	int except[] = { STDERR_FILENO, pass_fd };
+	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
+	if (err)
+		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+
+	int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
+	if (n == -1)
+		exit_msg("Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
+
+	// Now close off stdin/stdout/stderr
+	dup2(n,STDIN_FILENO);
+	dup2(n,STDOUT_FILENO);
+	dup2(n,STDERR_FILENO);
+	OOBase::POSIX::close(n);
 
 	OOBase::LocalString display;
 	display.getenv("DISPLAY");

@@ -47,6 +47,22 @@ namespace
 	private:
 		pid_t m_pid;
 	};
+
+	void exit_msg(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args,fmt);
+
+		OOBase::LocalString msg;
+		int err = msg.vprintf(fmt,args);
+
+		va_end(args);
+
+		if (err == 0)
+			OOBase::stderr_write(msg.c_str());
+
+		_exit(127);
+	}
 }
 
 bool User::Process::is_relative_path(const Omega::string_t& strPath)
@@ -66,8 +82,6 @@ User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Se
 
 void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
 {
-	const char* pszExeName = strExeName.c_str();
-
 	pid_t pid = fork();
 	if (pid < 0)
 		OMEGA_THROW(errno);
@@ -83,19 +97,25 @@ void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega:
 
 	// We are the child
 
+	// Close all open handles except the standard ones
+	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
+	int err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
+	if (err)
+		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+
 	// Sort out environment block and split args
 
 	// Update PWD?
 
 	// Use execve()
+	void* TODO;
 
 	// Just use the system() call
-	int ret = system(pszExeName);
-	if (WIFEXITED(ret))
-		_exit(WEXITSTATUS(ret));
+	err = system(strExeName.c_str());
+	if (!WIFEXITED(err))
+		exit_msg("Failed to launch process %s\n",strExeName.c_str());
 
-	OOBase::stderr_write("Failed to launch process\n");
-	_exit(127);
+	_exit(WEXITSTATUS(err));
 }
 
 bool UserProcessUnix::running()

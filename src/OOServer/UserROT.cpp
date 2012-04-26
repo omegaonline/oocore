@@ -22,8 +22,6 @@
 #include "OOServer_User.h"
 #include "UserROT.h"
 
-#include "../OOCore/Server.h"
-
 using namespace Omega;
 using namespace OTL;
 

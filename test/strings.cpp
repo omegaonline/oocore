@@ -286,7 +286,7 @@ bool guid_tests()
 	TEST(bTest);
 
 	// Check to see if we can export OID's properly
-	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t("{63EB243E-6AE3-43bd-B073-764E096775F8}"));
+	TEST(Omega::Registry::OID_Registry == Omega::guid_t("{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}"));
 
 	// Check whether OMEGA_GUIDOF works...
 	TEST(OMEGA_GUIDOF(Omega::IObject) == OMEGA_GUIDOF(Omega::IObject*));

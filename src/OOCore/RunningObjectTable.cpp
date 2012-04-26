@@ -22,7 +22,6 @@
 #include "OOCore_precomp.h"
 
 #include "Activation.h"
-#include "StdObjectManager.h"
 #include "WireProxy.h"
 #include "Channel.h"
 #include "Exception.h"
@@ -52,7 +51,6 @@ namespace OTL
 					OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
 					OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
 					OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
-					OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
 					OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)

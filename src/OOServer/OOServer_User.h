@@ -58,6 +58,8 @@
 
 #include "../../include/Omega/Service.h"
 
+#include "../OOCore/Server.h"
+
 #define OMEGA_CREATE_INTERNAL(e)  (Omega::System::Internal::auto_iface_ptr<Omega::IInternalException>(Omega::IInternalException::Create(Omega::string_t::constant(e),__FILE__,__LINE__,OMEGA_FUNCNAME)))
 
 namespace User

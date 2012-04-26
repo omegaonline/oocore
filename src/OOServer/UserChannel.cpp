@@ -46,7 +46,7 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 		m_ptrOF = Activation::GetObjectFactory(m_message_oid,Activation::Library);
 
 	// Create a new OM
-	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::Library | Activation::DontLaunch);
+	m_ptrOM = OOCore_CreateStdObjectManager();
 
 	// QI for IMarshaller
 	m_ptrMarshaller = m_ptrOM.QueryInterface<Remoting::IMarshaller>();

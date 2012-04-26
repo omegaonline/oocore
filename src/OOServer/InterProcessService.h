@@ -26,8 +26,6 @@
 #include "UserRegistry.h"
 #include "UserProcess.h"
 
-#include "../OOCore/Server.h"
-
 namespace User
 {
 	class InterProcessService :

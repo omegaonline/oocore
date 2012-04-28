@@ -120,6 +120,7 @@ namespace Omega
 
 			void destroy(pointer p)
 			{
+				OMEGA_UNUSED_ARG(p);
 				p->~T();
 			}
 		};

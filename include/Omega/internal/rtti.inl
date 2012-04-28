@@ -100,7 +100,7 @@ inline Omega::INotFoundException* Omega::INotFoundException::Create(const string
 OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_MissingIID,1,((in),const Omega::guid_t&,iid))
 OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_MissingRTTI,1,((in),const Omega::guid_t&,iid))
 
-OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_BadInvoke,1,((in),uint32_t,method_id))
+OOCORE_EXPORTED_FUNCTION(Omega::INotFoundException*,OOCore_INotFoundException_BadInvoke,1,((in),Omega::uint32_t,method_id))
 inline void Omega::System::Internal::Wire_Stub_Base::Invoke(uint32_t method_id, Remoting::IMessage* /*pParamsIn*/, Remoting::IMessage* /*pParamsOut*/)
 {
 	throw OOCore_INotFoundException_BadInvoke(method_id);

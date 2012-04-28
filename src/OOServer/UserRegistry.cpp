@@ -502,7 +502,7 @@ IKey::string_set_t OverlayKey::EnumValues()
 	return over_set;
 }
 
-void OverlayKey::DeleteSubKey(const string_t& strSubKey)
+void OverlayKey::DeleteSubKey(const string_t& /*strSubKey*/)
 {
 	ThrowOverlay();
 }

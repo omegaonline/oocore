@@ -63,7 +63,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
 {
-	if (!static_cast<OOBase::Mutex*>(m1)->tryacquire())
+	if (!static_cast<OOBase::Mutex*>(m1)->try_acquire())
 	{
 		OTL::ObjectPtr<Omega::Remoting::ICallContext> ptrCC = Omega::Remoting::GetCallContext();
 		Omega::uint32_t millisecs = ptrCC->Timeout();

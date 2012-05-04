@@ -26,7 +26,7 @@
 
 #include <shlwapi.h>
 
-void AttachDebugger(unsigned long pid);
+void AttachDebugger(DWORD pid);
 
 #if defined(_MSC_VER)
 #define wcsicmp _wcsicmp

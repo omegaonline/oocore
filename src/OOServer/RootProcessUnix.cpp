@@ -44,8 +44,6 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-void AttachDebugger(unsigned long pid);
-
 namespace
 {
 	class RootProcessUnix : public Root::Process
@@ -165,9 +163,6 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 
 	if (child_id != 0)
 	{
-		if (Root::is_debug())
-			AttachDebugger(child_id);
-
 		// We are the parent
 		m_pid = child_id;
 		return true;

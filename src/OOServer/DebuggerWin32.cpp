@@ -34,6 +34,8 @@
 #include <OOBase/GlobalNew.h>
 #include <OOBase/String.h>
 
+#if defined(_WIN32)
+
 ///////////////////////////////////////////////////////////////////////////////////
 //
 // This module provides hook functions that attempt to attach to a debugger...
@@ -183,25 +185,20 @@ namespace
 
 namespace
 {
-	void PromptForDebugger(unsigned long pid)
+	void PromptForDebugger(DWORD pid)
 	{
 		OOBase::LocalString str;
 		if (str.printf("Attach the debugger to process id %ld now if you want!",pid) == 0)
-		{
-#if defined(_WIN32)
 			MessageBoxA(NULL,str.c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
-#else
-			OOBase::stdout_write(str.c_str());
-			OOBase::stdout_write("\n");
-#endif
-		}
 	}
 }
 
-void AttachDebugger(unsigned long pid)
+void AttachDebugger(DWORD pid)
 {
 #if !defined(NDEBUG) && defined(_MSC_VER)
 	if (!AttachVSDebugger(pid))
 #endif
 		PromptForDebugger(pid);
 }
+
+#endif // _WIN32

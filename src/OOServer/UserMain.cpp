@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
 		if (hDebugEvent)
 		{
 			// Wait for a bit, letting the caller attach a debugger
-			WaitForSingleObject(hDebugEvent,5000);
+			WaitForSingleObject(hDebugEvent,15000);
 		}
 	}
 
@@ -138,6 +138,14 @@ int main(int argc, char* argv[])
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+
+	if (s_is_debug)
+	{
+		printf("Attach a debugger to process %u, and hit ENTER...\n",getpid());
+		char buf[256];
+		read(STDIN_FILENO,buf,sizeof(buf));
+	}
+
 #endif
 
 	OOBase::String strPipe;

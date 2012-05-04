@@ -29,8 +29,6 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
-void AttachDebugger(unsigned long pid);
-
 namespace
 {
 	class UserProcessUnix : public User::Process
@@ -88,9 +86,7 @@ void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega:
 
 	if (pid != 0)
 	{
-		if (User::is_debug())
-			AttachDebugger(pid);
-
+		// We are the parent
 		m_pid = pid;
 		return;
 	}

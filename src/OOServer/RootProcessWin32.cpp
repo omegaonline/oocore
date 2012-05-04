@@ -42,7 +42,7 @@
 #include <shlobj.h>
 #include <ntsecapi.h>
 
-void AttachDebugger(unsigned long pid);
+void AttachDebugger(DWORD pid);
 
 namespace
 {

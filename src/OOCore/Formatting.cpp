@@ -27,6 +27,11 @@
 #include <wchar.h>
 #include <locale.h>
 
+#if defined(HAVE_INTTYPES_H)
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#endif
+
 #if !defined(PRId64)
 #if defined(__MINGW32__)
 #define PRId64 "I64d"
@@ -72,7 +77,7 @@ namespace
 		return (c >= '0' && c <= '9');
 	}
 
-	bool parse_numfmt(const string_t& str, num_fmt& fmt, bool& capital, long& precision)
+	bool parse_numfmt(const string_t& str, num_fmt& fmt, bool& capital, int& precision)
 	{
 		if (str.Length() > 3)
 			return false;
@@ -617,7 +622,7 @@ namespace
 #endif
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, const int64_t& val, long precision)
+	void fmt_fixed_i(OOBase::LocalString& str, const int64_t& val, int precision)
 	{
 		int err = str.printf("%" PRId64,val);
 		if (err != 0)
@@ -643,7 +648,7 @@ namespace
 		}
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, long precision)
+	void fmt_fixed_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, int precision)
 	{
 		int err = str.printf("%" PRIu64,val);
 		if (err != 0)
@@ -669,7 +674,7 @@ namespace
 		}
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, long precision)
+	void fmt_fixed_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -682,7 +687,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_currency(const T& val, long precision, EXTRA_LCID)
+	string_t fmt_currency(const T& val, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
@@ -711,7 +716,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_number(const T& val, long precision, EXTRA_LCID)
+	string_t fmt_number(const T& val, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
@@ -739,7 +744,7 @@ namespace
 		return ret.c_str();
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, const int64_t& val, long precision)
+	void fmt_decimal_i(OOBase::LocalString& str, const int64_t& val, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -751,7 +756,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, long precision)
+	void fmt_decimal_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -763,20 +768,20 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, long precision)
+	void fmt_decimal_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, int precision)
 	{
 		fmt_decimal_i(str,static_cast<int64_t>(val),precision);
 	}
 
 	template <typename T>
-	string_t fmt_decimal(const T& val, long precision)
+	string_t fmt_decimal(const T& val, int precision)
 	{
 		OOBase::LocalString str;
 		fmt_decimal_i(str,val,precision);
 		return str.c_str();
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, bool capital, long precision)
+	void fmt_hex_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, bool capital, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -788,18 +793,18 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, const int64_t& val, bool capital, long precision)
+	void fmt_hex_i(OOBase::LocalString& str, const int64_t& val, bool capital, int precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, long precision)
+	void fmt_hex_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, int precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
 
 	template <typename T>
-	string_t fmt_hex(const T& val, bool capital, long precision)
+	string_t fmt_hex(const T& val, bool capital, int precision)
 	{
 		OOBase::LocalString str;
 		fmt_hex_i(str,val,capital,precision);
@@ -807,7 +812,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_fixed(const T& val, long precision, EXTRA_LCID)
+	string_t fmt_fixed(const T& val, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
@@ -835,7 +840,7 @@ namespace
 		return ret.c_str();
 	}
 
-	void exp_strip(OOBase::LocalString& str, long precision, bool show_plus)
+	void exp_strip(OOBase::LocalString& str, int precision, bool show_plus)
 	{
 		assert(precision >= 0);
 
@@ -864,13 +869,13 @@ namespace
 			insert(str,pos,pos+precision-str.length(),'0');
 	}
 
-	void fmt_scientific_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, long precision, EXTRA_LCID)
+	void fmt_scientific_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, int precision, EXTRA_LCID)
 	{
 		int err;
 		if (precision >= 0)
 			err = str.printf((capital ? "%.*E" : "%.*e"),precision,val);
 		else
-			err = str.printf((capital ? "%E" : "%e"),precision,val);
+			err = str.printf((capital ? "%E" : "%e"),val);
 
 		if (err != 0)
 			OMEGA_THROW(err);
@@ -880,13 +885,13 @@ namespace
 	}
 
 	template <typename T>
-	void fmt_scientific_i(OOBase::LocalString& str, const T& val, bool capital, long precision, EXTRA_LCID)
+	void fmt_scientific_i(OOBase::LocalString& str, const T& val, bool capital, int precision, EXTRA_LCID)
 	{
 		fmt_scientific_i(str,static_cast<double>(val),capital,precision,PASS_LCID);
 	}
 
 	template <typename T>
-	string_t fmt_scientific(const T& val, bool capital, long precision, EXTRA_LCID)
+	string_t fmt_scientific(const T& val, bool capital, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 			precision = 6;
@@ -896,7 +901,7 @@ namespace
 		return str.c_str();
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, long precision)
+	void fmt_general_i(OOBase::LocalString& str, const int64_t& val, bool /*capital*/, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -908,7 +913,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, bool /*capital*/, long precision)
+	void fmt_general_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, bool /*capital*/, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -920,7 +925,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, long precision)
+	void fmt_general_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -935,7 +940,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_general(const T& val, bool capital, long precision, bool use_locale, EXTRA_LCID)
+	string_t fmt_general(const T& val, bool capital, int precision, bool use_locale, EXTRA_LCID)
 	{
 		OOBase::LocalString str;
 		fmt_general_i(str,val,capital,precision);
@@ -949,7 +954,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_round_trip(const T& val, long /*precision*/, EXTRA_LCID)
+	string_t fmt_round_trip(const T& val, int /*precision*/, EXTRA_LCID)
 	{
 		OMEGA_UNUSED_ARG(lc);
 #if defined(_WIN32)
@@ -958,7 +963,7 @@ namespace
 		return fmt_decimal(val,0);
 	}
 
-	string_t fmt_round_trip(System::Internal::optimal_param<double>::type val, long precision, EXTRA_LCID)
+	string_t fmt_round_trip(System::Internal::optimal_param<double>::type val, int precision, EXTRA_LCID)
 	{
 		string_t s;
 		for (int i=0; i<2; i+=2)
@@ -1049,10 +1054,10 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision, EXTRA_LCID);
+	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID);
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse, EXTRA_LCID);
+	string_t fmt_recurse(const T& val, const string_t& strFormat, int def_precision, bool bRecurse, EXTRA_LCID);
 
 	template <typename T>
 	string_t fmt_rnd_away(const T& val)
@@ -1090,7 +1095,7 @@ namespace
 
 		// Work out precision and mode...
 		size_t sci = string_t::npos;
-		long precision = 0;
+		int precision = 0;
 		int width = 0;
 		int exp_digits = 0;
 		bool seen_decimal = false;
@@ -1348,11 +1353,11 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, long def_precision, bool bRecurse, EXTRA_LCID)
+	string_t fmt_recurse(const T& val, const string_t& strFormat, int def_precision, bool bRecurse, EXTRA_LCID)
 	{
 		num_fmt fmt;
 		bool capital;
-		long precision;
+		int precision;
 		if (parse_numfmt(strFormat,fmt,capital,precision))
 		{
 			switch (fmt)
@@ -1399,7 +1404,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, long def_precision, EXTRA_LCID)
+	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID)
 	{
 		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
 		switch (parse_custom(strFormat,parts))
@@ -1434,7 +1439,7 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	long def_precision = 0;
+	int def_precision = 0;
 	switch (byte_width)
 	{
 	case sizeof(byte_t):
@@ -1465,7 +1470,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,v
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	long def_precision = 0;
+	int def_precision = 0;
 	switch (byte_width)
 	{
 	case sizeof(byte_t):
@@ -1496,7 +1501,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	long def_precision = 0;
+	int def_precision = 0;
 	switch (byte_width)
 	{
 	case sizeof(float4_t):

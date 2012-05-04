@@ -48,7 +48,7 @@ namespace
 
 #if defined(HAVE_UNISTD_H)
 		// Just default to using the sid with POSIX
-		strId.printf("%ld",getsid(0));
+		strId.printf("%d",getsid(0));
 #endif
 
 #if defined(HAVE_DBUS_H)

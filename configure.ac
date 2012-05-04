@@ -118,7 +118,7 @@ OO_LIB_SQLITE3([3.5.0])
 AS_IF([test -z "$SQLITE3_LIBS"],[AC_MSG_ERROR([Need a valid sqlite3 library])])
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h])
+AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h inttypes.h])
 
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))

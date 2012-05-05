@@ -6,11 +6,8 @@ aclocal.m4
 Makefile.in
 autom4te.cache/
 build-aux/
-libltdl/
-.libs/
 m4/argz.m4
 m4/libtool.m4
-m4/ltdl.m4
 m4/ltoptions.m4
 m4/ltsugar.m4
 m4/ltversion.m4
@@ -26,23 +23,11 @@ stamp-h*
 # general stuff
 *.regdb
 
-# build stuff
-*.Plo
-*.Po
-*.[oa]
-*.l[oa]
-*.lai
-lt-*.c
-*_ltshwrapper
-*.gch
-
 # Windows stuff
 OOServer_msgs.h
 OOServer_msgs.rc
-*.exe
-*.dll
 
-# msvc stuff
+# MSVC stuff
 ipch/
 bin/
 Debug*/
@@ -62,11 +47,8 @@ Release*/
 *.wixobj
 *.wixproj.FileList.txt
 
-# Unix stuff
-ooserverd
-oosvruser
-ooguidgen
-oo-launch
-ooreg
-coretests
-testprocess
+# Eclipse stuff
+debug/
+.project
+.cproject
+.settings/

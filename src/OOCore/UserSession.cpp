@@ -332,7 +332,7 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 {
 	// Make this value configurable somehow...
-	void* TODO;
+	void* ISSUE_9;    // Alert!
 
 	OOBase::Timeout timeout(0,500000);
 	do
@@ -345,7 +345,6 @@ void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 	if (usage == 0)
 	{
 		// This incoming request may not be processed for some time...
-		void* ISSUE_9;    // Alert!
 	}
 }
 

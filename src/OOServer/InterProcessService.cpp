@@ -182,8 +182,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		{
 			OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
 
-			void* TODO;
-			//ptrProcess->kill();
+			ptrProcess->kill();
 
 			if (timeout.has_expired())
 				throw ITimeoutException::Create();

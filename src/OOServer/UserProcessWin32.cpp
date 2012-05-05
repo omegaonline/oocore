@@ -39,6 +39,7 @@ namespace
 	public:
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
+		virtual void kill();
 
 		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, OOBase::RefPtr<OOBase::Buffer>& env_block);
 
@@ -244,6 +245,16 @@ bool UserProcessWin32::wait_for_exit(const OOBase::Timeout& timeout, int& exit_c
 		OOBase_CallCriticalFailure(GetLastError());
 
 	return false;
+}
+
+void UserProcessWin32::kill()
+{
+	if (m_hProcess.is_valid())
+	{
+		TerminateProcess(m_hProcess,-1);
+
+		WaitForSingleObject(m_hProcess,INFINITE);
+	}
 }
 
 #endif // _WIN32

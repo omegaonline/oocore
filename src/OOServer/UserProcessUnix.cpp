@@ -39,6 +39,7 @@ namespace
 
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
+		virtual void kill();
 
 		void exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 
@@ -149,6 +150,19 @@ bool UserProcessUnix::wait_for_exit(const OOBase::Timeout& timeout, int& exit_co
 	}
 
 	return false;
+}
+
+void UserProcessUnix::kill()
+{
+	if (running())
+	{
+		::kill(m_pid,SIGKILL);
+
+		int status = 0;
+		waitpid(m_pid,&status,0);
+
+		m_pid = 0;
+	}
 }
 
 #endif // HAVE_UNISTD_H

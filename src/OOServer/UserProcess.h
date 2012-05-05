@@ -31,6 +31,7 @@ namespace User
 
 		virtual bool running() = 0;
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code) = 0;
+		virtual void kill() = 0;
 
 		static Process* exec(const Omega::string_t& strProcess, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
 		static bool is_relative_path(const Omega::string_t& strPath);

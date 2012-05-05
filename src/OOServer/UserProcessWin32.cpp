@@ -251,7 +251,7 @@ void UserProcessWin32::kill()
 {
 	if (m_hProcess.is_valid())
 	{
-		TerminateProcess(m_hProcess,-1);
+		TerminateProcess(m_hProcess,127);
 
 		WaitForSingleObject(m_hProcess,INFINITE);
 	}

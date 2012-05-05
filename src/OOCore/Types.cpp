@@ -657,7 +657,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 	OMEGA_UNUSED_ARG(strFormat);
 
 	OOBase::LocalString str;
-	int err = str.printf("{%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X}",
+	int err = str.printf("{%.8lX-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X}",
 		guid.Data1,guid.Data2,guid.Data3,
 		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
 		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);

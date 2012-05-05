@@ -627,18 +627,15 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 {
 	try
 	{
-		// Add respond_exception
-		void* TODO;
-
 		// Find and/or create the object manager associated with src_channel_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id,guid_t::Null());
 		if (!ptrOM)
-			return;
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find or create object manager for channel"));
 
 		// QI for IMarshaller
 		ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
 		if (!ptrMarshaller)
-			return;
+			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
@@ -651,7 +648,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 
 		// Check timeout
 		if (timeout.has_expired())
-			return;
+			throw ITimeoutException::Create();
 
 		// Make the call
 		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.millisecs());
@@ -670,8 +667,15 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 	}
 	catch (IException* pE)
 	{
-		// Just drop the exception, and let it pass...
-		pE->Release();
+		ObjectPtr<IException> ptrE = pE;
+		if (!(attribs & OOServer::Message_t::asynchronous))
+		{
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+
+			OOCore_RespondException(ptrResponse,pE);
+
+			send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),timeout,attribs);
+		}
 	}
 }
 

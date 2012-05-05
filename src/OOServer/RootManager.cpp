@@ -185,7 +185,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 		else
 		{
 			OOBase::LocalString str;
-			if ((err = m_registry->get_value(key,name,0,str)))
+			if ((err = m_registry->get_value(key,name,0,str)) != 0)
 			{
 				if (err != Db::HIVE_NOTFOUND)
 					LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry",name),false);

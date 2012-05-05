@@ -82,7 +82,7 @@ namespace
 		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
 			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 
-		int err = strPipe.printf("OOR%s-%u-%u",pszSid,GetCurrentProcessId(),GetTickCount());
+		int err = strPipe.printf("OOR%s-%lu-%lu",pszSid,GetCurrentProcessId(),GetTickCount());
 		::LocalFree(pszSid);
 
 		if (err != 0)
@@ -663,7 +663,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 
 		if (dwRes != STILL_ACTIVE)
 		{
-			LOG_ERROR(("Process exited immediately, exit code: %#x, %s",dwRes,OOBase::system_error_text(dwRes)));
+			LOG_ERROR(("Process exited immediately, exit code: %#lx, %s",dwRes,OOBase::system_error_text(dwRes)));
 
 			CloseHandle(process_info.hProcess);
 			CloseHandle(process_info.hThread);

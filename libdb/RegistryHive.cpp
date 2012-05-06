@@ -337,6 +337,9 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	access_rights_t access_mask = 0;
 	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 
+	// Add the next subkey element to strFullKeyName on error!
+	void* TODO;
+
 	if (flags == 0 /*OpenExisting*/)
 		return err;
 
@@ -492,7 +495,12 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	access_rights_t access_mask;
 	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 	if (err)
+	{
+		// Add the next subkey element to strFullKeyName on error!
+		void* TODO;
+
 		return err;
+	}
 
 	// Write must be checked
 	err = access_check(channel_id,access_mask,Db::write_check);

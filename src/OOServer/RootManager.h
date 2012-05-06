@@ -118,6 +118,8 @@ namespace Root
 		virtual void on_channel_closed(Omega::uint32_t channel);
 		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs);
 
+		void get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response);
+
 		// Registry members
 		OOBase::SmartPtr<Db::Hive> m_registry;
 

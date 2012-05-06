@@ -30,8 +30,10 @@ namespace OOServer
 
 		// User -> Root
 
+		GetConfigArg = 0x80,
+
 		// Registry opcodes
-		OpenKey = 0x80,
+		OpenKey = 0x90,
 		DeleteSubKey,
 		EnumSubKeys,
 		ValueExists,

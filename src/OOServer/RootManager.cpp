@@ -192,6 +192,18 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 	return false;
 }
 
+void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	OOBase::LocalString strArg;
+	if (!request.read(strArg))
+		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
+
+	OOBase::String strValue;
+	get_config_arg(strArg.c_str(),strValue);
+
+	response.write(strValue.c_str(),strValue.length());
+}
+
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -674,6 +686,10 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
+	case OOServer::GetConfigArg:
+		get_config_arg(request,response);
+		break;
+
 	case OOServer::OpenKey:
 		registry_open_key(src_channel_id,request,response);
 		break;

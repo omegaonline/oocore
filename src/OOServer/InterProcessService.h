@@ -48,6 +48,8 @@ namespace User
 
 		OOBase::Table<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
 
+		Omega::string_t GetSurrogateProcess(const Omega::guid_t& oid);
+
 	// OOCore::IInterProcessService members
 	public:
 		Omega::Registry::IKey* GetRegistry();

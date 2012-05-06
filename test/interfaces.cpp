@@ -285,6 +285,11 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 		pE->Release();
 	}
 
+	// Test for surrogate activation
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process);
+	TEST(ptrSimpleTest);
+	interface_tests(ptrSimpleTest);
+
 	// Test unregistering
 	TEST(unregister_library());
 

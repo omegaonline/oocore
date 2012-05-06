@@ -80,6 +80,60 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
+string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
+{
+	OOBase::LocalString strPath;
+	int err = strPath.assign(LIBEXEC_DIR);
+	if (err)
+		OMEGA_THROW(err);
+
+	if (User::is_debug())
+	{
+		OOBase::CDRStream request;
+		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetConfigArg));
+		request.write("binary_path",11);
+
+		if (request.last_error() != 0)
+			OMEGA_THROW(request.last_error());
+
+		OOBase::CDRStream response;
+		m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+
+		OOBase::LocalString strVal;
+		response.read(strVal);
+
+		if (!strVal.empty() && (err = strPath.assign(strVal)) != 0)
+			OMEGA_THROW(err);
+	}
+
+	if ((err = OOBase::Paths::CorrectDirSeparators(strPath)) != 0 ||
+			(err = OOBase::Paths::AppendDirSeparator(strPath)) != 0)
+	{
+		OMEGA_THROW(err);
+	}
+
+	string_t strProcess = strPath.c_str();
+
+	void* ISSUE_8; // Surrogates!!
+
+#if defined(_WIN32)
+	strProcess += "OOSvrHost.exe";
+#else
+	strProcess += "oosvrhost";
+#endif
+
+	LOG_DEBUG(("Running surrogate process: %s",strProcess.c_str()));
+
+	if (oid == OOCore::OID_Surrogate)
+		strProcess += " --multiple";
+	else if (oid == OOCore::OID_SingleSurrogate)
+		strProcess += " --single";
+	else
+		strProcess.Clear();
+
+	return strProcess;
+}
+
 void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, IObject*& pObject)
 {
 	// Forward to sandbox if required
@@ -101,18 +155,9 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
 		ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
 
-		LOG_DEBUG(("Looking for %s",oid.ToString().c_str()));
-
 		string_t strProcess;
-		if (!ptrKey->IsKey(oid.ToString()))
-		{
-			void* ISSUE_8; // Surrogates here
-
-			if (oid == OOCore::OID_Surrogate)
-				strProcess = "BLAH";
-			else if (oid == OOCore::OID_SingleSurrogate)
-				strProcess = "BLAH --single";
-		}
+		if ((oid == OOCore::OID_Surrogate || oid == OOCore::OID_SingleSurrogate) && !ptrKey->IsKey(oid.ToString()))
+			strProcess = GetSurrogateProcess(oid);
 
 		if (strProcess.IsEmpty())
 		{

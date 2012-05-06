@@ -71,16 +71,27 @@ namespace
 		return pObj;
 	}
 
-	bool IsRelativePath(const string_t& strPath)
-	{
 #if defined(_WIN32)
-		return (PathIsRelativeA(strPath.c_str()) != FALSE);
-#else
-		return (strPath[0] != '/');
-#endif
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const Omega::string_t& str)
+	{
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
+		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
+		if (len == 0)
+		{
+			DWORD dwErr = GetLastError();
+			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
+				OMEGA_THROW(dwErr);
+		}
+
+		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
+		if (!wsz)
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
+		wsz[len] = L'\0';
+		return wsz;
 	}
 
-#if defined(_WIN32)
 	string_t from_wchar_t(const wchar_t* wstr)
 	{
 		string_t ret;
@@ -107,6 +118,15 @@ namespace
 		return ret;
 	}
 #endif
+
+	bool IsRelativePath(const string_t& strPath)
+	{
+#if defined(_WIN32)
+		return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
+#else
+		return (strPath[0] != '/');
+#endif
+	}
 
 	ObjectPtr<Registry::IKey> GetObjectsKey(const string_t& strSubKey)
 	{

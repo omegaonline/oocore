@@ -337,7 +337,7 @@ void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 	OOBase::Timeout timeout(0,500000);
 	do
 	{
-		// The tinyest sleep
+		// The tiniest sleep
 		OOBase::Thread::yield();
 	}
 	while (usage == 0 && !timeout.has_expired());

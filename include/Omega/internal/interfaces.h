@@ -67,7 +67,7 @@ namespace Omega
 
 		enum Flags
 		{	
-			Default = 0,                         ///< Use a dll/so or executeable as available
+			Default = 0,                         ///< Use a dll/so or executable as available
 			Library = 1,                         ///< Only use dll/so
 			Process = 2,                         ///< Launch as current user - implies surrogate if dll/so
 			Sandbox = 3,                         ///< Launch as the sandbox user - implies surrogate if dll/so

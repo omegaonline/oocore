@@ -34,13 +34,24 @@ namespace OOCore
 		virtual Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink) = 0;
 	};
 
-	// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
+	interface ISurrogate : public Omega::IObject
+	{
+		virtual void CreateInstance(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::IObject*& pObject) = 0;
+	};
+
+	// {7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}
 	extern "C" const Omega::guid_t OID_InterProcessService;
+
+	// {D063D32C-FB9A-004A-D2E5-BB5451808FF5}
+	extern "C" const Omega::guid_t OID_Surrogate;
+
+	// {22DC1376-4905-D9DD-1B63-2096C487E5A3}
+	extern "C" const Omega::guid_t OID_SingleSurrogate;
 }
 
 OMEGA_DEFINE_INTERFACE
 (
-	OOCore, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
+	OOCore, IInterProcessService, "{70F6D098-6E53-4E8D-BF21-9EA359DC4FF8}",
 
 	OMEGA_METHOD(Registry::IKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
@@ -48,6 +59,13 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,millisecs))
 	OMEGA_METHOD(Remoting::IChannel*,OpenRemoteChannel,1,((in),const string_t&,strEndpoint))
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	OOCore, ISurrogate, "{1EE9F564-853C-104F-AC73-EA8E76DCADCE}",
+
+	OMEGA_METHOD_VOID(CreateInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,());

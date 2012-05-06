@@ -98,19 +98,26 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		}
 
 		// Find the OID key...
-		string_t strProcess;
 		ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
-		ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs/" + oid.ToString());
+		ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
 
-		if (ptrKey->IsValue(string_t::constant("Library")))
+		LOG_DEBUG(("Looking for %s",oid.ToString().c_str()));
+
+		string_t strProcess;
+		if (!ptrKey->IsKey(oid.ToString()))
 		{
 			void* ISSUE_8; // Surrogates here
 
-			OMEGA_THROW("No surrogate support!");
+			if (oid == OOCore::OID_Surrogate)
+				strProcess = "BLAH";
+			else if (oid == OOCore::OID_SingleSurrogate)
+				strProcess = "BLAH --single";
 		}
-		else
+
+		if (strProcess.IsEmpty())
 		{
 			// Find the name of the executable to run...
+			ptrKey = ptrKey->OpenKey(oid.ToString());
 			string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
 			ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
 			strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
@@ -122,8 +129,11 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
 		for (uint32_t i = 0; i < envc; ++i)
 		{
-			// Remove any unwanted entries
-			void* TODO;
+			if (!m_ptrSBIPS)
+			{
+				// Remove any unwanted entries
+				void* TODO;
+			}
 
 			int err = setEnv.insert(envp[i]);
 			if (err != 0)
@@ -215,4 +225,6 @@ Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& 
 	return Manager::open_server_sink(message_oid,pSink);
 }
 
-OMEGA_DEFINE_OID(OOCore,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");
+OMEGA_DEFINE_OID(OOCore,OID_InterProcessService,"{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");
+OMEGA_DEFINE_OID(OOCore,OID_Surrogate,"{D063D32C-FB9A-004A-D2E5-BB5451808FF5}");
+OMEGA_DEFINE_OID(OOCore,OID_SingleSurrogate,"{22DC1376-4905-D9DD-1B63-2096C487E5A3}");

@@ -134,29 +134,54 @@ namespace
 		return ptrObjects->OpenKey(strSubKey);
 	}
 
+	IObject* RunSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	{
+		string_t strOid = string_t::constant("Omega.Surrogate");
+		if (flags & Activation::OwnSurrogate)
+			strOid = string_t::constant("Omega.SingleSurrogate");
+
+		IObject* pObject = NULL;
+		ObjectPtr<OOCore::ISurrogate> ptrSurrogate(strOid,flags);
+		if (ptrSurrogate)
+			ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
+
+		return pObject;
+	}
+
 	IObject* LoadObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		Activation::Flags_t sub_type = (flags & 0xF);
-		
-		// Try to load a library, if allowed
-		if (sub_type == Activation::Default || sub_type == Activation::Library)
-		{
-			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey("OIDs/" + oid.ToString());
-			if (ptrOidKey->IsValue(Omega::string_t::constant("Library")))
-			{
-				string_t strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
-				if (strLib.IsEmpty() || IsRelativePath(strLib))
-					throw IAccessDeniedException::Create(OOCore::get_text("Relative path \"{0}\" in library registry value.") % strLib);
 
+		// Check for Library key in the registry first
+		string_t strLib;
+		ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey("OIDs/" + oid.ToString());
+		if (ptrOidKey->IsValue(Omega::string_t::constant("Library")))
+		{
+			strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
+			if (strLib.IsEmpty() || IsRelativePath(strLib))
+				throw IAccessDeniedException::Create(OOCore::get_text("Relative path \"{0}\" in library registry value.") % strLib);
+		}
+		
+		if (!strLib.IsEmpty())
+		{
+			// Try to load a library, if allowed
+			if (sub_type == Activation::Default || sub_type == Activation::Library)
+			{
+				// Load the library locally
 				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
 				if (pObject)
 					return pObject;
 			}
+
+			if (sub_type != Activation::Library)
+			{
+				// Run a surrogate
+				IObject* pObject = RunSurrogateObject(oid,flags,iid);
+				if (pObject)
+					return pObject;
+			}
 		}
-		
-		// See if we can run it out of process
-		if (sub_type != Activation::Library)
+		else if (sub_type != Activation::Library)
 		{
 			// Ask the IPS to run it...
 			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();

@@ -858,10 +858,10 @@ bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String 
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 	}
 
-	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
+	// Now confirm the file exists, and if it doesn't, copy user_template.regdb
 	if (!PathFileExistsA(strHive.c_str()))
 	{
-		if ((err = strSysDir.append("default_user.regdb")) != 0)
+		if ((err = strSysDir.append("user_template.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
 		if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))

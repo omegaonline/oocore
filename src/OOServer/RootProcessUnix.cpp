@@ -391,7 +391,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 
 	LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
 
-	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
+	// Check hive exists... if it doesn't copy user_template.regdb and chown/chmod correctly
 	OOBase::POSIX::SmartFD fd_to(OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR));
 	if (fd_to == -1)
 	{
@@ -401,7 +401,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 	else
 	{
 		// If we get here, then we have a brand new file...
-		if ((err = strSysDir.append("default_user.regdb")) != 0)
+		if ((err = strSysDir.append("user_template.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
 		OOBase::POSIX::SmartFD fd_from(OOBase::POSIX::open(strSysDir.c_str(),O_RDONLY));

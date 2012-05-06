@@ -348,8 +348,6 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 
 bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
-	assert(!m_bSandbox);
-
 	int err = OOBase::Paths::AppendDirSeparator(strSysDir);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);

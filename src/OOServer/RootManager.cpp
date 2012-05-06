@@ -151,19 +151,7 @@ bool Root::Manager::init_database()
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!m_registry->open(SQLITE_OPEN_READWRITE))
-		return false;
-
-	// Create a new System database
-	dir2 = dir;
-	if ((err = dir2.append("sandbox.regdb")) != 0)
-		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
-
-	m_registry_sandbox = new (std::nothrow) Db::Hive(this,dir2.c_str());
-	if (!m_registry_sandbox)
-		LOG_ERROR_RETURN(("Out of memory"),false);
-
-	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
+	return m_registry->open(SQLITE_OPEN_READWRITE);
 }
 
 bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
@@ -421,7 +409,7 @@ bool Root::Manager::spawn_sandbox()
 	}
 
 	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
+	m_sandbox_channel = spawn_user(uid,NULL,NULL,strPipe,bAgain);
 	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
 	{
 		OOBase::LocalString strOurUName;
@@ -434,7 +422,7 @@ bool Root::Manager::spawn_sandbox()
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user(uid,NULL,m_registry_sandbox,strPipe,bAgain);
+		m_sandbox_channel = spawn_user(uid,NULL,NULL,strPipe,bAgain);
 	}
 
 #if defined(_WIN32)
@@ -575,7 +563,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 
 	// Init the registry, if necessary
 	bool bOk = true;
-	if (!process.m_ptrRegistry)
+	if (session_id && !process.m_ptrRegistry)
 	{
 		bOk = false;
 

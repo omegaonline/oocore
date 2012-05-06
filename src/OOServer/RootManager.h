@@ -120,7 +120,6 @@ namespace Root
 
 		// Registry members
 		OOBase::SmartPtr<Db::Hive> m_registry;
-		OOBase::SmartPtr<Db::Hive> m_registry_sandbox;
 
 		Db::hive_errors registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
 		bool registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::access_rights_t access_mask, int& err);

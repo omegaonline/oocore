@@ -814,8 +814,6 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 
 bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
-	assert(!m_bSandbox);
-
 	int err = OOBase::Paths::AppendDirSeparator(strSysDir);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);

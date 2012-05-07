@@ -250,24 +250,24 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 					err2 = strFullKeyName.append(strFirst.c_str());
 				if (err2)
 					LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
-			}
 
-			if (err == HIVE_LINK)
-			{
-				if (pos == OOBase::LocalString::npos)
-					strSubKey.clear();
-				else
+				if (err == HIVE_LINK)
 				{
-					// Assign remains of strSubKey to strSubKey
-					OOBase::LocalString strSecond;
-					err2 = strSecond.assign(strSubKey.c_str()+pos);
-					if (!err2)
-						err2 = strSubKey.assign(strSecond.c_str());
-					if (err2)
-						LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
+					if (pos == OOBase::LocalString::npos)
+						strSubKey.clear();
+					else
+					{
+						// Assign remains of strSubKey to strSubKey
+						OOBase::LocalString strSecond;
+						err2 = strSecond.assign(strSubKey.c_str()+pos);
+						if (!err2)
+							err2 = strSubKey.assign(strSecond.c_str());
+						if (err2)
+							LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
+					}
 				}
 			}
-			else if (err)
+			else
 			{
 				// Assign remains of strSubKey to strSubKey
 				OOBase::LocalString strSecond;
@@ -337,11 +337,17 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	access_rights_t access_mask = 0;
 	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 
-	// Add the next subkey element to strFullKeyName on error!
-	void* TODO;
-
 	if (flags == 0 /*OpenExisting*/)
+	{
+		if (err == HIVE_NOTFOUND && !strSubKey.empty())
+		{
+			// Return the full missing name in strFullKeyName
+			int err2 = strFullKeyName.append("/",1);
+			if (!err2)
+				err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
+		}
 		return err;
+	}
 
 	if (flags == 1 /*OpenCreate*/ && err != HIVE_NOTFOUND)
 		return err;
@@ -411,7 +417,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName)
 {
 	// This one is recursive, within a transaction and a lock...
 
@@ -457,13 +463,21 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 		}
 	}
 	
+	OOBase::LocalString strSubKey;
 	if (!ids.empty())
 	{
 		for (Omega::int64_t id;ids.pop(&id);)
 		{
-			err = delete_subkeys(id,channel_id);
+			err = delete_subkeys(id,channel_id,strSubKey);
 			if (err)
+			{
+				// Update strFullKeyName on err
+				int err2 = strFullKeyName.append("/",1);
+				if (!err2)
+					err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
+
 				return err;
+			}
 		}
 	}
 	
@@ -496,9 +510,15 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 	if (err)
 	{
-		// Add the next subkey element to strFullKeyName on error!
-		void* TODO;
-
+		if (err == HIVE_NOTFOUND && !strSubKey.empty())
+		{
+			// Return the full missing name in strFullKeyName
+			int err2 = strFullKeyName.append("/",1);
+			if (!err2)
+				err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
+			if (err2)
+				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
+		}
 		return err;
 	}
 
@@ -517,7 +537,7 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	if (trans.begin() != SQLITE_OK)
 		return HIVE_ERRORED;
 
-	err = delete_subkeys(uKey,channel_id);
+	err = delete_subkeys(uKey,channel_id,strFullKeyName);
 	if (err)
 		return err;
 

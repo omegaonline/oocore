@@ -342,7 +342,9 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 		if (err == HIVE_NOTFOUND && !strSubKey.empty())
 		{
 			// Return the full missing name in strFullKeyName
-			int err2 = strFullKeyName.append("/",1);
+			int err2 = 0;
+			if (!strFullKeyName.empty())
+				err2 = strFullKeyName.append("/",1);
 			if (!err2)
 				err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
 		}

@@ -29,7 +29,7 @@ namespace OOCore
 	void RegisterObjects();
 	void UnregisterObjects();
 
-	IInterProcessService* GetInterProcessService();
+	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService();
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
@@ -39,7 +39,7 @@ namespace OOCore
 		public Omega::Activation::IRunningObjectTable
 	{
 	public:
-		OOCore::IInterProcessService* GetIPS();
+		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS();
 
 	protected:
 		LocalROT();

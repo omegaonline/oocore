@@ -384,8 +384,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		}
 
 		// Open a remote channel
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		ObjectPtr<Remoting::IChannel> ptrChannel = ptrIPS->OpenRemoteChannel(strEndpoint);
+		ObjectPtr<Remoting::IChannel> ptrChannel = OOCore::GetInterProcessService()->OpenRemoteChannel(strEndpoint);
 
 		// Get the ObjectManager
 		IObject* pObject = NULL;
@@ -417,11 +416,7 @@ OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C
 
 void OOCore::RegistryFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-	if (ptrIPS)
-	{
-		ObjectPtr<Registry::IKey> ptrKey = ptrIPS->GetRegistry();
-		if (ptrKey)
-			pObject = ptrKey->QueryInterface(iid);
-	}
+	ObjectPtr<Registry::IKey> ptrKey = OOCore::GetInterProcessService()->GetRegistry();
+	if (ptrKey)
+		pObject = ptrKey->QueryInterface(iid);
 }

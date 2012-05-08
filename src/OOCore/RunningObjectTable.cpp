@@ -128,7 +128,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 	}
 }
 
-OOCore::IInterProcessService* OOCore::GetInterProcessService()
+OTL::ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 {
 	ObjectPtr<SingletonObjectImpl<OOCore::LocalROT> > ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 	return ptrROT->GetIPS();
@@ -142,9 +142,7 @@ bool OOCore::HostedByOOServer()
 	if (!bChecked)
 	{
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
-		ObjectPtr<IInterProcessService> ptrIPS = GetInterProcessService();
-		
-		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy = ptrIPS.QueryInterface<System::Internal::ISafeProxy>();
+		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy = GetInterProcessService().QueryInterface<System::Internal::ISafeProxy>();
 		if (ptrSProxy)
 		{
 			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
@@ -182,7 +180,7 @@ OOCore::LocalROT::~LocalROT()
 	}
 }
 
-OOCore::IInterProcessService* OOCore::LocalROT::GetIPS()
+ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS()
 {
 	IObject* pIPS = NULL;
 	GetObject(OID_InterProcessService,OMEGA_GUIDOF(IInterProcessService),pIPS,false);
@@ -202,15 +200,9 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	if (flags & ~Activation::ProcessScope)
 	{
 		// Register in ROT
-		ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
-		if (ptrIPS)
-		{
-			ptrROT = ptrIPS->GetRunningObjectTable();
-			if (ptrROT)
-			{
-				rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessScope));
-			}
-		}
+		ptrROT = GetIPS()->GetRunningObjectTable();
+		if (ptrROT)
+			rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessScope));
 	}
 
 	try
@@ -329,15 +321,11 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 		return;
 	}
 
-	ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
-	if (ptrIPS)
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
+	if (ptrROT)
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
-		if (ptrROT)
-		{
-			// Route to global rot
-			ptrROT->GetObject(oid,iid,pObject,remote);
-		}
+		// Route to global rot
+		ptrROT->GetObject(oid,iid,pObject,remote);
 	}
 }
 
@@ -359,13 +347,9 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 		if (info.m_rot_cookie)
 		{
 			// Revoke from ROT
-			ObjectPtr<IInterProcessService> ptrIPS = GetIPS();
-			if (ptrIPS)
-			{
-				ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
-				if (ptrROT)
-					ptrROT->RevokeObject(info.m_rot_cookie);
-			}
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
+			if (ptrROT)
+				ptrROT->RevokeObject(info.m_rot_cookie);
 		}
 	}
 }
@@ -396,11 +380,7 @@ OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable,"{F67F5A41-BA32-48C9-BFD2-7B3
 
 void OOCore::RunningObjectTableFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-	if (ptrIPS)
-	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
-		if (ptrROT)
-			pObject = ptrROT->QueryInterface(iid);
-	}
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = OOCore::GetInterProcessService()->GetRunningObjectTable();
+	if (ptrROT)
+		pObject = ptrROT->QueryInterface(iid);
 }

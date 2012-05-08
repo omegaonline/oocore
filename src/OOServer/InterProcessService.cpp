@@ -235,14 +235,18 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		if (!pObject)
 		{
-			OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
-
-			ptrProcess->kill();
-
 			if (timeout.has_expired())
-				throw ITimeoutException::Create();
+			{
+				OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
 
-			throw INotFoundException::Create(string_t::constant("The process {0} terminated unexpectedly with exit code {1}") % strProcess % exit_code);
+				ptrProcess->kill();
+
+				throw ITimeoutException::Create();
+			}
+
+			OOBase::Logger::log(OOBase::Logger::Debug,"Process %s exited with code %d",strProcess.c_str(),exit_code);
+
+			throw INotFoundException::Create(string_t::constant("The process '{0}' terminated unexpectedly with exit code {1}") % strProcess % exit_code);
 		}
 	}
 }

@@ -381,6 +381,5 @@ OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable,"{F67F5A41-BA32-48C9-BFD2-7B3
 void OOCore::RunningObjectTableFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT = OOCore::GetInterProcessService()->GetRunningObjectTable();
-	if (ptrROT)
-		pObject = ptrROT->QueryInterface(iid);
+	pObject = ptrROT->QueryInterface(iid);
 }

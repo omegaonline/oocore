@@ -197,11 +197,10 @@ namespace
 		if (flags & Activation::OwnSurrogate)
 			strOid = string_t::constant("Omega.SingleSurrogate");
 
-		IObject* pObject = NULL;
 		ObjectPtr<OOCore::ISurrogate> ptrSurrogate = static_cast<OOCore::ISurrogate*>(LoadObjectApp(NameToOid(strOid),flags,OMEGA_GUIDOF(OOCore::ISurrogate)));
-		if (ptrSurrogate)
-			ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
 
+		IObject* pObject = NULL;
+		ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
 		return pObject;
 	}
 
@@ -416,6 +415,5 @@ OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C
 void OOCore::RegistryFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
 	ObjectPtr<Registry::IKey> ptrKey = OOCore::GetInterProcessService()->GetRegistry();
-	if (ptrKey)
-		pObject = ptrKey->QueryInterface(iid);
+	pObject = ptrKey->QueryInterface(iid);
 }

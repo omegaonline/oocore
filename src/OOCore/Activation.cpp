@@ -134,6 +134,63 @@ namespace
 		return ptrObjects->OpenKey(strSubKey);
 	}
 
+	IObject* LoadObjectApp(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	{
+		uint32_t envc = 0;
+		OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
+
+#if defined(_WIN32)
+		const wchar_t* env = GetEnvironmentStringsW();
+		for (const wchar_t* e=env;e != NULL && *e != L'\0';++envc)
+			e += wcslen(e)+1;
+
+		if (envc)
+		{
+			envp = new (OOCore::throwing) string_t[envc];
+
+			size_t i = 0;
+			for (const wchar_t* e=env;e != NULL && *e != L'\0';++i)
+			{
+				envp[i] = from_wchar_t(e);
+				e += wcslen(e)+1;
+			}
+		}
+#elif defined(HAVE_UNISTD_H)
+		for (char** e=environ;*e != NULL;++e)
+			++envc;
+
+		if (envc)
+		{
+			envp = new (OOCore::throwing) string_t[envc];
+
+			size_t i = 0;
+			for (char** e=environ;*e != NULL;++e)
+				envp[i++] = string_t(*e);
+		}
+#else
+#error Fix me!
+#endif
+
+		// Ask the IPS to run it...
+		IObject* pObject = NULL;
+		OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
+		return pObject;
+	}
+
+	guid_t NameToOid(const string_t& strObjectName)
+	{
+		string_t strCurName = strObjectName;
+		ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
+
+		while (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
+		{
+			strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
+			ptrOidKey = GetObjectsKey(strCurName);
+		}
+
+		return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
+	}
+
 	IObject* RunSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		string_t strOid = string_t::constant("Omega.Surrogate");
@@ -141,7 +198,7 @@ namespace
 			strOid = string_t::constant("Omega.SingleSurrogate");
 
 		IObject* pObject = NULL;
-		ObjectPtr<OOCore::ISurrogate> ptrSurrogate(strOid,flags);
+		ObjectPtr<OOCore::ISurrogate> ptrSurrogate = static_cast<OOCore::ISurrogate*>(LoadObjectApp(NameToOid(strOid),flags,OMEGA_GUIDOF(OOCore::ISurrogate)));
 		if (ptrSurrogate)
 			ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
 
@@ -168,66 +225,22 @@ namespace
 			if (sub_type == Activation::Default || sub_type == Activation::Library)
 			{
 				// Load the library locally
-				IObject* pObject = LoadLibraryObject(strLib,oid,iid);
-				if (pObject)
-					return pObject;
+				return LoadLibraryObject(strLib,oid,iid);
 			}
-
-			if (sub_type != Activation::Library)
+			else
 			{
 				// Run a surrogate
-				IObject* pObject = RunSurrogateObject(oid,flags,iid);
-				if (pObject)
-					return pObject;
+				return RunSurrogateObject(oid,flags,iid);
 			}
 		}
-		else if (sub_type != Activation::Library)
+
+		if (sub_type == Activation::Library)
 		{
-			// Ask the IPS to run it...
-			ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-			if (ptrIPS)
-			{
-				uint32_t envc = 0;
-				OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
-
-#if defined(_WIN32)
-				const wchar_t* env = GetEnvironmentStringsW();
-				for (const wchar_t* e=env;e != NULL && *e != L'\0';++envc)
-					e += wcslen(e)+1;
-
-				if (envc)
-				{
-					envp = new (OOCore::throwing) string_t[envc];
-
-					size_t i = 0;
-					for (const wchar_t* e=env;e != NULL && *e != L'\0';++i)
-					{
-						envp[i] = from_wchar_t(e);
-						e += wcslen(e)+1;
-					}
-				}
-#elif defined(HAVE_UNISTD_H)
-				for (char** e=environ;*e != NULL;++e)
-					++envc;
-
-				if (envc)
-				{
-					envp = new (OOCore::throwing) string_t[envc];
-
-					size_t i = 0;
-					for (char** e=environ;*e != NULL;++e)
-						envp[i++] = string_t(*e);
-				}
-#else
-#error Fix me!
-#endif
-				IObject* pObject = NULL;
-				ptrIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
-				return pObject;
-			}
+			// Force an exception
+			ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
 		}
 
-		return NULL;
+		return LoadObjectApp(oid,flags,iid);
 	}
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
@@ -252,20 +265,6 @@ namespace
 		}
 
 		return pObject;
-	}
-
-	guid_t NameToOid(const string_t& strObjectName)
-	{
-		string_t strCurName = strObjectName;
-		ObjectPtr<Registry::IKey> ptrOidKey = GetObjectsKey(strCurName);
-
-		while (ptrOidKey->IsValue(Omega::string_t::constant("CurrentVersion")))
-		{
-			strCurName = ptrOidKey->GetValue(Omega::string_t::constant("CurrentVersion")).cast<string_t>();
-			ptrOidKey = GetObjectsKey(strCurName);
-		}
-
-		return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
 	}
 }
 

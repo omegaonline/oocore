@@ -150,9 +150,14 @@ void User::RunningObjectTable::GetObject(const any_t& oid, const guid_t& iid, IO
 			}
 			else
 			{
-				ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
-				if (!ptrObject)
-					throw OOCore_INotFoundException_MissingIID(iid);
+				if (iid == OMEGA_GUIDOF(IObject))
+					ptrObject = pInfo->m_ptrObject;
+				else
+				{
+					ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
+					if (!ptrObject)
+						throw OOCore_INotFoundException_MissingIID(iid);
+				}
 
 				// Remove the entry if Activation::SingleUse
 				if (pInfo->m_flags & Activation::SingleUse)
@@ -173,9 +178,7 @@ void User::RunningObjectTable::GetObject(const any_t& oid, const guid_t& iid, IO
 		RevokeObject_i(i,0);
 
 	if (ptrObject)
-	{
 		pObject = ptrObject.Detach();
-	}
 	else if (m_ptrROT)
 	{
 		// Route to global rot

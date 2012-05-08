@@ -416,4 +416,6 @@ void OOCore::RegistryFactory::CreateInstance(const guid_t& iid, IObject*& pObjec
 {
 	ObjectPtr<Registry::IKey> ptrKey = OOCore::GetInterProcessService()->GetRegistry();
 	pObject = ptrKey->QueryInterface(iid);
+	if (!pObject)
+		throw OOCore_INotFoundException_MissingIID(iid);
 }

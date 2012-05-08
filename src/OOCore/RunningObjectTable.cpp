@@ -292,9 +292,14 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 			}
 			else
 			{
-				ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
-				if (!ptrObject)
-					throw OOCore_INotFoundException_MissingIID(iid);
+				if (iid == OMEGA_GUIDOF(IObject))
+					ptrObject = pInfo->m_ptrObject;
+				else
+				{
+					ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
+					if (!ptrObject)
+						throw OOCore_INotFoundException_MissingIID(iid);
+				}
 
 				// Remove the entry if Activation::SingleUse
 				if (pInfo->m_flags & Activation::SingleUse)
@@ -316,15 +321,11 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 	
 	// If we have an object, get out now
 	if (ptrObject)
-	{
 		pObject = ptrObject.Detach();
-		return;
-	}
-
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
-	if (ptrROT)
+	else
 	{
 		// Route to global rot
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
 		ptrROT->GetObject(oid,iid,pObject,remote);
 	}
 }
@@ -348,8 +349,7 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 		{
 			// Revoke from ROT
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
-			if (ptrROT)
-				ptrROT->RevokeObject(info.m_rot_cookie);
+			ptrROT->RevokeObject(info.m_rot_cookie);
 		}
 	}
 }
@@ -382,4 +382,6 @@ void OOCore::RunningObjectTableFactory::CreateInstance(const guid_t& iid, IObjec
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT = OOCore::GetInterProcessService()->GetRunningObjectTable();
 	pObject = ptrROT->QueryInterface(iid);
+	if (!pObject)
+		throw OOCore_INotFoundException_MissingIID(iid);
 }

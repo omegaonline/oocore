@@ -130,15 +130,6 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
-	if ((err = OOBase::Paths::CorrectDirSeparators(strAppName)) == 0 &&
-			(err = OOBase::Paths::AppendDirSeparator(strAppName)) == 0)
-	{
-		err = strAppName.append("oosvruser");
-	}
-
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
 	char* rpath = realpath(strAppName.c_str(),NULL);
 	OOBase::Logger::log(OOBase::Logger::Information,"Using oosvruser: %s",rpath);
 	::free(rpath);
@@ -348,10 +339,7 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 
 bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
-	int err = OOBase::Paths::AppendDirSeparator(strSysDir);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
-
+	int err = 0;
 	OOBase::POSIX::pw_info pw(m_uid);
 	if (!pw)
 		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
@@ -365,16 +353,15 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 		{
 			bAddDot = true;
 			err = strUsersDir.assign(strHome.c_str());
+			if (!err && strHome[strHome.length()-1] != '/')
+				err = strHome.append("/",1);
 		}
 		else
 			err = strUsersDir.concat(strSysDir.c_str(),"users/");
 
-		if (err != 0)
+		if (err)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 	}
-
-	if ((err = OOBase::Paths::AppendDirSeparator(strUsersDir)) != 0)
-		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
 
 	if (bAddDot)
 	{
@@ -449,7 +436,7 @@ bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String s
 	return true;
 }
 
-OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
@@ -474,16 +461,11 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLo
 		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::Process>());
 	}
 
-	OOBase::String strAppName;
-	if ((err = strAppName.assign(LIBEXEC_DIR)) != 0)
+	err = strAppName.append("oosvruser");
+	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 
-	// If we are debugging, allow binary_path override
-	if (Root::is_debug())
-	{
-		if (get_config_arg("binary_path",strAppName))
-			OOBase::Logger::log(OOBase::Logger::Warning,"Overriding with 'binary_path' setting '%s'",strAppName.c_str());
-	}
+	OOBase::Logger::log(OOBase::Logger::Debug,"Spawning user process '%s'",strAppName.c_str());
 
 	// Spawn the process
 	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
@@ -547,6 +529,33 @@ bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::A
 	}
 
 	uid = pw->pw_uid;
+	return true;
+}
+
+bool Root::correct_and_append_path(OOBase::String& strPath, bool correct, const char* fname)
+{
+	int err = 0;
+	if (correct)
+	{
+		err = strPath.replace('\\','/');
+		if (err)
+			LOG_ERROR_RETURN(("Failed to copy strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if (!strPath.empty() && strPath[strPath.length()-1] != '/')
+	{
+		err = strPath.append("/",1);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	if (fname)
+	{
+		err = strPath.append(fname);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),false);
+	}
+
 	return true;
 }
 

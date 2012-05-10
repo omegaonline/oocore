@@ -82,37 +82,8 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 
 string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 {
-	OOBase::LocalString strPath;
-	int err = strPath.assign(LIBEXEC_DIR);
-	if (err)
-		OMEGA_THROW(err);
-
-	if (User::is_debug())
-	{
-		OOBase::CDRStream request;
-		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetConfigArg));
-		request.write("binary_path",11);
-
-		if (request.last_error() != 0)
-			OMEGA_THROW(request.last_error());
-
-		OOBase::CDRStream response;
-		m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
-
-		OOBase::LocalString strVal;
-		response.read(strVal);
-
-		if (!strVal.empty() && (err = strPath.assign(strVal)) != 0)
-			OMEGA_THROW(err);
-	}
-
-	if ((err = OOBase::Paths::CorrectDirSeparators(strPath)) != 0 ||
-			(err = OOBase::Paths::AppendDirSeparator(strPath)) != 0)
-	{
-		OMEGA_THROW(err);
-	}
-
-	string_t strProcess = strPath.c_str();
+	string_t strProcess;
+	m_pManager->get_root_config_arg("binary_path",strProcess);
 
 	void* ISSUE_8; // Surrogates!!
 
@@ -138,7 +109,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 {
 	// Forward to sandbox if required
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
-		m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
+	{
+		// Don't pass env vars to sandbox!
+		m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,0,NULL,pObject);
+	}
 	else
 	{
 		// The timeout needs to be related to the request timeout...
@@ -170,16 +144,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 				throw IAccessDeniedException::Create(string_t::constant("Relative path \"{0}\" in application activation registry value.") % strProcess);
 		}
 
-		// Build the environment block
+		// Build the environment set
 		OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
 		for (uint32_t i = 0; i < envc; ++i)
 		{
-			if (!m_ptrSBIPS)
-			{
-				// Remove any unwanted entries
-				void* TODO;
-			}
-
 			int err = setEnv.insert(envp[i]);
 			if (err != 0)
 				OMEGA_THROW(err);

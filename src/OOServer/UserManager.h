@@ -53,6 +53,8 @@ namespace User
 		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
 		void close_socket(Omega::uint32_t id);
 		
+		void get_root_config_arg(const char* key, Omega::string_t& strValue);
+
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
 

@@ -52,6 +52,7 @@ namespace Root
 {
 	bool is_debug();
 	bool platform_init();
+	bool correct_and_append_path(OOBase::String& strPath, bool correct, const char* fname);
 
 	class Manager :
 			public OOServer::MessageHandler,
@@ -72,6 +73,7 @@ namespace Root
 		OOBase::ThreadPool                    m_proactor_pool;
 
 		// Init and run members
+		bool init_config(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_i(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_file(const char* pszFile);
@@ -106,7 +108,7 @@ namespace Root
 		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
 		mapUserProcessesType                                   m_mapUserProcesses;
 
-		OOBase::SmartPtr<Process> platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
+		OOBase::SmartPtr<Process> platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
 		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Db::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process);

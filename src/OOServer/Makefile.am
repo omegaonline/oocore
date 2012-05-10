@@ -46,9 +46,6 @@ endif
 
 pkglibexec_PROGRAMS = oosvruser
 
-oosvruser_CPPFLAGS = $(AM_CPPFLAGS) \
-	-DLIBEXEC_DIR=\"$(pkglibexecdir)/\"
-
 oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32

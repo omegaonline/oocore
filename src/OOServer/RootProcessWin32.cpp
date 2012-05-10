@@ -504,14 +504,7 @@ RootProcessWin32::~RootProcessWin32()
 
 DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	OOBase::Paths::CorrectDirSeparators(strAppName);
-	int err = OOBase::Paths::AppendDirSeparator(strAppName);
-	if (err == 0)
-		err = strAppName.append("OOSvrUser.exe");
-
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
-
+	int err = 0;
 	if (strAppName.length() >= MAX_PATH)
 	{
 		// Prefix with '\\?\'
@@ -814,10 +807,7 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 
 bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 {
-	int err = OOBase::Paths::AppendDirSeparator(strSysDir);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
-
+	int err = 0;
 	if (strUsersDir.empty())
 	{
 		char szBuf[MAX_PATH] = {0};
@@ -836,9 +826,6 @@ bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String 
 	}
 	else
 	{
-		if ((err = OOBase::Paths::AppendDirSeparator(strUsersDir)) != 0)
-			LOG_ERROR_RETURN(("Failed to append separator: %s",OOBase::system_error_text(err)),false);
-
 		// Get the names associated with the user SID
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
@@ -873,7 +860,7 @@ bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String 
 	return true;
 }
 
-OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	// Alloc a new SpawnedProcess
 	RootProcessWin32* pSpawn32 = new (std::nothrow) RootProcessWin32();
@@ -882,25 +869,11 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOSvrBase::AsyncLo
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
 
-	// Get our module name
-	char szPath[MAX_PATH];
-	if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-		LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::Process>());
-	
-	// Strip off our name
-	PathRemoveFileSpecA(szPath);
-
-	OOBase::String strAppName;
-	int err = strAppName.assign(szPath);
+	int err = strAppName.append("oosvruser");
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
 
-	// If we are debugging, allow binary_path override
-	if (Root::is_debug())
-	{
-		if (get_config_arg("binary_path",strAppName))
-			OOBase::Logger::log(OOBase::Logger::Warning,"Overriding with 'binary_path' setting '%s'",strAppName.c_str());
-	}
+	OOBase::Logger::log(OOBase::Logger::Debug,"Spawning user process '%s'",strAppName.c_str());
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
@@ -973,6 +946,16 @@ bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::A
 		bAgain = true;
 
 	return (dwErr == ERROR_SUCCESS);
+}
+
+bool Root::correct_and_append_path(OOBase::String& strPath, bool correct, const char* fname)
+{
+
+	int err = strPath.replace('\\','/');
+	if (err)
+		LOG_ERROR_RETURN(("Failed to copy strings: %s",OOBase::system_error_text(err)),false);
+
+	FIX ME!!
 }
 
 #endif // _WIN32

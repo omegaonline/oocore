@@ -743,3 +743,22 @@ void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRS
 			OMEGA_THROW("Internal server exception");
 	}
 }
+
+void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strValue)
+{
+	OOBase::CDRStream request;
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetConfigArg));
+	request.write(key);
+
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
+
+	OOBase::CDRStream response;
+	sendrecv_root(request,&response,TypeInfo::Synchronous);
+
+	OOBase::LocalString strVal;
+	if (!response.read(strVal))
+		OMEGA_THROW(response.last_error());
+
+	strValue = strVal.c_str();
+}

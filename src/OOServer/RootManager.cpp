@@ -63,50 +63,47 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 		ret = EXIT_FAILURE;
 
 		// Load the config
-		if (load_config(cmd_args))
+		// Open the root registry
+		if (init_config(cmd_args))
 		{
-			// Open the root registry
-			if (init_database())
+			// Start the proactor pool
+			int err = m_proactor_pool.run(&run_proactor,NULL,2);
+			if (err)
+				LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+			else
 			{
-				// Start the proactor pool
-				int err = m_proactor_pool.run(&run_proactor,NULL,2);
-				if (err)
-					LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
-				else
+				// Start the handler
+				if (start_request_threads(2))
 				{
-					// Start the handler
-					if (start_request_threads(2))
+					// Spawn the sandbox
+					if (spawn_sandbox())
 					{
-						// Spawn the sandbox
-						if (spawn_sandbox())
+						// Start listening for clients
+						if (start_client_acceptor())
 						{
-							// Start listening for clients
-							if (start_client_acceptor())
-							{
-								OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
+							OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
 
-								ret = EXIT_SUCCESS;
+							ret = EXIT_SUCCESS;
 
-								// Wait for quit
-								bQuit = wait_to_quit();
+							// Wait for quit
+							bQuit = wait_to_quit();
 
-								OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
+							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
 
-								// Stop accepting new clients
-								m_client_acceptor = NULL;
-							}
-
-							// Close all channels
-							shutdown_channels();
-
-							// Wait for all user processes to terminate
-							m_mapUserProcesses.clear();
+							// Stop accepting new clients
+							m_client_acceptor = NULL;
 						}
-					}
 
-					// Stop the MessageHandler
-					stop_request_threads();
+						// Close all channels
+						shutdown_channels();
+
+						// Wait for all user processes to terminate
+						m_mapUserProcesses.clear();
+					}
 				}
+
+				// Stop the MessageHandler
+				stop_request_threads();
 
 				// Stop any proactor threads
 				Proactor::instance().stop();
@@ -136,20 +133,14 @@ bool Root::Manager::init_database()
 	if (!get_config_arg("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-	int err = OOBase::Paths::CorrectDirSeparators(dir);
-	if (err == 0)
-		err = OOBase::Paths::AppendDirSeparator(dir);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
+	int err = dir.append("system.regdb");
+	if (err)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
 
 	// Create a new system database
-	OOBase::String dir2 = dir;
-	if ((err = dir2.append("system.regdb")) != 0)
-		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text()),false);
-
-	m_registry = new (std::nothrow) Db::Hive(this,dir2.c_str());
+	m_registry = new (std::nothrow) Db::Hive(this,dir.c_str());
 	if (!m_registry)
-		LOG_ERROR_RETURN(("Out of memory"),false);
+		LOG_ERROR_RETURN(("Failed to create registry hive: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
 	return m_registry->open(SQLITE_OPEN_READWRITE);
 }
@@ -202,6 +193,133 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 	get_config_arg(strArg.c_str(),strValue);
 
 	response.write(strValue.c_str(),strValue.length());
+}
+
+bool Root::Manager::init_config(const OOBase::CmdArgs::results_t& cmd_args)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock,false);
+
+	if (!load_config(cmd_args))
+		return false;
+
+	// Update reg_db path with a validated value
+	OOBase::String strKey;
+	int err = strKey.assign("regdb_path");
+	if (err)
+		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+
+	guard.acquire();
+
+	OOBase::String* pv = m_config_args.find(strKey);
+	if (pv)
+	{
+		if (!correct_and_append_path(*pv,true,NULL))
+			return false;
+	}
+
+	guard.release();
+
+	if (!init_database())
+		return false;
+
+	// Update binary_path and users_path with the validated value
+	OOBase::String strVal;
+	err = strKey.assign("users_path");
+	if (err)
+		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+
+	guard.acquire();
+
+	pv = m_config_args.find(strKey);
+	if (pv)
+	{
+		if (!correct_and_append_path(*pv,true,NULL))
+			return false;
+
+		guard.release();
+	}
+	else
+	{
+		guard.release();
+
+		if (get_config_arg(strKey.c_str(),strVal))
+		{
+			if (!correct_and_append_path(strVal,false,NULL))
+				return false;
+
+			guard.acquire();
+
+			if ((err = m_config_args.insert(strKey,strVal)) != 0)
+				LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(err)),false);
+
+			guard.release();
+		}
+	}
+
+	err = strKey.assign("binary_path");
+	if (err)
+		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+
+	if (Root::is_debug())
+	{
+		guard.acquire();
+
+		if (m_config_args.find(strKey,strVal))
+		{
+			if (!correct_and_append_path(strVal,true,NULL))
+				return false;
+
+			guard.release();
+		}
+		else
+		{
+			guard.release();
+
+			if (get_config_arg(strKey.c_str(),strVal) && !correct_and_append_path(strVal,false,NULL))
+				return false;
+		}
+	}
+
+	if (strVal.empty())
+	{
+#if defined(LIBEXEC_DIR)
+		err = strVal.assign(LIBEXEC_DIR);
+		if (!err && strVal[strVal.length()-1] != '/')
+			err = strVal.append("/",1);
+
+#elif defined(_WIN32)
+
+		// Get our module name
+		char szPath[MAX_PATH];
+		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
+
+		// Strip off our name
+		PathRemoveFileSpecA(szPath);
+		if (!PathAddBackslashA(szPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		err = strVal.assign(szPath);
+#else
+#error Fix me!
+#endif
+
+		if (err)
+			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	guard.acquire();
+
+	pv = m_config_args.find(strKey);
+	if (!pv)
+	{
+		if ((err = m_config_args.insert(strKey,strVal)) != 0)
+			LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(err)),false);
+	}
+	else
+		*pv = strVal;
+
+	return true;
 }
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
@@ -565,8 +683,13 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	Omega::uint32_t channel_id = 0;
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC;
 
+	// Get the binary path
+	OOBase::String strAppName;
+	if (!get_config_arg("binary_path",strAppName))
+		LOG_ERROR_RETURN(("Failed to find binary_path config arg"),0);
+
 	UserProcess process;
-	process.m_ptrProcess = platform_spawn(uid,session_id,strPipe,channel_id,ptrMC,bAgain);
+	process.m_ptrProcess = platform_spawn(strAppName,uid,session_id,strPipe,channel_id,ptrMC,bAgain);
 	if (!process.m_ptrProcess)
 		return 0;
 
@@ -580,7 +703,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		bOk = false;
 
 		OOBase::String strRegPath, strUsersPath;
-		if (!get_config_arg("regdb_path",strRegPath) || strRegPath.empty())
+		if (!get_config_arg("regdb_path",strRegPath))
 			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),0);
 
 		get_config_arg("users_path",strUsersPath);

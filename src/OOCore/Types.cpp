@@ -737,8 +737,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 {
 #if defined(_WIN32)
 
-	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
-	UuidCreate(&uuid);
+	UUID uuid = {0};
+	RPC_STATUS s = UuidCreate(&uuid);
+	OMEGA_UNUSED_ARG(s);
 
 	return *(guid_t*)(&uuid);
 

@@ -97,6 +97,18 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
 	}
 
+	if (!m_config_args.exists("binary_path"))
+	{
+		OOBase::String v,k;
+		int err = k.assign("binary_path");
+		if (err == 0)
+			err = v.assign(LIBEXEC_DIR);
+		if (err == 0)
+			err = m_config_args.insert(k,v);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
 	return true;
 }
 

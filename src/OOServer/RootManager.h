@@ -73,7 +73,6 @@ namespace Root
 		OOBase::ThreadPool                    m_proactor_pool;
 
 		// Init and run members
-		bool init_config(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_i(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_file(const char* pszFile);

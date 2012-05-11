@@ -50,14 +50,15 @@ bool Root::platform_init()
 	if (!is_debug())
 	{
 		// Change working directory to the location of the executable (we know it's valid!)
-		char szPath[MAX_PATH];
-		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-			LOG_ERROR_RETURN(("GetModuleFileNameA failed: %s",OOBase::system_error_text()),false);
+		wchar_t szPath[MAX_PATH];
+		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
 
 		// Strip off our name
-		PathRemoveFileSpecA(szPath);
+		PathUnquoteSpacesW(szPath);
+		PathRemoveFileSpecW(szPath);
 
-		if (!SetCurrentDirectoryA(szPath))
+		if (!SetCurrentDirectoryW(szPath))
 			LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),false);
 	}
 	return true;
@@ -266,6 +267,7 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 	// Now set some defaults...
 	if (!m_config_args.exists("regdb_path"))
 	{
+		// This does need to be ASCII
 		char szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 		if FAILED(hr)
@@ -281,6 +283,33 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 		int err = v.assign("regdb_path");
 		if (err == 0)
 			err = k.assign(szBuf);
+		if (err == 0)
+			err = m_config_args.insert(k,v);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
+	if (!m_config_args.exists("binary_path"))
+	{
+		// Get our module name
+		wchar_t wszPath[MAX_PATH] = {0};
+		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
+
+		// Strip off our name
+		PathUnquoteSpacesW(wszPath);
+		PathRemoveFileSpecW(wszPath);
+		if (!PathAddBackslashW(wszPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		char szPath[MAX_PATH * 2] = {0};
+		if (!WideCharToMultiByte(CP_UTF8,0,wsz,-1,szPath,sizeof(szPath),NULL,NULL))
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+
+		OOBase::String v,k;
+		int err = v.assign("binary_path");
+		if (err == 0)
+			err = k.assign(szPath);
 		if (err == 0)
 			err = m_config_args.insert(k,v);
 		if (err != 0)

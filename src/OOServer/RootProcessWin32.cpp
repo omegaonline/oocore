@@ -810,6 +810,7 @@ bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String 
 	int err = 0;
 	if (strUsersDir.empty())
 	{
+		// This does need to be ASCII
 		char szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
 		if FAILED(hr)

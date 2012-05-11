@@ -64,7 +64,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 		// Load the config
 		// Open the root registry
-		if (init_config(cmd_args))
+		if (load_config(cmd_args) && init_database())
 		{
 			// Start the proactor pool
 			int err = m_proactor_pool.run(&run_proactor,NULL,2);
@@ -193,133 +193,6 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 	get_config_arg(strArg.c_str(),strValue);
 
 	response.write(strValue.c_str(),strValue.length());
-}
-
-bool Root::Manager::init_config(const OOBase::CmdArgs::results_t& cmd_args)
-{
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock,false);
-
-	if (!load_config(cmd_args))
-		return false;
-
-	// Update reg_db path with a validated value
-	OOBase::String strKey;
-	int err = strKey.assign("regdb_path");
-	if (err)
-		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-
-	guard.acquire();
-
-	OOBase::String* pv = m_config_args.find(strKey);
-	if (pv)
-	{
-		if (!correct_and_append_path(*pv,true,NULL))
-			return false;
-	}
-
-	guard.release();
-
-	if (!init_database())
-		return false;
-
-	// Update binary_path and users_path with the validated value
-	OOBase::String strVal;
-	err = strKey.assign("users_path");
-	if (err)
-		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-
-	guard.acquire();
-
-	pv = m_config_args.find(strKey);
-	if (pv)
-	{
-		if (!correct_and_append_path(*pv,true,NULL))
-			return false;
-
-		guard.release();
-	}
-	else
-	{
-		guard.release();
-
-		if (get_config_arg(strKey.c_str(),strVal))
-		{
-			if (!correct_and_append_path(strVal,false,NULL))
-				return false;
-
-			guard.acquire();
-
-			if ((err = m_config_args.insert(strKey,strVal)) != 0)
-				LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(err)),false);
-
-			guard.release();
-		}
-	}
-
-	err = strKey.assign("binary_path");
-	if (err)
-		LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-
-	if (Root::is_debug())
-	{
-		guard.acquire();
-
-		if (m_config_args.find(strKey,strVal))
-		{
-			if (!correct_and_append_path(strVal,true,NULL))
-				return false;
-
-			guard.release();
-		}
-		else
-		{
-			guard.release();
-
-			if (get_config_arg(strKey.c_str(),strVal) && !correct_and_append_path(strVal,false,NULL))
-				return false;
-		}
-	}
-
-	if (strVal.empty())
-	{
-#if defined(LIBEXEC_DIR)
-		err = strVal.assign(LIBEXEC_DIR);
-		if (!err && strVal[strVal.length()-1] != '/')
-			err = strVal.append("/",1);
-
-#elif defined(_WIN32)
-
-		// Get our module name
-		char szPath[MAX_PATH];
-		if (!GetModuleFileNameA(NULL,szPath,MAX_PATH))
-			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
-
-		// Strip off our name
-		PathRemoveFileSpecA(szPath);
-		if (!PathAddBackslashA(szPath))
-			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
-
-		err = strVal.assign(szPath);
-#else
-#error Fix me!
-#endif
-
-		if (err)
-			LOG_ERROR_RETURN(("Failed to assign strings: %s",OOBase::system_error_text(err)),false);
-	}
-
-	guard.acquire();
-
-	pv = m_config_args.find(strKey);
-	if (!pv)
-	{
-		if ((err = m_config_args.insert(strKey,strVal)) != 0)
-			LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(err)),false);
-	}
-	else
-		*pv = strVal;
-
-	return true;
 }
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)

@@ -504,7 +504,10 @@ RootProcessWin32::~RootProcessWin32()
 
 DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	int err = 0;
+	int err = strAppName.append("OOSvrUser.exe");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
+
 	if (strAppName.length() >= MAX_PATH)
 	{
 		// Prefix with '\\?\'
@@ -870,12 +873,6 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& st
 	if (!pSpawn32)
 		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
 
-	int err = strAppName.append("oosvruser");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
-
-	OOBase::Logger::log(OOBase::Logger::Debug,"Spawning user process '%s'",strAppName.c_str());
-
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,session_id == NULL,bAgain))
@@ -886,6 +883,7 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& st
 		return OOBase::SmartPtr<Root::Process>();
 
 	// Connect up
+	int err = 0;
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());

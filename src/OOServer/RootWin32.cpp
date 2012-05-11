@@ -280,9 +280,9 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
 
 		OOBase::String v,k;
-		int err = v.assign("regdb_path");
+		int err = k.assign("regdb_path");
 		if (err == 0)
-			err = k.assign(szBuf);
+			err = v.assign(szBuf);
 		if (err == 0)
 			err = m_config_args.insert(k,v);
 		if (err != 0)
@@ -293,7 +293,7 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 	{
 		// Get our module name
 		wchar_t wszPath[MAX_PATH] = {0};
-		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
+		if (!GetModuleFileNameW(NULL,wszPath,MAX_PATH))
 			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
 
 		// Strip off our name
@@ -303,13 +303,13 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
 		char szPath[MAX_PATH * 2] = {0};
-		if (!WideCharToMultiByte(CP_UTF8,0,wsz,-1,szPath,sizeof(szPath),NULL,NULL))
+		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
 
 		OOBase::String v,k;
-		int err = v.assign("binary_path");
+		int err = k.assign("binary_path");
 		if (err == 0)
-			err = k.assign(szPath);
+			err = v.assign(szPath);
 		if (err == 0)
 			err = m_config_args.insert(k,v);
 		if (err != 0)

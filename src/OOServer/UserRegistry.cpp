@@ -153,6 +153,8 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 		if (!response.read(strFullKeyName))
 			OMEGA_THROW(response.last_error());
 
+		if (!strFullKeyName.empty())
+			strFullKey += "/";
 		strFullKey += strFullKeyName.c_str();
 
 		if (err == OOServer::Linked)
@@ -381,6 +383,8 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 		if (!response.read(strFullKeyName))
 			OMEGA_THROW(response.last_error());
 
+		if (!strFullKeyName.empty())
+			strFullKey += "/";
 		strFullKey += strFullKeyName.c_str();
 
 		if (err == OOServer::Linked)

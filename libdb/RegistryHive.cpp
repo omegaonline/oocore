@@ -245,7 +245,8 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 			if (!err || err == HIVE_LINK)
 			{
 				// Append valid part to strFullKeyName
-				err2 = strFullKeyName.append("/",1);
+				if (!strFullKeyName.empty())
+					err2 = strFullKeyName.append("/",1);
 				if (!err2)
 					err2 = strFullKeyName.append(strFirst.c_str());
 				if (err2)
@@ -393,7 +394,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 			else
 				err2 = strFirst.assign(strSubKey.c_str()+start,pos-start);
 
-			if (!err2)
+			if (!err2 && !strFullKeyName.empty())
 				err2 = strFullKeyName.append("/",1);
 			if (!err2)
 				err2 = strFullKeyName.append(strFirst.c_str());
@@ -474,7 +475,9 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 			if (err)
 			{
 				// Update strFullKeyName on err
-				int err2 = strFullKeyName.append("/",1);
+				int err2 = 0;
+				if (!strFullKeyName.empty())
+					err2 = strFullKeyName.append("/",1);
 				if (!err2)
 					err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
 
@@ -515,7 +518,9 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 		if (err == HIVE_NOTFOUND && !strSubKey.empty())
 		{
 			// Return the full missing name in strFullKeyName
-			int err2 = strFullKeyName.append("/",1);
+			int err2 = 0;
+			if (!strFullKeyName.empty())
+				err2 = strFullKeyName.append("/",1);
 			if (!err2)
 				err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
 			if (err2)

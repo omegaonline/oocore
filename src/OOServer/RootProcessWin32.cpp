@@ -949,14 +949,4 @@ bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::A
 	return (dwErr == ERROR_SUCCESS);
 }
 
-bool Root::correct_and_append_path(OOBase::String& strPath, bool correct, const char* fname)
-{
-
-	int err = strPath.replace('\\','/');
-	if (err)
-		LOG_ERROR_RETURN(("Failed to copy strings: %s",OOBase::system_error_text(err)),false);
-
-	FIX ME!!
-}
-
 #endif // _WIN32

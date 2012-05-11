@@ -52,8 +52,7 @@ namespace Root
 {
 	bool is_debug();
 	bool platform_init();
-	bool correct_and_append_path(OOBase::String& strPath, bool correct, const char* fname);
-
+	
 	class Manager :
 			public OOServer::MessageHandler,
 			public Db::Manager,

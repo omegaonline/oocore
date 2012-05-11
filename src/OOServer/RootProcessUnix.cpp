@@ -532,31 +532,4 @@ bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::A
 	return true;
 }
 
-bool Root::correct_and_append_path(OOBase::String& strPath, bool correct, const char* fname)
-{
-	int err = 0;
-	if (correct)
-	{
-		err = strPath.replace('\\','/');
-		if (err)
-			LOG_ERROR_RETURN(("Failed to copy strings: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if (!strPath.empty() && strPath[strPath.length()-1] != '/')
-	{
-		err = strPath.append("/",1);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),false);
-	}
-
-	if (fname)
-	{
-		err = strPath.append(fname);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),false);
-	}
-
-	return true;
-}
-
 #endif // !HAVE_UNISTD_H

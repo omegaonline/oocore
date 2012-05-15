@@ -296,7 +296,10 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 		if (getgrouplist(pw->pw_name,pw->pw_gid,NULL,&ngroups) == -1)
 		{
 			if (!ptrGroups.allocate(ngroups * sizeof(gid_t)))
-				LOG_ERROR_RETURN(("Out of memory!"),ENOMEM);
+			{
+				int err = errno;
+				LOG_ERROR_RETURN(("Failed to allocate groups: %s",OOBase::system_error_text(err)),err);
+			}
 
 			getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups);
 		}

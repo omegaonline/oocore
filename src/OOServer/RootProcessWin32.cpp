@@ -198,7 +198,10 @@ namespace
 		size_t wlen = OOBase::from_native(NULL,0,strUName.c_str());
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName;
 		if (!ptrUName.allocate(wlen*sizeof(wchar_t)))
-			LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
+		{
+			DWORD dwErr = GetLastError();
+			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(dwErr)),dwErr);
+		}
 
 		OOBase::from_native(ptrUName,wlen,strUName.c_str());
 
@@ -730,7 +733,10 @@ int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 	{
 		pSD = OOBase::LocalAllocator::allocate(cbNeeded);
 		if (!pSD)
-			LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
+		{
+			DWORD dwErr = GetLastError();
+			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(dwErr)),dwErr);
+		}
 
 		if (GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,cbNeeded,&cbNeeded))
 			break;

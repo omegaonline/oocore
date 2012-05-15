@@ -202,7 +202,7 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 				++dwValLen;
 				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf;
 				if (!buf.allocate(dwValLen+1))
-					LOG_ERROR_RETURN(("Out of memory"),false);
+					LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
 
 				lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
 				if (lRes != ERROR_SUCCESS)
@@ -219,7 +219,7 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 					{
 						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3;
 						if (!buf3.allocate(dwExpLen+1))
-							LOG_ERROR_RETURN(("Out of memory"),false);
+							LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
 
 						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
 							LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);

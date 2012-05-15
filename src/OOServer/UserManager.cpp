@@ -250,7 +250,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 	// Create a new MessageConnection
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
 	if (!ptrMC)
-		LOG_ERROR_RETURN(("Out of memory"),false);
+		LOG_ERROR_RETURN(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()),false);
 
 	// Attach it to ourselves
 	if (register_channel(ptrMC,m_uUpstreamChannel) == 0)
@@ -442,7 +442,7 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 	// Create a new MessageConnection
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
-		LOG_ERROR(("Out of memory"));
+		LOG_ERROR(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()));
 	else
 	{
 		// Attach it to ourselves

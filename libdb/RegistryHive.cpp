@@ -633,7 +633,7 @@ Db::hive_errors Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32
 
 					if (bAllow)
 					{
-						err3 = setSubKeys.push(strSubKey);
+						err3 = setSubKeys.insert(strSubKey);
 						if (err3)
 							LOG_ERROR_RETURN(("Failed to stack push: %s",OOBase::system_error_text(err3)),HIVE_ERRORED);
 					}
@@ -788,7 +788,7 @@ Db::hive_errors Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_
 					if (err2)
 						LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 
-					err2 = setValues.push(val);
+					err2 = setValues.insert(val);
 					if (err2)
 						LOG_ERROR_RETURN(("Failed to stack push: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 				}

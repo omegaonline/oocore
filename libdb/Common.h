@@ -25,6 +25,7 @@
 #include <OOBase/SmartPtr.h>
 #include <OOBase/String.h>
 #include <OOBase/Stack.h>
+#include <OOBase/Set.h>
 #include <OOBase/Timeout.h>
 
 #include "../include/Omega/internal/base_types.h"

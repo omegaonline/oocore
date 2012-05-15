@@ -59,7 +59,7 @@ namespace Db
 
 		bool open(int flags);
 
-		typedef OOBase::Stack<OOBase::String,OOBase::LocalAllocator> registry_set_t;
+		typedef OOBase::Set<OOBase::String,OOBase::LocalAllocator> registry_set_t;
 
 		hive_errors create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
 		hive_errors delete_key(const Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);

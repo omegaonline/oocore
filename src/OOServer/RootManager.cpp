@@ -159,7 +159,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 		if (err)
 		{
 			if (err != Db::HIVE_NOTFOUND)
-				LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings' key in the system registry"),false);
+				LOG_ERROR_RETURN(("Failed to open the '/System/Server/Settings' key in the system registry"),false);
 		}
 		else
 		{
@@ -167,7 +167,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 			if ((err = m_registry->get_value(key,name,0,str)) != 0)
 			{
 				if (err != Db::HIVE_NOTFOUND)
-					LOG_ERROR_RETURN(("Failed to find the '/System/Server/Settings/%s' setting in the system registry",name),false);
+					LOG_ERROR_RETURN(("Failed to get the '/System/Server/Settings/%s' setting in the system registry",name),false);
 			}
 			else 
 			{
@@ -554,7 +554,16 @@ void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 {
 	Omega::int64_t key = 0;
 	OOBase::LocalString strSubKey,strLink,strFullKeyName;
-	int err2 = strSubKey.assign("/Environment");
+	int err2 = 0;
+	const char* key_text = (ptrRegistry ? "Local User" : "System/Sandbox");
+	if (!ptrRegistry)
+	{
+		ptrRegistry = m_registry;
+		err2 = strSubKey.assign("/System/Sandbox/Environment");
+	}
+	else
+		err2 = strSubKey.assign("/Environment");
+
 	if (err2)
 		LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
 	else
@@ -563,14 +572,14 @@ void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 		if (err)
 		{
 			if (err != Db::HIVE_NOTFOUND)
-				LOG_ERROR(("Failed to find the '/Local User/Environment' key in the user registry"));
+				LOG_ERROR(("Failed to open the '/%s/Environment' key in the user registry",key_text));
 		}
 		else
 		{
 			Db::Hive::registry_set_t names;
 			err = ptrRegistry->enum_values(key,0,names);
 			if (err)
-				LOG_ERROR(("Failed to enumerate the '/Local User/Environment' values in the user registry"));
+				LOG_ERROR(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text));
 			else
 			{
 				OOBase::String strName;
@@ -613,38 +622,9 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),0);
 
 	UserProcess process;
-	process.m_ptrProcess = platform_spawn(strAppName,uid,session_id,strPipe,channel_id,ptrMC,bAgain);
-	if (!process.m_ptrProcess)
-		return 0;
-
 	process.m_ptrRegistry = ptrRegistry;
 	process.m_strPipe = strPipe;
-
-	// Init the registry, if necessary
-	bool bOk = true;
-	if (session_id && !process.m_ptrRegistry)
-	{
-		bOk = false;
-
-		OOBase::String strRegPath, strUsersPath;
-		if (!get_config_arg("regdb_path",strRegPath))
-			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),0);
-
-		get_config_arg("users_path",strUsersPath);
-
-		OOBase::LocalString strHive;
-		if (process.m_ptrProcess->GetRegistryHive(strRegPath,strUsersPath,strHive))
-		{
-			// Create a new database
-			process.m_ptrRegistry = new (std::nothrow) Db::Hive(this,strHive.c_str());
-			if (!process.m_ptrRegistry)
-				LOG_ERROR(("Out of memory"));
-			else
-				bOk = process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE);
-		}
-	}
-
-	if (!bOk)
+	if (!platform_spawn(strAppName,uid,session_id,process,channel_id,ptrMC,bAgain))
 		return 0;
 
 	// Insert the data into the process map...
@@ -688,7 +668,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
-		LOG_ERROR_RETURN(("Out of memory"),0);
+		LOG_ERROR_RETURN(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()),0);
 
 	Omega::uint32_t channel_id = register_channel(ptrMC,0);
 	if (!channel_id)

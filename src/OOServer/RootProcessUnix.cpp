@@ -58,7 +58,6 @@ namespace
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		OOBase::String m_sid;
@@ -82,6 +81,112 @@ namespace
 
 		_exit(127);
 	}
+
+	bool get_registry_hive(uid_t uid, OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+	{
+		int err = 0;
+		OOBase::POSIX::pw_info pw(uid);
+		if (!pw)
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
+
+		bool bAddDot = false;
+		if (strUsersDir.empty())
+		{
+			OOBase::LocalString strHome;
+			err = strHome.assign(pw->pw_dir);
+			if (err)
+				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+			if (strHome.empty())
+				strHome.getenv("HOME");
+
+			if (!strHome.empty())
+			{
+				bAddDot = true;
+				err = strUsersDir.assign(strHome.c_str());
+				if (!err && strHome[strHome.length()-1] != '/')
+					err = strHome.append("/",1);
+			}
+			else
+				err = strUsersDir.concat(strSysDir.c_str(),"users/");
+
+			if (err)
+				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+		}
+
+		if (bAddDot)
+		{
+			if ((err = strHive.concat(strUsersDir.c_str(),".omegaonline.regdb")) != 0)
+				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+		}
+		else
+		{
+			if ((err = strHive.printf("%s%s.regdb",strUsersDir.c_str(),pw->pw_name)) != 0)
+				LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
+		}
+
+		LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
+
+		// Check hive exists... if it doesn't copy user_template.regdb and chown/chmod correctly
+		OOBase::POSIX::SmartFD fd_to(OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR));
+		if (fd_to == -1)
+		{
+			if (errno != EEXIST)
+				LOG_ERROR_RETURN(("Failed to open registry hive: '%s' %s",strHive.c_str(),OOBase::system_error_text(errno)),false);
+		}
+		else
+		{
+			// If we get here, then we have a brand new file...
+			if ((err = strSysDir.append("user_template.regdb")) != 0)
+				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+
+			OOBase::POSIX::SmartFD fd_from(OOBase::POSIX::open(strSysDir.c_str(),O_RDONLY));
+			if (fd_from == -1)
+			{
+				err = errno;
+				::unlink(strHive.c_str());
+				LOG_ERROR_RETURN(("Failed to open %s: %s",strSysDir.c_str(),OOBase::system_error_text(err)),false);
+			}
+
+			char buffer[1024] = {0};
+			ssize_t r = 0;
+			do
+			{
+				r = OOBase::POSIX::read(fd_from,buffer,sizeof(buffer));
+				if (r == -1)
+				{
+					err = errno;
+					::unlink(strHive.c_str());
+					LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
+				}
+
+				if (r > 0)
+				{
+					ssize_t s = OOBase::POSIX::write(fd_to,buffer,r);
+					if (s != r)
+					{
+						if (s != -1)
+							err = EIO;
+						else
+							err = errno;
+
+						::unlink(strHive.c_str());
+						LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
+					}
+				}
+			} while (r != 0);
+
+			if (chown(strHive.c_str(),uid,pw->pw_gid) == -1)
+			{
+				err = errno;
+				::unlink(strHive.c_str());
+				LOG_ERROR_RETURN(("Failed to set file owner: %s",OOBase::system_error_text(err)),false);
+			}
+		}
+
+		return true;
+	}
+
 }
 
 RootProcessUnix::RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
@@ -340,111 +445,42 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 	return (m_uid == uid);
 }
 
-bool RootProcessUnix::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
-	int err = 0;
-	OOBase::POSIX::pw_info pw(m_uid);
-	if (!pw)
-		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
-
-	bool bAddDot = false;
-	if (strUsersDir.empty())
+	// Init the registry, if necessary
+	if (session_id && !process.m_ptrRegistry)
 	{
-		OOBase::LocalString strHome;
-		strHome.getenv("HOME");
-		if (!strHome.empty())
-		{
-			bAddDot = true;
-			err = strUsersDir.assign(strHome.c_str());
-			if (!err && strHome[strHome.length()-1] != '/')
-				err = strHome.append("/",1);
-		}
-		else
-			err = strUsersDir.concat(strSysDir.c_str(),"users/");
+		OOBase::String strRegPath, strUsersPath;
+		if (!get_config_arg("regdb_path",strRegPath))
+			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-		if (err)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+		get_config_arg("users_path",strUsersPath);
+
+		OOBase::LocalString strHive;
+		if (!get_registry_hive(uid,strRegPath,strUsersPath,strHive))
+			return false;
+
+		// Create a new database
+		process.m_ptrRegistry = new (std::nothrow) Db::Hive(this,strHive.c_str());
+		if (!process.m_ptrRegistry)
+			LOG_ERROR_RETURN(("Failed to allocate hive: %s",OOBase::system_error_text()),false);
+
+		if (!process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE))
+			return false;
 	}
 
-	if (bAddDot)
-	{
-		if ((err = strHive.concat(strUsersDir.c_str(),".omegaonline.regdb")) != 0)
-			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
-	}
-	else
-	{
-		if ((err = strHive.printf("%s%s.regdb",strUsersDir.c_str(),pw->pw_name)) != 0)
-			LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
-	}
+	// Get the environment settings
+	OOBase::Set<OOBase::String,OOBase::LocalAllocator> setEnv,setSysEnv;
+	int err = OOBase::Environment::get_current(setSysEnv);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-	LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
+	load_user_env(process.m_ptrRegistry,setEnv);
 
-	// Check hive exists... if it doesn't copy user_template.regdb and chown/chmod correctly
-	OOBase::POSIX::SmartFD fd_to(OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR));
-	if (fd_to == -1)
-	{
-		if (errno != EEXIST)
-			LOG_ERROR_RETURN(("Failed to open registry hive: '%s' %s",strHive.c_str(),OOBase::system_error_text(errno)),false);
-	}
-	else
-	{
-		// If we get here, then we have a brand new file...
-		if ((err = strSysDir.append("user_template.regdb")) != 0)
-			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
-
-		OOBase::POSIX::SmartFD fd_from(OOBase::POSIX::open(strSysDir.c_str(),O_RDONLY));
-		if (fd_from == -1)
-		{
-			err = errno;
-			::unlink(strHive.c_str());
-			LOG_ERROR_RETURN(("Failed to open %s: %s",strSysDir.c_str(),OOBase::system_error_text(err)),false);
-		}
-
-		char buffer[1024] = {0};
-		ssize_t r = 0;
-		do
-		{
-			r = OOBase::POSIX::read(fd_from,buffer,sizeof(buffer));
-			if (r == -1)
-			{
-				err = errno;
-				::unlink(strHive.c_str());
-				LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
-			}
-
-			if (r > 0)
-			{
-				ssize_t s = OOBase::POSIX::write(fd_to,buffer,r);
-				if (s != r)
-				{
-					if (s != -1)
-						err = EIO;
-					else
-						err = errno;
-
-					::unlink(strHive.c_str());
-					LOG_ERROR_RETURN(("Failed to copy file contents: %s",OOBase::system_error_text(err)),false);
-				}
-			}
-		} while (r != 0);
-
-		if (chown(strHive.c_str(),m_uid,pw->pw_gid) == -1)
-		{
-			err = errno;
-			::unlink(strHive.c_str());
-			LOG_ERROR_RETURN(("Failed to set file owner: %s",OOBase::system_error_text(err)),false);
-		}
-	}
-
-	return true;
-}
-
-OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
-{
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::Process>());
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
 
 	// Make sure sockets are closed
 	OOBase::POSIX::SmartFD fds[2];
@@ -452,24 +488,26 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& st
 	fds[1] = fd[1];
 
 	// Add FD_CLOEXEC to fd[0]
-	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
+	err = OOBase::POSIX::set_close_on_exec(fd[0],true);
 	if (err != 0)
-		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
+		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),false);
 
 	// Alloc a new RootProcess
 	RootProcessUnix* pSpawnUnix = new (std::nothrow) RootProcessUnix(uid);
 	if (!pSpawnUnix)
-		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::Process>());
+		LOG_ERROR_RETURN(("Failed to allocate RootProcessUnix: %s",OOBase::system_error_text()),false);
+
+	OOBase::SmartPtr<Root::Process> ptrSpawn(pSpawnUnix);
 
 	err = strAppName.append("oosvruser");
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::Logger::log(OOBase::Logger::Debug,"Spawning user process '%s'",strAppName.c_str());
 
 	// Spawn the process
 	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
-		return OOBase::SmartPtr<Root::Process>();
+		return false;
 
 	// Done with fd[1]
 	fds[1].close();
@@ -477,16 +515,17 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& st
 	// Create an async socket wrapper
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance().attach_local_socket(fd[0],err);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
 	fds[0].detach();
 
 	// Bootstrap the user process...
-	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
+	channel_id = bootstrap_user(ptrSocket,ptrMC,process.m_strPipe);
 	if (!channel_id)
-		return OOBase::SmartPtr<Root::Process>();
+		return false;
 
-	return OOBase::SmartPtr<Root::Process>(pSpawnUnix);
+	process.m_ptrProcess = ptrSpawn;
+	return true;
 }
 
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)

@@ -57,7 +57,6 @@ namespace
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -67,6 +66,63 @@ namespace
 
 		DWORD SpawnFromToken(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
+
+	bool GetRegistryHive(HANDLE hToken, OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+	{
+		int err = 0;
+		if (strUsersDir.empty())
+		{
+			// This does need to be ASCII
+			char szBuf[MAX_PATH] = {0};
+			HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,hToken,SHGFP_TYPE_DEFAULT,szBuf);
+			if FAILED(hr)
+				LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
+
+			if (!PathAppendA(szBuf,"Omega Online"))
+				LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
+
+			if (!PathFileExistsA(szBuf) && !CreateDirectoryA(szBuf,NULL))
+				LOG_ERROR_RETURN(("CreateDirectoryA %s failed: %s",szBuf,OOBase::system_error_text()),false);
+
+			if ((err = strHive.concat(szBuf,"\\user.regdb")) != 0)
+				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+		}
+		else
+		{
+			// Get the names associated with the user SID
+			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
+			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
+
+			DWORD dwErr = OOBase::Win32::GetNameFromToken(hToken,strUserName,strDomainName);
+			if (dwErr != ERROR_SUCCESS)
+				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
+
+			if (!strDomainName)
+				err = strHive.printf("%s%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName));
+			else
+				err = strHive.printf("%s%ls.%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName),static_cast<const wchar_t*>(strDomainName));
+
+			if (err != 0)
+				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+		}
+
+		// Now confirm the file exists, and if it doesn't, copy user_template.regdb
+		if (!PathFileExistsA(strHive.c_str()))
+		{
+			if ((err = strSysDir.append("user_template.regdb")) != 0)
+				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+
+			if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))
+				LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
+
+			::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
+
+			void* ISSUE_11;
+		}
+
+		return true;
+	}
+
 
 	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
 	{
@@ -814,94 +870,69 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool RootProcessWin32::GetRegistryHive(OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
-	int err = 0;
-	if (strUsersDir.empty())
+	// Init the registry, if necessary
+	if (session_id && !process.m_ptrRegistry)
 	{
-		// This does need to be ASCII
-		char szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
-		if FAILED(hr)
-			LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
+		OOBase::String strRegPath, strUsersPath;
+		if (!get_config_arg("regdb_path",strRegPath))
+			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-		if (!PathAppendA(szBuf,"Omega Online"))
-			LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
+		get_config_arg("users_path",strUsersPath);
 
-		if (!PathFileExistsA(szBuf) && !CreateDirectoryA(szBuf,NULL))
-			LOG_ERROR_RETURN(("CreateDirectoryA %s failed: %s",szBuf,OOBase::system_error_text()),false);
+		OOBase::LocalString strHive;
+		if (!GetRegistryHive(uid,strRegPath,strUsersPath,strHive))
+			return false;
 
-		if ((err = strHive.concat(szBuf,"\\user.regdb")) != 0)
-			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
-	}
-	else
-	{
-		// Get the names associated with the user SID
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
+		// Create a new database
+		process.m_ptrRegistry = new (std::nothrow) Db::Hive(this,strHive.c_str());
+		if (!process.m_ptrRegistry)
+			LOG_ERROR_RETURN(("Failed to allocate hive: %s",OOBase::system_error_text()),false);
 
-		DWORD dwErr = OOBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
-		if (dwErr != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
-
-		if (!strDomainName)
-			err = strHive.printf("%s%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName));
-		else
-			err = strHive.printf("%s%ls.%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName),static_cast<const wchar_t*>(strDomainName));
-
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+		if (!process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE))
+			return false;
 	}
 
-	// Now confirm the file exists, and if it doesn't, copy user_template.regdb
-	if (!PathFileExistsA(strHive.c_str()))
-	{
-		if ((err = strSysDir.append("user_template.regdb")) != 0)
-			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+	OOBase::Set<OOBase::String,OOBase::LocalAllocator> setEnv,setSysEnv;
 
-		if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))
-			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
+	int err = OOBase::Environment::get_current(setSysEnv);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-		::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
+	load_user_env(process.m_ptrRegistry,setEnv);
 
-		void* ISSUE_11;
-	}
-
-	return true;
-}
-
-OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::String& strPipe, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
-{
 	// Alloc a new SpawnedProcess
 	RootProcessWin32* pSpawn32 = new (std::nothrow) RootProcessWin32();
-	OOBase::SmartPtr<Root::Process> pSpawn(pSpawn32);
-
 	if (!pSpawn32)
-		LOG_ERROR_RETURN(("Out of memory"),pSpawn);
+		LOG_ERROR_RETURN(("Failed to allocate RootProcessWin32: %s",OOBase::system_error_text()),false);
+
+	OOBase::SmartPtr<Root::Process> ptrSpawn(pSpawn32);
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
 	if (!pSpawn32->Spawn(strAppName,uid,hPipe,session_id == NULL,bAgain))
-		return OOBase::SmartPtr<Root::Process>();
+		return false;
 
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
-		return OOBase::SmartPtr<Root::Process>();
+		return false;
 
 	// Connect up
 	int err = 0;
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
 	hPipe.detach();
 
 	// Bootstrap the user process...
-	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);
+	channel_id = bootstrap_user(ptrSocket,ptrMC,process.m_strPipe);
 	if (!channel_id)
-		return OOBase::SmartPtr<Root::Process>();
+		return false;
 
-	return pSpawn;
+	process.m_ptrProcess = ptrSpawn;
+	return true;
 }
 
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)

@@ -38,6 +38,7 @@
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
+#include <OOBase/Environment.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
 #include <OOBase/BoundedQueue.h>

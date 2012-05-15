@@ -44,8 +44,7 @@
 #include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>
-#include <OOBase/utf8.h>
-#include <OOBase/Socket.h>
+#include <OOBase/Set.h>
 #include <OOBase/String.h>
 #include <OOBase/CmdArgs.h>
 #include <OOBase/SecurityWin32.h>

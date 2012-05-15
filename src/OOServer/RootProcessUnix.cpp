@@ -214,9 +214,9 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 
 		execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
-		//OOBase::LocalString params;
-		//params.printf("--log-file=vallog%d.txt",getpid());
-		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",params.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		//OOBase::LocalString valgrind;
+		//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
+		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
 
 		//OOBase::LocalString gdb;
 		//gdb.printf("run %s --debug",strPipe.c_str());
@@ -443,23 +443,20 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& st
 	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),OOBase::SmartPtr<Root::Process>());
 
+	// Make sure sockets are closed
+	OOBase::POSIX::SmartFD fds[2];
+	fds[0] = fd[0];
+	fds[1] = fd[1];
+
 	// Add FD_CLOEXEC to fd[0]
 	int err = OOBase::POSIX::set_close_on_exec(fd[0],true);
 	if (err != 0)
-	{
-		OOBase::POSIX::close(fd[0]);
-		OOBase::POSIX::close(fd[1]);
 		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
-	}
 
 	// Alloc a new RootProcess
 	RootProcessUnix* pSpawnUnix = new (std::nothrow) RootProcessUnix(uid);
 	if (!pSpawnUnix)
-	{
-		OOBase::POSIX::close(fd[0]);
-		OOBase::POSIX::close(fd[1]);
 		LOG_ERROR_RETURN(("Out of memory"),OOBase::SmartPtr<Root::Process>());
-	}
 
 	err = strAppName.append("oosvruser");
 	if (err != 0)
@@ -469,22 +466,17 @@ OOBase::SmartPtr<Root::Process> Root::Manager::platform_spawn(OOBase::String& st
 
 	// Spawn the process
 	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
-	{
-		OOBase::POSIX::close(fd[0]);
-		OOBase::POSIX::close(fd[1]);
 		return OOBase::SmartPtr<Root::Process>();
-	}
 
 	// Done with fd[1]
-	OOBase::POSIX::close(fd[1]);
+	fds[1].close();
 
 	// Create an async socket wrapper
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance().attach_local_socket(fd[0],err);
 	if (err != 0)
-	{
-		OOBase::POSIX::close(fd[0]);
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOBase::SmartPtr<Root::Process>());
-	}
+
+	fds[0].detach();
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(ptrSocket,ptrMC,strPipe);

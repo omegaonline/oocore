@@ -550,6 +550,57 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	return false;
 }
 
+void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Set<OOBase::String,OOBase::LocalAllocator>& setEnv)
+{
+	Omega::int64_t key = 0;
+	OOBase::LocalString strSubKey,strLink,strFullKeyName;
+	int err2 = strSubKey.assign("/Environment");
+	if (err2)
+		LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
+	else
+	{
+		Db::hive_errors err = ptrRegistry->create_key(0,key,strSubKey,0,0,strLink,strFullKeyName);
+		if (err)
+		{
+			if (err != Db::HIVE_NOTFOUND)
+				LOG_ERROR(("Failed to find the '/Local User/Environment' key in the user registry"));
+		}
+		else
+		{
+			Db::Hive::registry_set_t names;
+			err = ptrRegistry->enum_values(key,0,names);
+			if (err)
+				LOG_ERROR(("Failed to enumerate the '/Local User/Environment' values in the user registry"));
+			else
+			{
+				OOBase::String strName;
+				while (names.pop(&strName))
+				{
+					OOBase::LocalString strVal;
+					err = ptrRegistry->get_value(key,strName.c_str(),0,strVal);
+					if (!err)
+					{
+						err2 = strName.append("=",1);
+						if (!err2)
+							err2 = strName.append(strVal.c_str(),strVal.length());
+						if (err2)
+							LOG_ERROR(("Failed to append strings: %s",OOBase::system_error_text(err2)));
+						else
+						{
+							err2 = setEnv.insert(strName);
+							if (err2)
+							{
+								LOG_ERROR(("Failed to insert environment string: %s",OOBase::system_error_text(err2)));
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Db::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
@@ -559,7 +610,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	// Get the binary path
 	OOBase::String strAppName;
 	if (!get_config_arg("binary_path",strAppName))
-		LOG_ERROR_RETURN(("Failed to find binary_path config arg"),0);
+		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),0);
 
 	UserProcess process;
 	process.m_ptrProcess = platform_spawn(strAppName,uid,session_id,strPipe,channel_id,ptrMC,bAgain);
@@ -609,7 +660,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		{
 			if (m_mapUserProcesses.at(i)->m_ptrProcess->IsSameLogin(uid,session_id))
 			{
-				channel_closed(channel_id,0);
+				ptrMC->shutdown();
 				return *m_mapUserProcesses.key_at(i);
 			}
 		}
@@ -618,7 +669,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	int err = m_mapUserProcesses.insert(channel_id,process);
 	if (err != 0)
 	{
-		channel_closed(channel_id,0);
+		ptrMC->shutdown();
 		LOG_ERROR_RETURN(("Failed to insert into map: %s",OOBase::system_error_text(err)),0);
 	}
 
@@ -791,4 +842,3 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 		}
 	}
 }
-

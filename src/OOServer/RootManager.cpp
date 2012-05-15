@@ -645,10 +645,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	}
 
 	if (!bOk)
-	{
-		ptrMC->shutdown();
 		return 0;
-	}
 
 	// Insert the data into the process map...
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -659,19 +656,13 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
 			if (m_mapUserProcesses.at(i)->m_ptrProcess->IsSameLogin(uid,session_id))
-			{
-				ptrMC->shutdown();
 				return *m_mapUserProcesses.key_at(i);
-			}
 		}
 	}
 
 	int err = m_mapUserProcesses.insert(channel_id,process);
 	if (err != 0)
-	{
-		ptrMC->shutdown();
 		LOG_ERROR_RETURN(("Failed to insert into map: %s",OOBase::system_error_text(err)),0);
-	}
 
 	// Now start the read cycle from ptrMC
 	if ((err = ptrMC->recv()) != 0)

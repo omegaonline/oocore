@@ -81,7 +81,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 						// Start listening for clients
 						if (start_client_acceptor())
 						{
-							OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
+							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
 							ret = EXIT_SUCCESS;
 

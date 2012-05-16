@@ -144,7 +144,7 @@ int User::Manager::run(const char* pszPipe)
 	if (start_request_threads(2) &&
 			connect_root(pszPipe))
 	{
-		OOBase::Logger::log(OOBase::Logger::Debug,APPNAME " started successfully");
+		OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
 		// Wait for stop
 		wait_for_quit();

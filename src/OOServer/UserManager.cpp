@@ -380,6 +380,8 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 #error set security on pipe_name
 #endif
 
+	LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()));
+
 	int err = 0;
 	m_ptrAcceptor = Proactor::instance().accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
 	if (err != 0)

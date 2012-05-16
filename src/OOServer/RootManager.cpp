@@ -623,7 +623,6 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 
 	UserProcess process;
 	process.m_ptrRegistry = ptrRegistry;
-	process.m_strPipe = strPipe;
 	if (!platform_spawn(strAppName,uid,session_id,process,channel_id,ptrMC,bAgain))
 		return 0;
 
@@ -635,8 +634,12 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 	{
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
 		{
-			if (m_mapUserProcesses.at(i)->m_ptrProcess->IsSameLogin(uid,session_id))
+			UserProcess* p = m_mapUserProcesses.at(i);
+			if (p->m_ptrProcess->IsSameLogin(uid,session_id))
+			{
+				strPipe = p->m_strPipe;
 				return *m_mapUserProcesses.key_at(i);
+			}
 		}
 	}
 
@@ -650,6 +653,8 @@ Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid
 		channel_closed(channel_id,0);
 		channel_id = 0;
 	}
+
+	strPipe = process.m_strPipe;
 
 	return channel_id;
 }

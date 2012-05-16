@@ -35,7 +35,7 @@
 #include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Set.h>
-#include <OOBase/utf8.h>
+#include <OOBase/Environment.h>
 #include <OOBase/SecurityWin32.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>

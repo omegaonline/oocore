@@ -28,7 +28,7 @@ namespace OOCore
 	{
 		virtual Omega::Registry::IKey* GetRegistry() = 0;
 		virtual Omega::Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
-		virtual void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, Omega::IObject*& pObject) = 0;
+		virtual void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::IObject*& pObject) = 0;
 		virtual Omega::bool_t HandleRequest(Omega::uint32_t millisecs) = 0;
 		virtual Omega::Remoting::IChannel* OpenRemoteChannel(const Omega::string_t& strEndpoint) = 0;
 		virtual Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink) = 0;
@@ -55,7 +55,7 @@ OMEGA_DEFINE_INTERFACE
 
 	OMEGA_METHOD(Registry::IKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
-	OMEGA_METHOD_VOID(LaunchObjectApp,6,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(in),uint32_t,envc,(in)(size_is(envc)),const Omega::string_t*,envp,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(LaunchObjectApp,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,millisecs))
 	OMEGA_METHOD(Remoting::IChannel*,OpenRemoteChannel,1,((in),const string_t&,strEndpoint))
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))

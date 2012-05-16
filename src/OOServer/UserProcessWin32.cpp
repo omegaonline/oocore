@@ -41,7 +41,7 @@ namespace
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 		virtual void kill();
 
-		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, OOBase::RefPtr<OOBase::Buffer>& env_block);
+		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, bool is_surrogate, OOBase::RefPtr<OOBase::Buffer>& env_block);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
@@ -127,7 +127,7 @@ bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
 }
 
-User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const Omega::string_t& strExeName, bool is_surrogate, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
 	// Copy and widen to UNICODE
 	OOBase::Set<OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>,OOBase::LocalAllocator> wenv;
@@ -170,11 +170,11 @@ User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Se
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 	// Do a ShellExecute style lookup for the actual thing to call..
-	ptrProcess->exec(ShellParse(to_wchar_t(strExeName)),env_block);
+	ptrProcess->exec(ShellParse(to_wchar_t(strExeName)),is_surrgoate,env_block);
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, OOBase::RefPtr<OOBase::Buffer>& env_block)
+void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, bool is_surrogate, OOBase::RefPtr<OOBase::Buffer>& env_block)
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 

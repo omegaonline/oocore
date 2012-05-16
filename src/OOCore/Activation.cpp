@@ -91,32 +91,6 @@ namespace
 		wsz[len] = L'\0';
 		return wsz;
 	}
-
-	string_t from_wchar_t(const wchar_t* wstr)
-	{
-		string_t ret;
-		char szBuf[1024] = {0};
-		int len = WideCharToMultiByte(CP_UTF8,0,wstr,-1,szBuf,sizeof(szBuf)-1,NULL,NULL);
-		if (len != 0)
-			ret = string_t(szBuf,len);
-		else
-		{
-			DWORD dwErr = GetLastError();
-			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				OMEGA_THROW(dwErr);
-		
-			len = WideCharToMultiByte(CP_UTF8,0,wstr,-1,NULL,0,NULL,NULL);
-			char* sz = static_cast<char*>(OOBase::LocalAllocator::allocate(len + 1));
-			if (!sz)
-				OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-			len = WideCharToMultiByte(CP_UTF8,0,wstr,-1,sz,len,NULL,NULL);
-			string_t(szBuf,len);
-			OOBase::LocalAllocator::free(sz);
-		}
-		
-		return ret;
-	}
 #endif
 
 	bool IsInvalidPath(const string_t& strPath)
@@ -133,49 +107,6 @@ namespace
 	{
 		ObjectPtr<Registry::IKey> ptrObjects = ObjectPtr<Registry::IOverlayKeyFactory>(Registry::OID_OverlayKeyFactory)->Overlay(string_t::constant("Local User/Objects"),string_t::constant("All Users/Objects"));
 		return ptrObjects->OpenKey(strSubKey);
-	}
-
-	IObject* LoadObjectApp(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
-	{
-		uint32_t envc = 0;
-		OOBase::SmartPtr<string_t,OOBase::ArrayDeleteDestructor<string_t> > envp;
-
-#if defined(_WIN32)
-		const wchar_t* env = GetEnvironmentStringsW();
-		for (const wchar_t* e=env;e != NULL && *e != L'\0';++envc)
-			e += wcslen(e)+1;
-
-		if (envc)
-		{
-			envp = new (OOCore::throwing) string_t[envc];
-
-			size_t i = 0;
-			for (const wchar_t* e=env;e != NULL && *e != L'\0';++i)
-			{
-				envp[i] = from_wchar_t(e);
-				e += wcslen(e)+1;
-			}
-		}
-#elif defined(HAVE_UNISTD_H)
-		for (char** e=environ;*e != NULL;++e)
-			++envc;
-
-		if (envc)
-		{
-			envp = new (OOCore::throwing) string_t[envc];
-
-			size_t i = 0;
-			for (char** e=environ;*e != NULL;++e)
-				envp[i++] = string_t(*e);
-		}
-#else
-#error Fix me!
-#endif
-
-		// Ask the IPS to run it...
-		IObject* pObject = NULL;
-		OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,flags,envc,envp,pObject);
-		return pObject;
 	}
 
 	guid_t NameToOid(const string_t& strObjectName)
@@ -198,10 +129,15 @@ namespace
 		if (flags & Activation::OwnSurrogate)
 			strOid = string_t::constant("Omega.SingleSurrogate");
 
-		ObjectPtr<OOCore::ISurrogate> ptrSurrogate = static_cast<OOCore::ISurrogate*>(LoadObjectApp(NameToOid(strOid),flags,OMEGA_GUIDOF(OOCore::ISurrogate)));
-
 		IObject* pObject = NULL;
-		ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
+		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(OOCore::ISurrogate),flags,pObject);
+		if (pObject)
+		{
+			ObjectPtr<OOCore::ISurrogate> ptrSurrogate = static_cast<OOCore::ISurrogate*>(pObject);
+
+			pObject = NULL;
+			ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
+		}
 		return pObject;
 	}
 
@@ -240,7 +176,9 @@ namespace
 			ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
 		}
 
-		return LoadObjectApp(oid,flags,iid);
+		IObject* pObject = NULL;
+		OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,flags,pObject);
+		return pObject;
 	}
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)

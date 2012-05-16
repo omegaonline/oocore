@@ -41,7 +41,7 @@ namespace
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 		virtual void kill();
 
-		void exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
+		void exec(const Omega::string_t& strExeName, char** env);
 
 	private:
 		pid_t m_pid;
@@ -70,18 +70,21 @@ bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 	return (strPath[0] != '/' && strPath.Find('/') != Omega::string_t::npos);
 }
 
-User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+User::Process* User::Process::exec(const Omega::string_t& strExeName, bool /*is_surrogate*/, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	ptrProcess->exec(strExeName,env);
+	ptrProcess->exec(strExeName,OOBase::Environment::get_envp(tabEnv));
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)
+void UserProcessUnix::exec(const Omega::string_t& strExeName, char** env)
 {
+	// Create a pipe() pair, and wait for the write end to close in the child
+	void* TODO;
+
 	pid_t pid = fork();
 	if (pid < 0)
 		OMEGA_THROW(errno);
@@ -101,12 +104,8 @@ void UserProcessUnix::exec(const Omega::string_t& strExeName, OOBase::Set<Omega:
 	if (err)
 		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 
-	// Sort out environment block and split args
-
-	// Update PWD?
-
-	// Use execve()
-	void* TODO;
+	// Reset the environment
+	::environ = env;
 
 	// Just use the system() call
 	err = system(strExeName.c_str());

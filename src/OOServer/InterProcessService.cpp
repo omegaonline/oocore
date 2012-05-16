@@ -85,8 +85,6 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 	string_t strProcess;
 	m_pManager->get_root_config_arg("binary_path",strProcess);
 
-	void* ISSUE_8; // Surrogates!!
-
 #if defined(_WIN32)
 	strProcess += "OOSvrHost.exe";
 #else
@@ -105,117 +103,139 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 	return strProcess;
 }
 
-void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, Omega::uint32_t envc, const Omega::string_t* envp, IObject*& pObject)
+void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, IObject*& pObject)
 {
 	// Forward to sandbox if required
 	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
+		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
+
+	// The timeout needs to be related to the request timeout...
+	OOBase::Timeout timeout(15,0);
+	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
+	if (ptrCC)
 	{
-		// Don't pass env vars to sandbox!
-		m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,0,NULL,pObject);
+		uint32_t msecs = ptrCC->Timeout();
+		if (msecs != 0xFFFFFFFF)
+			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
 	}
-	else
+
+	// Find the OID key...
+	ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
+	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
+
+	bool is_surrogate = false;
+	string_t strProcess;
+	if ((oid == OOCore::OID_Surrogate || oid == OOCore::OID_SingleSurrogate) && !ptrKey->IsKey(oid.ToString()))
 	{
-		// The timeout needs to be related to the request timeout...
-		OOBase::Timeout timeout(15,0);
-		ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-		if (ptrCC)
+		strProcess = GetSurrogateProcess(oid);
+		is_surrogate = !strProcess.IsEmpty();
+	}
+
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
+	if (strProcess.IsEmpty())
+	{
+		// Find the name of the executable to run...
+		ptrKey = ptrKey->OpenKey(oid.ToString());
+		string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
+		ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
+		strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
+		if (strProcess.IsEmpty() || User::Process::is_invalid_path(strProcess))
+			throw IAccessDeniedException::Create(string_t::constant("Invalid path \"{0}\" in application activation registry value.") % strProcess);
+
+		if (ptrKey->IsKey(string_t::constant("Environment")))
 		{
-			uint32_t msecs = ptrCC->Timeout();
-			if (msecs != 0xFFFFFFFF)
-				timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
-		}
-
-		// Find the OID key...
-		ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
-		ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
-
-		string_t strProcess;
-		if ((oid == OOCore::OID_Surrogate || oid == OOCore::OID_SingleSurrogate) && !ptrKey->IsKey(oid.ToString()))
-			strProcess = GetSurrogateProcess(oid);
-
-		if (strProcess.IsEmpty())
-		{
-			// Find the name of the executable to run...
-			ptrKey = ptrKey->OpenKey(oid.ToString());
-			string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
-			ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
-			strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
-			if (strProcess.IsEmpty() || User::Process::is_relative_path(strProcess))
-				throw IAccessDeniedException::Create(string_t::constant("Relative path \"{0}\" in application activation registry value.") % strProcess);
-		}
-
-		// Build the environment set
-		OOBase::Set<string_t,OOBase::LocalAllocator> setEnv;
-		for (uint32_t i = 0; i < envc; ++i)
-		{
-			int err = setEnv.insert(envp[i]);
-			if (err != 0)
-				OMEGA_THROW(err);
-		}
-
-		// Check for remote activation
-		bool remote_activation = false;
-		if (flags & Activation::RemoteActivation)
-			remote_activation = true;
-
-		OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
-		if (!guard.acquire(timeout))
-			throw ITimeoutException::Create();
-
-		OOBase::SmartPtr<User::Process> ptrProcess;
-		if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
-		{
-			m_mapInProgress.remove(strProcess);
-			ptrProcess = NULL;
-		}
-
-		if (!ptrProcess)
-		{
-			OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
-
-			// Create a new process
-			ptrProcess = User::Process::exec(strProcess,setEnv);
-
-			int err = m_mapInProgress.insert(strProcess,ptrProcess);
-			if (err != 0)
-				OMEGA_THROW(err);
-		}
-
-		guard.release();
-
-		// Wait for the process to start and register its parts...
-		int exit_code = 0;
-		for (unsigned int msecs = 1;!timeout.has_expired();msecs = 1 << msecs)
-		{
-			// Check the process is still alive
-			if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))
-				break;
-
-			m_ptrROT->GetObject(oid,iid,pObject,remote_activation);
-			if (pObject)
-				break;
-		}
-
-		// Remove from the map
-		guard.acquire();
-		m_mapInProgress.remove(strProcess);
-		guard.release();
-
-		if (!pObject)
-		{
-			if (timeout.has_expired())
+			ptrKey = ptrKey->OpenKey(string_t::constant("Environment"));
+			Omega::Registry::IKey::string_set_t setVals = ptrKey->EnumValues();
+			for (Omega::Registry::IKey::string_set_t::const_iterator i=setVals.begin();i!=setVals.end();++i)
 			{
-				OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
+				OOBase::String strKey,strVal;
+				int err = strKey.assign(i->c_str(),i->Length());
+				if (err)
+					OMEGA_THROW(err);
 
-				ptrProcess->kill();
+				string_t val = ptrKey->GetValue(*i).cast<string_t>();
+				err = strVal.assign(val.c_str(),val.Length());
+				if (!err)
+					err = tabEnv.insert(strKey,strVal);
 
-				throw ITimeoutException::Create();
+				if (err)
+					OMEGA_THROW(err);
 			}
-
-			OOBase::Logger::log(OOBase::Logger::Debug,"Process %s exited with code %d",strProcess.c_str(),exit_code);
-
-			throw INotFoundException::Create(string_t::constant("The process '{0}' terminated unexpectedly with exit code {1}") % strProcess % exit_code);
 		}
+	}
+
+	// Get the environment settings
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabSysEnv;
+	int err = OOBase::Environment::get_current(tabSysEnv);
+	if (err)
+		OMEGA_THROW(err);
+
+	err = OOBase::Environment::substitute(tabEnv,tabSysEnv);
+	if (err)
+		OMEGA_THROW(err);
+
+	// Check for remote activation
+	bool remote_activation = false;
+	if (flags & Activation::RemoteActivation)
+		remote_activation = true;
+
+	OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
+	if (!guard.acquire(timeout))
+		throw ITimeoutException::Create();
+
+	OOBase::SmartPtr<User::Process> ptrProcess;
+	if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
+	{
+		m_mapInProgress.remove(strProcess);
+		ptrProcess = NULL;
+	}
+
+	if (!ptrProcess)
+	{
+		OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
+
+		// Create a new process
+		ptrProcess = User::Process::exec(strProcess,is_surrogate,tabEnv);
+
+		int err = m_mapInProgress.insert(strProcess,ptrProcess);
+		if (err != 0)
+			OMEGA_THROW(err);
+	}
+
+	guard.release();
+
+	// Wait for the process to start and register its parts...
+	int exit_code = 0;
+	for (unsigned int msecs = 1;!timeout.has_expired();msecs = 1 << msecs)
+	{
+		// Check the process is still alive
+		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))
+			break;
+
+		m_ptrROT->GetObject(oid,iid,pObject,remote_activation);
+		if (pObject)
+			break;
+	}
+
+	// Remove from the map
+	guard.acquire();
+	m_mapInProgress.remove(strProcess);
+	guard.release();
+
+	if (!pObject)
+	{
+		if (timeout.has_expired())
+		{
+			OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
+
+			ptrProcess->kill();
+
+			throw ITimeoutException::Create();
+		}
+
+		OOBase::Logger::log(OOBase::Logger::Debug,"Process %s exited with code %d",strProcess.c_str(),exit_code);
+
+		throw INotFoundException::Create(string_t::constant("The process '{0}' terminated unexpectedly with exit code {1}") % strProcess % exit_code);
 	}
 }
 

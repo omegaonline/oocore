@@ -52,7 +52,7 @@ namespace
 		RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
 		virtual ~RootProcessUnix();
 
-		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain);
+		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
 
 		bool IsRunning() const;
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -228,7 +228,7 @@ RootProcessUnix::~RootProcessUnix()
 	}
 }
 
-bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain)
+bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
 {
 	m_bSandbox = (session_id == NULL);
 	int err = m_sid.assign(session_id);
@@ -317,22 +317,24 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 		else
 			strTitle.concat("oosvruser:",m_sid.c_str());
 
-		execlp("xterm","xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
 		//OOBase::LocalString valgrind;
 		//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
-		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",(char*)NULL);
+		//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
 		//OOBase::LocalString gdb;
 		//gdb.printf("run %s --debug",strPipe.c_str());
-		//execlp("xterm","xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(),(char*)NULL);
+		//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(), NULL };
+
+		execvpe(argv[0],(char* const*)argv,envp);
 	}
 
 	const char* argv[] = { "oosvruser", strPipe.c_str(), NULL, NULL };
 	if (Root::is_debug())
 		argv[2] = "--debug";
 
-	execv(strAppName.c_str(),(char* const*)argv);
+	execve(strAppName.c_str(),(char* const*)argv,envp);
 
 	err = errno;
 	exit_msg("Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
@@ -447,6 +449,10 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
+	int err = strAppName.append("oosvruser");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
 	// Init the registry, if necessary
 	if (session_id && !process.m_ptrRegistry)
 	{
@@ -470,12 +476,10 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	}
 
 	// Get the environment settings
-	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv,tabSysEnv;
-	int err = OOBase::Environment::get_current(tabSysEnv);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
+	get_user_env(process.m_ptrRegistry,tabEnv);
 
-	load_user_env(process.m_ptrRegistry,tabEnv);
+	OOBase::SmartPtr<char*,OOBase::LocalAllocator> ptrEnv = OOBase::Environment::get_envp(tabEnv);
 
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};
@@ -492,6 +496,8 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	if (err != 0)
 		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),false);
 
+	OOBase::Logger::log(OOBase::Logger::Debug,"Starting user process '%s'",strAppName.c_str());
+
 	// Alloc a new RootProcess
 	RootProcessUnix* pSpawnUnix = new (std::nothrow) RootProcessUnix(uid);
 	if (!pSpawnUnix)
@@ -499,14 +505,8 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 
 	OOBase::SmartPtr<Root::Process> ptrSpawn(pSpawnUnix);
 
-	err = strAppName.append("oosvruser");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
-	OOBase::Logger::log(OOBase::Logger::Debug,"Spawning user process '%s'",strAppName.c_str());
-
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain))
+	if (!pSpawnUnix->Spawn(strAppName,session_id,fd[1],bAgain,ptrEnv))
 		return false;
 
 	// Done with fd[1]

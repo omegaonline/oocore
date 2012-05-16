@@ -563,19 +563,6 @@ RootProcessWin32::~RootProcessWin32()
 
 DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
-	int err = strAppName.append("OOSvrUser.exe");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
-
-	if (strAppName.length() >= MAX_PATH)
-	{
-		// Prefix with '\\?\'
-		if ((err = strAppName.concat("\\\\?\\",strAppName.c_str())) != 0)
-			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
-	}
-
-	OOBase::Logger::log(OOBase::Logger::Information,"Using OOSvrUser: %s",strAppName.c_str());
-
 	// Create the named pipe
 	OOBase::LocalString strPipe;
 	hPipe = CreatePipe(hToken,strPipe);
@@ -585,6 +572,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::system_error_text(dwErr)),dwErr);
 	}
 
+	int err = 0;
 	OOBase::LocalString strCmdLine;
 	if (!strAppName.empty() && strAppName[0] != '"' && strAppName.find(' ') != strAppName.npos)
 	{
@@ -872,6 +860,17 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
+	int err = strAppName.append("OOSvrUser.exe");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
+
+	if (strAppName.length() >= MAX_PATH)
+	{
+		// Prefix with '\\?\'
+		if ((err = strAppName.concat("\\\\?\\",strAppName.c_str())) != 0)
+			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),err);
+	}
+
 	// Init the registry, if necessary
 	if (session_id && !process.m_ptrRegistry)
 	{
@@ -894,13 +893,11 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 			return false;
 	}
 
-	OOBase::Set<OOBase::String,OOBase::LocalAllocator> setEnv,setSysEnv;
+	// Get the environment settings
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
+	get_user_env(process.m_ptrRegistry,tabEnv);
 
-	int err = OOBase::Environment::get_current(setSysEnv);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
-
-	load_user_env(process.m_ptrRegistry,setEnv);
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
 
 	// Alloc a new SpawnedProcess
 	RootProcessWin32* pSpawn32 = new (std::nothrow) RootProcessWin32();
@@ -919,7 +916,6 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 		return false;
 
 	// Connect up
-	int err = 0;
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);

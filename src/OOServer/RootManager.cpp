@@ -609,6 +609,21 @@ void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	}
 }
 
+void Root::Manager::get_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+{
+	// Get the environment settings
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabSysEnv;
+	int err = OOBase::Environment::get_current(tabSysEnv);
+	if (err)
+		LOG_ERROR(("Failed to load environment variables: %s",OOBase::system_error_text(err)));
+
+	load_user_env(ptrRegistry,tabEnv);
+
+	err = OOBase::Environment::substitute(tabEnv,tabSysEnv);
+	if (err)
+		LOG_ERROR(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)));
+}
+
 Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Db::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn

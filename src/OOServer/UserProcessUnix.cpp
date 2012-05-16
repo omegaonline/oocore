@@ -64,9 +64,10 @@ namespace
 	}
 }
 
-bool User::Process::is_relative_path(const Omega::string_t& strPath)
+bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
-	return (strPath[0] != '/');
+	// Valid paths can contain PATH-based paths
+	return (strPath[0] != '/' && strPath.Find('/') != Omega::string_t::npos);
 }
 
 User::Process* User::Process::exec(const Omega::string_t& strExeName, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env)

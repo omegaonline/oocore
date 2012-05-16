@@ -119,12 +119,13 @@ namespace
 	}
 #endif
 
-	bool IsRelativePath(const string_t& strPath)
+	bool IsInvalidPath(const string_t& strPath)
 	{
 #if defined(_WIN32)
 		return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
 #else
-		return (strPath[0] != '/');
+		// Allow PATH-based paths
+		return (strPath[0] != '/' && strPath.Find('/') != string_t::npos);
 #endif
 	}
 
@@ -214,8 +215,8 @@ namespace
 		if (ptrOidKey->IsValue(Omega::string_t::constant("Library")))
 		{
 			strLib = ptrOidKey->GetValue(Omega::string_t::constant("Library")).cast<string_t>();
-			if (strLib.IsEmpty() || IsRelativePath(strLib))
-				throw IAccessDeniedException::Create(OOCore::get_text("Relative path \"{0}\" in library registry value.") % strLib);
+			if (strLib.IsEmpty() || IsInvalidPath(strLib))
+				throw IAccessDeniedException::Create(OOCore::get_text("Invalid path \"{0}\" in library registry value.") % strLib);
 		}
 		
 		if (!strLib.IsEmpty())

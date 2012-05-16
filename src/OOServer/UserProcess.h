@@ -34,7 +34,7 @@ namespace User
 		virtual void kill() = 0;
 
 		static Process* exec(const Omega::string_t& strProcess, OOBase::Set<Omega::string_t,OOBase::LocalAllocator>& env);
-		static bool is_relative_path(const Omega::string_t& strPath);
+		static bool is_invalid_path(const Omega::string_t& strPath);
 
 	protected:
 		Process() {}

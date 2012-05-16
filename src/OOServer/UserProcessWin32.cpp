@@ -122,7 +122,7 @@ namespace
 	}
 }
 
-bool User::Process::is_relative_path(const Omega::string_t& strPath)
+bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
 	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
 }

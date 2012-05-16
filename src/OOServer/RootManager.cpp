@@ -550,7 +550,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	return false;
 }
 
-void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Set<OOBase::String,OOBase::LocalAllocator>& setEnv)
+void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
 	Omega::int64_t key = 0;
 	OOBase::LocalString strSubKey,strLink,strFullKeyName;
@@ -589,14 +589,13 @@ void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 					err = ptrRegistry->get_value(key,strName.c_str(),0,strVal);
 					if (!err)
 					{
-						err2 = strName.append("=",1);
-						if (!err2)
-							err2 = strName.append(strVal.c_str(),strVal.length());
+						OOBase::String strValue;
+						err2 = strValue.assign(strVal.c_str(),strVal.length());
 						if (err2)
-							LOG_ERROR(("Failed to append strings: %s",OOBase::system_error_text(err2)));
+							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
 						else
 						{
-							err2 = setEnv.insert(strName);
+							err2 = tabEnv.insert(strName,strValue);
 							if (err2)
 							{
 								LOG_ERROR(("Failed to insert environment string: %s",OOBase::system_error_text(err2)));

@@ -470,12 +470,12 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	}
 
 	// Get the environment settings
-	OOBase::Set<OOBase::String,OOBase::LocalAllocator> setEnv,setSysEnv;
-	int err = OOBase::Environment::get_current(setSysEnv);
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv,tabSysEnv;
+	int err = OOBase::Environment::get_current(tabSysEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-	load_user_env(process.m_ptrRegistry,setEnv);
+	load_user_env(process.m_ptrRegistry,tabEnv);
 
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};

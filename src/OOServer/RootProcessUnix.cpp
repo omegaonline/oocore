@@ -187,6 +187,19 @@ namespace
 		return true;
 	}
 
+	pid_t safe_wait_pid(pid_t pid, int* status, int options)
+	{
+		for (;;)
+		{
+			pid_t ret = ::waitpid(pid,status,options);
+			if (ret != -1)
+				return ret;
+
+			if (errno != EINTR)
+				LOG_ERROR_RETURN(("waitpid() failed: %s",OOBase::system_error_text()),-1);
+		}
+	}
+
 }
 
 RootProcessUnix::RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
@@ -207,7 +220,7 @@ RootProcessUnix::~RootProcessUnix()
 			for (int i=0; i<5; ++i)
 			{
 				int ec;
-				retv = waitpid(m_pid,&ec,WNOHANG);
+				retv = safe_wait_pid(m_pid,&ec,WNOHANG);
 				if (retv != 0)
 					break;
 
@@ -218,7 +231,7 @@ RootProcessUnix::~RootProcessUnix()
 		else
 		{
 			int ec;
-			retv = waitpid(m_pid,&ec,0);
+			retv = safe_wait_pid(m_pid,&ec,0);
 		}
 
 		if (retv == 0)
@@ -347,7 +360,7 @@ bool RootProcessUnix::IsRunning() const
 		return false;
 
 	int status = 0;
-	return (waitpid(m_pid,&status,WNOHANG) == 0);
+	return (safe_wait_pid(m_pid,&status,WNOHANG) == 0);
 }
 
 int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
@@ -490,11 +503,6 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	OOBase::POSIX::SmartFD fds[2];
 	fds[0] = fd[0];
 	fds[1] = fd[1];
-
-	// Add FD_CLOEXEC to fd[0]
-	err = OOBase::POSIX::set_close_on_exec(fd[0],true);
-	if (err != 0)
-		LOG_ERROR_RETURN(("set_close_on_exec() failed: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::Logger::log(OOBase::Logger::Debug,"Starting user process '%s'",strAppName.c_str());
 

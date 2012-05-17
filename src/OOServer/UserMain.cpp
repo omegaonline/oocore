@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 		else if (args.find("unknown",strErr))
 			OOBase::Logger::log(OOBase::Logger::Error,"Unknown option %s",strErr.c_str());
 		else
-			OOBase::Logger::log(OOBase::Logger::Error,"Failed to parse comand line: %s",OOBase::system_error_text(err));
+			OOBase::Logger::log(OOBase::Logger::Error,"Failed to parse command line: %s",OOBase::system_error_text(err));
 			
 		return EXIT_FAILURE;
 	}

@@ -57,62 +57,61 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	int ret = EXIT_FAILURE;
 
-	// Loop until we quit
-	for (bool bQuit=false; !bQuit;)
+	// Load the config
+	// Open the root registry
+	if (load_config(cmd_args) && init_database())
 	{
-		ret = EXIT_FAILURE;
-
-		// Load the config
-		// Open the root registry
-		if (load_config(cmd_args) && init_database())
+		// Start the proactor pool
+		int err = m_proactor_pool.run(&run_proactor,NULL,2);
+		if (err)
+			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+		else
 		{
-			// Start the proactor pool
-			int err = m_proactor_pool.run(&run_proactor,NULL,2);
-			if (err)
-				LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
-			else
+			// Start the handler
+			if (start_request_threads(2))
 			{
-				// Start the handler
-				if (start_request_threads(2))
+				// Spawn the sandbox
+				if (spawn_sandbox())
 				{
-					// Spawn the sandbox
-					if (spawn_sandbox())
+					// Start listening for clients
+					if (start_client_acceptor())
 					{
-						// Start listening for clients
-						if (start_client_acceptor())
+						OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
+
+						ret = EXIT_SUCCESS;
+
+						// Wait for quit
+						for (bool bQuit = false;!bQuit;)
 						{
-							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
-
-							ret = EXIT_SUCCESS;
-
-							// Wait for quit
 							bQuit = wait_to_quit();
-
-							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
-
-							// Stop accepting new clients
-							m_client_acceptor = NULL;
+							if (!bQuit)
+							{
+								// Restart services
+								void* TODO;
+							}
 						}
 
-						// Close all channels
-						shutdown_channels();
+						OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
 
-						// Wait for all user processes to terminate
-						m_mapUserProcesses.clear();
+						// Stop accepting new clients
+						m_client_acceptor = NULL;
 					}
+
+					// Close all channels
+					shutdown_channels();
+
+					// Wait for all user processes to terminate
+					m_mapUserProcesses.clear();
 				}
-
-				// Stop the MessageHandler
-				stop_request_threads();
-
-				// Stop any proactor threads
-				Proactor::instance().stop();
-				m_proactor_pool.join();
 			}
-		}
 
-		if (ret == EXIT_FAILURE)
-			break;
+			// Stop the MessageHandler
+			stop_request_threads();
+
+			// Stop any proactor threads
+			Proactor::instance().stop();
+			m_proactor_pool.join();
+		}
 	}
 
 	if (is_debug() && ret != EXIT_SUCCESS)

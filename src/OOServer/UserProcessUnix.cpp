@@ -34,17 +34,22 @@ namespace
 	class UserProcessUnix : public User::Process
 	{
 	public:
-		UserProcessUnix() : m_pid(0)
+		UserProcessUnix() : m_pid(0), m_fd(-1)
 		{}
 
-		virtual bool running();
-		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
-		virtual void kill();
+		~UserProcessUnix()
+		{
+			OOBase::POSIX::close(m_fd);
+		}
 
+		bool running();
+		bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
+		void kill();
 		void exec(const Omega::string_t& strExeName, char** env);
 
 	private:
 		pid_t m_pid;
+		int   m_fd;
 	};
 
 	void exit_msg(const char* fmt, ...)
@@ -61,6 +66,19 @@ namespace
 			OOBase::stderr_write(msg.c_str());
 
 		_exit(127);
+	}
+
+	pid_t safe_wait_pid(pid_t pid, int* status, int options)
+	{
+		for (;;)
+		{
+			pid_t ret = ::waitpid(pid,status,options);
+			if (ret != -1)
+				return ret;
+
+			if (errno != EINTR)
+				OMEGA_THROW(errno);
+		}
 	}
 }
 
@@ -82,25 +100,43 @@ User::Process* User::Process::exec(const Omega::string_t& strExeName, bool /*is_
 
 void UserProcessUnix::exec(const Omega::string_t& strExeName, char** env)
 {
-	// Create a pipe() pair, and wait for the write end to close in the child
-	void* TODO;
+	// Create a pipe() pair, and wait for the child to close the write end
+	int fd[2] = {-1,-1};
+	int err = pipe(fd);
+	if (err)
+		OMEGA_THROW(errno);
+
+	// We want the file to close on exec (during the system() call below)
+	err = OOBase::POSIX::set_close_on_exec(fd[1],true);
+	if (err)
+	{
+		OOBase::POSIX::close(fd[0]);
+		OOBase::POSIX::close(fd[1]);
+		OMEGA_THROW(err);
+	}
 
 	pid_t pid = fork();
 	if (pid < 0)
+	{
+		OOBase::POSIX::close(fd[0]);
+		OOBase::POSIX::close(fd[1]);
 		OMEGA_THROW(errno);
+	}
 
 	if (pid != 0)
 	{
 		// We are the parent
+		OOBase::POSIX::close(fd[1]);
+		m_fd = fd[0];
 		m_pid = pid;
 		return;
 	}
 
-	// We are the child
+	// We are the child...
 
-	// Close all open handles except the standard ones
-	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
-	int err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
+	// Close all open handles except the standard ones and fd[1]
+	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, fd[1] };
+	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
 	if (err)
 		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 
@@ -117,39 +153,56 @@ void UserProcessUnix::exec(const Omega::string_t& strExeName, char** env)
 
 bool UserProcessUnix::running()
 {
-	if (m_pid == 0)
-		return false;
+	if (m_pid != 0)
+	{
+		pid_t retv = safe_wait_pid(m_pid,NULL,WNOHANG);
+		if (retv == 0)
+			return true;
 
-	pid_t retv = waitpid(m_pid,NULL,WNOHANG);
-	if (retv == 0)
-		return true;
+		m_pid = 0;
+	}
 
-	m_pid = 0;
 	return false;
 }
 
 bool UserProcessUnix::wait_for_exit(const OOBase::Timeout& timeout, int& exit_code)
 {
-	if (m_pid == 0)
-		return true;
+	int status = 0;
 
-	while (!timeout.has_expired())
+	::timeval wait = {0};
+	if (!timeout.get_timeval(wait))
+		safe_wait_pid(m_pid,&status,0);
+	else
 	{
-		int status = 0;
-		pid_t retv = waitpid(m_pid,&status,WNOHANG);
-		if (retv != 0)
+		if (wait.tv_sec || wait.tv_usec)
 		{
-			if (WIFEXITED(status))
-				exit_code = WEXITSTATUS(status);
-			else
-				exit_code = -1;
-			return true;
+			fd_set set;
+			FD_ZERO(&set);
+			FD_SET(m_fd,&set);
+
+			for (;;)
+			{
+				int ret = select(m_fd+1,&set,NULL,NULL,&wait);
+				if (ret != -1)
+					break;
+
+				if (errno != EINTR)
+					OMEGA_THROW(errno);
+
+				timeout.get_timeval(wait);
+			}
 		}
 
-		OOBase::Thread::sleep(0);
+		if (safe_wait_pid(m_pid,&status,WNOHANG) == 0)
+			return false;
 	}
 
-	return false;
+	if (WIFEXITED(status))
+		exit_code = WEXITSTATUS(status);
+	else
+		exit_code = -1;
+
+	return true;
 }
 
 void UserProcessUnix::kill()
@@ -159,7 +212,7 @@ void UserProcessUnix::kill()
 		::kill(m_pid,SIGKILL);
 
 		int status = 0;
-		waitpid(m_pid,&status,0);
+		safe_wait_pid(m_pid,&status,0);
 
 		m_pid = 0;
 	}

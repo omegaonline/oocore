@@ -206,7 +206,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	// Wait for the process to start and register its parts...
 	int exit_code = 0;
-	for (unsigned int msecs = 1;!timeout.has_expired();msecs = 1 << msecs)
+	for (unsigned int msecs = 1;!timeout.has_expired();msecs *= 2)
 	{
 		// Check the process is still alive
 		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))

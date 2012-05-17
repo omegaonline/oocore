@@ -124,7 +124,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
 
 	bool is_surrogate = false;
-	string_t strProcess;
+	string_t strProcess,strWorkingDir;
 	if ((oid == OOCore::OID_Surrogate || oid == OOCore::OID_SingleSurrogate) && !ptrKey->IsKey(oid.ToString()))
 	{
 		strProcess = GetSurrogateProcess(oid);
@@ -141,6 +141,9 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
 		if (strProcess.IsEmpty() || User::Process::is_invalid_path(strProcess))
 			throw IAccessDeniedException::Create(string_t::constant("Invalid path \"{0}\" in application activation registry value.") % strProcess);
+
+		if (ptrKey->IsValue(string_t::constant("Directory")))
+			strWorkingDir = ptrKey->GetValue(string_t::constant("Directory")).cast<string_t>();
 
 		if (ptrKey->IsKey(string_t::constant("Environment")))
 		{
@@ -195,7 +198,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
 
 		// Create a new process
-		ptrProcess = User::Process::exec(strProcess,is_surrogate,tabEnv);
+		ptrProcess = User::Process::exec(strProcess,strWorkingDir,is_surrogate,tabEnv);
 
 		int err = m_mapInProgress.insert(strProcess,ptrProcess);
 		if (err != 0)
@@ -203,6 +206,9 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 
 	guard.release();
+
+	// When we have notification support, use a notifier...
+	void* TODO;
 
 	// Wait for the process to start and register its parts...
 	int exit_code = 0;

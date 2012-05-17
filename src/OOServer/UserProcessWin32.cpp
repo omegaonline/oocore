@@ -127,7 +127,7 @@ bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
 }
 
-User::Process* User::Process::exec(const Omega::string_t& strExeName, bool is_surrogate, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+User::Process* User::Process::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_surrogate, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
 	// Copy and widen to UNICODE
 	OOBase::Set<OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>,OOBase::LocalAllocator> wenv;
@@ -168,6 +168,8 @@ User::Process* User::Process::exec(const Omega::string_t& strExeName, bool is_su
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
 	if (!ptrProcess)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+#error FIX ME!
 
 	// Do a ShellExecute style lookup for the actual thing to call..
 	ptrProcess->exec(ShellParse(to_wchar_t(strExeName)),is_surrgoate,env_block);

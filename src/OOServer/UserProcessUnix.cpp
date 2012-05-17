@@ -45,7 +45,7 @@ namespace
 		bool running();
 		bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 		void kill();
-		void exec(const Omega::string_t& strExeName, char** env);
+		void exec(const char* pszExeName, const char* pszWorkingDir, char** env);
 
 	private:
 		pid_t m_pid;
@@ -88,17 +88,17 @@ bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 	return (strPath[0] != '/' && strPath.Find('/') != Omega::string_t::npos);
 }
 
-User::Process* User::Process::exec(const Omega::string_t& strExeName, bool /*is_surrogate*/, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+User::Process* User::Process::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_surrogate*/, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	ptrProcess->exec(strExeName,OOBase::Environment::get_envp(tabEnv));
+	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),OOBase::Environment::get_envp(tabEnv));
 	return ptrProcess.detach();
 }
 
-void UserProcessUnix::exec(const Omega::string_t& strExeName, char** env)
+void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, char** env)
 {
 	// Create a pipe() pair, and wait for the child to close the write end
 	int fd[2] = {-1,-1};
@@ -143,10 +143,18 @@ void UserProcessUnix::exec(const Omega::string_t& strExeName, char** env)
 	// Reset the environment
 	::environ = env;
 
+	// Set cwd
+	if (pszWorkingDir)
+	{
+		int err = ::chdir(pszWorkingDir);
+		if (err)
+			exit_msg("chdir(%s): %s\n",pszWorkingDir,OOBase::system_error_text(err));
+	}
+
 	// Just use the system() call
-	err = system(strExeName.c_str());
+	err = ::system(pszExeName);
 	if (!WIFEXITED(err))
-		exit_msg("Failed to launch process %s\n",strExeName.c_str());
+		exit_msg("Failed to launch process %s\n",pszExeName);
 
 	_exit(WEXITSTATUS(err));
 }

@@ -56,10 +56,10 @@ endif
 
 oosvruser_SOURCES = \
 	OOServer_User.h \
-	InterProcessService.h \
-	InterProcessService.cpp \
 	UserChannel.h \
 	UserChannel.cpp \
+	UserIPS.h \
+	UserIPS.cpp \
 	UserMain.cpp \
 	UserManager.h \
 	UserManager.cpp \

@@ -21,7 +21,7 @@
 
 #include "OOServer_User.h"
 
-#include "InterProcessService.h"
+#include "UserIPS.h"
 #include "UserManager.h"
 
 using namespace Omega;

@@ -21,7 +21,7 @@
 
 #include "OOServer_User.h"
 #include "UserManager.h"
-#include "InterProcessService.h"
+#include "UserIPS.h"
 #include "UserChannel.h"
 
 #include <stdlib.h>

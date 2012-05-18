@@ -130,10 +130,10 @@ namespace
 			strOid = string_t::constant("Omega.SingleSurrogate");
 
 		IObject* pObject = NULL;
-		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(OOCore::ISurrogate),flags,pObject);
+		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Remoting::ISurrogate),flags,pObject);
 		if (pObject)
 		{
-			ObjectPtr<OOCore::ISurrogate> ptrSurrogate = static_cast<OOCore::ISurrogate*>(pObject);
+			ObjectPtr<Remoting::ISurrogate> ptrSurrogate = static_cast<Remoting::ISurrogate*>(pObject);
 
 			pObject = NULL;
 			ptrSurrogate->CreateInstance(oid,iid,flags,pObject);

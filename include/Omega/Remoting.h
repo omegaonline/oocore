@@ -31,7 +31,7 @@ namespace Omega
 		enum MarshalFlags
 		{
 			Same = 0,              ///< Objects are in the same context
-			Compartment = 1,         ///< Objects share address space, but not thread
+			Compartment = 1,       ///< Objects share address space, but not thread
 			InterProcess = 2,      ///< Objects share user id, but not address space
 			InterUser = 3,         ///< Objects share machine, but not user id or address space
 			RemoteMachine = 4      ///< Objects on separate machines and share nothing
@@ -102,6 +102,11 @@ namespace Omega
 			virtual string_t Canonicalise(const string_t& strEndpoint) = 0;
 			virtual guid_t MessageOid() = 0;
 			virtual IChannelSink* Open(const string_t& strEndpoint, IChannelSink* pSink) = 0;
+		};
+
+		interface ISurrogate : public Omega::IObject
+		{
+			virtual void CreateInstance(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, IObject*& pObject) = 0;
 		};
 	}
 }
@@ -181,6 +186,13 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(string_t,Canonicalise,1,((in),const string_t&,strEndpoint))
 	OMEGA_METHOD(guid_t,MessageOid,0,())
 	OMEGA_METHOD(Remoting::IChannelSink*,Open,2,((in),const string_t&,strEndpoint,(in),Remoting::IChannelSink*,pSink))
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::Remoting, ISurrogate, "{1EE9F564-853C-104F-AC73-EA8E76DCADCE}",
+
+	OMEGA_METHOD_VOID(CreateInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in),Omega::IObject*,pObject));

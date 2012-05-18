@@ -34,11 +34,6 @@ namespace OOCore
 		virtual Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink) = 0;
 	};
 
-	interface ISurrogate : public Omega::IObject
-	{
-		virtual void CreateInstance(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::IObject*& pObject) = 0;
-	};
-
 	// {7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}
 	extern "C" const Omega::guid_t OID_InterProcessService;
 
@@ -59,13 +54,6 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,millisecs))
 	OMEGA_METHOD(Remoting::IChannel*,OpenRemoteChannel,1,((in),const string_t&,strEndpoint))
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
-)
-
-OMEGA_DEFINE_INTERFACE
-(
-	OOCore, ISurrogate, "{1EE9F564-853C-104F-AC73-EA8E76DCADCE}",
-
-	OMEGA_METHOD_VOID(CreateInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,());

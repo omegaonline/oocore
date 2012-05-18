@@ -85,7 +85,7 @@ namespace Omega
 			ProcessScope = 1,    // Register for calling process only
 			UserScope = 3,       // Register for calling user only
 			PublicScope = 7,     // Register for all users
-			ExternalPublic = 8,  // Register as externally accessible
+			ExternalPublic = 15, // Register as externally accessible
 			
 			MultipleUse = 0,
 			SingleUse = 0x10,           // Auto Revoke after 1st GetObject

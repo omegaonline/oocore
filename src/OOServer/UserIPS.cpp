@@ -109,7 +109,7 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, IObject*& pObject)
 {
 	// Forward to sandbox if required
-	if (m_ptrSBIPS && (flags & 0xF) == Activation::Sandbox)
+	if (m_ptrSBIPS && (flags & 0xF) >= Activation::Sandbox)
 		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
 
 	// The timeout needs to be related to the request timeout...

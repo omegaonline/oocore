@@ -190,13 +190,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 {
 	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
 
-	string_t strIID = OOCore::get_text("Unknown interface {0}") % iid;
+	string_t strIID = OOCore::get_text("Unknown interface: {0}") % iid;
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)
 		strIID = ptrII->GetName();
 
-	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface {0}") % strIID;
+	pExcept->m_strDesc = OOCore::get_text("Object does not support the requested interface: {0}") % strIID;
 	return pExcept.Detach();
 }
 

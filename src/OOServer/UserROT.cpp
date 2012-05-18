@@ -48,7 +48,8 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	uint32_t rot_cookie = 0;
 
 	// Check for public registration...
-	if (m_ptrROT && (flags & ~Activation::UserScope))
+	Activation::RegisterFlags_t scope = (flags & 0xF);
+	if (m_ptrROT && (scope & ~Activation::UserScope))
 	{
 		// Register in sandbox ROT
 		rot_cookie = m_ptrROT->RegisterObject(oid,pObject,flags);

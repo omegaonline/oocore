@@ -197,12 +197,13 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	uint32_t rot_cookie = 0;
 
 	// Check for user registration
-	if (flags & ~Activation::ProcessScope)
+	Activation::RegisterFlags_t scope = (flags & 0xF);
+	if (scope & ~Activation::ProcessScope)
 	{
 		// Register in ROT
 		ptrROT = GetIPS()->GetRunningObjectTable();
 		if (ptrROT)
-			rot_cookie = ptrROT->RegisterObject(oid,pObject,static_cast<Activation::RegisterFlags_t>(flags & ~Activation::ProcessScope));
+			rot_cookie = ptrROT->RegisterObject(oid,pObject,flags);
 	}
 
 	try

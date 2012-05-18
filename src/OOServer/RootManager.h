@@ -42,12 +42,6 @@
 #include "RootProcess.h"
 #include "Protocol.h"
 
-#if defined(_WIN32) && !defined(__MINGW32__)
-#define APPNAME "OOServer"
-#else
-#define APPNAME "ooserverd"
-#endif
-
 namespace Root
 {
 	bool is_debug();

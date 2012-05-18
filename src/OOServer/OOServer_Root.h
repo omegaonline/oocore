@@ -62,4 +62,11 @@
 
 #include "../../include/Omega/internal/base_types.h"
 
+
+#if defined(_WIN32) && !defined(__MINGW32__)
+#define APPNAME "OOServer"
+#else
+#define APPNAME "ooserverd"
+#endif
+
 #endif // OOSERVER_ROOT_H_INCLUDED_

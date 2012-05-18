@@ -48,6 +48,12 @@
 
 //////////////////////////////////////////////
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+	#define APPNAME "OOSvrUser"
+#else
+	#define APPNAME "oosvruser"
+#endif
+
 /////////////////////////////////////////////////
 
 // Ensure we have the local Omega.h instead of the installed one...

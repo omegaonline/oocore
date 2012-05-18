@@ -103,11 +103,11 @@ int main(int argc, char* argv[])
 	{
 		OOBase::String strErr;
 		if (args.find("missing",strErr))
-			OOBase::Logger::log(OOBase::Logger::Error,"Missing value for option %s",strErr.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Missing value for option %s",strErr.c_str());
 		else if (args.find("unknown",strErr))
-			OOBase::Logger::log(OOBase::Logger::Error,"Unknown option %s",strErr.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Unknown option %s",strErr.c_str());
 		else
-			OOBase::Logger::log(OOBase::Logger::Error,"Failed to parse command line: %s",OOBase::system_error_text(err));
+			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Failed to parse command line: %s",OOBase::system_error_text(err));
 			
 		return EXIT_FAILURE;
 	}
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 
 	if (s_is_debug)
 	{
-		printf("Attach a debugger to process %u, and hit ENTER...\n",getpid());
+		printf("Attach a debugger to " APPNAME " process %u, and hit ENTER...\n",getpid());
 		char buf[256];
 		read(STDIN_FILENO,buf,sizeof(buf));
 	}

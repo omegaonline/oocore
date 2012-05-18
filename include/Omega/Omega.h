@@ -139,17 +139,19 @@ inline void Omega::Uninitialize()
 	OOCore_Omega_Uninitialize();
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags));
-inline Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(const any_t& oid, Activation::Flags_t flags)
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+inline void Omega::Activation::GetObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
-	return OOCore_GetObjectFactory(oid,flags);
+	OOCore_GetObject(oid,flags,iid,pObject);
 }
 
 inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(oid,flags));
-
 	IObject* pObject = NULL;
+	OOCore_GetObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
+	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
+
+	pObject = NULL;
 	ptrOF->CreateInstance(iid,pObject);
 	return pObject;
 }

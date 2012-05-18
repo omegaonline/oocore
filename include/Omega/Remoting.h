@@ -106,7 +106,7 @@ namespace Omega
 
 		interface ISurrogate : public Omega::IObject
 		{
-			virtual void CreateInstance(const guid_t& oid, const guid_t& iid, Activation::Flags_t flags, IObject*& pObject) = 0;
+			virtual void GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
 		};
 	}
 }
@@ -192,7 +192,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, ISurrogate, "{1EE9F564-853C-104F-AC73-EA8E76DCADCE}",
 
-	OMEGA_METHOD_VOID(CreateInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(GetObject,4,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in),Omega::IObject*,pObject));

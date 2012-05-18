@@ -40,7 +40,11 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF = Activation::GetObjectFactory(m_message_oid,Activation::Library);
+	{
+		IObject* pObject = NULL;
+		Activation::GetObject(m_message_oid,Activation::Library,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
+		m_ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
+	}
 	
 	// Connect the OM to us
 	m_ptrOM = pOM;

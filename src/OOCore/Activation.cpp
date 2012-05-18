@@ -123,21 +123,30 @@ namespace
 		return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
 	}
 
-	IObject* RunSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	IObject* LoadSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		string_t strOid = string_t::constant("Omega.Surrogate");
 		if (flags & Activation::OwnSurrogate)
 			strOid = string_t::constant("Omega.SingleSurrogate");
 
-		IObject* pObject = NULL;
-		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Remoting::ISurrogate),flags,pObject);
-		if (pObject)
-		{
-			ObjectPtr<Remoting::ISurrogate> ptrSurrogate = static_cast<Remoting::ISurrogate*>(pObject);
+		Activation::Flags_t sgt_flags = (flags & 0xF);
+		if (sgt_flags < Activation::Process)
+			sgt_flags = Activation::Process;
 
-			pObject = NULL;
-			ptrSurrogate->CreateInstance(oid,iid,flags,pObject);
-		}
+		if (flags & Activation::RemoteActivation)
+			sgt_flags |= Activation::RemoteActivation;
+
+		// Always launch the surrogate as an app - this protects against in-process surrogates!
+		IObject* pObject = NULL;
+		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Activation::IObjectFactory),sgt_flags,pObject);
+		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
+
+		pObject = NULL;
+		ptrOF->CreateInstance(OMEGA_GUIDOF(Remoting::ISurrogate),pObject);
+		ObjectPtr<Remoting::ISurrogate> ptrSurrogate = static_cast<Remoting::ISurrogate*>(pObject);
+
+		pObject = NULL;
+		ptrSurrogate->GetObject(oid,flags,iid,pObject);
 		return pObject;
 	}
 
@@ -166,7 +175,7 @@ namespace
 			else
 			{
 				// Run a surrogate
-				return RunSurrogateObject(oid,flags,iid);
+				return LoadSurrogateObject(oid,flags,iid);
 			}
 		}
 
@@ -340,9 +349,9 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const any_t&,oid,(in),Activation::Flags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
-	return static_cast<Activation::IObjectFactory*>(OOCore::GetInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+	pObject = OOCore::GetInstance(oid,flags,iid);
 }
 
 // {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}

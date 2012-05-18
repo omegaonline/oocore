@@ -44,14 +44,17 @@ ooserverd_SOURCES += OOServer.rc
 ooserverd_LDADD += -lshlwapi
 endif
 
-pkglibexec_PROGRAMS = oosvruser
+pkglibexec_PROGRAMS = oosvruser oosvrhost
 
 oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+oosvrhost_LDADD = @top_builddir@/oobase/liboobase.la
 
 if WIN32
 oosvruser_LDADD += ../OOCore/OOCore.la
+oosvrhost_LDADD += ../OOCore/OOCore.la
 else
 oosvruser_LDADD += ../OOCore/liboocore.la
+oosvrhost_LDADD += ../OOCore/liboocore.la
 endif
 
 oosvruser_SOURCES = \
@@ -72,9 +75,15 @@ oosvruser_SOURCES = \
 	UserRegistry.cpp \
 	UserROT.h \
 	UserROT.cpp
+	
+oosvrhost_SOURCES = \
+	OOServer_Host.h \
+	HostMain.cpp \
+	HostSurrogate.cpp
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc
+oosvrhost_SOURCES += OOSvrHost.rc
 endif
 
 EXTRA_DIST = \

@@ -78,7 +78,7 @@ namespace Omega
 		};
 		typedef uint16_t Flags_t;
 
-		IObjectFactory* GetObjectFactory(const any_t& oid, Activation::Flags_t flags);
+		void GetObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 
 		enum RegisterFlags
 		{

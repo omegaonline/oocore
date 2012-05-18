@@ -133,11 +133,6 @@ int main(int argc, char* argv[])
 	}
 
 #elif defined(HAVE_UNISTD_H)
-	// Ignore SIGCHLD
-	sigset_t sigset;
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGCHLD);
-	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 
 	if (s_is_debug)
 	{
@@ -151,7 +146,7 @@ int main(int argc, char* argv[])
 	OOBase::String strPipe;
 	if (!args.find("pipe",strPipe))
 	{
-		// Ooops...
+		// Oops...
 		OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
 		return EXIT_FAILURE;
 	}

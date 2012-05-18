@@ -122,6 +122,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
 	}
 
+	// Use an infinite timeout if we are debugging
+	if (User::is_debug())
+		timeout = OOBase::Timeout();
+
 	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
 	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");

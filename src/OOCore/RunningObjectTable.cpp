@@ -322,7 +322,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 	// If we have an object, get out now
 	if (ptrObject)
 		pObject = ptrObject.Detach();
-	else
+	else if (oid != OID_InterProcessService)
 	{
 		// Route to global rot
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();

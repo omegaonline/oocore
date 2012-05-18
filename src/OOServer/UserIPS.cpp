@@ -93,6 +93,9 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 
 	LOG_DEBUG(("Running surrogate process: %s",strProcess.c_str()));
 
+	if (User::is_debug())
+		strProcess += " --debug";
+
 	if (oid == OOCore::OID_Surrogate)
 		strProcess += " --multiple";
 	else if (oid == OOCore::OID_SingleSurrogate)

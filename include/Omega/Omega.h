@@ -149,7 +149,7 @@ inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags
 {
 	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(oid,flags));
 
-	IObject* pObject = 0;
+	IObject* pObject = NULL;
 	ptrOF->CreateInstance(iid,pObject);
 	return pObject;
 }

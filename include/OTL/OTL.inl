@@ -45,14 +45,14 @@ inline Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
 inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid)
 {
 	const CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0; g[i].pfnOid!=0; ++i)
+	for (size_t i=0; g[i].pfnOid != NULL; ++i)
 	{
 		if (*(g[i].pfnOid)() == oid)
 		{
 			return g[i].pfnCreate(iid);
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 inline void OTL::ProcessModule::RegisterObjectFactories()
@@ -60,11 +60,27 @@ inline void OTL::ProcessModule::RegisterObjectFactories()
 	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT(Omega::Activation::OID_RunningObjectTable);
 
 	CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0; g[i].pfnOid!=0; ++i)
+	for (size_t i=0; g[i].pfnOid != NULL; ++i)
 	{
 		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF = static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory)));
 
 		g[i].cookie = ptrROT->RegisterObject(*(g[i].pfnOid)(),ptrOF,(*g[i].pfnRegistrationFlags)());
+	}
+}
+
+inline void OTL::ProcessModule::RegisterObjectFactory(const Omega::guid_t& oid)
+{
+	CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0; g[i].pfnOid != NULL; ++i)
+	{
+		if (*(g[i].pfnOid)() == oid)
+		{
+			ObjectPtr<Omega::Activation::IObjectFactory> ptrOF = static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory)));
+
+			ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT(Omega::Activation::OID_RunningObjectTable);
+			g[i].cookie = ptrROT->RegisterObject(*(g[i].pfnOid)(),ptrOF,(*g[i].pfnRegistrationFlags)());
+			break;
+		}
 	}
 }
 
@@ -73,10 +89,28 @@ inline void OTL::ProcessModule::UnregisterObjectFactories()
 	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT(Omega::Activation::OID_RunningObjectTable);
 
 	CreatorEntry* g=getCreatorEntries();
-	for (size_t i=0; g[i].pfnOid!=0; ++i)
+	for (size_t i=0; g[i].pfnOid != NULL; ++i)
 	{
-		ptrROT->RevokeObject(g[i].cookie);
-		g[i].cookie = 0;
+		if (g[i].cookie)
+		{
+			ptrROT->RevokeObject(g[i].cookie);
+			g[i].cookie = 0;
+		}
+	}
+}
+
+inline void OTL::ProcessModule::UnregisterObjectFactory(const Omega::guid_t& oid)
+{
+	CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0; g[i].pfnOid != NULL; ++i)
+	{
+		if (*(g[i].pfnOid)() == oid)
+		{
+			ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT(Omega::Activation::OID_RunningObjectTable);
+			ptrROT->RevokeObject(g[i].cookie);
+			g[i].cookie = 0;
+			break;
+		}
 	}
 }
 

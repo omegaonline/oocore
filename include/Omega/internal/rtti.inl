@@ -49,16 +49,16 @@ inline void Omega::System::UnpinObjectPointer(Omega::IObject* pObject)
 
 #if !defined(DOXYGEN)
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const char*,pszName,(in),const void*,type_info));
-inline void Omega::System::Internal::register_typeinfo(const Omega::guid_t& iid, const char* pszName, const typeinfo_rtti* type_info)
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,4,((in),const void*,key,(in),const Omega::guid_t&,iid,(in),const char*,pszName,(in),const void*,type_info));
+inline void Omega::System::Internal::register_typeinfo(const void* key, const Omega::guid_t& iid, const char* pszName, const typeinfo_rtti* type_info)
 {
-	OOCore_Internal_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
+	OOCore_Internal_RegisterAutoTypeInfo(key,iid,pszName,(const void*)type_info);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
-inline void Omega::System::Internal::unregister_typeinfo(const Omega::guid_t& iid, const typeinfo_rtti* type_info)
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const void*,key,(in),const Omega::guid_t&,iid));
+inline void Omega::System::Internal::unregister_typeinfo(const void* key, const Omega::guid_t& iid)
 {
-	OOCore_Internal_UnregisterAutoTypeInfo(iid,(const void*)type_info);
+	OOCore_Internal_UnregisterAutoTypeInfo(key,iid);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),Omega::IException*,pCause))

@@ -83,8 +83,8 @@ namespace
 	class TIMapImpl
 	{
 	public:
-		void insert(const guid_t& iid, const char* pszName, const System::Internal::typeinfo_rtti* type_info);
-		void remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info);
+		void insert(const void* key, const guid_t& iid, const char* pszName, const System::Internal::typeinfo_rtti* type_info);
+		void remove(const void* key, const guid_t& iid);
 
 		TypeInfo::IInterfaceInfo* get_type_info(const guid_t& iid);
 
@@ -94,6 +94,7 @@ namespace
 		struct ti_t
 		{
 			const char*                            pszName;
+			const void*                            key;
 			const System::Internal::typeinfo_rtti* type_info;
 		};
 
@@ -417,24 +418,24 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 	OMEGA_THROW("GetAttributeRef failed to find reference parameter");
 }
 
-void TIMapImpl::insert(const guid_t& iid, const char* pszName, const System::Internal::typeinfo_rtti* type_info)
+void TIMapImpl::insert(const void* key, const guid_t& iid, const char* pszName, const System::Internal::typeinfo_rtti* type_info)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	ti_t ti = { pszName, type_info };
+	ti_t ti = { pszName, key, type_info };
 
 	int err = m_ti_map.insert(iid,ti);
 	if (err != 0)
 		OMEGA_THROW(err);
 }
 
-void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info)
+void TIMapImpl::remove(const void* key, const guid_t& iid)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	for (size_t i=m_ti_map.find_first(iid); i < m_ti_map.size() && *m_ti_map.key_at(i)==iid;)
 	{
-		if (m_ti_map.at(i)->type_info == type_info)
+		if (m_ti_map.at(i)->key == key)
 			m_ti_map.remove_at(i);
 		else
 			++i;
@@ -461,14 +462,14 @@ TypeInfo::IInterfaceInfo* OOCore::GetInterfaceInfo(const guid_t& iid)
 	return TIMap::instance().get_type_info(iid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const guid_t&,iid,(in),const char*,pszName,(in),const void*,type_info))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,4,((in),const void*,key,(in),const guid_t&,iid,(in),const char*,pszName,(in),const void*,type_info))
 {
-	TIMap::instance().insert(iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
+	TIMap::instance().insert(key,iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const guid_t&,iid,(in),const void*,type_info))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const void*,key,(in),const guid_t&,iid))
 {
-	TIMap::instance().remove(iid,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
+	TIMap::instance().remove(key,iid);
 }
 
 void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const System::Internal::type_holder* typeDest)

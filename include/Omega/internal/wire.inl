@@ -22,44 +22,22 @@
 #ifndef OOCORE_WIRE_INL_INCLUDED_
 #define OOCORE_WIRE_INL_INCLUDED_
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__ctor,2,((in),void**,phandle,(in),Omega::Threading::SingletonCallback,pfn_init));
-inline void* Omega::System::Internal::wire_rtti_holder::handle()
-{
-	static void* s_handle = NULL;
-	OOCore_wire_rtti_holder__ctor(&s_handle,&init);
-	return s_handle;
-}
-
-inline const Omega::System::Internal::SafeShim* OMEGA_CALL Omega::System::Internal::wire_rtti_holder::init(void** param)
-{
-	const SafeShim* except = NULL;
-	try
-	{
-		Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)>::add_destructor(destroy,*param);
-	}
-	catch (IException* pE)
-	{
-		except = return_safe_exception(pE);
-	}
-	return except;
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__dctor,1,((in),void*,handle));
-inline void Omega::System::Internal::wire_rtti_holder::destroy(void* param)
-{
-	OOCore_wire_rtti_holder__dctor(param);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,2,((in),void*,handle,(in),const Omega::guid_base_t*,iid));
+OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,1,((in),const Omega::guid_base_t*,iid));
 inline const Omega::System::Internal::wire_rtti* Omega::System::Internal::get_wire_rtti_info(const guid_t& iid)
 {
-	return OOCore_wire_rtti_holder_find(wire_rtti_holder::handle(),&iid);
+	return OOCore_wire_rtti_holder_find(&iid);
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),void*,handle,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::wire_rtti*,pRtti));
-inline void Omega::System::Internal::register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti)
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),const void*,key,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::wire_rtti*,pRtti));
+inline void Omega::System::Internal::register_wire_rtti_info(const void* key, const guid_t& iid, const wire_rtti* pRtti)
 {
-	OOCore_wire_rtti_holder_insert(wire_rtti_holder::handle(),&iid,pRtti);
+	OOCore_wire_rtti_holder_insert(key,&iid,pRtti);
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_remove,2,((in),const void*,key,(in),const Omega::guid_base_t*,iid));
+inline void Omega::System::Internal::unregister_wire_rtti_info(const void* key, const guid_t& iid)
+{
+	OOCore_wire_rtti_holder_remove(key,&iid);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_holder__ctor,0,());

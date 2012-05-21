@@ -473,17 +473,9 @@ namespace Omega
 				Remoting::IStub* (*pfnCreateWireStub)(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI);
 			};
 
-			struct wire_rtti_holder
-			{
-				static void* handle();
-
-			private:				
-				static const System::Internal::SafeShim* OMEGA_CALL init(void**);
-				static void destroy(void*);
-			};
-			
 			inline static const wire_rtti* get_wire_rtti_info(const guid_t& iid);
-			inline static void register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti);
+			inline static void register_wire_rtti_info(const void* key, const guid_t& iid, const wire_rtti* pRtti);
+			inline static void unregister_wire_rtti_info(const void* key, const guid_t& iid);
 
 			OMEGA_WIRE_MAGIC(Omega,IObject)
 

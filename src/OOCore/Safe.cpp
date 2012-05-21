@@ -192,68 +192,72 @@ namespace
 {
 	struct WireRttiHolder
 	{
-		OOBase::SpinLock m_lock;
+		const System::Internal::wire_rtti* find(const guid_t& iid);
+		void insert(const void* key, const guid_t& iid, const System::Internal::wire_rtti* pRtti);
+		void remove(const void* key, const guid_t& iid);
 
-		OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_map;
+	private:
+		OOBase::RWMutex m_lock;
+
+		struct wr_t
+		{
+			const void*                        key;
+			const System::Internal::wire_rtti* wire_info;
+		};
+
+		OOBase::Table<guid_t,wr_t,OOBase::HeapAllocator> m_map;
 	};
+	typedef OOBase::Singleton<WireRttiHolder,OOCore::DLL> WIRE_RTTI_HELPER;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__ctor,2,((in),void**,phandle,(in),Omega::Threading::SingletonCallback,pfn_init))
+template class OOBase::Singleton<WireRttiHolder,OOCore::DLL>;
+
+const System::Internal::wire_rtti* WireRttiHolder::find(const guid_t& iid)
 {
-	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
-	if (!pCur)
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	wr_t wr = {0};
+	m_map.find(iid,wr);
+	return wr.wire_info;
+}
+
+void WireRttiHolder::insert(const void* key, const guid_t& iid, const System::Internal::wire_rtti* pRtti)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	wr_t wr = { key, pRtti };
+
+	int err = m_map.insert(iid,wr);
+	if (err != 0)
+		OMEGA_THROW(err);
+}
+
+void WireRttiHolder::remove(const void* key, const guid_t& iid)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	for (size_t i=m_map.find_first(iid); i < m_map.size() && *m_map.key_at(i)==iid;)
 	{
-		*phandle = new (OOCore::throwing) WireRttiHolder;
-		
-		try
-		{
-			(*pfn_init)(phandle);
-		}
-		catch (...)
-		{
-			delete static_cast<WireRttiHolder*>(*phandle);
-			*phandle = NULL;
-			throw;
-		}
-	}
-
-	while (pCur == (void*)1)
-	{
-		OOBase::Thread::yield();
-		pCur = *phandle;
+		if (m_map.at(i)->key == key)
+			m_map.remove_at(i);
+		else
+			++i;
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder__dctor,1,((in),void*,handle))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,1,((in),const guid_base_t*,iid))
 {
-	delete static_cast<WireRttiHolder*>(handle);
+	return WIRE_RTTI_HELPER::instance().find(*iid);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,2,((in),void*,handle,(in),const guid_base_t*,iid))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),const void*,key,(in),const guid_base_t*,iid,(in),const System::Internal::wire_rtti*,pRtti))
 {
-	WireRttiHolder* pThis = static_cast<WireRttiHolder*>(handle);
-
-	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
-
-	const System::Internal::wire_rtti* pRet = NULL;
-
-	pThis->m_map.find(*iid,pRet);
-
-	return pRet;
+	WIRE_RTTI_HELPER::instance().insert(key,*iid,pRtti);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),void*,handle,(in),const guid_base_t*,iid,(in),const System::Internal::wire_rtti*,pRtti))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_remove,2,((in),const void*,key,(in),const guid_base_t*,iid))
 {
-	WireRttiHolder* pThis = static_cast<WireRttiHolder*>(handle);
-
-	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
-
-	if (!pThis->m_map.exists(*iid))
-	{
-		int err = pThis->m_map.insert(*iid,pRtti);
-		if (err != 0)
-			OOBase_CallCriticalFailure(err);
-	}
+	WIRE_RTTI_HELPER::instance().remove(key,*iid);
 }
 
 namespace

@@ -71,32 +71,14 @@ namespace
 		return pObj;
 	}
 
-#if defined(_WIN32)
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const Omega::string_t& str)
-	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
-		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
-		if (len == 0)
-		{
-			DWORD dwErr = GetLastError();
-			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				OMEGA_THROW(dwErr);
-		}
-
-		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
-		if (!wsz)
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
-		wsz[len] = L'\0';
-		return wsz;
-	}
-#endif
-
 	bool IsInvalidPath(const string_t& strPath)
 	{
 #if defined(_WIN32)
-		return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
+		wchar_t wpath[MAX_PATH] = {0};
+		if (MultiByteToWideChar(CP_UTF8,0,strPath.c_str(),-1,wpath,MAX_PATH-1) <= 0)
+			return true;
+
+		return (PathIsRelativeW(wpath) != FALSE);
 #else
 		// Allow PATH-based paths
 		return (strPath[0] != '/' && strPath.Find('/') != string_t::npos);

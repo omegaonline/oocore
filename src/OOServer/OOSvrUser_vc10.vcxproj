@@ -214,7 +214,6 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="InterProcessService.cpp" />
     <ClCompile Include="MessageConnection.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </PrecompiledHeader>
@@ -233,6 +232,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="UserIPS.cpp" />
     <ClCompile Include="UserMain.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -248,11 +248,11 @@
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h" />
     <ClInclude Include="UserChannel.h" />
-    <ClInclude Include="InterProcessService.h" />
     <ClInclude Include="MessageConnection.h" />
     <ClInclude Include="OOServer_User.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="..\OOCore\Server.h" />
+    <ClInclude Include="UserIPS.h" />
     <ClInclude Include="UserManager.h" />
     <ClInclude Include="UserNet.h" />
     <ClInclude Include="UserProcess.h" />

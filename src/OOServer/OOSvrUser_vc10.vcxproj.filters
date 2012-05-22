@@ -21,9 +21,6 @@
     <ClCompile Include="DebuggerWin32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InterProcessService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MessageConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -45,15 +42,15 @@
     <ClCompile Include="UserROT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UserIPS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UserChannel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InterProcessService.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MessageConnection.h">
@@ -81,6 +78,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UserROT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserIPS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

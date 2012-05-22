@@ -41,142 +41,45 @@ namespace
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 		virtual void kill();
 
-		void exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, bool is_surrogate, OOBase::RefPtr<OOBase::Buffer>& env_block);
+		void exec(wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
 	};
-
-	static OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> CopyCmdLine(const wchar_t* psz)
-	{
-		size_t wlen = (wcslen(psz)+1)*sizeof(wchar_t);
-
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine;
-		if (!ptrCmdLine.allocate(wlen))
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-		memcpy(ptrCmdLine,psz,wlen);
-
-		return ptrCmdLine;
-	}
-
-	static OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ShellParse(const wchar_t* pszFile)
-	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine = CopyCmdLine(pszFile);
-		
-		const wchar_t* pszExt = PathFindExtensionW(pszFile);
-		if (pszExt && wcsicmp(pszExt,L".exe")!=0)
-		{
-			DWORD dwLen = 1024;
-			wchar_t szBuf[1024];
-			ASSOCF flags = (ASSOCF)(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL);
-			HRESULT hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
-			if (hRes == S_OK)
-				ptrCmdLine = CopyCmdLine(szBuf);
-			else if (hRes == E_POINTER)
-			{
-				if (!ptrCmdLine.allocate((dwLen+1)*sizeof(wchar_t)))
-					OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-				hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,ptrCmdLine,&dwLen);
-			}
-
-			if (hRes == S_OK)
-			{
-				LPVOID lpBuffer = 0;
-				if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-								   ptrCmdLine,0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
-				{
-					ptrCmdLine = CopyCmdLine((LPWSTR)lpBuffer);
-					LocalFree(lpBuffer);
-				}
-			}
-		}
-		
-		return ptrCmdLine;
-	}
-
-	bool env_sort(const OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>& s1, const OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>& s2)
-	{
-		return (_wcsicmp(s1,s2) < 0);
-	}
-
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const Omega::string_t& str)
-	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
-		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
-		if (len == 0)
-		{
-			DWORD dwErr = GetLastError();
-			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				OMEGA_THROW(dwErr);
-		}
-
-		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
-		if (!wsz)
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
-		
-		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
-		wsz[len] = L'\0';
-		return wsz;
-	}
 }
 
 bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
-	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
+	wchar_t wpath[MAX_PATH] = {0};
+	if (MultiByteToWideChar(CP_UTF8,0,strPath.c_str(),-1,wpath,MAX_PATH-1) <= 0)
+		return true;
+
+	return (PathIsRelativeW(wpath) != FALSE);
 }
 
 User::Process* User::Process::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_surrogate, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
-	// Copy and widen to UNICODE
-	OOBase::Set<OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>,OOBase::LocalAllocator> wenv;
-	for (size_t i=0;i<env.size();++i)
-		wenv.insert(to_wchar_t(*env.at(i)));
-
-	// Sort environment block - UNICODE, no-locale, case-insensitive (from MSDN)
-	wenv.sort(&env_sort);
-
-	// Build environment block
-	OOBase::RefPtr<OOBase::Buffer> env_block = new (std::nothrow) OOBase::Buffer();
-	if (!env_block)
-		OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-	for (size_t i=0;i<wenv.size();++i)
-	{
-		wchar_t* e = *wenv.at(i);
-		if (e)
-		{
-			size_t len = (wcslen(e) + 1)*sizeof(wchar_t);
-			int err = env_block->space(len);
-			if (err != 0)
-				OMEGA_THROW(err);
-
-			memcpy(env_block->wr_ptr(),e,len);
-			env_block->wr_ptr()[len-1] = L'\0';
-			env_block->wr_ptr(len);
-		}
-	}
-
-	int err = env_block->space(4);
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	memset(env_block->wr_ptr(),0,4);
-	env_block->wr_ptr(4);
-
 	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
 	if (!ptrProcess)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-#error FIX ME!
+	// Get OOSvrHost to run ShellExecuteEx!!
+	void* TODO;
+
+	wchar_t cmd_line[MAX_PATH] = {0};
+	if (MultiByteToWideChar(CP_UTF8,0,strExeName.c_str(),-1,cmd_line,MAX_PATH-1) <= 0)
+		OMEGA_THROW(GetLastError());
+
+	wchar_t working_dir[MAX_PATH] = {0};
+	if (MultiByteToWideChar(CP_UTF8,0,strWorkingDir.c_str(),-1,working_dir,MAX_PATH-1) <= 0)
+		OMEGA_THROW(GetLastError());
 
 	// Do a ShellExecute style lookup for the actual thing to call..
-	ptrProcess->exec(ShellParse(to_wchar_t(strExeName)),is_surrgoate,env_block);
+	ptrProcess->exec(cmd_line,working_dir,OOBase::Environment::get_block(tabEnv));
 	return ptrProcess.detach();
 }
 
-void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine, bool is_surrogate, OOBase::RefPtr<OOBase::Buffer>& env_block)
+void UserProcessWin32::exec(wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block)
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 
@@ -195,7 +98,7 @@ void UserProcessWin32::exec(OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptr
 
 	// Spawn the process
 	PROCESS_INFORMATION pi = {0};
-	if (!CreateProcessW(NULL,ptrCmdLine,NULL,NULL,FALSE,dwFlags,(void*)(env_block->rd_ptr()),NULL,&si,&pi))
+	if (!CreateProcessW(NULL,cmd_line,NULL,NULL,FALSE,dwFlags,env_block,working_dir,&si,&pi))
 	{
 		DWORD dwErr = GetLastError();
 		OMEGA_THROW(dwErr);

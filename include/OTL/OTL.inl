@@ -37,11 +37,6 @@ inline void OTL::ModuleBase::DecLockCount()
 	m_lockCount.Release();
 }
 
-inline Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
-{
-	return m_csMain;
-}
-
 inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid)
 {
 	const CreatorEntry* g=getCreatorEntries();

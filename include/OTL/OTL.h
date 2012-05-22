@@ -422,7 +422,6 @@ namespace OTL
 		bool HaveLocks() const;
 		void IncLockCount();
 		void DecLockCount();
-		Omega::Threading::Mutex& GetLock();
 
 		virtual void RegisterObjectFactories()
 		{
@@ -464,7 +463,6 @@ namespace OTL
 		virtual CreatorEntry* getCreatorEntries() = 0;
 
 	private:
-		Omega::Threading::Mutex          m_csMain;
 		Omega::Threading::AtomicRefCount m_lockCount;
 
 		ModuleBase(const ModuleBase&);

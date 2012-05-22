@@ -79,6 +79,11 @@ namespace Omega
 					return typename impl::safe_type_wrapper(val);
 				}
 
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<T>::type val, const guid_t& iid)
+				{
+					return typename impl::safe_type_wrapper(val,iid);
+				}
+
 				template <typename S>
 				static typename impl::safe_type_wrapper coerce(typename optimal_param<T>::type val, S count)
 				{
@@ -88,6 +93,11 @@ namespace Omega
 				static typename impl::type_wrapper coerce(type val)
 				{
 					return typename impl::type_wrapper(val);
+				}
+
+				static typename impl::type_wrapper coerce(type val, const guid_base_t* piid)
+				{
+					return typename impl::type_wrapper(val,piid);
 				}
 
 				template <typename S>
@@ -333,7 +343,7 @@ namespace Omega
 				{
 					type_wrapper(safe_type vals, size_t cbSize) :
 							m_val(default_value<typename marshal_info<T>::safe_type::type>::value()),
-							m_pVals(0),
+							m_pVals(NULL),
 							m_pOrig(vals),
 							m_cbSize(cbSize)
 					{
@@ -372,7 +382,7 @@ namespace Omega
 					operator T*()
 					{
 						if (!m_pOrig)
-							return 0;
+							return NULL;
 						else if (m_pVals)
 							return m_pVals;
 						else
@@ -392,7 +402,7 @@ namespace Omega
 
 					safe_type_wrapper(T* vals, size_t cbSize) :
 							m_val(default_value<T>::value()),
-							m_pVals(0),
+							m_pVals(NULL),
 							m_pOrig(vals),
 							m_cbSize(cbSize)
 					{
@@ -431,7 +441,7 @@ namespace Omega
 					operator safe_type()
 					{
 						if (!m_pOrig)
-							return 0;
+							return NULL;
 						else if (m_pVals)
 							return m_pVals;
 						else
@@ -455,7 +465,7 @@ namespace Omega
 				{
 					type_wrapper(safe_type vals, size_t cbSize) :
 							m_val(default_value<T>::value()),
-							m_pVals(0),
+							m_pVals(NULL),
 							m_cbSize(!vals ? 0 : cbSize)
 					{
 						if (vals)
@@ -485,7 +495,7 @@ namespace Omega
 					operator const T*()
 					{
 						if (m_cbSize == 0)
-							return 0;
+							return NULL;
 						else if (m_pVals)
 							return m_pVals;
 						else
@@ -506,7 +516,7 @@ namespace Omega
 
 					safe_type_wrapper(const T* vals, size_t cbSize) :
 							m_val(default_value<arr_type>::value()),
-							m_pVals(0),
+							m_pVals(NULL),
 							m_cbSize(!vals ? 0 : cbSize)
 					{
 						if (vals)
@@ -536,7 +546,7 @@ namespace Omega
 					operator safe_type()
 					{
 						if (!m_cbSize)
-							return 0;
+							return NULL;
 						else if (m_pVals)
 							return m_pVals;
 						else
@@ -1164,10 +1174,10 @@ namespace Omega
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type pS) :
-							m_pI(0)
+					type_wrapper(safe_type pS, const guid_base_t* piid = NULL) :
+							m_pI(NULL)
 					{
-						m_pI = create_safe_proxy<I>(pS);
+						m_pI = static_cast<I*>(create_safe_proxy(pS,piid ? *piid : OMEGA_GUIDOF(I)));
 					}
 
 					~type_wrapper()
@@ -1181,7 +1191,7 @@ namespace Omega
 						return m_pI;
 					}
 
-					void update(safe_type& pS, const guid_base_t* piid = 0)
+					void update(safe_type& pS, const guid_base_t* piid = NULL)
 					{
 						if (pS)
 							release_safe(pS);
@@ -1195,9 +1205,9 @@ namespace Omega
 
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(I* pI)
+					safe_type_wrapper(I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 					{
-						m_pS = create_safe_stub(pI,OMEGA_GUIDOF(I));
+						m_pS = create_safe_stub(pI,iid);
 					}
 
 					~safe_type_wrapper()

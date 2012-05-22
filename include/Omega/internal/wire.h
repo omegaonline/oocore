@@ -160,9 +160,9 @@ namespace Omega
 			(
 				Omega::Remoting, IMarshaller,
 
-				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
+				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
+				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,millisecs))
 				OMEGA_METHOD(uint32_t,GetSource,0,())

@@ -112,7 +112,9 @@
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
-	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid); }
+	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid); } \
+	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,Omega_CanUnloadLibrary,0,()) \
+	{ return !(OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->HaveLocks()); }
 
 #define BEGIN_PROCESS_OBJECT_MAP() \
 	namespace OTL { \

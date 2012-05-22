@@ -93,7 +93,7 @@ namespace
 
 				try
 				{
-					while (Omega::HandleRequest(30000) || GetModule()->HaveLocks())
+					while (Omega::HandleRequest(30000) || GetModule()->HaveLocks() || !Omega::CanUnload())
 					{}
 				}
 				catch (...)

@@ -104,6 +104,7 @@ namespace Omega
 
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
 	bool_t HandleRequest(uint32_t millisecs = 0xFFFFFFFF);
+	bool_t CanUnload();
 }
 
 #include "internal/types.inl"
@@ -160,6 +161,12 @@ OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega:
 inline Omega::bool_t Omega::HandleRequest(uint32_t millisecs)
 {
 	return OOCore_Omega_HandleRequest(millisecs);
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_CanUnload,0,());
+inline Omega::bool_t Omega::CanUnload()
+{
+	return OOCore_Omega_CanUnload();
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes));

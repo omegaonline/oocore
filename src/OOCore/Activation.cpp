@@ -42,6 +42,7 @@ namespace
 
 		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
 		void unload_unused();
+		bool can_unload();
 
 	private:
 		DLLManagerImpl(const DLLManagerImpl&);
@@ -51,6 +52,8 @@ namespace
 		OOBase::Table<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
+
+	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
 
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
 	{
@@ -238,7 +241,7 @@ OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 
 void DLLManagerImpl::unload_unused()
 {
-	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
+	// This may skip a few entries, but it makes best effort
 
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -279,6 +282,41 @@ void DLLManagerImpl::unload_unused()
 		else
 			++i;
 	}
+}
+
+bool DLLManagerImpl::can_unload()
+{
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	for (size_t i=0; i<m_dll_map.size(); ++i)
+	{
+		OOBase::SmartPtr<OOBase::DLL> dll = *m_dll_map.at(i);
+
+		try
+		{
+			pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(dll->symbol("Omega_CanUnloadLibrary_Safe"));
+			if (!pfn)
+				return false;
+
+			bool unload = false;
+			System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(unload));
+
+			// Ignore exceptions
+			if (CanUnloadLibrary_Exception)
+				System::Internal::release_safe(CanUnloadLibrary_Exception);
+
+			if (!unload)
+				return false;
+		}
+		catch (IException* pE)
+		{
+			// Ignore exceptions
+			pE->Release();
+			return false;
+		}
+	}
+
+	return true;
 }
 
 IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
@@ -334,6 +372,11 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
 	pObject = OOCore::GetInstance(oid,flags,iid);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_CanUnload,0,())
+{
+	return DLLManager::instance()->can_unload();
 }
 
 // {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}

@@ -547,7 +547,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	return false;
 }
 
-void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
 {
 	Omega::int64_t key = 0;
 	OOBase::LocalString strSubKey,strLink,strFullKeyName;
@@ -562,21 +562,21 @@ void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 		err2 = strSubKey.assign("/Environment");
 
 	if (err2)
-		LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
 	else
 	{
 		Db::hive_errors err = ptrRegistry->create_key(0,key,strSubKey,0,0,strLink,strFullKeyName);
 		if (err)
 		{
 			if (err != Db::HIVE_NOTFOUND)
-				LOG_ERROR(("Failed to open the '/%s/Environment' key in the user registry",key_text));
+				LOG_ERROR_RETURN(("Failed to open the '/%s/Environment' key in the user registry",key_text),false);
 		}
 		else
 		{
 			Db::Hive::registry_set_t names;
 			err = ptrRegistry->enum_values(key,0,names);
 			if (err)
-				LOG_ERROR(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text));
+				LOG_ERROR_RETURN(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text),false);
 			else
 			{
 				OOBase::String strName;
@@ -589,21 +589,20 @@ void Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 						OOBase::String strValue;
 						err2 = strValue.assign(strVal.c_str(),strVal.length());
 						if (err2)
-							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
+							LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
 						else
 						{
 							err2 = tabEnv.insert(strName,strValue);
 							if (err2)
-							{
-								LOG_ERROR(("Failed to insert environment string: %s",OOBase::system_error_text(err2)));
-								break;
-							}
+								LOG_ERROR_RETURN(("Failed to insert environment string: %s",OOBase::system_error_text(err2)),false);
 						}
 					}
 				}
 			}
 		}
 	}
+
+	return true;
 }
 
 Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Db::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)

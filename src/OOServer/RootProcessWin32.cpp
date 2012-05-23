@@ -923,14 +923,15 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabSysEnv;
 	err = OOBase::Environment::get_user(uid,tabSysEnv);
 	if (err)
-		LOG_ERROR(("Failed to load environment variables: %s",OOBase::system_error_text(err)));
+		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
-	load_user_env(process.m_ptrRegistry,tabEnv);
+	if (!load_user_env(process.m_ptrRegistry,tabEnv))
+		return false;
 
 	err = OOBase::Environment::substitute(tabEnv,tabSysEnv);
 	if (err)
-		LOG_ERROR(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)));
+		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
 

@@ -88,8 +88,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 							// Wait for quit
 							for (bool bQuit = false;!bQuit;)
 							{
-								// Restart services
-								void* TODO;
+								start_services();
 
 								bQuit = wait_to_quit();
 								if (!bQuit)

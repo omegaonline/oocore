@@ -185,6 +185,8 @@ namespace
 		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
 			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 
+		void* SECURITY; // Use a GUID here for more randomness
+
 		int err = strPipe.printf("OOR%s-%lu-%lu",pszSid,GetCurrentProcessId(),GetTickCount());
 		::LocalFree(pszSid);
 

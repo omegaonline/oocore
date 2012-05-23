@@ -88,6 +88,7 @@ namespace Root
 		bool start_client_acceptor();
 		static void accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
 		void accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err);
+		bool start_services();
 
 		// Spawned process members
 		struct UserProcess

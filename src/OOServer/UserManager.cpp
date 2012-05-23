@@ -161,7 +161,7 @@ int User::Manager::run(const char* pszPipe)
 
 	if (User::is_debug() && ret != EXIT_SUCCESS)
 	{
-		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
+		OOBase::Logger::log(OOBase::Logger::Debug,"Pausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(15000);

@@ -114,7 +114,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 	if (is_debug() && ret != EXIT_SUCCESS)
 	{
-		OOBase::Logger::log(OOBase::Logger::Debug,"\nPausing to let you read the messages...");
+		OOBase::Logger::log(OOBase::Logger::Debug,"Pausing to let you read the messages...");
 
 		// Give us a chance to read the errors!
 		OOBase::Thread::sleep(15000);

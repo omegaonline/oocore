@@ -117,6 +117,7 @@ namespace
 User::Manager* User::Manager::s_instance = NULL;
 
 User::Manager::Manager() :
+		m_proactor(NULL),
 		m_nIPSCookie(0),
 		m_bIsSandbox(false),
 		m_mapRemoteChannelIds(1)
@@ -131,33 +132,41 @@ User::Manager::~Manager()
 
 int User::Manager::run(const char* pszPipe)
 {
-	int err = m_proactor_pool.run(run_proactor,NULL,2);
-	if (err != 0)
-	{
-		m_proactor_pool.join();
-		LOG_ERROR_RETURN(("Thread pool create failed: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
-	}
-
 	int ret = EXIT_FAILURE;
-
-	// Start the handler
-	if (start_request_threads(2) &&
-			connect_root(pszPipe))
+	int err = 0;
+	m_proactor = OOSvrBase::Proactor::create(err);
+	if (err)
+		LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
+	else
 	{
-		OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
+		err = m_proactor_pool.run(run_proactor,NULL,2);
+		if (err != 0)
+			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+		else
+		{
+			// Start the handler
+			if (start_request_threads(2))
+			{
+				if (connect_root(pszPipe))
+				{
+					OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
-		// Wait for stop
-		wait_for_quit();
+					// Wait for stop
+					wait_for_quit();
 
-		ret = EXIT_SUCCESS;
+					ret = EXIT_SUCCESS;
+				}
+
+				// Stop the MessageHandler
+				stop_request_threads();
+			}
+
+			m_proactor->stop();
+			m_proactor_pool.join();
+		}
+
+		OOSvrBase::Proactor::destroy(m_proactor);
 	}
-
-	// Stop the MessageHandler
-	stop_request_threads();
-
-	Proactor::instance().stop();
-
-	m_proactor_pool.join();
 
 	if (User::is_debug() && ret != EXIT_SUCCESS)
 	{
@@ -182,7 +191,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().connect_local_socket(pszPipe,err,timeout));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->connect_local_socket(pszPipe,err,timeout));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -192,7 +201,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 	int fd = atoi(pszPipe);
 
 	int err = 0;
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(Proactor::instance().attach_local_socket(fd,err));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->attach_local_socket(fd,err));
 	if (err != 0)
 	{
 		OOBase::POSIX::close(fd);
@@ -376,7 +385,7 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 	LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()));
 
 	int err = 0;
-	m_ptrAcceptor = Proactor::instance().accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
+	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
 

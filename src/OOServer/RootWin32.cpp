@@ -406,7 +406,7 @@ bool Root::Manager::start_client_acceptor()
 
 	const char* pipe_name = "OmegaOnline";
 	int err = 0;
-	m_client_acceptor = Proactor::instance().accept_local(this,&accept_client,pipe_name,err,&m_sa);
+	m_client_acceptor = m_proactor->accept_local(this,&accept_client,pipe_name,err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 

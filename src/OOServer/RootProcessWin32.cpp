@@ -952,7 +952,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 		return false;
 
 	// Connect up
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(Proactor::instance().attach_local_socket((SOCKET)(HANDLE)hPipe,err));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(m_proactor->attach_local_socket((SOCKET)(HANDLE)hPipe,err));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 

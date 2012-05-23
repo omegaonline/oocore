@@ -41,6 +41,7 @@
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
+		m_proactor(NULL),
 		m_sandbox_channel(0)
 {
 	// Root channel is fixed
@@ -60,55 +61,67 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	if (load_config(cmd_args) && init_database())
 	{
 		// Start the proactor pool
-		int err = m_proactor_pool.run(&run_proactor,NULL,2);
+		int err = 0;
+		m_proactor = OOSvrBase::Proactor::create(err);
 		if (err)
-			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+			LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 		else
 		{
-			// Start the handler
-			if (start_request_threads(2))
+			err = m_proactor_pool.run(&run_proactor,m_proactor,2);
+			if (err)
+				LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
+			else
 			{
-				// Spawn the sandbox
-				if (spawn_sandbox())
+				// Start the handler
+				if (start_request_threads(2))
 				{
-					// Start listening for clients
-					if (start_client_acceptor())
+					// Spawn the sandbox
+					if (spawn_sandbox())
 					{
-						OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
-
-						ret = EXIT_SUCCESS;
-
-						// Wait for quit
-						for (bool bQuit = false;!bQuit;)
+						// Start listening for clients
+						if (start_client_acceptor())
 						{
-							bQuit = wait_to_quit();
-							if (!bQuit)
+							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
+
+							ret = EXIT_SUCCESS;
+
+							// Wait for quit
+							for (bool bQuit = false;!bQuit;)
 							{
 								// Restart services
 								void* TODO;
+
+								bQuit = wait_to_quit();
+								if (!bQuit)
+								{
+									// Restart services
+									void* TODO;
+								}
 							}
+
+							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
+
+							// Stop accepting new clients
+							m_client_acceptor = NULL;
 						}
 
-						OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
+						// Close all channels
+						shutdown_channels();
 
-						// Stop accepting new clients
-						m_client_acceptor = NULL;
+						// Wait for all user processes to terminate
+						m_mapUserProcesses.clear();
 					}
-
-					// Close all channels
-					shutdown_channels();
-
-					// Wait for all user processes to terminate
-					m_mapUserProcesses.clear();
 				}
+
+				// Stop the MessageHandler
+				stop_request_threads();
+
+				// Stop any proactor threads
+				m_proactor->stop();
+				m_proactor_pool.join();
 			}
 
-			// Stop the MessageHandler
-			stop_request_threads();
-
-			// Stop any proactor threads
-			Proactor::instance().stop();
-			m_proactor_pool.join();
+			OOSvrBase::Proactor::destroy(m_proactor);
 		}
 	}
 
@@ -356,10 +369,10 @@ bool Root::Manager::load_config_file(const char* pszFile)
 	return (err == 0);
 }
 
-int Root::Manager::run_proactor(void*)
+int Root::Manager::run_proactor(void* p)
 {
 	int err = 0;
-	return Proactor::instance().run(err);
+	return static_cast<OOSvrBase::Proactor*>(p)->run(err);
 }
 
 bool Root::Manager::spawn_sandbox()

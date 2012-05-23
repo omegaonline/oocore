@@ -531,7 +531,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	fds[1].close();
 
 	// Create an async socket wrapper
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = Proactor::instance().attach_local_socket(fd[0],err);
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = m_proactor->attach_local_socket(fd[0],err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 

@@ -119,11 +119,11 @@ bool Root::Manager::start_client_acceptor()
 	m_sa.mode = 0777;
 
 	int err = 0;
-	m_client_acceptor = Proactor::instance().accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
+	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
 	if (err == EADDRINUSE)
 	{
 		unlink(pipe_name);
-		m_client_acceptor = Proactor::instance().accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
+		m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
 	}
 
 	if (err != 0)

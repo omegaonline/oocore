@@ -63,6 +63,7 @@ namespace Root
 		Manager& operator = (const Manager&);
 
 		OOBase::RWMutex                       m_lock;
+		OOSvrBase::Proactor*                  m_proactor;
 		OOBase::ThreadPool                    m_proactor_pool;
 
 		// Init and run members
@@ -133,8 +134,6 @@ namespace Root
 
 		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs);
 	};
-
-	typedef OOBase::Singleton<OOSvrBase::Proactor,Manager> Proactor;
 }
 
 #endif // OOSERVER_ROOT_MANAGER_H_INCLUDED_

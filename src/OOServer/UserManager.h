@@ -56,6 +56,7 @@ namespace User
 		Manager& operator = (const Manager&);
 
 		OOBase::RWMutex                                                               m_lock;
+		OOSvrBase::Proactor*                                                          m_proactor;
 		OOBase::ThreadPool                                                            m_proactor_pool;
 		Omega::uint32_t                                                               m_nIPSCookie;
 		bool                                                                          m_bIsSandbox;

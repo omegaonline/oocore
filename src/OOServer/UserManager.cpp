@@ -385,6 +385,16 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 	LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()));
 
 	int err = 0;
+
+#if defined(__linux__)
+	// Try for an abstract socket first...
+	char abstract[108] = {0};
+	memcpy(abstract+1,strPipe.c_str(),sizeof(abstract)-2);
+	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,abstract,err,&m_sa);
+	if (!err)
+		return true;
+#endif
+
 	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);

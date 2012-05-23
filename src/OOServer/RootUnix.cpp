@@ -114,15 +114,23 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 
 bool Root::Manager::start_client_acceptor()
 {
-	const char* pipe_name = "/tmp/omegaonline";
+	const char* abstract_name = "\0/tmp/omegaonline";
+	const char* pipe_name = abstract_name + 1;
 
 	m_sa.mode = 0777;
 
 	int err = 0;
+
+#if defined(__linux__)
+	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,abstract_name,err,&m_sa);
+	if (!err)
+		return true;
+#endif
+
 	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
 	if (err == EADDRINUSE)
 	{
-		unlink(pipe_name);
+		::unlink(pipe_name);
 		m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
 	}
 

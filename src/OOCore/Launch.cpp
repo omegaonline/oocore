@@ -107,11 +107,18 @@ namespace
  	#if defined(_WIN32)
  		const char* name = "OmegaOnline";
 	#else
-		const char* name = "/tmp/omegaonline";
+ 		const char* abstract_name = "\0/tmp/omegaonline";
+		const char* name = abstract_name + 1;
 	#endif
 
-		OOBase::SmartPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(name,err);
-		if (!root_socket)
+		OOBase::SmartPtr<OOBase::Socket> root_socket;
+
+#if defined (__linux__)
+		root_socket = OOBase::Socket::connect_local(abstract_name,err);
+		if (err)
+#endif
+		root_socket = OOBase::Socket::connect_local(name,err);
+		if (err)
 		{
 			ObjectPtr<IException> ptrE = ISystemException::Create(err);
 			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
@@ -145,10 +152,23 @@ void OOCore::UserSession::start()
 
 	int err = 0;
 
+#if defined(__linux__)
+	char abstract[108] = {0};
+	memcpy(abstract+1,strPipe.c_str(),sizeof(abstract)-2);
+#endif
+
 	// Connect up to the user process...
 	OOBase::Timeout timeout(15,0);
 	do
 	{
+
+#if defined(__linux__)
+		// Try for an abstract socket first...
+		m_stream = OOBase::Socket::connect_local(abstract,err,timeout);
+		if (!err)
+			break;
+#endif
+
 		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
 		if (!err || (err != ENOENT && err != ECONNREFUSED))
 			break;

@@ -576,43 +576,37 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 
 	if (err2)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
-	else
+
+	Db::hive_errors err = ptrRegistry->create_key(0,key,strSubKey,0,0,strLink,strFullKeyName);
+	if (err)
 	{
-		Db::hive_errors err = ptrRegistry->create_key(0,key,strSubKey,0,0,strLink,strFullKeyName);
+		if (err != Db::HIVE_NOTFOUND)
+			LOG_ERROR_RETURN(("Failed to open the '/%s/Environment' key in the user registry",key_text),false);
+
+		return true;
+	}
+
+	Db::Hive::registry_set_t names;
+	err = ptrRegistry->enum_values(key,0,names);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text),false);
+
+	OOBase::String strName;
+	while (names.pop(&strName))
+	{
+		OOBase::LocalString strVal;
+		err = ptrRegistry->get_value(key,strName.c_str(),0,strVal);
 		if (err)
-		{
-			if (err != Db::HIVE_NOTFOUND)
-				LOG_ERROR_RETURN(("Failed to open the '/%s/Environment' key in the user registry",key_text),false);
-		}
-		else
-		{
-			Db::Hive::registry_set_t names;
-			err = ptrRegistry->enum_values(key,0,names);
-			if (err)
-				LOG_ERROR_RETURN(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text),false);
-			else
-			{
-				OOBase::String strName;
-				while (names.pop(&strName))
-				{
-					OOBase::LocalString strVal;
-					err = ptrRegistry->get_value(key,strName.c_str(),0,strVal);
-					if (!err)
-					{
-						OOBase::String strValue;
-						err2 = strValue.assign(strVal.c_str(),strVal.length());
-						if (err2)
-							LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
-						else
-						{
-							err2 = tabEnv.insert(strName,strValue);
-							if (err2)
-								LOG_ERROR_RETURN(("Failed to insert environment string: %s",OOBase::system_error_text(err2)),false);
-						}
-					}
-				}
-			}
-		}
+			LOG_ERROR_RETURN(("Failed to get the '/%s/Environment/%s' value from the user registry",key_text,strName.c_str()),false);
+
+		OOBase::String strValue;
+		err2 = strValue.assign(strVal.c_str(),strVal.length());
+		if (err2)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
+
+		err2 = tabEnv.insert(strName,strValue);
+		if (err2)
+			LOG_ERROR_RETURN(("Failed to insert environment string: %s",OOBase::system_error_text(err2)),false);
 	}
 
 	return true;

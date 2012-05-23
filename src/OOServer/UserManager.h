@@ -108,8 +108,6 @@ namespace User
 		void close_all_remotes();
 		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator>& channels);
 	};
-
-	typedef OOBase::Singleton<OOSvrBase::Proactor,Manager> Proactor;
 }
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_

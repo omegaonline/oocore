@@ -139,7 +139,7 @@ int User::Manager::run(const char* pszPipe)
 		LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 	else
 	{
-		err = m_proactor_pool.run(run_proactor,NULL,2);
+		err = m_proactor_pool.run(&run_proactor,m_proactor,2);
 		if (err != 0)
 			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 		else
@@ -179,10 +179,10 @@ int User::Manager::run(const char* pszPipe)
 	return ret;
 }
 
-int User::Manager::run_proactor(void*)
+int User::Manager::run_proactor(void* p)
 {
 	int err = 0;
-	return Proactor::instance().run(err);
+	return static_cast<OOSvrBase::Proactor*>(p)->run(err);
 }
 
 bool User::Manager::connect_root(const char* pszPipe)

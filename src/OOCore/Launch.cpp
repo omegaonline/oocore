@@ -111,7 +111,7 @@ namespace
 		const char* name = abstract_name + 1;
 	#endif
 
-		OOBase::SmartPtr<OOBase::Socket> root_socket;
+		OOBase::RefPtr<OOBase::Socket> root_socket;
 
 #if defined (__linux__)
 		root_socket = OOBase::Socket::connect_local(abstract_name,err);

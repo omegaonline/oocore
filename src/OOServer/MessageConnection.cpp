@@ -65,7 +65,6 @@ namespace
 }
 
 OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket) :
-		OOBase::RefCounted(),
 		m_pHandler(pHandler),
 		m_ptrSocket(ptrSocket),
 		m_channel_id(0)

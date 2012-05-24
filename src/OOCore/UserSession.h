@@ -101,7 +101,7 @@ namespace OOCore
 		// 'Main' data
 		OOBase::RWMutex                  m_lock;
 		OOBase::Thread                   m_worker_thread;
-		OOBase::SmartPtr<OOBase::Socket> m_stream;
+		OOBase::RefPtr<OOBase::Socket>   m_stream;
 		Omega::uint32_t                  m_channel_id;
 		Omega::uint32_t                  m_nIPSCookie;
 

@@ -58,10 +58,6 @@
 
 #include "MessageConnection.h"
 
-#if !defined(ECONNRESET) && defined(_WIN32)
-#define ECONNRESET WSAECONNRESET
-#endif
-
 namespace
 {
 	static const size_t     s_default_buffer_size = 512;

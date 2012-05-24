@@ -99,7 +99,11 @@ namespace
 			
 	#elif defined(HAVE_UNISTD_H)
 
-		int err = name.printf("/tmp/oo-%d-%d",getuid(),getpid());
+		#if defined(P_tmpdir)
+			int err = name.printf(P_tmpdir "/oo-%d-%d",getuid(),getpid());
+		#else
+			int err = name.printf("/tmp/oo-%d-%d",getuid(),getpid());
+		#endif
 
 	#else
 	#error Fix me!

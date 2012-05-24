@@ -27,10 +27,6 @@
 using namespace Omega;
 using namespace OTL;
 
-#if !defined(ECONNREFUSED) && defined(_WIN32)
-#define ECONNREFUSED WSAECONNREFUSED
-#endif
-
 #if defined(HAVE_DBUS_H)
 #undef interface
 #include <dbus/dbus.h>
@@ -107,7 +103,11 @@ namespace
  	#if defined(_WIN32)
  		const char* name = "OmegaOnline";
 	#else
- 		const char* abstract_name = "\0/tmp/omegaonline";
+		#if defined(P_tmpdir)
+ 			const char* abstract_name = "\0" P_tmpdir "/omegaonline";
+ 		#else
+ 			const char* abstract_name = "\0/tmp/omegaonline";
+ 		#endif
 		const char* name = abstract_name + 1;
 	#endif
 
@@ -165,12 +165,12 @@ void OOCore::UserSession::start()
 #if defined(__linux__)
 		// Try for an abstract socket first...
 		m_stream = OOBase::Socket::connect_local(abstract,err,timeout);
-		if (!err)
+		if (!err || err != ENOENT)
 			break;
 #endif
 
 		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
-		if (!err || (err != ENOENT && err != ECONNREFUSED))
+		if (!err || err != ENOENT)
 			break;
 
 		// We ignore the error, and try again until we timeout

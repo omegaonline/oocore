@@ -114,7 +114,11 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 
 bool Root::Manager::start_client_acceptor()
 {
+#if defined(P_tmpdir)
+	const char* abstract_name = "\0" P_tmpdir "/omegaonline";
+#else
 	const char* abstract_name = "\0/tmp/omegaonline";
+#endif
 	const char* pipe_name = abstract_name + 1;
 
 	m_sa.mode = 0777;

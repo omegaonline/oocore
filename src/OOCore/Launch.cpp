@@ -33,6 +33,25 @@ using namespace OTL;
 #define interface struct
 #endif
 
+#if !defined(ECONNREFUSED)
+#define ECONNREFUSED ENOENT
+#endif
+
+#if defined(_WIN32)
+	#define ROOT_NAME "OmegaOnline"
+#else
+	#if defined(P_tmpdir)
+		#define TMPDIR P_tmpdir
+	#else
+		#define TMPDIR "/tmp"
+	#endif
+	#if defined(__linux__)
+		#define ROOT_NAME "\0" TMPDIR "/omegaonline"
+	#else
+		#define ROOT_NAME TMPDIR "/omegaonline"
+	#endif
+#endif
+
 namespace
 {
 	void get_session_id(OOBase::LocalString& strId)
@@ -100,24 +119,7 @@ namespace
 		if (!strPipe.empty())
 			return;
 
- 	#if defined(_WIN32)
- 		const char* name = "OmegaOnline";
-	#else
-		#if defined(P_tmpdir)
- 			const char* abstract_name = "\0" P_tmpdir "/omegaonline";
- 		#else
- 			const char* abstract_name = "\0/tmp/omegaonline";
- 		#endif
-		const char* name = abstract_name + 1;
-	#endif
-
-		OOBase::RefPtr<OOBase::Socket> root_socket;
-
-#if defined (__linux__)
-		root_socket = OOBase::Socket::connect_local(abstract_name,err);
-		if (err)
-#endif
-		root_socket = OOBase::Socket::connect_local(name,err);
+		OOBase::RefPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(ROOT_NAME,err);
 		if (err)
 		{
 			ObjectPtr<IException> ptrE = ISystemException::Create(err);
@@ -161,16 +163,12 @@ void OOCore::UserSession::start()
 	OOBase::Timeout timeout(15,0);
 	do
 	{
-
 #if defined(__linux__)
-		// Try for an abstract socket first...
 		m_stream = OOBase::Socket::connect_local(abstract,err,timeout);
-		if (!err || err != ENOENT)
-			break;
-#endif
-
+#else
 		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
-		if (!err || err != ENOENT)
+#endif
+		if (!err || (err != ENOENT && err != ECONNREFUSED))
 			break;
 
 		// We ignore the error, and try again until we timeout

@@ -115,31 +115,29 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 bool Root::Manager::start_client_acceptor()
 {
 #if defined(P_tmpdir)
-	const char* abstract_name = "\0" P_tmpdir "/omegaonline";
+	#define TMPDIR P_tmpdir
 #else
-	const char* abstract_name = "\0/tmp/omegaonline";
+	#define TMPDIR "/tmp"
 #endif
-	const char* pipe_name = abstract_name + 1;
+
+#if defined(__linux__)
+	#define ROOT_NAME "\0" TMPDIR "/omegaonline"
+#else
+	#define ROOT_NAME TMPDIR "/omegaonline"
+#endif
 
 	m_sa.mode = 0777;
 
 	int err = 0;
-
-#if defined(__linux__)
-	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,abstract_name,err,&m_sa);
-	if (!err)
-		return true;
-#endif
-
-	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
+	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
 	if (err == EADDRINUSE)
 	{
-		::unlink(pipe_name);
-		m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,pipe_name,err,&m_sa);
+		::unlink(ROOT_NAME);
+		m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
 	}
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: '" TMPDIR "/omegaonline' %s",OOBase::system_error_text(err)),false);
 
 	return true;
 }

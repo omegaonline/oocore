@@ -39,17 +39,12 @@ using namespace OTL;
 
 #if defined(_WIN32)
 	#define ROOT_NAME "OmegaOnline"
+#elif defined(__linux__)
+	#define ROOT_NAME "\0omegaonline"
+#elif defined(P_tmpdir)
+	#define ROOT_NAME P_tmpdir "/omegaonline"
 #else
-	#if defined(P_tmpdir)
-		#define TMPDIR P_tmpdir
-	#else
-		#define TMPDIR "/tmp"
-	#endif
-	#if defined(__linux__)
-		#define ROOT_NAME "\0" TMPDIR "/omegaonline"
-	#else
-		#define ROOT_NAME TMPDIR "/omegaonline"
-	#endif
+	#define ROOT_NAME "/tmp/omegaonline"
 #endif
 
 namespace
@@ -116,34 +111,44 @@ namespace
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		if (!strPipe.empty())
-			return;
-
-		OOBase::RefPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(ROOT_NAME,err);
-		if (err)
+		if (strPipe.empty())
 		{
-			ObjectPtr<IException> ptrE = ISystemException::Create(err);
-			throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
+			OOBase::RefPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(ROOT_NAME,err);
+			if (err)
+			{
+				ObjectPtr<IException> ptrE = ISystemException::Create(err);
+				throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
+			}
+
+			uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+
+			OOBase::LocalString strSid;
+			get_session_id(strSid);
+
+			OOBase::CDRStream stream;
+			if (!stream.write(version) || !stream.write(strSid.c_str()))
+				OMEGA_THROW(stream.last_error());
+
+			err = root_socket->send(stream.buffer());
+			if (err)
+				OMEGA_THROW(err);
+
+			stream.reset();
+
+			// Now read strPipe
+			if (!stream.recv_string(root_socket,strPipe))
+				OMEGA_THROW(stream.last_error());
+
+			// Now set our pipe name as an env var
+#if defined(_WIN32)
+			SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strPipe.c_str());
+#else
+			setenv("OMEGA_SESSION_ADDRESS",strPipe.c_str(),1);
+#endif
 		}
 
-		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-
-		OOBase::LocalString strSid;
-		get_session_id(strSid);
-
-		OOBase::CDRStream stream;
-		if (!stream.write(version) || !stream.write(strSid.c_str()))
-			OMEGA_THROW(stream.last_error());
-
-		err = root_socket->send(stream.buffer());
-		if (err)
-			OMEGA_THROW(err);
-
-		stream.reset();
-
-		// Now read strPipe
-		if (!stream.recv_string(root_socket,strPipe))
-			OMEGA_THROW(stream.last_error());
+		if (strPipe[0] == ' ')
+			strPipe.replace_at(0,'\0');
 	}
 }
 
@@ -152,22 +157,12 @@ void OOCore::UserSession::start()
 	OOBase::LocalString strPipe;
 	discover_server_port(strPipe);
 
-	int err = 0;
-
-#if defined(__linux__)
-	char abstract[108] = {0};
-	memcpy(abstract+1,strPipe.c_str(),sizeof(abstract)-2);
-#endif
-
 	// Connect up to the user process...
 	OOBase::Timeout timeout(15,0);
+	int err = 0;
 	do
 	{
-#if defined(__linux__)
-		m_stream = OOBase::Socket::connect_local(abstract,err,timeout);
-#else
 		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
-#endif
 		if (!err || (err != ENOENT && err != ECONNREFUSED))
 			break;
 
@@ -215,14 +210,4 @@ void OOCore::UserSession::start()
 
 	// Register locally...
 	m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
-	
-	// Now set our pipe name as an env var
-	if (!strPipe.empty())
-	{
-#if defined(_WIN32)
-		SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strPipe.c_str());
-#else
-		setenv("OMEGA_SESSION_ADDRESS",strPipe.c_str(),1);
-#endif
-	}
 }

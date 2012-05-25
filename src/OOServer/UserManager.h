@@ -82,7 +82,7 @@ namespace User
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
 		bool handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
-		bool start_acceptor(const OOBase::LocalString& strPipe);
+		bool start_acceptor(OOBase::LocalString& strPipe);
 
 		static void do_quit(void* pParams, OOBase::CDRStream& input);
 		void do_quit_i();

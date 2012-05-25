@@ -114,16 +114,12 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 
 bool Root::Manager::start_client_acceptor()
 {
-#if defined(P_tmpdir)
-	#define TMPDIR P_tmpdir
-#else
-	#define TMPDIR "/tmp"
-#endif
-
 #if defined(__linux__)
-	#define ROOT_NAME "\0" TMPDIR "/omegaonline"
+	#define ROOT_NAME "\0omegaonline"
+#elif defined(P_tmpdir)
+	#define ROOT_NAME P_tmpdir "/omegaonline"
 #else
-	#define ROOT_NAME TMPDIR "/omegaonline"
+	#define ROOT_NAME "/tmp/omegaonline"
 #endif
 
 	m_sa.mode = 0777;
@@ -137,7 +133,7 @@ bool Root::Manager::start_client_acceptor()
 	}
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: '" TMPDIR "/omegaonline' %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
 
 	return true;
 }

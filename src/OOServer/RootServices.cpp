@@ -36,7 +36,7 @@
 
 namespace
 {
-	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames)
+	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueOIDs)
 	{
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
 		int err2 = strSubKey.assign(strName.c_str(),strName.length());
@@ -57,9 +57,16 @@ namespace
 			return true;
 		}
 
+		OOBase::String strOID;
+		err2 = strOID.assign(strVal.c_str(),strVal.length());
+		if (err2)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
+
 		// Add the name to the name queue
 		// This prevents circular dependencies
 		err2 = queueNames.push(strName);
+		if (!err2)
+			err2 = queueOIDs.push(strOID);
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to push to queue: %s",OOBase::system_error_text(err2)),false);
 
@@ -82,7 +89,7 @@ namespace
 			OOBase::String strDep;
 			while (names.pop(&strDep))
 			{
-				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames))
+				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueOIDs))
 					return false;
 			}
 		}
@@ -90,7 +97,7 @@ namespace
 		return true;
 	}
 
-	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames)
+	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueOIDs)
 	{
 		Omega::int64_t key = 0;
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
@@ -116,7 +123,7 @@ namespace
 		OOBase::String strName;
 		while (keys.pop(&strName))
 		{
-			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames))
+			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueOIDs))
 				return false;
 		}
 
@@ -127,30 +134,22 @@ namespace
 bool Root::Manager::start_services()
 {
 	// Get the list of services, ordered by dependency
-
-	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames;
-	if (!enum_services(m_registry,queueNames))
+	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames,queueOIDs;
+	if (!enum_services(m_registry,queueNames,queueOIDs))
 		return false;
 
-	OOBase::String info;
-	while (queueNames.pop(&info))
+	// Remove the associated spawned process
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	UserProcess sandbox;
+	if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
+		LOG_ERROR_RETURN(("Failed to find sandbox process"),false);
+
+	guard.release();
+
+	OOBase::String strName,strOID;
+	while (queueNames.pop(&strName) && queueOIDs.pop(&strOID))
 	{
-		/*
-		 * Create a unique local socket name
-		 *
-		 * Send name to sandbox via a root message + strName
-		 *
-		 * Listen for a single connection on the new local socket
-		 *
-		 * Accept 1st connection
-		 *
-		 * Read strName back and check, or the child has exited
-		 *
-		 * Open as many sockets as the service wants, and send down local socket
-		 *
-		 * close()
-		 *
-		 */
 	}
 
 	return true;

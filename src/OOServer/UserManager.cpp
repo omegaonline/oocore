@@ -97,6 +97,10 @@ namespace
 
 		LocalFree(pszSid);
 			
+	#elif defined(__linux__)
+
+		int err = name.printf(" oo-%d-%d",getuid(),getpid());
+
 	#elif defined(HAVE_UNISTD_H)
 
 		#if defined(P_tmpdir)
@@ -344,7 +348,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	}
 }
 
-bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
+bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 {
 #if defined(_WIN32)
 
@@ -384,22 +388,16 @@ bool User::Manager::start_acceptor(const OOBase::LocalString& strPipe)
 
 #endif
 
-	LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()));
+	if (strPipe[0] == ' ')
+	{
+		LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()+1));
+		strPipe.replace_at(0,'\0');
+	}
+	else
+		LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()));
 
 	int err = 0;
-
-#if defined(__linux__)
-
-	char abstract[108] = {0};
-	memcpy(abstract+1,strPipe.c_str(),sizeof(abstract)-2);
-	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,abstract,err,&m_sa);
-
-#else
-
 	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
-
-#endif
-
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
 

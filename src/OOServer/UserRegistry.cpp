@@ -121,7 +121,7 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 	key = m_key;
 	type = m_type;
 
-	if (strSubKey.c_str()[0] == '/')
+	if (strSubKey[0] == '/')
 	{
 		key = 0;
 		type = 0;

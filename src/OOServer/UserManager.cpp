@@ -384,7 +384,7 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 
 #elif defined(HAVE_UNISTD_H)
 
-	m_sa.mode = 0700;
+	m_sa.mode = 0600;
 
 #endif
 

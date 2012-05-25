@@ -122,7 +122,7 @@ bool Root::Manager::start_client_acceptor()
 	#define ROOT_NAME "/tmp/omegaonline"
 #endif
 
-	m_sa.mode = 0777;
+	m_sa.mode = 0666;
 
 	int err = 0;
 	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);

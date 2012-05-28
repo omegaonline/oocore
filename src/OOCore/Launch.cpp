@@ -154,7 +154,12 @@ namespace
 
 void OOCore::UserSession::start()
 {
+#if defined(NDEBUG)
 	OOBase::Timeout timeout(15,0);
+#else
+	OOBase::Timeout timeout;
+#endif
+
 	OOBase::LocalString strPipe;
 	discover_server_port(strPipe,timeout);
 

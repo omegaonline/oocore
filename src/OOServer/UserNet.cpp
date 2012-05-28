@@ -262,8 +262,8 @@ void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
-		pE->Release();
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 	}
 	catch (...)
 	{
@@ -698,8 +698,8 @@ void User::Manager::close_all_remotes()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
-			pE->Release();
+			ObjectPtr<IException> ptrE = pE;
+			LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 		}
 
 		guard.acquire();
@@ -738,8 +738,8 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
-		pE->Release();
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 		return OOServer::MessageHandler::io_result::failed;
 	}
 }

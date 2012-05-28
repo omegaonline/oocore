@@ -71,6 +71,8 @@
 namespace User
 {
 	bool is_debug();
+
+	Omega::string_t recurse_log_exception(Omega::IException* pE);
 }
 
 #endif // OOSERVER_USER_H_INCLUDED_

@@ -64,14 +64,17 @@ namespace
 		void GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 	};
 
-	void recurse_log_exception(Omega::IException* pE)
+	string_t recurse_log_exception(Omega::IException* pE)
 	{
+		string_t msg = pE->GetDescription();
+		if (!msg.IsEmpty() && msg[msg.Length()-1] != '.')
+			msg += ".";
+
 		ObjectPtr<IException> ptrCause = pE->GetCause();
 		if (ptrCause)
-		{
-			LOG_ERROR(("Cause: %s",ptrCause->GetDescription().c_str()));
-			recurse_log_exception(ptrCause);
-		}
+			msg += "\nCause: " + recurse_log_exception(ptrCause);
+
+		return msg;
 	}
 
 	int Run(const guid_t& oid)
@@ -82,8 +85,7 @@ namespace
 		if (pE)
 		{
 			ObjectPtr<IException> ptrE = pE;
-			LOG_ERROR(("IException thrown: %s",ptrE->GetDescription().c_str()));
-			recurse_log_exception(ptrE);
+			LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 		}
 		else
 		{
@@ -109,8 +111,7 @@ namespace
 			catch (IException* pE)
 			{
 				ObjectPtr<IException> ptrE = pE;
-				LOG_ERROR(("IException thrown: %s",ptrE->GetDescription().c_str()));
-				recurse_log_exception(ptrE);
+				LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 			}
 			catch (...)
 			{

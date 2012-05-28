@@ -120,6 +120,19 @@ namespace
 	}
 }
 
+string_t User::recurse_log_exception(IException* pE)
+{
+	string_t msg = pE->GetDescription();
+	if (!msg.IsEmpty() && msg[msg.Length()-1] != '.')
+		msg += ".";
+
+	ObjectPtr<IException> ptrCause = pE->GetCause();
+	if (ptrCause)
+		msg += "\nCause: " + recurse_log_exception(ptrCause);
+
+	return msg;
+}
+
 // UserManager
 
 User::Manager* User::Manager::s_instance = NULL;
@@ -341,9 +354,8 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
-		pE->Release();
-
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 		return false;
 	}
 }
@@ -546,8 +558,8 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	}
 	catch (IException* pE)
 	{
-		LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
-		pE->Release();
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 	}
 
 	// If the root closes, we should end!
@@ -586,8 +598,8 @@ void User::Manager::do_quit_i()
 		}
 		catch (IException* pE)
 		{
-			LOG_ERROR(("IException thrown: %s",pE->GetDescription().c_str()));
-			pE->Release();
+			ObjectPtr<IException> ptrE = pE;
+			LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 		}
 
 		// Close the OOCore

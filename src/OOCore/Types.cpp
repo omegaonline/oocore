@@ -763,23 +763,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 
 #elif defined(HAVE_UNISTD_H)
 
-	OOBase::POSIX::SmartFD fd(OOBase::POSIX::open("/dev/urandom",O_RDONLY));
-	if (!fd.is_valid())
-		fd = OOBase::POSIX::open("/dev/random",O_RDONLY);
-
-	if (!fd.is_valid())
-		OMEGA_THROW(errno);
-
 	guid_base_t res;
-	ssize_t r = OOBase::POSIX::read(fd,&res,sizeof(res));
-	if (r != sizeof(res))
-	{
-		int err = errno;
-		if (r != -1)
-			err = EIO;
-
+	int err = OOBase::POSIX::random_bytes(&res,sizeof(res));
+	if (err)
 		OMEGA_THROW(err);
-	}
 
 	return res;
 

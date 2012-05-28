@@ -91,7 +91,7 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 	strProcess += "oosvrhost";
 #endif
 
-	LOG_DEBUG(("Running surrogate process: %s",strProcess.c_str()));
+	OOBase::Logger::log(OOBase::Logger::Information,"Using host process for OID %s",oid.ToString().c_str());
 
 	if (User::is_debug())
 		strProcess += " --debug";
@@ -113,7 +113,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
 
 	// The timeout needs to be related to the request timeout...
-	OOBase::Timeout timeout(15,0);
+	OOBase::Timeout timeout;
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 	if (ptrCC)
 	{
@@ -122,55 +122,53 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
 	}
 
-	// Use an infinite timeout if we are debugging
-	if (User::is_debug())
-		timeout = OOBase::Timeout();
-
 	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
 	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
 
-	bool is_surrogate = false;
+	bool is_host_process = false;
 	string_t strProcess,strWorkingDir;
-	if ((oid == OOCore::OID_Surrogate || oid == OOCore::OID_SingleSurrogate) && !ptrKey->IsKey(oid.ToString()))
+	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
+
+	// Find the name of the executable to run...
+	ptrKey = ptrKey->OpenKey(oid.ToString());
+	string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
+	ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
+
+	if (ptrKey->IsValue(string_t::constant("SystemHost")))
 	{
 		strProcess = GetSurrogateProcess(oid);
-		is_surrogate = !strProcess.IsEmpty();
+		is_host_process = !strProcess.IsEmpty();
 	}
 
-	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
-	if (strProcess.IsEmpty())
+	if (!is_host_process)
 	{
-		// Find the name of the executable to run...
-		ptrKey = ptrKey->OpenKey(oid.ToString());
-		string_t strAppName = ptrKey->GetValue(string_t::constant("Application")).cast<string_t>();
-		ptrKey = ptrLU->OpenKey("Applications/" + strAppName + "/Activation");
 		strProcess = ptrKey->GetValue(string_t::constant("Path")).cast<string_t>();
 		if (strProcess.IsEmpty() || User::Process::is_invalid_path(strProcess))
 			throw IAccessDeniedException::Create(string_t::constant("Invalid path \"{0}\" in application activation registry value.") % strProcess);
+	}
 
-		if (ptrKey->IsValue(string_t::constant("Directory")))
-			strWorkingDir = ptrKey->GetValue(string_t::constant("Directory")).cast<string_t>();
+	if (ptrKey->IsValue(string_t::constant("Directory")))
+		strWorkingDir = ptrKey->GetValue(string_t::constant("Directory")).cast<string_t>();
 
-		if (ptrKey->IsKey(string_t::constant("Environment")))
+	if (ptrKey->IsKey(string_t::constant("Environment")))
+	{
+		ptrKey = ptrKey->OpenKey(string_t::constant("Environment"));
+		Omega::Registry::IKey::string_set_t setVals = ptrKey->EnumValues();
+		for (Omega::Registry::IKey::string_set_t::const_iterator i=setVals.begin();i!=setVals.end();++i)
 		{
-			ptrKey = ptrKey->OpenKey(string_t::constant("Environment"));
-			Omega::Registry::IKey::string_set_t setVals = ptrKey->EnumValues();
-			for (Omega::Registry::IKey::string_set_t::const_iterator i=setVals.begin();i!=setVals.end();++i)
-			{
-				OOBase::String strKey,strVal;
-				int err = strKey.assign(i->c_str(),i->Length());
-				if (err)
-					OMEGA_THROW(err);
+			OOBase::String strKey,strVal;
+			int err = strKey.assign(i->c_str(),i->Length());
+			if (err)
+				OMEGA_THROW(err);
 
-				string_t val = ptrKey->GetValue(*i).cast<string_t>();
-				err = strVal.assign(val.c_str(),val.Length());
-				if (!err)
-					err = tabEnv.insert(strKey,strVal);
+			string_t val = ptrKey->GetValue(*i).cast<string_t>();
+			err = strVal.assign(val.c_str(),val.Length());
+			if (!err)
+				err = tabEnv.insert(strKey,strVal);
 
-				if (err)
-					OMEGA_THROW(err);
-			}
+			if (err)
+				OMEGA_THROW(err);
 		}
 	}
 
@@ -202,10 +200,10 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	if (!ptrProcess)
 	{
-		OOBase::Logger::log(OOBase::Logger::Debug,"Executing process %s",strProcess.c_str());
+		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strProcess.c_str());
 
 		// Create a new process
-		ptrProcess = User::Process::exec(strProcess,strWorkingDir,is_surrogate,tabEnv);
+		ptrProcess = User::Process::exec(strProcess,strWorkingDir,is_host_process,tabEnv);
 
 		int err = m_mapInProgress.insert(strProcess,ptrProcess);
 		if (err != 0)

@@ -33,7 +33,7 @@ namespace User
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code) = 0;
 		virtual void kill() = 0;
 
-		static Process* exec(const Omega::string_t& strProcess, const Omega::string_t& strWorkingDir, bool is_surrogate, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv);
+		static Process* exec(const Omega::string_t& strProcess, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv);
 		static bool is_invalid_path(const Omega::string_t& strPath);
 
 	protected:

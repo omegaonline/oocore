@@ -39,16 +39,39 @@ BEGIN TRANSACTION;
 	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 12, 'Omega.SingleSurrogate', 8 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 12, 6 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 12, '{22DC1376-4905-D9DD-1B63-2096C487E5A3}' );
-
-	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 13, 'OIDs', 8 );
+	        
+        INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 13, 'Omega.ServiceHost', 8 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 13, 6 );
+	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 13, '{}' );
 
-	  INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 14, 'Applications', 7 );
-	      INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 14, 6 ); 
+	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 14, 'OIDs', 8 );
+	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 14, 6 );
+	        
+	        INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 15, '{D063D32C-FB9A-004A-D2E5-BB5451808FF5}', 14 );
+	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 15, 6 );
+	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Application', 15, 'Omega.SystemHost' );
+	        
+        	INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 16, '{22DC1376-4905-D9DD-1B63-2096C487E5A3}', 14 );
+	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 16, 6 );
+	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Application', 16, 'Omega.SystemHost' );
+	        
+	        INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 17, '{}', 14 );
+	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 17, 6 );
+	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Application', 17, 'Omega.SystemHost' );
 
-	INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 15, '.links', 0 );
-	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 15, 7 );
-	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Local User', 15, 'system:user/' );
+	  INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 18, 'Applications', 7 );
+	      INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 18, 6 ); 
+	      
+	      INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 19, 'Omega.SystemHost', 18 );
+	          INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 19, 6 );
+	          
+	          INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 20, 'Activation', 19 );          	
+		          INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 20, 6 );
+		          INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'SystemHost', 20, '' );
+
+	INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 21, '.links', 0 );
+	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 21, 7 );
+	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Local User', 21, 'system:user/' );
 	
 COMMIT;
 

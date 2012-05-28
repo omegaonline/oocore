@@ -353,7 +353,7 @@ namespace
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 
-		// This might be needed for retricted tokens...
+		// This might be needed for restricted tokens...
 		dwErr = OOBase::Win32::SetTokenDefaultDACL(hToken);
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::system_error_text(dwErr)),dwErr);

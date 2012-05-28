@@ -756,9 +756,9 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		send_response(src_channel_id,src_thread_id,response,timeout,attribs);
 }
 
-OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs)
+OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint16_t attribs)
 {
-	return send_request(m_sandbox_channel,&request,response,OOBase::Timeout(),attribs);
+	return send_request(m_sandbox_channel,&request,response,timeout,attribs);
 }
 
 void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)

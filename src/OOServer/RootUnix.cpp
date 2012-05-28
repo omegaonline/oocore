@@ -62,10 +62,10 @@ bool Root::platform_init()
 {
     // Make sure the file is owned by root (0)
     if (chown(strFile.c_str(),0,(gid_t)-1) != 0)
-        LOG_ERROR_RETURN(("chown(%s) failed: %s",strFile.c_str(),OOBase::system_error_text(errno).c_str()),false);
+        LOG_ERROR_RETURN(("chown(%s) failed: %s",strFile.c_str(),OOBase::system_error_text().c_str()),false);
 
     if (chmod(strFile.c_str(),S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
-        LOG_ERROR_RETURN(("chmod(%s) failed: %s",strFile.c_str(),OOBase::system_error_text(errno).c_str()),false);
+        LOG_ERROR_RETURN(("chmod(%s) failed: %s",strFile.c_str(),OOBase::system_error_text().c_str()),false);
 
     return true;
 }*/

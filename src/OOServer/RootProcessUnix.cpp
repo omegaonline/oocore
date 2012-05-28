@@ -132,7 +132,7 @@ namespace
 		if (fd_to == -1)
 		{
 			if (errno != EEXIST)
-				LOG_ERROR_RETURN(("Failed to open registry hive: '%s' %s",strHive.c_str(),OOBase::system_error_text(errno)),false);
+				LOG_ERROR_RETURN(("Failed to open registry hive: '%s' %s",strHive.c_str(),OOBase::system_error_text()),false);
 		}
 		else
 		{
@@ -514,7 +514,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	fds[0] = fd[0];
 	fds[1] = fd[1];
 
-	OOBase::Logger::log(OOBase::Logger::Debug,"Starting user process '%s'",strAppName.c_str());
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
 
 	// Alloc a new RootProcess
 	RootProcessUnix* pSpawnUnix = new (std::nothrow) RootProcessUnix(uid);

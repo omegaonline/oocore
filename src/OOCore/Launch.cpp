@@ -105,7 +105,7 @@ namespace
 #endif // !WIN32
 	}
 
-	void discover_server_port(OOBase::LocalString& strPipe)
+	void discover_server_port(OOBase::LocalString& strPipe, const OOBase::Timeout timeout)
 	{
 		int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
 		if (err != 0)
@@ -113,7 +113,7 @@ namespace
 
 		if (strPipe.empty())
 		{
-			OOBase::RefPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(ROOT_NAME,err);
+			OOBase::RefPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(ROOT_NAME,err,timeout);
 			if (err)
 			{
 				ObjectPtr<IException> ptrE = ISystemException::Create(err);
@@ -154,13 +154,13 @@ namespace
 
 void OOCore::UserSession::start()
 {
+	OOBase::Timeout timeout(15,0);
 	OOBase::LocalString strPipe;
-	discover_server_port(strPipe);
+	discover_server_port(strPipe,timeout);
 
 	// Connect up to the user process...
-	OOBase::Timeout timeout(15,0);
 	int err = 0;
-	do
+	while (!timeout.has_expired())
 	{
 		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
 		if (!err || (err != ENOENT && err != ECONNREFUSED))
@@ -168,8 +168,6 @@ void OOCore::UserSession::start()
 
 		// We ignore the error, and try again until we timeout
 	}
-	while (!timeout.has_expired());
-
 	if (err)
 		OMEGA_THROW(err);
 

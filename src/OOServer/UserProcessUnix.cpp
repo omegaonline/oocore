@@ -151,6 +151,10 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 			exit_msg("chdir(%s): %s\n",pszWorkingDir,OOBase::system_error_text(err));
 	}
 
+	// When wait_for_exit() is finally removed, replace the system() call below with:
+	// execl("/bin/sh","sh","-c",pszExeName,(char*)NULL);
+	void* TODO;
+
 	// Just use the system() call
 	err = ::system(pszExeName);
 	if (!WIFEXITED(err))

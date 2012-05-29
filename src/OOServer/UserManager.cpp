@@ -841,7 +841,7 @@ void User::Manager::start_service(OOBase::CDRStream& request)
 			catch (IException* pE)
 			{
 				ObjectPtr<IException> ptrE = pE;
-				LOG_ERROR(("Failed to start service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str()));
+				OOBase::Logger::log(OOBase::Logger::Warning,"Failed to start service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str());
 			}
 		}
 	}

@@ -26,21 +26,10 @@
 
 #include <OOBase/GlobalNew.h>
 #include <OOBase/CmdArgs.h>
-//#include <OOBase/Singleton.h>
-//#include <OOBase/SmartPtr.h>
-//#include <OOBase/TLSSingleton.h>
-//#include <OOBase/CDRStream.h>
-//#include <OOBase/Posix.h>
-//#include <OOBase/BoundedQueue.h>
-//#include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
-//#include <OOBase/Set.h>
-//#include <OOBase/Environment.h>
-//#include <OOBase/SecurityWin32.h>
 #include <OOBase/Logger.h>
-//#include <OOBase/Server.h>
-
-//#include <OOSvrBase/Proactor.h>
+#include <OOBase/Socket.h>
+#include <OOBase/SmartPtr.h>
 
 //////////////////////////////////////////////
 
@@ -75,6 +64,8 @@ namespace Host
 	int SingleSurrogate();
 	int MultipleSurrogate();
 	int ServiceStart();
+
+	void StartService(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);
 }
 
 #endif // OOSERVER_HOST_H_INCLUDED_

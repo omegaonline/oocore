@@ -174,9 +174,7 @@ void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, cons
 
 void ServiceManagerImpl::Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
 {
-	Registry::IKey::string_set_t subs = pKey->EnumSubKeys();
-
-	OMEGA_THROW(ENOENT);
+	Host::StartService(strPipe,strName,pKey,strSecret);
 }
 
 int Host::SingleSurrogate()

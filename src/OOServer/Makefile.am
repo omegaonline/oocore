@@ -79,6 +79,7 @@ oosvruser_SOURCES = \
 oosvrhost_SOURCES = \
 	OOServer_Host.h \
 	HostMain.cpp \
+	HostService.cpp \
 	HostSurrogate.cpp
 
 if WIN32

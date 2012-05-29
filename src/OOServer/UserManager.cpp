@@ -99,14 +99,14 @@ namespace
 			
 	#elif defined(__linux__)
 
-		int err = name.printf(" oo-%d-%d",getuid(),getpid());
+		int err = name.printf(" /org/omegaonline/user-%d-%d",getuid(),getpid());
 
 	#elif defined(HAVE_UNISTD_H)
 
 		#if defined(P_tmpdir)
-			int err = name.printf(P_tmpdir "/oo-%d-%d",getuid(),getpid());
+			int err = name.printf(P_tmpdir "/oou-%d-%d",getuid(),getpid());
 		#else
-			int err = name.printf("/tmp/oo-%d-%d",getuid(),getpid());
+			int err = name.printf("/tmp/oou-%d-%d",getuid(),getpid());
 		#endif
 
 	#else

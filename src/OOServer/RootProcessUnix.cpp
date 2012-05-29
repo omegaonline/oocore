@@ -207,16 +207,17 @@ namespace
 		addr.sun_family = AF_UNIX;
 #if defined(__linux__)
 		addr.sun_path[0] = '\0';
-		size_t offset = 1;
+		strncpy(addr.sun_path+1,"/org/omegaonline/",sizeof(addr.sun_path)-1);
+		size_t offset = strlen(addr.sun_path+1) + 1;
 #elif defined(P_tmpdir)
 		strncpy(addr.sun_path,P_tmpdir "/",sizeof(addr.sun_path)-1);
 		size_t offset = strlen(addr.sun_path);
 #else
-		strncpy(addr.sun_path,P_tmpdir "/tmp/",sizeof(addr.sun_path)-1);
+		strncpy(addr.sun_path,"/tmp/",sizeof(addr.sun_path)-1);
 		size_t offset = strlen(addr.sun_path);
 #endif
 
-		return OOBase::POSIX::random_chars(addr.sun_path+offset,sizeof(addr.sun_path)-offset);
+		return OOBase::POSIX::random_chars(addr.sun_path+offset,24);
 	}
 }
 
@@ -500,7 +501,13 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		if (err)
 			LOG_ERROR_RETURN(("Failed to generate unique pipe name: %s",OOBase::system_error_text(err)),ptrNew);
 
-		if (::bind(fd,(const sockaddr*)&addr,sizeof(addr)) == 0)
+		socklen_t addr_len = 0;
+		if (addr.sun_path[0] == '\0')
+			addr_len = offsetof(sockaddr_un, sun_path) + strlen(addr.sun_path+1) + 1;
+		else
+			addr_len = offsetof(sockaddr_un, sun_path) + strlen(addr.sun_path);
+
+		if (::bind(fd,(const sockaddr*)&addr,addr_len) == 0)
 			break;
 
 		if (errno != EADDRINUSE)
@@ -513,10 +520,18 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 	if (err)
 		LOG_ERROR_RETURN(("Failed to read random bytes: %s",OOBase::system_error_text(err)),ptrNew);
 
+	OOBase::LocalString strPipe;
+	if (addr.sun_path[0] == '\0')
+		err = strPipe.concat(" ",addr.sun_path+1);
+	else
+		err = strPipe.append(addr.sun_path);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),ptrNew);
+
 	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
 	OOBase::CDRStream request;
 	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StartService)) ||
-			!request.write(addr.sun_path) ||
+			!request.write(strPipe.c_str()) ||
 			!request.write(strName.c_str()) ||
 			!request.write(key) ||
 			!request.write(secret))
@@ -535,6 +550,9 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 	// accept() the first connection
 	OOBase::POSIX::SmartFD new_fd;
 	OOBase::Timeout timeout(wait_secs,0);
+	if (Root::is_debug())
+		timeout = OOBase::Timeout();
+
 	err = OOBase::BSD::accept(fd,new_fd,timeout);
 	if (err == ETIMEDOUT)
 	{

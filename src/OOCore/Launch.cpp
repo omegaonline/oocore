@@ -40,7 +40,7 @@ using namespace OTL;
 #if defined(_WIN32)
 	#define ROOT_NAME "OmegaOnline"
 #elif defined(__linux__)
-	#define ROOT_NAME "\0omegaonline"
+	#define ROOT_NAME "\0/org/omegaonline"
 #elif defined(P_tmpdir)
 	#define ROOT_NAME P_tmpdir "/omegaonline"
 #else

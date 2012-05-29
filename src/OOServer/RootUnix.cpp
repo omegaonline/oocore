@@ -115,7 +115,7 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 bool Root::Manager::start_client_acceptor()
 {
 #if defined(__linux__)
-	#define ROOT_NAME "\0omegaonline"
+	#define ROOT_NAME "\0/org/omegaonline"
 #elif defined(P_tmpdir)
 	#define ROOT_NAME P_tmpdir "/omegaonline"
 #else

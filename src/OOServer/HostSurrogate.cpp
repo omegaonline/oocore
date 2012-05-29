@@ -77,7 +77,7 @@ namespace
 		return msg;
 	}
 
-	int Run(const guid_t& oid)
+	int Run(const guid_t& oid, uint32_t msecs)
 	{
 		int ret = EXIT_FAILURE;
 
@@ -95,7 +95,7 @@ namespace
 
 				try
 				{
-					while (Omega::HandleRequest(30000) || GetModule()->HaveLocks() || !Omega::CanUnload())
+					while (Omega::HandleRequest(msecs) || GetModule()->HaveLocks() || !Omega::CanUnload())
 					{}
 				}
 				catch (...)
@@ -154,10 +154,10 @@ void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, cons
 
 int Host::SingleSurrogate()
 {
-	return Run(OOCore::OID_SingleSurrogate);
+	return Run(OOCore::OID_SingleSurrogate,30000);
 }
 
 int Host::MultipleSurrogate()
 {
-	return Run(OOCore::OID_Surrogate);
+	return Run(OOCore::OID_Surrogate,30000);
 }

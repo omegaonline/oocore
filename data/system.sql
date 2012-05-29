@@ -42,7 +42,7 @@ BEGIN TRANSACTION;
 	        
         INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 13, 'Omega.ServiceHost', 8 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 13, 6 );
-	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 13, '{}' );
+	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 13, '{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}' );
 
 	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 14, 'OIDs', 8 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 14, 6 );
@@ -55,7 +55,7 @@ BEGIN TRANSACTION;
 	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 16, 6 );
 	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Application', 16, 'Omega.SystemHost' );
 	        
-	        INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 17, '{}', 14 );
+	        INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 17, '{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}', 14 );
 	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 17, 6 );
 	        	INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'Application', 17, 'Omega.SystemHost' );
 

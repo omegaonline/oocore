@@ -36,7 +36,7 @@
 
 namespace
 {
-	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueOIDs)
+	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys)
 	{
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
 		int err2 = strSubKey.assign(strName.c_str(),strName.length());
@@ -48,25 +48,11 @@ namespace
 		if (err)
 			LOG_ERROR_RETURN(("Failed to open the '/System/Services/%s' key in the registry",strName.c_str()),false);
 
-		// Check we have an OID
-		OOBase::LocalString strVal;
-		err = ptrRegistry->get_value(subkey,"OID",0,strVal);
-		if (err)
-		{
-			OOBase::Logger::log(OOBase::Logger::Warning,"Failed to get the OID value for the '/System/Services/%s' key in the registry",strName.c_str());
-			return true;
-		}
-
-		OOBase::String strOID;
-		err2 = strOID.assign(strVal.c_str(),strVal.length());
-		if (err2)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
-
 		// Add the name to the name queue
 		// This prevents circular dependencies
 		err2 = queueNames.push(strName);
 		if (!err2)
-			err2 = queueOIDs.push(strOID);
+			err2 = queueKeys.push(key);
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to push to queue: %s",OOBase::system_error_text(err2)),false);
 
@@ -89,7 +75,7 @@ namespace
 			OOBase::String strDep;
 			while (names.pop(&strDep))
 			{
-				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueOIDs))
+				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueKeys))
 					return false;
 			}
 		}
@@ -97,7 +83,7 @@ namespace
 		return true;
 	}
 
-	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueOIDs)
+	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys)
 	{
 		Omega::int64_t key = 0;
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
@@ -123,7 +109,7 @@ namespace
 		OOBase::String strName;
 		while (keys.pop(&strName))
 		{
-			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueOIDs))
+			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueKeys))
 				return false;
 		}
 
@@ -134,8 +120,9 @@ namespace
 bool Root::Manager::start_services()
 {
 	// Get the list of services, ordered by dependency
-	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames,queueOIDs;
-	if (!enum_services(m_registry,queueNames,queueOIDs))
+	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames;
+	OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator> queueKeys;
+	if (!enum_services(m_registry,queueNames,queueKeys))
 		return false;
 
 	// Remove the associated spawned process
@@ -147,9 +134,22 @@ bool Root::Manager::start_services()
 
 	guard.release();
 
-	OOBase::String strName,strOID;
-	while (queueNames.pop(&strName) && queueOIDs.pop(&strOID))
+	OOBase::String strName;
+	Omega::int64_t key;
+	while (queueNames.pop(&strName) && queueKeys.pop(&key))
 	{
+		OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
+
+		// Make Timeout a registry setting
+		void* TODO;
+		unsigned int wait_secs = 15;
+
+		// Create a unique local socket name
+		OOBase::RefPtr<OOBase::Socket> ptrSocket = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs);
+		if (ptrSocket)
+		{
+
+		}
 	}
 
 	return true;

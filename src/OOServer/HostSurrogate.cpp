@@ -64,6 +64,24 @@ namespace
 		void GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 	};
 
+	class ServiceManagerImpl :
+			public ObjectBase,
+			public AutoObjectFactory<ServiceManagerImpl,&OOCore::OID_ServiceManager,Activation::UserScope | Activation::SingleUse>,
+			public OOCore::IServiceManager
+	{
+	public:
+		ServiceManagerImpl()
+		{ }
+
+		BEGIN_INTERFACE_MAP(ServiceManagerImpl)
+			INTERFACE_ENTRY(OOCore::IServiceManager)
+		END_INTERFACE_MAP()
+
+	// IServiceManager members
+	public:
+		void Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret);
+	};
+
 	string_t recurse_log_exception(Omega::IException* pE)
 	{
 		string_t msg = pE->GetDescription();
@@ -137,10 +155,12 @@ namespace
 BEGIN_PROCESS_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(SingleSurrogateImpl)
 	OBJECT_MAP_ENTRY(SurrogateImpl)
+	OBJECT_MAP_ENTRY(ServiceManagerImpl)
 END_PROCESS_OBJECT_MAP()
 
 OMEGA_DEFINE_OID(OOCore,OID_Surrogate,"{D063D32C-FB9A-004A-D2E5-BB5451808FF5}");
 OMEGA_DEFINE_OID(OOCore,OID_SingleSurrogate,"{22DC1376-4905-D9DD-1B63-2096C487E5A3}");
+OMEGA_DEFINE_OID(OOCore,OID_ServiceManager,"{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}");
 
 void SingleSurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
@@ -152,6 +172,13 @@ void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, cons
 	OOCore_GetObject(oid,clean_flags(flags),iid,pObject);
 }
 
+void ServiceManagerImpl::Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
+{
+	Registry::IKey::string_set_t subs = pKey->EnumSubKeys();
+
+	OMEGA_THROW(ENOENT);
+}
+
 int Host::SingleSurrogate()
 {
 	return Run(OOCore::OID_SingleSurrogate,30000);
@@ -160,4 +187,9 @@ int Host::SingleSurrogate()
 int Host::MultipleSurrogate()
 {
 	return Run(OOCore::OID_Surrogate,30000);
+}
+
+int Host::ServiceStart()
+{
+	return Run(OOCore::OID_ServiceManager,0xFFFFFFFF);
 }

@@ -323,7 +323,8 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	else
 	{
 		bQuit = !pThis->bootstrap(sandbox_channel) ||
-			!pThis->start_acceptor(strPipe);
+			!pThis->start_acceptor(strPipe) ||
+			!pThis->notify_started();
 	}
 
 	if (bQuit)
@@ -635,13 +636,17 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	}
 
 	OOBase::CDRStream response;
-	//switch (op_code)
-	//{
-	//default:
+	switch (op_code)
+	{
+	case OOServer::StartService:
+		start_service(request);
+		break;
+
+	default:
 		response.write(int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
-	//	break;
-	//}
+		break;
+	}
 
 	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
 	{
@@ -789,4 +794,55 @@ void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strVal
 		OMEGA_THROW(response.last_error());
 
 	strValue = strVal.c_str();
+}
+
+bool User::Manager::notify_started()
+{
+	if (m_bIsSandbox)
+	{
+		OOBase::CDRStream request;
+		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::NotifyStarted));
+
+		if (request.last_error() != 0)
+			LOG_ERROR_RETURN(("Failed to write start notification arguments: %s",OOBase::system_error_text(request.last_error())),false);
+
+		if (send_request(m_uUpstreamChannel,&request,NULL,OOBase::Timeout(),TypeInfo::Asynchronous) != OOServer::MessageHandler::io_result::success)
+			LOG_ERROR_RETURN(("Failed to send start notification: %s",OOBase::system_error_text()),false);
+	}
+
+	return true;
+}
+
+void User::Manager::start_service(OOBase::CDRStream& request)
+{
+	if (!m_bIsSandbox)
+		LOG_ERROR(("Request to start service received in non-sandbox host"));
+	else
+	{
+		OOBase::LocalString strPipe,strName,strSecret;
+		int64_t key = 0;
+		if (!request.read(strPipe) ||
+				!request.read(strName) ||
+				!request.read(key) ||
+				!request.read(strSecret))
+		{
+			LOG_ERROR(("Failed to read service start args: %s",OOBase::system_error_text(request.last_error())));
+		}
+		else
+		{
+			try
+			{
+				// Wrap up a registry key
+				ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
+				ptrKey->init(this,string_t::constant("/System/Services/") + strName.c_str(),key,0);
+
+				ObjectPtr<OOCore::IServiceManager>("Omega.ServiceHost")->Start(strPipe.c_str(),strName.c_str(),ptrKey,strSecret.c_str());
+			}
+			catch (IException* pE)
+			{
+				ObjectPtr<IException> ptrE = pE;
+				LOG_ERROR(("Failed to start service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str()));
+			}
+		}
+	}
 }

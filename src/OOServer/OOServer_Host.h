@@ -74,6 +74,7 @@ namespace Host
 
 	int SingleSurrogate();
 	int MultipleSurrogate();
+	int ServiceStart();
 }
 
 #endif // OOSERVER_HOST_H_INCLUDED_

@@ -107,6 +107,9 @@ namespace User
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
 		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator>& channels);
+
+		bool notify_started();
+		void start_service(OOBase::CDRStream& request);
 	};
 }
 

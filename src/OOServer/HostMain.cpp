@@ -94,6 +94,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("debug");
 	cmd_args.add_option("single");
 	cmd_args.add_option("multiple");
+	cmd_args.add_option("service");
 
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
@@ -146,6 +147,8 @@ int main(int argc, char* argv[])
 		return Host::MultipleSurrogate();
 	else if (args.exists("single"))
 		return Host::SingleSurrogate();
+	else if (args.exists("service"))
+		return Host::ServiceStart();
 
 	// Oops...
 	OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");

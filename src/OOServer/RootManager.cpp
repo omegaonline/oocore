@@ -88,8 +88,6 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 							// Wait for quit
 							for (bool bQuit = false;!bQuit;)
 							{
-								start_services();
-
 								bQuit = wait_to_quit();
 								if (!bQuit)
 								{
@@ -710,6 +708,11 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
+	case OOServer::NotifyStarted:
+		if (src_channel_id == m_sandbox_channel)
+			start_services();
+		break;
+
 	case OOServer::GetConfigArg:
 		get_config_arg(request,response);
 		break;
@@ -752,7 +755,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		break;
 	}
 
-	if (response.last_error() == 0 && !(attribs & 1))
+	if (!response.last_error() && !(attribs & OOServer::Message_t::asynchronous))
 		send_response(src_channel_id,src_thread_id,response,timeout,attribs);
 }
 

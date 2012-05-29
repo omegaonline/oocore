@@ -43,6 +43,7 @@
 
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/un.h>
 
 namespace
 {
@@ -58,6 +59,7 @@ namespace
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		OOBase::RefPtr<OOBase::Socket> LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const;
 
 	private:
 		OOBase::String m_sid;
@@ -200,6 +202,22 @@ namespace
 		}
 	}
 
+	int unique_pipename(sockaddr_un& addr)
+	{
+		addr.sun_family = AF_UNIX;
+#if defined(__linux__)
+		addr.sun_path[0] = '\0';
+		size_t offset = 1;
+#elif defined(P_tmpdir)
+		strncpy(addr.sun_path,P_tmpdir "/",sizeof(addr.sun_path)-1);
+		size_t offset = strlen(addr.sun_path);
+#else
+		strncpy(addr.sun_path,P_tmpdir "/tmp/",sizeof(addr.sun_path)-1);
+		size_t offset = strlen(addr.sun_path);
+#endif
+
+		return OOBase::POSIX::random_chars(addr.sun_path+offset,sizeof(addr.sun_path)-offset);
+	}
 }
 
 RootProcessUnix::RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
@@ -458,6 +476,99 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 		return false;
 
 	return (m_uid == uid);
+}
+
+OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const
+{
+	OOBase::RefPtr<OOBase::Socket> ptrNew;
+
+	// Create a new socket
+	OOBase::POSIX::SmartFD fd(::socket(AF_UNIX,SOCK_STREAM,0));
+	if (!fd.is_valid())
+		LOG_ERROR_RETURN(("Failed to create socket: %s",OOBase::system_error_text()),ptrNew);
+
+	// Set permissions
+	if (::fchmod(fd,0666) != 0)
+		LOG_ERROR_RETURN(("Failed to set socket permissions: %s",OOBase::system_error_text()),ptrNew);
+
+	// Bind to a unique pipe name
+	int err = 0;
+	sockaddr_un addr = {0};
+	for (;;)
+	{
+		err = unique_pipename(addr);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to generate unique pipe name: %s",OOBase::system_error_text(err)),ptrNew);
+
+		if (::bind(fd,(const sockaddr*)&addr,sizeof(addr)) == 0)
+			break;
+
+		if (errno != EADDRINUSE)
+			LOG_ERROR_RETURN(("Failed to bind pipe: %s",OOBase::system_error_text()),ptrNew);
+	}
+
+	// Invent a random secret...
+	char secret[32] = {0};
+	err = OOBase::POSIX::random_chars(secret,sizeof(secret));
+	if (err)
+		LOG_ERROR_RETURN(("Failed to read random bytes: %s",OOBase::system_error_text(err)),ptrNew);
+
+	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
+	OOBase::CDRStream request;
+	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StartService)) ||
+			!request.write(addr.sun_path) ||
+			!request.write(strName.c_str()) ||
+			!request.write(key) ||
+			!request.write(secret))
+	{
+		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),ptrNew);
+	}
+
+	OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,NULL,OOBase::Timeout(),OOServer::Message_t::asynchronous);
+	if (res != OOServer::MessageHandler::io_result::success)
+		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),ptrNew);
+
+	// Set the socket listening
+	if (::listen(fd,1) != 0)
+		LOG_ERROR_RETURN(("Failed to listen on pipe: %s",OOBase::system_error_text()),ptrNew);
+
+	// accept() the first connection
+	OOBase::POSIX::SmartFD new_fd;
+	OOBase::Timeout timeout(wait_secs,0);
+	err = OOBase::BSD::accept(fd,new_fd,timeout);
+	if (err == ETIMEDOUT)
+	{
+		OOBase::Logger::log(OOBase::Logger::Warning,"Timed out waiting for service '%s' to start",strName.c_str());
+		return ptrNew;
+	}
+	else if (err)
+		LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),ptrNew);
+
+	// Done with fd
+	OOBase::POSIX::close(fd.detach());
+
+	ptrNew = OOBase::Socket::attach(new_fd.detach(),err);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),ptrNew);
+
+	// Now read the secret back...
+	char secret2[32] = {0};
+	ptrNew->recv(secret2,sizeof(secret2),true,err);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to read form socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
+
+	if (memcmp(secret,secret2,sizeof(secret)) != 0)
+		LOG_ERROR_RETURN(("Failed to validate service"),OOBase::RefPtr<OOBase::Socket>());
+
+	uid_t other_uid;
+	err = ptrNew->get_peer_uid(other_uid);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to determine service user: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
+
+	if (other_uid != m_uid)
+		LOG_ERROR_RETURN(("Failed to validate service"),OOBase::RefPtr<OOBase::Socket>());
+
+	return ptrNew;
 }
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)

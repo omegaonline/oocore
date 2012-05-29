@@ -28,9 +28,12 @@ namespace OOServer
 	{
 		// Root -> User
 
-		// User -> Root
+		// Root -> Sandbox
+		StartService = 0x40,
 
-		GetConfigArg = 0x80,
+		// User -> Root
+		NotifyStarted = 0x80,
+		GetConfigArg,
 
 		// Registry opcodes
 		OpenKey = 0x90,

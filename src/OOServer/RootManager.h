@@ -58,6 +58,8 @@ namespace Root
 
 		int run(const OOBase::CmdArgs::results_t& cmd_args);
 
+		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::Timeout& timeout = OOBase::Timeout(), Omega::uint16_t attribs = 0);
+
 	private:
 		Manager(const Manager&);
 		Manager& operator = (const Manager&);
@@ -132,8 +134,6 @@ namespace Root
 		void registry_set_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-
-		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs);
 	};
 }
 

@@ -34,6 +34,11 @@ namespace OOCore
 		virtual Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink) = 0;
 	};
 
+	interface IServiceManager : public Omega::IObject
+	{
+		virtual void Start(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret) = 0;
+	};
+
 	// {7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}
 	extern "C" const Omega::guid_t OID_InterProcessService;
 
@@ -42,6 +47,9 @@ namespace OOCore
 
 	// {22DC1376-4905-D9DD-1B63-2096C487E5A3}
 	extern "C" const Omega::guid_t OID_SingleSurrogate;
+
+	// {1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}
+	extern "C" const Omega::guid_t OID_ServiceManager;
 }
 
 OMEGA_DEFINE_INTERFACE
@@ -54,6 +62,13 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,millisecs))
 	OMEGA_METHOD(Remoting::IChannel*,OpenRemoteChannel,1,((in),const string_t&,strEndpoint))
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	OOCore, IServiceManager, "{705FE905-164E-DDAE-DD2C-DE7A049AA58C}",
+
+	OMEGA_METHOD_VOID(Start,4,((in),const string_t&,strPipe,(in),const string_t&,strName,(in),Registry::IKey*,pKey,(in),const string_t&,strSecret))
 )
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,());

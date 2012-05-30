@@ -212,5 +212,5 @@ void OOCore::UserSession::start()
 	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
 
 	// Register locally...
-	m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
+	m_nIPSCookie = OOCore_RegisterIPS(ptrIPS,false);
 }

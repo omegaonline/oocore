@@ -346,7 +346,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		ptrIPS->init(ptrOMSb,NULL,this);
 
 		// Register our interprocess service so we can react to activation requests
-		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS);
+		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS,true);
 
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();

@@ -98,22 +98,18 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,())
 	OOCore::RegisterObjects();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,1,((in),IObject*,pIPS))
+namespace
+{
+	bool s_hosted_by_ooserver = false;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,2,((in),Omega::IObject*,pIPS,(in),bool_t,hosted))
 {
 	// Get the zero cmpt service manager...
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
 	
-	try
-	{
-		// This forces the detection, so cleanup succeeds
-		OOCore::HostedByOOServer();
-	}
-	catch (...)
-	{
-		ptrROT->RevokeObject(nCookie);
-		throw;
-	}
+	s_hosted_by_ooserver = hosted;
 
 	return nCookie;
 }
@@ -136,26 +132,7 @@ OTL::ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 
 bool OOCore::HostedByOOServer()
 {
-	static bool bChecked = false;
-	static bool bHosted = false;
-
-	if (!bChecked)
-	{
-		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
-		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy = GetInterProcessService().QueryInterface<System::Internal::ISafeProxy>();
-		if (ptrSProxy)
-		{
-			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
-			if (!shim || !static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
-			{
-				bHosted = true;
-			}
-		}
-	
-		bChecked = true;
-	}
-
-	return bHosted;
+	return s_hosted_by_ooserver;
 }
 
 OOCore::LocalROT::LocalROT() : m_mapServicesByCookie(1)

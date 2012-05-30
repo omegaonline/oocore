@@ -333,7 +333,7 @@ namespace Omega
 						return m_shim;
 					}
 
-					return 0;
+					return NULL;
 				}
 
 				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)

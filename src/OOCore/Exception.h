@@ -25,7 +25,7 @@
 namespace OOCore
 {
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
-	extern "C" const Omega::guid_t OID_SystemExceptionMarshalFactory;
+	extern const Omega::guid_t OID_SystemExceptionMarshalFactory;
 
 	class SystemException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
@@ -65,13 +65,13 @@ namespace OOCore
 	};
 
 	class SystemExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OID_SystemExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<SystemException>
 	{
 	};
 
 	// {47E86F31-E9E9-4667-89CA-40EB048DA2B7}
-	extern "C" const Omega::guid_t OID_InternalExceptionMarshalFactory;
+	extern const Omega::guid_t OID_InternalExceptionMarshalFactory;
 
 	class InternalException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::IInternalException, &OID_InternalExceptionMarshalFactory>
@@ -111,13 +111,13 @@ namespace OOCore
 	};
 
 	class InternalExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<InternalExceptionMarshalFactoryImpl,&OOCore::OID_InternalExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<InternalExceptionMarshalFactoryImpl,&OID_InternalExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<InternalException>
 	{
 	};
 
 	// {1E127359-1542-4329-8E30-FED8FF810960}
-	extern "C" const Omega::guid_t OID_NotFoundExceptionMarshalFactory;
+	extern const Omega::guid_t OID_NotFoundExceptionMarshalFactory;
 
 	class NotFoundException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::INotFoundException, &OID_NotFoundExceptionMarshalFactory>
@@ -130,13 +130,13 @@ namespace OOCore
 	};
 
 	class NotFoundExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<NotFoundExceptionMarshalFactoryImpl,&OOCore::OID_NotFoundExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<NotFoundExceptionMarshalFactoryImpl,&OID_NotFoundExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<NotFoundException>
 	{
 	};
 
 	// {BA90E55F-E0B6-0528-C45F-32DD9C3A414E}
-	extern "C" const Omega::guid_t OID_AlreadyExistsExceptionMarshalFactory;
+	extern const Omega::guid_t OID_AlreadyExistsExceptionMarshalFactory;
 
 	class AlreadyExistsException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::IAlreadyExistsException, &OID_AlreadyExistsExceptionMarshalFactory>
@@ -149,13 +149,13 @@ namespace OOCore
 	};
 
 	class AlreadyExistsExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<AlreadyExistsExceptionMarshalFactoryImpl,&OOCore::OID_AlreadyExistsExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<AlreadyExistsExceptionMarshalFactoryImpl,&OID_AlreadyExistsExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<AlreadyExistsException>
 	{
 	};
 
 	// {5CA887CE-648C-BBE4-9B66-14F275879CFB}
-	extern "C" const Omega::guid_t OID_AccessDeniedExceptionMarshalFactory;
+	extern const Omega::guid_t OID_AccessDeniedExceptionMarshalFactory;
 
 	class AccessDeniedException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::IAccessDeniedException, &OID_AccessDeniedExceptionMarshalFactory>
@@ -168,13 +168,13 @@ namespace OOCore
 	};
 
 	class AccessDeniedExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<AccessDeniedExceptionMarshalFactoryImpl,&OOCore::OID_AccessDeniedExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<AccessDeniedExceptionMarshalFactoryImpl,&OID_AccessDeniedExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<AccessDeniedException>
 	{
 	};
 
 	// {8FA37F2C-8252-437e-9C54-F07C13152E94}
-	extern "C" const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
+	extern const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 
 	class TimeoutException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
@@ -187,13 +187,13 @@ namespace OOCore
 	};
 
 	class TimeoutExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OID_TimeoutExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<TimeoutException>
 	{
 	};
 
 	// {029B38C5-CC76-4d13-98A4-83A65D40710A}
-	extern "C" const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
+	extern const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
 
 	class ChannelClosedException :
 			public OTL::ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>
@@ -206,7 +206,7 @@ namespace OOCore
 	};
 
 	class ChannelClosedExceptionMarshalFactoryImpl :
-			public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::ProcessScope>,
 			public OTL::ExceptionMarshalFactoryImpl<ChannelClosedException>
 	{
 	};

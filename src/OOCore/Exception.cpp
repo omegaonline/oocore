@@ -93,13 +93,13 @@ namespace
 	OutOfMemoryException OutOfMemoryException::s_instance;
 }
 
-OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
-OMEGA_DEFINE_OID(OOCore,OID_InternalExceptionMarshalFactory, "{47E86F31-E9E9-4667-89CA-40EB048DA2B7}");
-OMEGA_DEFINE_OID(OOCore,OID_NotFoundExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
-OMEGA_DEFINE_OID(OOCore,OID_AccessDeniedExceptionMarshalFactory, "{5CA887CE-648C-BBE4-9B66-14F275879CFB}");
-OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
-OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
-OMEGA_DEFINE_OID(OOCore,OID_AlreadyExistsExceptionMarshalFactory, "{BA90E55F-E0B6-0528-C45F-32DD9C3A414E}");
+const Omega::guid_t OOCore::OID_SystemExceptionMarshalFactory("{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
+const Omega::guid_t OOCore::OID_InternalExceptionMarshalFactory("{47E86F31-E9E9-4667-89CA-40EB048DA2B7}");
+const Omega::guid_t OOCore::OID_NotFoundExceptionMarshalFactory("{1E127359-1542-4329-8E30-FED8FF810960}");
+const Omega::guid_t OOCore::OID_AccessDeniedExceptionMarshalFactory("{5CA887CE-648C-BBE4-9B66-14F275879CFB}");
+const Omega::guid_t OOCore::OID_TimeoutExceptionMarshalFactory("{8FA37F2C-8252-437e-9C54-F07C13152E94}");
+const Omega::guid_t OOCore::OID_ChannelClosedExceptionMarshalFactory("{029B38C5-CC76-4d13-98A4-83A65D40710A}");
+const Omega::guid_t OOCore::OID_AlreadyExistsExceptionMarshalFactory("{BA90E55F-E0B6-0528-C45F-32DD9C3A414E}");
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),IException*,pCause))
 {

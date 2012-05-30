@@ -78,7 +78,7 @@ namespace User
 	};
 
 	// {1A7672C5-8478-4e5a-9D8B-D5D019E25D15}
-	extern "C" const Omega::guid_t OID_ChannelMarshalFactory;
+	extern const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :
 			public OTL::ObjectBase,

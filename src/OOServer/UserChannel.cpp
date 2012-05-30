@@ -26,7 +26,7 @@
 using namespace Omega;
 using namespace OTL;
 
-OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+const Omega::guid_t User::OID_ChannelMarshalFactory("{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 
 User::Channel::Channel() :
 		m_pManager(0),
@@ -267,4 +267,4 @@ void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*, Rem
 	pObject = Manager::create_channel(channel_id,message_oid)->QueryInterface(iid);
 }
 
-OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");
+const Omega::guid_t OOCore::OID_CDRMessageMarshalFactory("{1455FCD0-A49B-4f2a-94A5-222949957123}");

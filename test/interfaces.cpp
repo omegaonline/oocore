@@ -10,13 +10,13 @@ namespace Omega
 {
 	namespace TestSuite
 	{
-		extern "C" const Omega::guid_t OID_TestLibrary;
-		extern "C" const Omega::guid_t OID_TestProcess;
+		extern const Omega::guid_t OID_TestLibrary;
+		extern const Omega::guid_t OID_TestProcess;
 	}
 }
 
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48F5-A10E-1DCA3FADB9A6}");
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40C6-90F2-39C7C306FC69}");
+const Omega::guid_t Omega::TestSuite::OID_TestLibrary("{16C07AEA-242F-48F5-A10E-1DCA3FADB9A6}");
+const Omega::guid_t Omega::TestSuite::OID_TestProcess("{4BC2E65B-CEE0-40C6-90F2-39C7C306FC69}");
 
 #include "Test.h"
 

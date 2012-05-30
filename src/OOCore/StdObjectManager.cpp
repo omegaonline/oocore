@@ -932,5 +932,5 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IObjectManager*,OOCore_CreateStdObjectM
 	return static_cast<Remoting::IObjectManager*>(ptrOM.Detach());
 }
 
-OMEGA_DEFINE_OID(OOCore,OID_ProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");
-OMEGA_DEFINE_OID(OOCore,OID_InterProcessService,"{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");
+const Omega::guid_t OOCore::OID_ProxyMarshalFactory("{69099DD8-A628-458a-861F-009E016DB81B}");
+const Omega::guid_t OOCore::OID_InterProcessService("{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");

@@ -7,11 +7,11 @@ namespace Omega
 {
 	namespace TestSuite
 	{
-		extern "C" const Omega::guid_t OID_TestLibrary;
+		extern const Omega::guid_t OID_TestLibrary;
 	}
 }
 
-OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
+const Omega::guid_t Omega::TestSuite::OID_TestLibrary("{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
 
 class TestLibraryImpl :
 		public OTL::ObjectBase,

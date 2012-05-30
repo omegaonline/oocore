@@ -11,7 +11,7 @@ testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/OOCore.la
 testlibrary_la_LDFLAGS += -avoid-version
 else
 testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/liboocore.la
-testlibrary_la_LDFLAGS += -release $(VERSION)
+testlibrary_la_LDFLAGS += -release $(VERSION) -no-undefined -export-symbols-regex '^(OID_|Omega_)'
 endif
 
 testlibrary_la_SOURCES = \

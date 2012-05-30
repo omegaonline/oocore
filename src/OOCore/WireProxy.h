@@ -29,7 +29,7 @@ namespace OOCore
 	class StdObjectManager;
 
 	// {69099DD8-A628-458a-861F-009E016DB81B}
-	extern "C" const Omega::guid_t OID_ProxyMarshalFactory;
+	extern const Omega::guid_t OID_ProxyMarshalFactory;
 
 	class ProxyMarshalFactory :
 			public OTL::ObjectBase,

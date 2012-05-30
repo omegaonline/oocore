@@ -101,7 +101,7 @@ namespace OOCore
 	};
 
 	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}
-	extern "C" const Omega::guid_t OID_ChannelMarshalFactory;
+	extern const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :
 			public OTL::ObjectBase,

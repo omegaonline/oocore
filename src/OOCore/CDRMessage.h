@@ -27,7 +27,7 @@
 namespace OOCore
 {
 	// {1455FCD0-A49B-4f2a-94A5-222949957123}
-	extern "C" const Omega::guid_t OID_CDRMessageMarshalFactory;
+	extern const Omega::guid_t OID_CDRMessageMarshalFactory;
 }
 
 namespace OOCore

@@ -61,7 +61,7 @@ else
 lib_LTLIBRARIES = liboocore.la
 
 liboocore_la_LIBADD = @top_builddir@/oobase/liboobase.la $(UUID_LIBS) $(DBUS_LIBS)
-liboocore_la_LDFLAGS = -release $(VERSION) -no-undefined
+liboocore_la_LDFLAGS = -release $(VERSION) -no-undefined -export-symbols-regex '^(OID_|OOCore_)'
 
 liboocore_la_SOURCES = \
 	$(common)

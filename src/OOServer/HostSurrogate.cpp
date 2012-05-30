@@ -95,6 +95,26 @@ namespace
 		return msg;
 	}
 
+	int worker(void* p)
+	{
+		try
+		{
+			while (Omega::HandleRequest(*static_cast<uint32_t*>(p)) || GetModule()->HaveLocks() || !Omega::CanUnload())
+			{}
+
+			return 0;
+		}
+		catch (IException* pE)
+		{
+			ObjectPtr<IException> ptrE = pE;
+			LOG_ERROR_RETURN(("IException thrown: %s",recurse_log_exception(ptrE).c_str()),-1);
+		}
+		catch (...)
+		{
+			LOG_ERROR_RETURN(("Unrecognised exception thrown"),-1);
+		}
+	}
+
 	int Run(const guid_t& oid, uint32_t msecs)
 	{
 		int ret = EXIT_FAILURE;
@@ -111,16 +131,14 @@ namespace
 			{
 				GetModule()->RegisterObjectFactory(oid);
 
-				try
-				{
-					while (Omega::HandleRequest(msecs) || GetModule()->HaveLocks() || !Omega::CanUnload())
-					{}
-				}
-				catch (...)
-				{
-					GetModule()->UnregisterObjectFactories();
-					throw;
-				}
+				OOBase::ThreadPool pool;
+				int err = pool.run(&worker,&msecs,2);
+				if (err)
+					LOG_ERROR(("Failed to start thread pool: %s",OOBase::system_error_text(err)));
+				else
+					worker(&msecs);
+
+				pool.join();
 
 				GetModule()->UnregisterObjectFactories();
 
@@ -130,10 +148,6 @@ namespace
 			{
 				ObjectPtr<IException> ptrE = pE;
 				LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-			}
-			catch (...)
-			{
-				LOG_ERROR(("Unrecognised exception thrown"));
 			}
 
 			Omega::Uninitialize();

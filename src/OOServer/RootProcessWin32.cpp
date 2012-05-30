@@ -57,6 +57,7 @@ namespace
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		OOBase::RefPtr<OOBase::Socket> LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const;
 
 	private:
 		bool                       m_bSandbox;
@@ -882,6 +883,13 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 		return false;
 
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
+}
+
+OOBase::RefPtr<OOBase::Socket> RootProcessWin32::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const
+{
+	void* TODO;
+
+	return OOBase::RefPtr<OOBase::Socket>();
 }
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)

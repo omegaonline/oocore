@@ -430,7 +430,7 @@ namespace OTL
 			// Override this in a derived class, or do not call
 		}
 
-		virtual void RegisterObjectFactory(const Omega::guid_t& oid)
+		virtual void RegisterObjectFactory(const Omega::guid_t& /*oid*/)
 		{
 			// Override this in a derived class, or do not call
 		}
@@ -440,7 +440,7 @@ namespace OTL
 			// Override this in a derived class, or do not call
 		}
 
-		virtual void UnregisterObjectFactory(const Omega::guid_t& oid)
+		virtual void UnregisterObjectFactory(const Omega::guid_t& /*oid*/)
 		{
 			// Override this in a derived class, or do not call
 		}

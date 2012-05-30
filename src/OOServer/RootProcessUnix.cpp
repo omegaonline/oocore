@@ -547,44 +547,45 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 	if (::listen(fd,1) != 0)
 		LOG_ERROR_RETURN(("Failed to listen on pipe: %s",OOBase::system_error_text()),ptrNew);
 
-	// accept() the first connection
-	OOBase::POSIX::SmartFD new_fd;
-	OOBase::Timeout timeout(wait_secs,0);
-	if (Root::is_debug())
-		timeout = OOBase::Timeout();
-
-	err = OOBase::BSD::accept(fd,new_fd,timeout);
-	if (err == ETIMEDOUT)
+	// accept() a connection
+	for (;;)
 	{
-		OOBase::Logger::log(OOBase::Logger::Warning,"Timed out waiting for service '%s' to start",strName.c_str());
-		return ptrNew;
+		OOBase::POSIX::SmartFD new_fd;
+		OOBase::Timeout timeout(wait_secs,0);
+		if (Root::is_debug())
+			timeout = OOBase::Timeout();
+
+		err = OOBase::BSD::accept(fd,new_fd,timeout);
+		if (err == ETIMEDOUT)
+		{
+			OOBase::Logger::log(OOBase::Logger::Warning,"Timed out waiting for service '%s' to start",strName.c_str());
+			return ptrNew;
+		}
+		else if (err)
+			LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),ptrNew);
+
+		ptrNew = OOBase::Socket::attach(new_fd.detach(),err);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),ptrNew);
+
+		// Now read the secret back...
+		char secret2[32] = {0};
+		ptrNew->recv(secret2,sizeof(secret2),true,err);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to read form socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
+
+		uid_t other_uid;
+		err = ptrNew->get_peer_uid(other_uid);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to determine service user: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
+
+		// Check the secret and the uid
+		if (memcmp(secret,secret2,sizeof(secret)) == 0 && other_uid == m_uid)
+			break;
+
+		OOBase::Logger::log(OOBase::Logger::Warning,"Failed to validate service");
+		ptrNew = NULL;
 	}
-	else if (err)
-		LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),ptrNew);
-
-	// Done with fd
-	OOBase::POSIX::close(fd.detach());
-
-	ptrNew = OOBase::Socket::attach(new_fd.detach(),err);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),ptrNew);
-
-	// Now read the secret back...
-	char secret2[32] = {0};
-	ptrNew->recv(secret2,sizeof(secret2),true,err);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to read form socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
-
-	if (memcmp(secret,secret2,sizeof(secret)) != 0)
-		LOG_ERROR_RETURN(("Failed to validate service"),OOBase::RefPtr<OOBase::Socket>());
-
-	uid_t other_uid;
-	err = ptrNew->get_peer_uid(other_uid);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to determine service user: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
-
-	if (other_uid != m_uid)
-		LOG_ERROR_RETURN(("Failed to validate service"),OOBase::RefPtr<OOBase::Socket>());
 
 	return ptrNew;
 }

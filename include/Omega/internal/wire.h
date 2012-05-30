@@ -476,7 +476,7 @@ namespace Omega
 								{
 									typename impl::type v = default_value<typename impl::type>::value();
 									read(msg,v);
-									m_val.insert(m_val.begin(),impl::coerce(v));
+									m_val.insert(m_val.end(),impl::coerce(v));
 								}
 							}
 						}
@@ -494,7 +494,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),m_val.size());
-							for (typename Coll::reverse_iterator i=m_val.rbegin(); i!=m_val.rend(); ++i)
+							for (typename Coll::const_iterator i=m_val.begin(); i!=m_val.end(); ++i)
 								write(msg,static_cast<typename impl::type>(impl::clone(*i)));
 
 							val = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
@@ -521,7 +521,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),val.size());
-							for (typename Coll::const_reverse_iterator i=val.rbegin(); i!=val.rend(); ++i)
+							for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 								write(msg,static_cast<typename impl::type>(impl::coerce(*i)));
 
 							m_shim = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
@@ -548,7 +548,7 @@ namespace Omega
 								{
 									typename impl::type v = default_value<typename impl::type>::value();
 									read(msg,v);
-									dest.insert(dest.begin(),impl::clone(v));
+									dest.insert(dest.end(),impl::clone(v));
 								}
 							}
 						}
@@ -686,7 +686,7 @@ namespace Omega
 									typename mapped_impl::type m = default_value<typename mapped_impl::type>::value();
 									read(msg,k);
 									read(msg,m);
-									m_val.insert(m_val.begin(),typename Coll::value_type(key_impl::coerce(k),mapped_impl::coerce(m)));
+									m_val.insert(m_val.end(),typename Coll::value_type(key_impl::coerce(k),mapped_impl::coerce(m)));
 								}
 							}
 						}
@@ -704,7 +704,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),m_val.size());
-							for (typename Coll::reverse_iterator i=m_val.rbegin(); i!=m_val.rend(); ++i)
+							for (typename Coll::const_iterator i=m_val.begin(); i!=m_val.end(); ++i)
 							{
 								write(msg,key_impl::clone(i->first));
 								write(msg,mapped_impl::clone(i->second));
@@ -734,7 +734,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
 							msg->WriteValue(string_t(),val.size());
-							for (typename Coll::const_reverse_iterator i=val.rbegin(); i!=val.rend(); ++i)
+							for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 							{
 								write(msg,static_cast<typename key_impl::type>(key_impl::coerce(i->first)));
 								write(msg,static_cast<typename mapped_impl::type>(mapped_impl::coerce(i->second)));
@@ -766,7 +766,7 @@ namespace Omega
 									typename mapped_impl::type m = default_value<typename mapped_impl::type>::value();
 									read(msg,k);
 									read(msg,m);
-									dest.insert(dest.begin(),typename Coll::value_type(key_impl::clone(k),mapped_impl::clone(m)));
+									dest.insert(dest.end(),typename Coll::value_type(key_impl::clone(k),mapped_impl::clone(m)));
 								}
 							}
 						}

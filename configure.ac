@@ -105,6 +105,7 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
     AX_CXXFLAGS_GCC_OPTION([-march=i686])
     AX_CXXFLAGS_GCC_OPTION([-mtune=native])
 	
+	# Rename libstdc++.dll.a to libstdc++.dll.a.dontlink as well!!
 	AX_CXXFLAGS_GCC_OPTION([-static-libgcc])
 	AX_CXXFLAGS_GCC_OPTION([-static-libstdc++])
   ])

@@ -43,7 +43,7 @@
 				&Safe_Proxy<n_space::iface,n_space::iface >::bind, \
 				&Safe_Stub<n_space::iface >::create \
 			}; \
-			register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
+			register_qi_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 			register_typeinfo(this,OMEGA_GUIDOF(n_space::iface),OMEGA_STRINGIZE(n_space::iface),typeinfo_holder<n_space::iface >::get_type_info()); \
 		} \
 		~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
@@ -64,11 +64,7 @@
 				&Wire_Proxy<n_space::iface,n_space::iface >::bind, \
 				&Wire_Stub<n_space::iface >::create, \
 			}; \
-			register_wire_rtti_info(this,OMEGA_GUIDOF(n_space::iface),&s_rtti); \
-		} \
-		~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
-		{ \
-			unregister_wire_rtti_info(this,OMEGA_GUIDOF(n_space::iface)); \
+			register_wire_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 		} \
 	}; \
 	OMEGA_WEAK_VARIABLE(OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit),OMEGA_CONCAT_R(OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,_WireInit_),OMEGA_UNIQUE_NAME(iface)));

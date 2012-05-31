@@ -691,7 +691,7 @@ namespace Omega
 				const SafeShim* (*pfnCreateSafeStub)(IObject* pI);
 			};
 
-			struct qi_rtti_holder
+			struct rtti_holder
 			{
 				static void* handle();
 				
@@ -701,7 +701,7 @@ namespace Omega
 			};
 			
 			static const qi_rtti* get_qi_rtti_info(const guid_t& iid);
-			static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti);
+			static void register_qi_rtti_info(const guid_t& iid, const qi_rtti* pRtti);
 
 			template <typename I> struct vtable_info;
 

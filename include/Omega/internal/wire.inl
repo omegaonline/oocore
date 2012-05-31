@@ -22,24 +22,6 @@
 #ifndef OOCORE_WIRE_INL_INCLUDED_
 #define OOCORE_WIRE_INL_INCLUDED_
 
-OOCORE_RAW_EXPORTED_FUNCTION(const Omega::System::Internal::wire_rtti*,OOCore_wire_rtti_holder_find,1,((in),const Omega::guid_base_t*,iid));
-inline const Omega::System::Internal::wire_rtti* Omega::System::Internal::get_wire_rtti_info(const guid_t& iid)
-{
-	return OOCore_wire_rtti_holder_find(&iid);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_insert,3,((in),const void*,key,(in),const Omega::guid_base_t*,iid,(in),const Omega::System::Internal::wire_rtti*,pRtti));
-inline void Omega::System::Internal::register_wire_rtti_info(const void* key, const guid_t& iid, const wire_rtti* pRtti)
-{
-	OOCore_wire_rtti_holder_insert(key,&iid,pRtti);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_rtti_holder_remove,2,((in),const void*,key,(in),const Omega::guid_base_t*,iid));
-inline void Omega::System::Internal::unregister_wire_rtti_info(const void* key, const guid_t& iid)
-{
-	OOCore_wire_rtti_holder_remove(key,&iid);
-}
-
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_holder__ctor,0,());
 inline Omega::System::Internal::wire_holder::wire_holder() : m_handle(NULL)
 {
@@ -153,15 +135,15 @@ inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IPro
 		return Wire_Proxy_IObject::bind(pProxy);
 
 	// Find rtti...
-	const wire_rtti* rtti = get_wire_rtti_info(iid);
-	if (!rtti)
+	const wire_rtti* pRtti = get_wire_rtti_info(iid);
+	if (!pRtti)
 	{
-		rtti = get_wire_rtti_info(fallback_iid);
-		if (!rtti)
-			rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
+		pRtti = get_wire_rtti_info(fallback_iid);
+		if (!pRtti)
+			pRtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
 	}
 
-	return (*rtti->pfnCreateWireProxy)(pProxy);
+	return (*pRtti->pfnCreateWireProxy)(pProxy);
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
@@ -185,12 +167,12 @@ inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remotin
 	if (!ptrQI)
 		return NULL;
 
-	// Wrap it in a proxy and add it...
-	const wire_rtti* rtti = get_wire_rtti_info(iid);
-	if (!rtti)
+	// Wrap it in a wire stub...
+	const wire_rtti* pRtti = get_wire_rtti_info(iid);
+	if (!pRtti)
 		throw OOCore_INotFoundException_MissingRTTI(iid);
 
-	return (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
+	return (*pRtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
 }
 
 #if !defined(DOXYGEN)

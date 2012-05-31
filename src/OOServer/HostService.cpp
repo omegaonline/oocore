@@ -24,6 +24,10 @@
 using namespace Omega;
 using namespace OTL;
 
+#if !defined(ECONNREFUSED)
+#define ECONNREFUSED ENOENT
+#endif
+
 void Host::StartService(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
 {
 	OOBase::LocalString strPipe2;

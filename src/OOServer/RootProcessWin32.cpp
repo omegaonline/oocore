@@ -77,43 +77,16 @@ namespace
 		{
 			DWORD dwErr = GetLastError();
 			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),NULL);
+				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),wsz);
 		}
 
 		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
 		if (!wsz)
-			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),NULL);
+			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),wsz);
 		
 		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
 		wsz[len] = L'\0';
 		return wsz;
-	}
-
-	template <typename T>
-	int from_wchar_t(T& str, const wchar_t* wstr)
-	{
-		int err = 0;
-		char szBuf[1024] = {0};
-		int len = WideCharToMultiByte(CP_UTF8,0,wstr,-1,szBuf,sizeof(szBuf)-1,NULL,NULL);
-		if (len != 0)
-			err = str.assign(szBuf,len);
-		else
-		{
-			DWORD dwErr = GetLastError();
-			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				return dwErr;
-
-			len = WideCharToMultiByte(CP_UTF8,0,wstr,-1,NULL,0,NULL,NULL);
-			char* sz = static_cast<char*>(OOBase::LocalAllocator::allocate(len + 1));
-			if (!sz)
-				OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-			len = WideCharToMultiByte(CP_UTF8,0,wstr,-1,sz,len,NULL,NULL);
-			string_t(sz,len);
-			OOBase::LocalAllocator::free(sz);
-		}
-
-		return err;
 	}
 
 	bool GetRegistryHive(HANDLE hToken, OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)

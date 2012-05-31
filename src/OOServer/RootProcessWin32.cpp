@@ -612,19 +612,10 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::system_error_text(dwErr)),dwErr);
 	}
 
-	int err = 0;
-	OOBase::LocalString strCmdLine;
-	if (!strAppName.empty() && strAppName[0] != '"' && strAppName.find(' ') != strAppName.npos)
-	{
-		err = strCmdLine.concat("\"",strAppName.c_str());
-		if (err == 0)
-			err = strCmdLine.append("\"");
-	}
-	else
-		err = strCmdLine.assign(strAppName.c_str());
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrAppName = to_wchar_t(strAppName);
 
-	if (err == 0)
-		err = strCmdLine.append(" --pipe=");
+	OOBase::LocalString strCmdLine;
+	int err = strCmdLine.assign(" --pipe=");
 	if (err == 0)
 		err = strCmdLine.append(strPipe.c_str());
 	if (err == 0 && Root::is_debug())
@@ -633,6 +624,8 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to build command line: %s",OOBase::system_error_text(err)),err);
 
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine = to_wchar_t(strCmdLine);
+
 	OOBase::LocalString strWindowStation;
 	if ((err = strWindowStation.assign("WinSta0\\default")) != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
@@ -640,13 +633,14 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 	// Forward declare these because of goto's
 	DWORD dwRes = ERROR_SUCCESS;
 	DWORD dwWait;
-	STARTUPINFOA startup_info = {0};
+	STARTUPINFOW startup_info = {0};
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	OOBase::LocalString strTitle;
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrWS,ptrTitle;
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -690,7 +684,10 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 				err = strTitle.printf("%s - %ls\\%ls",strAppName.c_str(),static_cast<const wchar_t*>(strDomainName),static_cast<const wchar_t*>(strUserName));
 
 			if (err == 0)
-				startup_info.lpTitle = const_cast<LPSTR>(strTitle.c_str());
+			{
+				ptrTitle = to_wchar_t(strTitle);
+				startup_info.lpTitle = static_cast<LPWSTR>(static_cast<void*>(ptrTitle));
+			}
 		}
 	}
 	else
@@ -700,16 +697,20 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 		if (bSandbox)
 			OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
 
-		startup_info.lpDesktop = const_cast<LPSTR>(strWindowStation.c_str());
+		ptrWS = to_wchar_t(strWindowStation);
+		if (!ptrWS)
+			return GetLastError();
+
+		startup_info.lpDesktop = static_cast<LPWSTR>(static_cast<void*>(ptrWS));
 		startup_info.wShowWindow = SW_HIDE;
 	}
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserA(hPriToken,strAppName.c_str(),const_cast<LPSTR>(strCmdLine.c_str()),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,static_cast<LPCWSTR>(static_cast<void*>(ptrAppName)),static_cast<LPWSTR>(static_cast<void*>(ptrCmdLine)),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
-		LOG_ERROR(("CreateProcessAsUserA: %s",OOBase::system_error_text(dwRes)));
+		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::system_error_text(dwRes)));
 
 		if (hDebugEvent)
 			CloseHandle(hDebugEvent);

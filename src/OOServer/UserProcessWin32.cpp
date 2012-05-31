@@ -70,9 +70,15 @@ User::Process* User::Process::exec(const Omega::string_t& strExeName, const Omeg
 	if (MultiByteToWideChar(CP_UTF8,0,strExeName.c_str(),-1,cmd_line,MAX_PATH-1) <= 0)
 		OMEGA_THROW(GetLastError());
 
-	wchar_t working_dir[MAX_PATH] = {0};
-	if (MultiByteToWideChar(CP_UTF8,0,strWorkingDir.c_str(),-1,working_dir,MAX_PATH-1) <= 0)
-		OMEGA_THROW(GetLastError());
+	wchar_t working_dir_buf[MAX_PATH] = {0};
+	const wchar_t* working_dir = NULL;
+	if (!strWorkingDir.IsEmpty())
+	{
+		if (MultiByteToWideChar(CP_UTF8,0,strWorkingDir.c_str(),-1,working_dir_buf,MAX_PATH-1) <= 0)
+			OMEGA_THROW(GetLastError());
+
+		working_dir = working_dir_buf;
+	}
 
 	// Do a ShellExecute style lookup for the actual thing to call..
 	ptrProcess->exec(cmd_line,working_dir,OOBase::Environment::get_block(tabEnv));

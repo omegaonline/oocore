@@ -139,6 +139,7 @@ bool string_tests_format()
 	TEST(Omega::string_t("1st:{0,10} 2nd:{1}") % 1 % 2 ==  "1st:         1 2nd:2");
 	TEST(Omega::string_t("1st:{0,-10} 2nd:{1}") % 1 % 2 == "1st:1          2nd:2");
 
+#if !defined(__MINGW32__)
 	{
 		loc_holder lh;
 
@@ -208,6 +209,7 @@ bool string_tests_format()
 			TEST(Omega::string_t("{0:N4}") % 123456789.0 == "123,456,789.0000");
 		}
 	}
+#endif
 
 	TEST(Omega::string_t("{0:x}") % 0x2c45e == "2c45e");
 	TEST(Omega::string_t("{0:X}") % 0x2c45e == "2C45E");

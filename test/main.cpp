@@ -46,7 +46,7 @@ int main(int /*argc*/, char* /*argv*/[])
 	output("\nRunning %-40s","server tests");
 	if (init_tests())
 	{
-		output("\n");
+		output("[Connected]\n");
 
 		RUN_TEST(registry_tests);
 		RUN_TEST(interface_dll_tests);

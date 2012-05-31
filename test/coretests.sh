@@ -8,16 +8,18 @@ cd ../src/OOCore
 
 server_launch="../OOServer/ooserverd"
 
-if test -n "$DISPLAY" && test -n "$TERM"; then
+if test -n "$TERM"; then
 	#Try to do something sensible with $TERM
 	case $TERM in
 		cygwin)
 			# Mingw needs a load of help here...
-			server_launch="$COMSPEC //Q //c start ../OOServer/ooserverd.exe"
+			server_launch="$COMSPEC //Q //c start ../OOServer/.libs/ooserverd.exe"
 			;;
 		*)
-			server_launch="$TERM -e $server_launch"
-			#server_launch="$TERM -e libtool --mode=execute valgrind --tool=callgrind $server_launch" 
+			if test -n "$DISPLAY"; then
+				server_launch="$TERM -e $server_launch"
+				#server_launch="$TERM -e libtool --mode=execute valgrind --tool=callgrind $server_launch" 
+			fi
 			;;
 	esac
 fi

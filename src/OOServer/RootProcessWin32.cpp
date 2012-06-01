@@ -95,23 +95,28 @@ namespace
 		if (strUsersDir.empty())
 		{
 			// This does need to be ASCII
-			char szBuf[MAX_PATH] = {0};
-			HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,hToken,SHGFP_TYPE_DEFAULT,szBuf);
+			wchar_t szBuf[MAX_PATH] = {0};
+			HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,hToken,SHGFP_TYPE_DEFAULT,szBuf);
 			if FAILED(hr)
-				LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
+				LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text()),false);
 
-			if (!PathAppendA(szBuf,"Omega Online"))
-				LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
+			if (!PathAppendW(szBuf,L"Omega Online"))
+				LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
 
-			if (!PathFileExistsA(szBuf) && !CreateDirectoryA(szBuf,NULL))
+			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
 				LOG_ERROR_RETURN(("CreateDirectoryA %s failed: %s",szBuf,OOBase::system_error_text()),false);
 
-			if ((err = strHive.concat(szBuf,"\\user.regdb")) != 0)
+			char sz[MAX_PATH * 2] = {0};
+			if (!WideCharToMultiByte(CP_UTF8,0,szBuf,-1,sz,sizeof(sz),NULL,NULL))
+				LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+
+			if ((err = strHive.concat(sz,"\\user.regdb")) != 0)
 				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 		}
 		else
 		{
 			// Get the names associated with the user SID
+			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUsersDir = to_wchar_t(strUsersDir);
 			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
 			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
 
@@ -120,24 +125,27 @@ namespace
 				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
 
 			if (!strDomainName)
-				err = strHive.printf("%s%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName));
+				err = strHive.printf("%ls%ls.regdb",static_cast<const wchar_t*>(ptrUsersDir),static_cast<const wchar_t*>(strUserName));
 			else
-				err = strHive.printf("%s%ls.%ls.regdb",strUsersDir.c_str(),static_cast<const wchar_t*>(strUserName),static_cast<const wchar_t*>(strDomainName));
+				err = strHive.printf("%ls%ls.%ls.regdb",static_cast<const wchar_t*>(ptrUsersDir),static_cast<const wchar_t*>(strUserName),static_cast<const wchar_t*>(strDomainName));
 
 			if (err != 0)
-				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+				LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
 		}
 
+		LOG_DEBUG(("Opening user hive: %s",strHive.c_str()));
+
 		// Now confirm the file exists, and if it doesn't, copy user_template.regdb
-		if (!PathFileExistsA(strHive.c_str()))
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrHive = to_wchar_t(strHive);
+		if (!PathFileExistsW(ptrHive))
 		{
 			if ((err = strSysDir.append("user_template.regdb")) != 0)
 				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
 
-			if (!CopyFileA(strSysDir.c_str(),strHive.c_str(),TRUE))
+			if (!CopyFileW(to_wchar_t(strSysDir),ptrHive,TRUE))
 				LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
-			::SetFileAttributesA(strHive.c_str(),FILE_ATTRIBUTE_NORMAL);
+			::SetFileAttributesW(ptrHive,FILE_ATTRIBUTE_NORMAL);
 
 			void* ISSUE_11;
 		}
@@ -898,7 +906,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 			LOG_ERROR_RETURN(("Failed to allocate hive: %s",OOBase::system_error_text()),false);
 
 		if (!process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE))
-			return false;
+			LOG_ERROR_RETURN(("Failed to open hive: %s",strHive.c_str()),false);
 	}
 
 	// Get the environment settings

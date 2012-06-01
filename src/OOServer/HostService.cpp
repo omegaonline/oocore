@@ -57,12 +57,25 @@ void Host::StartService(const string_t& strPipe, const string_t& strName, Regist
 	if (err)
 		OMEGA_THROW(err);
 
-	// Now send the secret back to the root, to authenticate ourselves
+	// Now we start the service!
+
+
+	void* TODO;
+
+
+
+	// Now send the secret back to the root, to authenticate ourselves, and signal we have started
 	ptrSocket->send(strSecret.c_str(),strSecret.Length(),err);
 	if (err)
 		OMEGA_THROW(err);
 
-	//Registry::IKey::string_set_t subs = pKey->EnumSubKeys();
+#if defined(_WIN32)
+	// Send our pid, so we can unmarshal socket handles
+	DWORD pid = GetCurrentProcessId();
+	ptrSocket->send(&pid,sizeof(pid),err);
+	if (err)
+		OMEGA_THROW(err);
+#endif
 
-	//OMEGA_THROW(ENOENT);
+	// Now loop reading socket handles from ptrSocket
 }

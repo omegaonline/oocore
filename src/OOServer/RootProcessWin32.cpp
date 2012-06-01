@@ -237,7 +237,7 @@ namespace
 		return hPipe;
 	}
 
-	bool WaitForConnect(HANDLE hPipe)
+	bool WaitForConnect(HANDLE hPipe, const OOBase::Timeout& timeout)
 	{
 		OVERLAPPED ov = {0};
 		ov.hEvent = CreateEventW(NULL,TRUE,TRUE,NULL);
@@ -268,9 +268,27 @@ namespace
 			LOG_ERROR(("ConnectNamedPipe failed: %s",OOBase::system_error_text(dwErr)));
 		else
 		{
-			DWORD dw = 0;
-			if (!GetOverlappedResult(hPipe,&ov,&dw,TRUE))
-				LOG_ERROR(("GetOverlappedResult failed: %s",OOBase::system_error_text()));
+			if (!timeout.is_infinite())
+			{
+				DWORD dwRes = WaitForSingleObject(ov.hEvent,timeout.millisecs());
+				if (dwRes == WAIT_TIMEOUT)
+				{
+					dwErr = ERROR_TIMEOUT;
+					LOG_ERROR(("Timed out waiting for pipe connection"));
+				}
+				else if (dwRes != WAIT_OBJECT_0)
+				{
+					dwErr = GetLastError();
+					LOG_ERROR(("WaitForSingleObject failed: %s",OOBase::system_error_text(dwErr)));
+				}
+			}
+
+			if (dwErr == 0)
+			{
+				DWORD dw = 0;
+				if (!GetOverlappedResult(hPipe,&ov,&dw,TRUE))
+					LOG_ERROR(("GetOverlappedResult failed: %s",OOBase::system_error_text()));
+			}
 		}
 
 		if (dwErr != 0)
@@ -920,7 +938,11 @@ OOBase::RefPtr<OOBase::Socket> RootProcessWin32::LaunchService(Root::Manager* pM
 	if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),ptrNew);
 
-	if (!WaitForConnect(hPipe))
+	OOBase::Timeout timeout(wait_secs,0);
+	if (Root::is_debug())
+		timeout = OOBase::Timeout();
+
+	if (!WaitForConnect(hPipe,timeout))
 		return ptrNew;
 
 	// Connect up
@@ -931,8 +953,8 @@ OOBase::RefPtr<OOBase::Socket> RootProcessWin32::LaunchService(Root::Manager* pM
 	hPipe.detach();
 
 	// Now read the secret back...
-	char secret2[32] = {0};
-	ptrNew->recv(secret2,strSecret.length(),true,err);
+	char secret2[33] = {0};
+	ptrNew->recv(secret2,strSecret.length(),true,err,timeout);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
 
@@ -1010,7 +1032,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 		return false;
 
 	// Wait for the connect attempt
-	if (!WaitForConnect(hPipe))
+	if (!WaitForConnect(hPipe,OOBase::Timeout(15,0)))
 		return false;
 
 	// Connect up

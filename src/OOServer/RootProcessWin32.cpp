@@ -133,8 +133,6 @@ namespace
 				LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
 		}
 
-		LOG_DEBUG(("Opening user hive: %s",strHive.c_str()));
-
 		// Now confirm the file exists, and if it doesn't, copy user_template.regdb
 		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrHive = to_wchar_t(strHive);
 		if (!PathFileExistsW(ptrHive))

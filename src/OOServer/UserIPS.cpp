@@ -200,8 +200,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	if (!ptrProcess)
 	{
-		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strProcess.c_str());
-
 		// Create a new process
 		ptrProcess = m_pManager->exec(strProcess,strWorkingDir,is_host_process,tabEnv);
 

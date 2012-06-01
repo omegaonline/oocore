@@ -161,15 +161,18 @@ namespace
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),INVALID_HANDLE_VALUE);
 
-		char* pszSid = NULL;
-		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
-			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
+		if (strPipe.empty())
+		{
+			char* pszSid = NULL;
+			if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+				LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 
-		int err = strPipe.printf("OOR%s-%lu-%lu",pszSid,GetCurrentProcessId(),GetTickCount());
-		::LocalFree(pszSid);
+			int err = strPipe.printf("OOR%s-%lu-%lu",pszSid,GetCurrentProcessId(),GetTickCount());
+			::LocalFree(pszSid);
 
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to compose pipe name: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
+			if (err != 0)
+				LOG_ERROR_RETURN(("Failed to compose pipe name: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
+		}
 
 		// Create security descriptor
 		PSID pSID;
@@ -215,7 +218,8 @@ namespace
 
 		// Create the named pipe instance
 		OOBase::LocalString strFullPipe;
-		if ((err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str())) != 0)
+		int err = strFullPipe.concat("\\\\.\\pipe\\",strPipe.c_str());
+		if (err)
 			LOG_ERROR_RETURN(("Failed to concat strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
 
 		HANDLE hPipe = CreateNamedPipeA(strFullPipe.c_str(),
@@ -867,9 +871,79 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 
 OOBase::RefPtr<OOBase::Socket> RootProcessWin32::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const
 {
-	void* TODO;
+	OOBase::RefPtr<OOBase::Socket> ptrNew;
 
-	return OOBase::RefPtr<OOBase::Socket>();
+	// Create the named pipe name
+	UUID guid = {0};
+	if (UuidCreate(&guid) != RPC_S_OK)
+		LOG_ERROR_RETURN(("Failed to generate uuid: %s",OOBase::system_error_text()),ptrNew);
+
+	OOBase::LocalString strPipe;
+	int err = strPipe.printf("OOV-%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X",
+		(Omega::uint32_t)guid.Data1,guid.Data2,guid.Data3,
+		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
+		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);
+
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text()),ptrNew);
+
+	// Create a secret
+	if (UuidCreate(&guid) != RPC_S_OK)
+		LOG_ERROR_RETURN(("Failed to generate uuid: %s",OOBase::system_error_text()),ptrNew);
+
+	OOBase::LocalString strSecret;
+	err = strSecret.printf("%.8X%.4X%.4X%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
+		(Omega::uint32_t)guid.Data1,guid.Data2,guid.Data3,
+		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
+		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);
+
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text()),ptrNew);
+
+	// Create the named pipe
+	OOBase::Win32::SmartHandle hPipe(CreatePipe(m_hToken,strPipe));
+	if (!hPipe.is_valid())
+		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::system_error_text()),ptrNew);
+	
+	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
+	OOBase::CDRStream request;
+	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StartService)) ||
+			!request.write(strPipe.c_str()) ||
+			!request.write(strName.c_str()) ||
+			!request.write(key) ||
+			!request.write(strSecret.c_str()))
+	{
+		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),ptrNew);
+	}
+
+	OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,NULL,OOBase::Timeout(),OOServer::Message_t::asynchronous);
+	if (res != OOServer::MessageHandler::io_result::success)
+		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),ptrNew);
+
+	if (!WaitForConnect(hPipe))
+		return ptrNew;
+
+	// Connect up
+	ptrNew = OOBase::Socket::attach_local((SOCKET)(HANDLE)hPipe,err);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),ptrNew);
+
+	hPipe.detach();
+
+	// Now read the secret back...
+	char secret2[32] = {0};
+	ptrNew->recv(secret2,strSecret.length(),true,err);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
+
+	// Check the secret and the uid
+	if (strSecret != secret2)
+	{
+		OOBase::Logger::log(OOBase::Logger::Warning,"Failed to validate service");
+		ptrNew = NULL;
+	}
+
+	return ptrNew;
 }
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)

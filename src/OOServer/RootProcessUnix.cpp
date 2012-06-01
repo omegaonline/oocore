@@ -564,7 +564,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		else if (err)
 			LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),ptrNew);
 
-		ptrNew = OOBase::Socket::attach(new_fd.detach(),err);
+		ptrNew = OOBase::Socket::attach_local(new_fd.detach(),err);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),ptrNew);
 
@@ -572,7 +572,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		char secret2[32] = {0};
 		ptrNew->recv(secret2,sizeof(secret2),true,err);
 		if (err)
-			LOG_ERROR_RETURN(("Failed to read form socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
+			LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
 
 		uid_t other_uid;
 		err = ptrNew->get_peer_uid(other_uid);

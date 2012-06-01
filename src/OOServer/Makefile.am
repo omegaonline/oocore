@@ -41,6 +41,7 @@ ooserverd_SOURCES = \
 
 if WIN32
 ooserverd_SOURCES += OOServer.rc
+ooserverd_LDADD += -lole32 -lrpcrt4 -lshlwapi
 endif
 
 pkglibexec_PROGRAMS = oosvruser oosvrhost

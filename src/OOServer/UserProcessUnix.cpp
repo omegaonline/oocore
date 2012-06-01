@@ -88,16 +88,6 @@ bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 	return (strPath[0] != '/' && strPath.Find('/') != Omega::string_t::npos);
 }
 
-User::Process* User::Process::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
-{
-	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
-	if (!ptrProcess)
-		OMEGA_THROW(ENOMEM);
-
-	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),OOBase::Environment::get_envp(tabEnv));
-	return ptrProcess.detach();
-}
-
 void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, char** env)
 {
 	// Create a pipe() pair, and wait for the child to close the write end
@@ -235,6 +225,16 @@ void UserProcessUnix::kill()
 
 		m_pid = 0;
 	}
+}
+
+User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+{
+	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
+	if (!ptrProcess)
+		OMEGA_THROW(ENOMEM);
+
+	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),OOBase::Environment::get_envp(tabEnv));
+	return ptrProcess.detach();
 }
 
 #endif // HAVE_UNISTD_H

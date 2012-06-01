@@ -41,7 +41,6 @@ ooserverd_SOURCES = \
 
 if WIN32
 ooserverd_SOURCES += OOServer.rc
-ooserverd_LDADD += -lshlwapi
 endif
 
 pkglibexec_PROGRAMS = oosvruser oosvrhost
@@ -85,6 +84,7 @@ oosvrhost_SOURCES = \
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc
 oosvrhost_SOURCES += OOSvrHost.rc
+oosvrhost_LDADD += -lole32
 endif
 
 EXTRA_DIST = \

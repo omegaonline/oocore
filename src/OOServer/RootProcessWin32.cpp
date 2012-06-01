@@ -104,7 +104,7 @@ namespace
 				LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
 
 			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
-				LOG_ERROR_RETURN(("CreateDirectoryA %s failed: %s",szBuf,OOBase::system_error_text()),false);
+				LOG_ERROR_RETURN(("CreateDirectoryW %ls failed: %s",szBuf,OOBase::system_error_text()),false);
 
 			char sz[MAX_PATH * 2] = {0};
 			if (!WideCharToMultiByte(CP_UTF8,0,szBuf,-1,sz,sizeof(sz),NULL,NULL))

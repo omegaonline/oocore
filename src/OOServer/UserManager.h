@@ -26,6 +26,7 @@
 #include "Protocol.h"
 #include "UserChannel.h"
 #include "UserNet.h"
+#include "UserProcess.h"
 
 int main(int, char**);
 
@@ -48,7 +49,8 @@ namespace User
 		void close_socket(Omega::uint32_t id);
 		
 		void get_root_config_arg(const char* key, Omega::string_t& strValue);
-
+		Process* exec(const Omega::string_t& strProcess, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv);
+		
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
 

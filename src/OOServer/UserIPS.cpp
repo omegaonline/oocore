@@ -83,15 +83,11 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 {
 	string_t strProcess;
+	
+#if !defined(_WIN32)
 	m_pManager->get_root_config_arg("binary_path",strProcess);
-
-#if defined(_WIN32)
-	strProcess += "OOSvrHost.exe";
-#else
 	strProcess += "oosvrhost";
 #endif
-
-	OOBase::Logger::log(OOBase::Logger::Information,"Using host process for OID %s",oid.ToString().c_str());
 
 	if (User::is_debug())
 		strProcess += " --debug";
@@ -141,6 +137,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	{
 		strProcess = GetSurrogateProcess(oid);
 		is_host_process = !strProcess.IsEmpty();
+		if (is_host_process)
+			OOBase::Logger::log(OOBase::Logger::Information,"Using host process for OID %s",oid.ToString().c_str());
 	}
 
 	if (!is_host_process)
@@ -205,7 +203,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strProcess.c_str());
 
 		// Create a new process
-		ptrProcess = User::Process::exec(strProcess,strWorkingDir,is_host_process,tabEnv);
+		ptrProcess = m_pManager->exec(strProcess,strWorkingDir,is_host_process,tabEnv);
 
 		int err = m_mapInProgress.insert(strProcess,ptrProcess);
 		if (err != 0)

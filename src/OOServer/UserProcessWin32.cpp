@@ -20,7 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_User.h"
-#include "UserProcess.h"
+#include "UserManager.h"
 
 #if defined(_WIN32)
 
@@ -41,51 +41,40 @@ namespace
 		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
 		virtual void kill();
 
-		void exec(wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block);
+		void exec(const wchar_t* app_name, wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block);
 
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
 	};
+
+	template <typename T>
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
+	{
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
+		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
+		if (len == 0)
+		{
+			DWORD dwErr = GetLastError();
+			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
+				OMEGA_THROW(dwErr);
+		}
+
+		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
+		if (!wsz)
+			OMEGA_THROW(GetLastError());
+		
+		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
+		wsz[len] = L'\0';
+		return wsz;
+	}
 }
 
 bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
-	wchar_t wpath[MAX_PATH] = {0};
-	if (MultiByteToWideChar(CP_UTF8,0,strPath.c_str(),-1,wpath,MAX_PATH-1) <= 0)
-		return true;
-
-	return (PathIsRelativeW(wpath) != FALSE);
+	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
 }
 
-User::Process* User::Process::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
-{
-	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
-	if (!ptrProcess)
-		OMEGA_THROW(ERROR_OUTOFMEMORY);
-
-	// Get OOSvrHost to run ShellExecuteEx!!
-	void* TODO;
-
-	wchar_t cmd_line[MAX_PATH] = {0};
-	if (MultiByteToWideChar(CP_UTF8,0,strExeName.c_str(),-1,cmd_line,MAX_PATH-1) <= 0)
-		OMEGA_THROW(GetLastError());
-
-	wchar_t working_dir_buf[MAX_PATH] = {0};
-	const wchar_t* working_dir = NULL;
-	if (!strWorkingDir.IsEmpty())
-	{
-		if (MultiByteToWideChar(CP_UTF8,0,strWorkingDir.c_str(),-1,working_dir_buf,MAX_PATH-1) <= 0)
-			OMEGA_THROW(GetLastError());
-
-		working_dir = working_dir_buf;
-	}
-
-	// Do a ShellExecute style lookup for the actual thing to call..
-	ptrProcess->exec(cmd_line,working_dir,OOBase::Environment::get_block(tabEnv));
-	return ptrProcess.detach();
-}
-
-void UserProcessWin32::exec(wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block)
+void UserProcessWin32::exec(const wchar_t* app_name, wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block)
 {
 	DWORD dwFlags = DETACHED_PROCESS;
 
@@ -104,7 +93,7 @@ void UserProcessWin32::exec(wchar_t* cmd_line, const wchar_t* working_dir, LPVOI
 
 	// Spawn the process
 	PROCESS_INFORMATION pi = {0};
-	if (!CreateProcessW(NULL,cmd_line,NULL,NULL,FALSE,dwFlags,env_block,working_dir,&si,&pi))
+	if (!CreateProcessW(app_name,cmd_line,NULL,NULL,FALSE,dwFlags,env_block,working_dir,&si,&pi))
 	{
 		DWORD dwErr = GetLastError();
 		OMEGA_THROW(dwErr);
@@ -166,6 +155,26 @@ void UserProcessWin32::kill()
 
 		WaitForSingleObject(m_hProcess,INFINITE);
 	}
+}
+
+User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+{
+	OOBase::SmartPtr<UserProcessWin32> ptrProcess = new (std::nothrow) UserProcessWin32();
+	if (!ptrProcess)
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+	Omega::string_t strProcess;
+	get_root_config_arg("binary_path",strProcess);
+	strProcess += "OOSvrHost.exe";
+
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> cmd_line;
+	if (!is_host_process)
+		cmd_line = to_wchar_t(" --shellex -- " + strExeName);
+	else
+		cmd_line = to_wchar_t(strExeName);
+	
+	ptrProcess->exec(to_wchar_t(strProcess),cmd_line,strWorkingDir.IsEmpty() ? NULL : to_wchar_t(strWorkingDir),OOBase::Environment::get_block(tabEnv));
+	return ptrProcess.detach();
 }
 
 #endif // _WIN32

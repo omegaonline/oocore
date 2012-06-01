@@ -66,6 +66,10 @@ namespace Host
 	int ServiceStart();
 
 	void StartService(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);
+
+#if defined(_WIN32)
+	int ShellEx(const OOBase::CmdArgs::results_t& args);
+#endif
 }
 
 #endif // OOSERVER_HOST_H_INCLUDED_

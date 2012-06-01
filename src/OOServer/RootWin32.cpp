@@ -59,7 +59,7 @@ bool Root::platform_init()
 		PathRemoveFileSpecW(szPath);
 
 		if (!SetCurrentDirectoryW(szPath))
-			LOG_ERROR_RETURN(("SetCurrentDirectory(%s) failed: %s",szPath,OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("SetCurrentDirectory(%ls) failed: %s",szPath,OOBase::system_error_text()),false);
 	}
 	return true;
 }

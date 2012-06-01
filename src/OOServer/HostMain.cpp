@@ -37,6 +37,10 @@
 extern "C" int _setenvp() { return 0; }
 #endif
 
+#if defined(_WIN32)
+#include <ShellAPI.h>
+#endif
+
 namespace
 {
 	int Help()
@@ -96,6 +100,10 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("multiple");
 	cmd_args.add_option("service");
 
+#if defined(_WIN32)
+	cmd_args.add_option("shellex");
+#endif
+
 	// Parse command line
 	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
@@ -149,8 +157,105 @@ int main(int argc, char* argv[])
 		return Host::SingleSurrogate();
 	else if (args.exists("service"))
 		return Host::ServiceStart();
+#if defined(_WIN32)
+	else if (args.exists("shellex"))
+		return Host::ShellEx(args);
+#endif
 
 	// Oops...
 	OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Invalid or missing arguments.");
 	return EXIT_FAILURE;
 }
+
+#if defined(_WIN32)
+
+#if !defined(SEE_MASK_NOASYNC)
+#define SEE_MASK_NOASYNC SEE_MASK_FLAG_DDEWAIT
+#endif
+
+namespace
+{
+	template <typename T>
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
+	{
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
+		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
+		if (len == 0)
+		{
+			DWORD dwErr = GetLastError();
+			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
+				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),wsz);
+		}
+
+		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
+		if (!wsz)
+			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),wsz);
+		
+		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
+		wsz[len] = L'\0';
+		return wsz;
+	}
+}
+
+int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
+{
+	OOBase::String strAppName;
+	if (!args.find("@0",strAppName))
+		LOG_ERROR_RETURN(("No arguments passed with --shellex"),EXIT_FAILURE);
+
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wszAppName = to_wchar_t(strAppName);
+	if (!wszAppName)
+		return EXIT_FAILURE;
+
+	OOBase::LocalString strCmdLine;
+	for (size_t i = 1;;++i)
+	{
+		OOBase::LocalString strId;
+		int err = strId.printf("@%u",i);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
+
+		OOBase::String strArg;
+		if (!args.find(strId.c_str(),strArg))
+			break;
+
+		err = strCmdLine.append(strArg.c_str());
+		if (!err && i != 0)
+			err = strCmdLine.append(" ");
+		if (err)
+			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
+	}
+
+	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wszCmdLine;
+	if (!strCmdLine.empty())
+	{
+		wszCmdLine = to_wchar_t(strCmdLine);
+		if (!wszCmdLine)
+			return EXIT_FAILURE;
+	}
+	
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	if (FAILED(hr))
+		LOG_ERROR_RETURN(("CoInitializeEx failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
+
+	SHELLEXECUTEINFOW sei = {0};
+	sei.cbSize = sizeof(sei);
+	sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
+	sei.lpFile = wszAppName;
+	sei.lpParameters = wszCmdLine;
+	sei.nShow = SW_SHOWDEFAULT;
+
+	if (!ShellExecuteExW(&sei))
+		LOG_ERROR_RETURN(("ShellExecuteExW failed: %s",OOBase::system_error_text()),EXIT_FAILURE);
+
+	if (sei.hProcess)
+	{
+		WaitForSingleObject(sei.hProcess,INFINITE);
+		CloseHandle(sei.hProcess);
+	}
+
+	CoUninitialize();
+
+	return EXIT_SUCCESS;
+}
+#endif

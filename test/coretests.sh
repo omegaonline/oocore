@@ -13,6 +13,7 @@ if test -n "$TERM"; then
 	case $TERM in
 		cygwin)
 			# Mingw needs a load of help here...
+			cp .libs/OOCore.dll .
 			server_launch="$COMSPEC //Q //c start ../OOServer/.libs/ooserverd.exe"
 			;;
 		*)

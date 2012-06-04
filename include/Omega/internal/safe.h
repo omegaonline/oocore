@@ -187,6 +187,9 @@ namespace Omega
 
 					ref_holder(type val) : m_val(*val), m_dest(val)
 					{ }
+
+					ref_holder(type val, const guid_base_t* piid) : m_val(*val,piid), m_dest(val)
+					{ }
 				};
 
 				struct ref_holder_lite : public ref_holder
@@ -203,13 +206,16 @@ namespace Omega
 				struct ref_holder_full : public ref_holder
 				{
 					ref_holder_full(type val, const guid_base_t* piid) :
-							ref_holder(val), m_piid(piid)
+							ref_holder(val,piid), m_piid(piid)
 					{}
 
 					~ref_holder_full()
 					{
 						this->m_val.update(*this->m_dest,m_piid);
 					}
+
+					ref_holder_full(const ref_holder_full& rhs) : ref_holder(rhs.m_dest,rhs.m_piid), m_piid(rhs.m_piid)
+					{}
 
 				private:
 					const guid_base_t* m_piid;
@@ -229,7 +235,7 @@ namespace Omega
 					ref_holder_safe(T& val) : m_val(val), m_dest(val)
 					{}
 
-					ref_holder_safe(const ref_holder_safe& rhs) : m_val(rhs.m_val), m_dest(rhs.m_dest)
+					ref_holder_safe(T& val, const guid_t& iid) : m_val(val,iid), m_dest(val)
 					{}
 
 				private:
@@ -250,7 +256,7 @@ namespace Omega
 				struct ref_holder_safe_full : public ref_holder_safe
 				{
 					ref_holder_safe_full(T& val, const guid_t& iid) :
-							ref_holder_safe(val), m_iid(iid)
+							ref_holder_safe(val,iid), m_iid(iid)
 					{}
 
 					~ref_holder_safe_full()
@@ -258,7 +264,7 @@ namespace Omega
 						this->m_val.update(this->m_dest,m_iid);
 					}
 
-					ref_holder_safe_full(const ref_holder_safe_full& rhs) : ref_holder_safe(rhs), m_iid(rhs.m_iid)
+					ref_holder_safe_full(const ref_holder_safe_full& rhs) : ref_holder_safe(rhs.m_dest,rhs.m_iid), m_iid(rhs.m_iid)
 					{}
 
 				private:
@@ -1205,7 +1211,12 @@ namespace Omega
 
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+					safe_type_wrapper(I* pI)
+					{
+						m_pS = create_safe_stub(pI,OMEGA_GUIDOF(I));
+					}
+
+					safe_type_wrapper(I* pI, const guid_t& iid)
 					{
 						m_pS = create_safe_stub(pI,iid);
 					}

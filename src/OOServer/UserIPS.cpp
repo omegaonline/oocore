@@ -203,7 +203,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		// Create a new process
 		ptrProcess = m_pManager->exec(strProcess,strWorkingDir,is_host_process,tabEnv);
 
-		int err = m_mapInProgress.insert(strProcess,ptrProcess);
+		err = m_mapInProgress.insert(strProcess,ptrProcess);
 		if (err != 0)
 			OMEGA_THROW(err);
 	}

@@ -115,7 +115,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION</PreprocessorDefinitions>
       <EnablePREfast>true</EnablePREfast>
-      <AdditionalIncludeDirectories>..\oobase\include;C:\Work\sqlite</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite\sqlite-autoconf-3070603</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -134,7 +134,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION</PreprocessorDefinitions>
       <EnablePREfast>true</EnablePREfast>
-      <AdditionalIncludeDirectories>C:\Work\sqlite\sqlite-autoconf-3070603;..\oobase\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -153,7 +153,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;NDEBUG</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\oobase\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
@@ -175,7 +175,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\oobase\include;C:\Work\sqlite\sqlite-autoconf-3070603;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>

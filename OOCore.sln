@@ -54,7 +54,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOBase", "oobase\src\OOBase
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOSvrBase", "oobase\src\OOSvrBase.vcxproj", "{3D33990C-7640-4E1D-A758-D398D532E447}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libDB", "libdb\libdb.vcxproj", "{447D76C1-0605-4948-88C6-A28C5D880794}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libDB", "src\OOServer\libdb\libdb.vcxproj", "{447D76C1-0605-4948-88C6-A28C5D880794}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOSvrHost", "src\OOServer\OOSvrHost.vcxproj", "{37C35A08-B9C3-434E-A1DD-AB0C1BF9C8C1}"
 EndProject

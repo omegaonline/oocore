@@ -36,7 +36,7 @@
 
 #include "OOServer_Root.h"
 
-#include "../../libdb/RegistryHive.h"
+#include "libdb/RegistryHive.h"
 
 #include "MessageConnection.h"
 #include "RootProcess.h"

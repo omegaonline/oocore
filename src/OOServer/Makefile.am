@@ -1,5 +1,7 @@
 include $(top_srcdir)/m4/ltrc.inc
 
+SUBDIRS = libdb
+
 AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
 AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS)
@@ -24,7 +26,7 @@ ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) \
 	-DCONFIG_DIR=\"$(pkgdatadir)/\" \
 	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" 
 		
-ooserverd_LDADD = liboosvrcmn.la @top_builddir@/libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+ooserverd_LDADD = liboosvrcmn.la libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \

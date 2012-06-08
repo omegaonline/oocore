@@ -11,10 +11,10 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
 	Makefile
 	include/Makefile
-	libdb/Makefile
 	src/Makefile
 	src/OOCore/Makefile
 	src/OOServer/Makefile
+	src/OOServer/libdb/Makefile
 	data/Makefile
 	tools/Makefile
 	tools/OOCOMLite/Makefile

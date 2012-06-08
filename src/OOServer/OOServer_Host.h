@@ -38,7 +38,11 @@
 //////////////////////////////////////////////
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-	#define APPNAME "OOSvrHost"
+#if defined(WIN64_HYBRID)
+	#define APPNAME "OOSvrHost64"
+#else
+	#define APPNAME "OOSvrHost32"
+#endif
 #else
 	#define APPNAME "oosvrhost"
 #endif

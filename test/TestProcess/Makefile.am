@@ -7,7 +7,11 @@ testprocess_CXXFLAGS = $(PTHREAD_CFLAGS)
 testprocess_LDFLAGS = $(PTHREAD_LIBS)
 
 if WIN32
-testprocess_LDADD = $(top_builddir)/src/OOCore/OOCore.la
+if WIN64_HYBRID
+testprocess_LDADD = $(top_builddir)/src/OOCore/OOCore64.la
+else
+testprocess_LDADD = $(top_builddir)/src/OOCore/OOCore32.la
+endif
 else
 testprocess_LDADD = $(top_builddir)/src/OOCore/liboocore.la
 endif

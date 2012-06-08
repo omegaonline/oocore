@@ -14,9 +14,13 @@ bin_PROGRAMS = ooreg
 ooreg_LDADD = @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32
-ooreg_LDADD += ../../src/OOCore/OOCore.la
+if WIN64_HYBRID
+ooreg_LDADD += $(top_builddir)/src/OOCore/OOCore64.la
 else
-ooreg_LDADD += ../../src/OOCore/liboocore.la
+ooreg_LDADD += $(top_builddir)/src/OOCore/OOCore32.la
+endif
+else
+ooreg_LDADD += $(top_builddir)/src/OOCore/liboocore.la
 endif
 
 ooreg_SOURCES = \

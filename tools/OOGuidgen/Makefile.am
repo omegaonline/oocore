@@ -14,9 +14,13 @@ bin_PROGRAMS = ooguidgen
 ooguidgen_LDADD = @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32
-ooguidgen_LDADD += ../../src/OOCore/OOCore.la
+if WIN64_HYBRID
+ooguidgen_LDADD += $(top_builddir)/src/OOCore/OOCore64.la
 else
-ooguidgen_LDADD += ../../src/OOCore/liboocore.la
+ooguidgen_LDADD += $(top_builddir)/src/OOCore/OOCore32.la
+endif
+else
+ooguidgen_LDADD += $(top_builddir)/src/OOCore/liboocore.la
 endif
 
 ooguidgen_SOURCES = \

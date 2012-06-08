@@ -378,12 +378,14 @@ const char** get_dlls()
 	static const char* dlls[] =
 	{
 #if defined(_MSC_VER)
-		"TestLibrary_msvc.dll",
-		"..\\Release\\TestLibrary_msvc.dll",
+		"..\\..\\Debug\\Win32\\TestLibrary_msvc.dll",
+		"..\\..\\Debug\\x64\\TestLibrary_msvc.dll",
+		"..\\..\\Release\\Win32\\TestLibrary_msvc.dll",
+		"..\\..\\Release\\x64\\TestLibrary_msvc.dll",
 		"..\\..\\..\\debug\\test\\TestLibrary\\.libs\\testlibrary.dll",
 #elif defined(_WIN32)
-		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Release/TestLibrary_msvc.dll",
-		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Debug/TestLibrary_msvc.dll",
+		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Debug/Win32/TestLibrary_msvc.dll",
+		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Release/Win32/TestLibrary_msvc.dll",
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestLibrary/.libs/testlibrary.dll",
 #else
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestLibrary/testlibrary.la",
@@ -436,12 +438,14 @@ const char** get_exes()
 	static const char* exes[] =
 	{
 #if defined(_MSC_VER)
-		"TestProcess_msvc.exe",
-		"..\\Release\\TestProcess_msvc.exe",
+		"..\\..\\Debug\\Win32\\TestProcess_msvc.exe",
+		"..\\..\\Debug\\x64\\TestProcess_msvc.exe",
+		"..\\..\\Release\\Win32\\TestProcess_msvc.exe",
+		"..\\..\\Release\\x64\\TestProcess_msvc.exe",
 		"..\\..\\..\\debug\\test\\TestProcess\\.libs\\testprocess.exe",
 #elif defined(_WIN32)
-		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Release/TestProcess_msvc.exe",
-		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Win32/Debug/TestProcess_msvc.exe",
+		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Debug/Win32/TestProcess_msvc.exe",
+		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Release/Win32/TestProcess_msvc.exe",
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestProcess/testprocess.exe",
 #else
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestProcess/testprocess",

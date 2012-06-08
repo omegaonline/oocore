@@ -46,16 +46,31 @@ common = \
 	WireStub.h
 
 if WIN32
+if WIN64_HYBRID
 
-lib_LTLIBRARIES = OOCore.la
+AM_CPPFLAGS += -DWIN64_HYBRID
 
-OOCore_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4 -lshlwapi
-OOCore_la_LDFLAGS = -module -avoid-version -no-undefined
+lib_LTLIBRARIES = OOCore64.la
 
-OOCore_la_SOURCES = \
+OOCore64_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4 -lshlwapi
+OOCore64_la_LDFLAGS = -module -avoid-version -no-undefined
+
+OOCore64_la_SOURCES = \
 	$(common) \
 	OOCore_res.rc
 
+else
+
+lib_LTLIBRARIES = OOCore32.la
+
+OOCore32_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4 -lshlwapi
+OOCore32_la_LDFLAGS = -module -avoid-version -no-undefined
+
+OOCore32_la_SOURCES = \
+	$(common) \
+	OOCore_res.rc
+
+endif
 else
 
 lib_LTLIBRARIES = liboocore.la

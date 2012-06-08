@@ -40,7 +40,7 @@ namespace
 
 		~DLLManagerImpl();
 
-		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
+		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name, bool allow_null);
 		void unload_unused();
 		bool can_unload();
 
@@ -55,11 +55,14 @@ namespace
 
 	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
 
-	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid)
+	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, const guid_t& iid, bool allow_null)
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
 
-		OOBase::SmartPtr<OOBase::DLL> dll = DLLManager::instance()->load_dll(dll_name);
+		OOBase::SmartPtr<OOBase::DLL> dll = DLLManager::instance()->load_dll(dll_name,allow_null);
+		if (!dll)
+			return NULL;
+
 		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
 		if (!pfn)
 			throw INotFoundException::Create(OOCore::get_text("The library {0} is missing the Omega_GetLibraryObject_Safe entrypoint") % dll_name);
@@ -108,7 +111,7 @@ namespace
 		return ptrOidKey->GetValue(Omega::string_t::constant("OID")).cast<guid_t>();
 	}
 
-	IObject* LoadSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	IObject* LoadSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, bool wrong_platform)
 	{
 		string_t strOid = string_t::constant("Omega.Surrogate");
 		if (flags & Activation::OwnSurrogate)
@@ -152,16 +155,19 @@ namespace
 		if (!strLib.IsEmpty())
 		{
 			// Try to load a library, if allowed
+			bool wrong_platform = false;
 			if (sub_type == Activation::Default || sub_type == Activation::Library)
 			{
 				// Load the library locally
-				return LoadLibraryObject(strLib,oid,iid);
+				IObject* pObj = LoadLibraryObject(strLib,oid,iid,(sub_type == Activation::Default));
+				if (pObj)
+					return pObj;
+
+				wrong_platform = true;
 			}
-			else
-			{
-				// Run a surrogate
-				return LoadSurrogateObject(oid,flags,iid);
-			}
+			
+			// Run a surrogate
+			return LoadSurrogateObject(oid,flags,iid,wrong_platform);
 		}
 
 		if (sub_type == Activation::Library)
@@ -210,7 +216,7 @@ DLLManagerImpl::~DLLManagerImpl()
 	m_dll_map.clear();
 }
 
-OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
+OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name, bool allow_null)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -226,6 +232,12 @@ OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 
 	// Load the new DLL
 	int err = dll->load(name.c_str());
+
+#if defined(_WIN32)
+	if (allow_null && err == ERROR_BAD_EXE_FORMAT)
+		return OOBase::SmartPtr<OOBase::DLL>();	
+#endif
+
 	if (err != 0)
 	{
 		ObjectPtr<IException> ptrE = ISystemException::Create(err);

@@ -73,7 +73,11 @@ BEGIN
             VALUE "FileVersion", OOCORE_VERSION
 			VALUE "LegalCopyright", "GNU General Public License"
             VALUE "InternalName", "OOSvrHost"
-            VALUE "OriginalFilename", "OOSvrHost.exe"
+#ifdef WIN64_HYBRID
+            VALUE "OriginalFilename", "OOSvrHost64.exe"
+#else
+            VALUE "OriginalFilename", "OOSvrHost32.exe"
+#endif
             VALUE "ProductName", "Omega Online Core"
             VALUE "ProductVersion", OOCORE_VERSION
         END

@@ -12,9 +12,13 @@ coretests_CXXFLAGS = $(PTHREAD_CFLAGS)
 coretests_LDFLAGS = $(PTHREAD_LIBS)
 
 if WIN32
-coretests_LDADD = ../src/OOCore/OOCore.la
+if WIN64_HYBRID
+coretests_LDADD = $(top_builddir)/src/OOCore/OOCore64.la
 else
-coretests_LDADD = ../src/OOCore/liboocore.la
+coretests_LDADD = $(top_builddir)/src/OOCore/OOCore32.la
+endif
+else
+coretests_LDADD = $(top_builddir)/src/OOCore/liboocore.la
 endif
 
 coretests_SOURCES = \

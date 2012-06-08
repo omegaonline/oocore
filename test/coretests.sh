@@ -12,8 +12,8 @@ if test -n "$TERM"; then
 	#Try to do something sensible with $TERM
 	case $TERM in
 		cygwin)
-			# Mingw needs a load of help here...
-			cp .libs/OOCore.dll .
+			# MSYS needs a load of help here...
+			cp .libs/OOCore32.dll .
 			server_launch="$COMSPEC //Q //c start ../OOServer/.libs/ooserverd.exe"
 			;;
 		*)

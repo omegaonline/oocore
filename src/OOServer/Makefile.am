@@ -46,18 +46,7 @@ ooserverd_SOURCES += OOServer.rc
 ooserverd_LDADD += -lole32 -lrpcrt4 -lshlwapi
 endif
 
-pkglibexec_PROGRAMS = oosvruser oosvrhost
-
-oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
-oosvrhost_LDADD = @top_builddir@/oobase/liboobase.la
-
-if WIN32
-oosvruser_LDADD += ../OOCore/OOCore.la
-oosvrhost_LDADD += ../OOCore/OOCore.la
-else
-oosvruser_LDADD += ../OOCore/liboocore.la
-oosvrhost_LDADD += ../OOCore/liboocore.la
-endif
+pkglibexec_PROGRAMS = oosvruser
 
 oosvruser_SOURCES = \
 	OOServer_User.h \
@@ -77,17 +66,61 @@ oosvruser_SOURCES = \
 	UserRegistry.cpp \
 	UserROT.h \
 	UserROT.cpp
-	
+
+oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+
+if WIN32
+if WIN64_HYBRID
+
+oosvruser_CPPFLAGS = $(AM_CPPFLAGS) -DWIN64_HYBRID
+oosvruser_LDADD += ../OOCore/OOCore64.la
+
+pkglibexec_PROGRAMS += oosvrhost64
+
+oosvrhost64_SOURCES = \
+	OOServer_Host.h \
+	HostMain.cpp \
+	HostService.cpp \
+	HostSurrogate.cpp \
+	OOSvrHost.rc
+
+oosvrhost64_LDADD = @top_builddir@/oobase/liboobase.la ../OOCore/OOCore64.la -lole32
+
+else
+
+pkglibexec_PROGRAMS += oosvrhost32
+
+oosvruser_CPPFLAGS = $(AM_CPPFLAGS) 
+oosvruser_LDADD += ../OOCore/OOCore32.la
+
+oosvrhost32_SOURCES = \
+	OOServer_Host.h \
+	HostMain.cpp \
+	HostService.cpp \
+	HostSurrogate.cpp \
+	OOSvrHost.rc
+
+oosvrhost32_LDADD = @top_builddir@/oobase/liboobase.la ../OOCore/OOCore32.la -lole32
+
+endif
+
+oosvruser_SOURCES += OOSvrUser.rc
+
+else
+
+oosvruser_CPPFLAGS = $(AM_CPPFLAGS)
+oosvruser_LDADD += @top_builddir@/oobase/liboobase.la ../OOCore/liboocore.la
+
+pkglibexec_PROGRAMS += oosvrhost
+
 oosvrhost_SOURCES = \
 	OOServer_Host.h \
 	HostMain.cpp \
 	HostService.cpp \
 	HostSurrogate.cpp
 
-if WIN32
-oosvruser_SOURCES += OOSvrUser.rc
-oosvrhost_SOURCES += OOSvrHost.rc
-oosvrhost_LDADD += -lole32
+oosvrhost_LDADD = ../OOCore/liboocore.la
+
 endif
 
 EXTRA_DIST = \

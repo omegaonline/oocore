@@ -52,7 +52,11 @@ BEGIN
             VALUE "FileVersion", OOCORE_VERSION
 			VALUE "LegalCopyright", "GNU Lesser General Public License"
             VALUE "InternalName", "OOCore"
-            VALUE "OriginalFilename", "OOCore.dll"
+#ifdef WIN64_HYBRID
+            VALUE "OriginalFilename", "OOCore64.dll"
+#else
+            VALUE "OriginalFilename", "OOCore32.dll"
+#endif
             VALUE "ProductName", "Omega Online Core"
             VALUE "ProductVersion", OOCORE_VERSION
         END

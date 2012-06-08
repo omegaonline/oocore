@@ -7,7 +7,11 @@ testlibrary_la_CXXFLAGS = $(PTHREAD_CFLAGS)
 testlibrary_la_LDFLAGS =  -no-undefined -module $(PTHREAD_LIBS) -rpath /nowhere
 
 if WIN32
-testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/OOCore.la
+if WIN64_HYBRID
+testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/OOCore64.la
+else
+testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/OOCore32.la
+endif
 testlibrary_la_LDFLAGS += -avoid-version
 else
 testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/liboocore.la

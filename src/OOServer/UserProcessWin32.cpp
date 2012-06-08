@@ -165,7 +165,12 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 
 	Omega::string_t strProcess;
 	get_root_config_arg("binary_path",strProcess);
-	strProcess += "OOSvrHost.exe";
+
+#if defined(WIN64_HYBRID)
+	strProcess += "OOSvrHost64.exe";
+#else
+	strProcess += "OOSvrHost32.exe";
+#endif
 
 	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> cmd_line;
 	if (!is_host_process)

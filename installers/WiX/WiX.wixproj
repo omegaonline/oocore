@@ -15,12 +15,12 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>$(SolutionDir)bin\Win32\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;BinDir=..\..\bin\Win32\$(Configuration);DataDir=..\..\debug\data</DefineConstants>
+    <DefineConstants>Debug;BinDir=..\..\bin\Win32\$(Configuration)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>$(SolutionDir)bin\Win32\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>BinDir=..\..\bin\Win32\$(Configuration);DataDir=..\..\debug\data</DefineConstants>
+    <DefineConstants>BinDir=..\..\bin\Win32\$(Configuration)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="OOCore.wxs" />

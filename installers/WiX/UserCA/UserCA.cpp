@@ -359,7 +359,7 @@ extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 	HKEY hKey;
 	if (RegCreateKeyExW(HKEY_LOCAL_MACHINE,L"Software\\Omega Online\\OOServer\\Install",0,NULL,0,KEY_WRITE,NULL,&hKey,NULL) == ERROR_SUCCESS)
 	{
-		RegSetValueExW(hKey,L"added_user",0,REG_SZ,(LPBYTE)strUName.c_str(),(strUName.size()+1)*sizeof(wchar_t));
+		RegSetValueExW(hKey,L"added_user",0,REG_SZ,(LPBYTE)strUName.c_str(),(DWORD)(strUName.size()+1)*sizeof(wchar_t));
 		RegCloseKey(hKey);
 	}
 

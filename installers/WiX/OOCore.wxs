@@ -46,9 +46,16 @@
 
     <!-- Define directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLDIR" Name="Omega Online" />
-      </Directory>
+      <?if $(var.Platform) = x64 ?>
+        <Directory Id="ProgramFilesFolder64">
+          <Directory Id="INSTALLDIR" Name="Omega Online" />
+        </Directory>
+        <Directory Id="SystemFolder64" />
+      <?else ?>
+        <Directory Id="ProgramFilesFolder">
+          <Directory Id="INSTALLDIR" Name="Omega Online" />
+        </Directory>
+      <?endif ?>
       <Directory Id="SystemFolder" />
       <Directory Id="CommonFilesFolder">
         <Directory Id="COMMONDIR" Name="Omega Online" />
@@ -57,13 +64,20 @@
 
     <!-- Define file components -->
     <DirectoryRef Id="SystemFolder">
-      <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}" Permanent="yes">
-        <File Source="$(var.BinDir)\OOCore.dll" KeyPath="yes" Checksum="yes" />
+      <Component Id="OOCore32.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}" Win64="no" Permanent="yes">
+        <File Source="$(var.OOCore.TargetDir)..\Win32\OOCore32.dll" KeyPath="yes" Checksum="yes" />
       </Component>
     </DirectoryRef>
+    <?if $(var.Platform) = x64 ?>
+      <DirectoryRef Id="SystemFolder64">
+       <Component Id="OOCore64.dll" Guid="{B7A06F42-E1B0-4420-9DA1-128D0158DA87}" Permanent="yes">
+         <File Source="$(var.OOCore.TargetPath)" KeyPath="yes" Checksum="yes" />
+       </Component>
+      </DirectoryRef>
+    <?endif ?>
     <DirectoryRef Id="INSTALLDIR">
-      <Component Id="OOServer.exe" Guid="{13EC374D-B4C7-4B4E-8ABF-BF937A1EDECB}">
-        <File Source="$(var.BinDir)\OOServer.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
+      <Component Id="OOServer.exe" Guid="{13EC374D-B4C7-4B4E-8ABF-BF937A1EDECB}" >
+        <File Source="$(var.OOServer.TargetPath)" KeyPath="yes" Checksum="yes" />
 
         <!-- Stop and remove the service -->
         <ServiceControl Id="OOServer.Service.Control"
@@ -86,21 +100,21 @@
           <ServiceDependency Id="LanmanWorkstation"/>
         </ServiceInstall>
       </Component>
-      <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
-        <File Source="$(var.BinDir)\OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
+      <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}" >
+        <File Source="$(var.OOSvrUser.TargetPath)" KeyPath="yes" Checksum="yes" />
       </Component>
-      <Component Id="OOReg.exe" Guid="{B6158997-7D0F-4524-93EA-FB30FE10E8D3}">
-        <File Source="$(var.BinDir)\OOReg.exe" KeyPath="yes" />
+      <Component Id="OOReg.exe" Guid="{B6158997-7D0F-4524-93EA-FB30FE10E8D3}" >
+        <File Source="$(var.OOReg.TargetPath)" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 
     <!-- Install registry databases -->
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="OOServer.system.regdb" Guid="{8B2918F6-80C9-4D50-A514-0460F7D37BD5}">
-        <File Source="$(var.BinDir)\system.regdb" KeyPath="yes" />
+        <File Source="$(var.OutDir)system.regdb" KeyPath="yes" />
       </Component>
       <Component Id="OOServer.user_template.regdb" Guid="{2723E66D-E2FC-4659-B49B-3E9E4FAD8012}">
-        <File Source="$(var.BinDir)\user_template.regdb" KeyPath="yes" />
+        <File Source="$(var.OutDir)user_template.regdb" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 
@@ -179,12 +193,8 @@
                   Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
 
     <!-- Define binary -->
-    <?ifdef Debug ?>
-    <Binary Id="UserCALibrary" SourceFile=".\bin\Debug\UserCA.dll" />
-    <?else?>
-    <Binary Id="UserCALibrary" SourceFile=".\bin\Release\UserCA.dll" />
-    <?endif?>
-
+    <Binary Id="UserCALibrary" SourceFile="$(var.UserCA.TargetPath)" />
+    
     <!-- Set execute order -->
     <InstallExecuteSequence>
       <Custom Action="CheckUser" Before="InstallInitialize"><![CDATA[NOT REMOVE]]></Custom>
@@ -203,7 +213,10 @@
 
     <!-- Group components -->
     <ComponentGroup Id="OOCore">
-      <ComponentRef Id="OOCore.dll" />
+      <ComponentRef Id="OOCore32.dll" />
+      <?if $(var.Platform) = x64 ?>
+        <ComponentRef Id="OOCore64.dll" />
+      <?endif ?>
       <ComponentRef Id="OOCore.RegKeys" />
     </ComponentGroup>
 

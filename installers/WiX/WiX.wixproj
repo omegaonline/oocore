@@ -13,14 +13,26 @@
     <Name>WiX</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>$(SolutionDir)bin\Win32\$(Configuration)\</OutputPath>
+    <OutputPath>$(SolutionDir)bin\$(Configuration)\Win32\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;BinDir=..\..\bin\Win32\$(Configuration)</DefineConstants>
+    <DefineConstants>Debug;</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>$(SolutionDir)bin\Win32\$(Configuration)\</OutputPath>
+    <OutputPath>$(SolutionDir)bin\$(Configuration)\Win32\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>BinDir=..\..\bin\Win32\$(Configuration)</DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DefineConstants>Debug;</DefineConstants>
+    <OutputPath>$(SolutionDir)bin\$(Configuration)\x64\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DefineConstants>
+    </DefineConstants>
+    <OutputPath>$(SolutionDir)bin\$(Configuration)\x64\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="OOCore.wxs" />

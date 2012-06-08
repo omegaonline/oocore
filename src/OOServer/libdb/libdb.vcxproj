@@ -88,12 +88,14 @@
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <ExecutablePath>C:\Work\msvcconf\Win32\Release;$(ExecutablePath)</ExecutablePath>
+    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(Platform)\$(Configuration)\</OutDir>
@@ -103,10 +105,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <ExecutablePath>C:\Work\msvcconf\Win32\Release;$(ExecutablePath)</ExecutablePath>
+    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -127,13 +131,13 @@
       <Message>Configuring project settings...</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Platform)\$(Configuration)\ $(SolutionDir)</Command>
+      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Configuration)\$(Platform)\ $(SolutionDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Building regdb files...</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(SolutionDir)bin\$(Platform)\$(Configuration)\system.regdb;$(SolutionDir)bin\$(Platform)\$(Configuration)\user_template.regdb</Outputs>
+      <Outputs>$(SolutionDir)bin\$(Configuration)\$(Platform)\system.regdb;$(SolutionDir)bin\$(Configuration)\$(Platform)\user_template.regdb</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <Inputs>$(SolutionDir)data\common.sql;$(SolutionDir)data\system.sql;$(SolutionDir)data\user_template.sql</Inputs>
@@ -158,13 +162,13 @@
       <Message>Configuring project settings...</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Platform)\$(Configuration)\ $(SolutionDir)</Command>
+      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Configuration)\$(Platform)\ $(SolutionDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Building regdb files...</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(SolutionDir)bin\$(Platform)\$(Configuration)\system.regdb;$(SolutionDir)bin\$(Platform)\$(Configuration)\user_template.regdb</Outputs>
+      <Outputs>$(SolutionDir)bin\$(Configuration)\$(Platform)\system.regdb;$(SolutionDir)bin\$(Configuration)\$(Platform)\user_template.regdb</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <Inputs>$(SolutionDir)data\common.sql;$(SolutionDir)data\system.sql;$(SolutionDir)data\user_template.sql</Inputs>
@@ -177,7 +181,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;NDEBUG</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
@@ -192,13 +196,13 @@
       <Message>Configuring project settings...</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Platform)\$(Configuration)\ $(SolutionDir)</Command>
+      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Configuration)\$(Platform)\ $(SolutionDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Building regdb files...</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(SolutionDir)bin\$(Platform)\$(Configuration)\system.regdb;$(SolutionDir)bin\$(Platform)\$(Configuration)\user_template.regdb</Outputs>
+      <Outputs>$(SolutionDir)bin\$(Configuration)\$(Platform)\system.regdb;$(SolutionDir)bin\$(Configuration)\$(Platform)\user_template.regdb</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <Inputs>$(SolutionDir)data\common.sql;$(SolutionDir)data\system.sql;$(SolutionDir)data\user_template.sql</Inputs>
@@ -211,7 +215,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
@@ -226,13 +230,13 @@
       <Message>Configuring project settings...</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Platform)\$(Configuration)\ $(SolutionDir)</Command>
+      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Configuration)\$(Platform)\ $(SolutionDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Building regdb files...</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(SolutionDir)bin\$(Platform)\$(Configuration)\system.regdb;$(SolutionDir)bin\$(Platform)\$(Configuration)\user_template.regdb</Outputs>
+      <Outputs>$(SolutionDir)bin\$(Configuration)\$(Platform)\system.regdb;$(SolutionDir)bin\$(Configuration)\$(Platform)\user_template.regdb</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <Inputs>$(SolutionDir)data\common.sql;$(SolutionDir)data\system.sql;$(SolutionDir)data\user_template.sql</Inputs>

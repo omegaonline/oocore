@@ -59,7 +59,7 @@ namespace
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		OOBase::RefPtr<OOBase::Socket> LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const;
+		OOBase::RefPtr<OOBase::Socket> LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs) const;
 
 	private:
 		OOBase::String m_sid;
@@ -479,7 +479,7 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 	return (m_uid == uid);
 }
 
-OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const
+OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs) const
 {
 	OOBase::RefPtr<OOBase::Socket> ptrNew;
 

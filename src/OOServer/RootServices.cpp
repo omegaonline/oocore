@@ -140,9 +140,14 @@ bool Root::Manager::start_services()
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
 
-		// Make Timeout a registry setting
-		void* TODO;
-		unsigned int wait_secs = 15;
+		// Get the timeout value
+		unsigned long wait_secs = 0;
+		OOBase::LocalString strTimeout;
+		if (m_registry->get_value(key,"Timeout",0,strTimeout) == Db::HIVE_OK)
+			wait_secs = strtoul(strTimeout.c_str(),NULL,10);
+		
+		if (wait_secs == 0)
+			wait_secs = 15;
 
 		// Create a unique local socket name
 		OOBase::RefPtr<OOBase::Socket> ptrSocket = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs);

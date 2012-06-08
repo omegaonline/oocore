@@ -47,7 +47,7 @@ namespace Root
 		virtual int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
 		virtual bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const = 0;
 		virtual bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
-		virtual OOBase::RefPtr<OOBase::Socket> LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned int wait_secs) const = 0;
+		virtual OOBase::RefPtr<OOBase::Socket> LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs) const = 0;
 
 	protected:
 		Process() {}

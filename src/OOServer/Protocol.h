@@ -30,6 +30,7 @@ namespace OOServer
 
 		// Root -> Sandbox
 		StartService = 0x40,
+		StopServices,
 
 		// User -> Root
 		NotifyStarted = 0x80,

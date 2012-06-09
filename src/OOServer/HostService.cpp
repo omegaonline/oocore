@@ -28,7 +28,7 @@ using namespace OTL;
 #define ECONNREFUSED ENOENT
 #endif
 
-void Host::StartService(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
+System::IService* Host::StartService(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
 {
 	OOBase::LocalString strPipe2;
 	int err = strPipe2.assign(strPipe.c_str());
@@ -78,4 +78,6 @@ void Host::StartService(const string_t& strPipe, const string_t& strName, Regist
 #endif
 
 	// Now loop reading socket handles from ptrSocket
+
+	return NULL;
 }

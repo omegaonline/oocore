@@ -642,6 +642,10 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 		start_service(request);
 		break;
 
+	case OOServer::StopServices:
+		response.write(int32_t(stop_services()));
+		break;
+
 	default:
 		response.write(int32_t(EINVAL));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
@@ -836,6 +840,9 @@ void User::Manager::start_service(OOBase::CDRStream& request)
 				ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
 				ptrKey->init(this,string_t::constant("/System/Services/") + strName.c_str(),key,0);
 
+				// Return a pointer to a IService interface and place in stack
+				void* TODO;
+
 				ObjectPtr<OOCore::IServiceManager>("Omega.ServiceHost")->Start(strPipe.c_str(),strName.c_str(),ptrKey,strSecret.c_str());
 			}
 			catch (IException* pE)
@@ -845,4 +852,11 @@ void User::Manager::start_service(OOBase::CDRStream& request)
 			}
 		}
 	}
+}
+
+int User::Manager::stop_services()
+{
+	void* TODO;
+
+	return 0;
 }

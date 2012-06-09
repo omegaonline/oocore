@@ -79,7 +79,7 @@ namespace
 
 	// IServiceManager members
 	public:
-		void Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret);
+		System::IService* Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret);
 	};
 
 	string_t recurse_log_exception(Omega::IException* pE)
@@ -186,9 +186,9 @@ void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, cons
 	OOCore_GetObject(oid,clean_flags(flags),iid,pObject);
 }
 
-void ServiceManagerImpl::Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
+System::IService* ServiceManagerImpl::Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
 {
-	Host::StartService(strPipe,strName,pKey,strSecret);
+	return Host::StartService(strPipe,strName,pKey,strSecret);
 }
 
 int Host::SingleSurrogate()

@@ -125,7 +125,7 @@ bool Root::Manager::start_services()
 	if (!enum_services(m_registry,queueNames,queueKeys))
 		return false;
 
-	// Remove the associated spawned process
+	// Find the sandbox process
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	UserProcess sandbox;
@@ -159,3 +159,27 @@ bool Root::Manager::start_services()
 
 	return true;
 }
+
+bool Root::Manager::stop_services()
+{
+	// Send the stop message to the sandbox oosvruser process
+	OOBase::CDRStream request;
+	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StopServices)))
+		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),false);
+	
+	// Make a blocking call
+	OOBase::CDRStream response;
+	OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
+	if (res != OOServer::MessageHandler::io_result::success)
+		LOG_ERROR_RETURN(("Failed to send service stop request to sandbox"),false);
+
+	Omega::int32_t err = 0;
+	if (!response.read(err))
+		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response.last_error())),false);
+
+	if (err)
+		LOG_ERROR_RETURN(("Service stop failed: %s",OOBase::system_error_text(err)),false);
+
+	return true;
+}
+

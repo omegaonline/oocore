@@ -86,13 +86,16 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 							ret = EXIT_SUCCESS;
 
 							// Wait for quit
-							for (bool bQuit = false;!bQuit;)
+							for (bool bQuit = false;!bQuit && ret == EXIT_SUCCESS;)
 							{
 								bQuit = wait_to_quit();
 								if (!bQuit)
 								{
-									// Restart services
-									void* TODO;
+									// Restart the services
+									if (!stop_services())
+										ret = EXIT_FAILURE;
+									else if (!start_services())
+										ret = EXIT_FAILURE;
 								}
 							}
 

@@ -59,6 +59,7 @@
 // Ensure we have the local Omega.h instead of the installed one...
 #include "../../include/Omega/Omega.h"
 #include "../../include/Omega/Remoting.h"
+#include "../../include/Omega/Service.h"
 #include "../../include/OTL/Exception.h"
 #include "../../include/OTL/Registry.h"
 

@@ -112,6 +112,7 @@ namespace User
 
 		bool notify_started();
 		void start_service(OOBase::CDRStream& request);
+		int stop_services();
 	};
 }
 

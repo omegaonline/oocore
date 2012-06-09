@@ -52,6 +52,7 @@
 // Ensure we have the local Omega.h instead of the installed one...
 #include "../../include/Omega/Omega.h"
 #include "../../include/Omega/Remoting.h"
+#include "../../include/Omega/Service.h"
 
 #include "../../include/OTL/OTL.h"
 
@@ -69,7 +70,7 @@ namespace Host
 	int MultipleSurrogate();
 	int ServiceStart();
 
-	void StartService(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);
+	Omega::System::IService* StartService(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);
 
 #if defined(_WIN32)
 	int ShellEx(const OOBase::CmdArgs::results_t& args);

@@ -119,7 +119,7 @@ oosvrhost_SOURCES = \
 	HostService.cpp \
 	HostSurrogate.cpp
 
-oosvrhost_LDADD = ../OOCore/liboocore.la
+oosvrhost_LDADD = @top_builddir@/oobase/liboobase.la ../OOCore/liboocore.la
 
 endif
 

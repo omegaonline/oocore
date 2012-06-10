@@ -34,6 +34,8 @@
 #include "OOServer_Root.h"
 #include "RootManager.h"
 
+#include <stdlib.h>
+
 namespace
 {
 	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys)

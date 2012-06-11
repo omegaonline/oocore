@@ -175,6 +175,9 @@ int User::Manager::run(const char* pszPipe)
 					// Wait for stop
 					wait_for_quit();
 
+					// Stop services (if any)
+					stop_services();
+
 					ret = EXIT_SUCCESS;
 				}
 
@@ -841,9 +844,15 @@ void User::Manager::start_service(OOBase::CDRStream& request)
 				ptrKey->init(this,string_t::constant("/System/Services/") + strName.c_str(),key,0);
 
 				// Return a pointer to a IService interface and place in stack
-				void* TODO;
+				ObjectPtr<System::IService> ptrService = ObjectPtr<OOCore::IServiceManager>("Omega.ServiceHost")->Start(strPipe.c_str(),strName.c_str(),ptrKey,strSecret.c_str());
+				if (ptrService)
+				{
+					OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-				ObjectPtr<OOCore::IServiceManager>("Omega.ServiceHost")->Start(strPipe.c_str(),strName.c_str(),ptrKey,strSecret.c_str());
+					int err = m_mapServices.push(ptrService);
+					if (err)
+						OMEGA_THROW(err);
+				}
 			}
 			catch (IException* pE)
 			{
@@ -856,7 +865,17 @@ void User::Manager::start_service(OOBase::CDRStream& request)
 
 int User::Manager::stop_services()
 {
-	void* TODO;
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	ObjectPtr<System::IService> ptrService;
+	while (m_mapServices.pop(&ptrService))
+	{
+		guard.release();
+
+		ptrService->Stop();
+
+		guard.acquire();
+	}
 
 	return 0;
 }

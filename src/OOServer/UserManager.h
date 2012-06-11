@@ -64,6 +64,7 @@ namespace User
 		bool                                                                          m_bIsSandbox;
 		OOBase::RefPtr<OOSvrBase::Acceptor>                                           m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
+		OOBase::Stack<OTL::ObjectPtr<Omega::System::IService> >                       m_mapServices;
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags);
 		virtual void on_channel_closed(Omega::uint32_t channel);

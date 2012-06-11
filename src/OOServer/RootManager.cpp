@@ -453,13 +453,14 @@ bool Root::Manager::wait_to_quit()
 		{
 #if defined (_WIN32)
 			case CTRL_BREAK_EVENT:
-				return is_debug();
+				return false;
 
 			default:
 				return true;
+
 #elif defined(HAVE_UNISTD_H)
 			case SIGHUP:
-				return is_debug();
+				return false;
 
 			case SIGQUIT:
 			case SIGTERM:

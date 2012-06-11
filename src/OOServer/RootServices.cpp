@@ -164,6 +164,8 @@ bool Root::Manager::start_services()
 
 bool Root::Manager::stop_services()
 {
+	OOBase::Logger::log(OOBase::Logger::Information,"Stopping services...");
+
 	// Send the stop message to the sandbox oosvruser process
 	OOBase::CDRStream request;
 	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StopServices)))

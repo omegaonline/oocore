@@ -71,15 +71,16 @@ namespace
 	template <typename T>
 	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
 	{
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
 		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
 		if (len == 0)
 		{
 			DWORD dwErr = GetLastError();
 			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator>());
+				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),wsz);
 		}
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz((len+1) * sizeof(wchar_t));
+		wsz.allocate((len+1) * sizeof(wchar_t));
 		if (!wsz)
 			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),wsz);
 		

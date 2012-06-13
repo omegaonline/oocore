@@ -200,8 +200,8 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
 			{
 				++dwValLen;
-				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf;
-				if (!buf.allocate(dwValLen+1))
+				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf(dwValLen+1);
+				if (!buf)
 					LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
 
 				lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
@@ -217,8 +217,8 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 						lRes = value.assign(szBuf,dwExpLen-1);
 					else
 					{
-						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3;
-						if (!buf3.allocate(dwExpLen+1))
+						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3(dwExpLen+1);
+						if (!buf3)
 							LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
 
 						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))

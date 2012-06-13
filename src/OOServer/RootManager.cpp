@@ -422,7 +422,7 @@ bool Root::Manager::spawn_sandbox()
 	}
 
 	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user(uid,NULL,NULL,strPipe,bAgain);
+	m_sandbox_channel = spawn_user(uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
 	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
 	{
 		OOBase::LocalString strOurUName;
@@ -435,7 +435,7 @@ bool Root::Manager::spawn_sandbox()
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user(uid,NULL,NULL,strPipe,bAgain);
+		m_sandbox_channel = spawn_user(uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
 	}
 
 #if defined(_WIN32)
@@ -613,7 +613,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::SmartPtr<Db::Hive>& ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;

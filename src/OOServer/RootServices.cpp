@@ -147,7 +147,7 @@ namespace
 	{
 		/* The format is:
 		 *
-		 * family/type/protocol[/address/port]
+		 * family/type/protocol[/address/port[/IPv6_scope_id]]
 		 *
 		 * Where:
 		 *   family is one of: ip4, ip6, or numeric AF_ value
@@ -156,6 +156,7 @@ namespace
 		 *
 		 *   address is optional, and if present is formatted for getaddrinfo(family)
 		 *     using numeric formats only (AI_NUMERICHOST), and bind() is called.
+		 *     If address is '*' then INADDR_ANY is used.
 		 *
 		 *   port is optional (mandatory if address is given), and if present is
 		 *     formatted as a decimal number (AI_NUMERICSERV)
@@ -236,17 +237,85 @@ namespace
 				return false;
 			}
 
-			addrinfo* addr = NULL;
-			err = getaddrinfo(strSub.c_str(),strPort.c_str(),&ai,&addr);
-			if (err)
+			if (strSub == "*" && (ai.ai_family == AF_INET || ai.ai_family == AF_INET6))
 			{
-				OOBase::BSD::close_socket(new_sock);
-				LOG_ERROR_RETURN(("Failed to parse address: %s",gai_strerror(err)),false);
+				if (ai.ai_family == AF_INET)
+				{
+					sockaddr_in addr = {0};
+					addr.sin_family = AF_INET;
+					addr.sin_addr.s_addr = INADDR_ANY;
+
+					char* end_ptr = NULL;
+					ushort port = strtoull(strPort.c_str(),&end_ptr,10);
+					if (*end_ptr != '\0')
+					{
+						OOBase::BSD::close_socket(new_sock);
+						LOG_ERROR_RETURN(("Failed to parse port: %s",strPort.c_str()),false);
+					}
+
+					addr.sin_port = htons(port);
+
+					err = OOBase::BSD::bind(new_sock,(struct sockaddr*)&addr,sizeof(addr));
+				}
+				else if (ai.ai_family == AF_INET6)
+				{
+					sockaddr_in6 addr = {0};
+					addr.sin6_family = AF_INET6;
+
+					in6_addr any = IN6ADDR_ANY_INIT;
+					addr.sin6_addr = any;
+
+					char* end_ptr = NULL;
+					ushort port = strtoull(strPort.c_str(),&end_ptr,10);
+					if (*end_ptr != '\0')
+					{
+						OOBase::BSD::close_socket(new_sock);
+						LOG_ERROR_RETURN(("Failed to parse port: %s",strPort.c_str()),false);
+					}
+
+					addr.sin6_port = htons(port);
+
+					err = OOBase::BSD::bind(new_sock,(struct sockaddr*)&addr,sizeof(addr));
+				}
 			}
+			else
+			{
+				addrinfo* addr = NULL;
+				err = getaddrinfo(strSub.c_str(),strPort.c_str(),&ai,&addr);
+				if (err)
+				{
+					OOBase::BSD::close_socket(new_sock);
+					LOG_ERROR_RETURN(("Failed to parse address: %s",gai_strerror(err)),false);
+				}
 
-			err = OOBase::BSD::bind(new_sock,addr->ai_addr,addr->ai_addrlen);
+				if (addr->ai_family == AF_INET6)
+				{
+					sockaddr_in6* addr6 = reinterpret_cast<sockaddr_in6*>(addr->ai_addr);
+					if (IN6_IS_ADDR_LINKLOCAL(&addr6->sin6_addr))
+					{
+						// If we are a link-local IPv6 address, we need a scope id
+						if (!split_string(strValue,pos,strSub))
+						{
+							OOBase::BSD::close_socket(new_sock);
+							return false;
+						}
 
-			freeaddrinfo(addr);
+						char* end_ptr = NULL;
+						unsigned long scope = strtoull(strSub.c_str(),&end_ptr,10);
+						if (*end_ptr != '\0')
+						{
+							OOBase::BSD::close_socket(new_sock);
+							LOG_ERROR_RETURN(("Failed to parse scope-id: %s",strPort.c_str()),false);
+						}
+
+						addr6->sin6_scope_id = htonl(scope);
+					}
+				}
+
+				err = OOBase::BSD::bind(new_sock,addr->ai_addr,addr->ai_addrlen);
+
+				freeaddrinfo(addr);
+			}
 
 			if (err)
 			{

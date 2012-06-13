@@ -571,7 +571,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 
 		// Now read the secret back...
 		char secret2[32] = {0};
-		ptrNew->recv(secret2,sizeof(secret2),true,err,timeout);
+		ptrNew->recv(secret2,sizeof(secret2)-1,true,err,timeout);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOBase::RefPtr<OOBase::Socket>());
 

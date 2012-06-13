@@ -57,13 +57,6 @@ System::IService* Host::StartService(const string_t& strPipe, const string_t& st
 	if (err)
 		OMEGA_THROW(err);
 
-	// Now we start the service!
-
-
-	void* TODO;
-
-
-
 	// Now send the secret back to the root, to authenticate ourselves, and signal we have started
 	ptrSocket->send(strSecret.c_str(),strSecret.Length(),err);
 	if (err)
@@ -78,6 +71,36 @@ System::IService* Host::StartService(const string_t& strPipe, const string_t& st
 #endif
 
 	// Now loop reading socket handles from ptrSocket
+	for (;;)
+	{
+		uint32_t len = 0;
+		err = ptrSocket->recv(len);
+		if (err)
+			OMEGA_THROW(err);
+
+		if (!len)
+			break;
+
+		OOBase::SmartPtr<char,OOBase::LocalAllocator> ptrName(len);
+		if (!ptrName)
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+		ptrSocket->recv(ptrName,len,true,err);
+		if (err)
+			OMEGA_THROW(err);
+
+
+		string_t strName(ptrName,len);
+		OOBase::socket_t sock;
+		err = ptrSocket->recv_socket(sock);
+		if (err)
+			OMEGA_THROW(err);
+
+		OOBase::BSD::close_socket(sock);
+	}
+
+	// Now we start the service!
+	void* TODO;
 
 	return NULL;
 }

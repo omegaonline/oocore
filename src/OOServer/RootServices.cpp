@@ -36,6 +36,10 @@
 
 #include <stdlib.h>
 
+#if defined(HAVE_UNISTD_H)
+#include <netdb.h>
+#endif
+
 namespace
 {
 	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys)
@@ -117,6 +121,212 @@ namespace
 
 		return true;
 	}
+
+	bool split_string(const OOBase::LocalString& strSocket, size_t& pos, OOBase::LocalString& strSub)
+	{
+		int err = 0;
+		size_t end = strSocket.find('/',pos);
+		if (end == OOBase::LocalString::npos)
+		{
+			pos = end;
+			err = strSub.assign(strSocket.c_str()+pos);
+		}
+		else
+		{
+			pos = end + 1;
+			err = strSub.assign(strSocket.c_str()+pos,end-pos);
+		}
+
+		if (err)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+		return true;
+	}
+
+	bool create_and_forward_socket(pid_t pid, const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
+	{
+		/* The format is:
+		 *
+		 * family/type/protocol[/address/port]
+		 *
+		 * Where:
+		 *   family is one of: ip4, ip6, or numeric AF_ value
+		 *   type is one of: stream, dgram, raw, or numeric SOCK_ value
+		 *   protocol is one of: udp, tcp, or numeric PROTO_ value
+		 *
+		 *   address is optional, and if present is formatted for getaddrinfo(family)
+		 *     using numeric formats only (AI_NUMERICHOST), and bind() is called.
+		 *
+		 *   port is optional (mandatory if address is given), and if present is
+		 *     formatted as a decimal number (AI_NUMERICSERV)
+		 */
+
+		addrinfo ai = {0};
+		ai.ai_flags = AI_PASSIVE | AI_NUMERICHOST | AI_NUMERICSERV | AI_ADDRCONFIG;
+
+		// Parse address family
+		OOBase::LocalString strSub;
+		size_t pos = 0;
+		if (!split_string(strValue,pos,strSub))
+			return false;
+
+		if (strSub == "ipv4")
+			ai.ai_family = AF_INET;
+		else if (strSub == "ipv6")
+			ai.ai_family = AF_INET6;
+		else
+		{
+			char* end_ptr = NULL;
+			ai.ai_family = strtoul(strSub.c_str(),&end_ptr,10);
+			if (!ai.ai_family || *end_ptr != '\0')
+				LOG_ERROR_RETURN(("Failed to parse family value in '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),strSub.c_str()),false);
+		}
+
+		// Parse stream type
+		if (!split_string(strValue,pos,strSub))
+			return false;
+
+		if (strSub == "stream")
+			ai.ai_socktype = SOCK_STREAM;
+		else if (strSub == "dgram")
+			ai.ai_socktype = SOCK_DGRAM;
+		else if (strSub == "raw")
+			ai.ai_socktype = SOCK_RAW;
+		else
+		{
+			char* end_ptr = NULL;
+			ai.ai_socktype = strtoul(strSub.c_str(),&end_ptr,10);
+			if (!ai.ai_socktype || *end_ptr != '\0')
+				LOG_ERROR_RETURN(("Failed to parse type value in '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),strSub.c_str()),false);
+		}
+
+		// Parse protocol
+		if (!split_string(strValue,pos,strSub))
+			return false;
+
+		if (strSub == "udp")
+			ai.ai_protocol = IPPROTO_UDP;
+		else if (strSub == "tcp")
+			ai.ai_protocol = IPPROTO_TCP;
+		else
+		{
+			char* end_ptr = NULL;
+			ai.ai_protocol = strtoul(strSub.c_str(),&end_ptr,10);
+			if (!ai.ai_protocol || *end_ptr != '\0')
+				LOG_ERROR_RETURN(("Failed to parse protocol value '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),strSub.c_str()),false);
+		}
+
+		// Address
+		if (!split_string(strValue,pos,strSub))
+			return false;
+
+		// Create the socket
+		int err = 0;
+		OOBase::socket_t new_sock = OOBase::BSD::open_socket(ai.ai_family,ai.ai_socktype,ai.ai_protocol,err);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to create socket: %s",OOBase::system_error_text(err)),false);
+
+		// Bind if required
+		if (!strSub.empty())
+		{
+			OOBase::LocalString strPort;
+			if (!split_string(strValue,pos,strPort))
+			{
+				OOBase::BSD::close_socket(new_sock);
+				return false;
+			}
+
+			addrinfo* addr = NULL;
+			err = getaddrinfo(strSub.c_str(),strPort.c_str(),&ai,&addr);
+			if (err)
+			{
+				OOBase::BSD::close_socket(new_sock);
+				LOG_ERROR_RETURN(("Failed to parse address: %s",gai_strerror(err)),false);
+			}
+
+			err = OOBase::BSD::bind(new_sock,addr->ai_addr,addr->ai_addrlen);
+
+			freeaddrinfo(addr);
+
+			if (err)
+			{
+				OOBase::BSD::close_socket(new_sock);
+				LOG_ERROR_RETURN(("Failed to bind socket to %s: %s",strSub.c_str(),OOBase::system_error_text(err)),false);
+			}
+		}
+
+		// Send to service
+		err = ptrSocket->send(Omega::uint32_t(strSocketName.length()));
+		if (!err)
+			ptrSocket->send(strSocketName.c_str(),Omega::uint32_t(strSocketName.length()),err);
+		if (!err)
+			err = ptrSocket->send_socket(new_sock,pid);
+
+		OOBase::BSD::close_socket(new_sock);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to send socket to %s: %s",strName.c_str(),OOBase::system_error_text(err)),false);
+
+		return true;
+	}
+
+	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const Omega::int64_t& key)
+	{
+		pid_t pid = 0;
+#if defined(_WIN32)
+		int err3 = ptrSocket->recv(pid);
+		if (err3)
+		{
+			LOG_ERROR(("Failed to read process id from service socket: %s",OOBase::system_error_text(err3)));
+			return;
+		}
+#endif
+
+		Omega::int64_t sub_key = 0;
+		OOBase::LocalString strSubKey,strLink,strFullKeyName;
+		int err2 = strSubKey.assign("Connections");
+		if (err2)
+			LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
+		else
+		{
+			Db::hive_errors err = ptrRegistry->create_key(key,sub_key,strSubKey,0,0,strLink,strFullKeyName);
+			if (err)
+			{
+				if (err != Db::HIVE_NOTFOUND)
+					LOG_ERROR(("Failed to open the '/System/Services/%s/Connections' key in the registry",strName.c_str()));
+			}
+			else
+			{
+				// Enum each connection...
+				Db::Hive::registry_set_t keys;
+				err = ptrRegistry->enum_subkeys(sub_key,0,keys);
+				if (err)
+					LOG_ERROR(("Failed to enumerate the '/System/Services/%s/Connections' values in the registry",strName.c_str()));
+				else
+				{
+					OOBase::String strSocketName;
+					for (size_t idx = 0;keys.pop(&strSocketName);)
+					{
+						// Make sure we have some kind of name!
+						if (strSocketName.empty())
+							strSocketName.printf("%lu",++idx);
+
+						OOBase::LocalString strValue;
+						err = ptrRegistry->get_value(sub_key,strSocketName.c_str(),0,strValue);
+						if (err)
+							LOG_ERROR(("Failed to get '%s' from '/System/Services/%s/Connections' in the registry",strSocketName.c_str(),strName.c_str()));
+						else
+							create_and_forward_socket(pid,strName,strSocketName,strValue,ptrSocket);
+					}
+				}
+			}
+		}
+
+		// Write terminating NULL
+		ptrSocket->send(Omega::uint32_t(0));
+		if (err2)
+			LOG_ERROR(("Failed to send connection data to service: %s",OOBase::system_error_text(err2)));
+	}
+
 }
 
 bool Root::Manager::start_services()
@@ -154,9 +364,7 @@ bool Root::Manager::start_services()
 		// Create a unique local socket name
 		OOBase::RefPtr<OOBase::Socket> ptrSocket = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs);
 		if (ptrSocket)
-		{
-
-		}
+			enum_sockets(m_registry,strName,ptrSocket,key);
 	}
 
 	return true;

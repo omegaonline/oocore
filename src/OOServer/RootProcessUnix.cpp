@@ -507,11 +507,12 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		else
 			addr_len = offsetof(sockaddr_un, sun_path) + strlen(addr.sun_path);
 
-		if (::bind(fd,(const sockaddr*)&addr,addr_len) == 0)
+		err = OOBase::BSD::bind(fd,(const sockaddr*)&addr,addr_len);
+		if (!err)
 			break;
 
-		if (errno != EADDRINUSE)
-			LOG_ERROR_RETURN(("Failed to bind pipe: %s",OOBase::system_error_text()),ptrNew);
+		if (err != EADDRINUSE)
+			LOG_ERROR_RETURN(("Failed to bind pipe: %s",OOBase::system_error_text(err)),ptrNew);
 	}
 
 	// Invent a random secret...

@@ -150,7 +150,7 @@ namespace
 		 * family/type/protocol[/address/port[/IPv6_scope_id]]
 		 *
 		 * Where:
-		 *   family is one of: ip4, ip6, or numeric AF_ value
+		 *   family is one of: ipv4, ipv6, or numeric AF_ value
 		 *   type is one of: stream, dgram, raw, or numeric SOCK_ value
 		 *   protocol is one of: udp, tcp, or numeric PROTO_ value
 		 *
@@ -446,7 +446,7 @@ bool Root::Manager::start_services()
 
 bool Root::Manager::stop_services()
 {
-	OOBase::Logger::log(OOBase::Logger::Information,"Stopping services...");
+	OOBase::Logger::log(OOBase::Logger::Information,"Stopping services");
 
 	// Send the stop message to the sandbox oosvruser process
 	OOBase::CDRStream request;

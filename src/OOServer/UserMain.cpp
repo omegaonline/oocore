@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-#elif defined(HAVE_UNISTD_H)
+#elif defined(HAVE_UNISTD_H) && 0
 
 	if (s_is_debug)
 	{

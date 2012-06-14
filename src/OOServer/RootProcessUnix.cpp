@@ -507,7 +507,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		else
 			addr_len = offsetof(sockaddr_un, sun_path) + strlen(addr.sun_path);
 
-		err = OOBase::BSD::bind(fd,(const sockaddr*)&addr,addr_len);
+		err = OOBase::Net::bind(fd,(const sockaddr*)&addr,addr_len);
 		if (!err)
 			break;
 
@@ -556,7 +556,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		if (Root::is_debug())
 			timeout = OOBase::Timeout();
 
-		err = OOBase::BSD::accept(fd,new_fd,timeout);
+		err = OOBase::Net::accept(fd,new_fd,timeout);
 		if (err == ETIMEDOUT)
 		{
 			OOBase::Logger::log(OOBase::Logger::Warning,"Timed out waiting for service '%s' to start",strName.c_str());

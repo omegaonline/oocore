@@ -223,7 +223,7 @@ namespace
 
 		// Create the socket
 		int err = 0;
-		OOBase::socket_t new_sock = OOBase::BSD::open_socket(ai.ai_family,ai.ai_socktype,ai.ai_protocol,err);
+		OOBase::socket_t new_sock = OOBase::Net::open_socket(ai.ai_family,ai.ai_socktype,ai.ai_protocol,err);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to create socket: %s",OOBase::system_error_text(err)),false);
 
@@ -233,7 +233,7 @@ namespace
 			OOBase::LocalString strPort;
 			if (!split_string(strValue,pos,strPort))
 			{
-				OOBase::BSD::close_socket(new_sock);
+				OOBase::Net::close_socket(new_sock);
 				return false;
 			}
 
@@ -249,13 +249,13 @@ namespace
 					ushort port = strtoull(strPort.c_str(),&end_ptr,10);
 					if (*end_ptr != '\0')
 					{
-						OOBase::BSD::close_socket(new_sock);
-						LOG_ERROR_RETURN(("Failed to parse port: %s",strPort.c_str()),false);
+						OOBase::Net::close_socket(new_sock);
+						LOG_ERROR_RETURN(("Failed to parse port value '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),strPort.c_str()),false);
 					}
 
 					addr.sin_port = htons(port);
 
-					err = OOBase::BSD::bind(new_sock,(struct sockaddr*)&addr,sizeof(addr));
+					err = OOBase::Net::bind(new_sock,(struct sockaddr*)&addr,sizeof(addr));
 				}
 				else if (ai.ai_family == AF_INET6)
 				{
@@ -269,13 +269,13 @@ namespace
 					ushort port = strtoull(strPort.c_str(),&end_ptr,10);
 					if (*end_ptr != '\0')
 					{
-						OOBase::BSD::close_socket(new_sock);
-						LOG_ERROR_RETURN(("Failed to parse port: %s",strPort.c_str()),false);
+						OOBase::Net::close_socket(new_sock);
+						LOG_ERROR_RETURN(("Failed to parse port value '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),strPort.c_str()),false);
 					}
 
 					addr.sin6_port = htons(port);
 
-					err = OOBase::BSD::bind(new_sock,(struct sockaddr*)&addr,sizeof(addr));
+					err = OOBase::Net::bind(new_sock,(struct sockaddr*)&addr,sizeof(addr));
 				}
 			}
 			else
@@ -284,8 +284,8 @@ namespace
 				err = getaddrinfo(strSub.c_str(),strPort.c_str(),&ai,&addr);
 				if (err)
 				{
-					OOBase::BSD::close_socket(new_sock);
-					LOG_ERROR_RETURN(("Failed to parse address: %s",gai_strerror(err)),false);
+					OOBase::Net::close_socket(new_sock);
+					LOG_ERROR_RETURN(("Failed to parse address value '/System/Services/%s/Connections' '%s' connection string, %s/%s: %s",strName.c_str(),strSocketName.c_str(),strSub.c_str(),strPort.c_str(),gai_strerror(err)),false);
 				}
 
 				if (addr->ai_family == AF_INET6)
@@ -296,31 +296,34 @@ namespace
 						// If we are a link-local IPv6 address, we need a scope id
 						if (!split_string(strValue,pos,strSub))
 						{
-							OOBase::BSD::close_socket(new_sock);
+							OOBase::Net::close_socket(new_sock);
 							return false;
 						}
+
+						// Add support for named adaptors...
+						void* TODO;
 
 						char* end_ptr = NULL;
 						unsigned long scope = strtoull(strSub.c_str(),&end_ptr,10);
 						if (*end_ptr != '\0')
 						{
-							OOBase::BSD::close_socket(new_sock);
-							LOG_ERROR_RETURN(("Failed to parse scope-id: %s",strPort.c_str()),false);
+							OOBase::Net::close_socket(new_sock);
+							LOG_ERROR_RETURN(("Failed to parse scope-id value '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),strSub.c_str()),false);
 						}
 
 						addr6->sin6_scope_id = htonl(scope);
 					}
 				}
 
-				err = OOBase::BSD::bind(new_sock,addr->ai_addr,addr->ai_addrlen);
+				err = OOBase::Net::bind(new_sock,addr->ai_addr,addr->ai_addrlen);
 
 				freeaddrinfo(addr);
 			}
 
 			if (err)
 			{
-				OOBase::BSD::close_socket(new_sock);
-				LOG_ERROR_RETURN(("Failed to bind socket to %s: %s",strSub.c_str(),OOBase::system_error_text(err)),false);
+				OOBase::Net::close_socket(new_sock);
+				LOG_ERROR_RETURN(("Failed to bind socket value to '/System/Services/%s/Connections' '%s' connection string: %s",strName.c_str(),strSocketName.c_str(),OOBase::system_error_text(err)),false);
 			}
 		}
 
@@ -331,7 +334,7 @@ namespace
 		if (!err)
 			err = ptrSocket->send_socket(new_sock,pid);
 
-		OOBase::BSD::close_socket(new_sock);
+		OOBase::Net::close_socket(new_sock);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to send socket to %s: %s",strName.c_str(),OOBase::system_error_text(err)),false);
 
@@ -435,6 +438,8 @@ bool Root::Manager::start_services()
 		if (ptrSocket)
 			enum_sockets(m_registry,strName,ptrSocket,key);
 	}
+
+	OOBase::Logger::log(OOBase::Logger::Information,"All services started");
 
 	return true;
 }

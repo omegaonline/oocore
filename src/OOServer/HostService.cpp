@@ -96,7 +96,7 @@ System::IService* Host::StartService(const string_t& strPipe, const string_t& st
 		if (err)
 			OMEGA_THROW(err);
 
-		OOBase::BSD::close_socket(sock);
+		OOBase::Net::close_socket(sock);
 	}
 
 	// Now we start the service!

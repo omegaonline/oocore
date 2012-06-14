@@ -31,6 +31,7 @@ coretests_SOURCES = \
 	net.cpp \
 	registry.cpp \
 	strings.cpp \
+	services.cpp \
 	Test.h
 
 EXTRA_DIST = \

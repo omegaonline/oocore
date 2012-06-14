@@ -27,6 +27,8 @@ bool interface_process_tests();
 bool interface_dll_tests();
 bool compartment_dll_tests();
 bool compartment_process_tests();
+bool service_tests();
+
 bool net_tests();
 bool interface_tests2();
 
@@ -53,6 +55,7 @@ int main(int /*argc*/, char* /*argv*/[])
 		RUN_TEST(interface_process_tests);
 		RUN_TEST(compartment_dll_tests);
 		RUN_TEST(compartment_process_tests);
+		RUN_TEST(service_tests);
 
 		//RUN_TEST(net_tests);
 		//RUN_TEST(interface_tests2);

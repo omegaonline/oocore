@@ -58,7 +58,7 @@ namespace
 		// This prevents circular dependencies
 		err2 = queueNames.push(strName);
 		if (!err2)
-			err2 = queueKeys.push(key);
+			err2 = queueKeys.push(subkey);
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to push to queue: %s",OOBase::system_error_text(err2)),false);
 
@@ -128,13 +128,13 @@ namespace
 		size_t end = strSocket.find('/',pos);
 		if (end == OOBase::LocalString::npos)
 		{
-			pos = end;
 			err = strSub.assign(strSocket.c_str()+pos);
+			pos = end;
 		}
 		else
 		{
-			pos = end + 1;
 			err = strSub.assign(strSocket.c_str()+pos,end-pos);
+			pos = end + 1;
 		}
 
 		if (err)
@@ -369,14 +369,14 @@ namespace
 			else
 			{
 				// Enum each connection...
-				Db::Hive::registry_set_t keys;
-				err = ptrRegistry->enum_subkeys(sub_key,0,keys);
+				Db::Hive::registry_set_t values;
+				err = ptrRegistry->enum_values(sub_key,0,values);
 				if (err)
 					LOG_ERROR(("Failed to enumerate the '/System/Services/%s/Connections' values in the registry",strName.c_str()));
 				else
 				{
 					OOBase::String strSocketName;
-					for (size_t idx = 0;keys.pop(&strSocketName);)
+					for (size_t idx = 0;values.pop(&strSocketName);)
 					{
 						// Make sure we have some kind of name!
 						if (strSocketName.empty())

@@ -17,10 +17,6 @@ BEGIN TRANSACTION;
 	        
 	  INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 6, 'Services', 1 );
 	      INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 6, 7 );
-
-		  INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 50, 'TestService', 6 );
-	          INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 50, 6 );
-	          INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 50, '{Some bollox}' );
 		
 	INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 7, 'All Users', 0 );
 	    INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 7, 6 );

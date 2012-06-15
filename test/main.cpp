@@ -121,7 +121,7 @@ void add_success()
 
 void add_failure(const char* pszText)
 {
-	output("[Failed]\n%ls",pszText);
+	output("[Failed]\n\t%s",pszText);
 	++fail_count;
 }
 

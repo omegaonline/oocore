@@ -141,6 +141,12 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	keys = pKey->EnumSubKeys();
 	TEST(keys.find(strTestKey) == keys.end());
 
+	pKey->OpenKey(strTestKey + "/Subkey",Omega::Registry::IKey::CreateNew);
+
+	TEST_VOID(pKey->DeleteSubKey(strTestKey));
+	TEST(!pKey->IsKey(strTestKey + "/Subkey"));
+	TEST(!pKey->IsKey(strTestKey));
+
 	return true;
 }
 

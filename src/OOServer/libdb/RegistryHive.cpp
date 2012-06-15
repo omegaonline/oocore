@@ -427,7 +427,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	// Check if the key still exists
 	access_rights_t access_mask;
 	hive_errors err = check_key_exists(uKey,access_mask);
-	if (err != HIVE_NOTFOUND)
+	if (err)
 		return err;
 
 	// Write must be checked

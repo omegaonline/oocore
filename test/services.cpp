@@ -121,7 +121,10 @@ bool service_tests()
 	}
 
 	if (err)
+	{
 		add_failure("Failed to connect to test service\n");
+		return false;
+	}
 	else
 	{
 

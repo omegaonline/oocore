@@ -70,37 +70,53 @@ System::IService* Host::StartService(const string_t& strPipe, const string_t& st
 		OMEGA_THROW(err);
 #endif
 
-	// Now loop reading socket handles from ptrSocket
-	for (;;)
+	System::IService::socket_map_t socket_map;
+
+	try
 	{
-		uint32_t len = 0;
-		err = ptrSocket->recv(len);
-		if (err)
-			OMEGA_THROW(err);
+		// Now loop reading socket handles from ptrSocket
+		for (;;)
+		{
+			uint32_t len = 0;
+			err = ptrSocket->recv(len);
+			if (err)
+				OMEGA_THROW(err);
 
-		if (!len)
-			break;
+			if (!len)
+				break;
 
-		OOBase::SmartPtr<char,OOBase::LocalAllocator> ptrName(len);
-		if (!ptrName)
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
+			OOBase::SmartPtr<char,OOBase::LocalAllocator> ptrName(len);
+			if (!ptrName)
+				OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-		ptrSocket->recv(ptrName,len,true,err);
-		if (err)
-			OMEGA_THROW(err);
+			ptrSocket->recv(ptrName,len,true,err);
+			if (err)
+				OMEGA_THROW(err);
 
+			OOBase::socket_t sock;
+			err = ptrSocket->recv_socket(sock);
+			if (err)
+				OMEGA_THROW(err);
 
-		string_t strName(ptrName,len);
-		OOBase::socket_t sock;
-		err = ptrSocket->recv_socket(sock);
-		if (err)
-			OMEGA_THROW(err);
+			socket_map.insert(System::IService::socket_map_t::value_type(string_t(ptrName,len),sock));
+		}
 
-		OOBase::Net::close_socket(sock);
+		// Now we start the service!
+		ObjectPtr<System::IService> ptrService(pKey->GetValue(string_t::constant("OID")));
+		ptrService->Start(strName,pKey,socket_map);
+
+		// Close all remaining sockets
+		for (System::IService::socket_map_t::iterator i=socket_map.begin();i != socket_map.end(); ++i)
+			OOBase::Net::close_socket(i->second);
+
+		return ptrService;
 	}
+	catch (...)
+	{
+		// Close all remaining sockets
+		for (System::IService::socket_map_t::iterator i=socket_map.begin();i != socket_map.end(); ++i)
+			OOBase::Net::close_socket(i->second);
 
-	// Now we start the service!
-	void* TODO;
-
-	return NULL;
+		throw;
+	}
 }

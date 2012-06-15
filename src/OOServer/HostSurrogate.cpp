@@ -203,5 +203,5 @@ int Host::MultipleSurrogate()
 
 int Host::ServiceStart()
 {
-	return Run(OOCore::OID_ServiceManager,0xFFFFFFFF);
+	return Run(OOCore::OID_ServiceManager,30000);
 }

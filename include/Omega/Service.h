@@ -30,17 +30,23 @@ namespace Omega
 	{
 		interface IService : public IObject
 		{
-			virtual void Start(Registry::IKey* pKey) = 0;
+#if defined(_WIN32)
+			typedef std::map<string_t,SOCKET,std::less<string_t>,System::STLAllocator<string_t> > socket_map_t;
+#else
+			typedef std::map<string_t,int,std::less<string_t>,System::STLAllocator<string_t> > socket_map_t;
+#endif
+
+			virtual void Start(const string_t& strName, Registry::IKey* pKey, socket_map_t& socket_map) = 0;
 			virtual void Stop() = 0;
 		};
 	}
 }
 
-OMEGA_DEFINE_INTERFACE
+OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::System, IService, "{C5BA215C-C59C-4471-96F8-9169F122150A}",
 
-	OMEGA_METHOD_VOID(Start,1,((in),Registry::IKey*,pKey))
+	OMEGA_METHOD_VOID(Start,3,((in),const string_t&,strName,(in),Registry::IKey*,pKey,(in_out),System::IService::socket_map_t&,socket_map))
 	OMEGA_METHOD_VOID(Stop,0,())
 )
 

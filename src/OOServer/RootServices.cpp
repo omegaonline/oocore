@@ -313,6 +313,8 @@ namespace
 					}
 				}
 
+				OOBase::Logger::log(OOBase::Logger::Information,"Binding socket %s for service '%s'",strValue.c_str(),strName.c_str());
+
 				err = OOBase::Net::bind(new_sock,addr->ai_addr,addr->ai_addrlen);
 
 				freeaddrinfo(addr);

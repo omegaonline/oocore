@@ -78,8 +78,7 @@ namespace
 			if (err)
 				LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services/%s/Dependencies' values in the user registry",strName.c_str()),false);
 
-			OOBase::String strDep;
-			while (names.pop(&strDep))
+			for (OOBase::String strDep;names.pop(&strDep);)
 			{
 				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueKeys))
 					return false;
@@ -112,8 +111,7 @@ namespace
 		if (err)
 			LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services' values in the registry"),false);
 
-		OOBase::String strName;
-		while (keys.pop(&strName))
+		for (OOBase::String strName;keys.pop(&strName);)
 		{
 			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueKeys))
 				return false;
@@ -382,6 +380,9 @@ namespace
 						if (strSocketName.empty())
 							strSocketName.printf("%lu",++idx);
 
+						if (strSocketName[0] == '.')
+							continue;
+
 						OOBase::LocalString strValue;
 						err = ptrRegistry->get_value(sub_key,strSocketName.c_str(),0,strValue);
 						if (err)
@@ -432,6 +433,9 @@ bool Root::Manager::start_services()
 		
 		if (wait_secs == 0)
 			wait_secs = 15;
+
+		if (Root::is_debug())
+			wait_secs = 1000;
 
 		// Create a unique local socket name
 		OOBase::RefPtr<OOBase::Socket> ptrSocket = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs);

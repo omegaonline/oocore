@@ -92,7 +92,7 @@ bool service_tests()
 	TEST(register_service());
 
 	// Restart the services
-	TEST(restart_services());
+	restart_services();
 
 	// Wait a bit
 
@@ -105,13 +105,33 @@ bool service_tests()
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	addr.sin_port = htons(7654);
-	TEST(connect(sock,(sockaddr*)&addr,sizeof(addr)) == 0);
+
+	int err = 0;
+	for (size_t c = 0; c < 1000; ++c)
+	{
+		if (connect(sock,(sockaddr*)&addr,sizeof(addr)) != 0);
+#if defined(_WIN32)
+		err = GetLastError();
+		if (!er || err != ENOENT)
+#else
+		err = errno;
+		if (!err || (err != ENOENT && err != ECONNREFUSED))
+#endif
+			break;
+	}
+
+	if (err)
+		add_failure("Failed to connect to test service\n");
+	else
+	{
+
+	}
 
 	// Restart again to test stopping
-	TEST(unregister_service());
+	unregister_service();
 
 	// Restart the services
-	TEST(restart_services());
+	restart_services();
 
 	return true;
 }

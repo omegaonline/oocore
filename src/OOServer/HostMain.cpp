@@ -178,7 +178,7 @@ namespace
 	template <typename T>
 	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
 	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz
+		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
 		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
 		if (len == 0)
 		{

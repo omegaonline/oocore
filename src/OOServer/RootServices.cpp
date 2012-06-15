@@ -244,7 +244,7 @@ namespace
 					addr.sin_addr.s_addr = INADDR_ANY;
 
 					char* end_ptr = NULL;
-					ushort port = strtoull(strPort.c_str(),&end_ptr,10);
+					u_short port = static_cast<u_short>(strtoul(strPort.c_str(),&end_ptr,10));
 					if (*end_ptr != '\0')
 					{
 						OOBase::Net::close_socket(new_sock);
@@ -264,7 +264,7 @@ namespace
 					addr.sin6_addr = any;
 
 					char* end_ptr = NULL;
-					ushort port = strtoull(strPort.c_str(),&end_ptr,10);
+					u_short port = static_cast<u_short>(strtoul(strPort.c_str(),&end_ptr,10));
 					if (*end_ptr != '\0')
 					{
 						OOBase::Net::close_socket(new_sock);
@@ -302,7 +302,7 @@ namespace
 						void* TODO;
 
 						char* end_ptr = NULL;
-						unsigned long scope = strtoull(strSub.c_str(),&end_ptr,10);
+						unsigned long scope = strtoul(strSub.c_str(),&end_ptr,10);
 						if (*end_ptr != '\0')
 						{
 							OOBase::Net::close_socket(new_sock);

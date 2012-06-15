@@ -183,7 +183,11 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 		cmd_line = to_wchar_t(strExeName);
 	}
 	
-	ptrProcess->exec(to_wchar_t(strProcess),cmd_line,strWorkingDir.IsEmpty() ? NULL : to_wchar_t(strWorkingDir),OOBase::Environment::get_block(tabEnv));
+	const wchar_t* wd = NULL;
+	if (!strWorkingDir.IsEmpty())
+		wd = to_wchar_t(strWorkingDir);
+
+	ptrProcess->exec(to_wchar_t(strProcess),cmd_line,wd,OOBase::Environment::get_block(tabEnv));
 	return ptrProcess.detach();
 }
 

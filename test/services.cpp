@@ -3,7 +3,7 @@
 #include "interfaces.h"
 
 #if defined(_WIN32)
-
+#include <WinSock2.h>
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -72,9 +72,11 @@ bool restart_services()
 {
 #if defined(_WIN32)
 
-	GetServiceController
+	// GetServiceController
 
-	Do a restart
+	// Do a restart
+
+#error Fix Me!
 
 #else
 
@@ -109,13 +111,18 @@ bool service_tests()
 	int err = 0;
 	for (size_t c = 0; c < 1000; ++c)
 	{
-		if (connect(sock,(sockaddr*)&addr,sizeof(addr)) != 0);
+		if (connect(sock,(sockaddr*)&addr,sizeof(addr)) == 0)
+		{
+			err = 0;
+			break;
+		}
+
 #if defined(_WIN32)
 		err = GetLastError();
-		if (!er || err != ENOENT)
+		if (err != ENOENT)
 #else
 		err = errno;
-		if (!err || (err != ENOENT && err != ECONNREFUSED))
+		if (err != ENOENT && err != ECONNREFUSED)
 #endif
 			break;
 	}

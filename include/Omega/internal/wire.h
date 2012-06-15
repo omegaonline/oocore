@@ -454,6 +454,56 @@ namespace Omega
 				}
 			};
 
+			namespace coll_helpers
+			{
+				template <typename T>
+				inline void read(Remoting::IMessage* msg, T& val)
+				{
+					val = msg->ReadValue(string_t()).template cast<T>();
+				}
+
+				template <typename T>
+				inline void read(Remoting::IMessage* msg, T*& pval)
+				{
+					uintptr_t ptr = msg->ReadValue(string_t()).template cast<uintptr_t>();
+					pval = reinterpret_cast<T*>(ptr);
+				}
+
+				inline void read(Remoting::IMessage* msg, guid_base_t& val)
+				{
+					val = msg->ReadValue(string_t()).cast<guid_t>();
+				}
+
+				inline void read(Remoting::IMessage* msg, string_t::handle_t& val)
+				{
+					read(msg,val.p0);
+					read(msg,val.p1);
+				}
+
+				template <typename T>
+				inline void write(Remoting::IMessage* msg, T val)
+				{
+					msg->WriteValue(string_t(),val);
+				}
+
+				template <typename T>
+				inline void write(Remoting::IMessage* msg, T* pval)
+				{
+					msg->WriteValue(string_t(),reinterpret_cast<uintptr_t>(pval));
+				}
+
+				inline void write(Remoting::IMessage* msg, const guid_base_t& val)
+				{
+					msg->WriteValue(string_t(),guid_t(val));
+				}
+
+				inline void write(Remoting::IMessage* msg, const string_t::handle_t& val)
+				{
+					write(msg,val.p0);
+					write(msg,val.p1);
+				}
+			}
+
 			// STL collection marshalling types
 			template <typename Coll>
 			struct stl_safe_type_coll1
@@ -475,7 +525,7 @@ namespace Omega
 								for (size_t i=0; i<count; ++i)
 								{
 									typename impl::type v = default_value<typename impl::type>::value();
-									read(msg,v);
+									coll_helpers::read(msg,v);
 									m_val.insert(m_val.end(),impl::coerce(v));
 								}
 							}
@@ -495,7 +545,7 @@ namespace Omega
 
 							msg->WriteValue(string_t(),m_val.size());
 							for (typename Coll::const_iterator i=m_val.begin(); i!=m_val.end(); ++i)
-								write(msg,static_cast<typename impl::type>(impl::clone(*i)));
+								coll_helpers::write(msg,static_cast<typename impl::type>(impl::clone(*i)));
 
 							val = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
 						}
@@ -522,7 +572,7 @@ namespace Omega
 
 							msg->WriteValue(string_t(),val.size());
 							for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
-								write(msg,static_cast<typename impl::type>(impl::coerce(*i)));
+								coll_helpers::write(msg,static_cast<typename impl::type>(impl::coerce(*i)));
 
 							m_shim = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
 						}
@@ -547,7 +597,7 @@ namespace Omega
 								for (size_t i=0; i<count; ++i)
 								{
 									typename impl::type v = default_value<typename impl::type>::value();
-									read(msg,v);
+									coll_helpers::read(msg,v);
 									dest.insert(dest.end(),impl::clone(v));
 								}
 							}
@@ -567,53 +617,6 @@ namespace Omega
 				private:
 					const SafeShim* m_shim;
 				};
-
-				template <typename T>
-				static void read(Remoting::IMessage* msg, T& val)
-				{
-					val = msg->ReadValue(string_t()).template cast<T>();
-				}
-
-				static void read(Remoting::IMessage* msg, guid_base_t& val)
-				{
-					val = msg->ReadValue(string_t()).template cast<guid_t>();
-				}
-
-				static void read(Remoting::IMessage* msg, string_t::handle_t& val)
-				{
-					read(msg,val.p0);
-					read(msg,val.p1);
-				}
-
-				template <typename T>
-				static void read(Remoting::IMessage* msg, T*& pval)
-				{
-					uintptr_t ptr = msg->ReadValue(string_t()).template cast<uintptr_t>();
-					pval = reinterpret_cast<T*>(ptr);
-				}
-
-				template <typename T>
-				static void write(Remoting::IMessage* msg, T val)
-				{
-					msg->WriteValue(string_t(),val);
-				}
-
-				static void write(Remoting::IMessage* msg, const guid_base_t& val)
-				{
-					msg->WriteValue(string_t(),guid_t(val));
-				}
-
-				static void write(Remoting::IMessage* msg, const string_t::handle_t& val)
-				{
-					write(msg,val.p0);
-					write(msg,val.p1);
-				}
-
-				template <typename T>
-				static void write(Remoting::IMessage* msg, T* pval)
-				{
-					msg->WriteValue(string_t(),reinterpret_cast<uintptr_t>(pval));
-				}
 			};
 
 			// std::vector<bool> is badly broken in the C++ standard and shouldn't be used
@@ -684,8 +687,8 @@ namespace Omega
 								{
 									typename key_impl::type k = default_value<typename key_impl::type>::value();
 									typename mapped_impl::type m = default_value<typename mapped_impl::type>::value();
-									read(msg,k);
-									read(msg,m);
+									coll_helpers::read(msg,k);
+									coll_helpers::read(msg,m);
 									m_val.insert(m_val.end(),typename Coll::value_type(key_impl::coerce(k),mapped_impl::coerce(m)));
 								}
 							}
@@ -706,8 +709,8 @@ namespace Omega
 							msg->WriteValue(string_t(),m_val.size());
 							for (typename Coll::const_iterator i=m_val.begin(); i!=m_val.end(); ++i)
 							{
-								write(msg,key_impl::clone(i->first));
-								write(msg,mapped_impl::clone(i->second));
+								coll_helpers::write(msg,key_impl::clone(i->first));
+								coll_helpers::write(msg,mapped_impl::clone(i->second));
 							}
 
 							val = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
@@ -736,8 +739,8 @@ namespace Omega
 							msg->WriteValue(string_t(),val.size());
 							for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
 							{
-								write(msg,static_cast<typename key_impl::type>(key_impl::coerce(i->first)));
-								write(msg,static_cast<typename mapped_impl::type>(mapped_impl::coerce(i->second)));
+								coll_helpers::write(msg,static_cast<typename key_impl::type>(key_impl::coerce(i->first)));
+								coll_helpers::write(msg,static_cast<typename mapped_impl::type>(mapped_impl::coerce(i->second)));
 							}
 
 							m_shim = create_safe_stub(msg,OMEGA_GUIDOF(Remoting::IMessage));
@@ -764,8 +767,8 @@ namespace Omega
 								{
 									typename key_impl::type k = default_value<typename key_impl::type>::value();
 									typename mapped_impl::type m = default_value<typename mapped_impl::type>::value();
-									read(msg,k);
-									read(msg,m);
+									coll_helpers::read(msg,k);
+									coll_helpers::read(msg,m);
 									dest.insert(dest.end(),typename Coll::value_type(key_impl::clone(k),mapped_impl::clone(m)));
 								}
 							}
@@ -785,41 +788,6 @@ namespace Omega
 				private:
 					const SafeShim* m_shim;
 				};
-
-				template <typename T>
-				static void read(Remoting::IMessage* msg, T& val)
-				{
-					val = msg->ReadValue(string_t()).template cast<T>();
-				}
-
-				static void read(Remoting::IMessage* msg, guid_base_t& val)
-				{
-					val = msg->ReadValue(string_t()).template cast<guid_t>();
-				}
-
-				template <typename T>
-				static void read(Remoting::IMessage* msg, T*& pval)
-				{
-					uintptr_t ptr = msg->ReadValue(string_t()).template cast<uintptr_t>();
-					pval = reinterpret_cast<T*>(ptr);
-				}
-
-				template <typename T>
-				static void write(Remoting::IMessage* msg, T val)
-				{
-					msg->WriteValue(string_t(),val);
-				}
-
-				static void write(Remoting::IMessage* msg, const guid_base_t& val)
-				{
-					msg->WriteValue(string_t(),guid_t(val));
-				}
-
-				template <typename T>
-				static void write(Remoting::IMessage* msg, T* pval)
-				{
-					msg->WriteValue(string_t(),reinterpret_cast<uintptr_t>(pval));
-				}
 			};
 
 			template <typename Coll>

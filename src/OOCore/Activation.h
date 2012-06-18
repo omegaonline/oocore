@@ -39,7 +39,7 @@ namespace OOCore
 		public Omega::Activation::IRunningObjectTable
 	{
 	public:
-		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS();
+		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS(bool bThrow);
 
 	protected:
 		LocalROT();

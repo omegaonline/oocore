@@ -124,10 +124,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 	}
 }
 
-OTL::ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
+ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 {
 	ObjectPtr<SingletonObjectImpl<OOCore::LocalROT> > ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
-	return ptrROT->GetIPS();
+	return ptrROT->GetIPS(true);
 }
 
 bool OOCore::HostedByOOServer()
@@ -157,12 +157,12 @@ OOCore::LocalROT::~LocalROT()
 	}
 }
 
-ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS()
+ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
 {
 	IObject* pIPS = NULL;
 	GetObject(OID_InterProcessService,OMEGA_GUIDOF(IInterProcessService),pIPS,false);
 	
-	if (!pIPS)
+	if (bThrow && !pIPS)
 		throw IInternalException::Create("Omega::Initialize not called","OOCore");
 
 	return static_cast<IInterProcessService*>(pIPS);
@@ -178,7 +178,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	if (scope & ~Activation::ProcessScope)
 	{
 		// Register in ROT
-		ptrROT = GetIPS()->GetRunningObjectTable();
+		ptrROT = GetIPS(true)->GetRunningObjectTable();
 		if (ptrROT)
 			rot_cookie = ptrROT->RegisterObject(oid,pObject,flags);
 	}
@@ -303,7 +303,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 	else if (oid != OID_InterProcessService)
 	{
 		// Route to global rot
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS(true)->GetRunningObjectTable();
 		ptrROT->GetObject(oid,iid,pObject,remote);
 	}
 }
@@ -326,8 +326,12 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 		if (info.m_rot_cookie)
 		{
 			// Revoke from ROT
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS()->GetRunningObjectTable();
-			ptrROT->RevokeObject(info.m_rot_cookie);
+			ObjectPtr<OOCore::IInterProcessService> ptrIPS = GetIPS(false);
+			if (ptrIPS)
+			{
+				ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
+				ptrROT->RevokeObject(info.m_rot_cookie);
+			}
 		}
 	}
 }

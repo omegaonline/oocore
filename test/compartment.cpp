@@ -6,17 +6,17 @@
 #include "Test.h"
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest);
-bool register_library(const Omega::string_t& strLibName, bool& bSkipped);
-bool unregister_library();
-bool register_process(const Omega::string_t& strExeName, bool& bSkipped);
-bool unregister_process();
+bool register_library(const Omega::string_t& strPrefix, const Omega::string_t& strLibName, bool& bSkipped);
+bool unregister_library(const Omega::string_t& strPrefix);
+bool register_process(const Omega::string_t& strPrefix, const Omega::string_t& strExeName, bool& bSkipped);
+bool unregister_process(const Omega::string_t& strPrefix);
 
 static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipped)
 {
 	output("  %-45s ",strLibName.c_str());
 
 	// Register the library
-	TEST(register_library(strLibName,bSkipped));
+	TEST(register_library("/Local User",strLibName,bSkipped));
 	if (bSkipped)
 		return true;
 		
@@ -47,7 +47,7 @@ bool compartment_dll_tests()
 		bool bSkipped;
 		bool res = do_cmpt_library_test(make_absolute(*pszDlls),bSkipped);
 		
-		unregister_library();
+		unregister_library("/Local User");
 
 		if (res && !bSkipped)
 			output("[Ok]\n");
@@ -62,7 +62,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	output("  %-45s ",strModulePath.c_str());
 
 	// Register the process
-	TEST(register_process(strModulePath,bSkipped));
+	TEST(register_process("/Local User",strModulePath,bSkipped));
 	if (bSkipped)
 		return true;
 		
@@ -103,7 +103,7 @@ bool compartment_process_tests()
 		bool bSkipped;
 		bool res = do_cmpt_process_test(make_absolute(*pszExes),bSkipped);
 
-		unregister_process();
+		unregister_process("/Local User");
 
 		if (res && !bSkipped)
 			output("[Ok]\n");

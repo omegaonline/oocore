@@ -20,7 +20,7 @@ const Omega::guid_t Omega::TestSuite::OID_TestProcess("{4BC2E65B-CEE0-40C6-90F2-
 
 #include "Test.h"
 
-bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
+bool register_library(const Omega::string_t& strPrefix, const Omega::string_t& strLibName, bool& bSkipped)
 {
 	bSkipped = false;
 
@@ -35,7 +35,7 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestLibrary.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/Local User/Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(strPrefix + "/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenKey("Test.Library",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("OID",strOid);
 	ptrSubKey = ptrKey->OpenKey("OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
@@ -44,9 +44,9 @@ bool register_library(const Omega::string_t& strLibName, bool& bSkipped)
 	return true;
 }
 
-bool unregister_library()
+bool unregister_library(const Omega::string_t& strPrefix)
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/Local User/Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(strPrefix + "/Objects");
 
 	if (ptrKey->IsKey("Test.Library"))
 		ptrKey->DeleteSubKey("Test.Library");
@@ -59,7 +59,7 @@ bool unregister_library()
 	return true;
 }
 
-bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
+bool register_process(const Omega::string_t& strPrefix, const Omega::string_t& strExeName, bool& bSkipped)
 {
 	bSkipped = false;
 
@@ -74,22 +74,22 @@ bool register_process(const Omega::string_t& strExeName, bool& bSkipped)
 
 	Omega::string_t strOid = Omega::TestSuite::OID_TestProcess.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/Local User/Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(strPrefix + "/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenKey("Test.Process",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("OID",strOid);
 	ptrSubKey = ptrKey->OpenKey("OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("Application","CoreTests.TestProcess");
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>("/Local User/Applications",Omega::Registry::IKey::OpenCreate);
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(strPrefix + "/Applications",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey = ptrKey->OpenKey("CoreTests.TestProcess/Activation",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("Path",strExeName);
 
 	return true;
 }
 
-bool unregister_process()
+bool unregister_process(const Omega::string_t& strPrefix)
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/Local User/Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(strPrefix + "/Objects");
 
 	if (ptrKey->IsKey("Test.Process"))
 		ptrKey->DeleteSubKey("Test.Process");
@@ -99,7 +99,7 @@ bool unregister_process()
 	if (ptrKey->IsKey("OIDs/" + strOid))
 		ptrKey->DeleteSubKey("OIDs/" + strOid);
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>("/Local User/Applications",Omega::Registry::IKey::OpenCreate);
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(strPrefix + "/Applications",Omega::Registry::IKey::OpenCreate);
 	if (ptrKey->IsKey("CoreTests.TestProcess"))
 		ptrKey->DeleteSubKey("CoreTests.TestProcess");
 
@@ -229,15 +229,9 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	return true;
 }
 
-static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkipped)
+static bool do_local_library_test(const Omega::string_t& strPrefix)
 {
-	// Register the library
-	output("  %-45s ",strLibName.c_str());
-
-	// Register the library
-	TEST(register_library(strLibName,bSkipped));
-	if (bSkipped)
-		return true;
+	output("    %-43s ",("'" + strPrefix + "/' registry key").c_str());
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Library);
@@ -286,12 +280,12 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 	}
 
 	// Test for surrogate activation
-	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process);
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process | Omega::Activation::OwnSurrogate);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test unregistering
-	TEST(unregister_library());
+	TEST(unregister_library(strPrefix));
 
 	try
 	{
@@ -313,17 +307,26 @@ static bool do_local_library_test(const Omega::string_t& strLibName, bool& bSkip
 		pE->Release();
 	}
 
+	// Now test the sand-box surrogate activation
+/*
+	// Register the library
+	TEST(register_library("/System/Sandbox",strLibName,bSkipped));
+	if (bSkipped)
+		return true;
+
+	// Test for surrogate activation
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Sandbox);
+	TEST(ptrSimpleTest);
+	interface_tests(ptrSimpleTest);
+
+	TEST(unregister_library("/System/Sandbox"));*/
+
 	return true;
 }
 
-static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bSkipped)
+static bool do_local_process_test(const Omega::string_t& strPrefix)
 {
-	output("  %-45s ",strModulePath.c_str());
-
-	// Register the exe
-	TEST(register_process(strModulePath,bSkipped));
-	if (bSkipped)
-		return true;
+	output("    %-43s ",("'" + strPrefix + "/' registry key").c_str());
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::Process);
@@ -357,7 +360,7 @@ static bool do_local_process_test(const Omega::string_t& strModulePath, bool& bS
 	}
 
 	// Test unregistering
-	TEST(unregister_process());
+	TEST(unregister_process(strPrefix));
 
 	// Check its gone
 	try
@@ -418,13 +421,40 @@ bool interface_dll_tests()
 
 	for (const char** pszDlls = get_dlls(); *pszDlls; ++pszDlls)
 	{
+		// Register the library
+		Omega::string_t strLibName = make_absolute(*pszDlls);
+		output("  %-45s",strLibName.c_str());
+
+		// Register the library
 		bool bSkipped;
-		bool res = do_local_library_test(make_absolute(*pszDlls),bSkipped);
+		bool res = register_library("/Local User",strLibName,bSkipped);
+		if (bSkipped)
+			continue;
 
-		unregister_library();
+		if (res)
+		{
+			output("\n");
 
+			res = do_local_library_test("/Local User");
+
+			unregister_library("/Local User");
+
+			if (res)
+				output("[Ok]");
+		}
+
+		res = register_library("/All Users",strLibName,bSkipped);
 		if (res && !bSkipped)
-			output("[Ok]\n");
+		{
+			output("\n");
+
+			res = do_local_library_test("/All Users");
+
+			unregister_library("/All Users");
+
+			if (res)
+				output("[Ok]\n");
+		}
 	}
 
 	output("  %-46s","Result");
@@ -457,13 +487,39 @@ bool interface_process_tests()
 
 	for (const char** pszExes = get_exes(); *pszExes; ++pszExes)
 	{
+		// Register the exe
+		Omega::string_t strModulePath = make_absolute(*pszExes);
+		output("  %-45s ",strModulePath.c_str());
+
 		bool bSkipped;
-		bool res = do_local_process_test(make_absolute(*pszExes),bSkipped);
+		bool res = register_process("/Local User",strModulePath,bSkipped);
+		if (bSkipped)
+			continue;
 
-		unregister_process();
+		if (res)
+		{
+			output("\n");
 
+			res = do_local_process_test("/Local User");
+
+			unregister_process("/Local User");
+
+			if (res)
+				output("[Ok]");
+		}
+
+		res = register_process("/All Users",strModulePath,bSkipped);
 		if (res && !bSkipped)
-			output("[Ok]\n");
+		{
+			output("\n");
+
+			res = do_local_process_test("/All Users");
+
+			unregister_process("/All Users");
+
+			if (res)
+				output("[Ok]\n");
+		}
 	}
 
 	output("  %-46s","Result");
@@ -477,13 +533,15 @@ static bool do_library_test(const Omega::string_t& strLibName, const char* pszEn
 	output("  %-45s ",strLibName.c_str());
 
 	// Register the library
-	TEST(register_library(strLibName,bSkipped));
+	TEST(register_library("/Local User",strLibName,bSkipped));
 	if (bSkipped)
 		return true;
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest("Test.Library@" + Omega::string_t(pszEndpoint));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
+
+	TEST(unregister_library("/Local User"));
 
 	return true;
 }
@@ -493,7 +551,7 @@ static bool do_process_test(const Omega::string_t& strModulePath, const char* ps
 	output("  %-45s ",strModulePath.c_str());
 
 	// Register the exe
-	TEST(register_process(strModulePath,bSkipped));
+	TEST(register_process("/Local User",strModulePath,bSkipped));
 	if (bSkipped)
 		return true;
 
@@ -501,7 +559,7 @@ static bool do_process_test(const Omega::string_t& strModulePath, const char* ps
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
-	TEST(unregister_process());
+	TEST(unregister_process("/Local User"));
 
 	return true;
 }
@@ -515,7 +573,7 @@ static bool interface_tests_i(const char* pszHost)
 		bool bSkipped;
 		bool res = do_library_test(make_absolute(*pszDlls),pszHost,bSkipped);
 
-		unregister_library();
+		unregister_library("/Local User");
 
 		if (res && !bSkipped)
 			output("[Ok]\n");
@@ -528,7 +586,7 @@ static bool interface_tests_i(const char* pszHost)
 		bool bSkipped;
 		bool res = do_process_test(make_absolute(*pszExes),pszHost,bSkipped);
 
-		unregister_process();
+		unregister_process("/Local User");
 
 		if (res && !bSkipped)
 			output("[Ok]\n");

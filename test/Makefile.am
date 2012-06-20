@@ -1,6 +1,6 @@
 include $(top_srcdir)/m4/ltrc.inc
 
-SUBDIRS = TestLibrary TestProcess .
+SUBDIRS = TestLibrary TestProcess TestService .
 
 CLEANFILES = *.regdb
 

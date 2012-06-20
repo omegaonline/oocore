@@ -23,6 +23,7 @@ AC_CONFIG_FILES([
 	test/Makefile
 	test/TestLibrary/Makefile
 	test/TestProcess/Makefile
+	test/TestService/Makefile
 ])
 
 AM_INIT_AUTOMAKE([foreign 1.10 no-define])

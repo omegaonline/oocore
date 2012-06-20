@@ -19,7 +19,7 @@ namespace Omega
 
 #include "Test.h"
 
-const Omega::guid_t Omega::TestSuite::OID_TestService("{16C07A2A-242F-48F5-A10E-1DCA3FADB9A6}");
+const Omega::guid_t Omega::TestSuite::OID_TestService("{32A13162-BC9C-2CC1-531A-F0A8BF153E0D}");
 
 #if defined(_MSC_VER)
 	static const char* s_dll = "TestService.dll";
@@ -33,14 +33,14 @@ static bool register_service()
 {
 	Omega::string_t strOid = Omega::TestSuite::OID_TestService.ToString();
 
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/Local User/Objects",Omega::Registry::IKey::OpenCreate);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/System/Sandbox/Objects",Omega::Registry::IKey::OpenCreate);
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenKey("Test.Service",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("OID",strOid);
 	ptrSubKey = ptrKey->OpenKey("OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("Library",s_dll);
 
 	ptrKey = ptrKey->OpenKey("/System/Services/TestService",Omega::Registry::IKey::OpenCreate);
-	ptrKey->SetValue("OID",strOid);
+	ptrKey->SetValue("OID","Test.Service");
 	ptrKey = ptrKey->OpenKey("Connections",Omega::Registry::IKey::OpenCreate);
 	ptrKey->SetValue("One","ipv4/stream/tcp/127.0.0.1/7654");
 
@@ -49,7 +49,7 @@ static bool register_service()
 
 static bool unregister_service()
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/Local User/Objects");
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey("/System/Sandbox/Objects");
 
 	if (ptrKey->IsKey("Test.Service"))
 		ptrKey->DeleteSubKey("Test.Service");

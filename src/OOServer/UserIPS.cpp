@@ -93,9 +93,7 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 		strProcess += " --debug";
 
 	if (oid == OOCore::OID_Surrogate)
-		strProcess += " --multiple";
-	else if (oid == OOCore::OID_SingleSurrogate)
-		strProcess += " --single";
+		strProcess += " --surrogate";
 	else if (oid == OOCore::OID_ServiceManager)
 		strProcess += " --service";
 	else
@@ -273,5 +271,4 @@ Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& 
 
 const Omega::guid_t OOCore::OID_InterProcessService("{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");
 const Omega::guid_t OOCore::OID_Surrogate("{D063D32C-FB9A-004A-D2E5-BB5451808FF5}");
-const Omega::guid_t OOCore::OID_SingleSurrogate("{22DC1376-4905-D9DD-1B63-2096C487E5A3}");
 const Omega::guid_t OOCore::OID_ServiceManager("{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}");

@@ -45,9 +45,6 @@ namespace OOCore
 	// {D063D32C-FB9A-004A-D2E5-BB5451808FF5}
 	extern const Omega::guid_t OID_Surrogate;
 
-	// {22DC1376-4905-D9DD-1B63-2096C487E5A3}
-	extern const Omega::guid_t OID_SingleSurrogate;
-
 	// {1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}
 	extern const Omega::guid_t OID_ServiceManager;
 }

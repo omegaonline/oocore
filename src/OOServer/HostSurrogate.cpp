@@ -28,27 +28,9 @@ using namespace OTL;
 
 namespace
 {
-	class SingleSurrogateImpl :
-			public ObjectBase,
-			public AutoObjectFactory<SingleSurrogateImpl,&OOCore::OID_SingleSurrogate,Activation::UserScope | Activation::SingleUse>,
-			public Remoting::ISurrogate
-	{
-	public:
-		SingleSurrogateImpl()
-		{ }
-
-		BEGIN_INTERFACE_MAP(SingleSurrogateImpl)
-			INTERFACE_ENTRY(Remoting::ISurrogate)
-		END_INTERFACE_MAP()
-
-	// ISurrogate members
-	public:
-		void GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
-	};
-
 	class SurrogateImpl :
 			public ObjectBase,
-			public AutoObjectFactorySingleton<SurrogateImpl,&OOCore::OID_Surrogate>,
+			public AutoObjectFactory<SurrogateImpl,&OOCore::OID_Surrogate,Activation::UserScope | Activation::SingleUse>,
 			public Remoting::ISurrogate
 	{
 	public:
@@ -167,19 +149,12 @@ namespace
 }
 
 BEGIN_PROCESS_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(SingleSurrogateImpl)
 	OBJECT_MAP_ENTRY(SurrogateImpl)
 	OBJECT_MAP_ENTRY(ServiceManagerImpl)
 END_PROCESS_OBJECT_MAP()
 
 const Omega::guid_t OOCore::OID_Surrogate("{D063D32C-FB9A-004A-D2E5-BB5451808FF5}");
-const Omega::guid_t OOCore::OID_SingleSurrogate("{22DC1376-4905-D9DD-1B63-2096C487E5A3}");
 const Omega::guid_t OOCore::OID_ServiceManager("{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}");
-
-void SingleSurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
-{
-	OOCore_GetObject(oid,clean_flags(flags),iid,pObject);
-}
 
 void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
@@ -191,12 +166,7 @@ System::IService* ServiceManagerImpl::Start(const string_t& strPipe, const strin
 	return Host::StartService(strPipe,strName,pKey,strSecret);
 }
 
-int Host::SingleSurrogate()
-{
-	return Run(OOCore::OID_SingleSurrogate,30000);
-}
-
-int Host::MultipleSurrogate()
+int Host::Surrogate()
 {
 	return Run(OOCore::OID_Surrogate,30000);
 }

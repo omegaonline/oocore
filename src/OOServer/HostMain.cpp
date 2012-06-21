@@ -96,8 +96,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("debug");
-	cmd_args.add_option("single");
-	cmd_args.add_option("multiple");
+	cmd_args.add_option("surrogate");
 	cmd_args.add_option("service");
 
 #if defined(_WIN32)
@@ -151,10 +150,8 @@ int main(int argc, char* argv[])
 
 #endif
 
-	if (args.exists("multiple"))
-		return Host::MultipleSurrogate();
-	else if (args.exists("single"))
-		return Host::SingleSurrogate();
+	if (args.exists("surrogate"))
+		return Host::Surrogate();
 	else if (args.exists("service"))
 		return Host::ServiceStart();
 #if defined(_WIN32)

@@ -66,8 +66,7 @@ namespace Host
 {
 	bool is_debug();
 
-	int SingleSurrogate();
-	int MultipleSurrogate();
+	int Surrogate();
 	int ServiceStart();
 
 	Omega::System::IService* StartService(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);

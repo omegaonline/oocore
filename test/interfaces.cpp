@@ -280,7 +280,7 @@ static bool do_local_library_test(const Omega::string_t& strPrefix)
 	}
 
 	// Test for surrogate activation
-	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process | Omega::Activation::OwnSurrogate);
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::Process);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 

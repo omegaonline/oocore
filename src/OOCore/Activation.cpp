@@ -114,8 +114,6 @@ namespace
 	IObject* LoadSurrogateObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, bool wrong_platform)
 	{
 		string_t strOid = string_t::constant("Omega.Surrogate");
-		if (flags & Activation::OwnSurrogate)
-			strOid = string_t::constant("Omega.SingleSurrogate");
 
 		Activation::Flags_t sgt_flags = (flags & 0xF);
 		if (sgt_flags < Activation::Process)

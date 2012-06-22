@@ -1,0 +1,128 @@
+
+%name jsonParse
+
+////////////////////////////////////////////////
+// Definitions of the basic JSON types
+enum JsonValueType
+{
+    eJVnull = 0,
+    eJVfalse,
+    eJVtrue,
+    eJVobject,
+    eJVarray,
+    eJVfloat,
+    eJVinteger,
+    eJVstring
+};
+
+struct JsonObject;
+struct JsonArray;
+
+struct JsonText
+{
+    union
+    {
+        struct JsonArray*   m_array;
+        struct JsonObject*  m_object;
+    };
+    enum JsonValueType      m_type;
+};
+
+struct JsonValue
+{
+    union
+    {
+        double              m_float;
+        int64_t             m_integer;
+        char*               m_string;
+        struct JsonArray*   m_array;
+        struct JsonObject*  m_object;
+    };
+    enum JsonValueType      m_type;
+};
+
+struct JsonMember
+{
+    char*               m_name;
+    struct JsonValue    m_value;
+};
+
+struct JsonObject
+{
+    size_t              m_count;
+    struct JsonMember   m_members[1];
+};
+
+struct JsonArray
+{
+    size_t              m_count;
+    struct JsonValue    m_values[1];
+};
+
+struct JsonToken
+{
+    union
+    {
+        double  m_float;
+        int64_t m_integer;
+        char*   m_string;
+    };
+    enum JsonValueType m_type;
+};
+
+%include { #include "JsonInternal.h" }
+
+%token_prefix JSON_
+%token_type { struct JsonToken }
+%token_destructor { jsonDestroyToken(&$$); (void)param; }
+
+%extra_argument { void* param }
+
+%start_symbol json 
+
+%type json { struct JsonValue }
+%destructor json { jsonDestroyValue(&$$); }
+
+json(A) ::= array(B).    { jsonMakeValueArray(&A,B); jsonDoCallback(param,&A); }
+json(A) ::= object(B).   { jsonMakeValueObject(&A,B); jsonDoCallback(param,&A); } 
+
+%type object { struct JsonObject* }
+%destructor object { jsonDestroyObject($$); }
+
+object(A) ::= BEGIN_OBJECT members(B) END_OBJECT.   { A = B; }
+object(A) ::= BEGIN_OBJECT END_OBJECT.              { A = jsonNewObject(param,NULL); }
+
+%type members { struct JsonObject* }
+%destructor members { jsonDestroyObject($$); }
+
+members(A) ::= members(B) VALUE_SEP member(C).  { A = jsonAppendObject(param,B,C); }
+members(A) ::= member(B).                       { A = jsonNewObject(param,B); } 
+
+%type member { struct JsonMember* }
+%destructor member { jsonDestroyMember($$); }
+
+member(A) ::= STRING(B) NAME_SEP value(C).   { A = jsonNewMember(param,&B,&C); }
+
+%type array { struct JsonArray* }
+%destructor array { jsonDestroyArray($$); }
+
+array(A) ::= BEGIN_ARRAY array_members(B) END_ARRAY.   { A = B; }
+array(A) ::= BEGIN_ARRAY END_ARRAY.                    { A = jsonNewArray(param,NULL); }
+
+%type array_members { struct JsonArray* }
+%destructor array_members { jsonDestroyArray($$); }
+
+array_members(A) ::= array_members(B) VALUE_SEP value(C). { A = jsonAppendArray(param,B,&C); }
+array_members(A) ::= value(B).                            { A = jsonNewArray(param,&B); } 
+
+%type value { struct JsonValue }
+%destructor value { jsonDestroyValue(&$$); }
+
+value(A) ::= FALSE.     { jsonMakeValue(&A,eJVfalse); }
+value(A) ::= NULL.      { jsonMakeValue(&A,eJVnull); }
+value(A) ::= TRUE.      { jsonMakeValue(&A,eJVtrue); }
+value(A) ::= object(B). { jsonMakeValueObject(&A,B); }
+value(A) ::= array(B).  { jsonMakeValueArray(&A,B); }
+value(A) ::= FLOAT(B).  { jsonMakeValueToken(&A,&B); }
+value(A) ::= INTEGER(B).{ jsonMakeValueToken(&A,&B); }
+value(A) ::= STRING(B). { jsonMakeValueToken(&A,&B); }

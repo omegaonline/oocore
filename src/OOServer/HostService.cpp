@@ -109,7 +109,7 @@ System::IService* Host::StartService(const string_t& strPipe, const string_t& st
 		for (System::IService::socket_map_t::iterator i=socket_map.begin();i != socket_map.end(); ++i)
 			OOBase::Net::close_socket(i->second);
 
-		return ptrService;
+		return ptrService.Detach();
 	}
 	catch (...)
 	{

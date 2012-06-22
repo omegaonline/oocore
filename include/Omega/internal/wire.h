@@ -657,8 +657,9 @@ namespace Omega
 				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
+					typename Coll::const_iterator i=val.begin();
 
-					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
+					for (uint32_t c = 0; c<count && i!=val.end(); ++i,++c)
 						marshal_info<typename Coll::value_type>::wire_type::unpack(string_t(),pMarshaller,pMessage,*i);
 
 					pMessage->ReadArrayEnd();
@@ -838,8 +839,9 @@ namespace Omega
 				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
+					typename Coll::const_iterator i=val.begin();
 
-					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
+					for (uint32_t c = 0;c<count && i!=val.end(); ++i, ++c)
 					{
 						pMessage->ReadStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 

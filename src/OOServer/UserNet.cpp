@@ -85,7 +85,7 @@ Remoting::IObjectManager* User::RemoteChannel::create_object_manager(uint32_t ch
 	return ptrChannel->GetObjectManager();
 }
 
-void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::Timeout& timeout, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, uint16_t flags)
+void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::Timeout& timeout, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, OOServer::Message_t::Type type)
 {
 	// Make sure we have the source in the map...
 	if (src_channel_id != 0)
@@ -132,7 +132,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 	// Custom handling of system messages
 	if (attribs & OOServer::Message_t::system_message)
 	{
-		if (flags == OOServer::Message_t::Request)
+		if (type == OOServer::Message_t::Request)
 		{
 			if ((attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect ||
 				(attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
@@ -142,7 +142,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 			else
 				OMEGA_THROW("Invalid system message");
 		}
-		else if (flags == OOServer::Message_t::Response)
+		else
 		{
 			// Create a new message of the right format...
 			if (m_message_oid == guid_t::Null())
@@ -170,8 +170,6 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 			else
 				OMEGA_THROW("Invalid system message");
 		}
-		else
-			OMEGA_THROW("Invalid system message");
 	}
 	else
 	{
@@ -193,10 +191,10 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 		}
 	}
 
-	send_away_i(ptrPayload,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
+	send_away_i(ptrPayload,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
 }
 
-void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::Timeout& timeout, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, uint16_t flags)
+void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::Timeout& timeout, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, OOServer::Message_t::Type type)
 {
 	// Create a new message of the right format...
 	ObjectPtr<Remoting::IMessage> ptrMessage;
@@ -213,7 +211,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	ptrMessage->WriteValue(string_t::constant("attribs"),attribs);
 	ptrMessage->WriteValue(string_t::constant("dest_thread_id"),dest_thread_id);
 	ptrMessage->WriteValue(string_t::constant("src_thread_id"),src_thread_id);
-	ptrMessage->WriteValue(string_t::constant("flags"),flags);
+	ptrMessage->WriteValue(string_t::constant("type"),type == OOServer::Message_t::Request ? true : false);
 
 	// Get the source channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
@@ -246,7 +244,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 		ptrMessage->ReadValue(string_t::constant("attribs"));
 		ptrMessage->ReadValue(string_t::constant("dest_thread_id"));
 		ptrMessage->ReadValue(string_t::constant("src_thread_id"));
-		ptrMessage->ReadValue(string_t::constant("flags"));
+		ptrMessage->ReadValue(string_t::constant("type"));
 		ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		throw;
 	}
@@ -336,7 +334,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	uint32_t ex_attribs = pMsg->ReadValue(string_t::constant("attribs")).cast<uint32_t>();
 	uint16_t dest_thread_id = pMsg->ReadValue(string_t::constant("dest_thread_id")).cast<uint16_t>();
 	uint16_t src_thread_id = pMsg->ReadValue(string_t::constant("src_thread_id")).cast<uint16_t>();
-	uint16_t flags = pMsg->ReadValue(string_t::constant("flags")).cast<uint16_t>();
+	OOServer::Message_t::Type type = pMsg->ReadValue(string_t::constant("type")).cast<bool_t>() ? OOServer::Message_t::Request : OOServer::Message_t::Response;
 
 	// Get the dest channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
@@ -356,47 +354,56 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	{
 		if (ex_attribs & OOServer::Message_t::system_message)
 		{
-			if (flags == OOServer::Message_t::Request)
+			if (type == OOServer::Message_t::Request)
 			{
 				ObjectPtr<Remoting::IMessage> ptrResult;
 				uint32_t out_attribs = 0;
 
-				if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_close)
+				switch (ex_attribs & OOServer::Message_t::system_message)
 				{
-					uint32_t channel_id = ptrPayload->ReadValue(string_t::constant("channel_id")).cast<uint32_t>();
+				case OOServer::Message_t::channel_close:
+					{
+						uint32_t channel_id = ptrPayload->ReadValue(string_t::constant("channel_id")).cast<uint32_t>();
 
-					m_pManager->channel_closed(channel_id | m_channel_id,0);
+						m_pManager->channel_closed(channel_id | m_channel_id,0);
 
-					out_attribs = OOServer::Message_t::asynchronous;
-				}
-				else if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect)
-				{
-					// Create a new message of the right format...
-					if (m_message_oid == guid_t::Null())
-						ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
-					else
-						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
+						out_attribs = OOServer::Message_t::asynchronous;
+					}
+					break;
 
-					// Send back the src_channel_id
-					ptrResult->WriteValue(string_t::constant("channel_id"),src_channel_id | m_channel_id);
+				case OOServer::Message_t::channel_reflect:
+					{
+						// Create a new message of the right format...
+						if (m_message_oid == guid_t::Null())
+							ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+						else
+							ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
-					out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect;
-				}
-				else if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
-				{
-					// Create a new message of the right format...
-					if (m_message_oid == guid_t::Null())
-						ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
-					else
-						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
+						// Send back the src_channel_id
+						ptrResult->WriteValue(string_t::constant("channel_id"),src_channel_id | m_channel_id);
 
-					// Send back the pong
-					ptrResult->WriteValue(string_t::constant("pong"),byte_t(1));
+						out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect;
+					}
+					break;
 
-					out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping;
-				}
-				else
+				case OOServer::Message_t::channel_ping:
+					{
+						// Create a new message of the right format...
+						if (m_message_oid == guid_t::Null())
+							ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+						else
+							ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
+
+						// Send back the pong
+						ptrResult->WriteValue(string_t::constant("pong"),byte_t(1));
+
+						out_attribs = OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping;
+					}
+					break;
+
+				default:
 					OMEGA_THROW("Invalid system message");
+				}
 
 				if (!(out_attribs & OOServer::Message_t::asynchronous))
 				{
@@ -416,6 +423,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			output.write(ex_attribs);
 			output.write(dest_thread_id);
 			output.write(src_thread_id);
+			output.write(type == OOServer::Message_t::Request ? true : false);
 			if (output.last_error() != 0)
 				OMEGA_THROW(output.last_error());
 
@@ -425,6 +433,9 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
 			AddRef();
+
+			void* TODO;
+			// This seems broken...
 
 			if (!m_pManager->call_async_function_i("process_here",&process_here,this,&output))
 			{
@@ -442,7 +453,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		if (ex_attribs & OOServer::Message_t::system_message)
 		{
 			// Filter the system messages
-			if (flags == OOServer::Message_t::Request)
+			if (type == OOServer::Message_t::Request)
 			{
 				if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect ||
 					(ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_ping)
@@ -452,7 +463,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				else
 					OMEGA_THROW("Invalid system message");
 			}
-			else if (flags == OOServer::Message_t::Response)
+			else
 			{
 				if ((ex_attribs & OOServer::Message_t::system_message) == OOServer::Message_t::channel_reflect)
 				{
@@ -473,8 +484,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				else
 					OMEGA_THROW("Invalid system message");
 			}
-			else
-				OMEGA_THROW("Invalid system message");
 		}
 		else
 		{
@@ -522,7 +531,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 
 		// Forward through the network...
-		OOServer::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,timeout,ex_attribs,dest_thread_id,src_thread_id,flags,*ptrOutput->GetCDRStream());
+		OOServer::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,timeout,ex_attribs,dest_thread_id,src_thread_id,type,*ptrOutput->GetCDRStream());
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & OOServer::Message_t::system_message))
@@ -706,7 +715,7 @@ void User::Manager::close_all_remotes()
 	}
 }
 
-OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags)
+OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type)
 {
 	try
 	{
@@ -716,13 +725,13 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 
 			RemoteChannelEntry channel_entry;
 			if (!m_mapRemoteChannelIds.find(dest_channel_id & 0xFFF00000,channel_entry))
-				return MessageHandler::route_off(msg,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
+				return MessageHandler::route_off(msg,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
 
 			ptrRemoteChannel = channel_entry.ptrRemoteChannel;
 		}
 
 		// Send it on...
-		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
+		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
 
 		return OOServer::MessageHandler::io_result::success;
 	}

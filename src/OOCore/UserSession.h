@@ -56,14 +56,17 @@ namespace OOCore
 			channel_ping = 0x30000
 		};
 
+		// This is the order for I/O
 		Omega::uint32_t    m_src_channel_id;
+		OOBase::Timeout    m_timeout;
+		Omega::uint32_t    m_attribs;
 		Omega::uint16_t    m_dest_thread_id;
 		Omega::uint16_t    m_src_thread_id;
-		Omega::uint32_t    m_attribs;
-		Omega::uint16_t    m_type;
-		Omega::uint16_t    m_dest_cmpt_id;
-		OOBase::Timeout  m_timeout;
+		Type               m_type;
 		OOBase::CDRStream  m_payload;
+
+		// Not persisted
+		Omega::uint16_t    m_dest_cmpt_id;
 	};
 
 	class UserSession
@@ -177,7 +180,7 @@ namespace OOCore
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
 		void process_request(ThreadContext* pContext, const Message& msg, const OOBase::Timeout& timeout);
 		void wait_for_response(OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t from_channel_id);
-		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Omega::uint16_t flags, Omega::uint32_t attribs);
+		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Message::Type type, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::Atomic<size_t>& usage);
 

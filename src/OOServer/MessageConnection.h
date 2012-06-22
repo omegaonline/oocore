@@ -115,7 +115,7 @@ namespace OOServer
 			};
 		};
 
-		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, OOBase::CDRStream& message);
+		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type, OOBase::CDRStream& message);
 		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint32_t attribs);
 
 		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
@@ -132,7 +132,7 @@ namespace OOServer
 		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs) = 0;
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
 		virtual void on_channel_closed(Omega::uint32_t channel) = 0;
-		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags);
+		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type);
 
 		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
 		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
@@ -172,11 +172,13 @@ namespace OOServer
 			Message(size_t len) : m_payload(len) {}
 			~Message() {}
 
+			// This is the order for I/O as well
+			Omega::uint32_t   m_src_channel_id;
+			OOBase::Timeout   m_timeout;
+			Omega::uint32_t   m_attribs;
 			Omega::uint16_t   m_dest_thread_id;
 			Omega::uint16_t   m_src_thread_id;
-			Omega::uint32_t   m_src_channel_id;
-			Omega::uint32_t   m_attribs;
-			OOBase::Timeout m_timeout;
+			Message_t::Type   m_type;
 			OOBase::CDRStream m_payload;
 		};
 
@@ -216,12 +218,13 @@ namespace OOServer
 
 		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
 		io_result::type queue_message(const Message& msg);
+		io_result::type handle_message(Message& msg);
 		io_result::type wait_for_response(OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t from_channel_id);
-		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
+		io_result::type send_message(Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
 		bool process_request_context(ThreadContext* pContext, Message& msg, const OOBase::Timeout& timeout);
 
-		void process_channel_close(Message& msg);
-		void process_async_function(Message& msg);
+		io_result::type process_channel_close(Message& msg);
+		bool process_async_function(Message& msg);
 
 		static void do_route_off(void* pParam, OOBase::CDRStream& input);
 	};

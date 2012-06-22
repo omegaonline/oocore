@@ -167,7 +167,7 @@ bool OOServer::MessageConnection::on_recv(OOBase::Buffer* buffer, int err, int p
 	if (version != 1)
 		LOG_ERROR_RETURN(("Invalid protocol version"),false);
 		
-	// Room for 1 byte here!
+	// Room for 1 byte here! (We record an ASCII character currently)
 
 	// Read the length
 	Omega::uint32_t read_len = 0;
@@ -334,7 +334,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 
 	if (!bRoute)
 	{
-		// If its our message, process it
+		// If it's our message, process it
 
 		// Read in the message info
 		MessageHandler::Message msg(input);
@@ -346,13 +346,22 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		msg.m_payload.read(msg.m_dest_thread_id);
 		msg.m_payload.read(msg.m_src_thread_id);
 
+		// Read remaining message members
+		bool t;
+		msg.m_payload.read(t);
+		msg.m_type = (t ? Message_t::Request : Message_t::Response);
+
+		// Align to the next boundary
+		if (msg.m_payload.buffer()->length() > 0)
+			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+
 		// Did everything make sense?
 		err = msg.m_payload.last_error();
 		if (err != 0)
 			LOG_ERROR_RETURN(("Corrupt input: %s",OOBase::system_error_text(err)),false);
 
 		// Route it correctly...
-		io_result::type res = queue_message(msg);
+		io_result::type res = handle_message(msg);
 		return (res == io_result::success || res == io_result::timedout);
 	}
 	else
@@ -411,57 +420,10 @@ int OOServer::MessageHandler::pump_requests(const OOBase::Timeout& timeout, bool
 			continue;
 		}
 
-		// Read remaining message members
-		Omega::uint16_t type = 0;
-		msg.m_payload.read(type);
-
-		// Align to the next boundary
-		if (msg.m_payload.buffer()->length() > 0)
-			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-		
-		// Did everything make sense?
-		int err = msg.m_payload.last_error();
-		if (err != 0)
-			LOG_ERROR(("Corrupt message: %s",OOBase::system_error_text(err)));
-		else if (type == Message_t::Request)
+		if (msg.m_type == Message_t::Request)
 		{
-			if (msg.m_attribs & Message_t::system_message)
-			{
-				// Set timeout
-				OOBase::Timeout old_timeout = pContext->m_timeout;
-				pContext->m_timeout = msg.m_timeout;
-
-				if ((msg.m_attribs & Message_t::system_message) == Message_t::async_function)
-					process_async_function(msg);
-				else if ((msg.m_attribs & Message_t::system_message) == Message_t::channel_close)
-					process_channel_close(msg);
-				else if ((msg.m_attribs & Message_t::system_message) == Message_t::channel_reflect)
-				{
-					// Send back the src_channel_id
-					OOBase::CDRStream response;
-					response.write(msg.m_src_channel_id);
-
-					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_timeout,Message_t::synchronous | Message_t::channel_reflect);
-				}
-				else if ((msg.m_attribs & Message_t::system_message) == Message_t::channel_ping)
-				{
-					// Send back 1 byte
-					OOBase::CDRStream response;
-					response.write(Omega::byte_t(1));
-
-					send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,pContext->m_timeout,Message_t::synchronous | Message_t::channel_ping);
-				}
-				else
-					LOG_ERROR(("Unrecognised system message"));
-
-				// Reset timeout
-				pContext->m_timeout = old_timeout;
-			}
-			else
-			{
-				// Process the message...
-				process_request_context(pContext,msg,timeout);
-			}
+			if (!process_request_context(pContext,msg,timeout))
+				return 0;
 		}
 		else
 			LOG_ERROR(("Discarding response in message pump"));
@@ -567,8 +529,9 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 	Omega::uint16_t src_thread_id;
 	input.read(src_thread_id);
 
-	Omega::uint16_t flags;
-	input.read(flags);
+	bool t;
+	input.read(t);
+	Message_t::Type type = (t ? Message_t::Request : Message_t::Response);
 
 	// Did everything make sense?
 	int err = input.last_error();
@@ -579,11 +542,11 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 		if (input.buffer()->length() > 0)
 			input.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
-		pThis->route_off(input,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
+		pThis->route_off(input,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::Timeout&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::Timeout&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Message_t::Type)
 {
 	// We have nowhere to route!
 	return io_result::channel_closed;
@@ -661,6 +624,47 @@ Omega::uint16_t OOServer::MessageHandler::classify_channel(Omega::uint32_t chann
 		return 3; // inter_user;
 	else
 		return 4; // another_machine
+}
+
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::handle_message(Message& msg)
+{
+	if (msg.m_type == Message_t::Request && (msg.m_attribs & Message_t::system_message))
+	{
+		switch (msg.m_attribs & Message_t::system_message)
+		{
+		case Message_t::channel_close:
+			return process_channel_close(msg);
+
+		case Message_t::channel_reflect:
+			{
+				// Send back the src_channel_id
+				OOBase::CDRStream response;
+				if (!response.write(msg.m_src_channel_id))
+					LOG_ERROR_RETURN(("Failed to write channel reflect response: %s",OOBase::system_error_text(response.last_error())),io_result::failed);
+
+				return send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_timeout,Message_t::synchronous | Message_t::channel_reflect);
+			}
+
+		case Message_t::channel_ping:
+			{
+				// Send back 1 byte
+				OOBase::CDRStream response;
+				if (!response.write(Omega::byte_t(1)))
+					LOG_ERROR_RETURN(("Failed to write ping response: %s",OOBase::system_error_text(response.last_error())),io_result::failed);
+
+				return send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_timeout,Message_t::synchronous | Message_t::channel_ping);
+			}
+
+		case Message_t::async_function:
+			// This message gets queued, let it pass...
+			break;
+
+		default:
+			LOG_ERROR_RETURN(("Unrecognised system message: %X",msg.m_attribs),io_result::failed);
+		}
+	}
+
+	return queue_message(msg);
 }
 
 OOServer::MessageHandler::io_result::type OOServer::MessageHandler::queue_message(const Message& msg)
@@ -812,30 +816,14 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 			break;
 		}
 
-		Omega::uint16_t type = 0;
-		msg.m_payload.read(type);
-
-		if (msg.m_payload.buffer()->length() > 0)
-			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-		
-		int err = msg.m_payload.last_error();
-		if (err != 0)
-			LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
-		else
+		if (msg.m_type == Message_t::Response)
 		{
-			if (type == Message_t::Request)
-			{
-				process_request_context(pContext,msg,timeout);
-			}
-			else if (type == Message_t::Response)
-			{
-				response = msg.m_payload;
-				ret = io_result::success;
-				break;
-			}
-			else
-				LOG_ERROR(("Invalid message type"));
+			response = msg.m_payload;
+			ret = io_result::success;
+			break;
 		}
+		else
+			process_request_context(pContext,msg,timeout);
 	}
 
 	return ret;
@@ -843,6 +831,10 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::wait_for_res
 
 bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, Message& msg, const OOBase::Timeout& timeout)
 {
+	// Check for async function messages
+	if ((msg.m_attribs & Message_t::system_message) == Message_t::async_function)
+		return process_async_function(msg);
+
 	// Set per channel thread id
 	Omega::uint16_t old_thread_id = 0;
 	Omega::uint16_t* v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
@@ -882,23 +874,18 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 	return true;
 }
 
-void OOServer::MessageHandler::process_channel_close(Message& msg)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::process_channel_close(Message& msg)
 {
 	Omega::uint32_t closed_channel_id;
-	msg.m_payload.read(closed_channel_id);
-
-	int err = msg.m_payload.last_error();
-	if (err != 0)
-	{
-		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
-		return;
-	}
+	if (!msg.m_payload.read(closed_channel_id))
+		LOG_ERROR_RETURN(("Failed to read channel close payload: %s",OOBase::system_error_text(msg.m_payload.last_error())),io_result::failed);
 
 	// Close the channel
 	channel_closed(closed_channel_id,msg.m_src_channel_id);
+	return io_result::success;
 }
 
-void OOServer::MessageHandler::process_async_function(Message& msg)
+bool OOServer::MessageHandler::process_async_function(Message& msg)
 {
 	OOBase::LocalString strFn;
 	msg.m_payload.read(strFn);
@@ -914,19 +901,17 @@ void OOServer::MessageHandler::process_async_function(Message& msg)
 
 	int err = msg.m_payload.last_error();
 	if (err != 0)
-	{
-		LOG_ERROR(("Message reading failed: %s",OOBase::system_error_text(err)));
-		return;
-	}
+		LOG_ERROR_RETURN(("Message reading failed: %s",OOBase::system_error_text(err)),false);
 
 	try
 	{
 		// Make the call...
 		(*pfnCall)(pParam,msg.m_payload);
+		return true;
 	}
 	catch (...)
 	{
-		LOG_ERROR(("Unhandled exception in %s",strFn.c_str()));
+		LOG_ERROR_RETURN(("Unhandled exception in %s",strFn.c_str()),false);
 	}
 }
 
@@ -944,16 +929,12 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 		return false;
 
 	// Create a new message
-	MessageHandler::Message msg(24 + (stream ? stream->buffer()->length() : 0));	
+	MessageHandler::Message msg(sizeof(pszFn) + sizeof(pfnCall) + sizeof(pParam) + (stream ? stream->buffer()->length() : 0));
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_dest_thread_id = 0;
 	msg.m_src_thread_id = 0;
 	msg.m_attribs = Message_t::asynchronous | Message_t::async_function;
-
-	Omega::uint16_t type = Message_t::Request;
-	msg.m_payload.write(type);
-
-	msg.m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+	msg.m_type = Message_t::Request;
 
 	msg.m_payload.write(pszFn);
 	msg.m_payload.write(pfnCall);
@@ -981,6 +962,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	msg.m_src_thread_id = 0;
 	msg.m_timeout = timeout;
 	msg.m_attribs = attribs;
+	msg.m_type = Message_t::Request;
 	
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message_t::asynchronous))
@@ -1004,14 +986,14 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_timeout,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request);
+		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_timeout,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,msg.m_type);
 		if (res != io_result::success)
 			return res;
 	}
 	else
 	{
 		// Send upstream
-		io_result::type res = send_message(Message_t::Request,actual_dest_channel_id,dest_channel_id,msg);
+		io_result::type res = send_message(actual_dest_channel_id,dest_channel_id,msg);
 		if (res != io_result::success)
 			return res;
 	}
@@ -1031,9 +1013,10 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	Message msg(response);
 	msg.m_dest_thread_id = dest_thread_id;
 	msg.m_src_channel_id = m_uChannelId;
-	msg.m_src_thread_id = pContext->m_thread_id;
+	msg.m_src_thread_id = 0;//pContext->m_thread_id;
 	msg.m_attribs = attribs;
 	msg.m_timeout = pContext->m_timeout;
+	msg.m_type = Message_t::Response;
 	if (timeout < msg.m_timeout)
 		msg.m_timeout = timeout;
 
@@ -1048,16 +1031,16 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_timeout,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response);
+		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_timeout,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,msg.m_type);
 	}
 	else
 	{
 		// Send upstream
-		return send_message(Message_t::Response,actual_dest_channel_id,dest_channel_id,msg);
+		return send_message(actual_dest_channel_id,dest_channel_id,msg);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, OOBase::CDRStream& message)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type, OOBase::CDRStream& message)
 {
 	// Check the destination
 	bool bRoute = true;
@@ -1085,32 +1068,23 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		return route_off(message,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,flags);
+		return route_off(message,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
 	}
 
 	if (!bRoute)
 	{
-		// If its our message, route it
+		// If it's our message, route it
 
-		MessageHandler::Message msg(8 + message.buffer()->length());
+		MessageHandler::Message msg(message);
 		msg.m_dest_thread_id = dest_thread_id;
 		msg.m_src_channel_id = src_channel_id;
 		msg.m_src_thread_id = src_thread_id;
 		msg.m_attribs = attribs;
 		msg.m_timeout = timeout;
-
-		// Build a message
-		msg.m_payload.write(flags);
-
-		msg.m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
-		msg.m_payload.write_buffer(message.buffer());
-
-		int err = msg.m_payload.last_error();
-		if (err != 0)
-			LOG_ERROR_RETURN(("Message writing failed: %s",OOBase::system_error_text(err)),io_result::failed);
+		msg.m_type = type;
 
 		// Route it correctly...
-		return queue_message(msg);
+		return handle_message(msg);
 	}
 	else
 	{
@@ -1121,15 +1095,16 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::forward_mess
 		msg.m_src_thread_id = src_thread_id;
 		msg.m_attribs = attribs;
 		msg.m_timeout = timeout;
+		msg.m_type = type;
 		
-		return send_message(flags,actual_dest_channel_id,dest_channel_id,msg);
+		return send_message(actual_dest_channel_id,dest_channel_id,msg);
 	}
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message(Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg)
 {
 	// Write the header info
-	OOBase::CDRStream header;
+	OOBase::CDRStream header(36);
 	header.write_endianess();
 	header.write(Omega::byte_t(1));  // version
 	header.write(Omega::byte_t('S'));  // signature
@@ -1144,7 +1119,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.write(msg.m_attribs);
 	header.write(msg.m_dest_thread_id);
 	header.write(msg.m_src_thread_id);
-	header.write(flags);
+	header.write(msg.m_type == Message_t::Request ? true : false);
 
 	size_t len = 0;
 	size_t msg_len = msg.m_payload.buffer()->length();

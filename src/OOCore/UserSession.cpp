@@ -406,7 +406,10 @@ int OOCore::UserSession::run_read_loop()
 		msg.m_payload.read(msg.m_attribs);
 		msg.m_payload.read(msg.m_dest_thread_id);
 		msg.m_payload.read(msg.m_src_thread_id);
-		msg.m_payload.read(msg.m_type);
+
+		bool t;
+		msg.m_payload.read(t);
+		msg.m_type = (t ? Message::Request : Message::Response);
 
 		// Align to the next boundary
 		if (msg.m_payload.buffer()->length() > 0)
@@ -605,7 +608,7 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 			{
 				process_request(pContext,msg,timeout);
 			}
-			else if (msg.m_type == Message::Response)
+			else
 			{
 				response = msg.m_payload;
 				break;
@@ -744,7 +747,7 @@ void OOCore::UserSession::send_response(uint16_t src_cmpt_id, uint32_t dest_chan
 	}
 }
 
-void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, uint16_t flags, uint32_t attribs)
+void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Message::Type type, uint32_t attribs)
 {
 	header.write_endianess();
 	header.write(byte_t(1));     // version
@@ -760,7 +763,7 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 	header.write(attribs);
 	header.write(dest_thread_id);
 	header.write(src_thread_id);
-	header.write(flags);
+	header.write(type == Message::Request ? true : false);
 
 	if (header.last_error() != 0)
 		OMEGA_THROW(header.last_error());

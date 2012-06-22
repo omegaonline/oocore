@@ -35,7 +35,7 @@ public:
 
 void TestServiceImpl::Start(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map)
 {
-	printf("YAY!\n");
+	printf("Test service started!\n");
 }
 
 BEGIN_LIBRARY_OBJECT_MAP()

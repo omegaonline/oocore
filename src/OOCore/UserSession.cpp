@@ -530,23 +530,30 @@ bool OOCore::UserSession::pump_request(const OOBase::Timeout& timeout)
 		// Decrement the consumers...
 		--m_usage_count;
 
-		if (res == OOBase::BoundedQueue<Message>::error)
+		switch (res)
+		{
+		case OOBase::BoundedQueue<Message>::error:
 			OOBase_CallCriticalFailure(m_default_msg_queue.last_error());
-		else if (res == OOBase::BoundedQueue<Message>::timedout)
-			return false;
-		else if (res != OOBase::BoundedQueue<Message>::success)
-		{
-			// Its gone... user process has terminated
-			throw Remoting::IChannelClosedException::Create();
-		}
+			break;
 
-		if (msg.m_type == Message::Request)
-		{
+		case OOBase::BoundedQueue<Message>::timedout:
+			return false;
+
+		case OOBase::BoundedQueue<Message>::closed:
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Omega user process terminated."));
+
+		case OOBase::BoundedQueue<Message>::success:
+			if (msg.m_type != Message::Request)
+				OOBase_CallCriticalFailure("Response in default queue!");
+
 			// Don't confuse the wait timeout with the message processing timeout
 			process_request(ThreadContext::instance(),msg,OOBase::Timeout());
 
 			// We processed something
 			return true;
+
+		default:
+			break;
 		}
 	}
 }
@@ -600,24 +607,30 @@ void OOCore::UserSession::wait_for_response(OOBase::CDRStream& response, const O
 		// Decrement the usage count
 		--pContext->m_usage_count;
 
-		if (res == OOBase::BoundedQueue<Message>::error)
-			OOBase_CallCriticalFailure(pContext->m_msg_queue.last_error());
-		else if (res == OOBase::BoundedQueue<Message>::success)
+		switch (res)
 		{
-			if (msg.m_type == Message::Request)
-			{
-				process_request(pContext,msg,timeout);
-			}
-			else
+		case OOBase::BoundedQueue<Message>::error:
+			OOBase_CallCriticalFailure(pContext->m_msg_queue.last_error());
+			break;
+
+		case OOBase::BoundedQueue<Message>::success:
+			if (msg.m_type == Message::Response)
 			{
 				response = msg.m_payload;
-				break;
+				return;
 			}
-		}
-		else if (res == OOBase::BoundedQueue<Message>::closed)
-			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
-		else if (res == OOBase::BoundedQueue<Message>::timedout)
+			process_request(pContext,msg,timeout);
 			break;
+
+		case OOBase::BoundedQueue<Message>::closed:
+			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
+
+		case OOBase::BoundedQueue<Message>::timedout:
+			throw ITimeoutException::Create();
+
+		default:
+			break;
+		}
 	}
 }
 

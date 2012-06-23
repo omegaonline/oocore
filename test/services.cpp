@@ -76,8 +76,6 @@ bool restart_services()
 
 	// Do a restart
 
-#error Fix Me!
-
 #else
 
 	TEST(system("kill -HUP `cat ./ooserverd.pid`") == 0);

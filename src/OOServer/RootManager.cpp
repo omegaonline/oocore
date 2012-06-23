@@ -86,20 +86,12 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 							ret = EXIT_SUCCESS;
 
 							// Wait for quit
-							for (bool bQuit = false;!bQuit && ret == EXIT_SUCCESS;)
-							{
-								bQuit = wait_to_quit();
-								if (!bQuit)
-								{
-									// Restart the services
-									if (!stop_services())
-										ret = EXIT_FAILURE;
-									else if (!start_services())
-										ret = EXIT_FAILURE;
-								}
-							}
-
+							wait_for_quit();
+								
 							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
+
+							// Stop all services
+							stop_services();
 
 							// Stop accepting new clients
 							m_client_acceptor = NULL;
@@ -443,36 +435,6 @@ bool Root::Manager::spawn_sandbox()
 #endif
 
 	return (m_sandbox_channel != 0);
-}
-
-bool Root::Manager::wait_to_quit()
-{
-	for (;;)
-	{
-		switch (wait_for_quit())
-		{
-#if defined (_WIN32)
-			case CTRL_BREAK_EVENT:
-				return false;
-
-			default:
-				return true;
-
-#elif defined(HAVE_UNISTD_H)
-			case SIGHUP:
-				return false;
-
-			case SIGQUIT:
-			case SIGTERM:
-				return true;
-
-			default:
-				break;
-#else
-#error Fix me!
-#endif
-		}
-	}
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)

@@ -74,7 +74,6 @@ namespace Root
 		bool load_config_file(const char* pszFile);
 		bool init_database();
 		bool spawn_sandbox();
-		bool wait_to_quit();
 		static int run_proactor(void* param);
 
 		// Configuration members

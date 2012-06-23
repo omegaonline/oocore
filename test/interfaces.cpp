@@ -382,11 +382,15 @@ const char** get_dlls()
 	{
 #if defined(_MSC_VER)
 		"..\\Win32\\TestLibrary_msvc.dll",
+#if defined(WIN64_HYBRID)
 		"..\\x64\\TestLibrary_msvc.dll",
+#endif
 		"..\\..\\..\\debug\\test\\TestLibrary\\.libs\\testlibrary.dll",
 #elif defined(_WIN32)
 		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Debug/Win32/TestLibrary_msvc.dll",
+#if defined(WIN64_HYBRID)
 		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Debug/x64/TestLibrary_msvc.dll",
+#endif
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestLibrary/.libs/testlibrary.dll",
 #else
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestLibrary/testlibrary.la",
@@ -467,11 +471,17 @@ const char** get_exes()
 	{
 #if defined(_MSC_VER)
 		"..\\Win32\\TestProcess_msvc.exe",
+#if defined(WIN64_HYBRID)
 		"..\\x64\\TestProcess_msvc.exe",
+#endif
 		"..\\..\\..\\debug\\test\\TestProcess\\.libs\\testprocess.exe",
 #elif defined(_WIN32)
 		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Debug/Win32/TestProcess_msvc.exe",
+
+#if defined(WIN64_HYBRID)
 		OMEGA_STRINGIZE(TOP_SRC_DIR) "/bin/Debug/x64/TestProcess_msvc.exe",
+#endif
+
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestProcess/testprocess.exe",
 #else
 		OMEGA_STRINGIZE(BUILD_DIR) "/TestProcess/testprocess",

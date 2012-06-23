@@ -77,12 +77,17 @@ namespace
 		return msg;
 	}
 
-	int worker(void* p)
+	int worker(void*)
 	{
+		// Initially wait 15 seconds for 1st message
+		uint32_t msecs = 15000;
 		try
 		{
-			while (Omega::HandleRequest(*static_cast<uint32_t*>(p)) || GetModule()->HaveLocks() || !Omega::CanUnload())
-			{}
+			while (Omega::HandleRequest(msecs) || GetModule()->HaveLocks() || !Omega::CanUnload())
+			{
+				// Once we have the first message, we can then wait a very short time
+				msecs = 500;
+			}
 
 			return 0;
 		}
@@ -97,7 +102,7 @@ namespace
 		}
 	}
 
-	int Run(const guid_t& oid, uint32_t msecs)
+	int Run(const guid_t& oid)
 	{
 		int ret = EXIT_FAILURE;
 
@@ -114,11 +119,11 @@ namespace
 				GetModule()->RegisterObjectFactory(oid);
 
 				OOBase::ThreadPool pool;
-				int err = pool.run(&worker,&msecs,2);
+				int err = pool.run(&worker,NULL,2);
 				if (err)
 					LOG_ERROR(("Failed to start thread pool: %s",OOBase::system_error_text(err)));
 				else
-					worker(&msecs);
+					worker(NULL);
 
 				pool.join();
 
@@ -168,10 +173,10 @@ System::IService* ServiceManagerImpl::Start(const string_t& strPipe, const strin
 
 int Host::Surrogate()
 {
-	return Run(OOCore::OID_Surrogate,30000);
+	return Run(OOCore::OID_Surrogate);
 }
 
 int Host::ServiceStart()
 {
-	return Run(OOCore::OID_ServiceManager,30000);
+	return Run(OOCore::OID_ServiceManager);
 }

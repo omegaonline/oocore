@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
 	// If this event exists, then we are being debugged
 	{
 		// Scope it...
-		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
+		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
 		if (hDebugEvent)
 		{
 			// Wait for a bit, letting the caller attach a debugger

@@ -101,6 +101,9 @@ namespace Omega
 		
 		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
 		OOCORE_DECLARE_OID(OID_RunningObjectTable);
+
+		// {ADEA9DC0-9D82-9481-843C-CFBB8373F65E}
+		OOCORE_DECLARE_OID(OID_RunningObjectTable_NoThrow);
 	}
 
 	namespace TypeInfo

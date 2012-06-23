@@ -29,7 +29,7 @@ namespace OOCore
 	void RegisterObjects();
 	void UnregisterObjects();
 
-	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService();
+	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService(bool bThrow);
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
@@ -74,6 +74,14 @@ namespace OOCore
 
 	class RunningObjectTableFactory : 
 		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTable,Omega::Activation::ProcessScope>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(const Omega::guid_t& iid, Omega::IObject*& pObject);
+	};
+
+	class RunningObjectTableFactory_NoThrow :
+		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTable_NoThrow,Omega::Activation::ProcessScope>
 	{
 	// IObjectFactory members
 	public:

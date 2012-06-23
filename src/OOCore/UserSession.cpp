@@ -915,14 +915,14 @@ bool OOCore::UserSession::handle_request(uint32_t millisecs)
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
 {
 	if (OOCore::HostedByOOServer())
-		return OOCore::GetInterProcessService()->HandleRequest(millisecs);
+		return OOCore::GetInterProcessService(true)->HandleRequest(millisecs);
 		
 	return OOCore::UserSession::handle_request(millisecs);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 {
-	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
+	return OOCore::GetInterProcessService(true)->OpenServerSink(message_oid,pSink);
 }
 
 ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment(const guid_t& channel_oid)

@@ -284,6 +284,8 @@ static bool do_local_library_test(const Omega::string_t& strPrefix)
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
+	ptrSimpleTest.Release();
+
 	// Test unregistering
 	TEST(unregister_library(strPrefix));
 

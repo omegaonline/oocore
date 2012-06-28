@@ -145,12 +145,11 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 	// execl("/bin/sh","sh","-c",pszExeName,(char*)NULL);
 	void* TODO;
 
-	//OOBase::LocalString valgrind;
-	//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
-	//if (strncmp(pszExeName,"../OOServer/oosvrhost",20) == 0)
-	//	execlp("xterm","xterm","-T",pszExeName,"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),"../OOServer/oosvrhost","--multiple","--debug",(char*)NULL);
-	//else
-	//	execlp("xterm","xterm","-T",pszExeName,"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),pszExeName,(char*)NULL);
+#if 0
+	OOBase::LocalString valgrind;
+	valgrind.printf("xterm -T '%s' -e 'libtool --mode=execute valgrind --leak-check=full --log-file=valgrind_log%d.txt %s'",pszExeName,getpid(),pszExeName);
+	::system(valgrind.c_str());
+#endif
 
 	// Just use the system() call
 	err = ::system(pszExeName);

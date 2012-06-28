@@ -70,18 +70,9 @@ static bool unregister_service()
 
 bool restart_services()
 {
-#if defined(_WIN32)
-
 	// GetServiceController
 
 	// Do a restart
-
-#else
-
-	TEST(system("kill -HUP `cat ./ooserverd.pid`") == 0);
-	sleep(5);
-
-#endif
 
 	return true;
 }

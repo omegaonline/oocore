@@ -369,22 +369,20 @@ int Root::Manager::run_proactor(void* p)
 
 bool Root::Manager::spawn_sandbox()
 {
-	// Get username from config
-	OOBase::String strUName,strUnsafe;
-	if (!get_config_arg("sandbox_uname",strUName))
-		LOG_ERROR(("Failed to find the 'sandbox_uname' setting in the config"));
-
+	OOBase::String strUnsafe;
 	bool bUnsafe = false;
 	if (Root::is_debug() && get_config_arg("unsafe",strUnsafe))
 		bUnsafe = (strUnsafe == "true");
 
+	// Get username from config
+	OOBase::String strUName;
+	if (!get_config_arg("sandbox_uname",strUName) && !bUnsafe)
+		LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
+	
 	bool bAgain = false;
 	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
 	{
-		if (!bUnsafe)
-			LOG_ERROR_RETURN(("'sandbox_uname' setting in the config is empty!"),false);
-
 		OOBase::LocalString strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;

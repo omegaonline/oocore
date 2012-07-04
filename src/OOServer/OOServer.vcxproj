@@ -92,8 +92,8 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\include;..\..\oobase\include;C:\Program Files\Visual Leak Detector\include;C:\work\sqlite</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>HAVE_SQLITE3_H;HAVE_VLD_H</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\include;..\..\oobase\include;C:\work\sqlite3</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_SQLITE3_H</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>OOServer_Root.h</PrecompiledHeaderFile>
@@ -105,7 +105,7 @@
       <AdditionalDependencies>ws2_32.lib;netapi32.lib;userenv.lib;shlwapi.lib;rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Program Files\Visual Leak Detector\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

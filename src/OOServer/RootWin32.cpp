@@ -267,22 +267,28 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 	// Now set some defaults...
 	if (!m_config_args.exists("regdb_path"))
 	{
-		// This does need to be ASCII
-		char szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+		wchar_t wszPath[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,wszPath);
 		if FAILED(hr)
-			LOG_ERROR_RETURN(("SHGetFolderPathA failed: %s",OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text()),false);
 
-		if (!PathAppendA(szBuf,"Omega Online"))
-			LOG_ERROR_RETURN(("PathAppendA failed: %s",OOBase::system_error_text()),false);
+		if (!PathAppendW(wszPath,L"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
 
-		if (!PathFileExistsA(szBuf))
-			LOG_ERROR_RETURN(("%s does not exist.",szBuf),false);
+		if (!PathFileExistsW(wszPath))
+			LOG_ERROR_RETURN(("%ls does not exist.",wszPath),false);
+
+		if (!PathAddBackslashW(wszPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		char szPath[MAX_PATH * 2] = {0};
+		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
 
 		OOBase::String v,k;
 		int err = k.assign("regdb_path");
 		if (err == 0)
-			err = v.assign(szBuf);
+			err = v.assign(szPath);
 		if (err == 0)
 			err = m_config_args.insert(k,v);
 		if (err != 0)

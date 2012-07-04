@@ -141,7 +141,7 @@ namespace
 		return true;
 	}
 
-	bool create_and_forward_socket(pid_t pid, const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
+	bool create_and_forward_socket(DWORD pid, const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
 	{
 		/* The format is:
 		 *
@@ -343,7 +343,7 @@ namespace
 
 	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const Omega::int64_t& key)
 	{
-		pid_t pid = 0;
+		DWORD pid = 0;
 #if defined(_WIN32)
 		int err3 = ptrSocket->recv(pid);
 		if (err3)

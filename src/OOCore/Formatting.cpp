@@ -23,8 +23,6 @@
 
 #include <limits.h>
 #include <ctype.h>
-#include <wctype.h>
-#include <wchar.h>
 #include <locale.h>
 
 #if defined(HAVE_INTTYPES_H)

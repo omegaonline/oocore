@@ -141,7 +141,11 @@ namespace
 		return true;
 	}
 
+#if defined(_WIN32)
 	bool create_and_forward_socket(DWORD pid, const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
+#else
+	bool create_and_forward_socket(const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
+#endif
 	{
 		/* The format is:
 		 *
@@ -332,7 +336,12 @@ namespace
 		if (!err)
 			ptrSocket->send(strSocketName.c_str(),Omega::uint32_t(strSocketName.length()),err);
 		if (!err)
+#if defined(_WIN32)
 			err = ptrSocket->send_socket(new_sock,pid);
+#else
+			(void)pid;
+			err = ptrSocket->send_socket(new_sock);
+#endif
 
 		OOBase::Net::close_socket(new_sock);
 		if (err)
@@ -343,8 +352,8 @@ namespace
 
 	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const Omega::int64_t& key)
 	{
-		DWORD pid = 0;
 #if defined(_WIN32)
+		DWORD pid = 0;
 		int err3 = ptrSocket->recv(pid);
 		if (err3)
 		{
@@ -390,7 +399,13 @@ namespace
 						if (err)
 							LOG_ERROR(("Failed to get '%s' from '/System/Services/%s/Connections' in the registry",strSocketName.c_str(),strName.c_str()));
 						else
-							create_and_forward_socket(pid,strName,strSocketName,strValue,ptrSocket);
+						{
+							#if defined(_WIN32)
+								create_and_forward_socket(pid,strName,strSocketName,strValue,ptrSocket);
+							#else
+								create_and_forward_socket(strName,strSocketName,strValue,ptrSocket);
+							#endif
+						}
 					}
 				}
 			}

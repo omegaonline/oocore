@@ -40,6 +40,14 @@
 #include <netdb.h>
 #endif
 
+#if defined(_WIN32) && !defined(AI_NUMERICSERV)
+#define AI_NUMERICSERV 8
+#endif
+
+#if defined(_WIN32) && !defined(AI_ADDRCONFIG)
+#define AI_ADDRCONFIG 0x400
+#endif
+
 namespace
 {
 	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys)
@@ -264,9 +272,6 @@ namespace
 					sockaddr_in6 addr = {0};
 					addr.sin6_family = AF_INET6;
 
-					in6_addr any = IN6ADDR_ANY_INIT;
-					addr.sin6_addr = any;
-
 					char* end_ptr = NULL;
 					u_short port = static_cast<u_short>(strtoul(strPort.c_str(),&end_ptr,10));
 					if (*end_ptr != '\0')
@@ -385,7 +390,7 @@ namespace
 				else
 				{
 					OOBase::String strSocketName;
-					for (size_t idx = 0;values.pop(&strSocketName);)
+					for (unsigned long idx = 0;values.pop(&strSocketName);)
 					{
 						// Make sure we have some kind of name!
 						if (strSocketName.empty())

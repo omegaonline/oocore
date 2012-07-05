@@ -24,6 +24,10 @@
 
 #include "Omega.h"
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#endif
+
 namespace Omega
 {
 	namespace System

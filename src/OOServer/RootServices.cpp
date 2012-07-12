@@ -344,7 +344,6 @@ namespace
 #if defined(_WIN32)
 			err = ptrSocket->send_socket(new_sock,pid);
 #else
-			(void)pid;
 			err = ptrSocket->send_socket(new_sock);
 #endif
 

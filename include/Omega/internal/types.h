@@ -148,10 +148,6 @@ namespace Omega
 			};
 
 			// These are defined by the C ABI
-			template <> struct is_c_abi<void>
-			{
-				enum { result = 1 };
-			};
 			template <> struct is_c_abi<char>
 			{
 				enum { result = 1 };
@@ -212,6 +208,10 @@ namespace Omega
 			};
 
 			// Pointers are also C ABI compliant
+			template <> struct is_c_abi<void*>
+			{
+				enum { result = 1 };
+			};
 			template <typename T> struct is_c_abi<T*>
 			{
 				enum { result = is_c_abi<T>::result };

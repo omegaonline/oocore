@@ -1114,6 +1114,31 @@ namespace Omega
 				>::result wire_type;
 			};
 
+			template <typename T> struct marshal_info<const T*>
+			{
+				typedef typename if_else_t<
+					is_c_abi<T>::result,
+					std_safe_type<const T*>,
+					custom_safe_type_const_wrapper<T*>
+				>::result safe_type;
+
+				typedef typename if_else_t<
+					is_message_type<T>::result,
+					std_wire_type_array<const T>,
+					custom_wire_type_wrapper<const T*>
+				>::result wire_type;
+			};
+
+			template <> struct marshal_info<void*>
+			{
+				typedef std_safe_type<void*> safe_type;
+			};
+
+			template <> struct marshal_info<const void*>
+			{
+				typedef std_safe_type<const void*> safe_type;
+			};
+
 			struct SafeShim
 			{
 				const void* m_vtable;

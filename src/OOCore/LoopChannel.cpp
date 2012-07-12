@@ -64,7 +64,7 @@ void LoopMarshaller::init(OOCore::LoopChannel* pChannel)
 void LoopMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
 	pMessage->WriteStructStart(strName,string_t::constant("$loop_marshal"));
-	pMessage->WriteValue(string_t::constant("ptr"),reinterpret_cast<ptrdiff_t>(pObject));
+	pMessage->WriteValue(string_t::constant("ptr"),any_t(reinterpret_cast<ptrdiff_t>(pObject)));
 	pMessage->WriteStructEnd();
 
 	// Make sure we AddRef()

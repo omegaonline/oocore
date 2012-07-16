@@ -167,6 +167,10 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	try
 	{
 		m_pManager->MarshalInterface(string_t::constant("pReflect"),pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
+
+		// Not sure why this works...
+		void* CHECK_ME;
+		++m_marshal_count;
 	}
 	catch (...)
 	{

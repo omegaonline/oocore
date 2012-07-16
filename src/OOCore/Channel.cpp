@@ -137,7 +137,7 @@ void OOCore::ChannelBase::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::I
 
 void OOCore::ChannelBase::ReflectMarshal(Remoting::IMessage* pMessage)
 {
-	MarshalInterface(0,pMessage,guid_t::Null(),m_marshal_flags);
+	MarshalInterface(NULL,pMessage,guid_t::Null(),m_marshal_flags);
 }
 
 void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)

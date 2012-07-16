@@ -79,7 +79,6 @@ namespace Omega
 			virtual IMarshaller* GetMarshaller() = 0;
 			virtual bool_t IsAlive() = 0;
 			virtual bool_t RemoteQueryInterface(const guid_t& iid) = 0;
-			virtual IObject* QueryIObject() = 0;
 		};
 	}
 }
@@ -153,7 +152,6 @@ namespace Omega
 				OMEGA_METHOD(Remoting::IMarshaller*,GetMarshaller,0,())
 				OMEGA_METHOD(bool_t,IsAlive,0,())
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
-				OMEGA_METHOD(IObject*,QueryIObject,0,())
 			)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE

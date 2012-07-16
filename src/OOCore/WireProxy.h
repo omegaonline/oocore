@@ -79,7 +79,6 @@ namespace OOCore
 		Omega::Remoting::IMarshaller* GetMarshaller();
 		Omega::bool_t IsAlive();
 		Omega::bool_t RemoteQueryInterface(const Omega::guid_t& iid);
-		Omega::IObject* QueryIObject();
 
 	// IMarshal members
 	public:

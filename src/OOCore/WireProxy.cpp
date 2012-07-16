@@ -77,7 +77,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 
 	ObjectPtr<Remoting::IMessage> ptrParamsOut = m_pManager->CreateMessage();
 
-	WriteStubInfo(ptrParamsOut,0);
+	WriteStubInfo(ptrParamsOut,1);
 
 	ptrParamsOut->WriteValue(string_t::constant("iid"),iid);
 	ptrParamsOut->WriteStructEnd();
@@ -102,24 +102,6 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	}
 
 	return bOk;
-}
-
-IObject* OOCore::Proxy::QueryIObject()
-{
-	ObjectPtr<Remoting::IMessage> ptrParamsOut = m_pManager->CreateMessage();
-
-	WriteStubInfo(ptrParamsOut,1);
-
-	ptrParamsOut->WriteStructEnd();
-
-	ObjectPtr<Remoting::IMessage> ptrParamsIn;
-	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
-	if (pE)
-		pE->Rethrow();
-
-	IObject* pRet = NULL;
-	m_pManager->UnmarshalInterface(string_t::constant("$retval"),ptrParamsIn,OMEGA_GUIDOF(IObject),pRet);
-	return pRet;
 }
 
 IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
@@ -211,7 +193,7 @@ void OOCore::Proxy::CallRemoteRelease()
 	{
 		ObjectPtr<Remoting::IMessage> ptrParamsOut = m_pManager->CreateMessage();
 
-		WriteStubInfo(ptrParamsOut,uint32_t(-1));
+		WriteStubInfo(ptrParamsOut,0);
 
 		ptrParamsOut->WriteStructEnd();
 

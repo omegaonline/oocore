@@ -99,25 +99,21 @@ inline Omega::IObject* Omega::System::Internal::Wire_Proxy_Base::QueryInterface(
 		m_internal.AddRef();
 		return &m_internal;
 	}
-	else if (IsDerived__proxy__(iid))
+
+	if (IsDerived__proxy__(iid))
 	{
 		AddRef();
 		return QIReturn__proxy__();
 	}
 
 	if (iid == OMEGA_GUIDOF(IObject))
-	{
-		// Get the controlling IObject
-		return m_ptrProxy->QueryIObject();
-	}
-	else
-	{
-		// Check the proxy supports the interface
-		if (!m_ptrProxy->RemoteQueryInterface(iid))
-			return NULL;
+		return Wire_Proxy_IObject::bind(m_ptrProxy);
 
-		return create_wire_proxy(m_ptrProxy,iid);
-	}
+	// Check the proxy supports the interface
+	if (!m_ptrProxy->RemoteQueryInterface(iid))
+		return NULL;
+
+	return create_wire_proxy(m_ptrProxy,iid);
 }
 
 inline Omega::IException* Omega::System::Internal::Wire_Proxy_Base::Throw(const guid_t& iid)

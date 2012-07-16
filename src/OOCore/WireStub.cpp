@@ -43,9 +43,6 @@ void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pMana
 
 void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
-	// Make sure we can support the outgoing interface...
-	assert(RemoteQueryInterface(iid));
-
 	pMessage->WriteValue(string_t::constant("id"),m_stub_id);
 	pMessage->WriteValue(string_t::constant("iid"),iid);
 

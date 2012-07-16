@@ -924,7 +924,6 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 
 bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
 {
-	assert(pfnCall);
 	if (!pfnCall)
 		return false;
 

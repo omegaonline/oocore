@@ -840,8 +840,6 @@ namespace
 
 	void exp_strip(OOBase::LocalString& str, int precision, bool show_plus)
 	{
-		assert(precision >= 0);
-
 		size_t pos = strcspn(str.c_str(),"Ee");
 		if (pos >= str.length()-1)
 			return;

@@ -780,8 +780,6 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshall
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
 	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshaller);
-	assert(ptrOM);
-
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 
@@ -791,8 +789,6 @@ void OOCore::StdObjectManager::UndoMarshalChannel(Remoting::IMarshaller* pMarsha
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
 	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshaller);
-	assert(ptrOM);
-
 	ptrOM->ReleaseMarshalChannelData(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 

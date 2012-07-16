@@ -733,8 +733,6 @@ ObjectImpl<User::Channel>* User::Manager::create_channel(uint32_t src_channel_id
 
 ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid)
 {
-	assert(classify_channel(src_channel_id) > 1);
-
 	// Lookup existing..
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
 	{

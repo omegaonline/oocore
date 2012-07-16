@@ -196,8 +196,6 @@ ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_ch
 
 void OOCore::Compartment::process_request(const Message& msg, const OOBase::Timeout& timeout)
 {
-	assert(msg.m_dest_cmpt_id == m_id);
-
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(msg.m_src_channel_id);
 

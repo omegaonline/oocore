@@ -40,6 +40,8 @@ namespace User
 		Manager();
 		virtual ~Manager();
 
+		static Manager* instance() { return s_instance; }
+
 		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		static OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);

@@ -27,14 +27,12 @@
 
 namespace User
 {
-	class Manager;
-
 	class InterProcessService :
 			public OTL::ObjectBase,
 			public OOCore::IInterProcessService
 	{
 	public:
-		void init(Omega::Remoting::IObjectManager* pOMSB, Omega::Remoting::IObjectManager* pOMUser, Manager* pManager);
+		void init(Omega::Remoting::IObjectManager* pOMSB, Omega::Remoting::IObjectManager* pOMUser);
 
 		BEGIN_INTERFACE_MAP(InterProcessService)
 			INTERFACE_ENTRY(OOCore::IInterProcessService)
@@ -45,7 +43,6 @@ namespace User
 		OTL::ObjectPtr<OOCore::IInterProcessService>          m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
 		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
-		Manager*                                              m_pManager;
 
 		OOBase::Table<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
 

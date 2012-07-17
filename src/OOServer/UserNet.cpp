@@ -27,15 +27,13 @@ using namespace Omega;
 using namespace OTL;
 
 User::RemoteChannel::RemoteChannel() :
-		m_pManager(0),
 		m_channel_id(0),
 		m_nNextChannelId(0)
 {
 }
 
-ObjectImpl<User::Channel>* User::RemoteChannel::client_init(Manager* pManager, Remoting::IEndpoint* pEndpoint, const string_t& strEndpoint, uint32_t channel_id)
+ObjectImpl<User::Channel>* User::RemoteChannel::client_init(Remoting::IEndpoint* pEndpoint, const string_t& strEndpoint, uint32_t channel_id)
 {
-	m_pManager = pManager;
 	m_channel_id = channel_id;
 
 	// Open the remote endpoint and attach ourselves as the sink...
@@ -49,9 +47,8 @@ ObjectImpl<User::Channel>* User::RemoteChannel::client_init(Manager* pManager, R
 	return create_channel(0);
 }
 
-void User::RemoteChannel::server_init(Manager* pManager, Remoting::IChannelSink* pSink, const guid_t& message_oid, uint32_t channel_id)
+void User::RemoteChannel::server_init(Remoting::IChannelSink* pSink, const guid_t& message_oid, uint32_t channel_id)
 {
-	m_pManager = pManager;
 	m_channel_id = channel_id;
 	m_ptrUpstream = pSink;
 	m_message_oid = message_oid;
@@ -68,7 +65,7 @@ ObjectImpl<User::Channel>* User::RemoteChannel::create_channel(uint32_t channel_
 	if (!m_mapChannels.find(channel_id,ptrChannel))
 	{
 		ptrChannel = ObjectImpl<User::Channel>::CreateInstance();
-		ptrChannel->init(m_pManager,m_channel_id | channel_id,Remoting::RemoteMachine,m_message_oid);
+		ptrChannel->init(m_channel_id | channel_id,Remoting::RemoteMachine,m_message_oid);
 
 		int err = m_mapChannels.insert(channel_id,ptrChannel);
 		if (err != 0)
@@ -365,7 +362,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					{
 						uint32_t channel_id = ptrPayload->ReadValue(string_t::constant("channel_id")).cast<uint32_t>();
 
-						m_pManager->channel_closed(channel_id | m_channel_id,0);
+						Manager::instance()->channel_closed(channel_id | m_channel_id,0);
 
 						out_attribs = OOServer::Message_t::asynchronous;
 					}
@@ -437,7 +434,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			void* TODO;
 			// This seems broken...
 
-			if (!m_pManager->call_async_function_i("process_here",&process_here,this,&output))
+			if (!Manager::instance()->call_async_function_i("process_here",&process_here,this,&output))
 			{
 				Release();
 
@@ -531,7 +528,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 
 		// Forward through the network...
-		OOServer::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,timeout,ex_attribs,dest_thread_id,src_thread_id,type,*ptrOutput->GetCDRStream());
+		OOServer::MessageHandler::io_result::type res = Manager::instance()->forward_message(src_channel_id,dest_channel_id,timeout,ex_attribs,dest_thread_id,src_thread_id,type,*ptrOutput->GetCDRStream());
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & OOServer::Message_t::system_message))
@@ -593,10 +590,10 @@ void User::RemoteChannel::Close()
 				if (k >= m_channel_id)
 					break;
 
-				m_pManager->channel_closed(k | m_channel_id,0);
+				Manager::instance()->channel_closed(k | m_channel_id,0);
 			}
 
-			m_pManager->channel_closed(m_channel_id,0);
+			Manager::instance()->channel_closed(m_channel_id,0);
 		}
 	}
 
@@ -670,7 +667,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
 	try
 	{
-		ptrChannel = channel.ptrRemoteChannel->client_init(this,ptrEndpoint,channel.strEndpoint,channel_id);
+		ptrChannel = channel.ptrRemoteChannel->client_init(ptrEndpoint,channel.strEndpoint,channel_id);
 	}
 	catch (...)
 	{
@@ -776,7 +773,7 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	try
 	{
 		// Init the sink
-		channel.ptrRemoteChannel->server_init(this,pSink,message_oid,channel_id);
+		channel.ptrRemoteChannel->server_init(pSink,message_oid,channel_id);
 	}
 	catch (...)
 	{

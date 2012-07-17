@@ -29,15 +29,13 @@ using namespace OTL;
 const Omega::guid_t User::OID_ChannelMarshalFactory("{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 
 User::Channel::Channel() :
-		m_pManager(0),
 		m_channel_id(0),
 		m_marshal_flags(0)
 {
 }
 
-void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
+void User::Channel::init(Omega::uint32_t channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
 {
-	m_pManager = pManager;
 	m_channel_id = channel_id;
 	m_marshal_flags = marshal_flags;
 	m_message_oid = message_oid;
@@ -117,7 +115,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	OOBase::CDRStream response;
 	try
 	{
-		OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,timeout,attribs);
+		OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,timeout,attribs);
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (res == OOServer::MessageHandler::io_result::timedout)
@@ -180,7 +178,7 @@ bool_t User::Channel::IsConnected()
 	bool connected = true;
 	
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,NULL,&response,OOBase::Timeout(),OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
+	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOBase::Timeout(),OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
 	if (res != OOServer::MessageHandler::io_result::success)
 		connected = false;
 
@@ -205,7 +203,7 @@ bool_t User::Channel::IsConnected()
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,NULL,&response,OOBase::Timeout(),OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
+	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOBase::Timeout(),OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)

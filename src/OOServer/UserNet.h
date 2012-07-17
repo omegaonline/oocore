@@ -24,8 +24,6 @@
 
 namespace User
 {
-	class Manager;
-
 	class RemoteChannel :
 			public OTL::ObjectBase,
 			public Omega::Remoting::IChannelSink
@@ -33,8 +31,8 @@ namespace User
 	public:
 		RemoteChannel();
 
-		OTL::ObjectImpl<Channel>* client_init(Manager* pManager, Omega::Remoting::IEndpoint* pEndpoint, const Omega::string_t& strEndpoint, Omega::uint32_t channel_id);
-		void server_init(Manager* pManager, Omega::Remoting::IChannelSink* pSink, const Omega::guid_t& message_oid, Omega::uint32_t channel_id);
+		OTL::ObjectImpl<Channel>* client_init(Omega::Remoting::IEndpoint* pEndpoint, const Omega::string_t& strEndpoint, Omega::uint32_t channel_id);
+		void server_init(Omega::Remoting::IChannelSink* pSink, const Omega::guid_t& message_oid, Omega::uint32_t channel_id);
 		void send_away(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		void channel_closed(Omega::uint32_t channel_id);
 
@@ -44,7 +42,6 @@ namespace User
 
 	private:
 		OOBase::Mutex                                                        m_lock;
-		Manager*                                                             m_pManager;
 		Omega::uint32_t                                                      m_channel_id;
 		OTL::ObjectPtr<Omega::Remoting::IChannelSink>                        m_ptrUpstream;
 		Omega::guid_t                                                        m_message_oid;

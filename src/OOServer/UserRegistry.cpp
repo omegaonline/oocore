@@ -103,9 +103,8 @@ namespace
 	}
 }
 
-void RootKey::init(Manager* pManager, const string_t& strKey, const int64_t& key, byte_t type)
+void RootKey::init(const string_t& strKey, const int64_t& key, byte_t type)
 {
-	m_pManager = pManager;
 	m_strKey = strKey;
 	m_key = key;
 	m_type = type;
@@ -141,7 +140,7 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -201,7 +200,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -226,7 +225,7 @@ any_t RootKey::GetValue(const string_t& strName)
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -257,7 +256,7 @@ void RootKey::SetValue(const string_t& strName, const any_t& value)
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -288,7 +287,7 @@ IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstance();
-	ptrNew->init(m_pManager,strFullKey,key,type);
+	ptrNew->init(strFullKey,key,type);
 	return ptrNew.Detach();
 }
 
@@ -302,7 +301,7 @@ IKey::string_set_t RootKey::EnumSubKeys()
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -335,7 +334,7 @@ IKey::string_set_t RootKey::EnumValues()
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -370,7 +369,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))
@@ -412,7 +411,7 @@ void RootKey::DeleteValue(const string_t& strName)
 		OMEGA_THROW(request.last_error());
 
 	OOBase::CDRStream response;
-	m_pManager->sendrecv_root(request,&response,TypeInfo::Synchronous);
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
 	
 	OOServer::RootErrCode_t err;
 	if (!response.read(err))

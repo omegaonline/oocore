@@ -28,10 +28,8 @@
 using namespace Omega;
 using namespace OTL;
 
-void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser, Manager* pManager)
+void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser)
 {
-	m_pManager = pManager;
-
 	if (pOMSB)
 	{
 		// Create a proxy to the server interface
@@ -54,7 +52,7 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::
 	{
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
-		ptrKey->init(m_pManager,string_t::constant("/"),0,0);
+		ptrKey->init(string_t::constant("/"),0,0);
 		m_ptrReg = ptrKey.AddRef();
 	}
 
@@ -86,7 +84,7 @@ string_t User::InterProcessService::GetSurrogateProcess(const guid_t& oid)
 	string_t strProcess;
 	
 #if !defined(_WIN32)
-	m_pManager->get_root_config_arg("binary_path",strProcess);
+	Manager::instance()->get_root_config_arg("binary_path",strProcess);
 	strProcess += "oosvrhost";
 #endif
 
@@ -200,7 +198,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (!ptrProcess)
 	{
 		// Create a new process
-		ptrProcess = m_pManager->exec(strProcess,strWorkingDir,is_host_process,tabEnv);
+		ptrProcess = Manager::instance()->exec(strProcess,strWorkingDir,is_host_process,tabEnv);
 
 		err = m_mapInProgress.insert(strProcess,ptrProcess);
 		if (err != 0)
@@ -253,7 +251,7 @@ bool_t User::InterProcessService::HandleRequest(uint32_t millisecs)
 	if (millisecs != 0xFFFFFFFF)
 		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
 
-	int ret = m_pManager->pump_requests(timeout,true);
+	int ret = Manager::instance()->pump_requests(timeout,true);
 	if (ret == -1)
 		OMEGA_THROW("Request processing failed");
 	else

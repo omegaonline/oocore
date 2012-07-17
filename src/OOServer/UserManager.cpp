@@ -24,6 +24,7 @@
 #include "UserIPS.h"
 #include "UserChannel.h"
 #include "UserRegistry.h"
+#include "UserServices.h"
 
 #include <stdlib.h>
 
@@ -49,6 +50,7 @@ namespace OTL
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory)
 					OBJECT_MAP_ENTRY(User::Registry::OverlayKeyFactory)
+					OBJECT_MAP_ENTRY(User::ServiceController)
 					{ 0,0,0,0 }
 				};
 				return CreatorEntries;
@@ -347,7 +349,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstance();
-		ptrIPS->init(ptrOMSb,NULL,this);
+		ptrIPS->init(ptrOMSb,NULL);
 
 		// Register our interprocess service so we can react to activation requests
 		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS,true);
@@ -745,7 +747,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 
 	// Create a new channel
 	ptrChannel = ObjectImpl<Channel>::CreateInstance();
-	ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
+	ptrChannel->init(src_channel_id,classify_channel(src_channel_id),message_oid);
 
 	// And add to the map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -817,64 +819,4 @@ bool User::Manager::notify_started()
 	}
 
 	return true;
-}
-
-void User::Manager::start_service(OOBase::CDRStream& request)
-{
-	if (!m_bIsSandbox)
-		LOG_ERROR(("Request to start service received in non-sandbox host"));
-	else
-	{
-		OOBase::LocalString strPipe,strName,strSecret;
-		int64_t key = 0;
-		if (!request.read(strPipe) ||
-				!request.read(strName) ||
-				!request.read(key) ||
-				!request.read(strSecret))
-		{
-			LOG_ERROR(("Failed to read service start args: %s",OOBase::system_error_text(request.last_error())));
-		}
-		else
-		{
-			try
-			{
-				// Wrap up a registry key
-				ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
-				ptrKey->init(this,string_t::constant("/System/Services/") + strName.c_str(),key,0);
-
-				// Return a pointer to a IService interface and place in stack
-				ObjectPtr<System::IService> ptrService = ObjectPtr<OOCore::IServiceManager>("Omega.ServiceHost")->Start(strPipe.c_str(),strName.c_str(),ptrKey,strSecret.c_str());
-				if (ptrService)
-				{
-					OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-					int err = m_mapServices.push(ptrService);
-					if (err)
-						OMEGA_THROW(err);
-				}
-			}
-			catch (IException* pE)
-			{
-				ObjectPtr<IException> ptrE = pE;
-				OOBase::Logger::log(OOBase::Logger::Warning,"Failed to start service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str());
-			}
-		}
-	}
-}
-
-int User::Manager::stop_services()
-{
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	ObjectPtr<System::IService> ptrService;
-	while (m_mapServices.pop(&ptrService))
-	{
-		guard.release();
-
-		ptrService->Stop();
-
-		guard.acquire();
-	}
-
-	return 0;
 }

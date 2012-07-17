@@ -26,8 +26,6 @@
 
 namespace User
 {
-	class Manager;
-
 	class Channel :
 			public OTL::ObjectBase,
 			public Omega::Remoting::IChannel,
@@ -36,7 +34,7 @@ namespace User
 	public:
 		Channel();
 
-		void init(Manager* pManager, Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
+		void init(Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
 		Omega::Remoting::IObjectManager* GetObjectManager();
@@ -48,7 +46,6 @@ namespace User
 
 	private:
 		OOBase::SpinLock                                  m_lock;
-		Manager*                                          m_pManager;
 		Omega::uint32_t                                   m_channel_id;
 		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
 		Omega::guid_t                                     m_message_oid;

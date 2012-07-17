@@ -65,7 +65,9 @@ oosvruser_SOURCES = \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \
-	UserROT.cpp
+	UserROT.cpp \
+	UserServices.h \
+	UserServices.cpp
 
 oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 

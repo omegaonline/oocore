@@ -26,8 +26,6 @@
 
 namespace User
 {
-	class Manager;
-
 	namespace Registry
 	{
 		class RootKey :
@@ -36,7 +34,7 @@ namespace User
 				public Omega::Registry::IKey
 		{
 		public:
-			void init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
+			void init(const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
 
 			BEGIN_INTERFACE_MAP(RootKey)
 				INTERFACE_ENTRY(Omega::Registry::IKey)
@@ -44,7 +42,6 @@ namespace User
 			END_INTERFACE_MAP()
 
 		private:
-			Manager*        m_pManager;
 			Omega::string_t m_strKey;
 			Omega::int64_t  m_key;
 			Omega::byte_t   m_type;

@@ -494,3 +494,60 @@ bool Root::Manager::stop_services()
 	return true;
 }
 
+void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	// Check for permissions
+	Omega::int32_t err = OOServer::Ok;
+	if (channel_id == m_sandbox_channel)
+		err = OOServer::NoWrite;
+	else
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		// Find the process info
+		UserProcess* pU = m_mapUserProcesses.find(channel_id);
+		if (!pU)
+			err = OOServer::NoWrite;
+		else if (!Root::is_debug() && !pU->m_ptrProcess->IsAdmin())
+			err = OOServer::NoWrite;
+	}
+
+	if (!err)
+	{
+
+	}
+
+	response.write(err);
+
+	if (response.last_error() != 0)
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+}
+
+void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	// Check for permissions
+	Omega::int32_t err = OOServer::Ok;
+	if (channel_id == m_sandbox_channel)
+		err = OOServer::NoWrite;
+	else
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		// Find the process info
+		UserProcess* pU = m_mapUserProcesses.find(channel_id);
+		if (!pU)
+			err = OOServer::NoWrite;
+		else if (!Root::is_debug() && !pU->m_ptrProcess->IsAdmin())
+			err = OOServer::NoWrite;
+	}
+
+	if (!err)
+	{
+
+	}
+
+	response.write(err);
+
+	if (response.last_error() != 0)
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+}

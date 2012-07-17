@@ -23,6 +23,7 @@
 #include "UserManager.h"
 #include "UserIPS.h"
 #include "UserChannel.h"
+#include "UserRegistry.h"
 
 #include <stdlib.h>
 

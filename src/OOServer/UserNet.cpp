@@ -620,7 +620,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 	// Look up handler in registry
 	string_t strHandler;
-	ObjectPtr<Registry::IKey> ptrKey(string_t::constant("Local User"));
+	ObjectPtr<Omega::Registry::IKey> ptrKey(string_t::constant("Local User"));
 	if (ptrKey->IsKey("Networking/Protocols/" + strProtocol))
 	{
 		ptrKey = ptrKey->OpenKey("Networking/Protocols/" + strProtocol);
@@ -630,7 +630,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Registry::IKey>(string_t::constant("System"));
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(string_t::constant("System"));
 		if (ptrKey->IsKey("Networking/Protocols/" + strProtocol))
 		{
 			ptrKey = ptrKey->OpenKey("Networking/Protocols/" + strProtocol);

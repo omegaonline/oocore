@@ -23,11 +23,12 @@
 #define OOSERVER_INTER_PROCESS_SERVICE_H_INCLUDED_
 
 #include "UserROT.h"
-#include "UserRegistry.h"
 #include "UserProcess.h"
 
 namespace User
 {
+	class Manager;
+
 	class InterProcessService :
 			public OTL::ObjectBase,
 			public OOCore::IInterProcessService

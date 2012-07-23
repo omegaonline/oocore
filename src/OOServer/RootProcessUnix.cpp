@@ -531,7 +531,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 
 	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
 	OOBase::CDRStream request;
-	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StartService)) ||
+	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Root_StartService)) ||
 			!request.write(strPipe.c_str()) ||
 			!request.write(strName.c_str()) ||
 			!request.write(key) ||

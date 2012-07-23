@@ -672,12 +672,12 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case OOServer::NotifyStarted:
+	case OOServer::User_NotifyStarted:
 		if (src_channel_id == m_sandbox_channel)
 			start_services();
 		break;
 
-	case OOServer::GetConfigArg:
+	case OOServer::User_GetConfigArg:
 		get_config_arg(request,response);
 		break;
 

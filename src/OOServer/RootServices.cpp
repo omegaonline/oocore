@@ -475,7 +475,7 @@ bool Root::Manager::stop_services()
 
 	// Send the stop message to the sandbox oosvruser process
 	OOBase::CDRStream request;
-	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StopServices)))
+	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Root_StopAllServices)))
 		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),false);
 	
 	// Make a blocking call

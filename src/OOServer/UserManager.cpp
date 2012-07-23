@@ -644,11 +644,11 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case OOServer::StartService:
+	case OOServer::Root_StartService:
 		start_service(request);
 		break;
 
-	case OOServer::StopServices:
+	case OOServer::Root_StopAllServices:
 		response.write(int32_t(stop_services()));
 		break;
 
@@ -788,7 +788,7 @@ void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRS
 void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strValue)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetConfigArg));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::User_GetConfigArg));
 	request.write(key);
 
 	if (request.last_error() != 0)
@@ -809,7 +809,7 @@ bool User::Manager::notify_started()
 	if (m_bIsSandbox)
 	{
 		OOBase::CDRStream request;
-		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::NotifyStarted));
+		request.write(static_cast<OOServer::RootOpCode_t>(OOServer::User_NotifyStarted));
 
 		if (request.last_error() != 0)
 			LOG_ERROR_RETURN(("Failed to write start notification arguments: %s",OOBase::system_error_text(request.last_error())),false);

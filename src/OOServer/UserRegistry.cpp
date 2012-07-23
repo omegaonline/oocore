@@ -130,7 +130,7 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 		strFullKey = m_strKey;
 
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::OpenKey));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_OpenKey));
 	request.write(key);
 	request.write(type);
 	request.write(strSubKey.c_str());
@@ -191,7 +191,7 @@ bool_t RootKey::IsKey(const string_t& strSubKey)
 bool_t RootKey::IsValue(const string_t& strName)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ValueExists));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_ValueExists));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.c_str());
@@ -216,7 +216,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 any_t RootKey::GetValue(const string_t& strName)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::GetValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_GetValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.c_str());
@@ -246,7 +246,7 @@ any_t RootKey::GetValue(const string_t& strName)
 void RootKey::SetValue(const string_t& strName, const any_t& value)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::SetValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_SetValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.c_str());
@@ -294,7 +294,7 @@ IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 IKey::string_set_t RootKey::EnumSubKeys()
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumSubKeys));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_EnumSubKeys));
 	request.write(m_key);
 	request.write(m_type);
 	if (request.last_error() != 0)
@@ -327,7 +327,7 @@ IKey::string_set_t RootKey::EnumSubKeys()
 IKey::string_set_t RootKey::EnumValues()
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::EnumValues));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_EnumValues));
 	request.write(m_key);
 	request.write(m_type);
 	if (request.last_error() != 0)
@@ -360,7 +360,7 @@ IKey::string_set_t RootKey::EnumValues()
 void RootKey::DeleteSubKey(const string_t& strSubKey)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteSubKey));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_DeleteSubKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.c_str());
@@ -402,7 +402,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 void RootKey::DeleteValue(const string_t& strName)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::DeleteValue));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Registry_DeleteValue));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strName.c_str());

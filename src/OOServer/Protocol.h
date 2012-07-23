@@ -40,14 +40,14 @@ namespace OOServer
 		Service_IsRunning,
 
 		// Registry opcodes
-		OpenKey = 0x90,
-		DeleteSubKey,
-		EnumSubKeys,
-		ValueExists,
-		GetValue,
-		SetValue,
-		EnumValues,
-		DeleteValue
+		Registry_OpenKey = 0x90,
+		Registry_DeleteSubKey,
+		Registry_EnumSubKeys,
+		Registry_ValueExists,
+		Registry_GetValue,
+		Registry_SetValue,
+		Registry_EnumValues,
+		Registry_DeleteValue
 	};
 	typedef Omega::uint16_t RootOpCode_t;
 

@@ -693,35 +693,35 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		service_is_running(src_channel_id,request,response);
 		break;
 
-	case OOServer::OpenKey:
+	case OOServer::Registry_OpenKey:
 		registry_open_key(src_channel_id,request,response);
 		break;
 
-	case OOServer::DeleteSubKey:
+	case OOServer::Registry_DeleteSubKey:
 		registry_delete_key(src_channel_id,request,response);
 		break;
 
-	case OOServer::EnumSubKeys:
+	case OOServer::Registry_EnumSubKeys:
 		registry_enum_subkeys(src_channel_id,request,response);
 		break;
 
-	case OOServer::ValueExists:
+	case OOServer::Registry_ValueExists:
 		registry_value_exists(src_channel_id,request,response);
 		break;
 
-	case OOServer::GetValue:
+	case OOServer::Registry_GetValue:
 		registry_get_value(src_channel_id,request,response);
 		break;
 
-	case OOServer::SetValue:
+	case OOServer::Registry_SetValue:
 		registry_set_value(src_channel_id,request,response);
 		break;
 
-	case OOServer::EnumValues:
+	case OOServer::Registry_EnumValues:
 		registry_enum_values(src_channel_id,request,response);
 		break;
 
-	case OOServer::DeleteValue:
+	case OOServer::Registry_DeleteValue:
 		registry_delete_value(src_channel_id,request,response);
 		break;
 

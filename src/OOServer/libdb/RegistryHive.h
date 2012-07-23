@@ -61,6 +61,7 @@ namespace Db
 
 		typedef OOBase::Set<OOBase::String,OOBase::LocalAllocator> registry_set_t;
 
+		hive_errors access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
 		hive_errors create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
 		hive_errors delete_key(const Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
 		hive_errors enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys);
@@ -105,7 +106,6 @@ namespace Db
 		hive_errors value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
 		hive_errors set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue);
 		void prepare_statement(Statement& stmt, const char* pszSql);
-		hive_errors access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
 	};
 
 	class Manager

@@ -38,6 +38,7 @@ namespace User
 	public:
 		void StartService(const Omega::string_t& strName);
 		void StopService(const Omega::string_t& strName);
+		Omega::bool_t IsServiceRunning(const Omega::string_t& strName);
 	};
 }
 

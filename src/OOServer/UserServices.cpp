@@ -100,7 +100,10 @@ namespace
 			break;
 
 		case OOServer::NotFound:
-			throw INotFoundException::Create(string_t::constant("The service '{0}' does not exist") % strService);
+			throw INotFoundException::Create(string_t::constant("The service '{0}' does not exist or is not running") % strService);
+
+		case OOServer::AlreadyExists:
+			throw INotFoundException::Create(string_t::constant("The service '{0}' is already running") % strService);
 
 		case OOServer::NoWrite:
 			throw IAccessDeniedException::Create(string_t::constant("You do not have permissions to start or stop services"));
@@ -115,7 +118,7 @@ namespace
 void User::ServiceController::StartService(const string_t& strName)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ServiceStart));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Start));
 	request.write(strName.c_str());
 
 	if (request.last_error() != 0)
@@ -134,7 +137,7 @@ void User::ServiceController::StartService(const string_t& strName)
 void User::ServiceController::StopService(const string_t& strName)
 {
 	OOBase::CDRStream request;
-	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::ServiceStop));
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Stop));
 	request.write(strName.c_str());
 
 	if (request.last_error() != 0)
@@ -148,4 +151,29 @@ void User::ServiceController::StopService(const string_t& strName)
 		OMEGA_THROW(response.last_error());
 
 	ThrowCorrectException(err,strName);
+}
+
+bool_t User::ServiceController::IsServiceRunning(const string_t& strName)
+{
+	OOBase::CDRStream request;
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_IsRunning));
+	request.write(strName.c_str());
+
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
+
+	OOBase::CDRStream response;
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
+
+	OOServer::RootErrCode_t err;
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
+
+	bool retval = false;
+	if (!err && !response.read(retval))
+		OMEGA_THROW(response.last_error());
+
+	ThrowCorrectException(err,strName);
+
+	return retval;
 }

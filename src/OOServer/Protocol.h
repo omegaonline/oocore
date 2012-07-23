@@ -35,8 +35,9 @@ namespace OOServer
 		// User -> Root
 		NotifyStarted = 0x80,
 		GetConfigArg,
-		ServiceStart,
-		ServiceStop,
+		Service_Start,
+		Service_Stop,
+		Service_IsRunning,
 
 		// Registry opcodes
 		OpenKey = 0x90,

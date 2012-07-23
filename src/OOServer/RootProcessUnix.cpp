@@ -56,7 +56,6 @@ namespace
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
-		bool IsAdmin() const;
 
 		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
 		bool IsRunning() const;
@@ -478,15 +477,6 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 		return false;
 
 	return (m_uid == uid);
-}
-
-bool RootProcessUnix::IsAdmin() const
-{
-	// Sandbox is *never* Admin
-	if (m_bSandbox)
-		return false;
-
-	return (m_uid == 0);
 }
 
 OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs) const

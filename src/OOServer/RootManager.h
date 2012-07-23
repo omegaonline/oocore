@@ -95,6 +95,7 @@ namespace Root
 		bool stop_services();
 		void start_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void service_is_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 
 		// Spawned process members
 		struct UserProcess

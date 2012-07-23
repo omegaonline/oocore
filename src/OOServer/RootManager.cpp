@@ -681,12 +681,16 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		get_config_arg(request,response);
 		break;
 
-	case OOServer::ServiceStart:
+	case OOServer::Service_Start:
 		start_service(src_channel_id,request,response);
 		break;
 
-	case OOServer::ServiceStop:
+	case OOServer::Service_Stop:
 		stop_service(src_channel_id,request,response);
+		break;
+
+	case OOServer::Service_IsRunning:
+		service_is_running(src_channel_id,request,response);
 		break;
 
 	case OOServer::OpenKey:

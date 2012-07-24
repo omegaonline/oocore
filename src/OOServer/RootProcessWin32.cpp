@@ -962,7 +962,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessWin32::LaunchService(Root::Manager* pM
 	// Check the secret and the uid
 	if (strSecret != secret2)
 	{
-		OOBase::Logger::log(OOBase::Logger::Warning,"Failed to validate service");
+		OOBase::Logger::log(OOBase::Logger::Error,"Failed to validate service");
 		ptrNew = NULL;
 	}
 

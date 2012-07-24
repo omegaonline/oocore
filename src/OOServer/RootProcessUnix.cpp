@@ -559,7 +559,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		err = OOBase::Net::accept(fd,new_fd,timeout);
 		if (err == ETIMEDOUT)
 		{
-			OOBase::Logger::log(OOBase::Logger::Warning,"Timed out waiting for service '%s' to start",strName.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,"Timed out waiting for service '%s' to start",strName.c_str());
 			return ptrNew;
 		}
 		else if (err)
@@ -584,7 +584,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessUnix::LaunchService(Root::Manager* pMa
 		if (memcmp(secret,secret2,sizeof(secret)) == 0 && other_uid == m_uid)
 			break;
 
-		OOBase::Logger::log(OOBase::Logger::Warning,"Failed to validate service");
+		OOBase::Logger::log(OOBase::Logger::Error,"Failed to validate service");
 		ptrNew = NULL;
 	}
 

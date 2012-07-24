@@ -489,7 +489,7 @@ bool Root::Manager::stop_services()
 		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response.last_error())),false);
 
 	if (err)
-		LOG_ERROR_RETURN(("Service stop failed: %s",OOBase::system_error_text(err)),false);
+		OOBase::Logger::log(OOBase::Logger::Error,"Service stop failed: %s",OOBase::system_error_text(err));
 
 	return true;
 }

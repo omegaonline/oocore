@@ -926,7 +926,7 @@ OOBase::RefPtr<OOBase::Socket> RootProcessWin32::LaunchService(Root::Manager* pM
 	
 	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
 	OOBase::CDRStream request;
-	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::StartService)) ||
+	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Start)) ||
 			!request.write(strPipe.c_str()) ||
 			!request.write(strName.c_str()) ||
 			!request.write(key) ||

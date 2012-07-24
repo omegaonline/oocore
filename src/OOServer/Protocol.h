@@ -26,22 +26,19 @@ namespace OOServer
 {
 	enum RootOpCode
 	{
-		// Root -> User
-
-		// Root -> Sandbox
-		Root_StartService = 0x40,
-		Root_StopAllServices,
-
 		// User -> Root
-		User_NotifyStarted = 0x80,
+		User_NotifyStarted = 0x01,
 		User_GetConfigArg,
 
-		Service_Start = 0x90,
+		// User -> Root -> Sandbox
+		Service_Start = 0x20,
 		Service_Stop,
+		Service_StopAll,
 		Service_IsRunning,
 		Service_ListRunning,
 
-		Registry_OpenKey = 0xA0,
+		// User -> Root
+		Registry_OpenKey = 0x30,
 		Registry_DeleteSubKey,
 		Registry_EnumSubKeys,
 		Registry_ValueExists,

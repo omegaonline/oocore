@@ -644,11 +644,11 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case OOServer::Root_StartService:
+	case OOServer::Service_Start:
 		start_service(request);
 		break;
 
-	case OOServer::Root_StopAllServices:
+	case OOServer::Service_StopAll:
 		response.write(int32_t(stop_services()));
 		break;
 

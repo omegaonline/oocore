@@ -46,9 +46,12 @@ namespace Omega
 
 		interface IServiceController : public IObject
 		{
+			typedef std::set<string_t,std::less<string_t>,System::STLAllocator<string_t> > service_set_t;
+
 			virtual void StartService(const string_t& strName) = 0;
 			virtual void StopService(const string_t& strName) = 0;
 			virtual bool_t IsServiceRunning(const string_t& strName) = 0;
+			virtual service_set_t GetRunningServices() = 0;
 		};
 
 		// {D2A10F8C-ECD1-F698-7105-48247D50DB1B}
@@ -71,6 +74,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(StartService,1,((in),const string_t&,strName))
 	OMEGA_METHOD_VOID(StopService,1,((in),const string_t&,strName))
 	OMEGA_METHOD(bool_t,IsServiceRunning,1,((in),const string_t&,strName))
+	OMEGA_METHOD(System::IServiceController::service_set_t,GetRunningServices,0,())
 )
 
 #endif // OMEGA_SERVICE_H_INCLUDED_

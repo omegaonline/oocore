@@ -39,6 +39,7 @@ namespace OOServer
 		Service_Start = 0x90,
 		Service_Stop,
 		Service_IsRunning,
+		Service_ListRunning,
 
 		Registry_OpenKey = 0xA0,
 		Registry_DeleteSubKey,

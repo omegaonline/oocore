@@ -92,7 +92,7 @@ int User::Manager::stop_services()
 
 namespace
 {
-	void ThrowCorrectException(OOServer::RootErrCode_t err, const string_t& strService)
+	void ThrowCorrectException(OOServer::RootErrCode_t err, const string_t& strService = string_t())
 	{
 		switch (err)
 		{
@@ -176,4 +176,36 @@ bool_t User::ServiceController::IsServiceRunning(const string_t& strName)
 	ThrowCorrectException(err,strName);
 
 	return retval;
+}
+
+System::IServiceController::service_set_t User::ServiceController::GetRunningServices()
+{
+	OOBase::CDRStream request;
+	request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_ListRunning));
+
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
+
+	OOBase::CDRStream response;
+	Manager::instance()->sendrecv_root(request,&response,TypeInfo::Synchronous);
+
+	OOServer::RootErrCode_t err;
+	if (!response.read(err))
+		OMEGA_THROW(response.last_error());
+
+	ThrowCorrectException(err);
+
+	System::IServiceController::service_set_t values;
+	for (;;)
+	{
+		OOBase::LocalString strName;
+		if (!response.read(strName))
+			OMEGA_THROW(response.last_error());
+
+		if (strName.empty())
+			break;
+
+		values.insert(strName.c_str());
+	}
+	return values;
 }

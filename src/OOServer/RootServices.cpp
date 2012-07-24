@@ -510,6 +510,11 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 	response.write(err);
 
+	if (!err)
+	{
+
+	}
+
 	if (response.last_error() != 0)
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
@@ -530,6 +535,11 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 
 	response.write(err);
 
+	if (!err)
+	{
+
+	}
+
 	if (response.last_error() != 0)
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
@@ -549,6 +559,36 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 	}
 
 	response.write(err);
+
+	if (!err)
+	{
+
+	}
+
+	if (response.last_error() != 0)
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+}
+
+void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	// Check for permissions
+	Omega::int32_t err = OOServer::Ok;
+	if (channel_id == m_sandbox_channel)
+		err = OOServer::NoWrite;
+	else
+		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
+
+	if (!err)
+	{
+
+	}
+
+	response.write(err);
+
+	if (!err)
+	{
+
+	}
 
 	if (response.last_error() != 0)
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));

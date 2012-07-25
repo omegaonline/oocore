@@ -115,7 +115,8 @@ namespace User
 
 		bool notify_started();
 		void start_service(OOBase::CDRStream& request);
-		int stop_services();
+		OOServer::RootErrCode_t stop_all_services();
+		void stop_all_services(OOBase::CDRStream& response);
 	};
 }
 

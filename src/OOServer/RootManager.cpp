@@ -194,7 +194,8 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 	OOBase::String strValue;
 	get_config_arg(strArg.c_str(),strValue);
 
-	response.write(strValue.c_str(),strValue.length());
+	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write(strValue.c_str(),strValue.length()))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
@@ -730,7 +731,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		break;
 
 	default:
-		response.write(Omega::int32_t(EINVAL));
+		response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Errored));
 		LOG_ERROR(("Bad request op_code: %d",op_code));
 		break;
 	}

@@ -179,7 +179,7 @@ int User::Manager::run(const char* pszPipe)
 					wait_for_quit();
 
 					// Stop services (if any)
-					stop_services();
+					stop_all_services();
 
 					ret = EXIT_SUCCESS;
 				}
@@ -649,11 +649,11 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 		break;
 
 	case OOServer::Service_StopAll:
-		response.write(int32_t(stop_services()));
+		stop_all_services(response);
 		break;
 
 	default:
-		response.write(int32_t(EINVAL));
+		response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Errored));
 		LOG_ERROR(("Bad request op_code: %u",op_code));
 		break;
 	}
@@ -797,9 +797,13 @@ void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strVal
 	OOBase::CDRStream response;
 	sendrecv_root(request,&response,TypeInfo::Synchronous);
 
+	OOServer::RootErrCode_t err;
 	OOBase::LocalString strVal;
-	if (!response.read(strVal))
+	if (!response.read(err) || (!err && !response.read(strVal)))
 		OMEGA_THROW(response.last_error());
+
+	if (err)
+		throw IInternalException::Create(string_t::constant("Failed to get server configuration parameter.  Check server log for details"),"get_root_config_arg",0,NULL,NULL);
 
 	strValue = strVal.c_str();
 }

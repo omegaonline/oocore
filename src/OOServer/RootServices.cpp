@@ -484,12 +484,9 @@ bool Root::Manager::stop_services()
 	if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service stop request to sandbox"),false);
 
-	Omega::int32_t err = 0;
+	OOServer::RootErrCode_t err = 0;
 	if (!response.read(err))
 		LOG_ERROR_RETURN(("Failed to read response data: %s",OOBase::system_error_text(response.last_error())),false);
-
-	if (err)
-		OOBase::Logger::log(OOBase::Logger::Error,"Service stop failed: %s",OOBase::system_error_text(err));
 
 	return true;
 }

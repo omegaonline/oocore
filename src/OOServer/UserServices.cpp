@@ -73,7 +73,7 @@ void User::Manager::start_service(OOBase::CDRStream& request)
 	}
 }
 
-int User::Manager::stop_services()
+OOServer::RootErrCode_t User::Manager::stop_all_services()
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -82,12 +82,34 @@ int User::Manager::stop_services()
 	{
 		guard.release();
 
-		ptrService->Stop();
+		try
+		{
+			ptrService->Stop();
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+		}
 
 		guard.acquire();
 	}
 
-	return 0;
+	return OOServer::Ok;
+}
+
+void User::Manager::stop_all_services(OOBase::CDRStream& response)
+{
+	OOServer::RootErrCode_t err;
+	if (!m_bIsSandbox)
+	{
+		LOG_ERROR(("Request to stop services received in non-sandbox host"));
+		err = OOServer::Errored;
+	}
+	else
+		err = stop_all_services();
+
+	if (!response.write(err))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 namespace

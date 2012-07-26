@@ -146,3 +146,6 @@ void operator delete[](void* p, const OOCore::throwing_t&)
 {
 	::operator delete[](p);
 }
+
+// {D2A10F8C-ECD1-F698-7105-48247D50DB1B}
+OMEGA_DEFINE_OID(System,OID_ServiceController,"{D2A10F8C-ECD1-F698-7105-48247D50DB1B}");

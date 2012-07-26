@@ -100,7 +100,10 @@ bool service_tests()
 	TEST(start_service());
 
 	// Test the service has a socket listening
+	Omega::System::IServiceController::service_set_t svcs = OTL::ObjectPtr<Omega::System::IServiceController>(Omega::System::OID_ServiceController)->GetRunningServices();
+	TEST(svcs.find("TestService") != svcs.end());
 
+#if 0
 	int sock = socket(AF_INET,SOCK_STREAM,0);
 	TEST(sock != -1);
 
@@ -137,6 +140,7 @@ bool service_tests()
 	{
 
 	}
+#endif
 
 	TEST(stop_service());
 

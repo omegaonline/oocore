@@ -612,33 +612,29 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 			}
 			else
 			{
-				// Make a blocking call
-				OOBase::CDRStream response2;
-				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response2,OOBase::Timeout(),OOServer::Message_t::synchronous);
+				// Make a blocking call, reusing response
+				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
 				if (res != OOServer::MessageHandler::io_result::success)
 				{
 					LOG_ERROR(("Failed to send service stop request to sandbox"));
-					err = OOServer::Errored;
-				}
-				else if (!response2.read(err))
-				{
-					LOG_ERROR(("Failed to read response data: %s",OOBase::system_error_text(response2.last_error())));
 					err = OOServer::Errored;
 				}
 			}
 		}
 	}
 
-	if (!response.write(err))
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	if (err)
+	{
+		response.reset();
+		if (!response.write(err))
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	}
 }
 
 void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
-	bool retval = false;
-
 	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
@@ -654,7 +650,6 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 		}
 		else
 		{
-			// Send the stop message to the sandbox oosvruser process
 			OOBase::CDRStream request2;
 			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_IsRunning)) || !request2.write(strName.c_str()))
 			{
@@ -663,29 +658,23 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 			}
 			else
 			{
-				// Make a blocking call
-				OOBase::CDRStream response2;
-				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response2,OOBase::Timeout(),OOServer::Message_t::synchronous);
+				// Make a blocking call, reusing response
+				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
 				if (res != OOServer::MessageHandler::io_result::success)
 				{
 					LOG_ERROR(("Failed to send service_is_running request to sandbox"));
-					err = OOServer::Errored;
-				}
-				else if (!response2.read(err) || (!err && !response2.read(retval)))
-				{
-					LOG_ERROR(("Failed to read response data: %s",OOBase::system_error_text(response2.last_error())));
 					err = OOServer::Errored;
 				}
 			}
 		}
 	}
 
-	response.write(err);
-	if (!err)
-		response.write(retval);
-
-	if (response.last_error() != 0)
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	if (err)
+	{
+		response.reset();
+		if (!response.write(err))
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	}
 }
 
 void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
@@ -699,16 +688,28 @@ void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDR
 
 	if (!err)
 	{
-
+		OOBase::CDRStream request2;
+		if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_ListRunning)))
+		{
+			LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request2.last_error())));
+			err = OOServer::Errored;
+		}
+		else
+		{
+			// Make a blocking call, reusing response
+			OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
+			if (res != OOServer::MessageHandler::io_result::success)
+			{
+				LOG_ERROR(("Failed to send service_is_running request to sandbox"));
+				err = OOServer::Errored;
+			}
+		}
 	}
 
-	response.write(err);
-
-	if (!err)
+	if (err)
 	{
-
+		response.reset();
+		if (!response.write(err))
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 	}
-
-	if (response.last_error() != 0)
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }

@@ -275,6 +275,45 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
+void User::Manager::list_services(OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	OOServer::RootErrCode_t err = OOServer::Ok;
+	if (!m_bIsSandbox)
+	{
+		LOG_ERROR(("Request for service status received in non-sandbox host"));
+		err = OOServer::Errored;
+	}
+	else
+	{
+		response.write(err);
+
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+		{
+			if (!response.write(m_mapServices.at(pos)->strName.c_str()))
+				break;
+		}
+
+		guard.release();
+
+		response.write("");
+
+		if (response.last_error())
+		{
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+			err = OOServer::Errored;
+		}
+	}
+
+	if (err)
+	{
+		response.reset();
+		if (!response.write(err))
+			LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
+	}
+}
+
 namespace
 {
 	void ThrowCorrectException(OOServer::RootErrCode_t err, const string_t& strService = string_t())
@@ -295,7 +334,7 @@ namespace
 
 		case OOServer::Errored:
 		default:
-			throw IInternalException::Create(string_t::constant("Failed to start or stop service '{0}'.  Check server log for details") % strService,strService.c_str(),0,NULL,NULL);
+			throw IInternalException::Create(string_t::constant("The call to the service controller failed.  Check server log for details"),"IServiceController",0,NULL,NULL);
 		}
 	}
 }

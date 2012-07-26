@@ -660,6 +660,10 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 		service_is_running(request,response);
 		break;
 
+	case OOServer::Service_ListRunning:
+		list_services(request,response);
+		break;
+
 	default:
 		response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Errored));
 		LOG_ERROR(("Bad request op_code: %u",op_code));

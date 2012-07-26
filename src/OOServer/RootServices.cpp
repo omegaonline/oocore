@@ -128,6 +128,25 @@ namespace
 		return true;
 	}
 
+	OOServer::RootErrCode_t find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, Omega::int64_t& key)
+	{
+		OOBase::LocalString strSubKey,strLink,strFullKeyName;
+		int err2 = strSubKey.printf("/System/Services/%s",strName.c_str());
+		if (err2)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),OOServer::Errored);
+
+		Db::hive_errors err = ptrRegistry->create_key(0,key,strSubKey,0,0,strLink,strFullKeyName);
+		if (err)
+		{
+			if (err != Db::HIVE_NOTFOUND)
+				LOG_ERROR_RETURN(("Failed to open the '/System/Services/%s' key in the registry",strName.c_str()),OOServer::Errored);
+
+			return OOServer::NotFound;
+		}
+
+		return OOServer::Ok;
+	}
+
 	bool split_string(const OOBase::LocalString& strSocket, size_t& pos, OOBase::LocalString& strSub)
 	{
 		int err = 0;
@@ -420,17 +439,10 @@ namespace
 		if (err2)
 			LOG_ERROR(("Failed to send connection data to service: %s",OOBase::system_error_text(err2)));
 	}
-
 }
 
 bool Root::Manager::start_services()
 {
-	// Get the list of services, ordered by dependency
-	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames;
-	OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator> queueKeys;
-	if (!enum_services(m_registry,queueNames,queueKeys))
-		return false;
-
 	// Find the sandbox process
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -439,6 +451,12 @@ bool Root::Manager::start_services()
 		LOG_ERROR_RETURN(("Failed to find sandbox process"),false);
 
 	guard.release();
+
+	// Get the list of services, ordered by dependency
+	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames;
+	OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator> queueKeys;
+	if (!enum_services(m_registry,queueNames,queueKeys))
+		return false;
 
 	OOBase::String strName;
 	Omega::int64_t key;
@@ -459,12 +477,10 @@ bool Root::Manager::start_services()
 			wait_secs = 1000;
 
 		// Create a unique local socket name
-		OOBase::RefPtr<OOBase::Socket> ptrSocket = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs);
-		if (ptrSocket)
+		OOBase::RefPtr<OOBase::Socket> ptrSocket;
+		if (!sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,true,ptrSocket))
 			enum_sockets(m_registry,strName,ptrSocket,key);
 	}
-
-	OOBase::Logger::log(OOBase::Logger::Information,"All services started");
 
 	return true;
 }
@@ -494,73 +510,179 @@ bool Root::Manager::stop_services()
 void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
-	Omega::int32_t err = OOServer::Ok;
-	if (channel_id == m_sandbox_channel)
+	OOServer::RootErrCode_t err;
+	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
 		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
 
 	if (!err)
 	{
+		OOBase::LocalString strLName;
+		if (!request.read(strLName))
+		{
+			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
+		else
+		{
+			OOBase::String strName;
+			int err2 = strName.assign(strLName.c_str());
+			if (err2)
+			{
+				LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
+				err = OOServer::Errored;
+			}
+			else
+			{
+				// Find the sandbox process
+				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
+				UserProcess sandbox;
+				if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
+				{
+					LOG_ERROR(("Failed to find sandbox process"));
+					err = OOServer::Errored;
+				}
+
+				guard.release();
+
+				if (!err)
+				{
+					Omega::int64_t key = 0;
+					err = find_service(m_registry,strName,key);
+					if (!err)
+					{
+						OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
+
+						// Get the timeout value
+						unsigned long wait_secs = 0;
+						OOBase::LocalString strTimeout;
+						if (m_registry->get_value(key,"Timeout",0,strTimeout) == Db::HIVE_OK)
+							wait_secs = strtoul(strTimeout.c_str(),NULL,10);
+
+						if (wait_secs == 0)
+							wait_secs = 15;
+
+						if (Root::is_debug())
+							wait_secs = 1000;
+
+						// Create a unique local socket name
+						OOBase::RefPtr<OOBase::Socket> ptrSocket;
+						err = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket);
+						if (!err)
+							enum_sockets(m_registry,strName,ptrSocket,key);
+					}
+				}
+			}
+		}
 	}
 
-	response.write(err);
-
-	if (!err)
-	{
-
-	}
-
-	if (response.last_error() != 0)
+	if (!response.write(err))
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
-	Omega::int32_t err = OOServer::Ok;
-	if (channel_id == m_sandbox_channel)
+	OOServer::RootErrCode_t err;
+	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
 		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
 
 	if (!err)
 	{
+		OOBase::LocalString strName;
+		if (!request.read(strName))
+		{
+			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
+		else
+		{
+			OOBase::Logger::log(OOBase::Logger::Information,"Stopping service %s",strName.c_str());
 
+			// Send the stop message to the sandbox oosvruser process
+			OOBase::CDRStream request2;
+			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Stop)) || !request2.write(strName.c_str()))
+			{
+				LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request2.last_error())));
+				err = OOServer::Errored;
+			}
+			else
+			{
+				// Make a blocking call
+				OOBase::CDRStream response2;
+				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response2,OOBase::Timeout(),OOServer::Message_t::synchronous);
+				if (res != OOServer::MessageHandler::io_result::success)
+				{
+					LOG_ERROR(("Failed to send service stop request to sandbox"));
+					err = OOServer::Errored;
+				}
+				else if (!response2.read(err))
+				{
+					LOG_ERROR(("Failed to read response data: %s",OOBase::system_error_text(response2.last_error())));
+					err = OOServer::Errored;
+				}
+			}
+		}
 	}
 
-	response.write(err);
-
-	if (!err)
-	{
-
-	}
-
-	if (response.last_error() != 0)
+	if (!response.write(err))
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
-	Omega::int32_t err = OOServer::Ok;
-	if (channel_id == m_sandbox_channel)
+	OOServer::RootErrCode_t err;
+	bool retval = false;
+
+	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
 		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
 
 	if (!err)
 	{
-
+		OOBase::LocalString strName;
+		if (!request.read(strName))
+		{
+			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
+			err = OOServer::Errored;
+		}
+		else
+		{
+			// Send the stop message to the sandbox oosvruser process
+			OOBase::CDRStream request2;
+			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_IsRunning)) || !request2.write(strName.c_str()))
+			{
+				LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request2.last_error())));
+				err = OOServer::Errored;
+			}
+			else
+			{
+				// Make a blocking call
+				OOBase::CDRStream response2;
+				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response2,OOBase::Timeout(),OOServer::Message_t::synchronous);
+				if (res != OOServer::MessageHandler::io_result::success)
+				{
+					LOG_ERROR(("Failed to send service_is_running request to sandbox"));
+					err = OOServer::Errored;
+				}
+				else if (!response2.read(err) || (!err && !response2.read(retval)))
+				{
+					LOG_ERROR(("Failed to read response data: %s",OOBase::system_error_text(response2.last_error())));
+					err = OOServer::Errored;
+				}
+			}
+		}
 	}
 
 	response.write(err);
-
 	if (!err)
-	{
-
-	}
+		response.write(retval);
 
 	if (response.last_error() != 0)
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
@@ -569,8 +691,8 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
-	Omega::int32_t err = OOServer::Ok;
-	if (channel_id == m_sandbox_channel)
+	OOServer::RootErrCode_t err;
+	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
 		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);

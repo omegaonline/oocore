@@ -645,11 +645,19 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	switch (op_code)
 	{
 	case OOServer::Service_Start:
-		start_service(request);
+		start_service(request,attribs & OOServer::Message_t::asynchronous ? NULL : &response);
+		break;
+
+	case OOServer::Service_Stop:
+		stop_service(request,response);
 		break;
 
 	case OOServer::Service_StopAll:
 		stop_all_services(response);
+		break;
+
+	case OOServer::Service_IsRunning:
+		service_is_running(request,response);
 		break;
 
 	default:
@@ -658,7 +666,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 		break;
 	}
 
-	if (response.last_error() == 0 && !(attribs & OOServer::Message_t::asynchronous))
+	if (!response.last_error() && !(attribs & OOServer::Message_t::asynchronous))
 	{
 		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,timeout,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)

@@ -66,7 +66,6 @@ namespace User
 		bool                                                                          m_bIsSandbox;
 		OOBase::RefPtr<OOSvrBase::Acceptor>                                           m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
-		OOBase::Stack<OTL::ObjectPtr<Omega::System::IService> >                       m_mapServices;
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		virtual void on_channel_closed(Omega::uint32_t channel);
@@ -113,10 +112,20 @@ namespace User
 		void close_all_remotes();
 		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator>& channels);
 
+		// Service management (only for sandbox)
+		struct ServiceEntry
+		{
+			OOBase::String strName;
+			OTL::ObjectPtr<Omega::System::IService> ptrService;
+		};
+		OOBase::Stack<ServiceEntry> m_mapServices;
+
 		bool notify_started();
-		void start_service(OOBase::CDRStream& request);
+		void start_service(OOBase::CDRStream& request, OOBase::CDRStream* response);
 		OOServer::RootErrCode_t stop_all_services();
 		void stop_all_services(OOBase::CDRStream& response);
+		void stop_service(OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void service_is_running(OOBase::CDRStream& request, OOBase::CDRStream& response);
 	};
 }
 

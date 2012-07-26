@@ -1,4 +1,4 @@
-#include "../include/Omega/Remoting.h"
+#include "../include/Omega/Service.h"
 #include "../include/OTL/Registry.h"
 #include "interfaces.h"
 
@@ -68,24 +68,36 @@ static bool unregister_service()
 	return true;
 }
 
-bool restart_services()
+static bool start_service()
 {
-	// GetServiceController
+	OTL::ObjectPtr<Omega::System::IServiceController> ptrController(Omega::System::OID_ServiceController);
 
-	// Do a restart
+	if (!ptrController->IsServiceRunning("TestService"))
+		ptrController->StartService("TestService");
+
+	return true;
+}
+
+static bool stop_service()
+{
+	OTL::ObjectPtr<Omega::System::IServiceController> ptrController(Omega::System::OID_ServiceController);
+
+	if (ptrController->IsServiceRunning("TestService"))
+		ptrController->StopService("TestService");
 
 	return true;
 }
 
 bool service_tests()
 {
+	// Stop any services
+	TEST(stop_service());
+
 	// Register the new service
 	TEST(register_service());
 
 	// Restart the services
-	restart_services();
-
-	// Wait a bit
+	TEST(start_service());
 
 	// Test the service has a socket listening
 
@@ -126,11 +138,10 @@ bool service_tests()
 
 	}
 
-	// Restart again to test stopping
-	unregister_service();
+	TEST(stop_service());
 
-	// Restart the services
-	restart_services();
+	// Restart again to test stopping
+	TEST(unregister_service());
 
 	return true;
 }

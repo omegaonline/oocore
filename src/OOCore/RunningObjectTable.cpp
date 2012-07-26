@@ -164,18 +164,25 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
 	GetObject(OID_InterProcessService,OMEGA_GUIDOF(IInterProcessService),pIPS,false);
 	
 	if (bThrow && !pIPS)
-		throw IInternalException::Create("Omega::Initialize not called","OOCore");
+		throw IInternalException::Create(OOCore::get_text("Omega::Initialize not called"),"OOCore");
 
 	return static_cast<IInterProcessService*>(pIPS);
 }
 
 uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
+	if (!pObject)
+		throw IInternalException::Create(OOCore::get_text("NULL object"),"IRunningObjectTable::RegisterObject");
+
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	uint32_t rot_cookie = 0;
 
 	// Check for user registration
 	Activation::RegisterFlags_t scope = (flags & 0xF);
+
+	if (!scope)
+		throw IInternalException::Create(OOCore::get_text("Invalid flags"),"IRunningObjectTable::RegisterObject");
+
 	if (scope & ~Activation::ProcessScope)
 	{
 		// Register in ROT

@@ -117,7 +117,7 @@ namespace
 			if (err)
 			{
 				ObjectPtr<IException> ptrE = ISystemException::Create(err);
-				throw IInternalException::Create("Failed to connect to network daemon","Omega::Initialize",size_t(-1),NULL,ptrE);
+				throw IInternalException::Create(OOCore::get_text("Failed to connect to network daemon"),"Omega::Initialize",size_t(-1),NULL,ptrE);
 			}
 
 			uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;

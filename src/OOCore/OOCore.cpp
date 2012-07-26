@@ -70,7 +70,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-		return Omega::IInternalException::Create("This component requires a later version of OOCore","Omega::Initialize");
+		return Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
 	return OOCore::UserSession::init();
 }

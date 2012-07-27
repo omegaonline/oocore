@@ -69,7 +69,7 @@ namespace Host
 	int Surrogate();
 	int ServiceStart();
 
-	Omega::System::IService* StartService(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);
+	void StartService(Omega::System::IService* pService, const Omega::string_t& strName, const Omega::string_t& strPipe, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret);
 
 #if defined(_WIN32)
 	int ShellEx(const OOBase::CmdArgs::results_t& args);

@@ -35,10 +35,11 @@ namespace Omega
 		interface IService : public IObject
 		{
 #if defined(_WIN32)
-			typedef std::map<string_t,SOCKET,std::less<string_t>,System::STLAllocator<string_t> > socket_map_t;
+			typedef SOCKET socket_t;
 #else
-			typedef std::map<string_t,int,std::less<string_t>,System::STLAllocator<string_t> > socket_map_t;
+			typedef int socket_t;
 #endif
+			typedef std::map<string_t,socket_t,std::less<string_t>,System::STLAllocator<string_t> > socket_map_t;
 
 			virtual void Start(const string_t& strName, Registry::IKey* pKey, socket_map_t& socket_map) = 0;
 			virtual void Stop() = 0;

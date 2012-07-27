@@ -28,7 +28,7 @@ using namespace OTL;
 #define ECONNREFUSED ENOENT
 #endif
 
-System::IService* Host::StartService(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
+void Host::StartService(System::IService* pService, const string_t& strName, const string_t& strPipe, Registry::IKey* pKey, const string_t& strSecret)
 {
 	OOBase::LocalString strPipe2;
 	int err = strPipe2.assign(strPipe.c_str());
@@ -101,15 +101,11 @@ System::IService* Host::StartService(const string_t& strPipe, const string_t& st
 			socket_map.insert(System::IService::socket_map_t::value_type(string_t(ptrName,len),sock));
 		}
 
-		// Now we start the service!
-		ObjectPtr<System::IService> ptrService(pKey->GetValue(string_t::constant("OID")));
-		ptrService->Start(strName,pKey,socket_map);
+		pService->Start(strName,pKey,socket_map);
 
 		// Close all remaining sockets
 		for (System::IService::socket_map_t::iterator i=socket_map.begin();i != socket_map.end(); ++i)
 			OOBase::Net::close_socket(i->second);
-
-		return ptrService.Detach();
 	}
 	catch (...)
 	{

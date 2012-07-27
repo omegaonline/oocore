@@ -61,7 +61,8 @@ namespace
 
 	// IServiceManager members
 	public:
-		System::IService* Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret);
+		System::IService* Create(const any_t& oid);
+		void Start(System::IService* pService, const string_t& strName, const string_t& strPipe, Registry::IKey* pKey, const string_t& strSecret);
 	};
 
 	string_t recurse_log_exception(Omega::IException* pE)
@@ -166,9 +167,22 @@ void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, cons
 	OOCore_GetObject(oid,clean_flags(flags),iid,pObject);
 }
 
-System::IService* ServiceManagerImpl::Start(const string_t& strPipe, const string_t& strName, Registry::IKey* pKey, const string_t& strSecret)
+System::IService* ServiceManagerImpl::Create(const any_t& oid)
 {
-	return Host::StartService(strPipe,strName,pKey,strSecret);
+	return ObjectPtr<System::IService>(oid).AddRef();
+}
+
+void ServiceManagerImpl::Start(System::IService* pService, const string_t& strName, const string_t& strPipe, Registry::IKey* pKey, const string_t& strSecret)
+{
+	try
+	{
+		Host::StartService(pService,strName,strPipe,pKey,strSecret);
+	}
+	catch (IException* pE)
+	{
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR(("An exception occurred in service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str()));
+	}
 }
 
 int Host::Surrogate()

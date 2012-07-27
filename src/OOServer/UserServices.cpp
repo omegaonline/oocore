@@ -76,6 +76,8 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 
 				if (found)
 				{
+					guard.release();
+
 					if (!response)
 						OOBase::Logger::log(OOBase::Logger::Warning,"Service '%s' is already running",strName.c_str());
 
@@ -101,24 +103,31 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 							ptrKey->init(string_t::constant("/System/Services/") + strName.c_str(),key,0);
 
 							// Return a pointer to a IService interface and place in stack
-							ObjectPtr<Omega::System::IService> ptrService = ObjectPtr<OOCore::IServiceManager>("Omega.ServiceHost")->Start(strPipe.c_str(),strName.c_str(),ptrKey,strSecret.c_str());
+							ObjectPtr<OOCore::IServiceManager> ptrServiceManager("Omega.ServiceHost");
+							entry.ptrService = ptrServiceManager->Create(ptrKey->GetValue(string_t::constant("OID")));
 
 							guard.acquire();
 
 							for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 							{
-								if (m_mapServices.at(pos)->strName == strName.c_str())
+								if (m_mapServices.at(pos)->strName == strName.c_str() && !m_mapServices.at(pos)->ptrService)
 								{
-									m_mapServices.at(pos)->ptrService = ptrService;
+									m_mapServices.at(pos)->ptrService = entry.ptrService;
 									found = true;
 									break;
 								}
 							}
 
+							guard.release();
+
 							if (!found)
 							{
 								LOG_ERROR(("Failed to find service start partial entry"));
 								err = OOServer::Errored;
+							}
+							else
+							{
+								ptrServiceManager->Start(entry.ptrService,strName.c_str(),strPipe.c_str(),ptrKey,strSecret.c_str());
 							}
 						}
 						catch (IException* pE)
@@ -126,6 +135,18 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 							ObjectPtr<IException> ptrE = pE;
 							OOBase::Logger::log(OOBase::Logger::Warning,"Failed to start service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str());
 							err = OOServer::Errored;
+
+							guard.acquire();
+
+							// Remove any entries from the map
+							for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+							{
+								if (m_mapServices.at(pos)->strName == strName.c_str())
+								{
+									m_mapServices.remove_at(pos);
+									break;
+								}
+							}
 						}
 					}
 				}

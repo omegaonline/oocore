@@ -547,46 +547,41 @@ OOServer::RootErrCode_t RootProcessUnix::LaunchService(Root::Manager* pManager, 
 		LOG_ERROR_RETURN(("Failed to listen on pipe: %s",OOBase::system_error_text()),OOServer::Errored);
 
 	// accept() a connection
-	for (;;)
+	OOBase::POSIX::SmartFD new_fd;
+	OOBase::Timeout timeout(wait_secs,0);
+	if (Root::is_debug())
+		timeout = OOBase::Timeout();
+
+	err = OOBase::Net::accept(fd,new_fd,timeout);
+	if (err == ETIMEDOUT)
 	{
-		OOBase::POSIX::SmartFD new_fd;
-		OOBase::Timeout timeout(wait_secs,0);
-		if (Root::is_debug())
-			timeout = OOBase::Timeout();
-
-		err = OOBase::Net::accept(fd,new_fd,timeout);
-		if (err == ETIMEDOUT)
-		{
-			OOBase::Logger::log(OOBase::Logger::Error,"Timed out waiting for service '%s' to start",strName.c_str());
-			return OOServer::Errored;
-		}
-		else if (err)
-			LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),OOServer::Errored);
-
-		ptrSocket = OOBase::Socket::attach_local(new_fd.detach(),err);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
-
-		// Now read the secret back...
-		char secret2[32] = {0};
-		ptrSocket->recv(secret2,sizeof(secret2)-1,true,err,timeout);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
-
-		uid_t other_uid;
-		err = ptrSocket->get_peer_uid(other_uid);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to determine service user: %s",OOBase::system_error_text(err)),OOServer::Errored);
-
-		// Check the secret and the uid
-		if (memcmp(secret,secret2,sizeof(secret)) == 0 && other_uid == m_uid)
-			break;
-
-		OOBase::Logger::log(OOBase::Logger::Error,"Failed to validate service");
+		OOBase::Logger::log(OOBase::Logger::Error,"Timed out waiting for service '%s' to start",strName.c_str());
 		return OOServer::Errored;
 	}
+	else if (err)
+		LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
-	return OOServer::Ok;
+	ptrSocket = OOBase::Socket::attach_local(new_fd.detach(),err);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
+
+	// Now read the secret back...
+	char secret2[32] = {0};
+	ptrSocket->recv(secret2,sizeof(secret2)-1,true,err,timeout);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
+
+	uid_t other_uid;
+	err = ptrSocket->get_peer_uid(other_uid);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to determine service user: %s",OOBase::system_error_text(err)),OOServer::Errored);
+
+	// Check the secret and the uid
+	if (memcmp(secret,secret2,sizeof(secret)) == 0 && other_uid == m_uid)
+		return OOServer::Ok;
+
+	OOBase::Logger::log(OOBase::Logger::Error,"Failed to validate service");
+	return OOServer::Errored;
 }
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)

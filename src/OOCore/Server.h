@@ -36,7 +36,8 @@ namespace OOCore
 
 	interface IServiceManager : public Omega::IObject
 	{
-		virtual Omega::System::IService* Start(const Omega::string_t& strPipe, const Omega::string_t& strName, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret) = 0;
+		virtual Omega::System::IService* Create(const Omega::any_t& oid) = 0;
+		virtual void Start(Omega::System::IService* pService, const Omega::string_t& strName, const Omega::string_t& strPipe, Omega::Registry::IKey* pKey, const Omega::string_t& strSecret) = 0;
 	};
 
 	// {7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}
@@ -65,7 +66,8 @@ OMEGA_DEFINE_INTERFACE
 (
 	OOCore, IServiceManager, "{705FE905-164E-DDAE-DD2C-DE7A049AA58C}",
 
-	OMEGA_METHOD(System::IService*,Start,4,((in),const string_t&,strPipe,(in),const string_t&,strName,(in),Registry::IKey*,pKey,(in),const string_t&,strSecret))
+	OMEGA_METHOD(System::IService*,Create,1,((in),const Omega::any_t&,oid))
+	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,Start,5,((in),Omega::System::IService*,pService,(in),const Omega::string_t&,strName,(in),const Omega::string_t&,strPipe,(in),Omega::Registry::IKey*,pKey,(in),const Omega::string_t&,strSecret))
 )
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ServerInit,0,());

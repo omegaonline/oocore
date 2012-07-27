@@ -41,7 +41,7 @@ namespace Omega
 #endif
 			typedef std::map<string_t,socket_t,std::less<string_t>,System::STLAllocator<string_t> > socket_map_t;
 
-			virtual void Start(const string_t& strName, Registry::IKey* pKey, socket_map_t& socket_map) = 0;
+			virtual void Run(const string_t& strName, Registry::IKey* pKey, socket_map_t& socket_map) = 0;
 			virtual void Stop() = 0;
 		};
 
@@ -64,7 +64,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::System, IService, "{C5BA215C-C59C-4471-96F8-9169F122150A}",
 
-	OMEGA_METHOD_VOID(Start,3,((in),const string_t&,strName,(in),Registry::IKey*,pKey,(in_out),System::IService::socket_map_t&,socket_map))
+	OMEGA_METHOD_VOID(Run,3,((in),const string_t&,strName,(in),Registry::IKey*,pKey,(in_out),System::IService::socket_map_t&,socket_map))
 	OMEGA_METHOD_VOID(Stop,0,())
 )
 

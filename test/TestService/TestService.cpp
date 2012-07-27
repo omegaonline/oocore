@@ -1,6 +1,9 @@
 #include "../../include/Omega/Service.h"
 #include "../../include/OTL/OTL.h"
 
+#include <sys/socket.h>
+#include <stdio.h>
+
 namespace Omega
 {
 	namespace TestSuite
@@ -17,25 +20,55 @@ class TestServiceImpl :
 		public Omega::System::IService
 {
 public:
-	TestServiceImpl()
+	TestServiceImpl() : m_stop(false)
 	{
 	}
 
-	void Start(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map);
+	~TestServiceImpl()
+	{
+		printf("DEAD!\n");
+	}
 
-	void Stop()
-	{}
+	void Run(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map);
+	void Stop();
 
 	BEGIN_INTERFACE_MAP(TestServiceImpl)
 		INTERFACE_ENTRY(Omega::System::IService)
 	END_INTERFACE_MAP()
+
+private:
+	bool m_stop;
 };
 
-#include <stdio.h>
-
-void TestServiceImpl::Start(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map)
+void TestServiceImpl::Run(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map)
 {
-	printf("Test service started!\n");
+	printf("TestService started!\n");
+
+	/*if (socket_map.empty())
+	{
+		printf("Socket map!\n");
+		return;
+	}
+
+	Omega::System::IService::socket_t sock = socket_map.at("One");
+	listen(sock,1);
+
+	Omega::System::IService::socket_t nsock = accept(sock,NULL,NULL);*/
+
+	printf("TestService spinning\n");
+
+	while (!m_stop && Omega::HandleRequest())
+	{}
+
+	printf("TestService stopping\n");
+
+	//sleep(10);
+}
+
+void TestServiceImpl::Stop()
+{
+	printf("TestService stop signalled\n");
+	m_stop = true;
 }
 
 BEGIN_LIBRARY_OBJECT_MAP()

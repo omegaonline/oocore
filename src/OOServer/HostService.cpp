@@ -101,7 +101,8 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			socket_map.insert(System::IService::socket_map_t::value_type(string_t(ptrName,len),sock));
 		}
 
-		pService->Start(strName,pKey,socket_map);
+		// Now run the service (this need not return for some time)
+		pService->Run(strName,pKey,socket_map);
 
 		// Close all remaining sockets
 		for (System::IService::socket_map_t::iterator i=socket_map.begin();i != socket_map.end(); ++i)

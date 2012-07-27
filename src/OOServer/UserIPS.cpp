@@ -110,7 +110,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		return;
 	}
 
-
 	// The timeout needs to be related to the request timeout...
 	OOBase::Timeout timeout;
 	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();

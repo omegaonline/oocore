@@ -103,8 +103,14 @@ bool service_tests()
 	Omega::System::IServiceController::service_set_t svcs = OTL::ObjectPtr<Omega::System::IServiceController>(Omega::System::OID_ServiceController)->GetRunningServices();
 	TEST(svcs.find("TestService") != svcs.end());
 
-#if 0
+#if _WIN32
+	WSADATA wsa;
+	WSAStartup(MAKEWORD(2,2),&wsa);
+	SOCKET sock = socket(AF_INET,SOCK_STREAM,0);
+#else
 	int sock = socket(AF_INET,SOCK_STREAM,0);
+#endif
+
 	TEST(sock != -1);
 
 	sockaddr_in addr = {0};
@@ -122,7 +128,8 @@ bool service_tests()
 		}
 
 #if defined(_WIN32)
-		err = GetLastError();
+		err = WSAGetLastError();
+#error fix me!
 		if (err != ENOENT)
 #else
 		err = errno;
@@ -140,7 +147,6 @@ bool service_tests()
 	{
 
 	}
-#endif
 
 	TEST(stop_service());
 

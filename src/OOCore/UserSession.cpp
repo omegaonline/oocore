@@ -922,7 +922,7 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 bool OOCore::UserSession::handle_request(uint32_t millisecs)
 {
 	OOBase::Timeout timeout;
-	if (millisecs != 0xFFFFFFFF)
+	if (millisecs != 0)
 		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
 
 	return USER_SESSION::instance().pump_request(timeout);

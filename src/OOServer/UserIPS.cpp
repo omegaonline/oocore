@@ -105,7 +105,11 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 {
 	// Forward to sandbox if required
 	if (m_ptrSBIPS && (flags & 0xF) >= Activation::Sandbox)
-		return m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
+	{
+		m_ptrSBIPS->LaunchObjectApp(oid,iid,flags,pObject);
+		return;
+	}
+
 
 	// The timeout needs to be related to the request timeout...
 	OOBase::Timeout timeout;
@@ -248,7 +252,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 bool_t User::InterProcessService::HandleRequest(uint32_t millisecs)
 {
 	OOBase::Timeout timeout;
-	if (millisecs != 0xFFFFFFFF)
+	if (millisecs != 0)
 		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
 
 	int ret = Manager::instance()->pump_requests(timeout,true);

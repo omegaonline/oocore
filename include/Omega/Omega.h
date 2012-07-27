@@ -103,7 +103,7 @@ namespace Omega
 	void Uninitialize();
 
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
-	bool_t HandleRequest(uint32_t millisecs = 0xFFFFFFFF);
+	bool_t HandleRequest(uint32_t millisecs = 0);
 	bool_t CanUnload();
 }
 
@@ -160,6 +160,7 @@ inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega::uint32_t,millisecs));
 inline Omega::bool_t Omega::HandleRequest(uint32_t millisecs)
 {
+	// millisecs == 0 is INFINITE
 	return OOCore_Omega_HandleRequest(millisecs);
 }
 

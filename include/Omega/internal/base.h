@@ -106,7 +106,7 @@ namespace Omega
 		{
 			Synchronous = 0,
 			Asynchronous = 1,
-			Unreliable = 2,
+			Unreliable = (2 | Asynchronous), // Unreliable is always Asynchronous
 			Encrypted = 4
 		};
 		typedef uint16_t MethodAttributes_t;

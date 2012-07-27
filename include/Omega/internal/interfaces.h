@@ -81,10 +81,10 @@ namespace Omega
 
 		enum RegisterFlags
 		{
-			ProcessScope = 1,    // Register for calling process only
-			UserScope = 3,       // Register for calling user only
-			PublicScope = 7,     // Register for all users
-			ExternalPublic = 15, // Register as externally accessible
+			ProcessScope = 1,                   // Register for calling process only
+			UserScope = (2 | ProcessScope),     // Register for calling user only
+			PublicScope = (4 | UserScope),      // Register for all users
+			ExternalPublic = (8 | PublicScope), // Register as externally accessible
 			
 			MultipleUse = 0,
 			SingleUse = 0x10,           // Auto Revoke after 1st GetObject

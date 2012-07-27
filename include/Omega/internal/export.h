@@ -128,10 +128,10 @@
 #define OMEGA_PS_PARAM(meta,type,name) \
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_PS_PARAM_I,meta,(type,name))
 
-#define OMEGA_DECLARE_SAFE_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	const SafeShim* (OMEGA_CALL* OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe)))(const SafeShim* OMEGA_DECLARE_PARAMS_SAFE(param_count,params) );
 
-#define OMEGA_DECLARE_SAFE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	const SafeShim* (OMEGA_CALL* OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe)))(const SafeShim*, marshal_info<ret_type&>::safe_type::type OMEGA_DECLARE_PARAMS_SAFE(param_count,params) );
 
 #define OMEGA_DECLARE_SAFE_DECLARED_NO_METHODS()
@@ -206,13 +206,13 @@
 #define OMEGA_DECLARE_TYPE_PARAMS(param_count,params) \
 	static const typeinfo_rtti::ParamInfo pi[] = { \
 		OMEGA_TUPLE_FOR_EACH(param_count,OMEGA_DECLARE_TYPE_PARAM,OMEGA_SPLIT_3(param_count,params),0) \
-		{ 0, 0, 0, "" } }; \
+		{ NULL, 0, 0, "" } }; \
 	return pi;
 
-#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	OMEGA_DECLARE_TYPE_PARAMS(param_count,params)
 
-#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	OMEGA_DECLARE_TYPE_PARAMS(param_count,params)
 
 #define OMEGA_DECLARE_TYPE_PARAM_DECLARED_NO_METHODS() return NULL;
@@ -224,14 +224,14 @@
 #define OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD_PARAM,methods,0)
 
-#define OMEGA_DECLARE_TYPE_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	{ OMEGA_STRINGIZE(name),attribs,timeout,param_count,type_kind<void>::type()
+#define OMEGA_DECLARE_TYPE_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
+	{ OMEGA_STRINGIZE(name),attribs,param_count,type_kind<void>::type()
 
-#define OMEGA_DECLARE_TYPE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	{ OMEGA_STRINGIZE(name),attribs,timeout,param_count,type_kind<ret_type >::type()
+#define OMEGA_DECLARE_TYPE_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
+	{ OMEGA_STRINGIZE(name),attribs,param_count,type_kind<ret_type >::type()
 
 #define OMEGA_DECLARE_TYPE_DECLARED_NO_METHODS() \
-	{ "",0,0,0,0
+	{ NULL,0,0,NULL
 
 #define OMEGA_DECLARE_TYPE_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_,method) ,&OMEGA_CONCAT_R(method_param_,index) },
@@ -256,16 +256,16 @@
 			static const typeinfo_rtti::MethodInfo method_infos[] = \
 			{ \
 				OMEGA_DECLARE_TYPE_METHODS(methods) \
-				{ 0, 0, 0, 0, 0, 0 } \
+				{ NULL, 0, 0, NULL, NULL } \
 			}; \
 			return method_infos; \
 		} \
 	};
 
-#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	, &OMEGA_CONCAT(name,_Safe)
 
-#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	, &OMEGA_CONCAT(name,_Safe)
 
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_NO_METHODS()
@@ -276,7 +276,7 @@
 #define OMEGA_DECLARE_SAFE_STUB_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_STUB_METHOD,methods,0)
 
-#define OMEGA_DEFINE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DEFINE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
 		const SafeShim* OMEGA_CONCAT(name,_except) = NULL; \
@@ -286,7 +286,7 @@
 		return OMEGA_CONCAT(name,_except); \
 	}
 
-#define OMEGA_DEFINE_SAFE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DEFINE_SAFE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim), marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
 		const SafeShim* OMEGA_CONCAT(name,_except) = NULL; \
@@ -399,10 +399,10 @@
 #define OMEGA_UNPACK_PARAMS_WIRE_STUB(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_UNPACK_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	&OMEGA_CONCAT(name,_Wire)
 
-#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	&OMEGA_CONCAT(name,_Wire)
 
 #define OMEGA_DECLARE_WIRE_STUB_DECLARED_NO_METHODS() \
@@ -414,7 +414,7 @@
 #define OMEGA_DECLARE_WIRE_STUB_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_STUB_METHOD,methods,0)
 
-#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
@@ -427,7 +427,7 @@
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
 	}
 
-#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
@@ -530,14 +530,14 @@
 #define OMEGA_DECLARE_PARAMS_SAFE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_SAFE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		const SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))(this->m_shim OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
 		throw_correct_exception(OMEGA_CONCAT(name,_except)); \
 	}
 
-#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		ret_type OMEGA_CONCAT(name,_RetVal) = default_value<ret_type >::value(); \
@@ -625,7 +625,7 @@
 #define OMEGA_UNPACK_PARAMS_WIRE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_UNPACK_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,millisecs,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
@@ -637,7 +637,7 @@
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 			pParamsOut__wire__->WriteStructEnd(); \
-			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,millisecs); \
+			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
@@ -648,7 +648,7 @@
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +
 
-#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,millisecs,ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
@@ -660,7 +660,7 @@
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 			pParamsOut__wire__->WriteStructEnd(); \
-			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,millisecs); \
+			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
@@ -782,19 +782,19 @@
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
 
 #define OMEGA_METHOD_VOID(name,param_count,params) \
-	(DECLARED_METHOD_VOID(TypeInfo::Synchronous,0xFFFFFFFF,name,param_count,params))
+	(DECLARED_METHOD_VOID(TypeInfo::Synchronous,name,param_count,params))
 
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
-	(DECLARED_METHOD(TypeInfo::Synchronous,0xFFFFFFFF,ret_type,name,param_count,params))
+	(DECLARED_METHOD(TypeInfo::Synchronous,ret_type,name,param_count,params))
 
 #define OMEGA_NO_METHODS() \
 	(DECLARED_NO_METHODS())
 
-#define OMEGA_METHOD_EX_VOID(attribs,timeout,name,param_count,params) \
-	(DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params))
+#define OMEGA_METHOD_EX_VOID(attribs,name,param_count,params) \
+	(DECLARED_METHOD_VOID(attribs,name,param_count,params))
 
-#define OMEGA_METHOD_EX(attribs,timeout,ret_type,name,param_count,params) \
-	(DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params))
+#define OMEGA_METHOD_EX(attribs,ret_type,name,param_count,params) \
+	(DECLARED_METHOD(attribs,ret_type,name,param_count,params))
 
 #define OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params) \
 	extern "C" OMEGA_IMPORT const Omega::System::Internal::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \

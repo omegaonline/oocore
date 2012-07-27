@@ -55,7 +55,7 @@ namespace Omega
 			virtual void UnmarshalInterface(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
 			virtual void ReleaseMarshalData(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual IMessage* CreateMessage() = 0;
-			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t millisecs) = 0;
+			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv) = 0;
 			virtual uint32_t GetSource() = 0;
 		};
 
@@ -162,7 +162,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
-				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,millisecs))
+				OMEGA_METHOD(IException*,SendAndReceive,3,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv))
 				OMEGA_METHOD(uint32_t,GetSource,0,())
 			)
 

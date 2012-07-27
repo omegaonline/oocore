@@ -706,7 +706,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 			throw ITimeoutException::Create();
 
 		// Make the call
-		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.millisecs());
+		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.is_infinite() ? 0 : timeout.millisecs());
 
 		if (!(attribs & OOServer::Message_t::asynchronous))
 		{

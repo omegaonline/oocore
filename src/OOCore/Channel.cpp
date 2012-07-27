@@ -166,12 +166,12 @@ void OOCore::Channel::shutdown(uint32_t closed_channel_id)
 	// Send a channel close back to the sender
 	OOBase::CDRStream msg;
 	if (msg.write(closed_channel_id))
-		m_pSession->send_request(m_channel_id,&msg,NULL,0xFFFFFFFF,Message::asynchronous | Message::channel_close);
+		m_pSession->send_request(m_channel_id,&msg,NULL,Message::asynchronous | Message::channel_close);
 
 	disconnect();
 }
 
-IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
+IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
@@ -191,7 +191,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	OOBase::CDRStream response;
 	try
 	{
-		m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,millisecs,attribs);
+		m_pSession->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,attribs);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -233,7 +233,7 @@ bool_t OOCore::Channel::IsConnected()
 
 	try
 	{
-		m_pSession->send_request(m_channel_id,NULL,&response,0xFFFFFFFF,Message::synchronous | Message::channel_ping);
+		m_pSession->send_request(m_channel_id,NULL,&response,Message::synchronous | Message::channel_ping);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
@@ -264,7 +264,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	OOBase::CDRStream response;
 	try
 	{
-		m_pSession->send_request(m_channel_id,NULL,&response,0xFFFFFFFF,Message::synchronous | Message::channel_reflect);
+		m_pSession->send_request(m_channel_id,NULL,&response,Message::synchronous | Message::channel_reflect);
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{

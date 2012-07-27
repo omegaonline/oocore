@@ -167,8 +167,13 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 	else
 		pCC = &old_context;
 
-	if (millisecs != 0xFFFFFFFF)
+	if (millisecs)
+	{
+		// Use a decreasing timeout if needed
 		pCC->m_timeout = OOBase::Timeout(millisecs / 1000, (millisecs % 1000) * 1000);
+		if (old_context.m_timeout < pCC->m_timeout)
+			pCC->m_timeout = old_context.m_timeout;
+	}
 
 	try
 	{
@@ -274,7 +279,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const any_t& oid, Activation::F
 
 	try
 	{
-		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (...)
 	{
@@ -310,7 +315,7 @@ Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 	return m_ptrChannel->CreateMessage();
 }
 
-IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
+IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
 	pRecv = NULL;
 
@@ -318,7 +323,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected ObjectManager"));
 
 	ObjectPtr<Remoting::IMessage> ptrRecv;
-	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,ptrRecv,millisecs);
+	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,ptrRecv);
 	if (pE)
 		return pE;
 
@@ -372,7 +377,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 
 	try
 	{
-		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (...)
 	{

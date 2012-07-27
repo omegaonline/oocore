@@ -83,7 +83,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ptrParamsOut->WriteStructEnd();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
-	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
+	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	if (pE)
 		pE->Rethrow();
 
@@ -169,7 +169,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 		m_pManager->DoMarshalChannel(pMarshaller,ptrParamsOut);
 		ptrParamsOut->WriteStructEnd();
 
-		pERet = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);
+		pERet = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (...)
 	{
@@ -198,7 +198,7 @@ void OOCore::Proxy::CallRemoteRelease()
 		ptrParamsOut->WriteStructEnd();
 
 		ObjectPtr<Remoting::IMessage> ptrParamsIn;
-		ObjectPtr<IException> ptrE = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn,0xFFFFFFFF);		
+		ObjectPtr<IException> ptrE = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (IException* pE)
 	{

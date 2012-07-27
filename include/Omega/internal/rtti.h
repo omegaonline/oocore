@@ -274,7 +274,6 @@ namespace Omega
 				{
 					const char*                  pszName;
 					TypeInfo::MethodAttributes_t attribs;
-					uint32_t                     timeout;
 					byte_t                       param_count;
 					const type_holder*           return_type;
 					const ParamInfo* (*pfnGetParamInfo)();
@@ -305,7 +304,7 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ 0, 0, 0, "" }
+						{ NULL, 0, 0, "" }
 					};
 					return pi;
 				}
@@ -313,7 +312,7 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ 0, 0, 0, "" }
+						{ NULL, 0, 0, "" }
 					};
 					return pi;
 				}
@@ -322,7 +321,7 @@ namespace Omega
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
 						{ "iid", type_kind<const guid_t&>::type(), TypeInfo::attrIn, "" },
-						{ 0, 0, 0, "" }
+						{ NULL, 0, 0, "" }
 					};
 					return pi;
 				}
@@ -330,10 +329,10 @@ namespace Omega
 				{
 					static const typeinfo_rtti::MethodInfo methods[] =
 					{
-						{ "AddRef", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &AddRef_params },
-						{ "Release", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &Release_params },
-						{ "QueryInterface", TypeInfo::Synchronous, 0, 1, type_kind<IObject*>::type(), &QueryInterface_params },
-						{ 0, 0, 0, 0, 0 }
+						{ "AddRef", TypeInfo::Synchronous, 0, type_kind<void>::type(), &AddRef_params },
+						{ "Release", TypeInfo::Synchronous, 0, type_kind<void>::type(), &Release_params },
+						{ "QueryInterface", TypeInfo::Synchronous, 1, type_kind<IObject*>::type(), &QueryInterface_params },
+						{ NULL, 0, 0, NULL }
 					};
 					return methods;
 				}

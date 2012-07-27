@@ -49,7 +49,7 @@ namespace OOCore
 
 	public:
 		Omega::bool_t IsConnected();
-		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t millisecs);
+		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv);
 	};
 
 	class Compartment
@@ -68,7 +68,7 @@ namespace OOCore
 		void process_request(const Message& msg, const OOBase::Timeout& timeout);
 
 		OTL::ObjectImpl<ComptChannel>* create_compartment_channel(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);
-		Omega::IException* compartment_message(Omega::uint16_t src_compt_id, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t millisecs);
+		Omega::IException* compartment_message(Omega::uint16_t src_compt_id, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv);
 
 	private:
 		OOBase::RWMutex m_lock;

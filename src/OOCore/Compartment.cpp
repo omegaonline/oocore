@@ -217,7 +217,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::Time
 		throw ITimeoutException::Create();
 
 	// Make the call
-	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.millisecs());
+	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.is_infinite() ? 0 : timeout.millisecs());
 
 	if (!(msg.m_attribs & TypeInfo::Asynchronous))
 	{
@@ -228,7 +228,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::Time
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(msg.m_dest_cmpt_id,msg.m_src_channel_id,msg.m_src_thread_id,ptrResponse->GetCDRStream(),timeout);
+			m_pSession->send_response(msg,ptrResponse->GetCDRStream());
 		}
 		catch (...)
 		{
@@ -274,7 +274,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::Compartment::create_compartment_channe
 	return ptrChannel.Detach();
 }
 
-IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
+IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
 	// Switch state...
 	ComptState compt_state(this);
@@ -287,7 +287,7 @@ IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 
 		// Make the call
-		pRecv = ptrOM->Invoke(pSend,millisecs);
+		pRecv = ptrOM->Invoke(pSend,0);
 	}
 	catch (IException* pE)
 	{
@@ -317,9 +317,9 @@ Omega::bool_t OOCore::ComptChannel::IsConnected()
 	return true;
 }
 
-IException* OOCore::ComptChannel::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
+IException* OOCore::ComptChannel::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
-	return m_ptrCompt->compartment_message(m_src_compt_id,pSend,pRecv,millisecs);
+	return m_ptrCompt->compartment_message(m_src_compt_id,pSend,pRecv);
 }
 
 namespace OOCore

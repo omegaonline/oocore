@@ -49,7 +49,7 @@ namespace
 		void ReleaseMarshalData(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
 		void UnmarshalInterface(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
 		Remoting::IMessage* CreateMessage();
-		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs);
+		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv);
 		uint32_t GetSource();
 	};
 }
@@ -161,7 +161,7 @@ void SimpleMarshaller::UnmarshalInterface(const string_t& /*strName*/, Remoting:
 	OMEGA_THROW("Cannot call UnmarshalInterface() on SimpleMarshaller");
 }
 
-IException* SimpleMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* /*pSend*/, Remoting::IMessage*& /*pRecv*/, uint32_t /*millisecs*/)
+IException* SimpleMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* /*pSend*/, Remoting::IMessage*& /*pRecv*/)
 {
 	OMEGA_THROW("Cannot call SendAndReceive() on SimpleMarshaller");
 }

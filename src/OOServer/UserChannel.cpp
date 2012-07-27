@@ -93,11 +93,14 @@ Remoting::IMessage* User::Channel::CreateMessage()
 	}
 }
 
-IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
+IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
+	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
+	uint32_t msecs = ptrCC->Timeout();
+
 	OOBase::Timeout timeout;
-	if (millisecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(millisecs / 1000,(millisecs % 1000) * 1000);
+	if (msecs != 0xFFFFFFFF)
+		timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
 
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
@@ -155,7 +158,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		}
 	}
 
-	return 0;
+	return NULL;
 }
 
 Remoting::MarshalFlags_t User::Channel::GetMarshalFlags()

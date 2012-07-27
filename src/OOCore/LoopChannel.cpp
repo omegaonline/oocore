@@ -51,7 +51,7 @@ namespace
 		void ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
 		void UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
 		Remoting::IMessage* CreateMessage();
-		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs);
+		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv);
 		uint32_t GetSource();
 	};
 }
@@ -95,9 +95,9 @@ Remoting::IMessage* LoopMarshaller::CreateMessage()
 	return m_pChannel->CreateMessage();
 }
 
-IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t millisecs)
+IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
-	return m_pChannel->SendAndReceive(attribs,pSend,pRecv,millisecs);
+	return m_pChannel->SendAndReceive(attribs,pSend,pRecv);
 }
 
 uint32_t LoopMarshaller::GetSource()
@@ -119,7 +119,7 @@ Omega::bool_t OOCore::LoopChannel::IsConnected()
 	return false;
 }
 
-IException* OOCore::LoopChannel::SendAndReceive(TypeInfo::MethodAttributes_t, Remoting::IMessage*, Remoting::IMessage*&, uint32_t)
+IException* OOCore::LoopChannel::SendAndReceive(TypeInfo::MethodAttributes_t, Remoting::IMessage*, Remoting::IMessage*&)
 {
 	throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on loopback channel"));
 }

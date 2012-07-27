@@ -58,7 +58,6 @@ namespace
 		{
 			string_t                       strName;
 			TypeInfo::MethodAttributes_t   attribs;
-			uint32_t                       timeout;
 			ObjectPtr<Remoting::IMessage>  return_type;
 			OOBase::Stack<ParamInfo>*      params;
 		};
@@ -75,7 +74,7 @@ namespace
 		guid_t GetIID();
 		uint32_t GetMethodCount();
 		IInterfaceInfo* GetBaseType();
-		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Remoting::IMessage*& return_type);
+		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, byte_t& param_count, Remoting::IMessage*& return_type);
 		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Remoting::IMessage*& type, TypeInfo::ParamAttributes_t& attribs);
 		byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib);
 	};
@@ -296,7 +295,6 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 		MethodInfo mi;
 		mi.strName = pmi->pszName;
 		mi.attribs = pmi->attribs;
-		mi.timeout = pmi->timeout;
 		mi.return_type = Remoting::CreateMemoryMessage();
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
@@ -343,10 +341,10 @@ TypeInfo::IInterfaceInfo* TypeInfoImpl::GetBaseType()
 	return m_ptrBase;
 }
 
-void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Remoting::IMessage*& return_type)
+void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, byte_t& param_count, Remoting::IMessage*& return_type)
 {
 	if (method_idx < m_base_methods)
-		return m_ptrBase->GetMethodInfo(method_idx,strName,attribs,timeout,param_count,return_type);
+		return m_ptrBase->GetMethodInfo(method_idx,strName,attribs,param_count,return_type);
 
 	if (method_idx >= GetMethodCount())
 		OMEGA_THROW("GetMethodInfo requesting invalid method index");
@@ -357,7 +355,6 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 
 	strName = mi->strName;
 	attribs = mi->attribs;
-	timeout = mi->timeout;
 	param_count = mi->params ? static_cast<byte_t>(mi->params->size()) : 0;
 	return_type = mi->return_type.AddRef();
 }

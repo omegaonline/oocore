@@ -34,11 +34,24 @@ namespace OTL
 	// We don't use the macro as we override some behaviours
 	namespace Module
 	{
-		class OOCore_LibraryModuleImpl : public LibraryModule
+		class OOCore_LibraryModuleImpl : public ModuleBase
 		{
 		public:
 			void RegisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT);
 			void UnregisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT);
+
+			template <typename T>
+			struct Creator
+			{
+				static Omega::IObject* Create(const Omega::guid_t& iid)
+				{
+					ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
+					Omega::IObject* pObject = ptr->QueryInterface(iid);
+					if (!pObject)
+						throw OOCore_INotFoundException_MissingIID(iid);
+					return pObject;
+				}
+			};
 
 		private:
 			ModuleBase::CreatorEntry* getCreatorEntries()

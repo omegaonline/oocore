@@ -27,9 +27,6 @@
 using namespace Omega;
 using namespace OTL;
 
-// {D2A10F8C-ECD1-F698-7105-48247D50DB1B}
-OMEGA_DEFINE_OID(System,OID_ServiceController,"{D2A10F8C-ECD1-F698-7105-48247D50DB1B}");
-
 void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream* response)
 {
 	OOServer::RootErrCode_t err = OOServer::Ok;
@@ -296,7 +293,7 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void User::Manager::list_services(OOBase::CDRStream& request, OOBase::CDRStream& response)
+void User::Manager::list_services(OOBase::CDRStream& response)
 {
 	OOServer::RootErrCode_t err = OOServer::Ok;
 	if (!m_bIsSandbox)

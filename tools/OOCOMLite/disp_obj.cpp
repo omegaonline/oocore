@@ -357,11 +357,10 @@ STDMETHODIMP IDispatchObjImpl::GetIDsOfNames(REFIID riid, OLECHAR** rgszNames, U
 			for (; method < methodCount; ++method)
 			{
 				Omega::TypeInfo::MethodAttributes_t attribs;
-				Omega::uint32_t timeout;
 				Omega::string_t strName;
 				Omega::Remoting::IMessage* return_type = NULL;
 								
-				m_ptrInfo->GetMethodInfo(method,strName,attribs,timeout,param_count,return_type);
+				m_ptrInfo->GetMethodInfo(method,strName,attribs,param_count,return_type);
 					
 				if (return_type)
 					return_type->Release();
@@ -427,14 +426,13 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	// Get the member info
 	Omega::byte_t param_count;
 	Omega::TypeInfo::MethodAttributes_t attribs;
-	Omega::uint32_t timeout;
 	Omega::string_t strName;
 	
 	OTL::ObjectPtr<Omega::Remoting::IMessage> ptrRetType;
 	try
 	{
 		// Always Add 2 to avoid IObject::AddRef and IObject::Release
-		m_ptrInfo->GetMethodInfo(dispIdMember,strName,attribs,timeout,param_count,ptrRetType);
+		m_ptrInfo->GetMethodInfo(dispIdMember,strName,attribs,param_count,ptrRetType);
 	}
 	catch (Omega::IException* pE)	
 	{

@@ -661,7 +661,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 		break;
 
 	case OOServer::Service_ListRunning:
-		list_services(request,response);
+		list_services(response);
 		break;
 
 	default:

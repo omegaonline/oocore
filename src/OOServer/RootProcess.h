@@ -50,7 +50,7 @@ namespace Root
 		virtual bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
 
 		virtual bool IsRunning() const = 0;
-		virtual OOServer::RootErrCode_t LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const = 0;
+		virtual OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const = 0;
 
 	protected:
 		Process() {}

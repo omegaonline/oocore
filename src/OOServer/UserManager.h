@@ -126,7 +126,7 @@ namespace User
 		void stop_all_services(OOBase::CDRStream& response);
 		void stop_service(OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void service_is_running(OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void list_services(OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void list_services(OOBase::CDRStream& response);
 	};
 }
 

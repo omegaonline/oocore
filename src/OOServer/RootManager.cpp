@@ -695,7 +695,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 		break;
 
 	case OOServer::Service_ListRunning:
-		service_list_running(src_channel_id,request,response);
+		service_list_running(src_channel_id,response);
 		break;
 
 	case OOServer::Registry_OpenKey:

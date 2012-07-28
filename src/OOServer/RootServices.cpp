@@ -128,7 +128,7 @@ namespace
 		return true;
 	}
 
-	OOServer::RootErrCode_t find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, Omega::int64_t& key)
+	OOServer::RootErrCode find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, Omega::int64_t& key)
 	{
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
 		int err2 = strSubKey.printf("/System/Services/%s",strName.c_str());
@@ -514,7 +514,7 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
-		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
+		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
 	{
@@ -550,7 +550,7 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 				if (!err)
 				{
 					Omega::int64_t key = 0;
-					err = find_service(m_registry,strName,key);
+					err = static_cast<OOServer::RootErrCode_t>(find_service(m_registry,strName,key));
 					if (!err)
 					{
 						OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
@@ -569,7 +569,7 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 						// Create a unique local socket name
 						OOBase::RefPtr<OOBase::Socket> ptrSocket;
-						err = sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket);
+						err = static_cast<OOServer::RootErrCode_t>(sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket));
 						if (!err)
 							enum_sockets(m_registry,strName,ptrSocket,key);
 					}
@@ -589,7 +589,7 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
-		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
+		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
 	{
@@ -638,7 +638,7 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
-		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
+		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
 	{
@@ -677,14 +677,14 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 	}
 }
 
-void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
 	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
 		err = OOServer::NoWrite;
 	else
-		err = m_registry->access_check(channel_id,Db::write_check,Db::write_check);
+		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
 	{

@@ -1,7 +1,12 @@
 #include "../../include/Omega/Service.h"
 #include "../../include/OTL/OTL.h"
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#else
 #include <sys/socket.h>
+#endif
+
 #include <stdio.h>
 
 namespace Omega

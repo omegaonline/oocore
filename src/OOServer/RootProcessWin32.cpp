@@ -58,7 +58,7 @@ namespace
 
 		bool IsRunning() const;
 		bool Spawn(OOBase::String& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
-		OOServer::RootErrCode_t LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
+		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
 		bool                       m_bSandbox;
@@ -888,7 +888,7 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-OOServer::RootErrCode_t RootProcessWin32::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
+OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
 {
 	// Create the named pipe name
 	UUID guid = {0};
@@ -933,9 +933,23 @@ OOServer::RootErrCode_t RootProcessWin32::LaunchService(Root::Manager* pManager,
 		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),OOServer::Errored);
 	}
 
-	OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,NULL,OOBase::Timeout(),async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous);
+	OOBase::CDRStream response;
+	OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,OOBase::Timeout(),static_cast<Omega::uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
 	if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),OOServer::Errored);
+
+	if (!async)
+	{
+		OOServer::RootErrCode_t err2;
+		if (!response.read(err2))
+			LOG_ERROR_RETURN(("Failed to read response: %s",OOBase::system_error_text(response.last_error())),OOServer::Errored);
+
+		if (err2)
+		{
+			OOBase::Logger::log(OOBase::Logger::Error,"Failed to start service '%s'.  Check error log for details.",strName.c_str());
+			return static_cast<OOServer::RootErrCode>(err2);
+		}
+	}
 
 	OOBase::Timeout timeout(wait_secs,0);
 	if (Root::is_debug())

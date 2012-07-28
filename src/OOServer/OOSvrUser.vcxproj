@@ -244,6 +244,7 @@
     <ClCompile Include="UserProcessWin32.cpp" />
     <ClCompile Include="UserRegistry.cpp" />
     <ClCompile Include="UserROT.cpp" />
+    <ClCompile Include="UserServices.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h" />
@@ -258,6 +259,7 @@
     <ClInclude Include="UserProcess.h" />
     <ClInclude Include="UserRegistry.h" />
     <ClInclude Include="UserROT.h" />
+    <ClInclude Include="UserServices.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="logo.ico" />

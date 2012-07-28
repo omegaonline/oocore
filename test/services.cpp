@@ -19,10 +19,16 @@ namespace Omega
 
 #include "Test.h"
 
+Omega::string_t make_absolute(const char* wsz);
+
 const Omega::guid_t Omega::TestSuite::OID_TestService("{32A13162-BC9C-2CC1-531A-F0A8BF153E0D}");
 
 #if defined(_MSC_VER)
-	static const char* s_dll = "TestService.dll";
+	#if defined(WIN64_HYBRID)
+		static const char* s_dll = "..\\x64\\TestService_msvc.dll";
+	#else
+		static const char* s_dll = "..\\Win32\\TestService_msvc.dll";
+	#endif
 #elif defined(_WIN32)
 	static const char* s_dll = OMEGA_STRINGIZE(BUILD_DIR) "/TestService/.libs/testservice.dll";
 #else
@@ -37,7 +43,7 @@ static bool register_service()
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey->OpenKey("Test.Service",Omega::Registry::IKey::OpenCreate);
 	ptrSubKey->SetValue("OID",strOid);
 	ptrSubKey = ptrKey->OpenKey("OIDs/" + strOid,Omega::Registry::IKey::OpenCreate);
-	ptrSubKey->SetValue("Library",s_dll);
+	ptrSubKey->SetValue("Library",make_absolute(s_dll));
 
 	ptrKey = ptrKey->OpenKey("/System/Services/TestService",Omega::Registry::IKey::OpenCreate);
 	ptrKey->SetValue("OID","Test.Service");
@@ -129,8 +135,7 @@ bool service_tests()
 
 #if defined(_WIN32)
 		err = WSAGetLastError();
-#error fix me!
-		if (err != ENOENT)
+		if (err != WSAECONNREFUSED)
 #else
 		err = errno;
 		if (err != ENOENT && err != ECONNREFUSED)

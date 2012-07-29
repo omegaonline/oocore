@@ -45,34 +45,42 @@ private:
 	bool m_stop;
 };
 
-void TestServiceImpl::Run(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map)
+void TestServiceImpl::Run(const Omega::string_t& strName, Omega::Registry::IKey* /*pKey*/, Omega::System::IService::socket_map_t& socket_map)
 {
-	printf("TestService started!\n");
+	printf("%s started!\n",strName.c_str());
 
-	/*if (socket_map.empty())
+	if (socket_map.empty())
 	{
 		printf("Socket map!\n");
 		return;
 	}
 
-	Omega::System::IService::socket_t sock = socket_map.at("One");
+	Omega::System::IService::socket_t sock = socket_map["One"];
 	listen(sock,1);
 
-	Omega::System::IService::socket_t nsock = accept(sock,NULL,NULL);*/
+	printf("%s spinning\n",strName.c_str());
 
-	printf("TestService spinning\n");
+	while (!m_stop)
+	{
+		while (Omega::HandleRequest(500))
+		{}
 
-	while (!m_stop && Omega::HandleRequest())
-	{}
+		Omega::System::IService::socket_t nsock = accept(sock,NULL,NULL);
+		if (nsock != -1)
+			send(nsock,"HELLO\n",6,0);
 
-	printf("TestService stopping\n");
+#if defined(_WIN32)
+		closesocket(nsock);
+#else
+		close(nsock);
+#endif
+	}
 
-	//sleep(10);
+	printf("%s stopping\n",strName.c_str());
 }
 
 void TestServiceImpl::Stop()
 {
-	printf("TestService stop signalled\n");
 	m_stop = true;
 }
 

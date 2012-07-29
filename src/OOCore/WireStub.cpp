@@ -161,15 +161,18 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	if (!ptrMarshaller)
 		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
+	// QI for iid
+	ObjectPtr<IObject> ptrObject = m_ptrObj->QueryInterface(iid);
+	if (!ptrObject)
+		throw OOCore_INotFoundException_MissingIID(iid);
+
 	// Marshal the stub
-	ptrMarshaller->MarshalInterface(string_t::constant("stub"),ptrMessage,iid,m_ptrObj);
+	ptrMarshaller->MarshalInterface(string_t::constant("stub"),ptrMessage,iid,ptrObject);
 
 	try
 	{
 		m_pManager->MarshalInterface(string_t::constant("pReflect"),pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
 
-		// Not sure why this works...
-		void* CHECK_ME;
 		++m_marshal_count;
 	}
 	catch (...)

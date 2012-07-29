@@ -4,6 +4,7 @@
 #if defined(_WIN32)
 #include <WinSock2.h>
 #else
+#include <unistd.h>
 #include <sys/socket.h>
 #endif
 
@@ -66,7 +67,7 @@ void TestServiceImpl::Run(const Omega::string_t& strName, Omega::Registry::IKey*
 		{}
 
 		Omega::System::IService::socket_t nsock = accept(sock,NULL,NULL);
-		if (nsock != -1)
+		if (nsock != Omega::System::IService::socket_t(-1))
 			send(nsock,"HELLO\n",6,0);
 
 #if defined(_WIN32)

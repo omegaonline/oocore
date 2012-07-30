@@ -1,4 +1,5 @@
 #include "../../include/Omega/Omega.h"
+#include "../../include/Omega/TypeInfo.h"
 #include "../../include/OTL/OTL.h"
 
 #include "../SimpleTest.h"

@@ -1,4 +1,5 @@
 #include "../include/Omega/Remoting.h"
+#include "../include/Omega/Registry.h"
 #include "Test.h"
 
 #include <string>

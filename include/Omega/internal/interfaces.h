@@ -60,25 +60,6 @@ namespace Omega
 
 	namespace Activation
 	{
-		interface IObjectFactory : public IObject
-		{
-			virtual void CreateInstance(const guid_t& iid, IObject*& pObject) = 0;
-		};
-
-		enum Flags
-		{	
-			Default = 0,                         ///< Use a dll/so or executable as available
-			Library = 1,                         ///< Only use dll/so
-			Process = 2,                         ///< Launch as current user - implies surrogate if dll/so
-			Sandbox = 3,                         ///< Launch as the sandbox user - implies surrogate if dll/so
-			
-			RemoteActivation = 0x10,             ///< Request is from a remote machine
-			DontLaunch = 0x20                    ///< Do not launch exe/dll/so if not already running
-		};
-		typedef uint16_t Flags_t;
-
-		void GetObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
-
 		enum RegisterFlags
 		{
 			ProcessScope = 1,                   // Register for calling process only
@@ -118,6 +99,15 @@ namespace Omega
 			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Remoting::IMessage*& type, ParamAttributes_t& attribs) = 0;
 			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
 		};
+
+		interface IProvideObjectInfo : public IObject
+		{
+			typedef std::vector<guid_t,System::STLAllocator<guid_t> > iid_list_t;
+
+			virtual iid_list_t EnumInterfaces() = 0;
+		};
+
+		static IInterfaceInfo* GetInterfaceInfo(const guid_t& iid, IObject* pObject = 0);
 	}
 
 	namespace Registry
@@ -158,18 +148,6 @@ namespace Omega
 		// {7A351233-8363-BA15-B443-31DD1C8FC587}
 		OOCORE_DECLARE_OID(OID_OverlayKeyFactory);
 	}
-
-	namespace TypeInfo
-	{
-		interface IProvideObjectInfo : public IObject
-		{
-			typedef std::vector<guid_t,System::STLAllocator<guid_t> > iid_list_t;
-
-			virtual iid_list_t EnumInterfaces() = 0;
-		};
-
-		static IInterfaceInfo* GetInterfaceInfo(const guid_t& iid, IObject* pObject = 0);
-	}
 }
 
 #if !defined(DOXYGEN)
@@ -194,13 +172,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	OMEGA_METHOD(any_t,GetValue,0,())
 	OMEGA_METHOD(any_t::CastResult_t,GetReason,0,())
 	OMEGA_METHOD(Remoting::IMessage*,GetDestinationType,0,())
-)
-
-OMEGA_DEFINE_INTERFACE
-(
-	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
-
-	OMEGA_METHOD_VOID(CreateInstance,2,((in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL

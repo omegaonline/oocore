@@ -379,7 +379,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetInstance,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
 	pObject = OOCore::GetInstance(oid,flags,iid);
 }

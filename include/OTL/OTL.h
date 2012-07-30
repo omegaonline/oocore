@@ -158,6 +158,11 @@ namespace OTL
 			Release();
 		}
 
+		void GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags)
+		{
+			replace(static_cast<OBJECT*>(Omega::GetInstance(oid,flags,OMEGA_GUIDOF(OBJECT))),false);
+		}
+
 		OBJECT* Detach()
 		{
 			OBJECT* ptr = m_ptr;

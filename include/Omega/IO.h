@@ -22,7 +22,7 @@
 #ifndef OMEGA_IO_H_INCLUDED_
 #define OMEGA_IO_H_INCLUDED_
 
-#include "Omega.h"
+#include "./Omega.h"
 
 namespace Omega
 {

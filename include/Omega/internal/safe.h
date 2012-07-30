@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_SAFE_H_INCLUDED_
-#define OOCORE_SAFE_H_INCLUDED_
+#ifndef OMEGA_SAFE_H_INCLUDED_
+#define OMEGA_SAFE_H_INCLUDED_
 
 namespace Omega
 {
@@ -1308,4 +1308,4 @@ namespace Omega
 	}
 }
 
-#endif // OOCORE_SAFE_H_INCLUDED_
+#endif // OMEGA_SAFE_H_INCLUDED_

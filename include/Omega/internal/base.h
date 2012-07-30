@@ -19,10 +19,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_BASE_H_INCLUDED_
-#define OOCORE_BASE_H_INCLUDED_
+#ifndef OMEGA_BASE_H_INCLUDED_
+#define OMEGA_BASE_H_INCLUDED_
 
-#include "cpp/pre_base.h"
+#include "./cpp/pre_base.h"
 
 #if !defined(interface)
 #define interface struct
@@ -218,4 +218,4 @@ OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 
 #define OMEGA_THROW(e) throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
 
-#endif // OOCORE_BASE_H_INCLUDED_
+#endif // OMEGA_BASE_H_INCLUDED_

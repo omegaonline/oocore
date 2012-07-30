@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_SAFE_PS_H_INCLUDED_
-#define OOCORE_SAFE_PS_H_INCLUDED_
+#ifndef OMEGA_SAFE_PS_H_INCLUDED_
+#define OMEGA_SAFE_PS_H_INCLUDED_
 
 namespace Omega
 {
@@ -793,4 +793,4 @@ namespace Omega
 // ISafeProxy has no rtti associated with it...
 OMEGA_SET_GUIDOF(Omega::System::Internal,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}")
 
-#endif // OOCORE_SAFE_PS_H_INCLUDED_
+#endif // OMEGA_SAFE_PS_H_INCLUDED_

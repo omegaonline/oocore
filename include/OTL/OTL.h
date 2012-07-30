@@ -814,6 +814,6 @@ namespace OTL
 #endif // OMEGA_TYPEINFO_H_INCLUDED_
 }
 
-#include "OTL.inl"
+#include "./OTL.inl"
 
 #endif // OTL_H_INCLUDED_

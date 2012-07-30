@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_BASE_TYPES_H_INCLUDED_
-#define OOCORE_BASE_TYPES_H_INCLUDED_
+#ifndef OMEGA_BASE_TYPES_H_INCLUDED_
+#define OMEGA_BASE_TYPES_H_INCLUDED_
 
 /////////////////////////////////////////////////////////
 //
@@ -69,4 +69,4 @@ namespace Omega
 #error Failed to guess your compiler.  Please contact the omegaonline developers.
 #endif
 
-#endif // OOCORE_BASE_TYPES_H_INCLUDED_
+#endif // OMEGA_BASE_TYPES_H_INCLUDED_

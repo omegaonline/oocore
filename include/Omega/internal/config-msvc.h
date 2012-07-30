@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_MSVC_H_INCLUDED_
-#define OOCORE_CONFIG_MSVC_H_INCLUDED_
+#ifndef OMEGA_CONFIG_MSVC_H_INCLUDED_
+#define OMEGA_CONFIG_MSVC_H_INCLUDED_
 
 /////////////////////////////////////////////////////////
 //
@@ -76,9 +76,9 @@
 #endif
 
 #if defined(_WIN32_WCE)
-	#include "config-wince.h"
+	#include "./config-wince.h"
 #elif defined(_WIN32)
-	#include "config-win32.h"
+	#include "./config-win32.h"
 #else
 	#error What else can MSVC compile?
 #endif
@@ -89,4 +89,4 @@
 	#define EINVAL 22
 #endif
 
-#endif // OOCORE_CONFIG_MSVC_H_INCLUDED_
+#endif // OMEGA_CONFIG_MSVC_H_INCLUDED_

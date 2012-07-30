@@ -36,7 +36,7 @@
 // Split macros
 //
 
-#include "pre_base.h"
+#include "./pre_base.h"
 
 #if !defined(OMEGA_SPLIT_3)
 

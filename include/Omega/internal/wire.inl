@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_WIRE_INL_INCLUDED_
-#define OOCORE_WIRE_INL_INCLUDED_
+#ifndef OMEGA_WIRE_INL_INCLUDED_
+#define OMEGA_WIRE_INL_INCLUDED_
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_holder__ctor,0,());
 inline Omega::System::Internal::wire_holder::wire_holder() : m_handle(NULL)
@@ -181,4 +181,4 @@ inline Omega::Remoting::IMessage* Omega::Remoting::CreateMemoryMessage()
 
 #endif // !defined(DOXYGEN)
 
-#endif // OOCORE_WIRE_INL_INCLUDED_
+#endif // OMEGA_WIRE_INL_INCLUDED_

@@ -19,13 +19,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_CLANG_H_INCLUDED_
-#define OOCORE_CONFIG_CLANG_H_INCLUDED_
+#ifndef OMEGA_CONFIG_CLANG_H_INCLUDED_
+#define OMEGA_CONFIG_CLANG_H_INCLUDED_
 
 // clang is so close to gcc, that we include config-gcc.h and then override what we want
-#include "config-gcc.h"
+#include "./config-gcc.h"
 
 #undef OMEGA_COMPILER_STRING
 #define OMEGA_COMPILER_STRING   __VERSION__ ": version "__clang_version__
 
-#endif // OOCORE_CONFIG_CLANG_H_INCLUDED_
+#endif // OMEGA_CONFIG_CLANG_H_INCLUDED_

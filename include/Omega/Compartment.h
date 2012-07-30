@@ -22,7 +22,7 @@
 #ifndef OMEGA_COMPARTMENT_H_INCLUDED_
 #define OMEGA_COMPARTMENT_H_INCLUDED_
 
-#include "Omega.h"
+#include "./Omega.h"
 
 namespace Omega
 {

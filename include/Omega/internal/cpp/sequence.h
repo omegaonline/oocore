@@ -36,7 +36,7 @@
 // Sequence macros
 //
 
-#include "tuple.h"
+#include "./tuple.h"
 
 #if !defined(OMEGA_SEQUENCE_SIZEOF)
 

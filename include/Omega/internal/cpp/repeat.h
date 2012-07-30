@@ -36,7 +36,7 @@
 // Repeat macros
 //
 
-#include "pre_base.h"
+#include "./pre_base.h"
 
 #if !defined(OMEGA_REPEAT)
 #define OMEGA_REPEAT_1(m)    m(0)

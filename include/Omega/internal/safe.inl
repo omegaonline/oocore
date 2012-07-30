@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_SAFE_INL_INCLUDED_
-#define OOCORE_SAFE_INL_INCLUDED_
+#ifndef OMEGA_SAFE_INL_INCLUDED_
+#define OMEGA_SAFE_INL_INCLUDED_
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder__ctor,2,((in),void**,phandle,(in),Omega::Threading::SingletonCallback,pfn_init));
 inline void* Omega::System::Internal::rtti_holder::handle()
@@ -236,4 +236,4 @@ inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_
 	return create_safe_stub(pE,pE->GetThrownIID());
 }
 
-#endif // OOCORE_SAFE_INL_INCLUDED_
+#endif // OMEGA_SAFE_INL_INCLUDED_

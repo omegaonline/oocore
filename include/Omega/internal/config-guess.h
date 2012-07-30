@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_GUESS_H_INCLUDED_
-#define OOCORE_CONFIG_GUESS_H_INCLUDED_
+#ifndef OMEGA_CONFIG_GUESS_H_INCLUDED_
+#define OMEGA_CONFIG_GUESS_H_INCLUDED_
 
 /////////////////////////////////////////////////////////
 //
@@ -37,17 +37,17 @@
 
 #if defined(_MSC_VER)
 // MS Visual Studio
-#include "config-msvc.h"
+#include "./config-msvc.h"
 #elif defined (__clang__)
-#include "config-clang.h"
+#include "./config-clang.h"
 #elif defined (__BORLANDC__)
 // Borland C++ Builder
-#include "config-borland.h"
+#include "./config-borland.h"
 #elif defined (__GNUC__) || defined(__CDT_PARSER__)
 // Keep this last, as a lot of compilers pretend...
-#include "config-gcc.h"
+#include "./config-gcc.h"
 #else
 #error Failed to guess your compiler.  Please contact the omegaonline developers.
 #endif
 
-#endif // OOCORE_CONFIG_GUESS_H_INCLUDED_
+#endif // OMEGA_CONFIG_GUESS_H_INCLUDED_

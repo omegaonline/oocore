@@ -22,8 +22,8 @@
 #ifndef OMEGA_TYPES_H_INCLUDED_
 #define OMEGA_TYPES_H_INCLUDED_
 
-#include "base_types.h"
-#include "string.h"
+#include "./base_types.h"
+#include "./string.h"
 
 namespace Omega
 {

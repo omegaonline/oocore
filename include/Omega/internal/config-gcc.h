@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_GCC_H_INCLUDED_
-#define OOCORE_CONFIG_GCC_H_INCLUDED_
+#ifndef OMEGA_CONFIG_GCC_H_INCLUDED_
+#define OMEGA_CONFIG_GCC_H_INCLUDED_
 
 #if !defined(HAVE_STDINT_H)
 #define HAVE_STDINT_H 1
@@ -67,11 +67,11 @@
 #endif
 
 #if defined(_WIN32)
-	#include "config-win32.h"
+	#include "./config-win32.h"
 #endif
 
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
 
-#endif // OOCORE_CONFIG_GCC_H_INCLUDED_
+#endif // OMEGA_CONFIG_GCC_H_INCLUDED_

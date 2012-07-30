@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_RTTI_H_INCLUDED_
-#define OOCORE_RTTI_H_INCLUDED_
+#ifndef OMEGA_RTTI_H_INCLUDED_
+#define OMEGA_RTTI_H_INCLUDED_
 
 namespace Omega
 {
@@ -344,4 +344,4 @@ namespace Omega
 	}
 }
 
-#endif // OOCORE_RTTI_H_INCLUDED_
+#endif // OMEGA_RTTI_H_INCLUDED_

@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_WIN32_H_INCLUDED_
-#define OOCORE_CONFIG_WIN32_H_INCLUDED_
+#ifndef OMEGA_CONFIG_WIN32_H_INCLUDED_
+#define OMEGA_CONFIG_WIN32_H_INCLUDED_
 
 // Prevent inclusion of old winsock
 #define _WINSOCKAPI_
@@ -69,4 +69,4 @@
 	#undef max
 #endif
 
-#endif // OOCORE_CONFIG_WIN32_H_INCLUDED_
+#endif // OMEGA_CONFIG_WIN32_H_INCLUDED_

@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_RTTI_INL_INCLUDED_
-#define OOCORE_RTTI_INL_INCLUDED_
+#ifndef OMEGA_RTTI_INL_INCLUDED_
+#define OMEGA_RTTI_INL_INCLUDED_
 
 inline bool Omega::System::PinObjectPointer(Omega::IObject* pObject)
 {
@@ -126,5 +126,5 @@ inline Omega::IAccessDeniedException* Omega::IAccessDeniedException::Create(cons
 
 #endif // !defined(DOXYGEN)
 
-#endif // OOCORE_RTTI_INL_INCLUDED_
+#endif // OMEGA_RTTI_INL_INCLUDED_
 

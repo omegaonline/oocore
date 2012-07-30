@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_WIRE_H_INCLUDED_
-#define OOCORE_WIRE_H_INCLUDED_
+#ifndef OMEGA_WIRE_H_INCLUDED_
+#define OMEGA_WIRE_H_INCLUDED_
 
 namespace Omega
 {
@@ -967,4 +967,4 @@ namespace Omega
 
 #endif // !defined(DOXYGEN)
 
-#endif // OOCORE_WIRE_H_INCLUDED_
+#endif // OMEGA_WIRE_H_INCLUDED_

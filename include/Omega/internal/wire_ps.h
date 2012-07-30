@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_WIRE_PS_H_INCLUDED_
-#define OOCORE_WIRE_PS_H_INCLUDED_
+#ifndef OMEGA_WIRE_PS_H_INCLUDED_
+#define OMEGA_WIRE_PS_H_INCLUDED_
 
 namespace Omega
 {
@@ -548,4 +548,4 @@ namespace Omega
 	}
 }
 
-#endif // OOCORE_WIRE_PS_H_INCLUDED_
+#endif // OMEGA_WIRE_PS_H_INCLUDED_

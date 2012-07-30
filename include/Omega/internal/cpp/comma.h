@@ -36,7 +36,7 @@
 // Comma macros
 //
 
-#include "pre_base.h"
+#include "./pre_base.h"
 
 #if !defined(OMEGA_COMMA_NOT_FIRST)
 

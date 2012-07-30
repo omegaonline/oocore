@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_BORLAND_H_INCLUDED_
-#define OOCORE_CONFIG_BORLAND_H_INCLUDED_
+#ifndef OMEGA_CONFIG_BORLAND_H_INCLUDED_
+#define OMEGA_CONFIG_BORLAND_H_INCLUDED_
 
 #error Borland C++ currently doesn't work - please have a go at fixing it?
 
@@ -54,4 +54,4 @@
 #pragma warn -8058
 #pragma warn -8074
 
-#endif // OOCORE_CONFIG_BORLAND_H_INCLUDED_
+#endif // OMEGA_CONFIG_BORLAND_H_INCLUDED_

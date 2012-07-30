@@ -22,7 +22,7 @@
 #ifndef OTL_EXCEPTION_H_INCLUDED_
 #define OTL_EXCEPTION_H_INCLUDED_
 
-#include "OTL.h"
+#include "./OTL.h"
 
 #if !defined(OMEGA_REMOTING_H_INCLUDED_)
 #include "../Omega/Remoting.h"

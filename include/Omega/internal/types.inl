@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_TYPES_INL_INCLUDED_
-#define OOCORE_TYPES_INL_INCLUDED_
+#ifndef OMEGA_TYPES_INL_INCLUDED_
+#define OMEGA_TYPES_INL_INCLUDED_
 
 ////////////////////////////////////////////////////
 // string_t starts here
@@ -539,4 +539,4 @@ inline Omega::Formatting::formatter_t operator % (const char* lhs, const Omega::
 	return Omega::Formatting::formatter_t(Omega::string_t(lhs)) % rhs;
 }
 
-#endif // OOCORE_TYPES_INL_INCLUDED_
+#endif // OMEGA_TYPES_INL_INCLUDED_

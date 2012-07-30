@@ -19,15 +19,15 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_MACROS_H_INCLUDED_
-#define OOCORE_MACROS_H_INCLUDED_
+#ifndef OMEGA_MACROS_H_INCLUDED_
+#define OMEGA_MACROS_H_INCLUDED_
 
 #if !defined(DOXYGEN)
 
-#include "cpp/sequence.h"
-#include "cpp/repeat.h"
-#include "cpp/comma.h"
-#include "cpp/split.h"
+#include "./cpp/sequence.h"
+#include "./cpp/repeat.h"
+#include "./cpp/comma.h"
+#include "./cpp/split.h"
 
 #define OMEGA_UNIQUE_NAME(name) \
 	OMEGA_CONCAT(name,__LINE__)
@@ -898,4 +898,4 @@
 
 #endif // defined(DOXYGEN)
 
-#endif // OOCORE_MACROS_H_INCLUDED_
+#endif // OMEGA_MACROS_H_INCLUDED_

@@ -139,10 +139,6 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	guid_t iid = pParamsIn->ReadValue(string_t::constant("iid")).cast<guid_t>();
 	Activation::Flags_t act_flags = pParamsIn->ReadValue(string_t::constant("flags")).cast<Activation::Flags_t>();
 
-	// Check our permissions
-	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
-		act_flags |= Activation::RemoteActivation;
-
 	// Get the required object
 	ObjectPtr<IObject> ptrObject = OOCore::GetInstance(oid,act_flags,iid);
 

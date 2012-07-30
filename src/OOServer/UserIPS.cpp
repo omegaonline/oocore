@@ -182,11 +182,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (err)
 		OMEGA_THROW(err);
 
-	// Check for remote activation
-	bool remote_activation = false;
-	if (flags & Activation::RemoteActivation)
-		remote_activation = true;
-
 	OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
 	if (!guard.acquire(timeout))
 		throw ITimeoutException::Create();
@@ -221,7 +216,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))
 			break;
 
-		m_ptrROT->GetObject(oid,iid,pObject,remote_activation);
+		m_ptrROT->GetObject(oid,iid,pObject);
 		if (pObject)
 			break;
 	}

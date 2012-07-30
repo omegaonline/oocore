@@ -174,7 +174,7 @@ OOCore::LocalROT::~LocalROT()
 ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
 {
 	IObject* pIPS = NULL;
-	GetObject(OID_InterProcessService,OMEGA_GUIDOF(IInterProcessService),pIPS,false);
+	GetObject(OID_InterProcessService,OMEGA_GUIDOF(IInterProcessService),pIPS);
 	
 	if (bThrow && !pIPS)
 		throw IInternalException::Create(OOCore::get_text("Omega::Initialize not called"),"OOCore");
@@ -268,7 +268,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	}
 }
 
-void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject, bool_t remote)
+void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	ObjectPtr<IObject> ptrObject;
 
@@ -325,7 +325,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 	{
 		// Route to global rot
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = GetIPS(true)->GetRunningObjectTable();
-		ptrROT->GetObject(oid,iid,pObject,remote);
+		ptrROT->GetObject(oid,iid,pObject);
 	}
 }
 

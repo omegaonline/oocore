@@ -119,9 +119,6 @@ namespace
 		if (sgt_flags < Activation::Process)
 			sgt_flags = Activation::Process;
 
-		if (flags & Activation::RemoteActivation)
-			sgt_flags |= Activation::RemoteActivation;
-
 		// Always launch the surrogate as an app - this protects against in-process surrogates!
 		IObject* pObject = NULL;
 		OOCore::GetInterProcessService(true)->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Activation::IObjectFactory),sgt_flags,pObject);
@@ -181,16 +178,11 @@ namespace
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
-		// Check for remote activation
-		bool remote_activation = false;
-		if (flags & Activation::RemoteActivation)
-			remote_activation = true;
-			
 		// See if we have it registered in the ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
 
 		IObject* pObject = NULL;
-		ptrROT->GetObject(oid,iid,pObject,remote_activation);
+		ptrROT->GetObject(oid,iid,pObject);
 		if (!pObject)
 		{
 			// See if we are allowed to load...

@@ -116,8 +116,7 @@ namespace Omega
 			Process = 2,                         ///< Launch as current user - implies surrogate if dll/so
 			Sandbox = 3,                         ///< Launch as the sandbox user - implies surrogate if dll/so
 
-			RemoteActivation = 0x10,             ///< Request is from a remote machine
-			DontLaunch = 0x20                    ///< Do not launch exe/dll/so if not already running
+			DontLaunch = 0x10                    ///< Do not launch exe/dll/so if not already running
 		};
 		typedef uint16_t Flags_t;
 	}

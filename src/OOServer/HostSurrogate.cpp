@@ -143,15 +143,6 @@ namespace
 
 		return ret;
 	}
-
-	Activation::Flags_t clean_flags(Activation::Flags_t flags)
-	{
-		Activation::Flags_t new_flags = Activation::Library;
-		if (flags & Activation::RemoteActivation)
-			new_flags |= Activation::RemoteActivation;
-
-		return new_flags;
-	}
 }
 
 BEGIN_PROCESS_OBJECT_MAP()
@@ -164,7 +155,7 @@ const Omega::guid_t OOCore::OID_ServiceManager("{1ACC3273-8FB3-9741-E7E6-1CD4C61
 
 void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
-	OOCore_GetInstance(oid,clean_flags(flags),iid,pObject);
+	OOCore_GetInstance(oid,Activation::Library,iid,pObject);
 }
 
 System::IService* ServiceManagerImpl::Create(const any_t& oid)

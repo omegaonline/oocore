@@ -154,6 +154,9 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 
 	ptrMessage->WriteStructEnd();
 
+	// Get the channel marshal flags
+	Remoting::MarshalFlags_t flags = ptrChannel->GetMarshalFlags();
+
 	// Get the channel's IMarshaller
 	IObject* pObj = NULL;
 	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshaller),pObj);
@@ -173,7 +176,8 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	{
 		m_pManager->MarshalInterface(string_t::constant("pReflect"),pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
 
-		++m_marshal_count;
+		if (flags != Remoting::Same)
+			++m_marshal_count;
 	}
 	catch (...)
 	{

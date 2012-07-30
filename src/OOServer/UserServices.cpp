@@ -117,15 +117,8 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 
 							guard.release();
 
-							if (!found)
-							{
-								LOG_ERROR(("Failed to find service start partial entry"));
-								err = OOServer::Errored;
-							}
-							else
-							{
+							if (found)
 								ptrServiceManager->Start(entry.ptrService,strName.c_str(),strPipe.c_str(),ptrKey,strSecret.c_str());
-							}
 						}
 						catch (IException* pE)
 						{
@@ -162,7 +155,7 @@ OOServer::RootErrCode_t User::Manager::stop_all_services()
 	ServiceEntry entry;
 	while (m_mapServices.pop(&entry))
 	{
-		if (entry.ptrService)
+		if (entry.ptrService && Remoting::IsAlive(entry.ptrService))
 		{
 			guard.release();
 
@@ -232,9 +225,7 @@ void User::Manager::stop_service(OOBase::CDRStream& request, OOBase::CDRStream& 
 
 			guard.release();
 
-			if (!entry.ptrService)
-				err = OOServer::NotFound;
-			else
+			if (entry.ptrService && Remoting::IsAlive(entry.ptrService))
 			{
 				try
 				{
@@ -278,11 +269,13 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 
 			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 			{
-				if (m_mapServices.at(pos)->strName == strName.c_str())
+				ServiceEntry* entry = m_mapServices.at(pos);
+				if (entry->strName == strName.c_str())
 				{
-					if (m_mapServices.at(pos)->ptrService)
+					if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
 						found = true;
-
+					else
+						m_mapServices.remove_at(pos--);
 					break;
 				}
 			}
@@ -309,8 +302,14 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 
 		for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 		{
-			if (!response.write(m_mapServices.at(pos)->strName.c_str()))
-				break;
+			ServiceEntry* entry = m_mapServices.at(pos);
+			if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
+			{
+				if (!response.write(m_mapServices.at(pos)->strName.c_str()))
+					break;
+			}
+			else
+				m_mapServices.remove_at(pos--);
 		}
 
 		guard.release();

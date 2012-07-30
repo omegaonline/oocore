@@ -102,7 +102,6 @@ bool service_tests()
 	// Register the new service
 	TEST(register_service());
 
-	// Restart the services
 	TEST(start_service());
 
 	// Test the service has a socket listening
@@ -150,12 +149,19 @@ bool service_tests()
 	}
 	else
 	{
+		char buf[256] = {0};
+		ssize_t r = recv(sock,buf,sizeof(buf),0);
+		TEST(r != -1);
 
+#if defined(_WIN32)
+		closesocket(sock);
+#else
+		close(sock);
+#endif
 	}
 
 	TEST(stop_service());
 
-	// Restart again to test stopping
 	TEST(unregister_service());
 
 	return true;

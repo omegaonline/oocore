@@ -314,9 +314,13 @@ namespace OTL
 		return ObjectPtr<I>(p);
 	}
 
+#if defined(OMEGA_REGISTRY_H_INCLUDED_)
+
 	// If the compiler moans here, then you need to #include <OTL/Registry.h>
 	template <>
 	class ObjectPtr<Omega::Registry::IKey>;
+
+#endif // OMEGA_REGISTRY_H_INCLUDED_
 
 	class ObjectBase : public Omega::System::Internal::ThrowingNew
 	{
@@ -756,6 +760,8 @@ namespace OTL
 		{}
 	};
 
+#if defined(OMEGA_TYPEINFO_H_INCLUDED_)
+
 	template <typename ROOT>
 	class IProvideObjectInfoImpl :
 			public Omega::TypeInfo::IProvideObjectInfo
@@ -804,6 +810,8 @@ namespace OTL
 			return WalkEntries(ROOT::getQIEntries());
 		}
 	};
+
+#endif // OMEGA_TYPEINFO_H_INCLUDED_
 }
 
 #include "OTL.inl"

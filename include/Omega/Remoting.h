@@ -22,7 +22,7 @@
 #ifndef OMEGA_REMOTING_H_INCLUDED_
 #define OMEGA_REMOTING_H_INCLUDED_
 
-#include "Omega.h"
+#include "./TypeInfo.h"
 
 namespace Omega
 {

@@ -22,7 +22,7 @@
 #ifndef OMEGA_SERVICE_H_INCLUDED_
 #define OMEGA_SERVICE_H_INCLUDED_
 
-#include "Omega.h"
+#include "./Registry.h"
 
 #if defined(_WIN32)
 #include <WinSock2.h>

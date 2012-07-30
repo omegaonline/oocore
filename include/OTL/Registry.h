@@ -23,7 +23,11 @@
 #define OTL_REGISTRY_H_INCLUDED_
 
 // Specialisations of ObjectPtr for registry access
-#include "OTL.h"
+#include "./OTL.h"
+
+#if !defined(OMEGA_REGISTRY_H_INCLUDED_)
+#include "../Omega/Registry.h"
+#endif
 
 namespace OTL
 {

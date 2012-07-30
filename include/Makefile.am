@@ -16,7 +16,6 @@ nobase_include_HEADERS = \
 	Omega/internal/config-msvc.h \
 	Omega/internal/config-win32.h \
 	Omega/internal/export.h \
-	Omega/internal/interfaces.h \
 	Omega/internal/memory.h \
 	Omega/internal/rtti.h \
 	Omega/internal/rtti.inl \
@@ -34,9 +33,11 @@ nobase_include_HEADERS = \
 	Omega/Compartment.h \
 	Omega/IO.h \
 	Omega/Omega.h \
+	Omega/OOCore_version.h \
+	Omega/Registry.h \
 	Omega/Remoting.h \
 	Omega/Service.h \
-	Omega/OOCore_version.h \
+	Omega/TypeInfo.h \
 	OTL/OTL.h \
 	OTL/OTL.inl \
 	OTL/Exception.h \

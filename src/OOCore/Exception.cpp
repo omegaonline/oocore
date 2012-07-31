@@ -190,7 +190,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 {
 	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
 
-	string_t strIID = OOCore::get_text("Unknown interface: {0}") % iid;
+	string_t strIID = iid.ToString();
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)
@@ -204,7 +204,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 {
 	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
 
-	string_t strIID = OOCore::get_text("Unknown interface {0}") % iid;
+	string_t strIID = iid.ToString();
 
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII = OOCore::GetInterfaceInfo(iid);
 	if (ptrII)

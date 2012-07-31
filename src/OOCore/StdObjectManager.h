@@ -34,8 +34,6 @@ namespace OOCore
 		virtual void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 		virtual void ReleaseMarshalChannelData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 	};
-
-	Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
 }
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL

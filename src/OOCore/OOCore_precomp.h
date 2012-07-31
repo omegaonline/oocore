@@ -113,6 +113,8 @@ namespace OOCore
 	};
 
 	Omega::string_t get_text(const char* sz);
+
+	Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
 }
 
 // Operator new that throws Omega::ISystemException

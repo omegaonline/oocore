@@ -790,6 +790,9 @@
 #define OMEGA_NO_METHODS() \
 	(DECLARED_NO_METHODS())
 
+#define OMEGA_EVENT(name,param_count,params) \
+	(DECLARED_METHOD_VOID(TypeInfo::Asynchronous,name,param_count,params))
+
 #define OMEGA_METHOD_EX_VOID(attribs,name,param_count,params) \
 	(DECLARED_METHOD_VOID(attribs,name,param_count,params))
 

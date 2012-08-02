@@ -173,6 +173,12 @@ namespace Omega
 			virtual void GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 		};
 
+		interface IRunningObjectTableNotify : public IObject
+		{
+			virtual void OnRegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
+			virtual void OnRevokeObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
+		};
+
 		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
 		OOCORE_DECLARE_OID(OID_RunningObjectTable);
 
@@ -249,12 +255,21 @@ OMEGA_DEFINE_INTERFACE
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::Activation, IRunningObjectTable, "{0A36F849-8DBC-49c6-9ECA-8AD71BF3C8D0}",
+	Omega::Activation, IRunningObjectTable, "{0A36F849-8DBC-49C6-9ECA-8AD71BF3C8D0}",
 
 	// Methods
 	OMEGA_METHOD(uint32_t,RegisterObject,3,((in),const any_t&,oid,(in),IObject*,pObject,(in),Activation::RegisterFlags_t,flags))
 	OMEGA_METHOD_VOID(RevokeObject,1,((in),uint32_t,cookie))
 	OMEGA_METHOD_VOID(GetObject,3,((in),const any_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::Activation, IRunningObjectTableNotify, "{006A089C-977A-5E1E-1805-BF33A5F624C7}",
+
+	// Methods
+	OMEGA_EVENT(OnRegisterObject,3,((in),const any_t&,oid,(in),IObject*,pObject,(in),Activation::RegisterFlags_t,flags))
+	OMEGA_EVENT(OnRevokeObject,3,((in),const any_t&,oid,(in),IObject*,pObject,(in),Activation::RegisterFlags_t,flags))
 )
 
 #include "./internal/types.inl"

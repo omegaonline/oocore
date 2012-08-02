@@ -32,6 +32,7 @@ nobase_include_HEADERS = \
 	Omega/internal/wire.inl \
 	Omega/Compartment.h \
 	Omega/IO.h \
+	Omega/Notify.h \
 	Omega/Omega.h \
 	Omega/OOCore_version.h \
 	Omega/Registry.h \

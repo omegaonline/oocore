@@ -119,10 +119,10 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_RegisterIPS,2,((in),Omega::IObject*,pIPS,(in),bool_t,hosted))
 {
-	// Get the zero cmpt service manager...
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
-	uint32_t nCookie = ptrROT->RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
-	
+	ObjectPtr<SingletonObjectImpl<OOCore::LocalROT> > ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
+
+	uint32_t nCookie = ptrROT->RegisterIPS(pIPS);
+
 	s_hosted_by_ooserver = hosted;
 
 	return nCookie;
@@ -133,8 +133,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RevokeIPS,1,((in),uint32_t,nCookie))
 	// Get the zero compartment service manager...
 	if (nCookie)
 	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
-		ptrROT->RevokeObject(nCookie);
+		ObjectPtr<SingletonObjectImpl<OOCore::LocalROT> > ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
+		ptrROT->RevokeIPS(nCookie);
 	}
 }
 
@@ -149,26 +149,34 @@ bool OOCore::HostedByOOServer()
 	return s_hosted_by_ooserver;
 }
 
-OOCore::LocalROT::LocalROT() : m_mapServicesByCookie(1)
+OOCore::LocalROT::LocalROT() :
+		m_notify_cookie(0),
+		m_mapServicesByCookie(1),
+		m_mapNotify(1)
 {
 }
 
 OOCore::LocalROT::~LocalROT()
 {
-	try
+	/*try
 	{
 		// Because the DLL can be deleted without close being called...
-		Info info;
-		while (m_mapServicesByCookie.pop(NULL,&info))
+		for (Info info;m_mapServicesByCookie.pop(NULL,&info);)
 		{
 			// Just detach and leak every object...
 			info.m_ptrObject.Detach();
+		}
+
+		for (ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify;m_mapNotify.pop(NULL,&ptrNotify);)
+		{
+			// Just detach and leak every object...
+			ptrNotify.Detach();
 		}
 	}
 	catch (IException* pE)
 	{
 		pE->Release();
-	}
+	}*/
 }
 
 ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
@@ -182,48 +190,80 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
 	return static_cast<IInterProcessService*>(pIPS);
 }
 
+uint32_t OOCore::LocalROT::RegisterIPS(IObject* pIPS)
+{
+	// Register before we attach for notification
+	uint32_t nCookie = RegisterObject(OOCore::OID_InterProcessService,pIPS,Activation::ProcessScope | Activation::MultipleUse);
+
+	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS->QueryInterface(OMEGA_GUIDOF(IInterProcessService)));
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
+	ObjectPtr<Notify::INotifier> ptrNotify = ptrROT.QueryInterface<Notify::INotifier>();
+	if (ptrNotify)
+		m_notify_cookie = ptrNotify->RegisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),static_cast<Activation::IRunningObjectTableNotify*>(this));
+
+	return nCookie;
+}
+
+void OOCore::LocalROT::RevokeIPS(uint32_t cookie)
+{
+	if (m_notify_cookie)
+	{
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = GetIPS(false);
+		if (ptrIPS)
+		{
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
+			ObjectPtr<Notify::INotifier> ptrNotify = ptrROT.QueryInterface<Notify::INotifier>();
+			if (ptrNotify)
+				ptrNotify->UnregisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),m_notify_cookie);
+		}
+	}
+
+	RevokeObject(cookie);
+}
+
 uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
 	if (!pObject)
 		throw IInternalException::Create(OOCore::get_text("NULL object"),"IRunningObjectTable::RegisterObject");
 
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-	uint32_t rot_cookie = 0;
-
 	// Check for user registration
 	Activation::RegisterFlags_t scope = (flags & 0xF);
-
 	if (!scope)
 		throw IInternalException::Create(OOCore::get_text("Invalid flags"),"IRunningObjectTable::RegisterObject");
 
+	// Create a new info struct
+	Info info;
+	info.m_oid = oid.cast<string_t>();
+	info.m_flags = flags;
+	info.m_ptrObject = pObject;
+	info.m_ptrObject.AddRef();
+	info.m_rot_cookie = 0;
+
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 	if (scope & ~Activation::ProcessScope)
 	{
 		// Register in ROT
 		ptrROT = GetIPS(true)->GetRunningObjectTable();
 		if (ptrROT)
-			rot_cookie = ptrROT->RegisterObject(oid,pObject,flags);
+			info.m_rot_cookie = ptrROT->RegisterObject(oid,pObject,flags);
 	}
+
+	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
+	uint32_t nCookie = 0;
 
 	try
 	{
-		OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
-		string_t strOid = oid.cast<string_t>();
-
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Check if we have someone registered already
-		for (size_t i=m_mapServicesByOid.find_first(strOid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
+		for (size_t i=m_mapServicesByOid.find_first(info.m_oid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==info.m_oid; ++i)
 		{
 			Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
 			if (pInfo)
 			{
 				// Check its still alive...
 				if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
-				{
-					int err = revoke_list.push(*m_mapServicesByOid.at(i));
-					if (err != 0)
-						OMEGA_THROW(err);
-				}
+					revoke_list.push(*m_mapServicesByOid.at(i));
 				else
 				{
 					if (!(pInfo->m_flags & Activation::MultipleRegistration) || pInfo->m_flags == flags)
@@ -232,51 +272,42 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 			}
 		}
 
-		// Create a new cookie
-		Info info;
-		info.m_oid = strOid;
-		info.m_flags = flags;
-		info.m_ptrObject = pObject;
-		info.m_ptrObject->AddRef();
-		info.m_rot_cookie = rot_cookie;
-
-		uint32_t nCookie = 0;
 		int err = m_mapServicesByCookie.insert(info,nCookie,1,0xFFFFFFFF);
 		if (err == 0)
 		{
-			err = m_mapServicesByOid.insert(strOid,nCookie);
+			err = m_mapServicesByOid.insert(info.m_oid,nCookie);
 			if (err != 0)
 				m_mapServicesByCookie.remove(nCookie);
 		}
-		if (err != 0)
+		if (err)
 			OMEGA_THROW(err);
-		
-		guard.release();
-
-		// Revoke the revoke_list
-		for (uint32_t i = 0;revoke_list.pop(&i);)
-			RevokeObject(i);
-		
-		return nCookie;
 	}
 	catch (...)
 	{
-		if (rot_cookie && ptrROT)
-			ptrROT->RevokeObject(rot_cookie);
+		if (info.m_rot_cookie && ptrROT)
+			ptrROT->RevokeObject(info.m_rot_cookie);
 
 		throw;
 	}
+
+	if (!info.m_rot_cookie)
+		OnRegisterObject(info.m_oid,info.m_ptrObject,info.m_flags);
+		
+	// Revoke the revoke_list
+	for (uint32_t i = 0;revoke_list.pop(&i);)
+		RevokeObject(i);
+		
+	return nCookie;
 }
 
 void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<IObject> ptrObject;
-
 	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	
+	ObjectPtr<IObject> ptrObject;
 	for (size_t i=m_mapServicesByOid.find_first(strOid); i<m_mapServicesByOid.size() && *m_mapServicesByOid.key_at(i)==strOid; ++i)
 	{
 		Info* pInfo = m_mapServicesByCookie.find(*m_mapServicesByOid.at(i));
@@ -354,7 +385,111 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 				ptrROT->RevokeObject(info.m_rot_cookie);
 			}
 		}
+		else
+			OnRevokeObject(info.m_oid,info.m_ptrObject,info.m_flags);
 	}
+}
+
+void OOCore::LocalROT::OnRegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+{
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
+
+	OOBase::Stack<uint32_t> stackRemove;
+
+	for (size_t pos = m_mapNotify.begin(); pos != m_mapNotify.npos; pos = m_mapNotify.next(pos))
+	{
+		try
+		{
+			ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = *m_mapNotify.at(pos);
+			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
+				stackRemove.push(*m_mapNotify.key_at(pos));
+			else
+				ptrNotify->OnRegisterObject(oid,pObject,flags);
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+		}
+	}
+
+	read_guard.release();
+
+	if (!stackRemove.empty())
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (uint32_t i = 0;stackRemove.pop(&i);)
+			m_mapNotify.remove(i,NULL);
+	}
+}
+
+void OOCore::LocalROT::OnRevokeObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+{
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
+
+	OOBase::Stack<uint32_t> stackRemove;
+
+	for (size_t pos = m_mapNotify.begin(); pos != m_mapNotify.npos; pos = m_mapNotify.next(pos))
+	{
+		try
+		{
+			ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = *m_mapNotify.at(pos);
+			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
+				stackRemove.push(*m_mapNotify.key_at(pos));
+			else
+				ptrNotify->OnRevokeObject(oid,pObject,flags);
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+		}
+	}
+
+	read_guard.release();
+
+	if (!stackRemove.empty())
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (uint32_t i = 0;stackRemove.pop(&i);)
+			m_mapNotify.remove(i,NULL);
+	}
+}
+
+uint32_t OOCore::LocalROT::RegisterNotify(const guid_t& iid, IObject* pObject)
+{
+	uint32_t nCookie = 0;
+
+	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify) && pObject)
+	{
+		ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify(static_cast<Activation::IRunningObjectTableNotify*>(pObject));
+		ptrNotify.AddRef();
+
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		int err = m_mapNotify.insert(ptrNotify,nCookie,1,0xFFFFFFFF);
+		if (err)
+			OMEGA_THROW(err);
+	}
+
+	return nCookie;
+}
+
+void OOCore::LocalROT::UnregisterNotify(const guid_t& iid, uint32_t cookie)
+{
+	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify) && cookie)
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		m_mapNotify.remove(cookie,NULL);
+	}
+}
+
+Notify::INotifier::iid_list_t OOCore::LocalROT::ListNotifyInterfaces()
+{
+	Notify::INotifier::iid_list_t list;
+	list.push_back(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify));
+	return list;
 }
 
 void OTL::Module::OOCore_LibraryModuleImpl::RegisterObjectFactories(Activation::IRunningObjectTable* pROT)

@@ -36,10 +36,14 @@ namespace OOCore
 	// The instance wide LocalROT instance
 	class LocalROT : 
 		public OTL::ObjectBase,
-		public Omega::Activation::IRunningObjectTable
+		public Omega::Activation::IRunningObjectTable,
+		public Omega::Activation::IRunningObjectTableNotify,
+		public Omega::Notify::INotifier
 	{
 	public:
 		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS(bool bThrow);
+		Omega::uint32_t RegisterIPS(Omega::IObject* pIPS);
+		void RevokeIPS(Omega::uint32_t cookie);
 
 	protected:
 		LocalROT();
@@ -47,6 +51,8 @@ namespace OOCore
 	
 		BEGIN_INTERFACE_MAP(LocalROT)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
+			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTableNotify)
+			INTERFACE_ENTRY(Omega::Notify::INotifier)
 		END_INTERFACE_MAP()
 
 	private:
@@ -54,7 +60,8 @@ namespace OOCore
 		LocalROT& operator = (const LocalROT&);
 
 		OOBase::RWMutex m_lock;
-		
+		Omega::uint32_t m_notify_cookie;
+
 		struct Info
 		{
 			Omega::string_t                    m_oid;
@@ -65,11 +72,24 @@ namespace OOCore
 		OOBase::HandleTable<Omega::uint32_t,Info>      m_mapServicesByCookie;
 		OOBase::Table<Omega::string_t,Omega::uint32_t> m_mapServicesByOid;
 
+		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Activation::IRunningObjectTableNotify> > m_mapNotify;
+
 	// IRunningObjectTable members
 	public:
 		Omega::uint32_t RegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
 		void GetObject(const Omega::any_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		void RevokeObject(Omega::uint32_t cookie);
+
+	// IRunningObjectTableNotify members
+	public:
+		void OnRegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
+		void OnRevokeObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
+
+	// INotifier members
+	public:
+		Omega::uint32_t RegisterNotify(const Omega::guid_t& iid, Omega::IObject* pObject);
+		void UnregisterNotify(const Omega::guid_t& iid, Omega::uint32_t cookie);
+		iid_list_t ListNotifyInterfaces();
 	};
 
 	class RunningObjectTableFactory : 

@@ -23,13 +23,16 @@
 #define OOSERVER_RUNNING_OBJECT_TABLE_H_INCLUDED_
 
 #include "../../include/Omega/Remoting.h"
+#include "../../include/Omega/Notify.h"
 
 namespace User
 {
 	class RunningObjectTable :
 			public OTL::ObjectBase,
 			public OTL::IProvideObjectInfoImpl<RunningObjectTable>,
-			public Omega::Activation::IRunningObjectTable
+			public Omega::Activation::IRunningObjectTable,
+			public Omega::Activation::IRunningObjectTableNotify,
+			public Omega::Notify::INotifier
 	{
 	public:
 		RunningObjectTable();
@@ -38,6 +41,8 @@ namespace User
 
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
+			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTableNotify)
+			INTERFACE_ENTRY(Omega::Notify::INotifier)
 			INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 		END_INTERFACE_MAP()
 
@@ -45,8 +50,9 @@ namespace User
 		RunningObjectTable(const RunningObjectTable&);
 		RunningObjectTable& operator = (const RunningObjectTable&);
 
-		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
 		OOBase::RWMutex                                        m_lock;
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
+		Omega::uint32_t                                        m_notify_cookie;
 		
 		struct Info
 		{
@@ -59,6 +65,8 @@ namespace User
 		OOBase::HandleTable<Omega::uint32_t,Info>      m_mapObjectsByCookie;
 		OOBase::Table<Omega::string_t,Omega::uint32_t> m_mapObjectsByOid;
 
+		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Activation::IRunningObjectTableNotify> > m_mapNotify;
+
 		void RevokeObject_i(Omega::uint32_t cookie, Omega::uint32_t src_id);
 
 	// IRunningObjectTable
@@ -66,6 +74,17 @@ namespace User
 		Omega::uint32_t RegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t reg_flags);
 		void RevokeObject(Omega::uint32_t cookie);
 		void GetObject(const Omega::any_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
+
+	// IRunningObjectTableNotify members
+	public:
+		void OnRegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
+		void OnRevokeObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
+
+	// INotifier members
+	public:
+		Omega::uint32_t RegisterNotify(const Omega::guid_t& iid, Omega::IObject* pObject);
+		void UnregisterNotify(const Omega::guid_t& iid, Omega::uint32_t cookie);
+		Omega::Notify::INotifier::iid_list_t ListNotifyInterfaces();
 	};
 }
 

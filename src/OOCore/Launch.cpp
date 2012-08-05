@@ -113,7 +113,16 @@ namespace
 
 		if (strPipe.empty())
 		{
-			OOBase::RefPtr<OOBase::Socket> root_socket = OOBase::Socket::connect_local(ROOT_NAME,err,timeout);
+			OOBase::RefPtr<OOBase::Socket> root_socket;
+			while (!timeout.has_expired())
+			{
+				root_socket = OOBase::Socket::connect_local(ROOT_NAME,err,timeout);
+				if (!err || (err != ENOENT && err != ECONNREFUSED))
+					break;
+
+				// We ignore the error, and try again until we timeout
+			}
+
 			if (err)
 			{
 				ObjectPtr<IException> ptrE = ISystemException::Create(err);

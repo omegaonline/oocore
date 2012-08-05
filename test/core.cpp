@@ -26,17 +26,9 @@ bool init_tests()
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		if (pE->GetDescription() == "Failed to connect to network daemon")
-		{
-			pE->Release();
-			output("[No server]\n");
-		}
-		else
-		{
-			output("[Omega::IException]\n");
-			output_exception(pE);
-			pE->Release();
-		}
+		output("[Omega::IException]\n");
+		output_exception(pE);
+		pE->Release();
 		return false;
 	}
 

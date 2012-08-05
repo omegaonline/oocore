@@ -153,7 +153,7 @@ END_PROCESS_OBJECT_MAP()
 const Omega::guid_t OOCore::OID_Surrogate("{D063D32C-FB9A-004A-D2E5-BB5451808FF5}");
 const Omega::guid_t OOCore::OID_ServiceManager("{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}");
 
-void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t, const guid_t& iid, IObject*& pObject)
 {
 	OOCore_GetInstance(oid,Activation::Library,iid,pObject);
 }

@@ -150,7 +150,7 @@ bool service_tests()
 	else
 	{
 		char buf[256] = {0};
-		ssize_t r = recv(sock,buf,sizeof(buf),0);
+		int r = recv(sock,buf,sizeof(buf),0);
 		TEST(r != -1);
 
 #if defined(_WIN32)

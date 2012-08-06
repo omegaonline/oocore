@@ -123,7 +123,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	}
 
 	if (!info.m_rot_cookie)
-		OnRegisterObject(info.m_oid,info.m_ptrObject,info.m_flags);
+		OnRegisterObject(info.m_oid,info.m_flags);
 
 	// Revoke the revoke_list
 	for (uint32_t i = 0;revoke_list.pop(&i);)
@@ -219,7 +219,7 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 		if (info.m_rot_cookie)
 			m_ptrROT->RevokeObject(info.m_rot_cookie);
 		else
-			OnRevokeObject(info.m_oid,info.m_ptrObject,info.m_flags);
+			OnRevokeObject(info.m_oid,info.m_flags);
 	}
 }
 
@@ -233,7 +233,7 @@ void User::RunningObjectTable::RevokeObject(uint32_t cookie)
 	RevokeObject_i(cookie,src_id);
 }
 
-void User::RunningObjectTable::OnRegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+void User::RunningObjectTable::OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t flags)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -247,7 +247,7 @@ void User::RunningObjectTable::OnRegisterObject(const any_t& oid, IObject* pObje
 			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
 				stackRemove.push(*m_mapNotify.key_at(pos));
 			else
-				ptrNotify->OnRegisterObject(oid,pObject,flags);
+				ptrNotify->OnRegisterObject(oid,flags);
 		}
 		catch (IException* pE)
 		{
@@ -266,7 +266,7 @@ void User::RunningObjectTable::OnRegisterObject(const any_t& oid, IObject* pObje
 	}
 }
 
-void User::RunningObjectTable::OnRevokeObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+void User::RunningObjectTable::OnRevokeObject(const any_t& oid, Activation::RegisterFlags_t flags)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -280,7 +280,7 @@ void User::RunningObjectTable::OnRevokeObject(const any_t& oid, IObject* pObject
 			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
 				stackRemove.push(*m_mapNotify.key_at(pos));
 			else
-				ptrNotify->OnRevokeObject(oid,pObject,flags);
+				ptrNotify->OnRevokeObject(oid,flags);
 		}
 		catch (IException* pE)
 		{

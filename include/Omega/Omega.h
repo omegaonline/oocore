@@ -175,8 +175,8 @@ namespace Omega
 
 		interface IRunningObjectTableNotify : public IObject
 		{
-			virtual void OnRegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
-			virtual void OnRevokeObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags) = 0;
+			virtual void OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t flags) = 0;
+			virtual void OnRevokeObject(const any_t& oid, Activation::RegisterFlags_t flags) = 0;
 		};
 
 		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
@@ -268,8 +268,8 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IRunningObjectTableNotify, "{006A089C-977A-5E1E-1805-BF33A5F624C7}",
 
 	// Methods
-	OMEGA_EVENT(OnRegisterObject,3,((in),const any_t&,oid,(in),IObject*,pObject,(in),Activation::RegisterFlags_t,flags))
-	OMEGA_EVENT(OnRevokeObject,3,((in),const any_t&,oid,(in),IObject*,pObject,(in),Activation::RegisterFlags_t,flags))
+	OMEGA_EVENT(OnRegisterObject,2,((in),const any_t&,oid,(in),Activation::RegisterFlags_t,flags))
+	OMEGA_EVENT(OnRevokeObject,2,((in),const any_t&,oid,(in),Activation::RegisterFlags_t,flags))
 )
 
 #include "./internal/types.inl"

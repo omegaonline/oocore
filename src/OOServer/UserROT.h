@@ -77,8 +77,8 @@ namespace User
 
 	// IRunningObjectTableNotify members
 	public:
-		void OnRegisterObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
-		void OnRevokeObject(const Omega::any_t& oid, Omega::IObject* pObject, Omega::Activation::RegisterFlags_t flags);
+		void OnRegisterObject(const Omega::any_t& oid, Omega::Activation::RegisterFlags_t flags);
+		void OnRevokeObject(const Omega::any_t& oid, Omega::Activation::RegisterFlags_t flags);
 
 	// INotifier members
 	public:

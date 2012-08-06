@@ -291,7 +291,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	}
 
 	if (!info.m_rot_cookie)
-		OnRegisterObject(info.m_oid,info.m_ptrObject,info.m_flags);
+		OnRegisterObject(info.m_oid,info.m_flags);
 		
 	// Revoke the revoke_list
 	for (uint32_t i = 0;revoke_list.pop(&i);)
@@ -386,11 +386,11 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 			}
 		}
 		else
-			OnRevokeObject(info.m_oid,info.m_ptrObject,info.m_flags);
+			OnRevokeObject(info.m_oid,info.m_flags);
 	}
 }
 
-void OOCore::LocalROT::OnRegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+void OOCore::LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t flags)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -404,7 +404,7 @@ void OOCore::LocalROT::OnRegisterObject(const any_t& oid, IObject* pObject, Acti
 			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
 				stackRemove.push(*m_mapNotify.key_at(pos));
 			else
-				ptrNotify->OnRegisterObject(oid,pObject,flags);
+				ptrNotify->OnRegisterObject(oid,flags);
 		}
 		catch (IException* pE)
 		{
@@ -423,7 +423,7 @@ void OOCore::LocalROT::OnRegisterObject(const any_t& oid, IObject* pObject, Acti
 	}
 }
 
-void OOCore::LocalROT::OnRevokeObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+void OOCore::LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlags_t flags)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -437,7 +437,7 @@ void OOCore::LocalROT::OnRevokeObject(const any_t& oid, IObject* pObject, Activa
 			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
 				stackRemove.push(*m_mapNotify.key_at(pos));
 			else
-				ptrNotify->OnRevokeObject(oid,pObject,flags);
+				ptrNotify->OnRevokeObject(oid,flags);
 		}
 		catch (IException* pE)
 		{

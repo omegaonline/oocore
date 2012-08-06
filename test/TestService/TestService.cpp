@@ -32,7 +32,6 @@ public:
 
 	~TestServiceImpl()
 	{
-		printf("DEAD!\n");
 	}
 
 	void Run(const Omega::string_t& strName, Omega::Registry::IKey* pKey, Omega::System::IService::socket_map_t& socket_map);
@@ -51,10 +50,7 @@ void TestServiceImpl::Run(const Omega::string_t& strName, Omega::Registry::IKey*
 	printf("%s started!\n",strName.c_str());
 
 	if (socket_map.empty())
-	{
-		printf("Socket map!\n");
 		return;
-	}
 
 	Omega::System::IService::socket_t sock = socket_map["One"];
 	listen(sock,1);

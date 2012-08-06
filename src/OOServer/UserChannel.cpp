@@ -59,11 +59,15 @@ void User::Channel::disconnect()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	if (m_ptrOM)
-		m_ptrOM->Shutdown();
-
+	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrOM;
 	m_ptrOM.Release();
+
 	m_ptrMarshaller.Release();
+
+	guard.release();
+
+	if (ptrOM)
+		ptrOM->Shutdown();
 }
 
 Remoting::IObjectManager* User::Channel::GetObjectManager()

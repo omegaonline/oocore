@@ -42,8 +42,7 @@ namespace
 			OOBase::POSIX::close(m_fd);
 		}
 
-		bool running();
-		bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
+		bool is_running(int& exit_code);
 		void kill();
 		void exec(const char* pszExeName, const char* pszWorkingDir, char** env);
 
@@ -141,29 +140,24 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 			exit_msg("chdir(%s): %s\n",pszWorkingDir,OOBase::system_error_text(err));
 	}
 
-	// When wait_for_exit() is finally removed, replace the system() call below with:
-	// execl("/bin/sh","sh","-c",pszExeName,(char*)NULL);
-	void* TODO;
-
 #if 0
 	OOBase::LocalString valgrind;
 	valgrind.printf("xterm -T '%s' -e 'libtool --mode=execute valgrind --leak-check=full --log-file=valgrind_log%d.txt %s'",pszExeName,getpid(),pszExeName);
-	::system(valgrind.c_str());
+	execlp("/bin/sh","sh","-c",valgrind.c_str(),(char*)NULL);
 #endif
 
-	// Just use the system() call
-	err = ::system(pszExeName);
-	if (!WIFEXITED(err))
-		exit_msg("Failed to launch process %s\n",pszExeName);
-
-	_exit(WEXITSTATUS(err));
+	if (execlp("/bin/sh","sh","-c",pszExeName,(char*)NULL) == -1)
+	{
+		err = errno;
+		exit_msg("execlp(/bin/sh -c %s): %s\n",pszExeName,OOBase::system_error_text(err));
+	}
 }
 
-bool UserProcessUnix::running()
+bool UserProcessUnix::is_running(int& exit_code)
 {
 	if (m_pid != 0)
 	{
-		pid_t retv = safe_wait_pid(m_pid,NULL,WNOHANG);
+		pid_t retv = safe_wait_pid(m_pid,&exit_code,WNOHANG);
 		if (retv == 0)
 			return true;
 
@@ -173,54 +167,13 @@ bool UserProcessUnix::running()
 	return false;
 }
 
-bool UserProcessUnix::wait_for_exit(const OOBase::Timeout& timeout, int& exit_code)
-{
-	int status = 0;
-
-	::timeval wait = {0};
-	if (!timeout.get_timeval(wait))
-		safe_wait_pid(m_pid,&status,0);
-	else
-	{
-		if (wait.tv_sec || wait.tv_usec)
-		{
-			fd_set set;
-			FD_ZERO(&set);
-			FD_SET(m_fd,&set);
-
-			for (;;)
-			{
-				int ret = select(m_fd+1,&set,NULL,NULL,&wait);
-				if (ret != -1)
-					break;
-
-				if (errno != EINTR)
-					OMEGA_THROW(errno);
-
-				timeout.get_timeval(wait);
-			}
-		}
-
-		if (safe_wait_pid(m_pid,&status,WNOHANG) == 0)
-			return false;
-	}
-
-	if (WIFEXITED(status))
-		exit_code = WEXITSTATUS(status);
-	else
-		exit_code = -1;
-
-	return true;
-}
-
 void UserProcessUnix::kill()
 {
-	if (running())
+	if (m_pid != 0)
 	{
 		::kill(m_pid,SIGKILL);
 
-		int status = 0;
-		safe_wait_pid(m_pid,&status,0);
+		safe_wait_pid(m_pid,NULL,0);
 
 		m_pid = 0;
 	}

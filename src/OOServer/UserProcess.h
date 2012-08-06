@@ -29,8 +29,7 @@ namespace User
 	public:
 		virtual ~Process() {}
 
-		virtual bool running() = 0;
-		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code) = 0;
+		virtual bool is_running(int& exit_code) = 0;
 		virtual void kill() = 0;
 
 		static bool is_invalid_path(const Omega::string_t& strPath);

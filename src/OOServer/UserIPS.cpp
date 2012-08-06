@@ -28,6 +28,67 @@
 using namespace Omega;
 using namespace OTL;
 
+namespace
+{
+	class ROTNotifier : Activation::IRunningObjectTableNotify
+	{
+	public:
+		ROTNotifier(ObjectPtr<Notify::INotifier> ptrNotify, const guid_t& oid) :
+				m_ptrNotify(ptrNotify), m_cookie(0), m_oid(oid)
+		{
+			m_cookie = m_ptrNotify->RegisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),this);
+		}
+
+		virtual ~ROTNotifier()
+		{
+			if (m_cookie)
+				m_ptrNotify->UnregisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),m_cookie);
+		}
+
+		bool wait(const OOBase::Timeout& timeout)
+		{
+			bool res = false;
+			if (!m_future.wait(res,false,timeout))
+				return false;
+
+			return true;
+		}
+
+	private:
+		ObjectPtr<Notify::INotifier> m_ptrNotify;
+		uint32_t                     m_cookie;
+		OOBase::Future<bool>         m_future;
+		const guid_t&                m_oid;
+
+	// IObject members
+	public:
+		void AddRef()
+		{}
+
+		void Release()
+		{}
+
+		IObject* QueryInterface(const guid_t& iid)
+		{
+			if (iid == OMEGA_GUIDOF(IObject) || iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify))
+				return this;
+
+			return NULL;
+		}
+
+	// IRunningObjectTableNotify members
+	public:
+		void OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t)
+		{
+			if (oid == m_oid)
+				m_future.signal(true);
+		}
+
+		void OnRevokeObject(const any_t&, Activation::RegisterFlags_t)
+		{}
+	};
+}
+
 void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser)
 {
 	if (pOMSB)
@@ -186,8 +247,9 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (!guard.acquire(timeout))
 		throw ITimeoutException::Create();
 
+	int exit_code = 0;
 	OOBase::SmartPtr<User::Process> ptrProcess;
-	if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->running())
+	if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->is_running(exit_code))
 	{
 		m_mapInProgress.remove(strProcess);
 		ptrProcess = NULL;
@@ -205,19 +267,31 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	guard.release();
 
-	// When we have notification support, use a notifier...
-	void* TODO;
+	ObjectPtr<Notify::INotifier> ptrNotify = m_ptrROT.QueryInterface<Notify::INotifier>();
+	if (!ptrNotify)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Notify::INotifier));
+
+	// Use a notifier with a OOBase::Future
+	ROTNotifier notifier(ptrNotify,oid);
 
 	// Wait for the process to start and register its parts...
-	int exit_code = 0;
-	for (unsigned int msecs = 1;!timeout.has_expired();msecs *= 2)
+	while (!timeout.has_expired())
 	{
-		// Check the process is still alive
-		if (ptrProcess->wait_for_exit(OOBase::Timeout(0,msecs),exit_code))
-			break;
+		OOBase::Timeout wait(1,0);
+		if (!timeout.is_infinite() && timeout < wait)
+			wait = timeout;
 
-		m_ptrROT->GetObject(oid,iid,pObject);
-		if (pObject)
+		// Wait for the oid to be registered
+		//if (notifier.wait(wait))
+		{
+			// Get the object from the ROT
+			m_ptrROT->GetObject(oid,iid,pObject);
+			if (pObject)
+				break;
+		}
+
+		// Check the process is still alive
+		if (!ptrProcess->is_running(exit_code))
 			break;
 	}
 

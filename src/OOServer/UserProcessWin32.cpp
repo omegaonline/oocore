@@ -37,8 +37,7 @@ namespace
 	class UserProcessWin32 : public User::Process
 	{
 	public:
-		virtual bool running();
-		virtual bool wait_for_exit(const OOBase::Timeout& timeout, int& exit_code);
+		virtual bool is_running(int& exit_code);
 		virtual void kill();
 
 		void exec(const wchar_t* app_name, wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block);
@@ -108,7 +107,7 @@ void UserProcessWin32::exec(const wchar_t* app_name, wchar_t* cmd_line, const wc
 	m_hProcess = pi.hProcess;
 }
 
-bool UserProcessWin32::running()
+bool UserProcessWin32::is_running(int& exit_code)
 {
 	if (!m_hProcess.is_valid())
 		return false;
@@ -119,30 +118,14 @@ bool UserProcessWin32::running()
 
 	if (dwWait != WAIT_OBJECT_0)
 		OOBase_CallCriticalFailure(GetLastError());
-
-	return false;
-}
-
-bool UserProcessWin32::wait_for_exit(const OOBase::Timeout& timeout, int& exit_code)
-{
-	if (!m_hProcess.is_valid())
-		return true;
-
-	DWORD dwWait = WaitForSingleObject(m_hProcess,timeout.millisecs());
-	if (dwWait == WAIT_OBJECT_0)
-	{
-		DWORD dwCode;
-		if (GetExitCodeProcess(m_hProcess,&dwCode))
-			exit_code = dwCode;
-		else
-			exit_code = -1;
-
-		return true;
-	}
 	
-	if (dwWait != WAIT_TIMEOUT)
-		OOBase_CallCriticalFailure(GetLastError());
+	DWORD dwCode;
+	if (GetExitCodeProcess(m_hProcess,&dwCode))
+		exit_code = dwCode;
+	else
+		exit_code = -1;
 
+	m_hProcess.close();
 	return false;
 }
 

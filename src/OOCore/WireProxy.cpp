@@ -198,7 +198,7 @@ void OOCore::Proxy::CallRemoteRelease()
 		ptrParamsOut->WriteStructEnd();
 
 		ObjectPtr<Remoting::IMessage> ptrParamsIn;
-		ObjectPtr<IException> ptrE = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
+		ObjectPtr<IException> ptrE = m_pManager->SendAndReceive(TypeInfo::Asynchronous,ptrParamsOut,ptrParamsIn);
 	}
 	catch (IException* pE)
 	{

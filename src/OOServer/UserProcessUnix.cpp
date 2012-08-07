@@ -113,11 +113,23 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 			exit_msg("chdir(%s): %s\n",pszWorkingDir,OOBase::system_error_text(err));
 	}
 
+	if (User::is_debug())
+	{
+		OOBase::LocalString display;
+		display.getenv("DISPLAY");
+		if (!display.empty())
+		{
 #if 0
-	OOBase::LocalString valgrind;
-	valgrind.printf("xterm -T '%s' -e 'libtool --mode=execute valgrind --leak-check=full --log-file=valgrind_log%d.txt %s'",pszExeName,getpid(),pszExeName);
-	execlp("/bin/sh","sh","-c",valgrind.c_str(),(char*)NULL);
+			OOBase::LocalString valgrind;
+			valgrind.printf("xterm -T '%s' -e 'libtool --mode=execute valgrind --leak-check=full --log-file=valgrind_log%d.txt %s'",pszExeName,getpid(),pszExeName);
+			execlp("/bin/sh","sh","-c",valgrind.c_str(),(char*)NULL);
 #endif
+
+			OOBase::LocalString ex;
+			ex.printf("xterm -T '%s' -e '%s'",pszExeName,pszExeName);
+			execlp("/bin/sh","sh","-c",ex.c_str(),(char*)NULL);
+		}
+	}
 
 	if (execlp("/bin/sh","sh","-c",pszExeName,(char*)NULL) == -1)
 	{

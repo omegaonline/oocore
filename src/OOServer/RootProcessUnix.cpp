@@ -339,27 +339,30 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	dup2(n,STDERR_FILENO);
 	OOBase::POSIX::close(n);
 
-	OOBase::LocalString display;
-	display.getenv("DISPLAY");
-	if (Root::is_debug() && !display.empty())
+	if (Root::is_debug())
 	{
-		OOBase::String strTitle;
-		if (m_bSandbox)
-			strTitle.assign("oosvruser:/sandbox");
-		else
-			strTitle.concat("oosvruser:",m_sid.c_str());
+		OOBase::LocalString display;
+		display.getenv("DISPLAY");
+		if (!display.empty())
+		{
+			OOBase::String strTitle;
+			if (m_bSandbox)
+				strTitle.assign("oosvruser:/sandbox");
+			else
+				strTitle.concat("oosvruser:",m_sid.c_str());
 
-		const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
+			const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
-		//OOBase::LocalString valgrind;
-		//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
-		//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
+			//OOBase::LocalString valgrind;
+			//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
+			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
-		//OOBase::LocalString gdb;
-		//gdb.printf("run %s --debug",strPipe.c_str());
-		//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(), NULL };
+			//OOBase::LocalString gdb;
+			//gdb.printf("run %s --debug",strPipe.c_str());
+			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(), NULL };
 
-		execvpe(argv[0],(char* const*)argv,envp);
+			execvpe(argv[0],(char* const*)argv,envp);
+		}
 	}
 
 	const char* argv[] = { "oosvruser", strPipe.c_str(), NULL, NULL };

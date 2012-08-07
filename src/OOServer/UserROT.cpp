@@ -91,11 +91,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 			if (pInfo)
 			{
 				if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
-				{
-					int err = revoke_list.push(*m_mapObjectsByOid.at(i));
-					if (err != 0)
-						OMEGA_THROW(err);
-				}
+					revoke_list.push(*m_mapObjectsByOid.at(i));
 				else
 				{
 					if (!(pInfo->m_flags & Activation::MultipleRegistration) || pInfo->m_flags == flags)
@@ -122,14 +118,14 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		throw;
 	}
 
+	// Revoke the revoke_list BEFORE we notify of the new entry
+	for (uint32_t i = 0;revoke_list.pop(&i);)
+		RevokeObject_i(i,0);
+
 	// The lines below cause all kinds of problems!!
 	void* BROKEN;
 	//if (!info.m_rot_cookie)
 	//	OnRegisterObject(info.m_oid,info.m_flags);
-
-	// Revoke the revoke_list
-	for (uint32_t i = 0;revoke_list.pop(&i);)
-		RevokeObject_i(i,0);
 
 	return nCookie;
 }

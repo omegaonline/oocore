@@ -266,13 +266,13 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 
 		throw;
 	}
+		
+	// Revoke the revoke_list BEFORE we notify of the new entry
+	for (uint32_t i = 0;revoke_list.pop(&i);)
+		RevokeObject(i);
 
 	if (!info.m_rot_cookie)
 		OnRegisterObject(info.m_oid,info.m_flags);
-		
-	// Revoke the revoke_list
-	for (uint32_t i = 0;revoke_list.pop(&i);)
-		RevokeObject(i);
 		
 	return nCookie;
 }

@@ -870,7 +870,7 @@ bool OOServer::MessageHandler::process_request_context(ThreadContext* pContext, 
 	}
 	else
 		pContext->m_mapChannelThreads.remove(msg.m_src_channel_id);
-	
+
 	return true;
 }
 
@@ -882,6 +882,14 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::process_chan
 
 	// Close the channel
 	channel_closed(closed_channel_id,msg.m_src_channel_id);
+
+	// Remove any channel context
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Tell every thread context that the channel has gone...
+	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
+		(*m_mapThreadContexts.at(i))->m_mapChannelThreads.remove(closed_channel_id);
+
 	return io_result::success;
 }
 

@@ -34,13 +34,8 @@ namespace
 	class UserProcessUnix : public User::Process
 	{
 	public:
-		UserProcessUnix() : m_pid(0), m_fd(-1)
+		UserProcessUnix() : m_pid(0)
 		{}
-
-		~UserProcessUnix()
-		{
-			OOBase::POSIX::close(m_fd);
-		}
 
 		bool is_running(int& exit_code);
 		void kill();
@@ -48,7 +43,6 @@ namespace
 
 	private:
 		pid_t m_pid;
-		int   m_fd;
 	};
 
 	void exit_msg(const char* fmt, ...)
@@ -89,34 +83,13 @@ bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 
 void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, char** env)
 {
-	// Create a pipe() pair, and wait for the child to close the write end
-	int fd[2] = {-1,-1};
-	int err = pipe(fd);
-	if (err)
-		OMEGA_THROW(errno);
-
-	// We want the file to close on exec (during the system() call below)
-	err = OOBase::POSIX::set_close_on_exec(fd[1],true);
-	if (err)
-	{
-		OOBase::POSIX::close(fd[0]);
-		OOBase::POSIX::close(fd[1]);
-		OMEGA_THROW(err);
-	}
-
 	pid_t pid = fork();
 	if (pid < 0)
-	{
-		OOBase::POSIX::close(fd[0]);
-		OOBase::POSIX::close(fd[1]);
 		OMEGA_THROW(errno);
-	}
 
 	if (pid != 0)
 	{
 		// We are the parent
-		OOBase::POSIX::close(fd[1]);
-		m_fd = fd[0];
 		m_pid = pid;
 		return;
 	}
@@ -124,8 +97,8 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 	// We are the child...
 
 	// Close all open handles except the standard ones and fd[1]
-	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, fd[1] };
-	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
+	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
+	int err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
 	if (err)
 		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 

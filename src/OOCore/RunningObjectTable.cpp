@@ -156,29 +156,6 @@ OOCore::LocalROT::LocalROT() :
 {
 }
 
-OOCore::LocalROT::~LocalROT()
-{
-	/*try
-	{
-		// Because the DLL can be deleted without close being called...
-		for (Info info;m_mapServicesByCookie.pop(NULL,&info);)
-		{
-			// Just detach and leak every object...
-			info.m_ptrObject.Detach();
-		}
-
-		for (ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify;m_mapNotify.pop(NULL,&ptrNotify);)
-		{
-			// Just detach and leak every object...
-			ptrNotify.Detach();
-		}
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-	}*/
-}
-
 ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
 {
 	IObject* pIPS = NULL;

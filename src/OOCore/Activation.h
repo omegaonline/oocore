@@ -47,8 +47,7 @@ namespace OOCore
 
 	protected:
 		LocalROT();
-		virtual ~LocalROT();
-	
+
 		BEGIN_INTERFACE_MAP(LocalROT)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTableNotify)

@@ -408,12 +408,7 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 #endif
 
 	if (strPipe[0] == ' ')
-	{
-		LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()+1));
 		strPipe.replace_at(0,'\0');
-	}
-	else
-		LOG_DEBUG(("Listening for client connections on %s",strPipe.c_str()));
 
 	int err = 0;
 	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);

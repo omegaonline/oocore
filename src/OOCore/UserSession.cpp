@@ -334,7 +334,7 @@ void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
 	// Make this value configurable somehow...
 	void* ISSUE_9;    // Alert!
 
-	OOBase::Timeout timeout(0,500000);
+	OOBase::Timeout timeout(0,50000);
 	do
 	{
 		// The tiniest sleep
@@ -467,18 +467,11 @@ int OOCore::UserSession::run_read_loop()
 			ThreadContext* pContext = NULL;
 			if (m_mapThreadContexts.find(msg.m_dest_thread_id,pContext))
 			{
-				size_t waiting = pContext->m_usage_count;
-
 				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg,msg.m_timeout);
 				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = pContext->m_msg_queue.last_error();
 					break;
-				}
-				else if (res == OOBase::BoundedQueue<Message>::success)
-				{
-					if (waiting == 0)
-						wait_or_alert(pContext->m_usage_count);
 				}
 			}
 		}

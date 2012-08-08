@@ -282,7 +282,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			wait = timeout;
 
 		// Wait for the oid to be registered
-		//if (notifier.wait(wait))
+		if (notifier.wait(wait))
 		{
 			// Get the object from the ROT
 			m_ptrROT->GetObject(oid,iid,pObject);

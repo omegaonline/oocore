@@ -122,10 +122,8 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	for (uint32_t i = 0;revoke_list.pop(&i);)
 		RevokeObject_i(i,0);
 
-	// The lines below cause all kinds of problems!!
-	void* BROKEN;
-	//if (!info.m_rot_cookie)
-	//	OnRegisterObject(info.m_oid,info.m_flags);
+	if (!info.m_rot_cookie)
+		OnRegisterObject(info.m_oid,info.m_flags);
 
 	return nCookie;
 }

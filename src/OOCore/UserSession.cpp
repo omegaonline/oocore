@@ -677,17 +677,11 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
-	uint16_t src_thread_id = 0;
-	uint16_t dest_thread_id = 0;
-	
-	// Only use thread context if we are a synchronous call
-	if (!(attribs & Message::asynchronous))
-	{
-		// Determine dest_thread_id
-		pContext->m_mapChannelThreads.find(dest_channel_id,dest_thread_id);
+	uint16_t src_thread_id = pContext->m_thread_id;
 
-		src_thread_id = pContext->m_thread_id;
-	}
+	// Determine dest_thread_id
+	uint16_t dest_thread_id = 0;
+	pContext->m_mapChannelThreads.find(dest_channel_id,dest_thread_id);
 
 	// Write the header info
 	OOBase::CDRStream header;

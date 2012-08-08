@@ -962,25 +962,22 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 
 OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
 {
+	ThreadContext* pContext = ThreadContext::instance(this);
+
 	// Build a header
 	Message msg(request ? *request : OOBase::CDRStream());
+
 	msg.m_dest_thread_id = 0;
+	pContext->m_mapChannelThreads.find(dest_channel_id,msg.m_dest_thread_id);
+
 	msg.m_src_channel_id = m_uChannelId;
-	msg.m_src_thread_id = 0;
-	msg.m_timeout = timeout;
+	msg.m_src_thread_id = pContext->m_thread_id;
+	msg.m_timeout = pContext->m_timeout;
 	msg.m_attribs = attribs;
 	msg.m_type = Message_t::Request;
 	
-	// Only use thread context if we are a synchronous call
-	if (!(attribs & Message_t::asynchronous))
-	{
-		ThreadContext* pContext = ThreadContext::instance(this);
-
-		pContext->m_mapChannelThreads.find(dest_channel_id,msg.m_dest_thread_id);
-		
-		msg.m_src_thread_id = pContext->m_thread_id;
-		msg.m_timeout = pContext->m_timeout;
-	}
+	if (timeout < msg.m_timeout)
+		msg.m_timeout = timeout;
 
 	// Find the destination channel
 	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;
@@ -1020,7 +1017,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	Message msg(response);
 	msg.m_dest_thread_id = dest_thread_id;
 	msg.m_src_channel_id = m_uChannelId;
-	msg.m_src_thread_id = 0;//pContext->m_thread_id;
+	msg.m_src_thread_id = pContext->m_thread_id;
 	msg.m_attribs = attribs;
 	msg.m_timeout = pContext->m_timeout;
 	msg.m_type = Message_t::Response;

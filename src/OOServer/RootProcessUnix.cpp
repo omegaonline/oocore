@@ -127,7 +127,7 @@ namespace
 				LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
 		}
 
-		LOG_DEBUG(("Registry hive: %s",strHive.c_str()));
+		OOBase::Logger::log(OOBase::Logger::Information,"Loading registry hive: %s",strHive.c_str());
 
 		// Check hive exists... if it doesn't copy user_template.regdb and chown/chmod correctly
 		OOBase::POSIX::SmartFD fd_to(OOBase::POSIX::open(strHive.c_str(),O_CREAT | O_EXCL | O_WRONLY,S_IRUSR | S_IWUSR));

@@ -58,7 +58,7 @@ namespace Root
 
 		int run(const OOBase::CmdArgs::results_t& cmd_args);
 
-		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, const OOBase::Timeout& timeout = OOBase::Timeout(), Omega::uint16_t attribs = 0);
+		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs = 0);
 
 	private:
 		Manager(const Manager&);

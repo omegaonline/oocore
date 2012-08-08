@@ -642,7 +642,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::handle_messa
 				if (!response.write(msg.m_src_channel_id))
 					LOG_ERROR_RETURN(("Failed to write channel reflect response: %s",OOBase::system_error_text(response.last_error())),io_result::failed);
 
-				return send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_timeout,Message_t::synchronous | Message_t::channel_reflect);
+				return send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,Message_t::synchronous | Message_t::channel_reflect);
 			}
 
 		case Message_t::channel_ping:
@@ -652,7 +652,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::handle_messa
 				if (!response.write(Omega::byte_t(1)))
 					LOG_ERROR_RETURN(("Failed to write ping response: %s",OOBase::system_error_text(response.last_error())),io_result::failed);
 
-				return send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_timeout,Message_t::synchronous | Message_t::channel_ping);
+				return send_response(msg.m_src_channel_id,msg.m_src_thread_id,response,Message_t::synchronous | Message_t::channel_ping);
 			}
 
 		case Message_t::async_function:
@@ -927,7 +927,7 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 {
 	OOBase::CDRStream msg;
 	if (msg.write(closed_channel_id))
-		send_request(dest_channel_id,&msg,NULL,OOBase::Timeout(),Message_t::asynchronous | Message_t::channel_close);
+		send_request(dest_channel_id,&msg,NULL,Message_t::asynchronous | Message_t::channel_close);
 }
 
 bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
@@ -960,7 +960,7 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 	return (queue_message(msg) == io_result::success);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t attribs)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -976,9 +976,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	msg.m_attribs = attribs;
 	msg.m_type = Message_t::Request;
 	
-	if (timeout < msg.m_timeout)
-		msg.m_timeout = timeout;
-
 	// Find the destination channel
 	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
@@ -1009,7 +1006,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_request
 	return wait_for_response(*response,msg.m_timeout,actual_dest_channel_id);
 }
 
-OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
+OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, Omega::uint32_t attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1021,8 +1018,6 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_respons
 	msg.m_attribs = attribs;
 	msg.m_timeout = pContext->m_timeout;
 	msg.m_type = Message_t::Response;
-	if (timeout < msg.m_timeout)
-		msg.m_timeout = timeout;
 
 	// Find the destination channel
 	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;

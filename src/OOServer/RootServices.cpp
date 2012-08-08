@@ -496,7 +496,7 @@ bool Root::Manager::stop_services()
 	
 	// Make a blocking call
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
+	OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request,&response,OOServer::Message_t::synchronous);
 	if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service stop request to sandbox"),false);
 
@@ -613,7 +613,7 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 			else
 			{
 				// Make a blocking call, reusing response
-				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
+				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
 				if (res != OOServer::MessageHandler::io_result::success)
 				{
 					LOG_ERROR(("Failed to send service stop request to sandbox"));
@@ -659,7 +659,7 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 			else
 			{
 				// Make a blocking call, reusing response
-				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
+				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
 				if (res != OOServer::MessageHandler::io_result::success)
 				{
 					LOG_ERROR(("Failed to send service_is_running request to sandbox"));
@@ -697,7 +697,7 @@ void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDR
 		else
 		{
 			// Make a blocking call, reusing response
-			OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOBase::Timeout(),OOServer::Message_t::synchronous);
+			OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
 			if (res != OOServer::MessageHandler::io_result::success)
 			{
 				LOG_ERROR(("Failed to send service_is_running request to sandbox"));

@@ -667,7 +667,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 
 	if (!response.last_error() && !(attribs & OOServer::Message_t::asynchronous))
 	{
-		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,timeout,attribs);
+		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,attribs);
 		if (res == OOServer::MessageHandler::io_result::failed)
 			LOG_ERROR(("Root response sending failed"));
 	}
@@ -710,7 +710,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
-			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),timeout,attribs);
+			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
 				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
@@ -724,7 +724,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 
 			OOCore_RespondException(ptrResponse,pE);
 
-			send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),timeout,attribs);
+			send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),attribs);
 		}
 	}
 }
@@ -770,17 +770,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 
 void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)
 {
-	// The timeout needs to be related to the request timeout...
-	OOBase::Timeout timeout;
-	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-	if (ptrCC)
-	{
-		uint32_t msecs = ptrCC->Timeout();
-		if (msecs != 0xFFFFFFFF)
-			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
-	}
-
-	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,timeout,attribs);
+	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,attribs);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)
@@ -825,7 +815,7 @@ bool User::Manager::notify_started()
 		if (request.last_error() != 0)
 			LOG_ERROR_RETURN(("Failed to write start notification arguments: %s",OOBase::system_error_text(request.last_error())),false);
 
-		if (send_request(m_uUpstreamChannel,&request,NULL,OOBase::Timeout(),TypeInfo::Asynchronous) != OOServer::MessageHandler::io_result::success)
+		if (send_request(m_uUpstreamChannel,&request,NULL,TypeInfo::Asynchronous) != OOServer::MessageHandler::io_result::success)
 			LOG_ERROR_RETURN(("Failed to send start notification: %s",OOBase::system_error_text()),false);
 	}
 

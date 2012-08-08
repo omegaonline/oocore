@@ -95,13 +95,6 @@ Remoting::IMessage* User::Channel::CreateMessage()
 
 IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
-	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-	uint32_t msecs = ptrCC->Timeout();
-
-	OOBase::Timeout timeout;
-	if (msecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
-
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -118,7 +111,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	OOBase::CDRStream response;
 	try
 	{
-		OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,timeout,attribs);
+		OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,attribs);
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (res == OOServer::MessageHandler::io_result::timedout)
@@ -181,7 +174,7 @@ bool_t User::Channel::IsConnected()
 	bool connected = true;
 	
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOBase::Timeout(),OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
+	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOServer::Message_t::synchronous | OOServer::Message_t::channel_ping);
 	if (res != OOServer::MessageHandler::io_result::success)
 		connected = false;
 
@@ -206,7 +199,7 @@ bool_t User::Channel::IsConnected()
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOBase::Timeout(),OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
+	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
 		if (res == OOServer::MessageHandler::io_result::timedout)

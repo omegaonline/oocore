@@ -98,14 +98,6 @@ namespace OOCore
 	public:
 		void CreateInstance(const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
-
-	class RunningObjectTableFactory_NoThrow :
-		public OTL::ObjectFactoryBase<&Omega::Activation::OID_RunningObjectTable_NoThrow,Omega::Activation::ProcessScope>
-	{
-	// IObjectFactory members
-	public:
-		void CreateInstance(const Omega::guid_t& iid, Omega::IObject*& pObject);
-	};
 	
 	class RegistryFactory : 
 		public OTL::ObjectFactoryBase<&Omega::Registry::OID_Registry,Omega::Activation::ProcessScope>

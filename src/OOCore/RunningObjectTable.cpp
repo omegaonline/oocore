@@ -62,7 +62,6 @@ namespace OTL
 					OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
 					OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
 					OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
-					OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory_NoThrow)
 					OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
 					OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
 					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
@@ -501,19 +500,6 @@ void OOCore::RunningObjectTableFactory::CreateInstance(const guid_t& iid, IObjec
 		throw OOCore_INotFoundException_MissingIID(iid);
 }
 
-// {ADEA9DC0-9D82-9481-843C-CFBB8373F65E}
-OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable_NoThrow,"{ADEA9DC0-9D82-9481-843C-CFBB8373F65E}");
 
-void OOCore::RunningObjectTableFactory_NoThrow::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService(false);
-	if (!ptrIPS)
-		pObject = NULL;
-	else
-	{
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
-		pObject = ptrROT->QueryInterface(iid);
-		if (!pObject)
-			throw OOCore_INotFoundException_MissingIID(iid);
-	}
 }

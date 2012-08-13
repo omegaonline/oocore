@@ -25,9 +25,7 @@
 // Specialisations of ObjectPtr for registry access
 #include "./OTL.h"
 
-#if !defined(OMEGA_REGISTRY_H_INCLUDED_)
 #include "../Omega/Registry.h"
-#endif
 
 namespace OTL
 {
@@ -43,17 +41,17 @@ namespace OTL
 				ObjectPtrBase<Omega::Registry::IKey>(rhs.m_ptr,true)
 		{ }
 
-		ObjectPtr(const char* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
+		/*ObjectPtr(const char* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default)
 		{
-			if (key && key[0] != '\0')
+			if (key && !(key[0] == '\0' || (key[0] == '/' && key[1] == '\0')))
 				replace(this->m_ptr->OpenKey(key,flags),false);
-		}
+		}*/
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default)
 		{
-			if (!key.IsEmpty())
+			if (!key.IsEmpty() && key != "/")
 				replace(this->m_ptr->OpenKey(key,flags),false);
 		}
 

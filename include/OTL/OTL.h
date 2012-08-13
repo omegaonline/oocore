@@ -148,10 +148,9 @@ namespace OTL
 				m_ptr->AddRef();
 		}
 
-		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags)
-		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,OMEGA_GUIDOF(OBJECT)));
-		}
+		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags) :
+				m_ptr(static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,OMEGA_GUIDOF(OBJECT))))
+		{ }
 
 		virtual ~ObjectPtrBase()
 		{
@@ -242,9 +241,9 @@ namespace OTL
 				ObjectPtrBase<OBJECT>(oid,flags)
 		{ }
 
-		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
+		/*ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
 				ObjectPtrBase<OBJECT>(Omega::string_t(name),flags)
-		{ }
+		{ }*/
 
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
 		{
@@ -284,9 +283,9 @@ namespace OTL
 				ObjectPtrBase<Omega::IObject>(oid,flags)
 		{ }
 
-		ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
+		/*ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
 				ObjectPtrBase<Omega::IObject>(Omega::string_t(name),flags)
-		{ }
+		{ }*/
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
 		{

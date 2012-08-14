@@ -26,7 +26,7 @@ namespace User
 {
 	class ServiceController :
 			public OTL::ObjectBase,
-			public OTL::AutoObjectFactory<ServiceController,&Omega::System::OID_ServiceController,Omega::Activation::ProcessScope>,
+			public OTL::AutoObjectFactory<ServiceController,&Omega::System::OID_ServiceController,Omega::Activation::UserScope>,
 			public Omega::System::IServiceController
 	{
 	public:

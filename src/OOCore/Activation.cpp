@@ -93,7 +93,7 @@ namespace
 
 	ObjectPtr<Registry::IKey> GetObjectsKey(const string_t& strSubKey)
 	{
-		ObjectPtr<Registry::IKey> ptrObjects = ObjectPtr<Registry::IOverlayKeyFactory>(Registry::OID_OverlayKeyFactory)->Overlay(string_t::constant("Local User/Objects"),string_t::constant("All Users/Objects"));
+		ObjectPtr<Registry::IKey> ptrObjects = ObjectPtr<Registry::IOverlayKeyFactory>(Registry::OID_OverlayKeyFactory,Activation::Process | Activation::DontLaunch)->Overlay(string_t::constant("Local User/Objects"),string_t::constant("All Users/Objects"));
 		return ptrObjects->OpenKey(strSubKey);
 	}
 

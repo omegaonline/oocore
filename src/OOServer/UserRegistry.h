@@ -64,7 +64,7 @@ namespace User
 
 		class OverlayKeyFactory :
 				public OTL::ObjectBase,
-				public OTL::AutoObjectFactory<OverlayKeyFactory,&Omega::Registry::OID_OverlayKeyFactory,Omega::Activation::ProcessScope>,
+				public OTL::AutoObjectFactory<OverlayKeyFactory,&Omega::Registry::OID_OverlayKeyFactory,Omega::Activation::UserScope>,
 				public Omega::Registry::IOverlayKeyFactory
 		{
 		public:

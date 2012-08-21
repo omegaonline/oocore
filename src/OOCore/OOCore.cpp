@@ -82,7 +82,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 		// This is a short-cut close for use by the OOServer
 
 		// Unregister built-ins
-		OOCore::UnregisterObjects();
+		OOCore::UnregisterObjects(false);
 
 		// Close all singletons
 		OOCore::UserSession::close_singletons();

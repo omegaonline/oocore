@@ -62,7 +62,6 @@ namespace User
 		OOBase::RWMutex                                                               m_lock;
 		OOSvrBase::Proactor*                                                          m_proactor;
 		OOBase::ThreadPool                                                            m_proactor_pool;
-		Omega::uint32_t                                                               m_nIPSCookie;
 		bool                                                                          m_bIsSandbox;
 		OOBase::RefPtr<OOSvrBase::Acceptor>                                           m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;

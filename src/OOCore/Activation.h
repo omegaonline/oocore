@@ -27,7 +27,7 @@
 namespace OOCore
 {
 	void RegisterObjects();
-	void UnregisterObjects();
+	void UnregisterObjects(bool bPrivate);
 
 	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService(bool bThrow);
 
@@ -35,24 +35,23 @@ namespace OOCore
 
 	// The instance wide LocalROT instance
 	class LocalROT : 
-		public OTL::ObjectBase,
 		public Omega::Activation::IRunningObjectTable,
 		public Omega::Activation::IRunningObjectTableNotify,
 		public Omega::Notify::INotifier
 	{
 	public:
-		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS(bool bThrow);
-		Omega::uint32_t RegisterIPS(Omega::IObject* pIPS);
-		void RevokeIPS(Omega::uint32_t cookie);
-
-	protected:
 		LocalROT();
 
-		BEGIN_INTERFACE_MAP(LocalROT)
-			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
-			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTableNotify)
-			INTERFACE_ENTRY(Omega::Notify::INotifier)
-		END_INTERFACE_MAP()
+		OTL::ObjectPtr<OOCore::IInterProcessService> GetIPS(bool bThrow);
+		OTL::ObjectPtr<Omega::Registry::IKey> GetRootKey();
+		void RegisterIPS(OOCore::IInterProcessService* pIPS);
+		bool IsHosted();
+		void RevokeIPS();
+
+		static LocalROT* instance()
+		{
+			return OOBase::Singleton<LocalROT,OOCore::DLL>::instance_ptr();
+		}
 
 	private:
 		LocalROT(const LocalROT&);
@@ -60,6 +59,11 @@ namespace OOCore
 
 		OOBase::RWMutex m_lock;
 		Omega::uint32_t m_notify_cookie;
+		bool m_hosted_by_ooserver;
+
+		OTL::ObjectPtr<OOCore::IInterProcessService>           m_ptrIPS;
+		OTL::ObjectPtr<Omega::Registry::IKey>                  m_ptrReg;
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
 
 		struct Info
 		{
@@ -72,6 +76,22 @@ namespace OOCore
 		OOBase::Table<Omega::string_t,Omega::uint32_t> m_mapServicesByOid;
 
 		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Activation::IRunningObjectTableNotify> > m_mapNotify;
+
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> GetROT(bool bThrow);
+
+	// IObject members
+	public:
+		void AddRef()
+		{
+			OTL::GetModule()->IncLockCount();
+		}
+
+		void Release()
+		{
+			OTL::GetModule()->DecLockCount();
+		}
+
+		Omega::IObject* QueryInterface(const Omega::guid_t& iid);
 
 	// IRunningObjectTable members
 	public:

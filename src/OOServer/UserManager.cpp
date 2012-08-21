@@ -136,13 +136,10 @@ string_t User::recurse_log_exception(IException* pE)
 	return msg;
 }
 
-// UserManager
-
 User::Manager* User::Manager::s_instance = NULL;
 
 User::Manager::Manager() :
 		m_proactor(NULL),
-		m_nIPSCookie(0),
 		m_bIsSandbox(false),
 		m_mapRemoteChannelIds(1)
 {
@@ -341,18 +338,15 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 {
 	try
 	{
-		// Register our service
-		OOCore_ServerInit();
-
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstance();
-		ptrIPS->init(ptrOMSb,NULL);
+		ptrIPS->init(ptrOMSb);
 
 		// Register our interprocess service so we can react to activation requests
-		m_nIPSCookie = OOCore_RegisterIPS(ptrIPS,true);
+		OOCore_RegisterIPS(ptrIPS);
 
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();
@@ -594,18 +588,14 @@ void User::Manager::do_quit_i()
 			// Unregister our object factories
 			GetModule()->UnregisterObjectFactories();
 
-			// Unregister InterProcessService
-			OOCore_RevokeIPS(m_nIPSCookie);
-			m_nIPSCookie = 0;
+			// Close the OOCore
+			Uninitialize();
 		}
 		catch (IException* pE)
 		{
 			ObjectPtr<IException> ptrE = pE;
 			LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 		}
-
-		// Close the OOCore
-		Uninitialize();
 
 		// Close all channels
 		shutdown_channels();

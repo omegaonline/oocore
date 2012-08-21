@@ -179,10 +179,8 @@ namespace
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		// See if we have it registered in the ROT
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT = SingletonObjectImpl<OOCore::LocalROT>::CreateInstance();
-
 		IObject* pObject = NULL;
-		ptrROT->GetObject(oid,iid,pObject);
+		OOCore::LocalROT::instance()->GetObject(oid,iid,pObject);
 		if (!pObject)
 		{
 			// See if we are allowed to load...
@@ -379,18 +377,4 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetInstance,4,((in),const Omega::any_
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_CanUnload,0,())
 {
 	return DLLManager::instance()->can_unload();
-}
-
-// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
-OMEGA_DEFINE_OID(Registry,OID_Registry,"{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}");
-
-// {7A351233-8363-BA15-B443-31DD1C8FC587}
-OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C8FC587}");
-
-void OOCore::RegistryFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
-{
-	ObjectPtr<Registry::IKey> ptrKey = OOCore::GetInterProcessService(true)->GetRegistry();
-	pObject = ptrKey->QueryInterface(iid);
-	if (!pObject)
-		throw OOCore_INotFoundException_MissingIID(iid);
 }

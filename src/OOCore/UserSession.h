@@ -106,7 +106,6 @@ namespace OOCore
 		OOBase::Thread                   m_worker_thread;
 		OOBase::RefPtr<OOBase::Socket>   m_stream;
 		Omega::uint32_t                  m_channel_id;
-		Omega::uint32_t                  m_nIPSCookie;
 
 		// Startup/shutdown data
 		OOBase::Condition                m_cond;

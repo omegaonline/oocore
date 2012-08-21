@@ -42,7 +42,6 @@ template class OOBase::Singleton<OOCore::UserSession,OOCore::DLL>;
 OOCore::UserSession::UserSession() :
 		m_worker_thread(false),
 		m_channel_id(0),
-		m_nIPSCookie(0),
 		m_init_count(0),
 		m_init_state(eStopped),
 		m_usage_count(0),
@@ -174,12 +173,8 @@ void OOCore::UserSession::stop()
 {
 	try
 	{
-		// Unregister InterProcessService
-		OOCore_RevokeIPS(m_nIPSCookie);
-		m_nIPSCookie = 0;
-
 		// Unregister built-ins
-		OOCore::UnregisterObjects();
+		OOCore::UnregisterObjects(true);
 
 		// Close all singletons
 		close_singletons_i();

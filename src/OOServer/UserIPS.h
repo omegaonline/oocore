@@ -32,7 +32,7 @@ namespace User
 			public OOCore::IInterProcessService
 	{
 	public:
-		void init(Omega::Remoting::IObjectManager* pOMSB, Omega::Remoting::IObjectManager* pOMUser);
+		void init(Omega::Remoting::IObjectManager* pOMSB);
 
 		BEGIN_INTERFACE_MAP(InterProcessService)
 			INTERFACE_ENTRY(OOCore::IInterProcessService)

@@ -89,7 +89,7 @@ namespace
 	};
 }
 
-void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::IObjectManager* pOMUser)
+void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 {
 	if (pOMSB)
 	{
@@ -99,23 +99,10 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB, Remoting::
 		m_ptrSBIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
 	}
 
-	if (pOMUser)
-	{
-		// Create a proxy to the server interface
-		IObject* pIPS = NULL;
-		pOMUser->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
-
-		// Get the running object table
-		m_ptrReg = ptrIPS->GetRegistry();
-	}
-	else
-	{
-		// Create a local registry impl
-		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
-		ptrKey->init(string_t::constant("/"),0,0);
-		m_ptrReg = ptrKey.AddRef();
-	}
+	// Create a local registry impl
+	ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
+	ptrKey->init(string_t::constant("/"),0,0);
+	m_ptrReg = ptrKey.AddRef();
 
 	// Create the ROT
 	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstance();

@@ -29,7 +29,7 @@ namespace OOCore
 	void RegisterObjects();
 	void UnregisterObjects(bool bPrivate);
 
-	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService(bool bThrow);
+	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService();
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 	Omega::IObject* GetRegisteredObject(const Omega::guid_t& oid, const Omega::guid_t& iid);

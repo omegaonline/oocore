@@ -121,7 +121,7 @@ namespace
 
 		// Always launch the surrogate as an app - this protects against in-process surrogates!
 		IObject* pObject = NULL;
-		OOCore::GetInterProcessService(true)->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Activation::IObjectFactory),sgt_flags,pObject);
+		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Activation::IObjectFactory),sgt_flags,pObject);
 		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
 
 		pObject = NULL;
@@ -172,7 +172,7 @@ namespace
 		}
 
 		IObject* pObject = NULL;
-		OOCore::GetInterProcessService(true)->LaunchObjectApp(oid,iid,flags,pObject);
+		OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,flags,pObject);
 		return pObject;
 	}
 
@@ -349,7 +349,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		}
 
 		// Open a remote channel
-		ObjectPtr<Remoting::IChannel> ptrChannel = OOCore::GetInterProcessService(true)->OpenRemoteChannel(strEndpoint);
+		ObjectPtr<Remoting::IChannel> ptrChannel = OOCore::GetInterProcessService()->OpenRemoteChannel(strEndpoint);
 
 		// Get the ObjectManager
 		IObject* pObject = NULL;

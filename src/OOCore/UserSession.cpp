@@ -957,7 +957,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
 {
 	if (OOCore::HostedByOOServer())
-		return OOCore::GetInterProcessService(true)->HandleRequest(millisecs);
+		return OOCore::GetInterProcessService()->HandleRequest(millisecs);
 
 	OOBase::Timeout timeout;
 	if (millisecs != 0)

@@ -40,7 +40,7 @@ namespace
 			public Notify::INotifier
 	{
 	public:
-		ObjectPtr<OOCore::IInterProcessService> GetIPS(bool bThrow);
+		ObjectPtr<OOCore::IInterProcessService> GetIPS();
 		ObjectPtr<Registry::IKey> GetRootKey();
 		void RegisterIPS(OOCore::IInterProcessService* pIPS);
 		bool IsHosted();
@@ -231,11 +231,11 @@ IObject* LocalROT::QueryInterface(const guid_t& iid)
 	return NULL;
 }
 
-ObjectPtr<OOCore::IInterProcessService> LocalROT::GetIPS(bool bThrow)
+ObjectPtr<OOCore::IInterProcessService> LocalROT::GetIPS()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	
-	if (bThrow && !m_ptrIPS)
+	if (!m_ptrIPS)
 		throw IInternalException::Create(OOCore::get_text("Omega::Initialize not called"),"OOCore");
 
 	return m_ptrIPS;
@@ -619,9 +619,9 @@ void OOCore::UnregisterObjects(bool bPrivate)
 		Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,true);
 }
 
-ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService(bool bThrow)
+ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 {
-	return LOCAL_ROT::instance().GetIPS(bThrow);
+	return LOCAL_ROT::instance().GetIPS();
 }
 
 bool OOCore::HostedByOOServer()
@@ -638,7 +638,7 @@ IObject* OOCore::GetRegisteredObject(const guid_t& oid, const guid_t& iid)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 {
-	return OOCore::GetInterProcessService(true)->OpenServerSink(message_oid,pSink);
+	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
 }
 
 // {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}

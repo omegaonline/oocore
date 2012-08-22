@@ -570,12 +570,12 @@ namespace OTL
 	template <typename ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
-		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >;
+		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::InitialiseDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >;
 
 	public:
 		static SingletonObjectImpl<ROOT>* CreateInstance()
 		{
-			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
+			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::InitialiseDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
 			pObject->AddRef();
 			return pObject;
 		}

@@ -264,7 +264,7 @@ void SingletonHolder::add_uninit_call(Threading::DestructorCallback pfn, void* p
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
 {
-	return SINGLETON_HOLDER::instance().add_uninit_call(pfn_dctor,param);
+	SINGLETON_HOLDER::instance().add_uninit_call(pfn_dctor,param);
 }
 
 void SingletonHolder::remove_uninit_call(Threading::DestructorCallback pfn, void* param)
@@ -278,6 +278,8 @@ void SingletonHolder::remove_uninit_call(Threading::DestructorCallback pfn, void
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
 {
-	return SINGLETON_HOLDER::instance().remove_uninit_call(pfn_dctor,param);
+	SingletonHolder* p = SINGLETON_HOLDER::instance_ptr();
+	if (p)
+		p->remove_uninit_call(pfn_dctor,param);
 }
 

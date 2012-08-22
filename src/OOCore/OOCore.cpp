@@ -66,43 +66,6 @@ extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
 	return OOCORE_PATCH_VERSION;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::uint32_t,version))
-{
-	// Check the versions are correct
-	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-		return Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
-
-	return OOCore::UserSession::init();
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
-{
-	if (OOCore::HostedByOOServer())
-	{
-		// This is a short-cut close for use by the OOServer
-
-		// Unregister built-ins
-		OOCore::UnregisterObjects(false);
-
-		// Close all singletons
-		OOCore::UserSession::close_singletons();
-	}
-	else
-	{
-		OOCore::UserSession::term();
-	}
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
-{
-	return OOCore::UserSession::add_uninit_call(pfn_dctor,param);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
-{
-	return OOCore::UserSession::remove_uninit_call(pfn_dctor,param);
-}
-
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 {
 	void* p = OOBase::HeapAllocator::allocate(bytes);

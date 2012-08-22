@@ -21,9 +21,12 @@
 
 #include "OOCore_precomp.h"
 
+using namespace Omega;
+using namespace OTL;
+
 template class OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>;
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),size_t,n,(in),Omega::Threading::SingletonCallback,pfn_init))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),size_t,n,(in),Threading::SingletonCallback,pfn_init))
 {
 	// The value pointed to is definitely volatile under race conditions
 	volatile void* pVal = *val;
@@ -37,15 +40,15 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in
 		if (!pVal)
 		{
 			// Allocate
-			*val = Omega::System::Allocate(n);
+			*val = System::Allocate(n);
 
 			// Call the init function
-			const Omega::System::Internal::SafeShim* pE = (*pfn_init)(val);
+			const System::Internal::SafeShim* pE = (*pfn_init)(val);
 			if (pE)
 			{
-				Omega::System::Free(*val);
+				System::Free(*val);
 				*val = NULL;
-				Omega::System::Internal::throw_correct_exception(pE);
+				System::Internal::throw_correct_exception(pE);
 			}
 		}
 	}
@@ -65,13 +68,13 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
 {
 	if (!static_cast<OOBase::Mutex*>(m1)->try_acquire())
 	{
-		OTL::ObjectPtr<Omega::Remoting::ICallContext> ptrCC = Omega::Remoting::GetCallContext();
-		Omega::uint32_t millisecs = ptrCC->Timeout();
+		ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
+		uint32_t millisecs = ptrCC->Timeout();
 		if (millisecs != 0xFFFFFFFF)
 		{
 			OOBase::Timeout timeout(millisecs / 1000,(millisecs % 1000) * 1000);
 			if (!static_cast<OOBase::Mutex*>(m1)->acquire(timeout))
-				throw Omega::ITimeoutException::Create();
+				throw ITimeoutException::Create();
 		}
 		else
 		{
@@ -104,7 +107,7 @@ namespace
 {
 	struct destruct_entry_t
 	{
-		Omega::Threading::DestructorCallback pfn_dctor;
+		Threading::DestructorCallback pfn_dctor;
 		void*                                param;
 
 		bool operator == (const destruct_entry_t& rhs) const
@@ -148,7 +151,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 			{
 				(*e.pfn_dctor)(e.param);
 			}
-			catch (Omega::IException* pE)
+			catch (IException* pE)
 			{
 				pE->Release();
 			}
@@ -162,7 +165,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 	delete h;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Threading::DestructorCallback,pfn_dctor,(in),void*,param))
 {
 	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
 	if (h)
@@ -177,7 +180,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,ha
 	}
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*,handle,(in),Threading::DestructorCallback,pfn_dctor,(in),void*,param))
 {
 	mod_destruct_t* h = static_cast<mod_destruct_t*>(handle);
 	if (h)
@@ -189,3 +192,92 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*
 		h->m_list.remove(e);
 	}
 }
+
+namespace
+{
+	class SingletonHolder
+	{
+	public:
+		void close_singletons();
+		void add_uninit_call(Threading::DestructorCallback pfn, void* param);
+		void remove_uninit_call(Threading::DestructorCallback pfn, void* param);
+
+	private:
+		struct Uninit
+		{
+			Threading::DestructorCallback pfn_dctor;
+			void*                                param;
+
+			bool operator == (const Uninit& rhs) const
+			{
+				return (pfn_dctor == rhs.pfn_dctor && param == rhs.param);
+			}
+		};
+		OOBase::SpinLock      m_lock;
+		OOBase::Stack<Uninit> m_listUninitCalls;
+	};
+
+	typedef OOBase::Singleton<SingletonHolder,OOCore::DLL> SINGLETON_HOLDER;
+}
+template class OOBase::Singleton<SingletonHolder,OOCore::DLL>;
+
+void OOCore::close_singletons()
+{
+	SINGLETON_HOLDER::instance().close_singletons();
+}
+
+void SingletonHolder::close_singletons()
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	for (Uninit uninit;m_listUninitCalls.pop(&uninit);)
+	{
+		guard.release();
+
+		try
+		{
+			OOBase::Guard<OOBase::SpinLock> guard2(OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>::instance());
+
+			(*uninit.pfn_dctor)(uninit.param);
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+		}
+		catch (...)
+		{}
+
+		guard.acquire();
+	}
+}
+
+void SingletonHolder::add_uninit_call(Threading::DestructorCallback pfn, void* param)
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	Uninit uninit = { pfn, param };
+
+	int err = m_listUninitCalls.push(uninit);
+	if (err != 0)
+		OMEGA_THROW(err);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
+{
+	return SINGLETON_HOLDER::instance().add_uninit_call(pfn_dctor,param);
+}
+
+void SingletonHolder::remove_uninit_call(Threading::DestructorCallback pfn, void* param)
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	Uninit uninit = { pfn, param };
+
+	m_listUninitCalls.remove(uninit);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))
+{
+	return SINGLETON_HOLDER::instance().remove_uninit_call(pfn_dctor,param);
+}
+

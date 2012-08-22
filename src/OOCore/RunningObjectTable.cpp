@@ -28,6 +28,110 @@
 #include "Activation.h"
 #include "Compartment.h"
 
+using namespace Omega;
+using namespace OTL;
+
+namespace
+{
+	// The instance wide LocalROT instance
+	class LocalROT :
+			public Activation::IRunningObjectTable,
+			public Activation::IRunningObjectTableNotify,
+			public Notify::INotifier
+	{
+	public:
+		ObjectPtr<OOCore::IInterProcessService> GetIPS(bool bThrow);
+		ObjectPtr<Registry::IKey> GetRootKey();
+		void RegisterIPS(OOCore::IInterProcessService* pIPS);
+		bool IsHosted();
+		void RevokeIPS();
+
+	private:
+		friend class OOBase::Singleton<LocalROT,OOCore::DLL>;
+
+		LocalROT();
+		LocalROT(const LocalROT&);
+		LocalROT& operator = (const LocalROT&);
+
+		OOBase::RWMutex m_lock;
+		uint32_t        m_notify_cookie;
+		bool           m_hosted_by_ooserver;
+
+		ObjectPtr<OOCore::IInterProcessService>    m_ptrIPS;
+		ObjectPtr<Registry::IKey>                  m_ptrReg;
+		ObjectPtr<Activation::IRunningObjectTable> m_ptrROT;
+
+		struct Info
+		{
+			string_t                    m_oid;
+			ObjectPtr<IObject>          m_ptrObject;
+			Activation::RegisterFlags_t m_flags;
+			uint32_t                    m_rot_cookie;
+		};
+		OOBase::HandleTable<uint32_t,Info> m_mapServicesByCookie;
+		OOBase::Table<string_t,uint32_t>   m_mapServicesByOid;
+
+		OOBase::HandleTable<uint32_t,ObjectPtr<Activation::IRunningObjectTableNotify> > m_mapNotify;
+
+		ObjectPtr<Activation::IRunningObjectTable> GetROT(bool bThrow);
+
+	// IObject members
+	public:
+		void AddRef()
+		{
+			GetModule()->IncLockCount();
+		}
+
+		void Release()
+		{
+			GetModule()->DecLockCount();
+		}
+
+		IObject* QueryInterface(const guid_t& iid);
+
+	// IRunningObjectTable members
+	public:
+		uint32_t RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags);
+		void GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject);
+		void RevokeObject(uint32_t cookie);
+
+	// IRunningObjectTableNotify members
+	public:
+		void OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t flags);
+		void OnRevokeObject(const any_t& oid, Activation::RegisterFlags_t flags);
+
+	// INotifier members
+	public:
+		uint32_t RegisterNotify(const guid_t& iid, IObject* pObject);
+		void UnregisterNotify(const guid_t& iid, uint32_t cookie);
+		iid_list_t ListNotifyInterfaces();
+	};
+
+	typedef OOBase::Singleton<LocalROT,OOCore::DLL> LOCAL_ROT;
+}
+template class OOBase::Singleton<LocalROT,OOCore::DLL>;
+
+namespace OOCore
+{
+	IObject* GetRegisteredObject(const guid_t& oid, const guid_t& iid);
+
+	class RunningObjectTableFactory :
+			public ObjectFactoryBase<&Activation::OID_RunningObjectTable,Activation::ProcessScope>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(const guid_t& iid, IObject*& pObject);
+	};
+
+	class RegistryFactory :
+			public ObjectFactoryBase<&Registry::OID_Registry,Activation::ProcessScope>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(const guid_t& iid, IObject*& pObject);
+	};
+}
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_LIBRARY_OBJECT_MAP
@@ -37,16 +141,16 @@ namespace OTL
 		class OOCore_ModuleImpl : public ModuleBase
 		{
 		public:
-			void RegisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT, bool bPrivate);
-			void UnregisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT, bool bPrivate);
+			void RegisterObjectFactories(Activation::IRunningObjectTable* pROT, bool bPrivate);
+			void UnregisterObjectFactories(Activation::IRunningObjectTable* pROT, bool bPrivate);
 
 			template <typename T>
 			struct Creator
 			{
-				static Omega::IObject* Create(const Omega::guid_t& iid)
+				static IObject* Create(const guid_t& iid)
 				{
 					ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
-					Omega::IObject* pObject = ptr->QueryInterface(iid);
+					IObject* pObject = ptr->QueryInterface(iid);
 					if (!pObject)
 						throw OOCore_INotFoundException_MissingIID(iid);
 					return pObject;
@@ -98,43 +202,7 @@ namespace OTL
 	}
 }
 
-using namespace Omega;
-using namespace OTL;
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterProcessService*,pIPS))
-{
-	OOCore::LocalROT::instance()->RegisterIPS(pIPS);
-}
-
-void OOCore::RegisterObjects()
-{
-	// Register all our local class factories
-	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterObjectFactories(OOCore::LocalROT::instance(),true);
-}
-
-void OOCore::UnregisterObjects(bool bPrivate)
-{
-	OOCore::LocalROT* pROT = OOCore::LocalROT::instance();
-
-	pROT->RevokeIPS();
-
-	// Unregister all our local class factories
-	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,false);
-	if (bPrivate)
-		Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,true);
-}
-
-ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService(bool bThrow)
-{
-	return OOCore::LocalROT::instance()->GetIPS(bThrow);
-}
-
-bool OOCore::HostedByOOServer()
-{
-	return OOCore::LocalROT::instance()->IsHosted();
-}
-
-OOCore::LocalROT::LocalROT() :
+LocalROT::LocalROT() :
 		m_notify_cookie(0),
 		m_hosted_by_ooserver(false),
 		m_mapServicesByCookie(1),
@@ -143,7 +211,7 @@ OOCore::LocalROT::LocalROT() :
 	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterObjectFactories(this,false);
 }
 
-Omega::IObject* OOCore::LocalROT::QueryInterface(const Omega::guid_t& iid)
+IObject* LocalROT::QueryInterface(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(IObject) ||
 			iid == OMEGA_GUIDOF(Activation::IRunningObjectTable))
@@ -165,7 +233,7 @@ Omega::IObject* OOCore::LocalROT::QueryInterface(const Omega::guid_t& iid)
 	return NULL;
 }
 
-ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
+ObjectPtr<OOCore::IInterProcessService> LocalROT::GetIPS(bool bThrow)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	
@@ -175,7 +243,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::LocalROT::GetIPS(bool bThrow)
 	return m_ptrIPS;
 }
 
-ObjectPtr<Activation::IRunningObjectTable> OOCore::LocalROT::GetROT(bool bThrow)
+ObjectPtr<Activation::IRunningObjectTable> LocalROT::GetROT(bool bThrow)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -185,7 +253,7 @@ ObjectPtr<Activation::IRunningObjectTable> OOCore::LocalROT::GetROT(bool bThrow)
 	return m_ptrROT;
 }
 
-ObjectPtr<Omega::Registry::IKey> OOCore::LocalROT::GetRootKey()
+ObjectPtr<Registry::IKey> LocalROT::GetRootKey()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -195,14 +263,14 @@ ObjectPtr<Omega::Registry::IKey> OOCore::LocalROT::GetRootKey()
 	return m_ptrReg;
 }
 
-bool OOCore::LocalROT::IsHosted()
+bool LocalROT::IsHosted()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	return m_hosted_by_ooserver;
 }
 
-void OOCore::LocalROT::RegisterIPS(OOCore::IInterProcessService* pIPS)
+void LocalROT::RegisterIPS(OOCore::IInterProcessService* pIPS)
 {
 	if (!pIPS)
 		OMEGA_THROW("Null IPS in RegisterIPS");
@@ -222,7 +290,7 @@ void OOCore::LocalROT::RegisterIPS(OOCore::IInterProcessService* pIPS)
 		m_hosted_by_ooserver = true;
 }
 
-void OOCore::LocalROT::RevokeIPS()
+void LocalROT::RevokeIPS()
 {
 	if (m_notify_cookie)
 	{
@@ -236,7 +304,7 @@ void OOCore::LocalROT::RevokeIPS()
 	m_ptrIPS.Release();
 }
 
-uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
+uint32_t LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
 {
 	if (!pObject)
 		throw IInternalException::Create(OOCore::get_text("NULL object"),"IRunningObjectTable::RegisterObject");
@@ -274,7 +342,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 			if (pInfo)
 			{
 				// Check its still alive...
-				if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+				if (!Remoting::IsAlive(pInfo->m_ptrObject))
 					revoke_list.push(*m_mapServicesByOid.at(i));
 				else
 				{
@@ -312,7 +380,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	return nCookie;
 }
 
-void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject)
+void LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
 	string_t strOid = oid.cast<string_t>();
@@ -335,7 +403,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 		if (pInfo)
 		{
 			// Check its still alive...
-			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+			if (!Remoting::IsAlive(pInfo->m_ptrObject))
 			{
 				int err = revoke_list.push(*m_mapServicesByOid.at(i));
 				if (err != 0)
@@ -380,7 +448,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 	}
 }
 
-void OOCore::LocalROT::RevokeObject(uint32_t cookie)
+void LocalROT::RevokeObject(uint32_t cookie)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 	
@@ -407,7 +475,7 @@ void OOCore::LocalROT::RevokeObject(uint32_t cookie)
 	}
 }
 
-void OOCore::LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t flags)
+void LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFlags_t flags)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -440,7 +508,7 @@ void OOCore::LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFl
 	}
 }
 
-void OOCore::LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlags_t flags)
+void LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlags_t flags)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -473,7 +541,7 @@ void OOCore::LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlag
 	}
 }
 
-uint32_t OOCore::LocalROT::RegisterNotify(const guid_t& iid, IObject* pObject)
+uint32_t LocalROT::RegisterNotify(const guid_t& iid, IObject* pObject)
 {
 	uint32_t nCookie = 0;
 
@@ -492,7 +560,7 @@ uint32_t OOCore::LocalROT::RegisterNotify(const guid_t& iid, IObject* pObject)
 	return nCookie;
 }
 
-void OOCore::LocalROT::UnregisterNotify(const guid_t& iid, uint32_t cookie)
+void LocalROT::UnregisterNotify(const guid_t& iid, uint32_t cookie)
 {
 	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify) && cookie)
 	{
@@ -502,7 +570,7 @@ void OOCore::LocalROT::UnregisterNotify(const guid_t& iid, uint32_t cookie)
 	}
 }
 
-Notify::INotifier::iid_list_t OOCore::LocalROT::ListNotifyInterfaces()
+Notify::INotifier::iid_list_t LocalROT::ListNotifyInterfaces()
 {
 	Notify::INotifier::iid_list_t list;
 	list.push_back(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify));
@@ -530,12 +598,57 @@ void OTL::Module::OOCore_ModuleImpl::UnregisterObjectFactories(Activation::IRunn
 	}
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterProcessService*,pIPS))
+{
+	LOCAL_ROT::instance().RegisterIPS(pIPS);
+}
+
+void OOCore::RegisterObjects()
+{
+	// Register all our local class factories
+	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterObjectFactories(LOCAL_ROT::instance_ptr(),true);
+}
+
+void OOCore::UnregisterObjects(bool bPrivate)
+{
+	LocalROT* pROT = LOCAL_ROT::instance_ptr();
+
+	pROT->RevokeIPS();
+
+	// Unregister all our local class factories
+	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,false);
+	if (bPrivate)
+		Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,true);
+}
+
+ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService(bool bThrow)
+{
+	return LOCAL_ROT::instance().GetIPS(bThrow);
+}
+
+bool OOCore::HostedByOOServer()
+{
+	return LOCAL_ROT::instance().IsHosted();
+}
+
+IObject* OOCore::GetRegisteredObject(const guid_t& oid, const guid_t& iid)
+{
+	IObject* pObject = NULL;
+	LOCAL_ROT::instance().GetObject(oid,iid,pObject);
+	return pObject;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
+{
+	return OOCore::GetInterProcessService(true)->OpenServerSink(message_oid,pSink);
+}
+
 // {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
 OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable,"{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}");
 
 void OOCore::RunningObjectTableFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	pObject = OOCore::LocalROT::instance()->QueryInterface(iid);
+	pObject = LOCAL_ROT::instance().QueryInterface(iid);
 	if (!pObject)
 		throw OOCore_INotFoundException_MissingIID(iid);
 }
@@ -548,7 +661,7 @@ OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C
 
 void OOCore::RegistryFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<Registry::IKey> ptrKey = OOCore::LocalROT::instance()->GetRootKey();
+	ObjectPtr<Registry::IKey> ptrKey = LOCAL_ROT::instance().GetRootKey();
 
 	pObject = ptrKey->QueryInterface(iid);
 	if (!pObject)

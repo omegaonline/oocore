@@ -72,14 +72,11 @@ namespace OOCore
 	class UserSession
 	{
 	public:
-		static Omega::IException* init();
-		static void term();
-		static bool handle_request(Omega::uint32_t timeout);
-		
-		static void close_singletons();
-		static void add_uninit_call(Omega::Threading::DestructorCallback pfn, void* param);
-		static void remove_uninit_call(Omega::Threading::DestructorCallback pfn, void* param);
+		void init();
+		void term();
 
+		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
+		
 		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
 		void send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t attribs);
@@ -94,7 +91,6 @@ namespace OOCore
 	private:
 		friend class ThreadContext;
 		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
-		typedef OOBase::Singleton<UserSession,OOCore::DLL> USER_SESSION;
 
 		UserSession();
 		~UserSession();
@@ -149,34 +145,13 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void init_i();
 		void start();
-		void term_i();
 		void stop();
-				
-		// Uninitialise destructors
-		void close_singletons_i();
-		void close_compartments();
-		void add_uninit_call_i(Omega::Threading::DestructorCallback pfn, void* param);
-		void remove_uninit_call_i(Omega::Threading::DestructorCallback pfn, void* param);
-		
-		struct Uninit
-		{
-			Omega::Threading::DestructorCallback pfn_dctor;
-			void*                                param;
-
-			bool operator == (const Uninit& rhs) const
-			{
-				return (pfn_dctor == rhs.pfn_dctor && param == rhs.param);
-			}
-		};
-		OOBase::Stack<Uninit> m_listUninitCalls;
 
 		// Message pumping
 		int run_read_loop();
 		void respond_exception(OOBase::CDRStream& response, Omega::IException* pE);
 		void send_response_catch(const Message& msg, OOBase::CDRStream* response);
-		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
 		void process_request(ThreadContext* pContext, const Message& msg);
 		void wait_for_response(ThreadContext* pContext, OOBase::CDRStream& response, Omega::uint32_t from_channel_id);
 		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Message::Type type, Omega::uint32_t attribs);
@@ -188,6 +163,7 @@ namespace OOCore
 		// Compartment members
 		OOBase::HandleTable<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
 
+		void close_compartments();
 		OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment_i(const Omega::guid_t& channel_oid);
 		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
 	};

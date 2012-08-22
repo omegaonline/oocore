@@ -30,6 +30,11 @@
 using namespace Omega;
 using namespace OTL;
 
+namespace OOCore
+{
+	IObject* GetRegisteredObject(const guid_t& oid, const guid_t& iid);
+}
+
 namespace
 {
 	class DLLManagerImpl
@@ -179,8 +184,7 @@ namespace
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		// See if we have it registered in the ROT
-		IObject* pObject = NULL;
-		OOCore::LocalROT::instance()->GetObject(oid,iid,pObject);
+		IObject* pObject = OOCore::GetRegisteredObject(oid,iid);
 		if (!pObject)
 		{
 			// See if we are allowed to load...

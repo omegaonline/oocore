@@ -34,6 +34,8 @@ using namespace OTL;
 namespace
 {
 	static const size_t s_header_len = sizeof(uint32_t) * 2;
+
+	typedef OOBase::Singleton<OOCore::UserSession,OOCore::DLL> USER_SESSION;
 }
 
 template class OOBase::TLSSingleton<OOCore::UserSession::ThreadContext,OOCore::DLL>;
@@ -60,27 +62,7 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-IException* OOCore::UserSession::init()
-{
-	try
-	{
-		USER_SESSION::instance().init_i();
-	}
-	catch (IException* pE)
-	{
-		term();
-		return pE;
-	}
-
-	return 0;
-}
-
-void OOCore::UserSession::term()
-{
-	USER_SESSION::instance().term_i();
-}
-
-void OOCore::UserSession::init_i()
+void OOCore::UserSession::init()
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -135,7 +117,7 @@ void OOCore::UserSession::init_i()
 	}
 }
 
-void OOCore::UserSession::term_i()
+void OOCore::UserSession::term()
 {
 	OOBase::Guard<OOBase::Condition::Mutex> guard(m_cond_mutex);
 
@@ -177,7 +159,7 @@ void OOCore::UserSession::stop()
 		OOCore::UnregisterObjects(true);
 
 		// Close all singletons
-		close_singletons_i();
+		OOCore::close_singletons();
 
 		// Close compartments
 		close_compartments();
@@ -214,36 +196,6 @@ void OOCore::UserSession::stop()
 #endif
 }
 
-void OOCore::UserSession::close_singletons()
-{
-	USER_SESSION::instance().close_singletons_i();
-}
-
-void OOCore::UserSession::close_singletons_i()
-{
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	for (Uninit uninit;m_listUninitCalls.pop(&uninit);)
-	{
-		guard.release();
-
-		try
-		{
-			OOBase::Guard<OOBase::SpinLock> guard2(OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>::instance());
-
-			(*uninit.pfn_dctor)(uninit.param);
-		}
-		catch (IException* pE)
-		{
-			pE->Release();
-		}
-		catch (...)
-		{}
-
-		guard.acquire();
-	}
-}
-
 void OOCore::UserSession::close_compartments()
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -271,38 +223,6 @@ void OOCore::UserSession::close_compartments()
 uint32_t OOCore::UserSession::get_channel_id() const
 {
 	return m_channel_id;
-}
-
-void OOCore::UserSession::add_uninit_call(Threading::DestructorCallback pfn, void* param)
-{
-	USER_SESSION::instance().add_uninit_call_i(pfn,param);
-}
-
-void OOCore::UserSession::add_uninit_call_i(Threading::DestructorCallback pfn, void* param)
-{
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	Uninit uninit = { pfn, param };
-
-	int err = m_listUninitCalls.push(uninit);
-	if (err != 0)
-		OMEGA_THROW(err);
-}
-
-void OOCore::UserSession::remove_uninit_call(Threading::DestructorCallback pfn, void* param)
-{
-	UserSession* pThis = USER_SESSION::instance_ptr();
-	if (pThis)
-		pThis->remove_uninit_call_i(pfn,param);
-}
-
-void OOCore::UserSession::remove_uninit_call_i(Threading::DestructorCallback pfn, void* param)
-{
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	Uninit uninit = { pfn, param };
-
-	m_listUninitCalls.remove(uninit);
 }
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
@@ -623,7 +543,7 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 {
 	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext,OOCore::DLL>::instance();
 	if (pThis->m_thread_id == 0)
-		pThis->m_thread_id = UserSession::USER_SESSION::instance().insert_thread_context(pThis);
+		pThis->m_thread_id = USER_SESSION::instance().insert_thread_context(pThis);
 
 	return pThis;
 }
@@ -638,7 +558,7 @@ OOCore::UserSession::ThreadContext::ThreadContext() :
 OOCore::UserSession::ThreadContext::~ThreadContext()
 {
 	if (m_thread_id)
-		UserSession::USER_SESSION::instance().remove_thread_context(m_thread_id);
+		USER_SESSION::instance().remove_thread_context(m_thread_id);
 }
 
 // Accessors for ThreadContext
@@ -901,28 +821,6 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	pContext->m_current_cmpt = old_id;
 }
 
-bool OOCore::UserSession::handle_request(uint32_t millisecs)
-{
-	OOBase::Timeout timeout;
-	if (millisecs != 0)
-		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
-
-	return USER_SESSION::instance().pump_request(timeout);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
-{
-	if (OOCore::HostedByOOServer())
-		return OOCore::GetInterProcessService(true)->HandleRequest(millisecs);
-		
-	return OOCore::UserSession::handle_request(millisecs);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
-{
-	return OOCore::GetInterProcessService(true)->OpenServerSink(message_oid,pSink);
-}
-
 ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment(const guid_t& channel_oid)
 {
 	return USER_SESSION::instance().create_compartment_i(channel_oid);
@@ -1018,3 +916,53 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 		}
 	}
 }
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::uint32_t,version))
+{
+	// Check the versions are correct
+	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+		return Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
+
+	try
+	{
+		USER_SESSION::instance().init();
+	}
+	catch (IException* pE)
+	{
+		USER_SESSION::instance().term();
+		return pE;
+	}
+
+	return NULL;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
+{
+	if (OOCore::HostedByOOServer())
+	{
+		// This is a short-cut close for use by the OOServer
+
+		// Unregister built-ins
+		OOCore::UnregisterObjects(false);
+
+		// Close all singletons
+		OOCore::close_singletons();
+	}
+	else
+	{
+		USER_SESSION::instance().term();
+	}
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
+{
+	if (OOCore::HostedByOOServer())
+		return OOCore::GetInterProcessService(true)->HandleRequest(millisecs);
+
+	OOBase::Timeout timeout;
+	if (millisecs != 0)
+		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
+
+	return USER_SESSION::instance().pump_request(timeout);
+}
+

@@ -82,7 +82,8 @@
 namespace OOCore
 {
 	bool HostedByOOServer();
-	
+	void close_singletons();
+
 	struct DLL
 	{
 		int unused;

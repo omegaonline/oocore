@@ -30,11 +30,6 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace OOCore
-{
-	IObject* GetRegisteredObject(const guid_t& oid, const guid_t& iid);
-}
-
 namespace
 {
 	class DLLManagerImpl

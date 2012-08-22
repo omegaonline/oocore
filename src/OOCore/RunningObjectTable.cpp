@@ -113,8 +113,6 @@ template class OOBase::Singleton<LocalROT,OOCore::DLL>;
 
 namespace OOCore
 {
-	IObject* GetRegisteredObject(const guid_t& oid, const guid_t& iid);
-
 	class RunningObjectTableFactory :
 			public ObjectFactoryBase<&Activation::OID_RunningObjectTable,Activation::ProcessScope>
 	{

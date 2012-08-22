@@ -32,6 +32,7 @@ namespace OOCore
 	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService(bool bThrow);
 
 	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+	Omega::IObject* GetRegisteredObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

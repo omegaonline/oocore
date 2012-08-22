@@ -27,7 +27,7 @@
 namespace OOCore
 {
 	void RegisterObjects();
-	void UnregisterObjects(bool bPrivate);
+	void RevokeIPS();
 
 	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService();
 

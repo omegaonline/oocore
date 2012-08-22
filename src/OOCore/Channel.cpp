@@ -282,7 +282,7 @@ const Omega::guid_t OOCore::OID_ChannelMarshalFactory("{7E662CBB-12AF-4773-8B03-
 
 void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
-	if (OOCore::HostedByOOServer())
+	if (OOCore::IsHosted())
 	{
 		// This must match OOServer::User::OID_ChannelMarshalFactory
 		static const guid_t oid("{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");

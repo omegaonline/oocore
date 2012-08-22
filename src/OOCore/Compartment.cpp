@@ -377,10 +377,6 @@ OMEGA_DEFINE_OID(Compartment,OID_Compartment,"{3BE419D7-52D9-4873-95E7-836D33523
 
 void OOCore::CompartmentFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
 {
-	// Compartments are not supported in the OOSvrUser process!
-	if (OOCore::HostedByOOServer())
-		OMEGA_THROW("Compartments are not supported by the user service");
-
 	// Create a new compartment and get the channel to it...
 	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment(guid_t::Null());
 

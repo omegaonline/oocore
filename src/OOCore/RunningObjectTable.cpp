@@ -31,6 +31,27 @@
 using namespace Omega;
 using namespace OTL;
 
+
+namespace OOCore
+{
+	class RunningObjectTableFactory :
+			public ObjectFactoryBase<&Activation::OID_RunningObjectTable,Activation::ProcessScope>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(const guid_t& iid, IObject*& pObject);
+	};
+
+	class RegistryFactory :
+			public ObjectFactoryBase<&Registry::OID_Registry,Activation::ProcessScope>
+	{
+	// IObjectFactory members
+	public:
+		void CreateInstance(const guid_t& iid, IObject*& pObject);
+	};
+}
+
+
 namespace
 {
 	// The instance wide LocalROT instance
@@ -40,10 +61,12 @@ namespace
 			public Notify::INotifier
 	{
 	public:
+		bool IsHosted();
 		ObjectPtr<OOCore::IInterProcessService> GetIPS();
 		ObjectPtr<Registry::IKey> GetRootKey();
+
+		void RegisterPrivates();
 		void RegisterIPS(OOCore::IInterProcessService* pIPS);
-		bool IsHosted();
 		void RevokeIPS();
 
 	private:
@@ -55,7 +78,7 @@ namespace
 
 		OOBase::RWMutex m_lock;
 		uint32_t        m_notify_cookie;
-		bool           m_hosted_by_ooserver;
+		bool            m_hosted_by_ooserver;
 
 		ObjectPtr<OOCore::IInterProcessService>    m_ptrIPS;
 		ObjectPtr<Registry::IKey>                  m_ptrReg;
@@ -106,107 +129,63 @@ namespace
 		void UnregisterNotify(const guid_t& iid, uint32_t cookie);
 		iid_list_t ListNotifyInterfaces();
 	};
-
 	typedef OOBase::Singleton<LocalROT,OOCore::DLL> LOCAL_ROT;
+
+	struct CreatorEntry
+	{
+		const guid_t* (*pfnOid)();
+		const Activation::RegisterFlags_t (*pfnRegistrationFlags)();
+		IObject* (*pfnCreate)(const guid_t& iid);
+		uint32_t cookie;
+	};
+
+	template <typename T>
+	struct Creator
+	{
+		static IObject* Create(const guid_t& iid)
+		{
+			ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
+			IObject* pObject = ptr->QueryInterface(iid);
+			if (!pObject)
+				throw OOCore_INotFoundException_MissingIID(iid);
+			return pObject;
+		}
+	};
+	CreatorEntry s_CoreCreatorEntries[] =
+	{
+		OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
+		OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
+		OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
+		OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
+		OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::AccessDeniedExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::AlreadyExistsExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
+		{ 0,0,0,0 }
+	};
+	CreatorEntry s_PrivateCreatorEntries[] =
+	{
+		OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
+		OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
+		{ 0,0,0,0 }
+	};
 }
 template class OOBase::Singleton<LocalROT,OOCore::DLL>;
 
-namespace OOCore
-{
-	class RunningObjectTableFactory :
-			public ObjectFactoryBase<&Activation::OID_RunningObjectTable,Activation::ProcessScope>
-	{
-	// IObjectFactory members
-	public:
-		void CreateInstance(const guid_t& iid, IObject*& pObject);
-	};
-
-	class RegistryFactory :
-			public ObjectFactoryBase<&Registry::OID_Registry,Activation::ProcessScope>
-	{
-	// IObjectFactory members
-	public:
-		void CreateInstance(const guid_t& iid, IObject*& pObject);
-	};
-}
-
-namespace OTL
-{
-	// The following is an expansion of BEGIN_LIBRARY_OBJECT_MAP
-	// We don't use the macro as we override some behaviours
-	namespace Module
-	{
-		class OOCore_ModuleImpl : public ModuleBase
-		{
-		public:
-			void RegisterObjectFactories(Activation::IRunningObjectTable* pROT, bool bPrivate);
-			void UnregisterObjectFactories(Activation::IRunningObjectTable* pROT, bool bPrivate);
-
-			template <typename T>
-			struct Creator
-			{
-				static IObject* Create(const guid_t& iid)
-				{
-					ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
-					IObject* pObject = ptr->QueryInterface(iid);
-					if (!pObject)
-						throw OOCore_INotFoundException_MissingIID(iid);
-					return pObject;
-				}
-			};
-
-		private:
-			ModuleBase::CreatorEntry* getCreatorEntries()
-			{
-				static ModuleBase::CreatorEntry CreatorEntries[] =
-				{
-					OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
-					OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
-					OBJECT_MAP_FACTORY_ENTRY(OOCore::RunningObjectTableFactory)
-					OBJECT_MAP_FACTORY_ENTRY(OOCore::RegistryFactory)
-					OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::AccessDeniedExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::AlreadyExistsExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
-					OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
-					{ 0,0,0,0 }
-				};
-				return CreatorEntries;
-			}
-
-			ModuleBase::CreatorEntry* getCreatorEntries_private()
-			{
-				static ModuleBase::CreatorEntry CreatorEntries[] =
-				{
-					OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory)
-					OBJECT_MAP_FACTORY_ENTRY(OOCore::CompartmentFactory)
-					{ 0,0,0,0 }
-				};
-				return CreatorEntries;
-			}
-		};
-
-		OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule())
-		{
-			return OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>::instance_ptr();
-		}
-
-		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
-		{
-			return OMEGA_PRIVATE_FN_CALL(GetModule)();
-		}
-	}
-}
-
 LocalROT::LocalROT() :
 		m_notify_cookie(0),
-		m_hosted_by_ooserver(false),
+		m_hosted_by_ooserver(true),
 		m_mapServicesByCookie(1),
 		m_mapNotify(1)
 {
-	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterObjectFactories(this,false);
+	for (CreatorEntry* g = s_CoreCreatorEntries;g->pfnOid!=NULL;++g)
+	{
+		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(g->pfnCreate(OMEGA_GUIDOF(Activation::IObjectFactory)));
+		g->cookie = RegisterObject(*(g->pfnOid)(),ptrOF,(*g->pfnRegistrationFlags)());
+	}
 }
 
 IObject* LocalROT::QueryInterface(const guid_t& iid)
@@ -268,24 +247,39 @@ bool LocalROT::IsHosted()
 	return m_hosted_by_ooserver;
 }
 
+void LocalROT::RegisterPrivates()
+{
+	m_hosted_by_ooserver = false;
+
+	// Register all our local class factories
+	for (CreatorEntry* g = s_PrivateCreatorEntries;g->pfnOid!=NULL;++g)
+	{
+		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(g->pfnCreate(OMEGA_GUIDOF(Activation::IObjectFactory)));
+		g->cookie = RegisterObject(*(g->pfnOid)(),ptrOF,(*g->pfnRegistrationFlags)());
+	}
+}
+
 void LocalROT::RegisterIPS(OOCore::IInterProcessService* pIPS)
 {
 	if (!pIPS)
 		OMEGA_THROW("Null IPS in RegisterIPS");
 
+	ObjectPtr<Registry::IKey> ptrReg = pIPS->GetRegistry();
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = pIPS->GetRunningObjectTable();
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
 	// Stash passed in values
 	m_ptrIPS = pIPS;
 	m_ptrIPS.AddRef();
 
-	m_ptrROT = m_ptrIPS->GetRunningObjectTable();
-	m_ptrReg = m_ptrIPS->GetRegistry();
+	m_ptrROT = ptrROT;
+	m_ptrReg = ptrReg;
+
+	guard.release();
 
 	ObjectPtr<Notify::INotifier> ptrNotify = m_ptrROT.QueryInterface<Notify::INotifier>();
 	m_notify_cookie = ptrNotify->RegisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),static_cast<Activation::IRunningObjectTableNotify*>(this));
-
-	ObjectPtr<Remoting::IProxy> ptrProxy = Remoting::GetProxy(pIPS);
-	if (!ptrProxy)
-		m_hosted_by_ooserver = true;
 }
 
 void LocalROT::RevokeIPS()
@@ -300,6 +294,13 @@ void LocalROT::RevokeIPS()
 	m_ptrReg.Release();
 	m_ptrROT.Release();
 	m_ptrIPS.Release();
+
+	if (!m_hosted_by_ooserver)
+	{
+		// Unregister all our local class factories
+		for (CreatorEntry* g = s_PrivateCreatorEntries;g->pfnOid!=NULL;++g)
+			RevokeObject(g->cookie);
+	}
 }
 
 uint32_t LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Activation::RegisterFlags_t flags)
@@ -575,27 +576,6 @@ Notify::INotifier::iid_list_t LocalROT::ListNotifyInterfaces()
 	return list;
 }
 
-void OTL::Module::OOCore_ModuleImpl::RegisterObjectFactories(Activation::IRunningObjectTable* pROT, bool bPrivate)
-{
-	CreatorEntry* g = bPrivate ? getCreatorEntries_private() : getCreatorEntries();
-	for (size_t i=0; g[i].pfnOid!=0; ++i)
-	{
-		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Activation::IObjectFactory)));
-
-		g[i].cookie = pROT->RegisterObject(*(g[i].pfnOid)(),ptrOF,(*g[i].pfnRegistrationFlags)());
-	}
-}
-
-void OTL::Module::OOCore_ModuleImpl::UnregisterObjectFactories(Activation::IRunningObjectTable* pROT, bool bPrivate)
-{
-	CreatorEntry* g = bPrivate ? getCreatorEntries_private() : getCreatorEntries();
-	for (size_t i=0; g[i].pfnOid!=0; ++i)
-	{
-		pROT->RevokeObject(g[i].cookie);
-		g[i].cookie = 0;
-	}
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterProcessService*,pIPS))
 {
 	LOCAL_ROT::instance().RegisterIPS(pIPS);
@@ -603,20 +583,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterPro
 
 void OOCore::RegisterObjects()
 {
-	// Register all our local class factories
-	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterObjectFactories(LOCAL_ROT::instance_ptr(),true);
+	LOCAL_ROT::instance().RegisterPrivates();
 }
 
-void OOCore::UnregisterObjects(bool bPrivate)
+void OOCore::RevokeIPS()
 {
-	LocalROT* pROT = LOCAL_ROT::instance_ptr();
-
-	pROT->RevokeIPS();
-
-	// Unregister all our local class factories
-	Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,false);
-	if (bPrivate)
-		Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->UnregisterObjectFactories(pROT,true);
+	LOCAL_ROT::instance().RevokeIPS();
 }
 
 ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
@@ -624,7 +596,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 	return LOCAL_ROT::instance().GetIPS();
 }
 
-bool OOCore::HostedByOOServer()
+bool OOCore::IsHosted()
 {
 	return LOCAL_ROT::instance().IsHosted();
 }

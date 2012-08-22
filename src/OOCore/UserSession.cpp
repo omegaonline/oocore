@@ -156,13 +156,13 @@ void OOCore::UserSession::stop()
 	try
 	{
 		// Unregister built-ins
-		OOCore::UnregisterObjects(true);
-
-		// Close all singletons
-		OOCore::close_singletons();
+		OOCore::RevokeIPS();
 
 		// Close compartments
 		close_compartments();
+
+		// Now close Initialise singletons
+		OOCore::CloseSingletons();
 	}
 	catch (IException* pE)
 	{
@@ -938,25 +938,20 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 {
-	if (OOCore::HostedByOOServer())
+	if (OOCore::IsHosted())
 	{
-		// This is a short-cut close for use by the OOServer
+		OOCore::RevokeIPS();
 
-		// Unregister built-ins
-		OOCore::UnregisterObjects(false);
-
-		// Close all singletons
-		OOCore::close_singletons();
+		// Close Initialise singletons
+		OOCore::CloseSingletons();
 	}
 	else
-	{
 		USER_SESSION::instance().term();
-	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
 {
-	if (OOCore::HostedByOOServer())
+	if (OOCore::IsHosted())
 		return OOCore::GetInterProcessService()->HandleRequest(millisecs);
 
 	OOBase::Timeout timeout;

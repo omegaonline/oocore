@@ -110,5 +110,32 @@ void operator delete[](void* p, const OOCore::throwing_t&)
 	::operator delete[](p);
 }
 
+namespace OTL
+{
+	// The following is an expansion of BEGIN_LIBRARY_OBJECT_MAP
+	// We don't use the macro as we override some behaviours
+	namespace Module
+	{
+		class OOCore_ModuleImpl : public ModuleBase
+		{
+		private:
+			ModuleBase::CreatorEntry* getCreatorEntries()
+			{
+				return NULL;
+			}
+		};
+
+		OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule())
+		{
+			return OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>::instance_ptr();
+		}
+
+		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
+		{
+			return OMEGA_PRIVATE_FN_CALL(GetModule)();
+		}
+	}
+}
+
 // {D2A10F8C-ECD1-F698-7105-48247D50DB1B}
 OMEGA_DEFINE_OID(System,OID_ServiceController,"{D2A10F8C-ECD1-F698-7105-48247D50DB1B}");

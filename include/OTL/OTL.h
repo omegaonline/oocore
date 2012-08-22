@@ -121,7 +121,6 @@
 	namespace Module { \
 	class OMEGA_PRIVATE_TYPE(ProcessModuleImpl) : public ProcessModule \
 	{ \
-	private: \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \

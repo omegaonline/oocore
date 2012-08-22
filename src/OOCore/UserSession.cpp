@@ -181,7 +181,7 @@ void OOCore::UserSession::stop()
 	}
 
 	// Wait for the io worker thread to finish
-	OOBase::Timeout wait(15,0);
+	OOBase::Timeout wait(5,0);
 	if (!m_worker_thread.join(wait))
 	{
 		m_stream->close();

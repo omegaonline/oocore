@@ -30,7 +30,7 @@ namespace Omega
 	{
 		interface INotifier : public IObject
 		{
-			typedef std::vector<guid_t,System::STLAllocator<string_t> > iid_list_t;
+			typedef std::vector<guid_t,System::STLAllocator<guid_t> > iid_list_t;
 
 			virtual uint32_t RegisterNotify(const guid_t& iid, IObject* pObject) = 0;
 			virtual void UnregisterNotify(const guid_t& iid, uint32_t cookie) = 0;

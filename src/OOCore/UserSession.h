@@ -148,6 +148,12 @@ namespace OOCore
 		void start();
 		void stop();
 
+		// Private object factory members
+		Omega::uint32_t m_channel_factory_cookie;
+		Omega::uint32_t m_reg_cookie;
+		void register_private_factories();
+		void revoke_private_factories();
+
 		// Message pumping
 		int run_read_loop();
 		void respond_exception(OOBase::CDRStream& response, Omega::IException* pE);

@@ -341,6 +341,14 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 {
 	try
 	{
+		// Get the local ROT
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+
+		// Register our private factories...
+		OTL::GetModule()->RegisterAutoObjectFactory<User::ChannelMarshalFactory>();
+
+		// Now get the upstream IPS...
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
@@ -351,7 +359,14 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		// Register our interprocess service so we can react to activation requests
 		OOCore_RegisterIPS(ptrIPS);
 
-		// Now we have a ROT, register everything else
+		// Create a local registry impl
+		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrReg = ObjectImpl<User::Registry::RootKey>::CreateInstance();
+		ptrReg->init(string_t::constant("/"),0,0);
+
+		// Registry registry
+		ptrROT->RegisterObject(Omega::Registry::OID_Registry_Instance,ptrReg.QueryInterface<IObject>(),Activation::UserScope);
+
+		// Now we have a ROT and a registry, register everything else
 		GetModule()->RegisterObjectFactories();
 
 		return true;
@@ -576,37 +591,30 @@ void User::Manager::do_quit(void* pParams, OOBase::CDRStream&)
 
 void User::Manager::do_quit_i()
 {
+	OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
+
+	// Stop accepting new clients
+	m_ptrAcceptor = NULL;
+
+	// Close all the sinks
+	close_all_remotes();
+
 	try
 	{
-		OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
-
-		// Stop accepting new clients
-		m_ptrAcceptor = NULL;
-
-		// Close all the sinks
-		close_all_remotes();
-
-		try
-		{
-			// Unregister our object factories
-			GetModule()->UnregisterObjectFactories();
-
-			// Close the OOCore
-			Uninitialize();
-		}
-		catch (IException* pE)
-		{
-			ObjectPtr<IException> ptrE = pE;
-			LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-		}
-
-		// Close all channels
-		shutdown_channels();
+		// Unregister our object factories
+		GetModule()->UnregisterObjectFactories();
 	}
-	catch (...)
+	catch (IException* pE)
 	{
-		LOG_ERROR(("Unrecognised exception thrown"));
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
 	}
+
+	// Close the OOCore
+	Uninitialize();
+
+	// Close all channels
+	shutdown_channels();
 
 	// And now call quit()
 	quit();

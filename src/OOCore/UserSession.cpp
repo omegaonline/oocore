@@ -38,6 +38,11 @@ namespace
 	typedef OOBase::Singleton<OOCore::UserSession,OOCore::DLL> USER_SESSION;
 }
 
+namespace OOCore
+{
+	void CloseSingletons();
+}
+
 template class OOBase::TLSSingleton<OOCore::UserSession::ThreadContext,OOCore::DLL>;
 template class OOBase::Singleton<OOCore::UserSession,OOCore::DLL>;
 
@@ -48,6 +53,8 @@ OOCore::UserSession::UserSession() :
 		m_init_state(eStopped),
 		m_usage_count(0),
 		m_mapThreadContexts(1),
+		m_channel_factory_cookie(0),
+		m_reg_cookie(0),
 		m_mapCompartments(0)
 {
 }
@@ -155,11 +162,29 @@ void OOCore::UserSession::stop()
 {
 	try
 	{
-		// Unregister built-ins
-		OOCore::RevokeIPS();
-
 		// Close compartments
 		close_compartments();
+
+		// Revoke the registry
+		if (m_reg_cookie)
+		{
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+			if (m_reg_cookie)
+			{
+				ptrROT->RevokeObject(m_reg_cookie);
+				m_reg_cookie = 0;
+			}
+		}
+
+		// Revoke the IPS
+		OTL::GetModule()->RevokeIPS();
+
+		// Revoke our private factories
+		revoke_private_factories();
 
 		// Now close Initialise singletons
 		OOCore::CloseSingletons();
@@ -194,6 +219,26 @@ void OOCore::UserSession::stop()
 #else
 	unsetenv("OMEGA_SESSION_ADDRESS");
 #endif
+}
+
+void OOCore::UserSession::register_private_factories()
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Register all our local class factories
+	m_channel_factory_cookie = OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>();
+}
+
+void OOCore::UserSession::revoke_private_factories()
+{
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Unregister all our local class factories
+	ptrROT->RevokeObject(m_channel_factory_cookie);
+	m_channel_factory_cookie = 0;
 }
 
 void OOCore::UserSession::close_compartments()
@@ -938,9 +983,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 {
-	if (OOCore::IsHosted())
+	if (OTL::GetModule()->IsHosted())
 	{
-		OOCore::RevokeIPS();
+		OTL::GetModule()->RevokeIPS();
 
 		// Close Initialise singletons
 		OOCore::CloseSingletons();
@@ -951,8 +996,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
 {
-	if (OOCore::IsHosted())
-		return OOCore::GetInterProcessService()->HandleRequest(millisecs);
+	if (OTL::GetModule()->IsHosted())
+		return OTL::GetModule()->GetIPS()->HandleRequest(millisecs);
 
 	OOBase::Timeout timeout;
 	if (millisecs != 0)

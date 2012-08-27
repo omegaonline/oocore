@@ -54,7 +54,7 @@ namespace Omega
 		};
 
 		// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
-		OOCORE_DECLARE_OID(OID_Registry);
+		OOCORE_DECLARE_OID(OID_Registry_Instance);
 
 		interface IOverlayKeyFactory : public IObject
 		{

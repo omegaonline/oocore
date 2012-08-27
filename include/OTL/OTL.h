@@ -102,9 +102,6 @@
 #define OBJECT_MAP_ENTRY(obj) \
 		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
-#define OBJECT_MAP_FACTORY_ENTRY(obj) \
-		{ &obj::GetOid, &obj::GetRegistrationFlags, &Creator<obj>::Create, 0 },
-
 #define END_LIBRARY_OBJECT_MAP() \
 		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \

@@ -22,6 +22,10 @@
 #include "OOCore_precomp.h"
 
 #include "Activation.h"
+#include "RunningObjectTable.h"
+#include "WireProxy.h"
+#include "Exception.h"
+#include "Compartment.h"
 
 #if defined(_WIN32)
 #include <shlwapi.h>
@@ -121,7 +125,7 @@ namespace
 
 		// Always launch the surrogate as an app - this protects against in-process surrogates!
 		IObject* pObject = NULL;
-		OOCore::GetInterProcessService()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Activation::IObjectFactory),sgt_flags,pObject);
+		OTL::GetModule()->GetIPS()->LaunchObjectApp(NameToOid(strOid),OMEGA_GUIDOF(Activation::IObjectFactory),sgt_flags,pObject);
 		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
 
 		pObject = NULL;
@@ -146,7 +150,7 @@ namespace
 			if (strLib.IsEmpty() || IsInvalidPath(strLib))
 				throw IAccessDeniedException::Create(OOCore::get_text("Invalid path \"{0}\" in library registry value.") % strLib);
 		}
-		
+
 		if (!strLib.IsEmpty())
 		{
 			// Try to load a library, if allowed
@@ -160,7 +164,7 @@ namespace
 
 				wrong_platform = true;
 			}
-			
+
 			// Run a surrogate
 			return LoadSurrogateObject(oid,flags,iid,wrong_platform);
 		}
@@ -172,14 +176,14 @@ namespace
 		}
 
 		IObject* pObject = NULL;
-		OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,flags,pObject);
+		OTL::GetModule()->GetIPS()->LaunchObjectApp(oid,iid,flags,pObject);
 		return pObject;
 	}
 
 	IObject* GetLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 	{
 		// See if we have it registered in the ROT
-		IObject* pObject = OOCore::GetRegisteredObject(oid,iid);
+		IObject* pObject = OTL::GetModule()->GetROTObject(oid,iid);
 		if (!pObject)
 		{
 			// See if we are allowed to load...
@@ -193,7 +197,95 @@ namespace
 	}
 }
 
+template class OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>;
 template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> >;
+
+OTL::Module::OOCore_ModuleImpl::OOCore_ModuleImpl() :
+		m_hosted_by_ooserver(false)
+{
+	m_ptrROT = NoLockObjectImpl<OOCore::LocalROT>::CreateInstance();
+
+	// Register the ROT in itself...
+	m_ptrROT->RegisterObject(Activation::OID_RunningObjectTable_Instance,m_ptrROT.QueryInterface<IObject>(),Activation::ProcessScope);
+
+	// Now register all our standard implementations
+	for (const CreatorEntry* g = getCoreEntries();g->pfnOid!=NULL;++g)
+	{
+		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(g->pfnCreate(OMEGA_GUIDOF(Activation::IObjectFactory)));
+		m_ptrROT->RegisterObject(*(g->pfnOid)(),ptrOF,(*g->pfnRegistrationFlags)());
+	}
+}
+
+const OTL::ModuleBase::CreatorEntry* OTL::Module::OOCore_ModuleImpl::getCoreEntries()
+{
+	static const CreatorEntry s_CoreCreatorEntries[] =
+	{
+		OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory)
+		OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory)
+		OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::InternalExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::NotFoundExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::AccessDeniedExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::AlreadyExistsExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl)
+		OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl)
+		{ 0,0,0,0 }
+	};
+	return s_CoreCreatorEntries;
+}
+
+ObjectPtr<OOCore::IInterProcessService> OTL::Module::OOCore_ModuleImpl::GetIPS()
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	if (!m_ptrIPS)
+		throw IInternalException::Create(OOCore::get_text("Omega::Initialize not called"),"OOCore");
+
+	return m_ptrIPS;
+}
+
+IObject* OTL::Module::OOCore_ModuleImpl::GetROTObject(const guid_t& oid, const guid_t& iid)
+{
+	IObject* pObject = NULL;
+	m_ptrROT->GetObject(oid,iid,pObject);
+	return pObject;
+}
+
+bool OTL::Module::OOCore_ModuleImpl::IsHosted() const
+{
+	return m_hosted_by_ooserver;
+}
+
+void OTL::Module::OOCore_ModuleImpl::RegisterIPS(OOCore::IInterProcessService* pIPS, bool bHosted)
+{
+	if (!pIPS)
+		OMEGA_THROW("Null IPS in RegisterIPS");
+
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = pIPS->GetRunningObjectTable();
+
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	m_hosted_by_ooserver = bHosted;
+
+	// Stash passed in values
+	m_ptrIPS = pIPS;
+	m_ptrIPS.AddRef();
+
+	m_ptrROT->SetUpstreamROT(ptrROT);
+
+
+
+	guard.release();
+}
+
+void OTL::Module::OOCore_ModuleImpl::RevokeIPS()
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	m_ptrROT->SetUpstreamROT(NULL);
+
+	m_ptrIPS.Release();
+}
 
 DLLManagerImpl::~DLLManagerImpl()
 {
@@ -349,7 +441,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 		}
 
 		// Open a remote channel
-		ObjectPtr<Remoting::IChannel> ptrChannel = OOCore::GetInterProcessService()->OpenRemoteChannel(strEndpoint);
+		ObjectPtr<Remoting::IChannel> ptrChannel = OTL::GetModule()->GetIPS()->OpenRemoteChannel(strEndpoint);
 
 		// Get the ObjectManager
 		IObject* pObject = NULL;
@@ -364,7 +456,7 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 	catch (IException* pE)
 	{
 		ObjectPtr<IException> ptrE = pE;
-		throw INotFoundException::Create(OOCore::get_text("The requested object {0} could not be created") % oid,pE);
+		throw INotFoundException::Create(OOCore::get_text("The requested object {0} could not be found") % oid,pE);
 	}
 }
 
@@ -376,4 +468,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetInstance,4,((in),const Omega::any_
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_CanUnload,0,())
 {
 	return DLLManager::instance()->can_unload();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterProcessService*,pIPS))
+{
+	OTL::GetModule()->RegisterIPS(pIPS,true);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
+{
+	return OTL::GetModule()->GetIPS()->OpenServerSink(message_oid,pSink);
 }

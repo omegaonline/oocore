@@ -161,8 +161,8 @@ namespace Omega
 			ExternalPublic = (8 | PublicScope), // Register as externally accessible
 
 			MultipleUse = 0,
-			SingleUse = 0x10,           // Auto Revoke after 1st GetObject
-			MultipleRegistration = 0x20 // Allow multiple calls to Register with different flags
+			SingleUse = 0x100,            // Auto Revoke after 1st GetObject
+			MultipleRegistration = 0x200  // Allow multiple calls to Register with different flags
 		};
 		typedef uint16_t RegisterFlags_t;
 
@@ -180,7 +180,7 @@ namespace Omega
 		};
 
 		// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
-		OOCORE_DECLARE_OID(OID_RunningObjectTable);
+		OOCORE_DECLARE_OID(OID_RunningObjectTable_Instance);
 	}
 
 	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);

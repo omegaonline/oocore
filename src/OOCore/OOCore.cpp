@@ -110,32 +110,14 @@ void operator delete[](void* p, const OOCore::throwing_t&)
 	::operator delete[](p);
 }
 
-namespace OTL
-{
-	// The following is an expansion of BEGIN_LIBRARY_OBJECT_MAP
-	// We don't use the macro as we override some behaviours
-	namespace Module
-	{
-		class OOCore_ModuleImpl : public ModuleBase
-		{
-		private:
-			ModuleBase::CreatorEntry* getCreatorEntries()
-			{
-				return NULL;
-			}
-		};
+// {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
+OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable_Instance,"{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}");
 
-		OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule())
-		{
-			return OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>::instance_ptr();
-		}
+// {EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}
+OMEGA_DEFINE_OID(Registry,OID_Registry_Instance,"{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}");
 
-		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
-		{
-			return OMEGA_PRIVATE_FN_CALL(GetModule)();
-		}
-	}
-}
+// {7A351233-8363-BA15-B443-31DD1C8FC587}
+OMEGA_DEFINE_OID(Registry,OID_OverlayKeyFactory,"{7A351233-8363-BA15-B443-31DD1C8FC587}");
 
 // {D2A10F8C-ECD1-F698-7105-48247D50DB1B}
 OMEGA_DEFINE_OID(System,OID_ServiceController,"{D2A10F8C-ECD1-F698-7105-48247D50DB1B}");

@@ -42,7 +42,6 @@ namespace User
 		OOBase::Mutex                                         m_lock;
 		OTL::ObjectPtr<OOCore::IInterProcessService>          m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
-		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 
 		OOBase::Table<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
 
@@ -50,7 +49,6 @@ namespace User
 
 	// OOCore::IInterProcessService members
 	public:
-		Omega::Registry::IKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
 		void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::IObject*& pObject);
 		Omega::bool_t HandleRequest(Omega::uint32_t millisecs);

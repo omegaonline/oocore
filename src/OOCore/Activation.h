@@ -22,17 +22,56 @@
 #ifndef OOCORE_ACTIVATION_H_INCLUDED_
 #define OOCORE_ACTIVATION_H_INCLUDED_
 
+#include "RunningObjectTable.h"
 #include "Server.h"
 
-namespace OOCore
+namespace OTL
 {
-	void RegisterObjects();
-	void RevokeIPS();
+	// The following is an expansion of BEGIN_LIBRARY_OBJECT_MAP
+	// We don't use the macro as we override some behaviours
+	namespace Module
+	{
+		class OOCore_ModuleImpl : public ProcessModule
+		{
+			friend class OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>;
 
-	OTL::ObjectPtr<OOCore::IInterProcessService> GetInterProcessService();
+		public:
+			ObjectPtr<OOCore::IInterProcessService> GetIPS();
+			bool IsHosted() const;
 
-	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
-	Omega::IObject* GetRegisteredObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
+			void RegisterIPS(OOCore::IInterProcessService* pIPS, bool bHosted);
+			void RevokeIPS();
+
+			Omega::IObject* GetROTObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
+
+		private:
+			OOCore_ModuleImpl();
+
+			OOBase::SpinLock                               m_lock;
+			ObjectPtr<NoLockObjectImpl<OOCore::LocalROT> > m_ptrROT;
+			ObjectPtr<OOCore::IInterProcessService>        m_ptrIPS;
+			bool                                          m_hosted_by_ooserver;
+
+			ModuleBase::CreatorEntry* getCreatorEntries()
+			{
+				return NULL;
+			}
+			static const CreatorEntry* getCoreEntries();
+		};
+	}
+
+	inline OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule())
+	{
+		return OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>::instance_ptr();
+	}
+
+	namespace Module
+	{
+		inline OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
+		{
+			return OTL::OMEGA_PRIVATE_FN_CALL(GetModule)();
+		}
+	}
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

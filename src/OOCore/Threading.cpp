@@ -221,9 +221,12 @@ namespace
 }
 template class OOBase::Singleton<SingletonHolder,OOCore::DLL>;
 
-void OOCore::CloseSingletons()
+namespace OOCore
 {
-	SINGLETON_HOLDER::instance().close_singletons();
+	void CloseSingletons()
+	{
+		SINGLETON_HOLDER::instance().close_singletons();
+	}
 }
 
 void SingletonHolder::close_singletons()

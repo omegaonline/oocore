@@ -26,7 +26,6 @@ namespace OOCore
 {
 	interface IInterProcessService : public Omega::IObject
 	{
-		virtual Omega::Registry::IKey* GetRegistry() = 0;
 		virtual Omega::Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
 		virtual void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::Activation::Flags_t flags, Omega::IObject*& pObject) = 0;
 		virtual Omega::bool_t HandleRequest(Omega::uint32_t millisecs) = 0;
@@ -54,7 +53,6 @@ OMEGA_DEFINE_INTERFACE
 (
 	OOCore, IInterProcessService, "{70F6D098-6E53-4E8D-BF21-9EA359DC4FF8}",
 
-	OMEGA_METHOD(Registry::IKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
 	OMEGA_METHOD_VOID(LaunchObjectApp,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),Activation::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,millisecs))

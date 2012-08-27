@@ -99,11 +99,6 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 		m_ptrSBIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
 	}
 
-	// Create a local registry impl
-	ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
-	ptrKey->init(string_t::constant("/"),0,0);
-	m_ptrReg = ptrKey.AddRef();
-
 	// Create the ROT
 	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstance();
 	try
@@ -115,11 +110,6 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 		m_ptrROT.Release();
 		throw;
 	}
-}
-
-Registry::IKey* User::InterProcessService::GetRegistry()
-{
-	return m_ptrReg.AddRef();
 }
 
 Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTable()

@@ -81,8 +81,7 @@
 
 namespace OOCore
 {
-	bool IsHosted();
-	void CloseSingletons();
+	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
 	struct DLL
 	{

@@ -250,10 +250,12 @@ void User::RunningObjectTable::OnRegisterObject(const any_t& oid, Activation::Re
 
 	if (!stackRemove.empty())
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		for (uint32_t i = 0;stackRemove.pop(&i);)
-			m_mapNotify.remove(i,NULL);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock,false);
+		if (guard.try_acquire())
+		{
+			for (uint32_t i = 0;stackRemove.pop(&i);)
+				m_mapNotify.remove(i,NULL);
+		}
 	}
 }
 
@@ -283,10 +285,12 @@ void User::RunningObjectTable::OnRevokeObject(const any_t& oid, Activation::Regi
 
 	if (!stackRemove.empty())
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		for (uint32_t i = 0;stackRemove.pop(&i);)
-			m_mapNotify.remove(i,NULL);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock,false);
+		if (guard.try_acquire())
+		{
+			for (uint32_t i = 0;stackRemove.pop(&i);)
+				m_mapNotify.remove(i,NULL);
+		}
 	}
 }
 

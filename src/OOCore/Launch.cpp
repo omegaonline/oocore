@@ -194,11 +194,8 @@ void OOCore::UserSession::start()
 	if ((err = m_stream->recv(m_channel_id)) != 0)
 		OMEGA_THROW(err);
 
-	// Spawn off the io worker thread
-	m_worker_thread.run(io_worker_fn,this);
-
 	// Register built-ins
-	RegisterObjects();
+	register_private_factories();
 
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
@@ -215,11 +212,26 @@ void OOCore::UserSession::start()
 	// Create a new object manager for the user channel on the zero compartment
 	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
 
+	// Spawn off the io worker thread
+	m_worker_thread.run(io_worker_fn,this);
+
 	// Create a proxy to the server interface
 	IObject* pIPS = NULL;
 	ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
 
-	// Register locally...
-	OOCore_RegisterIPS(ptrIPS);
+	// Register the IPS...
+	OTL::GetModule()->RegisterIPS(ptrIPS,false);
+
+	// And register the Registry
+	ObjectPtr<Registry::IKey> ptrReg;
+	ptrReg.GetInstance(Registry::OID_Registry_Instance);
+	if (ptrReg)
+	{
+		// Re-register the proxy locally.. it saves a lot of time!
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+
+		m_reg_cookie = ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope);
+	}
 }

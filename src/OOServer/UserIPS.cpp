@@ -108,7 +108,7 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstance();
 	try
 	{
-		m_ptrROT->init(pOMSB);
+		m_ptrROT->init(m_ptrSBIPS);
 	}
 	catch (...)
 	{

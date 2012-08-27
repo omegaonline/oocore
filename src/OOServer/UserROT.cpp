@@ -32,15 +32,10 @@ User::RunningObjectTable::RunningObjectTable() :
 {
 }
 
-void User::RunningObjectTable::init(Remoting::IObjectManager* pOM)
+void User::RunningObjectTable::init(ObjectPtr<OOCore::IInterProcessService> ptrIPS)
 {
-	if (pOM)
+	if (ptrIPS)
 	{
-		// Create a proxy to the global interface
-		IObject* pIPS = NULL;
-		pOM->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS = static_cast<OOCore::IInterProcessService*>(pIPS);
-
 		// Get the running object table
 		m_ptrROT = ptrIPS->GetRunningObjectTable();
 	}

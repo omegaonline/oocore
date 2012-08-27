@@ -41,13 +41,6 @@ namespace OTL
 				ObjectPtrBase<Omega::Registry::IKey>(rhs.m_ptr,true)
 		{ }
 
-		/*ObjectPtr(const char* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
-				ObjectPtrBase<Omega::Registry::IKey>(Omega::Registry::OID_Registry,Omega::Activation::Default)
-		{
-			if (key && !(key[0] == '\0' || (key[0] == '/' && key[1] == '\0')))
-				replace(this->m_ptr->OpenKey(key,flags),false);
-		}*/
-
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 				ObjectPtrBase<Omega::Registry::IKey>(static_cast<Omega::Registry::IKey*>(Omega::GetInstance(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey))),false)
 		{

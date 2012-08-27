@@ -212,6 +212,15 @@
     <ClInclude Include="..\..\include\Omega\internal\wire_ps.h">
       <Filter>Omega</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Omega\Notify.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\Registry.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Omega\TypeInfo.h">
+      <Filter>Omega</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OOCore_res.rc">

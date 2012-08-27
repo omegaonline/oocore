@@ -235,6 +235,9 @@
     <ClCompile Include="WireStub.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Omega\Notify.h" />
+    <ClInclude Include="..\..\include\Omega\Registry.h" />
+    <ClInclude Include="..\..\include\Omega\TypeInfo.h" />
     <ClInclude Include="Activation.h" />
     <ClInclude Include="CDRMessage.h" />
     <ClInclude Include="Channel.h" />

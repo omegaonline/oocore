@@ -273,8 +273,6 @@ void OTL::Module::OOCore_ModuleImpl::RegisterIPS(OOCore::IInterProcessService* p
 	m_ptrIPS.AddRef();
 
 	m_ptrROT->SetUpstreamROT(ptrROT);
-
-	guard.release();
 }
 
 void OTL::Module::OOCore_ModuleImpl::RevokeIPS()

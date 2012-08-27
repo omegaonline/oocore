@@ -221,6 +221,9 @@
     <ClInclude Include="..\..\include\Omega\TypeInfo.h">
       <Filter>Omega</Filter>
     </ClInclude>
+    <ClInclude Include="RunningObjectTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OOCore_res.rc">

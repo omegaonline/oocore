@@ -53,8 +53,6 @@ OOCore::UserSession::UserSession() :
 		m_init_state(eStopped),
 		m_usage_count(0),
 		m_mapThreadContexts(1),
-		m_channel_factory_cookie(0),
-		m_reg_cookie(0),
 		m_mapCompartments(0)
 {
 }
@@ -165,21 +163,6 @@ void OOCore::UserSession::stop()
 		// Close compartments
 		close_compartments();
 
-		// Revoke the registry
-		if (m_reg_cookie)
-		{
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
-
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-			if (m_reg_cookie)
-			{
-				ptrROT->RevokeObject(m_reg_cookie);
-				m_reg_cookie = 0;
-			}
-		}
-
 		// Revoke the IPS
 		OTL::GetModule()->RevokeIPS();
 
@@ -221,14 +204,6 @@ void OOCore::UserSession::stop()
 #endif
 }
 
-void OOCore::UserSession::register_private_factories()
-{
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	// Register all our local class factories
-	m_channel_factory_cookie = OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>();
-}
-
 void OOCore::UserSession::revoke_private_factories()
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
@@ -236,9 +211,9 @@ void OOCore::UserSession::revoke_private_factories()
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	// Unregister all our local class factories
-	ptrROT->RevokeObject(m_channel_factory_cookie);
-	m_channel_factory_cookie = 0;
+	uint32_t cookie;
+	while (m_rot_cookies.pop(&cookie))
+		ptrROT->RevokeObject(cookie);
 }
 
 void OOCore::UserSession::close_compartments()

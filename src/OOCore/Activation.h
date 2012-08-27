@@ -42,7 +42,7 @@ namespace OTL
 			void RegisterIPS(OOCore::IInterProcessService* pIPS, bool bHosted);
 			void RevokeIPS();
 
-			Omega::IObject* GetROTObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
+			Omega::IObject* GetROTObject(const Omega::any_t& oid, const Omega::guid_t& iid);
 
 		private:
 			OOCore_ModuleImpl();

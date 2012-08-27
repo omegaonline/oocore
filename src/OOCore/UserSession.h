@@ -149,9 +149,7 @@ namespace OOCore
 		void stop();
 
 		// Private object factory members
-		Omega::uint32_t m_channel_factory_cookie;
-		Omega::uint32_t m_reg_cookie;
-		void register_private_factories();
+		OOBase::Stack<Omega::uint32_t> m_rot_cookies;
 		void revoke_private_factories();
 
 		// Message pumping

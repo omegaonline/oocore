@@ -24,14 +24,6 @@ BEGIN TRANSACTION;
 	  INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 8, 'Objects', 7 );
 	      INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 8, 6 );
 	
-	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 9, 'Omega.Activation.RunningObjectTable', 8 );
-	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 9, 6 );
-	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 9, '{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}' );
-	
-	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 10, 'Omega.Registry', 8 );
-	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 10, 6 );
-	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 10, '{EAAC4365-9B65-4C3C-94C2-CC8CC3E64D74}' );
-	        
 	    INSERT INTO RegistryKeys ( Id,Name,Parent) VALUES ( 11, 'Omega.Surrogate', 8 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( '.access', 11, 6 );
 	        INSERT INTO RegistryValues ( Name,Parent,Value) VALUES ( 'OID', 11, '{D063D32C-FB9A-004A-D2E5-BB5451808FF5}' );

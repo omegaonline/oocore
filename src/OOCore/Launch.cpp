@@ -194,29 +194,26 @@ void OOCore::UserSession::start()
 	if ((err = m_stream->recv(m_channel_id)) != 0)
 		OMEGA_THROW(err);
 
-	// Register built-ins
-	register_private_factories();
-
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
-	
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	ptrZeroCompt->set_id(0);
 
-		if ((err = m_mapCompartments.force_insert(0,ptrZeroCompt)) != 0)
-			OMEGA_THROW(err);
-
-		ptrZeroCompt->set_id(0);
-	}
+	// Register our local channel factory
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	m_rot_cookies.push(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
 
 	// Create a new object manager for the user channel on the zero compartment
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
+	if ((err = m_mapCompartments.force_insert(0,ptrZeroCompt)) != 0)
+		OMEGA_THROW(err);
+
+	guard.release();
 
 	// Spawn off the io worker thread
 	m_worker_thread.run(io_worker_fn,this);
 
 	// Create a proxy to the server interface
 	IObject* pIPS = NULL;
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
 	ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
 
@@ -232,6 +229,9 @@ void OOCore::UserSession::start()
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 		ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
 
-		m_reg_cookie = ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope);
+		guard.acquire();
+
+		m_rot_cookies.push(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
+		m_rot_cookies.push(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
 	}
 }

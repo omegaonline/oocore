@@ -207,6 +207,7 @@ OTL::Module::OOCore_ModuleImpl::OOCore_ModuleImpl() :
 
 	// Register the ROT in itself...
 	m_ptrROT->RegisterObject(Activation::OID_RunningObjectTable_Instance,m_ptrROT.QueryInterface<IObject>(),Activation::ProcessScope);
+	m_ptrROT->RegisterObject(string_t::constant("Omega.Activation.RunningObjectTable"),m_ptrROT.QueryInterface<IObject>(),Activation::ProcessScope);
 
 	// Now register all our standard implementations
 	for (const CreatorEntry* g = getCoreEntries();g->pfnOid!=NULL;++g)
@@ -244,7 +245,7 @@ ObjectPtr<OOCore::IInterProcessService> OTL::Module::OOCore_ModuleImpl::GetIPS()
 	return m_ptrIPS;
 }
 
-IObject* OTL::Module::OOCore_ModuleImpl::GetROTObject(const guid_t& oid, const guid_t& iid)
+IObject* OTL::Module::OOCore_ModuleImpl::GetROTObject(const any_t& oid, const guid_t& iid)
 {
 	IObject* pObject = NULL;
 	m_ptrROT->GetObject(oid,iid,pObject);
@@ -272,8 +273,6 @@ void OTL::Module::OOCore_ModuleImpl::RegisterIPS(OOCore::IInterProcessService* p
 	m_ptrIPS.AddRef();
 
 	m_ptrROT->SetUpstreamROT(ptrROT);
-
-
 
 	guard.release();
 }
@@ -433,6 +432,11 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 
 		if (strEndpoint.IsEmpty())
 		{
+			// See if we have it registered in the ROT
+			IObject* pObject = OTL::GetModule()->GetROTObject(oid,iid);
+			if (pObject)
+				return pObject;
+
 			// Do a quick registry lookup
 			if (!guid_t::FromString(strObject,oid_guid))
 				oid_guid = NameToOid(strObject);

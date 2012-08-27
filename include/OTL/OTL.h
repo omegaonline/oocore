@@ -160,7 +160,7 @@ namespace OTL
 			Release();
 		}
 
-		void GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags)
+		void GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default)
 		{
 			replace(static_cast<OBJECT*>(Omega::GetInstance(oid,flags,OMEGA_GUIDOF(OBJECT))),false);
 		}
@@ -436,22 +436,22 @@ namespace OTL
 		void IncLockCount();
 		void DecLockCount();
 
-		virtual void RegisterObjectFactories()
+		virtual void RegisterObjectFactories(Omega::Activation::IRunningObjectTable* /*pROT*/ = NULL)
 		{
 			// Override this in a derived class, or do not call
 		}
 
-		virtual void RegisterObjectFactory(const Omega::guid_t& /*oid*/)
+		virtual void RegisterObjectFactory(const Omega::guid_t& /*oid*/, Omega::Activation::IRunningObjectTable* /*pROT*/ = NULL)
 		{
 			// Override this in a derived class, or do not call
 		}
 
-		virtual void UnregisterObjectFactories()
+		virtual void UnregisterObjectFactories(Omega::Activation::IRunningObjectTable* /*pROT*/ = NULL)
 		{
 			// Override this in a derived class, or do not call
 		}
 
-		virtual void UnregisterObjectFactory(const Omega::guid_t& /*oid*/)
+		virtual void UnregisterObjectFactory(const Omega::guid_t& /*oid*/, Omega::Activation::IRunningObjectTable* /*pROT*/ = NULL)
 		{
 			// Override this in a derived class, or do not call
 		}
@@ -738,11 +738,28 @@ namespace OTL
 	class ProcessModule : public ModuleBase
 	{
 	public:
-		virtual void RegisterObjectFactories();
-		virtual void RegisterObjectFactory(const Omega::guid_t& oid);
-		virtual void UnregisterObjectFactories();
-		virtual void UnregisterObjectFactory(const Omega::guid_t& oid);
 		virtual void Run();
+
+		virtual void RegisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT = NULL);
+		virtual void RegisterObjectFactory(const Omega::guid_t& oid, Omega::Activation::IRunningObjectTable* pROT = NULL);
+		virtual void UnregisterObjectFactories(Omega::Activation::IRunningObjectTable* pROT = NULL);
+		virtual void UnregisterObjectFactory(const Omega::guid_t& oid, Omega::Activation::IRunningObjectTable* pROT = NULL);
+
+		template <typename T>
+		static Omega::uint32_t RegisterAutoObjectFactory(Omega::Activation::IRunningObjectTable* pROT = NULL)
+		{
+			ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT = pROT;
+			if (ptrROT)
+				ptrROT.AddRef();
+			else
+				ptrROT.GetInstance(Omega::Activation::OID_RunningObjectTable_Instance);
+
+			ObjectPtr<Omega::IObject> ptrObject = Creator<typename T::ObjectFactoryClass>::Create(OMEGA_GUIDOF(Omega::Activation::IObjectFactory));
+			if (!ptrObject)
+				throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Omega::Activation::IObjectFactory));
+
+			return ptrROT->RegisterObject(*T::GetOid(),ptrObject,T::GetRegistrationFlags());
+		}
 
 	protected:
 		ProcessModule()
@@ -761,6 +778,7 @@ namespace OTL
 			}
 		};
 
+		Omega::Threading::Mutex m_lock;
 	};
 
 #if defined(OMEGA_TYPEINFO_H_INCLUDED_)

@@ -74,7 +74,7 @@ namespace User
 		void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
-	// {1A7672C5-8478-4e5a-9D8B-D5D019E25D15}
+	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}
 	extern const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :

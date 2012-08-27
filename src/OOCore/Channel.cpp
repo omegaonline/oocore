@@ -23,7 +23,6 @@
 
 #include "Channel.h"
 #include "UserSession.h"
-#include "Activation.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -283,27 +282,11 @@ const Omega::guid_t OOCore::OID_ChannelMarshalFactory("{7E662CBB-12AF-4773-8B03-
 
 void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
-	if (OTL::GetModule()->IsHosted())
-	{
-		// This must match OOServer::User::OID_ChannelMarshalFactory
-		static const guid_t oid("{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
-		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::Library | Activation::DontLaunch);
+	uint32_t channel_id = pMessage->ReadValue(string_t::constant("m_channel_id")).cast<uint32_t>();
+	guid_t message_oid = pMessage->ReadValue(string_t::constant("m_message_oid")).cast<guid_t>();
 
-		// If we have a pointer by now then we are actually running in the OOServer.exe,
-		// and can therefore do our specialized unmarshalling...
-		ptrMarshalFactory->UnmarshalInterface(pMarshaller,pMessage,iid,flags,pObject);
-	}
-	else
-	{
-		// If we get here, then we are loaded into a different exe from OOServer,
-		// therefore we do simple unmarshalling
-
-		uint32_t channel_id = pMessage->ReadValue(string_t::constant("m_channel_id")).cast<uint32_t>();
-		guid_t message_oid = pMessage->ReadValue(string_t::constant("m_message_oid")).cast<guid_t>();
-
-		// Create a new channel
-		pObject = UserSession::create_channel(channel_id,message_oid,iid);
-	}
+	// Create a new channel
+	pObject = UserSession::create_channel(channel_id,message_oid,iid);
 }
 
 const Omega::guid_t OOCore::OID_CDRMessageMarshalFactory("{1455FCD0-A49B-4f2a-94A5-222949957123}");

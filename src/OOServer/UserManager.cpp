@@ -48,7 +48,6 @@ namespace OTL
 			{
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
-					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory)
 					OBJECT_MAP_ENTRY(User::Registry::OverlayKeyFactory)
 					OBJECT_MAP_ENTRY(User::ServiceController)
 					{ 0,0,0,0 }

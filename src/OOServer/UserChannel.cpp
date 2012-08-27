@@ -26,7 +26,7 @@
 using namespace Omega;
 using namespace OTL;
 
-const Omega::guid_t User::OID_ChannelMarshalFactory("{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+const Omega::guid_t User::OID_ChannelMarshalFactory("{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
 User::Channel::Channel() :
 		m_channel_id(0),
@@ -237,7 +237,7 @@ void User::Channel::GetManager(const guid_t& iid, IObject*& pObject)
 guid_t User::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
 {
 	// This must match OOCore::OID_ChannelMarshalFactory
-	return guid_t("{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
+	return User::OID_ChannelMarshalFactory;
 }
 
 void User::Channel::MarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)

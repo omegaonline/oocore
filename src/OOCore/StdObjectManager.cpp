@@ -447,7 +447,6 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(Remoting::IMarshal* pMarsh
 	{
 		pMessage->ReadValue(string_t::constant("$marshal_type"));
 		pMessage->ReadValue(string_t::constant("$oid"));
-		pMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
 		throw;
 	}
 

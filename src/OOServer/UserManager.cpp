@@ -56,12 +56,15 @@ namespace OTL
 				return CreatorEntries;
 			}
 		};
+	}
 
-		OMEGA_PRIVATE_FN_DECL(Module::OOSvrUser_ProcessModuleImpl*,GetModule())
-		{
-			return Omega::Threading::Singleton<Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Manager> >::instance();
-		}
+	OMEGA_PRIVATE_FN_DECL(Module::OOSvrUser_ProcessModuleImpl*,GetModule())
+	{
+		return OOBase::Singleton<Module::OOSvrUser_ProcessModuleImpl,User::Manager>::instance_ptr();
+	}
 
+	namespace Module
+	{
 		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
 		{
 			return OMEGA_PRIVATE_FN_CALL(GetModule)();
@@ -69,7 +72,7 @@ namespace OTL
 	}
 }
 
-template class Omega::Threading::Singleton<OTL::Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Manager> >;
+template class OOBase::Singleton<OTL::Module::OOSvrUser_ProcessModuleImpl,User::Manager>;
 
 using namespace Omega;
 using namespace OTL;

@@ -84,7 +84,7 @@ namespace
 		uint32_t msecs = 15000;
 		try
 		{
-			while (Omega::HandleRequest(msecs) || GetModule()->HaveLocks() || !Omega::CanUnload())
+			while (Omega::HandleRequest(msecs) || GetModuleBase()->HaveLocks() || !Omega::CanUnload())
 			{
 				// Once we have the first message, we can then wait a very short time
 				msecs = 500;
@@ -117,7 +117,7 @@ namespace
 		{
 			try
 			{
-				GetModule()->RegisterObjectFactory(oid);
+				GetModuleBase()->RegisterObjectFactory(oid);
 
 				OOBase::ThreadPool pool;
 				int err = pool.run(&worker,NULL,2);
@@ -128,7 +128,7 @@ namespace
 
 				pool.join();
 
-				GetModule()->UnregisterObjectFactories();
+				GetModuleBase()->UnregisterObjectFactories();
 
 				ret = EXIT_SUCCESS;
 			}

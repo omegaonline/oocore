@@ -108,13 +108,15 @@
 #define END_LIBRARY_OBJECT_MAP() \
 		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
-	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
-	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
+	} \
+	inline OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	namespace Module { \
+	inline OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OTL::OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
-	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid); } \
+	{ pObject = OTL::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,iid); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,Omega_CanUnloadLibrary,0,()) \
-	{ return !(OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->HaveLocks()); }
+	{ return !(OTL::GetModuleBase()->HaveLocks()); }
 
 #define BEGIN_PROCESS_OBJECT_MAP() \
 	namespace OTL { \
@@ -126,8 +128,10 @@
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
-	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
-	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
+	} \
+	inline OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	namespace Module { \
+	inline OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OTL::OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
 	}
 
@@ -483,7 +487,7 @@ namespace OTL
 		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)();
 	}
 
-	inline static ModuleBase* GetModule()
+	inline static ModuleBase* GetModuleBase()
 	{
 		return Module::OMEGA_PRIVATE_FN_CALL(GetModuleBase)();
 	}
@@ -500,13 +504,13 @@ namespace OTL
 	private:
 		ObjectImpl() : ROOT()
 		{
-			GetModule()->IncLockCount();
+			GetModuleBase()->IncLockCount();
 			this->AddRef();
 		}
 
 		virtual ~ObjectImpl()
 		{
-			GetModule()->DecLockCount();
+			GetModuleBase()->DecLockCount();
 		}
 
 		ObjectImpl(const ObjectImpl& rhs);
@@ -590,12 +594,12 @@ namespace OTL
 	public:
 		virtual void AddRef()
 		{
-			GetModule()->IncLockCount();
+			GetModuleBase()->IncLockCount();
 		}
 
 		virtual void Release()
 		{
-			GetModule()->DecLockCount();
+			GetModuleBase()->DecLockCount();
 		}
 
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
@@ -711,6 +715,12 @@ namespace OTL
 	class LibraryModule : public ModuleBase
 	{
 	public:
+		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
+
+	protected:
+		LibraryModule()
+		{}
+
 		template <typename T>
 		struct Creator
 		{
@@ -723,12 +733,6 @@ namespace OTL
 				return pObject;
 			}
 		};
-
-		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, const Omega::guid_t& iid);
-
-	protected:
-		LibraryModule()
-		{}
 	};
 
 	class ProcessModule : public ModuleBase
@@ -741,6 +745,9 @@ namespace OTL
 		virtual void Run();
 
 	protected:
+		ProcessModule()
+		{}
+
 		template <typename T>
 		struct Creator
 		{
@@ -754,8 +761,6 @@ namespace OTL
 			}
 		};
 
-		ProcessModule()
-		{}
 	};
 
 #if defined(OMEGA_TYPEINFO_H_INCLUDED_)

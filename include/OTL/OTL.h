@@ -240,10 +240,6 @@ namespace OTL
 				ObjectPtrBase<OBJECT>(oid,flags)
 		{ }
 
-		/*ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
-				ObjectPtrBase<OBJECT>(Omega::string_t(name),flags)
-		{ }*/
-
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
 		{
 			if (this != &rhs)
@@ -281,10 +277,6 @@ namespace OTL
 		ObjectPtr(const Omega::any_t& oid, Omega::Activation::Flags_t flags) :
 				ObjectPtrBase<Omega::IObject>(oid,flags)
 		{ }
-
-		/*ObjectPtr(const char* name, Omega::Activation::Flags_t flags = Omega::Activation::Default) :
-				ObjectPtrBase<Omega::IObject>(Omega::string_t(name),flags)
-		{ }*/
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
 		{

@@ -35,6 +35,12 @@
 
 #if !defined(_WIN32) && defined(HAVE_UNISTD_H)
 
+#if defined(ECLIPSE_PARSER)
+#define REGDB_PATH  "/var/lib/omegaonline"
+#define LIBEXEC_DIR "/usr/libexec"
+#define CONFIG_DIR "/etc"
+#endif
+
 #include "RootManager.h"
 
 #include <signal.h>

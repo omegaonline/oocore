@@ -54,7 +54,7 @@ namespace
 	};
 }
 
-SimpleMarshaller::SimpleMarshaller()
+SimpleMarshaller::SimpleMarshaller() : m_marshal_flags(Remoting::Same)
 {
 }
 

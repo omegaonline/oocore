@@ -406,6 +406,8 @@ namespace Omega
 
 			class Safe_Proxy_IObject : public Safe_Proxy<IObject,IObject>
 			{
+				typedef Safe_Proxy<IObject,IObject> baseClass;
+
 			public:
 				static IObject* bind(const SafeShim* shim)
 				{
@@ -423,8 +425,7 @@ namespace Omega
 				}
 
 			private:
-				Safe_Proxy_IObject(const SafeShim* shim) :
-						Safe_Proxy<IObject,IObject>(shim)
+				Safe_Proxy_IObject(const SafeShim* shim) : baseClass(shim)
 				{ }
 
 				virtual ~Safe_Proxy_IObject()

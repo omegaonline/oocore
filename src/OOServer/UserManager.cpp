@@ -342,7 +342,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	{
 		// Get the local ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
 
 		// Register our private factories...
 		OTL::GetModule()->RegisterAutoObjectFactory<User::ChannelMarshalFactory>();
@@ -352,14 +352,14 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		if (sandbox_channel != 0)
 			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
-		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstance();
+		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateObject();
 		ptrIPS->init(ptrOMSb);
 
 		// Register our interprocess service so we can react to activation requests
 		OOCore_RegisterIPS(ptrIPS);
 
 		// Create a local registry impl
-		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrReg = ObjectImpl<User::Registry::RootKey>::CreateInstance();
+		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrReg = ObjectImpl<User::Registry::RootKey>::CreateObject();
 		ptrReg->init(string_t::constant("/"),0,0);
 
 		// Registry registry
@@ -689,7 +689,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
-		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 		ptrEnvelope->init(request);
 
 		// Unpack the payload
@@ -706,7 +706,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 		if (!(attribs & OOServer::Message_t::asynchronous))
 		{
 			// Wrap the response...
-			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
@@ -720,7 +720,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 		ObjectPtr<IException> ptrE = pE;
 		if (!(attribs & OOServer::Message_t::asynchronous))
 		{
-			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 
 			OOCore_RespondException(ptrResponse,pE);
 
@@ -753,7 +753,7 @@ ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_
 	}
 
 	// Create a new channel
-	ptrChannel = ObjectImpl<Channel>::CreateInstance();
+	ptrChannel = ObjectImpl<Channel>::CreateObject();
 	ptrChannel->init(src_channel_id,classify_channel(src_channel_id),message_oid);
 
 	// And add to the map

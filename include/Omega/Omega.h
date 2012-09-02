@@ -139,7 +139,7 @@ namespace Omega
 	{
 		interface IObjectFactory : public IObject
 		{
-			virtual void CreateInstance(const guid_t& iid, IObject*& pObject) = 0;
+			virtual void CreateObject(const guid_t& iid, IObject*& pObject) = 0;
 		};
 
 		enum Flags
@@ -183,8 +183,8 @@ namespace Omega
 		OOCORE_DECLARE_OID(OID_RunningObjectTable_Instance);
 	}
 
-	IObject* CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
-	IObject* GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	IObject* CreateObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	IObject* GetObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid);
 
 	bool_t HandleRequest(uint32_t millisecs = 0);
 	bool_t CanUnload();
@@ -247,7 +247,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
-	OMEGA_METHOD_VOID(CreateInstance,2,((in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateObject,2,((in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -300,22 +300,22 @@ inline void Omega::Uninitialize()
 	OOCore_Omega_Uninitialize();
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_GetInstance,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
-inline Omega::IObject* Omega::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+inline Omega::IObject* Omega::GetObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	IObject* pObject = NULL;
-	OOCore_GetInstance(oid,flags,iid,pObject);
+	OOCore_GetObject(oid,flags,iid,pObject);
 	return pObject;
 }
 
-inline Omega::IObject* Omega::CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
+inline Omega::IObject* Omega::CreateObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	IObject* pObject = NULL;
-	OOCore_GetInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
+	OOCore_GetObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObject);
 	System::Internal::auto_iface_ptr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
 
 	pObject = NULL;
-	ptrOF->CreateInstance(iid,pObject);
+	ptrOF->CreateObject(iid,pObject);
 	return pObject;
 }
 

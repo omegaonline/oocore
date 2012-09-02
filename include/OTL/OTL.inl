@@ -53,7 +53,7 @@ inline void OTL::ProcessModule::RegisterObjectFactories(Omega::Activation::IRunn
 	if (ptrROT)
 		ptrROT.AddRef();
 	else
-		ptrROT.GetInstance(Omega::Activation::OID_RunningObjectTable_Instance);
+		ptrROT.GetObject(Omega::Activation::OID_RunningObjectTable_Instance);
 
 	Omega::Threading::Guard guard(m_lock);
 
@@ -74,7 +74,7 @@ inline void OTL::ProcessModule::RegisterObjectFactory(const Omega::guid_t& oid, 
 			if (ptrROT)
 				ptrROT.AddRef();
 			else
-				ptrROT.GetInstance(Omega::Activation::OID_RunningObjectTable_Instance);
+				ptrROT.GetObject(Omega::Activation::OID_RunningObjectTable_Instance);
 
 			Omega::Threading::Guard guard(m_lock);
 
@@ -92,7 +92,7 @@ inline void OTL::ProcessModule::UnregisterObjectFactories(Omega::Activation::IRu
 	if (ptrROT)
 		ptrROT.AddRef();
 	else
-		ptrROT.GetInstance(Omega::Activation::OID_RunningObjectTable_Instance);
+		ptrROT.GetObject(Omega::Activation::OID_RunningObjectTable_Instance);
 
 	Omega::Threading::Guard guard(m_lock);
 
@@ -116,7 +116,7 @@ inline void OTL::ProcessModule::UnregisterObjectFactory(const Omega::guid_t& oid
 			if (ptrROT)
 				ptrROT.AddRef();
 			else
-				ptrROT.GetInstance(Omega::Activation::OID_RunningObjectTable_Instance);
+				ptrROT.GetObject(Omega::Activation::OID_RunningObjectTable_Instance);
 
 			Omega::Threading::Guard guard(m_lock);
 

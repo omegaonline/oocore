@@ -25,7 +25,7 @@ static bool do_cmpt_library_test(const Omega::string_t& strLibName, bool& bSkipp
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = NULL;
-	ptrCompartment->CreateInstance("Test.Library",Omega::Activation::Library,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateObject("Test.Library",Omega::Activation::Library,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest = static_cast<Omega::TestSuite::ISimpleTest*>(pObj);
 
 	// Test the interface
@@ -71,7 +71,7 @@ static bool do_cmpt_process_test(const Omega::string_t& strModulePath, bool& bSk
 	TEST(ptrCompartment);
 
 	Omega::IObject* pObj = NULL;
-	ptrCompartment->CreateInstance("Test.Process",Omega::Activation::Process,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
+	ptrCompartment->CreateObject("Test.Process",Omega::Activation::Process,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObj);
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest = static_cast<Omega::TestSuite::ISimpleTest*>(pObj);
 
 	// Test the interface

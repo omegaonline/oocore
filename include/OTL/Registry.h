@@ -42,7 +42,7 @@ namespace OTL
 		{ }
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
-				ObjectPtrBase<Omega::Registry::IKey>(static_cast<Omega::Registry::IKey*>(Omega::GetInstance(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey))),false)
+				ObjectPtrBase<Omega::Registry::IKey>(static_cast<Omega::Registry::IKey*>(Omega::GetObject(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey))),false)
 		{
 			if (!key.IsEmpty() && key != "/")
 				replace(this->m_ptr->OpenKey(key,flags),false);

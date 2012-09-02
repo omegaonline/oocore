@@ -96,7 +96,7 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 						try
 						{
 							// Wrap up a registry key
-							ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateInstance();
+							ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateObject();
 							ptrKey->init(string_t::constant("/System/Services/") + strName.c_str(),key,0);
 
 							// Return a pointer to a IService interface and place in stack

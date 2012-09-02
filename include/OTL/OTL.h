@@ -149,7 +149,7 @@ namespace OTL
 		}
 
 		ObjectPtrBase(const Omega::any_t& oid, Omega::Activation::Flags_t flags) :
-				m_ptr(static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,OMEGA_GUIDOF(OBJECT))))
+				m_ptr(static_cast<OBJECT*>(Omega::CreateObject(oid,flags,OMEGA_GUIDOF(OBJECT))))
 		{ }
 
 		virtual ~ObjectPtrBase()
@@ -157,9 +157,9 @@ namespace OTL
 			Release();
 		}
 
-		void GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default)
+		void GetObject(const Omega::any_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Default)
 		{
-			replace(static_cast<OBJECT*>(Omega::GetInstance(oid,flags,OMEGA_GUIDOF(OBJECT))),false);
+			replace(static_cast<OBJECT*>(Omega::GetObject(oid,flags,OMEGA_GUIDOF(OBJECT))),false);
 		}
 
 		OBJECT* Detach()
@@ -485,7 +485,7 @@ namespace OTL
 	class ObjectImpl : public ROOT
 	{
 	public:
-		static ObjectImpl<ROOT>* CreateInstance()
+		static ObjectImpl<ROOT>* CreateObject()
 		{
 			return new ObjectImpl<ROOT>();
 		}
@@ -527,7 +527,7 @@ namespace OTL
 	class NoLockObjectImpl : public ROOT
 	{
 	public:
-		static NoLockObjectImpl<ROOT>* CreateInstance()
+		static NoLockObjectImpl<ROOT>* CreateObject()
 		{
 			return new NoLockObjectImpl<ROOT>();
 		}
@@ -565,7 +565,7 @@ namespace OTL
 		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::InitialiseDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >;
 
 	public:
-		static SingletonObjectImpl<ROOT>* CreateInstance()
+		static SingletonObjectImpl<ROOT>* CreateObject()
 		{
 			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::InitialiseDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
 			pObject->AddRef();
@@ -646,9 +646,9 @@ namespace OTL
 	class AutoObjectFactoryCallCreate
 	{
 	public:
-		static Omega::IObject* CreateInstance(const Omega::guid_t& iid)
+		static Omega::IObject* CreateObject(const Omega::guid_t& iid)
 		{
-			ObjectPtr<T> ptr = T::CreateInstance();
+			ObjectPtr<T> ptr = T::CreateObject();
 			Omega::IObject* ret = ptr->QueryInterface(iid);
 			if (!ret)
 				throw OOCore_INotFoundException_MissingIID(iid);
@@ -668,9 +668,9 @@ namespace OTL
 
 	// IObjectFactory members
 	public:
-		void CreateInstance(const Omega::guid_t& iid, Omega::IObject*& pObject)
+		void CreateObject(const Omega::guid_t& iid, Omega::IObject*& pObject)
 		{
-			pObject = T::CreateInstance(iid);
+			pObject = T::CreateObject(iid);
 		}
 	};
 
@@ -715,7 +715,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid)
 			{
-				ObjectPtr<ObjectImpl<T> > ptr = ObjectImpl<T>::CreateInstance();
+				ObjectPtr<ObjectImpl<T> > ptr = ObjectImpl<T>::CreateObject();
 				Omega::IObject* pObject = ptr->QueryInterface(iid);
 				if (!pObject)
 					throw OOCore_INotFoundException_MissingIID(iid);
@@ -741,7 +741,7 @@ namespace OTL
 			if (ptrROT)
 				ptrROT.AddRef();
 			else
-				ptrROT.GetInstance(Omega::Activation::OID_RunningObjectTable_Instance);
+				ptrROT.GetObject(Omega::Activation::OID_RunningObjectTable_Instance);
 
 			ObjectPtr<Omega::IObject> ptrObject = Creator<typename T::ObjectFactoryClass>::Create(OMEGA_GUIDOF(Omega::Activation::IObjectFactory));
 			if (!ptrObject)
@@ -759,7 +759,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid)
 			{
-				ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateInstance();
+				ObjectPtr<NoLockObjectImpl<T> > ptr = NoLockObjectImpl<T>::CreateObject();
 				Omega::IObject* pObject = ptr->QueryInterface(iid);
 				if (!pObject)
 					throw OOCore_INotFoundException_MissingIID(iid);

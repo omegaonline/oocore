@@ -106,7 +106,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 	if (e == ERROR_OUTOFMEMORY)
 		OutOfMemoryException::s_instance.Rethrow();
 
-	ObjectPtr<ObjectImpl<OOCore::SystemException> > pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::SystemException> > pExcept = ObjectImpl<OOCore::SystemException>::CreateObject();
 	pExcept->m_strDesc = OOBase::system_error_text(e);
 	pExcept->m_errno = e;
 	pExcept->m_ptrCause = pCause;
@@ -118,7 +118,7 @@ namespace OOCore
 {
 	ObjectPtr<ObjectImpl<OOCore::InternalException> > CreateInternalException(const string_t& desc, const char* pszFile, size_t nLine, const char* pszFunc, IException* pCause)
 	{
-		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateInstance();
+		ObjectPtr<ObjectImpl<OOCore::InternalException> > pExcept = ObjectImpl<OOCore::InternalException>::CreateObject();
 
 		pExcept->m_strDesc = desc;
 		pExcept->m_ptrCause = pCause;
@@ -179,7 +179,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IInternalException*,OOCore_IInternalException_Bad
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Create,2,((in),const string_t&,strDesc,(in),Omega::IException*,pCause))
 {
-	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateObject();
 	pExcept->m_strDesc = strDesc;
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
@@ -188,7 +188,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Cre
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_MissingIID,1,((in),const guid_t&,iid))
 {
-	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateObject();
 
 	string_t strIID = iid.ToString();
 
@@ -202,7 +202,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_MissingRTTI,1,((in),const guid_t&,iid))
 {
-	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateObject();
 
 	string_t strIID = iid.ToString();
 
@@ -216,21 +216,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_Mis
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(INotFoundException*,OOCore_INotFoundException_BadInvoke,1,((in),uint32_t,method_id))
 {
-	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::NotFoundException> > pExcept = ObjectImpl<OOCore::NotFoundException>::CreateObject();
 	pExcept->m_strDesc = OOCore::get_text("Invoke called with invalid method index {0}") % method_id;
 	return pExcept.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IAlreadyExistsException*,OOCore_IAlreadyExistsException_Create,1,((in),const string_t&,strDesc))
 {
-	ObjectPtr<ObjectImpl<OOCore::AlreadyExistsException> > pExcept = ObjectImpl<OOCore::AlreadyExistsException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::AlreadyExistsException> > pExcept = ObjectImpl<OOCore::AlreadyExistsException>::CreateObject();
 	pExcept->m_strDesc = strDesc;
 	return pExcept.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IAccessDeniedException*,OOCore_IAccessDeniedException_Create,2,((in),const string_t&,strDesc,(in),Omega::IException*,pCause))
 {
-	ObjectPtr<ObjectImpl<OOCore::AccessDeniedException> > pExcept = ObjectImpl<OOCore::AccessDeniedException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::AccessDeniedException> > pExcept = ObjectImpl<OOCore::AccessDeniedException>::CreateObject();
 	pExcept->m_strDesc = strDesc;
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
@@ -239,14 +239,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IAccessDeniedException*,OOCore_IAccessDeniedExcep
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
-	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::TimeoutException> > pExcept = ObjectImpl<OOCore::TimeoutException>::CreateObject();
 	pExcept->m_strDesc = OOCore::get_text("The operation timed out");
 	return pExcept.Detach();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,1,((in),IException*,pCause))
 {
-	ObjectPtr<ObjectImpl<OOCore::ChannelClosedException> > pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::ChannelClosedException> > pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateObject();
 	pExcept->m_ptrCause = pCause;
 	pExcept->m_ptrCause.AddRef();
 	pExcept->m_strDesc = OOCore::get_text("The remoting channel has closed");

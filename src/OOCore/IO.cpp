@@ -156,7 +156,7 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_1,3,((in),size_t,lenBytes,(in)(size_is(lenBytes)),const byte_t*,data,(in),bool_t,bCopy))
 {
-	ObjectPtr<ObjectImpl<BufferInputStream> > ptrRet = ObjectImpl<BufferInputStream>::CreateInstance();
+	ObjectPtr<ObjectImpl<BufferInputStream> > ptrRet = ObjectImpl<BufferInputStream>::CreateObject();
 
 	ptrRet->init(lenBytes,data,bCopy);
 
@@ -166,7 +166,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_1,3
 #if defined(_WIN32)
 OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),HANDLE,hFile))
 {
-	ObjectPtr<ObjectImpl<FileInputStream> > ptrRet = ObjectImpl<FileInputStream>::CreateInstance();
+	ObjectPtr<ObjectImpl<FileInputStream> > ptrRet = ObjectImpl<FileInputStream>::CreateObject();
 
 	ptrRet->init(hFile);
 
@@ -175,7 +175,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1
 #else
 OMEGA_DEFINE_EXPORTED_FUNCTION(IO::IInputStream*,OOCore_IO_CreateInputStream_2,1,((in),int,fd))
 {
-	ObjectPtr<ObjectImpl<FileInputStream> > ptrRet = ObjectImpl<FileInputStream>::CreateInstance();
+	ObjectPtr<ObjectImpl<FileInputStream> > ptrRet = ObjectImpl<FileInputStream>::CreateObject();
 
 	ptrRet->init(fd);
 

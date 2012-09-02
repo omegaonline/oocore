@@ -40,7 +40,7 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	m_message_oid = message_oid;
 
 	if (m_message_oid != guid_t::Null())
-		m_ptrOF.GetInstance(m_message_oid,Activation::Library);
+		m_ptrOF.GetObject(m_message_oid,Activation::Library);
 
 	// Connect the OM to us
 	m_ptrOM = pOM;
@@ -77,13 +77,13 @@ Remoting::IMessage* OOCore::ChannelBase::CreateMessage()
 	if (m_message_oid == guid_t::Null())
 	{
 		// Create a fresh CDRMessage
-		return ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+		return ObjectImpl<OOCore::CDRMessage>::CreateObject();
 	}
 	else
 	{
 		// Create a fresh one
 		IObject* pObject = NULL;
-		m_ptrOF->CreateInstance(OMEGA_GUIDOF(Remoting::IMessage),pObject);
+		m_ptrOF->CreateObject(OMEGA_GUIDOF(Remoting::IMessage),pObject);
 		return static_cast<Remoting::IMessage*>(pObject);
 	}
 }
@@ -181,7 +181,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	guard.release();
 
 	// We need to wrap the message
-	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstance();
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateObject();
 	ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	OOBase::CDRStream response;
@@ -206,7 +206,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 		try
 		{
 			// Wrap the response
-			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstance();
+			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateObject();
 			ptrRecv->init(response);
 
 			// Unwrap the payload...
@@ -299,7 +299,7 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*
 	pMessage->ReadBytes(string_t::constant("data"),len,(byte_t*)input.buffer()->wr_ptr());
 	input.buffer()->wr_ptr(len);
 
-	ObjectPtr<ObjectImpl<CDRMessage> > ptrInput = ObjectImpl<CDRMessage>::CreateInstance();
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrInput = ObjectImpl<CDRMessage>::CreateObject();
 	ptrInput->init(input);
 
 	pObject = ptrInput->QueryInterface(iid);
@@ -307,5 +307,5 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,())
 {
-	return ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+	return ObjectImpl<OOCore::CDRMessage>::CreateObject();
 }

@@ -152,7 +152,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 static bool test_key(const Omega::string_t& strKey)
 {
-	Omega::IObject* pObj = Omega::GetInstance(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey));
+	Omega::IObject* pObj = Omega::GetObject(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey));
 	TEST(pObj);
 	
 	Omega::Registry::IKey* pRootKey = static_cast<Omega::Registry::IKey*>(pObj);
@@ -243,7 +243,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 
 bool registry_tests()
 {
-	Omega::IObject* pObj = Omega::GetInstance(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey));
+	Omega::IObject* pObj = Omega::GetObject(Omega::Registry::OID_Registry_Instance,Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey));
 	TEST(pObj);
 	
 	Omega::Registry::IKey* pRootKey = static_cast<Omega::Registry::IKey*>(pObj);
@@ -264,7 +264,7 @@ bool registry_tests()
 		return false;
 		
 	// Check we can use the textual OID
-	pObj = Omega::GetInstance("Omega.Registry",Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey));
+	pObj = Omega::GetObject("Omega.Registry",Omega::Activation::Default,OMEGA_GUIDOF(Omega::Registry::IKey));
 	TEST(pObj);
 	pObj->Release();
 

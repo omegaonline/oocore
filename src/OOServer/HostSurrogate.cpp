@@ -155,7 +155,7 @@ const Omega::guid_t OOCore::OID_ServiceManager("{1ACC3273-8FB3-9741-E7E6-1CD4C61
 
 void SurrogateImpl::GetObject(const guid_t& oid, Activation::Flags_t, const guid_t& iid, IObject*& pObject)
 {
-	OOCore_GetInstance(oid,Activation::Library,iid,pObject);
+	OOCore_GetObject(oid,Activation::Library,iid,pObject);
 }
 
 System::IService* ServiceManagerImpl::Create(const any_t& oid)

@@ -1,6 +1,6 @@
 include $(top_srcdir)/m4/ltrc.inc
 
-AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include
+AM_CPPFLAGS = -I@top_srcdir@/oobase/include -I@top_builddir@/oobase/include $(SQLITE3_CFLAGS) 
 AM_CFLAGS = $(PTHREAD_CFLAGS)
 AM_CXXFLAGS = $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
@@ -19,5 +19,4 @@ libdb_la_SOURCES = \
 	RegistryHive.cpp \
 	SQLite3_comp.c
 	
-libdb_la_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) 
 libdb_la_LIBADD = $(SQLITE3_LIBS)

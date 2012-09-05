@@ -21,10 +21,11 @@ liboosvrcmn_la_SOURCES = \
 
 bin_PROGRAMS = ooserverd
 
-ooserverd_CPPFLAGS = $(AM_CPPFLAGS) $(SQLITE3_CFLAGS) \
+ooserverd_CPPFLAGS = $(SQLITE3_CFLAGS) \
 	-DLIBEXEC_DIR=\"$(pkglibexecdir)/\" \
 	-DCONFIG_DIR=\"$(pkgdatadir)/\" \
-	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" 
+	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" \
+	$(AM_CPPFLAGS) 
 		
 ooserverd_LDADD = liboosvrcmn.la libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
@@ -74,7 +75,7 @@ oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_buil
 if WIN32
 if WIN64_HYBRID
 
-oosvruser_CPPFLAGS = $(AM_CPPFLAGS) -DWIN64_HYBRID
+oosvruser_CPPFLAGS = -DWIN64_HYBRID $(AM_CPPFLAGS)
 oosvruser_LDADD += ../OOCore/OOCore64.la
 
 pkglibexec_PROGRAMS += oosvrhost64
@@ -92,7 +93,6 @@ else
 
 pkglibexec_PROGRAMS += oosvrhost32
 
-oosvruser_CPPFLAGS = $(AM_CPPFLAGS) 
 oosvruser_LDADD += ../OOCore/OOCore32.la
 
 oosvrhost32_SOURCES = \
@@ -110,7 +110,6 @@ oosvruser_SOURCES += OOSvrUser.rc
 
 else
 
-oosvruser_CPPFLAGS = $(AM_CPPFLAGS)
 oosvruser_LDADD += @top_builddir@/oobase/liboobase.la ../OOCore/liboocore.la
 
 pkglibexec_PROGRAMS += oosvrhost

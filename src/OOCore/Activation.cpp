@@ -129,7 +129,7 @@ namespace
 		ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObject);
 
 		pObject = NULL;
-		ptrOF->CreateInstance(OMEGA_GUIDOF(Remoting::ISurrogate),pObject);
+		ptrOF->CreateObject(OMEGA_GUIDOF(Remoting::ISurrogate),pObject);
 		ObjectPtr<Remoting::ISurrogate> ptrSurrogate = static_cast<Remoting::ISurrogate*>(pObject);
 
 		pObject = NULL;
@@ -203,7 +203,7 @@ template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestruct
 OTL::Module::OOCore_ModuleImpl::OOCore_ModuleImpl() :
 		m_hosted_by_ooserver(false)
 {
-	m_ptrROT = NoLockObjectImpl<OOCore::LocalROT>::CreateInstance();
+	m_ptrROT = NoLockObjectImpl<OOCore::LocalROT>::CreateObject();
 
 	// Register the ROT in itself...
 	m_ptrROT->RegisterObject(Activation::OID_RunningObjectTable_Instance,m_ptrROT.QueryInterface<IObject>(),Activation::ProcessScope);
@@ -407,7 +407,7 @@ bool DLLManagerImpl::can_unload()
 	return true;
 }
 
-IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
+IObject* OOCore::GetObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	try
 	{
@@ -462,9 +462,9 @@ IObject* OOCore::GetInstance(const any_t& oid, Activation::Flags_t flags, const 
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetInstance,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
-	pObject = OOCore::GetInstance(oid,flags,iid);
+	pObject = OOCore::GetObject(oid,flags,iid);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_CanUnload,0,())

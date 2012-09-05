@@ -64,7 +64,7 @@ ObjectImpl<User::Channel>* User::RemoteChannel::create_channel(uint32_t channel_
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
 	if (!m_mapChannels.find(channel_id,ptrChannel))
 	{
-		ptrChannel = ObjectImpl<User::Channel>::CreateInstance();
+		ptrChannel = ObjectImpl<User::Channel>::CreateObject();
 		ptrChannel->init(m_channel_id | channel_id,Remoting::RemoteMachine,m_message_oid);
 
 		int err = m_mapChannels.insert(channel_id,ptrChannel);
@@ -143,7 +143,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 		{
 			// Create a new message of the right format...
 			if (m_message_oid == guid_t::Null())
-				ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+				ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 			else
 				ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -174,7 +174,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 		if (msg.buffer()->length() > 0)
 		{
 			// Wrap the message block
-			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrInput = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrInput = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 			ptrInput->init(msg);
 
 			ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
@@ -196,7 +196,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	// Create a new message of the right format...
 	ObjectPtr<Remoting::IMessage> ptrMessage;
 	if (m_message_oid == guid_t::Null())
-		ptrMessage = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+		ptrMessage = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 	else
 		ptrMessage = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -284,7 +284,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	if (input.last_error() != 0)
 		OMEGA_THROW(input.last_error());
 
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 	ptrMsg->init(input);
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
@@ -372,7 +372,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					{
 						// Create a new message of the right format...
 						if (m_message_oid == guid_t::Null())
-							ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+							ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 						else
 							ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -387,7 +387,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					{
 						// Create a new message of the right format...
 						if (m_message_oid == guid_t::Null())
-							ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+							ptrResult = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 						else
 							ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -424,7 +424,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			if (output.last_error() != 0)
 				OMEGA_THROW(output.last_error());
 
-			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 			ptrMsg->init(output);
 
 			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
@@ -445,7 +445,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	}
 	else
 	{
-		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 
 		if (ex_attribs & OOServer::Message_t::system_message)
 		{
@@ -554,7 +554,7 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 		// Create a new message of the right format...
 		ObjectPtr<Remoting::IMessage> ptrMsg;
 		if (m_message_oid == guid_t::Null())
-			ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+			ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 		else
 			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::Library);
 
@@ -653,7 +653,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	}
 
 	// Create a sink for the new endpoint
-	channel.ptrRemoteChannel = ObjectImpl<RemoteChannel>::CreateInstance();
+	channel.ptrRemoteChannel = ObjectImpl<RemoteChannel>::CreateObject();
 
 	// Lock from here on...
 	OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
@@ -759,7 +759,7 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 {
 	// Create a sink for the new endpoint
 	RemoteChannelEntry channel;
-	channel.ptrRemoteChannel = ObjectImpl<RemoteChannel>::CreateInstance();
+	channel.ptrRemoteChannel = ObjectImpl<RemoteChannel>::CreateObject();
 
 	// Lock from here on...
 	OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);

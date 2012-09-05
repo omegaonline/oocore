@@ -222,12 +222,12 @@ void OOCore::UserSession::start()
 
 	// And register the Registry
 	ObjectPtr<Registry::IKey> ptrReg;
-	ptrReg.GetInstance(Registry::OID_Registry_Instance);
+	ptrReg.GetObject(Registry::OID_Registry_Instance);
 	if (ptrReg)
 	{
 		// Re-register the proxy locally.. it saves a lot of time!
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
 
 		guard.acquire();
 

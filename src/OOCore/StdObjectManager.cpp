@@ -140,7 +140,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	Activation::Flags_t act_flags = pParamsIn->ReadValue(string_t::constant("flags")).cast<Activation::Flags_t>();
 
 	// Get the required object
-	ObjectPtr<IObject> ptrObject = OOCore::GetInstance(oid,act_flags,iid);
+	ObjectPtr<IObject> ptrObject = OOCore::GetObject(oid,act_flags,iid);
 
 	// Write it out and return
 	MarshalInterface(string_t::constant("$retval"),pResponse,iid,ptrObject);
@@ -510,7 +510,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		else
 		{
 			// Add to the map...
-			ptrStub = ObjectImpl<Stub>::CreateInstance();
+			ptrStub = ObjectImpl<Stub>::CreateObject();
 
 			int err = m_mapStubIds.insert(ptrStub,stub_id,1,0xFFFFFFFF);
 			if (err == 0)
@@ -567,7 +567,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 
 		if (!ptrProxy)
 		{
-			ptrProxy = ObjectImpl<Proxy>::CreateInstance();
+			ptrProxy = ObjectImpl<Proxy>::CreateObject();
 			ptrProxy->init(proxy_id,this);
 
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -732,7 +732,7 @@ void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshaller* 
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
 {
-	ObjectPtr<ObjectImpl<StdCallContext> > ptrCC = ObjectImpl<StdCallContext>::CreateInstance();
+	ObjectPtr<ObjectImpl<StdCallContext> > ptrCC = ObjectImpl<StdCallContext>::CreateObject();
 
 	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 
@@ -819,7 +819,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IObjectManager*,OOCore_CreateStdObjectManager,0,())
 {
-	ObjectPtr<ObjectImpl<OOCore::StdObjectManager> > ptrOM = ObjectImpl<OOCore::StdObjectManager>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::StdObjectManager> > ptrOM = ObjectImpl<OOCore::StdObjectManager>::CreateObject();
 	return static_cast<Remoting::IObjectManager*>(ptrOM.Detach());
 }
 

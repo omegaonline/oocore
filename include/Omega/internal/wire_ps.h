@@ -287,7 +287,7 @@ namespace Omega
 
 			class Wire_Proxy_IObject : public Wire_Proxy<IObject,IObject>
 			{
-				typedef Wire_Proxy<IObject,IObject> Base;
+				typedef Wire_Proxy<IObject,IObject> baseClass;
 
 			public:
 				static IObject* bind(Remoting::IProxy* pProxy)
@@ -308,7 +308,7 @@ namespace Omega
 			private:
 				auto_iface_ptr<IObject> m_ptrProxyObj;
 
-				Wire_Proxy_IObject(Remoting::IProxy* pProxy) : Base(pProxy)
+				Wire_Proxy_IObject(Remoting::IProxy* pProxy) : baseClass(pProxy)
 				{
 					// QI for base object of pProxy
 					m_ptrProxyObj = pProxy->QueryInterface(OMEGA_GUIDOF(IObject));

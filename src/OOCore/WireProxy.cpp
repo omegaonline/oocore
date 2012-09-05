@@ -28,7 +28,8 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::Proxy::Proxy() :
-		m_proxy_id(0)
+		m_proxy_id(0),
+		m_pManager(NULL)
 {
 }
 

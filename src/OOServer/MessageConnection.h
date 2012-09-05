@@ -167,9 +167,33 @@ namespace OOServer
 
 		struct Message
 		{
-			Message() : m_payload(size_t(0)) {}
-			Message(const OOBase::CDRStream& payload) : m_payload(payload) {}
-			Message(size_t len) : m_payload(len) {}
+			Message() :
+					m_src_channel_id(0),
+					m_attribs(0),
+					m_dest_thread_id(0),
+					m_src_thread_id(0),
+					m_type(Message_t::Response),
+					m_payload(size_t(0))
+			{}
+
+			Message(const OOBase::CDRStream& payload) :
+					m_src_channel_id(0),
+					m_attribs(0),
+					m_dest_thread_id(0),
+					m_src_thread_id(0),
+					m_type(Message_t::Response),
+					m_payload(payload)
+			{}
+
+			Message(size_t len) :
+					m_src_channel_id(0),
+					m_attribs(0),
+					m_dest_thread_id(0),
+					m_src_thread_id(0),
+					m_type(Message_t::Response),
+					m_payload(len)
+			{}
+
 			~Message() {}
 
 			// This is the order for I/O as well

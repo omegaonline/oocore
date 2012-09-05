@@ -107,7 +107,7 @@ uint32_t LoopMarshaller::GetSource()
 
 IObject* OOCore::LoopChannel::create(uint32_t channel_id, const guid_t& message_oid, const guid_t& iid)
 {
-	ObjectPtr<ObjectImpl<LoopChannel> > ptrChannel = ObjectImpl<LoopChannel>::CreateInstance();
+	ObjectPtr<ObjectImpl<LoopChannel> > ptrChannel = ObjectImpl<LoopChannel>::CreateObject();
 
 	ptrChannel->init(channel_id,Remoting::Same,0,message_oid);
 
@@ -126,7 +126,7 @@ IException* OOCore::LoopChannel::SendAndReceive(TypeInfo::MethodAttributes_t, Re
 
 void OOCore::LoopChannel::GetManager(const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<ObjectImpl<LoopMarshaller> > ptrMarshaller = ObjectImpl<LoopMarshaller>::CreateInstance();
+	ObjectPtr<ObjectImpl<LoopMarshaller> > ptrMarshaller = ObjectImpl<LoopMarshaller>::CreateObject();
 	ptrMarshaller->init(this);
 
 	pObject = ptrMarshaller->QueryInterface(iid);

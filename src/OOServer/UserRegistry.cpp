@@ -286,7 +286,7 @@ IKey* RootKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	}
 
 	// By the time we get here then we have successfully opened or created the key...
-	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstance();
+	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateObject();
 	ptrNew->init(strFullKey,key,type);
 	return ptrNew.Detach();
 }
@@ -482,7 +482,7 @@ IKey* OverlayKey::OpenKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	ObjectPtr<IKey> ptrSubOver = m_ptrOver->OpenKey(strSubKey,IKey::OpenExisting);
 	ObjectPtr<IKey> ptrSubUnder = m_ptrUnder->OpenKey(strSubKey,IKey::OpenExisting);
 
-	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
+	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateObject();
 	ptrKey->init(ptrSubOver,ptrSubUnder);
 	return ptrKey.Detach();
 }
@@ -528,7 +528,7 @@ IKey* OverlayKeyFactory::Overlay(const string_t& strOver, const string_t& strUnd
 	ObjectPtr<IKey> ptrSubOver = ptrRoot->OpenKey(strOver,IKey::OpenExisting);
 	ObjectPtr<IKey> ptrSubUnder = ptrRoot->OpenKey(strUnder,IKey::OpenExisting);
 
-	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateInstance();
+	ObjectPtr<ObjectImpl<OverlayKey> > ptrKey = ObjectImpl<OverlayKey>::CreateObject();
 	ptrKey->init(ptrSubOver,ptrSubUnder);
 	return ptrKey.Detach();
 }

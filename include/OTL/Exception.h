@@ -81,7 +81,7 @@ namespace OTL
 	public:
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 		{
-			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstance();
+			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateObject();
 			ptrE->UnmarshalInterface(pMarshaller,pMessage,flags);
 			pObject = ptrE->QueryInterface(iid);
 		}

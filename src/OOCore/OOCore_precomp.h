@@ -81,7 +81,7 @@
 
 namespace OOCore
 {
-	Omega::IObject* GetInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+	Omega::IObject* GetObject(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
 	struct DLL
 	{

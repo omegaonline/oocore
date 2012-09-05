@@ -29,10 +29,24 @@ namespace OOCore
 {
 	struct Message
 	{
-		Message() : m_payload(size_t(0))
+		Message() :
+				m_src_channel_id(0),
+				m_attribs(0),
+				m_dest_thread_id(0),
+				m_src_thread_id(0),
+				m_type(Response),
+				m_payload(size_t(0)),
+				m_dest_cmpt_id(0)
 		{}
 
-		Message(size_t len) : m_payload(len)
+		Message(size_t len) :
+				m_src_channel_id(0),
+				m_attribs(0),
+				m_dest_thread_id(0),
+				m_src_thread_id(0),
+				m_type(Response),
+				m_payload(len),
+				m_dest_cmpt_id(0)
 		{}
 
 		enum Type

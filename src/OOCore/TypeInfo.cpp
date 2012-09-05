@@ -446,7 +446,7 @@ TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 	ti_t ti;
 	if (m_ti_map.find(iid,ti))
 	{
-		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstance();
+		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateObject();
 		ptrTI->init(iid,ti.pszName,ti.type_info);
 		return ptrTI.Detach();
 	}
@@ -548,7 +548,7 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 		break;
 	}
 
-	ObjectPtr<ObjectImpl<CastException> > pNew = ObjectImpl<CastException>::CreateInstance();
+	ObjectPtr<ObjectImpl<CastException> > pNew = ObjectImpl<CastException>::CreateObject();
 	pNew->m_strDesc = OOCore::get_text("Failed to convert from {0} to {1}: {2}") % strSource % strDest % strReason;
 	pNew->m_value = value;
 	pNew->m_reason = reason;

@@ -207,7 +207,7 @@ void OOCore::UserSession::stop()
 void OOCore::UserSession::revoke_private_factories()
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-	ptrROT.GetInstance(Activation::OID_RunningObjectTable_Instance);
+	ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -750,7 +750,7 @@ void OOCore::UserSession::respond_exception(OOBase::CDRStream& response, IExcept
 {
 	// Make sure the exception is released
 	ObjectPtr<IException> ptrE = pE;
-	ObjectPtr<ObjectImpl<CDRMessage> > ptrResponse = ObjectImpl<CDRMessage>::CreateInstance();
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrResponse = ObjectImpl<CDRMessage>::CreateObject();
 
 	OOCore_RespondException(ptrResponse,pE);
 	

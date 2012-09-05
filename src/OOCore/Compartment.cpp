@@ -172,10 +172,10 @@ ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_ch
 		read_guard.release();
 
 		// Create a new OM
-		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstance();
+		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateObject();
 
 		// Create a new channel
-		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstance();
+		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObject();
 		ptrChannel->init(m_pSession,src_channel_id,ptrOM,message_oid);
 
 		// And add to the map
@@ -205,7 +205,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::Time
 		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	// Wrap up the request
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 	ptrEnvelope->init(msg.m_payload);
 
 	// Unpack the payload
@@ -222,7 +222,7 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::Time
 	if (!(msg.m_attribs & TypeInfo::Asynchronous))
 	{
 		// Wrap the response...
-		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 		ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 		// Send it back...
@@ -256,9 +256,9 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::Compartment::create_compartment_channe
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment in session"));
 
 		// Create a new channel
-		ptrChannel = ObjectImpl<ComptChannel>::CreateInstance();
+		ptrChannel = ObjectImpl<ComptChannel>::CreateObject();
 		
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ObjectImpl<StdObjectManager>::CreateInstance();
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ObjectImpl<StdObjectManager>::CreateObject();
 		ptrChannel->init(m_id,ptrCompt,compartment_id | m_pSession->get_channel_id(),ptrOM,message_oid);
 
 		// And add to the map
@@ -343,7 +343,7 @@ namespace OOCore
 
 	// ICompartment members
 	public:
-		void CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
+		void CreateObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 	};
 }
 
@@ -359,7 +359,7 @@ void OOCore::CompartmentImpl::init(ObjectPtr<ObjectImpl<OOCore::ComptChannel> > 
 	m_ptrChannel = ptrChannel;
 }
 
-void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+void OOCore::CompartmentImpl::CreateObject(const any_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrChannel->GetObjectManager();
 
@@ -368,20 +368,20 @@ void OOCore::CompartmentImpl::CreateInstance(const any_t& oid, Activation::Flags
 	ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pObjF);
 	ObjectPtr<Activation::IObjectFactory> ptrOF = static_cast<Activation::IObjectFactory*>(pObjF);
 	
-	// Call CreateInstance
-	ptrOF->CreateInstance(iid,pObject);
+	// Call CreateObject
+	ptrOF->CreateObject(iid,pObject);
 }
 
 // {3BE419D7-52D9-4873-95E7-836D33523C51}
 OMEGA_DEFINE_OID(Compartment,OID_Compartment,"{3BE419D7-52D9-4873-95E7-836D33523C51}");
 
-void OOCore::CompartmentFactory::CreateInstance(const guid_t& iid, IObject*& pObject)
+void OOCore::CompartmentFactory::CreateObject(const guid_t& iid, IObject*& pObject)
 {
 	// Create a new compartment and get the channel to it...
 	ObjectPtr<ObjectImpl<OOCore::ComptChannel> > ptrChannel = OOCore::UserSession::create_compartment(guid_t::Null());
 
 	// Create a CompartmentImpl
-	ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::CompartmentImpl> > ptrCompt = ObjectImpl<OOCore::CompartmentImpl>::CreateObject();
 	ptrCompt->init(ptrChannel);
 
 	pObject = ptrCompt->QueryInterface(iid);

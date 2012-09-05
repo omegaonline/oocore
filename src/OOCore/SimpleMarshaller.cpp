@@ -54,7 +54,7 @@ namespace
 	};
 }
 
-SimpleMarshaller::SimpleMarshaller()
+SimpleMarshaller::SimpleMarshaller() : m_marshal_flags(Remoting::Same)
 {
 }
 
@@ -173,8 +173,8 @@ uint32_t SimpleMarshaller::GetSource()
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Remoting::IMessage*,pMessage,(in),IException*,pException))
 {
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateInstance();
-	ObjectPtr<ObjectImpl<SimpleMarshaller> > ptrMarshaller = ObjectImpl<SimpleMarshaller>::CreateInstance();
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateObject();
+	ObjectPtr<ObjectImpl<SimpleMarshaller> > ptrMarshaller = ObjectImpl<SimpleMarshaller>::CreateObject();
 
 	ptrPayload->WriteStructStart(string_t::constant("ipc_response"),string_t::constant("$ipc_response_type"));
 	ptrPayload->WriteValue(string_t::constant("$throw"),true);

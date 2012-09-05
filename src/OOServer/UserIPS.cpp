@@ -100,7 +100,7 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 	}
 
 	// Create the ROT
-	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstance();
+	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateObject();
 	try
 	{
 		m_ptrROT->init(m_ptrSBIPS);

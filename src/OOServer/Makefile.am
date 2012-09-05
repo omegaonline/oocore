@@ -70,6 +70,7 @@ oosvruser_SOURCES = \
 	UserServices.h \
 	UserServices.cpp
 
+oosvruser_CPPFLAGS = $(AM_CPPFLAGS)
 oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
 
 if WIN32

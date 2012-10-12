@@ -68,7 +68,6 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_EX_VOID(TypeInfo::Asynchronous,Start,5,((in),Omega::System::IService*,pService,(in),const Omega::string_t&,strName,(in),const Omega::string_t&,strPipe,(in),Omega::Registry::IKey*,pKey,(in),const Omega::string_t&,strSecret))
 )
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterProcessService*,pIPS));
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Omega::Remoting::IMessage*,pMessage,(in),Omega::IException*,pException));
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IObjectManager*,OOCore_CreateStdObjectManager,0,());
 

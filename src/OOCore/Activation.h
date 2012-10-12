@@ -39,7 +39,7 @@ namespace OTL
 			ObjectPtr<OOCore::IInterProcessService> GetIPS();
 			bool IsHosted() const;
 
-			void RegisterIPS(OOCore::IInterProcessService* pIPS, bool bHosted);
+			void RegisterIPS(ObjectPtr<OOCore::IInterProcessService> ptrIPS, bool bHosted);
 			void RevokeIPS();
 
 			Omega::IObject* GetROTObject(const Omega::any_t& oid, const Omega::guid_t& iid);

@@ -937,20 +937,32 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::uint32_t,version))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),IObject*,p))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 		return Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
-	try
+	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
+	if (p)
 	{
-		USER_SESSION::instance().init();
+		ptrIPS = static_cast<OOCore::IInterProcessService*>(p->QueryInterface(OMEGA_GUIDOF(OOCore::IInterProcessService)));
+		if (!ptrIPS)
+			return Omega::IInternalException::Create(OOCore::get_text("Invalid interface passed"),"Omega::Initialize");
+
+		OTL::GetModule()->RegisterIPS(ptrIPS,true);
 	}
-	catch (IException* pE)
+	else
 	{
-		USER_SESSION::instance().term();
-		return pE;
+		try
+		{
+			USER_SESSION::instance().init();
+		}
+		catch (IException* pE)
+		{
+			USER_SESSION::instance().term();
+			return pE;
+		}
 	}
 
 	return NULL;

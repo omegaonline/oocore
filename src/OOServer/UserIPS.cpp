@@ -93,6 +93,8 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 {
 	if (pOMSB)
 	{
+		void* TODO; // Get this another way!
+
 		// Create a proxy to the server interface
 		IObject* pIPS = NULL;
 		pOMSB->GetRemoteInstance(OOCore::OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);

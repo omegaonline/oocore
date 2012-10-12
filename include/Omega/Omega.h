@@ -280,12 +280,12 @@ OMEGA_DEFINE_INTERFACE
 #pragma warning(pop)
 #endif
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::uint32_t,version))
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,2,((in),Omega::uint32_t,version,(in),Omega::IObject*,p))
 inline Omega::IException* Omega::Initialize()
 {
 	try
 	{
-		return OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16));
+		return OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),NULL);
 	}
 	catch (Omega::IException* pE)
 	{

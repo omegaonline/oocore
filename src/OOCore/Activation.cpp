@@ -257,20 +257,19 @@ bool OTL::Module::OOCore_ModuleImpl::IsHosted() const
 	return m_hosted_by_ooserver;
 }
 
-void OTL::Module::OOCore_ModuleImpl::RegisterIPS(OOCore::IInterProcessService* pIPS, bool bHosted)
+void OTL::Module::OOCore_ModuleImpl::RegisterIPS(ObjectPtr<OOCore::IInterProcessService> ptrIPS, bool bHosted)
 {
-	if (!pIPS)
+	if (!ptrIPS)
 		OMEGA_THROW("Null IPS in RegisterIPS");
 
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT = pIPS->GetRunningObjectTable();
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	m_hosted_by_ooserver = bHosted;
 
 	// Stash passed in values
-	m_ptrIPS = pIPS;
-	m_ptrIPS.AddRef();
+	m_ptrIPS = ptrIPS;
 
 	m_ptrROT->SetUpstreamROT(ptrROT);
 }
@@ -470,11 +469,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_GetObject,4,((in),const Omega::any_t&
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_CanUnload,0,())
 {
 	return DLLManager::instance()->can_unload();
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterIPS,1,((in),OOCore::IInterProcessService*,pIPS))
-{
-	OTL::GetModule()->RegisterIPS(pIPS,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))

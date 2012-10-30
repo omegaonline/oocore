@@ -119,7 +119,7 @@ namespace
 	struct mod_destruct_t
 	{
 		OOBase::SpinLock                m_lock;
-		OOBase::Stack<destruct_entry_t> m_list;
+		OOBase::Stack<destruct_entry_t> m_stack;
 	};
 }
 
@@ -143,7 +143,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
 
-		for (destruct_entry_t e;h->m_list.pop(&e);)
+		for (destruct_entry_t e;h->m_stack.pop(&e);)
 		{
 			guard.release();
 
@@ -174,7 +174,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,ha
 
 		destruct_entry_t e = { pfn_dctor, param };
 
-		int err = h->m_list.push(e);
+		int err = h->m_stack.push(e);
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
@@ -189,7 +189,14 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*
 
 		destruct_entry_t e = { pfn_dctor, param };
 
-		h->m_list.remove(e);
+		for (size_t pos = 0;pos < h->m_stack.size();++pos)
+		{
+			if (*h->m_stack.at(pos) == e)
+			{
+				h->m_stack.remove_at(pos);
+				break;
+			}
+		}
 	}
 }
 
@@ -214,7 +221,7 @@ namespace
 			}
 		};
 		OOBase::SpinLock      m_lock;
-		OOBase::Stack<Uninit> m_listUninitCalls;
+		OOBase::Stack<Uninit> m_stackUninitCalls;
 	};
 
 	typedef OOBase::Singleton<SingletonHolder,OOCore::DLL> SINGLETON_HOLDER;
@@ -233,7 +240,7 @@ void SingletonHolder::close_singletons()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	for (Uninit uninit;m_listUninitCalls.pop(&uninit);)
+	for (Uninit uninit;m_stackUninitCalls.pop(&uninit);)
 	{
 		guard.release();
 
@@ -260,7 +267,7 @@ void SingletonHolder::add_uninit_call(Threading::DestructorCallback pfn, void* p
 
 	Uninit uninit = { pfn, param };
 
-	int err = m_listUninitCalls.push(uninit);
+	int err = m_stackUninitCalls.push(uninit);
 	if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -276,7 +283,14 @@ void SingletonHolder::remove_uninit_call(Threading::DestructorCallback pfn, void
 
 	Uninit uninit = { pfn, param };
 
-	m_listUninitCalls.remove(uninit);
+	for (size_t pos = 0;pos < m_stackUninitCalls.size();++pos)
+	{
+		if (*m_stackUninitCalls.at(pos) == uninit)
+		{
+			m_stackUninitCalls.remove_at(pos);
+			break;
+		}
+	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))

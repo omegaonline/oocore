@@ -29,6 +29,7 @@
 #include <OOBase/CDRStream.h>
 #include <OOBase/Timeout.h>
 #include <OOBase/Thread.h>
+#include <OOBase/Stack.h>
 #include <OOBase/Socket.h>
 #include <OOBase/BoundedQueue.h>
 #include <OOBase/HandleTable.h>

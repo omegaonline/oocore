@@ -349,14 +349,14 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 	if (method_idx >= GetMethodCount())
 		OMEGA_THROW("GetMethodInfo requesting invalid method index");
 
-	MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
+	const MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
 	if (!mi)
 		OMEGA_THROW("GetMethodInfo requesting invalid method index");
 
 	strName = mi->strName;
 	attribs = mi->attribs;
 	param_count = mi->params ? static_cast<byte_t>(mi->params->size()) : 0;
-	return_type = mi->return_type.AddRef();
+	return_type = const_cast<MethodInfo*>(mi)->return_type.AddRef();
 }
 
 void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Remoting::IMessage*& type, TypeInfo::ParamAttributes_t& attribs)
@@ -367,21 +367,21 @@ void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t&
 	if (method_idx >= GetMethodCount())
 		OMEGA_THROW("GetParamInfo requesting invalid method index");
 
-	MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
+	const MethodInfo* mi = m_methods.at(method_idx - m_base_methods);
 	if (!mi)
 		OMEGA_THROW("GetParamInfo requesting invalid method index");
 
 	if (!mi->params || param_idx >= mi->params->size())
 		OMEGA_THROW("GetParamInfo requesting invalid param index");
 
-	ParamInfo* pi = mi->params->at(param_idx);
+	const ParamInfo* pi = mi->params->at(param_idx);
 	if (!pi)
 		OMEGA_THROW("GetParamInfo requesting invalid param index");
 
 	strName = pi->strName;
 	type = pi->type;
 	attribs = pi->attribs;
-	type = pi->type.AddRef();
+	type = const_cast<ParamInfo*>(pi)->type.AddRef();
 }
 
 byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib)

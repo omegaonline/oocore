@@ -109,7 +109,8 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 							{
 								if (m_mapServices.at(pos)->strName == strName.c_str() && !m_mapServices.at(pos)->ptrService)
 								{
-									m_mapServices.at(pos)->ptrService = entry.ptrService;
+									ServiceEntry* se = const_cast<ServiceEntry*>(m_mapServices.at(pos));
+									se->ptrService = entry.ptrService;
 									found = true;
 									break;
 								}
@@ -269,7 +270,7 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 
 			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 			{
-				ServiceEntry* entry = m_mapServices.at(pos);
+				const ServiceEntry* entry = m_mapServices.at(pos);
 				if (entry->strName == strName.c_str())
 				{
 					if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
@@ -302,7 +303,7 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 
 		for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 		{
-			ServiceEntry* entry = m_mapServices.at(pos);
+			const ServiceEntry* entry = m_mapServices.at(pos);
 			if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
 			{
 				if (!response.write(m_mapServices.at(pos)->strName.c_str()))

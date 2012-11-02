@@ -66,7 +66,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
 {
-	if (!static_cast<OOBase::Mutex*>(m1)->try_acquire())
+	/*if (!static_cast<OOBase::Mutex*>(m1)->try_acquire())
 	{
 		ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
 		uint32_t millisecs = ptrCC->Timeout();
@@ -77,10 +77,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
 				throw ITimeoutException::Create();
 		}
 		else
-		{
+		{*/
 			static_cast<OOBase::Mutex*>(m1)->acquire();
-		}
-	}
+		/*}
+	}*/
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,m1))

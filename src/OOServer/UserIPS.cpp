@@ -222,9 +222,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	if (err)
 		OMEGA_THROW(err);
 
-	OOBase::Guard<OOBase::Mutex> guard(m_lock,false);
-	if (!guard.acquire(timeout))
-		throw ITimeoutException::Create();
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	int exit_code = 0;
 	OOBase::SmartPtr<User::Process> ptrProcess;

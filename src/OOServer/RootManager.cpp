@@ -35,7 +35,6 @@
 #include "RootManager.h"
 
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
@@ -208,7 +207,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	for (size_t i=0; i < cmd_args.size(); ++i)
 	{
 		int err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
-		if (err != 0)
+		if (err)
 			LOG_ERROR_RETURN(("Failed to copy command args: %s",OOBase::system_error_text(err)),false);
 	}
 
@@ -217,149 +216,14 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 
 bool Root::Manager::load_config_file(const char* pszFile)
 {
-	// Load simple config file...
-	FILE* f = NULL;
-#if defined(_MSC_VER)
-	int err = fopen_s(&f,pszFile,"rt");
-#else
-	int err = 0;
-	f = fopen(pszFile,"rt");
-	if (!f)
-		err = errno;
-#endif
-	if (err == ENOENT)
-		return true;
+	OOBase::ConfigFile::error_pos_t error = {0};
+	int err = OOBase::ConfigFile::load(pszFile,m_config_args,&error);
+	if (err == EINVAL)
+		LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",pszFile,error.line,error.col),false);
+	else if (err)
+		LOG_ERROR_RETURN(("Failed load configuration file %s: %s",pszFile,OOBase::system_error_text(err)),false);
 
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to open file %s: %s",pszFile,OOBase::system_error_text(err)),false);
-
-	OOBase::LocalString strBuffer;
-	for (bool bEof=false;!bEof && err==0;)
-	{
-		// Read some characters
-		char szBuf[256] = {0};
-		size_t r = fread(szBuf,1,sizeof(szBuf),f);
-		if (r != sizeof(szBuf))
-		{
-			if (feof(f))
-				bEof = true;
-			else
-			{
-				err = ferror(f);
-				LOG_ERROR(("Failed to read file %s: %s",pszFile,OOBase::system_error_text(err)));
-				break;
-			}
-		}
-
-		// Append to buffer
-		err = strBuffer.append(szBuf,r);
-
-		// Split out individual lines
-		for (size_t start = 0;err==0 && !strBuffer.empty();)
-		{
-			// Skip leading whitespace
-			while (strBuffer[start] == '\t' || strBuffer[start] == ' ')
-				++start;
-
-			if (start == strBuffer.length())
-			{
-				strBuffer.clear();
-				break;
-			}
-
-			// Find the next linefeed
-			size_t end = strBuffer.find('\n',start);
-			if (end == OOBase::String::npos)
-			{
-				if (!bEof)
-				{
-					// Incomplete line
-					break;
-				}
-
-				end = strBuffer.length();
-			}
-
-			// Skip everything after #
-			size_t valend = strBuffer.find('#',start);
-			if (valend > end)
-				valend = end;
-
-			// Trim trailing whitespace
-			while (valend > start && (strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' '))
-				--valend;
-
-			if (valend > start)
-			{
-				OOBase::String strKey, strValue;
-
-				// Split on first =
-				size_t eq = strBuffer.find('=',start);
-				if (eq != OOBase::String::npos)
-				{
-					// Trim trailing whitespace before =
-					size_t keyend = eq;
-					while (keyend > start && (strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' '))
-						--keyend;
-
-					if (keyend > start)
-					{
-						if ((err = strKey.assign(strBuffer.c_str() + start,keyend-start)) != 0)
-						{
-							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-							break;
-						}
-
-						// Skip leading whitespace after =
-						size_t valpos = eq+1;
-						while (valpos < valend && (strBuffer[valpos] == '\t' || strBuffer[valpos] == ' '))
-							++valpos;
-
-						if (valpos < valend)
-						{
-							if ((err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos)) != 0)
-							{
-								LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-								break;
-							}
-						}
-					}
-				}
-				else
-				{
-					err = strKey.assign(strBuffer.c_str() + start,valend-start);
-					if (err == 0)
-						err = strValue.assign("true",4);
-
-					if (err != 0)
-					{
-						LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-						break;
-					}
-				}
-
-				// Do something with strKey and strValue
-				if (!strKey.empty())
-				{
-					OOBase::String* pv = m_config_args.find(strKey);
-					if (!pv)
-					{
-						if ((err = m_config_args.insert(strKey,strValue)) != 0)
-							LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
-					}
-				}
-			}
-
-			if (end == OOBase::LocalString::npos)
-				break;
-
-			start = end + 1;
-		}
-	}
-
-	fclose(f);
-
-	return (err == 0);
+	return true;
 }
 
 int Root::Manager::run_proactor(void* p)

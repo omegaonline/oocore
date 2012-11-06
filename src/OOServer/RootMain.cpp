@@ -198,10 +198,11 @@ int main(int argc, const char* argv[])
 	}
 #elif defined(HAVE_UNISTD_H)
 
-	// Ignore SIGCHLD
+	// Ignore SIGCHLD and SIGPIPE
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGCHLD);
+	sigaddset(&sigset, SIGPIPE);
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 
 	umask(0);

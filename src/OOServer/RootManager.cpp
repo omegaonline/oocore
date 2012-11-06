@@ -188,7 +188,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::LocalString strArg;
-	if (!request.read(strArg))
+	if (!request.read_string(strArg))
 		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
 
 	OOBase::String strValue;

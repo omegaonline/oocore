@@ -318,7 +318,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	input.read(sandbox_channel);
 
 	OOBase::LocalString strPipe;
-	input.read(strPipe);
+	input.read_string(strPipe);
 
 	if (input.last_error() != 0)
 	{
@@ -796,7 +796,7 @@ void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strVal
 
 	OOServer::RootErrCode_t err;
 	OOBase::LocalString strVal;
-	if (!response.read(err) || (!err && !response.read(strVal)))
+	if (!response.read(err) || (!err && !response.read_string(strVal)))
 		OMEGA_THROW(response.last_error());
 
 	if (err)

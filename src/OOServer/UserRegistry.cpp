@@ -149,7 +149,7 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 	if (err != OOServer::Errored)
 	{
 		OOBase::LocalString strFullKeyName;
-		if (!response.read(strFullKeyName))
+		if (!response.read_string(strFullKeyName))
 			OMEGA_THROW(response.last_error());
 
 		if (!strFullKeyName.empty())
@@ -159,7 +159,7 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 		if (err == OOServer::Linked)
 		{
 			OOBase::LocalString strLink,strLinkSubKey;
-			if (!response.read(strLink) || !response.read(strLinkSubKey))
+			if (!response.read_string(strLink) || !response.read_string(strLinkSubKey))
 				OMEGA_THROW(response.last_error());
 
 			OMEGA_THROW("No registry mount-point support!");
@@ -237,7 +237,7 @@ any_t RootKey::GetValue(const string_t& strName)
 		ThrowCorrectException(err,m_strKey);
 
 	OOBase::LocalString strValue;
-	if (!response.read(strValue))
+	if (!response.read_string(strValue))
 		OMEGA_THROW(response.last_error());
 
 	return strValue.c_str();
@@ -313,7 +313,7 @@ IKey::string_set_t RootKey::EnumSubKeys()
 	for (;;)
 	{
 		OOBase::LocalString strName;
-		if (!response.read(strName))
+		if (!response.read_string(strName))
 			OMEGA_THROW(response.last_error());
 
 		if (strName.empty())
@@ -346,7 +346,7 @@ IKey::string_set_t RootKey::EnumValues()
 	for (;;)
 	{
 		OOBase::LocalString strName;
-		if (!response.read(strName))
+		if (!response.read_string(strName))
 			OMEGA_THROW(response.last_error());
 
 		if (strName.empty())
@@ -379,7 +379,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 	if (err != OOServer::Errored)
 	{
 		OOBase::LocalString strFullKeyName;
-		if (!response.read(strFullKeyName))
+		if (!response.read_string(strFullKeyName))
 			OMEGA_THROW(response.last_error());
 
 		if (!strFullKeyName.empty())
@@ -389,7 +389,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 		if (err == OOServer::Linked)
 		{
 			OOBase::LocalString strLink,strLinkSubKey;
-			if (!response.read(strLink) || !response.read(strLinkSubKey))
+			if (!response.read_string(strLink) || !response.read_string(strLinkSubKey))
 				OMEGA_THROW(response.last_error());
 
 			OMEGA_THROW("No registry mount-point support!");

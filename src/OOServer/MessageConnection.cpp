@@ -896,7 +896,7 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::process_chan
 bool OOServer::MessageHandler::process_async_function(Message& msg)
 {
 	OOBase::LocalString strFn;
-	msg.m_payload.read(strFn);
+	msg.m_payload.read_string(strFn);
 
 	void (*pfnCall)(void*,OOBase::CDRStream&);
 	msg.m_payload.read(pfnCall);

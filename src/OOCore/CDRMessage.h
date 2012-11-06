@@ -174,7 +174,7 @@ namespace OOCore
 			case Omega::TypeInfo::typeString:
 				{
 					OOBase::LocalString str;
-					if (!m_stream.read(str))
+					if (!m_stream.read_string(str))
 						OMEGA_THROW(m_stream.last_error());
 
 					return str.c_str();

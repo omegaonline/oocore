@@ -433,7 +433,7 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(err)),err);
 		}
 
-		OOBase::SmartPtr<gid_t,OOBase::LocalAllocator> ptrGroups;
+		OOBase::SmartPtr<gid_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrGroups;
 		int ngroups = 0;
 		if (getgrouplist(pw->pw_name,pw->pw_gid,NULL,&ngroups) == -1)
 		{
@@ -643,7 +643,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	if (err)
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::SmartPtr<char*,OOBase::LocalAllocator> ptrEnv = OOBase::Environment::get_envp(tabEnv);
+	OOBase::SmartPtr<char*,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrEnv = OOBase::Environment::get_envp(tabEnv);
 
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};

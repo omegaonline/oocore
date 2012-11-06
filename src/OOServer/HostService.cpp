@@ -85,7 +85,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			if (!len)
 				break;
 
-			OOBase::SmartPtr<char,OOBase::LocalAllocator> ptrName(len);
+			OOBase::SmartPtr<char,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrName(len);
 			if (!ptrName)
 				OMEGA_THROW(ERROR_OUTOFMEMORY);
 

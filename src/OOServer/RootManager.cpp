@@ -480,7 +480,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	return false;
 }
 
-bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv)
 {
 	Omega::int64_t key = 0;
 	OOBase::LocalString strSubKey,strLink,strFullKeyName;

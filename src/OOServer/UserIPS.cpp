@@ -166,7 +166,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	bool is_host_process = false;
 	string_t strProcess,strWorkingDir;
-	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
+	OOBase::Environment::env_table_t tabEnv;
 
 	// Find the name of the executable to run...
 	ptrKey = ptrKey->OpenKey(oid.ToString());
@@ -213,7 +213,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 
 	// Get the environment settings
-	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabSysEnv;
+	OOBase::Environment::env_table_t tabSysEnv;
 	int err = OOBase::Environment::get_current(tabSysEnv);
 	if (err)
 		OMEGA_THROW(err);

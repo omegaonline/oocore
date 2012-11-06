@@ -116,7 +116,7 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 	if (User::is_debug())
 	{
 		OOBase::LocalString display;
-		display.getenv("DISPLAY");
+		OOBase::Environment::getenv("DISPLAY",display);
 		if (!display.empty())
 		{
 #if 0

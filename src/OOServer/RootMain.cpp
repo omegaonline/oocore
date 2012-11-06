@@ -123,7 +123,7 @@ int main(int argc, const char* argv[])
 	// Get the debug ENV var
 	{
 		OOBase::LocalString str;
-		str.getenv("OMEGA_DEBUG");
+		OOBase::Environment::getenv("OMEGA_DEBUG",str);
 		s_is_debug = (str == "true");
 	}
 

@@ -100,7 +100,7 @@ namespace
 				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 			if (strHome.empty())
-				strHome.getenv("HOME");
+				OOBase::Environment::getenv("HOME",strHome);
 
 			if (!strHome.empty())
 			{
@@ -342,7 +342,7 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	if (Root::is_debug())
 	{
 		OOBase::LocalString display;
-		display.getenv("DISPLAY");
+		OOBase::Environment::getenv("DISPLAY",display);
 		if (!display.empty())
 		{
 			OOBase::String strTitle;

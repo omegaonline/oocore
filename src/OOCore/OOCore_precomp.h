@@ -28,6 +28,7 @@
 #include <OOBase/SmartPtr.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Timeout.h>
+#include <OOBase/Environment.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Stack.h>
 #include <OOBase/Socket.h>

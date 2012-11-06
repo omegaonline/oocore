@@ -146,122 +146,25 @@ bool Root::platform_init()
 
 bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 {
-	// Read from registry
-	HKEY hKey = 0;
-	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
-	if (lRes != ERROR_SUCCESS)
-	{
-		if (lRes == ERROR_FILE_NOT_FOUND)
-			OOBase::Logger::log(OOBase::Logger::Warning,"Missing registry key: HKEY_LOCAL_MACHINE\\Software\\Omega Online\\OOServer");
-		else
-			LOG_ERROR(("Failed to open config registry key: %s",OOBase::system_error_text(lRes)));
-	}
-	else
-	{
-		// Loop pulling out registry values
-		for (DWORD dwIndex=0;; ++dwIndex)
-		{
-			char szBuf[1024];
-			DWORD dwNameLen = sizeof(szBuf);
-			DWORD dwType = 0;
-			DWORD dwValLen = 0;
-			lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
-			if (lRes == ERROR_NO_MORE_ITEMS)
-				break;
-			else if (lRes != ERROR_SUCCESS)
-			{
-				RegCloseKey(hKey);
-				LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::system_error_text(lRes)),false);
-			}
-
-			// Skip anything starting with #
-			if (dwValLen>=1 && szBuf[0]=='#')
-				continue;
-
-			OOBase::String value,key;
-			lRes = key.assign(szBuf,dwNameLen);
-			if (lRes != 0)
-				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(lRes)),false);
-
-			++dwNameLen;
-
-			if (dwType == REG_DWORD)
-			{
-				DWORD dwVal = 0;
-				DWORD dwLen = sizeof(dwVal);
-				lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
-				if (lRes != ERROR_SUCCESS)
-					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
-
-				lRes = value.printf("%d",static_cast<int>(dwVal));
-				if (lRes != 0)
-					LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(lRes)),false);
-			}
-			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
-			{
-				++dwValLen;
-				OOBase::SmartPtr<char,OOBase::LocalAllocator> buf(dwValLen+1);
-				if (!buf)
-					LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
-
-				lRes = RegEnumValueA(hKey,dwIndex,szBuf,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
-				if (lRes != ERROR_SUCCESS)
-					LOG_ERROR_RETURN(("RegQueryValueA failed: %s",OOBase::system_error_text(lRes)),false);
-
-				if (dwType == REG_EXPAND_SZ)
-				{
-					DWORD dwExpLen = ExpandEnvironmentStringsA(buf,szBuf,sizeof(szBuf));
-					if (dwExpLen == 0)
-						LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);
-					else if (dwExpLen <= sizeof(szBuf))
-						lRes = value.assign(szBuf,dwExpLen-1);
-					else
-					{
-						OOBase::SmartPtr<char,OOBase::LocalAllocator> buf3(dwExpLen+1);
-						if (!buf3)
-							LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
-
-						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen))
-							LOG_ERROR_RETURN(("ExpandEnvironmentStringsA failed: %s",OOBase::system_error_text()),false);
-
-						lRes = value.assign(buf3,dwExpLen-1);
-					}
-
-					if (lRes != 0)
-						LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(lRes)),false);
-				}
-				else
-					value.assign(buf,dwValLen-1);
-			}
-			else
-			{
-				LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
-				continue;
-			}
-
-			if (!key.empty())
-			{
-				OOBase::String* v = m_config_args.find(key);
-				if (!v)
-				{
-					lRes = m_config_args.insert(key,value);
-					if (lRes != 0)
-						LOG_ERROR_RETURN(("Failed to insert config string: %s",OOBase::system_error_text(lRes)),false);
-				}
-			}
-		}
-
-		RegCloseKey(hKey);
-	}
+	// Read from WIN32 registry
+	int err = load_registry(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",m_config_args);
+	if (err)
+		LOG_ERROR_RETURN(("Failed read system registry: %s",OOBase::system_error_text(err)),false);
 
 	// Load any config file now...
 	size_t f = m_config_args.find_first("conf-file");
 	if (f != m_config_args.npos)
 	{
-		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",cmd_args.at(f)->c_str());
+		OOBase::String strFile = *cmd_args.at(f);
 
-		if (!load_config_file(cmd_args.at(f)->c_str()))
-			return false;
+		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",strFile.c_str());
+
+		OOBase::ConfigFile::error_pos_t error = {0};
+		err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
+		if (err == EINVAL)
+			LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",strFile.c_str(),error.line,error.col),false);
+		else if (err)
+			LOG_ERROR_RETURN(("Failed load configuration file %s: %s",strFile.c_str(),OOBase::system_error_text(err)),false);
 	}
 
 	// Now set some defaults...
@@ -286,12 +189,12 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
 
 		OOBase::String v,k;
-		int err = k.assign("regdb_path");
-		if (err == 0)
+		err = k.assign("regdb_path");
+		if (!err)
 			err = v.assign(szPath);
-		if (err == 0)
+		if (!err)
 			err = m_config_args.insert(k,v);
-		if (err != 0)
+		if (err)
 			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
 	}
 
@@ -313,12 +216,12 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
 
 		OOBase::String v,k;
-		int err = k.assign("binary_path");
-		if (err == 0)
+		err = k.assign("binary_path");
+		if (!err)
 			err = v.assign(szPath);
-		if (err == 0)
+		if (!err)
 			err = m_config_args.insert(k,v);
-		if (err != 0)
+		if (err)
 			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
 	}
 
@@ -413,7 +316,7 @@ bool Root::Manager::start_client_acceptor()
 	const char* pipe_name = "OmegaOnline";
 	int err = 0;
 	m_client_acceptor = m_proactor->accept_local(this,&accept_client,pipe_name,err,&m_sa);
-	if (err != 0)
+	if (err)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
 	return true;

@@ -214,18 +214,6 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	return load_config_i(cmd_args);
 }
 
-bool Root::Manager::load_config_file(const char* pszFile)
-{
-	OOBase::ConfigFile::error_pos_t error = {0};
-	int err = OOBase::ConfigFile::load(pszFile,m_config_args,&error);
-	if (err == EINVAL)
-		LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",pszFile,error.line,error.col),false);
-	else if (err)
-		LOG_ERROR_RETURN(("Failed load configuration file %s: %s",pszFile,OOBase::system_error_text(err)),false);
-
-	return true;
-}
-
 int Root::Manager::run_proactor(void* p)
 {
 	int err = 0;

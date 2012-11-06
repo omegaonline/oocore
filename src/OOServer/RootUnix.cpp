@@ -87,19 +87,30 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 		::free(rpath);
 	}
 
-	if (!load_config_file(strFile.empty() ? CONFIG_DIR "/ooserver.conf" : strFile.c_str()))
-		return false;
+	if (strFile.empty())
+	{
+		int err = strFile.assign(CONFIG_DIR "/ooserver.conf");
+		if (err)
+			LOG_ERROR_RETURN(("Failed assign string: %s",OOBase::system_error_text(err)),false);
+	}
+
+	OOBase::ConfigFile::error_pos_t error = {0};
+	int err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
+	if (err == EINVAL)
+		LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",strFile.c_str(),error.line,error.col),false);
+	else if (err)
+		LOG_ERROR_RETURN(("Failed load configuration file %s: %s",strFile.c_str(),OOBase::system_error_text(err)),false);
 
 	// Now set some defaults
 	if (!m_config_args.exists("regdb_path"))
 	{
 		OOBase::String v,k;
 		int err = k.assign("regdb_path");
-		if (err == 0)
+		if (!err)
 			err = v.assign(REGDB_PATH);
-		if (err == 0)
+		if (!err)
 			err = m_config_args.insert(k,v);
-		if (err != 0)
+		if (err)
 			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
 	}
 
@@ -107,11 +118,11 @@ bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
 	{
 		OOBase::String v,k;
 		int err = k.assign("binary_path");
-		if (err == 0)
+		if (!err)
 			err = v.assign(LIBEXEC_DIR);
-		if (err == 0)
+		if (!err)
 			err = m_config_args.insert(k,v);
-		if (err != 0)
+		if (err)
 			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
 	}
 
@@ -138,7 +149,7 @@ bool Root::Manager::start_client_acceptor()
 		m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
 	}
 
-	if (err != 0)
+	if (err)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
 
 	return true;

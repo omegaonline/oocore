@@ -71,7 +71,6 @@ namespace Root
 		// Init and run members
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
 		bool load_config_i(const OOBase::CmdArgs::results_t& cmd_args);
-		bool load_config_file(const char* pszFile);
 		bool init_database();
 		bool spawn_sandbox();
 		static int run_proactor(void* param);

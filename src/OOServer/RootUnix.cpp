@@ -76,59 +76,6 @@ bool Root::platform_init()
     return true;
 }*/
 
-bool Root::Manager::load_config_i(const OOBase::CmdArgs::results_t& cmd_args)
-{
-	// Determine conf file
-	OOBase::String strFile;
-	if (cmd_args.find("conf-file",strFile))
-	{
-		char* rpath = realpath(strFile.c_str(),NULL);
-		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
-		::free(rpath);
-	}
-
-	if (strFile.empty())
-	{
-		int err = strFile.assign(CONFIG_DIR "/ooserver.conf");
-		if (err)
-			LOG_ERROR_RETURN(("Failed assign string: %s",OOBase::system_error_text(err)),false);
-	}
-
-	OOBase::ConfigFile::error_pos_t error = {0};
-	int err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
-	if (err == EINVAL)
-		LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",strFile.c_str(),error.line,error.col),false);
-	else if (err)
-		LOG_ERROR_RETURN(("Failed load configuration file %s: %s",strFile.c_str(),OOBase::system_error_text(err)),false);
-
-	// Now set some defaults
-	if (!m_config_args.exists("regdb_path"))
-	{
-		OOBase::String v,k;
-		int err = k.assign("regdb_path");
-		if (!err)
-			err = v.assign(REGDB_PATH);
-		if (!err)
-			err = m_config_args.insert(k,v);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
-	}
-
-	if (!m_config_args.exists("binary_path"))
-	{
-		OOBase::String v,k;
-		int err = k.assign("binary_path");
-		if (!err)
-			err = v.assign(LIBEXEC_DIR);
-		if (!err)
-			err = m_config_args.insert(k,v);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
-	}
-
-	return true;
-}
-
 bool Root::Manager::start_client_acceptor()
 {
 #if defined(__linux__)

@@ -36,6 +36,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
+#include <limits.h>
 
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
 
@@ -199,19 +200,124 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
+	int err = 0;
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Clear current entries
 	m_config_args.clear();
 
+	// Copy command line args
 	for (size_t i=0; i < cmd_args.size(); ++i)
 	{
-		int err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
+		err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
 		if (err)
 			LOG_ERROR_RETURN(("Failed to copy command args: %s",OOBase::system_error_text(err)),false);
 	}
 
-	return load_config_i(cmd_args);
+#if defined(_WIN32)
+	// Read from WIN32 registry
+	err = load_registry(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",m_config_args);
+	if (err)
+		LOG_ERROR_RETURN(("Failed read system registry: %s",OOBase::system_error_text(err)),false);
+#endif
+
+	// Determine conf file
+	OOBase::String strFile;
+	if (!m_config_args.find("conf-file",strFile))
+	{
+#if !defined(_WIN32)
+		err = strFile.assign(CONFIG_DIR "/ooserver.conf");
+		if (err)
+			LOG_ERROR_RETURN(("Failed assign string: %s",OOBase::system_error_text(err)),false);
+#endif
+	}
+
+	// Load from config file
+	if (!strFile.empty())
+	{
+#if defined(__linux)
+		char rpath[PATH_MAX] = {0};
+		if (!realpath(strFile.c_str(),rpath))
+			strncpy(rpath,strFile.c_str(),sizeof(rpath)-1);
+#else
+		const char* rpath = strFile.c_str();
+#endif
+
+		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
+
+		OOBase::ConfigFile::error_pos_t error = {0};
+		int err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
+		if (err == EINVAL)
+			LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",rpath,error.line,error.col),false);
+		else if (err)
+			LOG_ERROR_RETURN(("Failed load configuration file %s: %s",rpath,OOBase::system_error_text(err)),false);
+	}
+
+	// Now set some defaults
+	if (!m_config_args.exists("regdb_path"))
+	{
+#if defined(_WIN32)
+		wchar_t wszPath[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,wszPath);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathAppendW(wszPath,L"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathFileExistsW(wszPath))
+			LOG_ERROR_RETURN(("%ls does not exist.",wszPath),false);
+
+		if (!PathAddBackslashW(wszPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		char szPath[MAX_PATH * 2] = {0};
+		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+#else
+		const char* szPath = REGDB_PATH;
+#endif
+		OOBase::String v,k;
+		err = k.assign("regdb_path");
+		if (!err)
+			err = v.assign(szPath);
+		if (!err)
+			err = m_config_args.insert(k,v);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
+	if (!m_config_args.exists("binary_path"))
+	{
+#if defined(_WIN32)
+		// Get our module name
+		wchar_t wszPath[MAX_PATH] = {0};
+		if (!GetModuleFileNameW(NULL,wszPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
+
+		// Strip off our name
+		PathUnquoteSpacesW(wszPath);
+		PathRemoveFileSpecW(wszPath);
+		if (!PathAddBackslashW(wszPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		char szPath[MAX_PATH * 2] = {0};
+		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+#else
+		const char* szPath = LIBEXEC_DIR;
+#endif
+		OOBase::String v,k;
+		err = k.assign("binary_path");
+		if (!err)
+			err = v.assign(szPath);
+		if (!err)
+			err = m_config_args.insert(k,v);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
+	return true;
 }
 
 int Root::Manager::run_proactor(void* p)

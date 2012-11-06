@@ -200,10 +200,17 @@ int main(int argc, const char* argv[])
 
 	// Ignore SIGCHLD and SIGPIPE
 	sigset_t sigset;
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGCHLD);
-	sigaddset(&sigset, SIGPIPE);
-	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+	err = sigemptyset(&sigset);
+	if (!err)
+		err = sigaddset(&sigset, SIGCHLD);
+	if (!err)
+		err = sigaddset(&sigset, SIGPIPE);
+	if (err)
+		err = errno;
+	else
+		err = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to adjust signals: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
 	umask(0);
 

@@ -38,7 +38,7 @@ namespace OOServer
 {
 	class MessageHandler;
 
-	class MessageConnection : public OOBase::RefCounted<OOBase::HeapAllocator>
+	class MessageConnection : public OOBase::RefCounted<OOBase::CrtAllocator>
 	{
 	public:
 		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
@@ -163,7 +163,7 @@ namespace OOServer
 		friend struct ChannelHash;
 		ChannelHash m_hash;
 
-		OOBase::HashTable<Omega::uint32_t,OOBase::RefPtr<MessageConnection>,OOBase::HeapAllocator,ChannelHash> m_mapChannelIds;
+		OOBase::HashTable<Omega::uint32_t,OOBase::RefPtr<MessageConnection>,OOBase::CrtAllocator,ChannelHash> m_mapChannelIds;
 
 		struct Message
 		{
@@ -221,7 +221,7 @@ namespace OOServer
 			// 'Private' thread-local data
 			OOBase::Timeout             m_timeout;
 
-			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator> m_mapChannelThreads;
+			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
 
 			static ThreadContext* instance(MessageHandler* pHandler);
 

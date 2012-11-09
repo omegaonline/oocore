@@ -32,8 +32,8 @@ namespace
 	{
 		OOBase::SpinLock m_lock;
 
-		OOBase::HashTable<guid_t,const System::Internal::qi_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_qi_map;
-		OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::HeapAllocator,OOCore::GuidHash> m_wi_map;
+		OOBase::HashTable<guid_t,const System::Internal::qi_rtti*,OOBase::CrtAllocator,OOCore::GuidHash> m_qi_map;
+		OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::CrtAllocator,OOCore::GuidHash> m_wi_map;
 	};
 }
 

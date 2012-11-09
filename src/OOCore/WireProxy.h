@@ -98,7 +98,7 @@ namespace OOCore
 		Omega::uint32_t                       m_proxy_id;
 		StdObjectManager*                     m_pManager;
 
-		OOBase::HashTable<Omega::guid_t,bool,OOBase::HeapAllocator,GuidHash> m_iids;
+		OOBase::HashTable<Omega::guid_t,bool,OOBase::CrtAllocator,GuidHash> m_iids;
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
 		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);

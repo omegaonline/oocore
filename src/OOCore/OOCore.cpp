@@ -68,7 +68,7 @@ extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 {
-	void* p = OOBase::HeapAllocator::allocate(bytes);
+	void* p = OOBase::CrtAllocator::allocate(bytes);
 	if (!p)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
@@ -77,7 +77,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,1,((in),void*,mem))
 {
-	OOBase::HeapAllocator::free(mem);
+	OOBase::CrtAllocator::free(mem);
 }
 
 const OOCore::throwing_t OOCore::throwing = {0};

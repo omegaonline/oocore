@@ -75,7 +75,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 	try
 	{
 		// Now loop reading socket handles from ptrSocket
-		for (;;)
+		for (char szName[512];;)
 		{
 			uint32_t len = 0;
 			err = ptrSocket->recv(len);
@@ -85,11 +85,18 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			if (!len)
 				break;
 
-			OOBase::SmartPtr<char,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrName(len);
-			if (!ptrName)
-				OMEGA_THROW(ERROR_OUTOFMEMORY);
+			char* pszName = szName;
+			OOBase::SmartPtr<char,OOBase::FreeDestructor<OOBase::CrtAllocator> > ptrName;
+			if (len > sizeof(szName))
+			{
+				ptrName = static_cast<char*>(OOBase::CrtAllocator::allocate(len));
+				if (!ptrName)
+					OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-			ptrSocket->recv(ptrName,len,true,err);
+				pszName = ptrName;
+			}
+
+			ptrSocket->recv(pszName,len,true,err);
 			if (err)
 				OMEGA_THROW(err);
 
@@ -98,7 +105,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			if (err)
 				OMEGA_THROW(err);
 
-			socket_map.insert(System::IService::socket_map_t::value_type(string_t(ptrName,len),sock));
+			socket_map.insert(System::IService::socket_map_t::value_type(string_t(pszName,len),sock));
 		}
 
 		// Now run the service (this need not return for some time)

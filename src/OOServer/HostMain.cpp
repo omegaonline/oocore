@@ -161,9 +161,9 @@ int main(int argc, char* argv[])
 namespace
 {
 	template <typename T>
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > to_wchar_t(const T& str)
 	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wsz;
 		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
 		if (len == 0)
 		{
@@ -172,7 +172,7 @@ namespace
 				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),wsz);
 		}
 
-		wsz.allocate((len+1) * sizeof(wchar_t));
+		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
 		if (!wsz)
 			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),wsz);
 		
@@ -188,7 +188,7 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 	if (!args.find("@0",strAppName))
 		LOG_ERROR_RETURN(("No arguments passed with --shellex"),EXIT_FAILURE);
 
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wszAppName = to_wchar_t(strAppName);
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wszAppName = to_wchar_t(strAppName);
 	if (!wszAppName)
 		return EXIT_FAILURE;
 
@@ -211,7 +211,7 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}
 
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wszCmdLine;
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wszCmdLine;
 	if (!strCmdLine.empty())
 	{
 		wszCmdLine = to_wchar_t(strCmdLine);

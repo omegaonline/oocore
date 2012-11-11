@@ -37,6 +37,10 @@
 
 #include <stdlib.h>
 
+#if defined(_WIN32)
+#include <Shlwapi.h>
+#endif
+
 #if defined(HAVE_UNISTD_H)
 #include <sys/stat.h>
 #endif

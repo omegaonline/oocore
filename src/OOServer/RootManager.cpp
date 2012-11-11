@@ -38,6 +38,11 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#if defined(_WIN32)
+#include <Shlwapi.h>
+#include <ShlObj.h>
+#endif
+
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
@@ -216,8 +221,8 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 
 #if defined(_WIN32)
 	// Read from WIN32 registry
-	err = load_registry(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",m_config_args);
-	if (err)
+	err = OOBase::ConfigFile::load_registry(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",m_config_args);
+	if (err && err != ERROR_FILE_NOT_FOUND)
 		LOG_ERROR_RETURN(("Failed read system registry: %s",OOBase::system_error_text(err)),false);
 #endif
 
@@ -246,7 +251,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
 
 		OOBase::ConfigFile::error_pos_t error = {0};
-		int err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
+		err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
 		if (err == EINVAL)
 			LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",rpath,error.line,error.col),false);
 		else if (err)
@@ -617,7 +622,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 	return channel_id;
 }
 
-void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs)
+void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& /*timeout*/, Omega::uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	request.read(op_code);

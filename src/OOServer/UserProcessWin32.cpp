@@ -47,7 +47,7 @@ namespace
 	};
 
 	template <typename T>
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > to_wchar_t(const T& str)
 	{
 		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
 		if (len == 0)
@@ -57,7 +57,7 @@ namespace
 				OMEGA_THROW(dwErr);
 		}
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz((len+1) * sizeof(wchar_t));
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
 		if (!wsz)
 			OMEGA_THROW(GetLastError());
 		
@@ -154,7 +154,7 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 	strProcess += "OOSvrHost32.exe";
 #endif
 
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> cmd_line;
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > cmd_line;
 	if (!is_host_process)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());

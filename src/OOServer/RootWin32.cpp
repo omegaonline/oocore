@@ -156,7 +156,7 @@ bool Root::Manager::start_client_acceptor()
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrSIDLogon;
 	if (OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
 	{
 		// Use logon sid instead...

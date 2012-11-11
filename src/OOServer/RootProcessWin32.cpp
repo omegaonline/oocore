@@ -70,9 +70,9 @@ namespace
 	};
 
 	template <typename T>
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> to_wchar_t(const T& str)
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > to_wchar_t(const T& str)
 	{
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> wsz;
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wsz;
 		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
 		if (len == 0)
 		{
@@ -81,7 +81,7 @@ namespace
 				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),wsz);
 		}
 
-		wsz.allocate((len+1) * sizeof(wchar_t));
+		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
 		if (!wsz)
 			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),wsz);
 		
@@ -117,9 +117,9 @@ namespace
 		else
 		{
 			// Get the names associated with the user SID
-			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUsersDir = to_wchar_t(strUsersDir);
-			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
-			OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
+			OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrUsersDir = to_wchar_t(strUsersDir);
+			OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > strUserName;
+			OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > strDomainName;
 
 			DWORD dwErr = OOBase::Win32::GetNameFromToken(hToken,strUserName,strDomainName);
 			if (dwErr != ERROR_SUCCESS)
@@ -135,7 +135,7 @@ namespace
 		}
 
 		// Now confirm the file exists, and if it doesn't, copy user_template.regdb
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrHive = to_wchar_t(strHive);
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrHive = to_wchar_t(strHive);
 		if (!PathFileExistsW(ptrHive))
 		{
 			if ((err = strSysDir.append("user_template.regdb")) != 0)
@@ -157,7 +157,7 @@ namespace
 		// Create a new unique pipe
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrSIDLogon;
 		DWORD dwRes = OOBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),INVALID_HANDLE_VALUE);
@@ -301,7 +301,7 @@ namespace
 	DWORD LogonSandboxUser(const OOBase::String& strUName, HANDLE& hToken)
 	{
 		// Convert UName to wide
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUName = to_wchar_t(strUName);
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrUName = to_wchar_t(strUName);
 		
 		// Open the local account policy...
 		LSA_HANDLE hPolicy;
@@ -324,7 +324,7 @@ namespace
 			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 		}
 
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrPwd(pszVal->Length + sizeof(wchar_t));
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrPwd = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate(pszVal->Length + sizeof(wchar_t)));
 		if (ptrPwd)
 		{
 			memcpy(ptrPwd,pszVal->Buffer,pszVal->Length);
@@ -443,7 +443,7 @@ namespace
 		// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
 
 		// Get the logon SID of the Token
-		OOBase::SmartPtr<void,OOBase::LocalAllocator> ptrSIDLogon;
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrSIDLogon;
 		DWORD dwRes = OOBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("OOBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
@@ -614,7 +614,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::system_error_text(dwErr)),dwErr);
 	}
 
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrAppName = to_wchar_t(strAppName);
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrAppName = to_wchar_t(strAppName);
 
 	OOBase::LocalString strCmdLine;
 	int err = strCmdLine.assign(" --pipe=");
@@ -626,7 +626,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to build command line: %s",OOBase::system_error_text(err)),err);
 
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrCmdLine = to_wchar_t(strCmdLine);
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrCmdLine = to_wchar_t(strCmdLine);
 
 	OOBase::LocalString strWindowStation;
 	if ((err = strWindowStation.assign("WinSta0\\default")) != 0)
@@ -642,7 +642,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	OOBase::LocalString strTitle;
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrWS,ptrTitle;
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrWS,ptrTitle;
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -675,8 +675,8 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::String& strAppName, HANDLE hToken
 		dwFlags |= CREATE_NEW_CONSOLE;
 
 		// Get the names associated with the user SID
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strUserName;
-		OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> strDomainName;
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > strUserName;
+		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > strDomainName;
 
 		if (OOBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
 		{
@@ -802,7 +802,7 @@ int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 {
 	bAllowed = false;
 
-	OOBase::SmartPtr<void,OOBase::LocalAllocator> pSD;
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<OOBase::LocalAllocator> > pSD;
 	for (DWORD cbNeeded = 512;;)
 	{
 		pSD = OOBase::LocalAllocator::allocate(cbNeeded);
@@ -1017,12 +1017,13 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	}
 
 	// Get the environment settings
-	OOBase::Environment::env_table_t tabSysEnv;
+	OOBase::TempAllocator<4096> temp_allocator;
+	OOBase::Environment::env_table_t tabSysEnv(temp_allocator);
 	err = OOBase::Environment::get_user(uid,tabSysEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::Environment::env_table_t tabEnv;
+	OOBase::Environment::env_table_t tabEnv(temp_allocator);
 	if (!load_user_env(process.m_ptrRegistry,tabEnv))
 		return false;
 
@@ -1073,8 +1074,8 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the names associated with the user SID
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrUserName;
-	OOBase::SmartPtr<wchar_t,OOBase::LocalAllocator> ptrDomainName;
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrUserName;
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrDomainName;
 
 	DWORD dwRes = OOBase::Win32::GetNameFromToken(uid,ptrUserName,ptrDomainName);
 	if (dwRes != ERROR_SUCCESS)

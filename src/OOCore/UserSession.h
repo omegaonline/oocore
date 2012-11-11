@@ -139,7 +139,7 @@ namespace OOCore
 			OOBase::Timeout               m_timeout;
 			Omega::uint16_t               m_current_cmpt;
 
-			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::LocalAllocator> m_mapChannelThreads;
+			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
 
 			static ThreadContext* instance();
 

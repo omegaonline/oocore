@@ -51,7 +51,7 @@
 #include <OOBase/SecurityWin32.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>
-#include <OOBase/Server.h>
+#include <OOBase/ConfigFile.h>
 
 #include <OOSvrBase/Proactor.h>
 

@@ -483,7 +483,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrProcessUser(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(hProcessToken,TokenUser)));
+		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::CrtAllocator> > ptrProcessUser(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(hProcessToken,TokenUser)));
 		if (!ptrProcessUser)
 			LOG_ERROR_RETURN(("OOBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
 
@@ -859,8 +859,8 @@ bool RootProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) co
 		return false;
 
 	// Check the SIDs and priviledges are the same...
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
-	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::HeapAllocator> pStats2(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges)));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<OOBase::CrtAllocator> > pStats1(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges)));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<OOBase::CrtAllocator> > pStats2(static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges)));
 
 	if (!pStats1 || !pStats2)
 		return false;
@@ -879,8 +879,8 @@ bool RootProcessWin32::IsSameUser(HANDLE hToken) const
 	if (m_bSandbox)
 		return false;
 
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo1(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(hToken,TokenUser)));
-	OOBase::SmartPtr<TOKEN_USER,OOBase::HeapAllocator> ptrUserInfo2(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(m_hToken,TokenUser)));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::CrtAllocator> > ptrUserInfo1(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(hToken,TokenUser)));
+	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::CrtAllocator> > ptrUserInfo2(static_cast<TOKEN_USER*>(OOBase::Win32::GetTokenInfo(m_hToken,TokenUser)));
 
 	if (!ptrUserInfo1 || !ptrUserInfo2)
 		return false;
@@ -1017,12 +1017,12 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	}
 
 	// Get the environment settings
-	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabSysEnv;
+	OOBase::Environment::env_table_t tabSysEnv;
 	err = OOBase::Environment::get_user(uid,tabSysEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator> tabEnv;
+	OOBase::Environment::env_table_t tabEnv;
 	if (!load_user_env(process.m_ptrRegistry,tabEnv))
 		return false;
 

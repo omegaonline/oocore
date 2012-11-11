@@ -35,8 +35,8 @@
 #include "RootManager.h"
 
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
 
@@ -188,7 +188,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::LocalString strArg;
-	if (!request.read(strArg))
+	if (!request.read_string(strArg))
 		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
 
 	OOBase::String strValue;
@@ -200,166 +200,124 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
+	int err = 0;
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Clear current entries
 	m_config_args.clear();
 
+	// Copy command line args
 	for (size_t i=0; i < cmd_args.size(); ++i)
 	{
-		int err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
-		if (err != 0)
+		err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
+		if (err)
 			LOG_ERROR_RETURN(("Failed to copy command args: %s",OOBase::system_error_text(err)),false);
 	}
 
-	return load_config_i(cmd_args);
-}
-
-bool Root::Manager::load_config_file(const char* pszFile)
-{
-	// Load simple config file...
-	FILE* f = NULL;
-#if defined(_MSC_VER)
-	int err = fopen_s(&f,pszFile,"rt");
-#else
-	int err = 0;
-	f = fopen(pszFile,"rt");
-	if (!f)
-		err = errno;
+#if defined(_WIN32)
+	// Read from WIN32 registry
+	err = load_registry(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",m_config_args);
+	if (err)
+		LOG_ERROR_RETURN(("Failed read system registry: %s",OOBase::system_error_text(err)),false);
 #endif
-	if (err == ENOENT)
-		return true;
 
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to open file %s: %s",pszFile,OOBase::system_error_text(err)),false);
-
-	OOBase::LocalString strBuffer;
-	for (bool bEof=false;!bEof && err==0;)
+	// Determine conf file
+	OOBase::String strFile;
+	if (!m_config_args.find("conf-file",strFile))
 	{
-		// Read some characters
-		char szBuf[256] = {0};
-		size_t r = fread(szBuf,1,sizeof(szBuf),f);
-		if (r != sizeof(szBuf))
-		{
-			if (feof(f))
-				bEof = true;
-			else
-			{
-				err = ferror(f);
-				LOG_ERROR(("Failed to read file %s: %s",pszFile,OOBase::system_error_text(err)));
-				break;
-			}
-		}
-
-		// Append to buffer
-		err = strBuffer.append(szBuf,r);
-
-		// Split out individual lines
-		for (size_t start = 0;err==0 && !strBuffer.empty();)
-		{
-			// Skip leading whitespace
-			while (strBuffer[start] == '\t' || strBuffer[start] == ' ')
-				++start;
-
-			if (start == strBuffer.length())
-			{
-				strBuffer.clear();
-				break;
-			}
-
-			// Find the next linefeed
-			size_t end = strBuffer.find('\n',start);
-			if (end == OOBase::String::npos)
-			{
-				if (!bEof)
-				{
-					// Incomplete line
-					break;
-				}
-
-				end = strBuffer.length();
-			}
-
-			// Skip everything after #
-			size_t valend = strBuffer.find('#',start);
-			if (valend > end)
-				valend = end;
-
-			// Trim trailing whitespace
-			while (valend > start && (strBuffer[valend-1] == '\t' || strBuffer[valend-1] == ' '))
-				--valend;
-
-			if (valend > start)
-			{
-				OOBase::String strKey, strValue;
-
-				// Split on first =
-				size_t eq = strBuffer.find('=',start);
-				if (eq != OOBase::String::npos)
-				{
-					// Trim trailing whitespace before =
-					size_t keyend = eq;
-					while (keyend > start && (strBuffer[keyend-1] == '\t' || strBuffer[keyend-1] == ' '))
-						--keyend;
-
-					if (keyend > start)
-					{
-						if ((err = strKey.assign(strBuffer.c_str() + start,keyend-start)) != 0)
-						{
-							LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-							break;
-						}
-
-						// Skip leading whitespace after =
-						size_t valpos = eq+1;
-						while (valpos < valend && (strBuffer[valpos] == '\t' || strBuffer[valpos] == ' '))
-							++valpos;
-
-						if (valpos < valend)
-						{
-							if ((err = strValue.assign(strBuffer.c_str() + valpos,valend-valpos)) != 0)
-							{
-								LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-								break;
-							}
-						}
-					}
-				}
-				else
-				{
-					err = strKey.assign(strBuffer.c_str() + start,valend-start);
-					if (err == 0)
-						err = strValue.assign("true",4);
-
-					if (err != 0)
-					{
-						LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
-						break;
-					}
-				}
-
-				// Do something with strKey and strValue
-				if (!strKey.empty())
-				{
-					OOBase::String* pv = m_config_args.find(strKey);
-					if (!pv)
-					{
-						if ((err = m_config_args.insert(strKey,strValue)) != 0)
-							LOG_ERROR(("Failed to insert config string: %s",OOBase::system_error_text(err)));
-					}
-				}
-			}
-
-			if (end == OOBase::LocalString::npos)
-				break;
-
-			start = end + 1;
-		}
+#if !defined(_WIN32)
+		err = strFile.assign(CONFIG_DIR "/ooserver.conf");
+		if (err)
+			LOG_ERROR_RETURN(("Failed assign string: %s",OOBase::system_error_text(err)),false);
+#endif
 	}
 
-	fclose(f);
+	// Load from config file
+	if (!strFile.empty())
+	{
+#if defined(__linux)
+		char rpath[PATH_MAX] = {0};
+		if (!realpath(strFile.c_str(),rpath))
+			strncpy(rpath,strFile.c_str(),sizeof(rpath)-1);
+#else
+		const char* rpath = strFile.c_str();
+#endif
 
-	return (err == 0);
+		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
+
+		OOBase::ConfigFile::error_pos_t error = {0};
+		int err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
+		if (err == EINVAL)
+			LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",rpath,error.line,error.col),false);
+		else if (err)
+			LOG_ERROR_RETURN(("Failed load configuration file %s: %s",rpath,OOBase::system_error_text(err)),false);
+	}
+
+	// Now set some defaults
+	if (!m_config_args.exists("regdb_path"))
+	{
+#if defined(_WIN32)
+		wchar_t wszPath[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,wszPath);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathAppendW(wszPath,L"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathFileExistsW(wszPath))
+			LOG_ERROR_RETURN(("%ls does not exist.",wszPath),false);
+
+		if (!PathAddBackslashW(wszPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		char szPath[MAX_PATH * 2] = {0};
+		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+#else
+		const char* szPath = REGDB_PATH;
+#endif
+		OOBase::String v,k;
+		err = k.assign("regdb_path");
+		if (!err)
+			err = v.assign(szPath);
+		if (!err)
+			err = m_config_args.insert(k,v);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
+	if (!m_config_args.exists("binary_path"))
+	{
+#if defined(_WIN32)
+		// Get our module name
+		wchar_t wszPath[MAX_PATH] = {0};
+		if (!GetModuleFileNameW(NULL,wszPath,MAX_PATH))
+			LOG_ERROR_RETURN(("GetModuleFileName failed: %s",OOBase::system_error_text()),false);
+
+		// Strip off our name
+		PathUnquoteSpacesW(wszPath);
+		PathRemoveFileSpecW(wszPath);
+		if (!PathAddBackslashW(wszPath))
+			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
+
+		char szPath[MAX_PATH * 2] = {0};
+		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+#else
+		const char* szPath = LIBEXEC_DIR;
+#endif
+		OOBase::String v,k;
+		err = k.assign("binary_path");
+		if (!err)
+			err = v.assign(szPath);
+		if (!err)
+			err = m_config_args.insert(k,v);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+	}
+
+	return true;
 }
 
 int Root::Manager::run_proactor(void* p)
@@ -522,7 +480,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 	return false;
 }
 
-bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv)
 {
 	Omega::int64_t key = 0;
 	OOBase::LocalString strSubKey,strLink,strFullKeyName;

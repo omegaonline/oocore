@@ -37,106 +37,97 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 	}
 	else
 	{
-		OOBase::LocalString strPipe,strName,strSecret;
+		ServiceEntry entry;
+		OOBase::LocalString strPipe,strSecret;
 		int64_t key = 0;
-		if (!request.read(strPipe) ||
-				!request.read(strName) ||
+		if (!request.read_string(strPipe) ||
+				!request.read_string(entry.strName) ||
 				!request.read(key) ||
-				!request.read(strSecret))
+				!request.read_string(strSecret))
 		{
 			LOG_ERROR(("Failed to read service start args: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
 		}
 		else
 		{
-			ServiceEntry entry;
-			int err2 = entry.strName.assign(strName.c_str());
-			if (err2)
+			// Check if it's running already
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+			bool found = false;
+			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 			{
-				LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
-				err = OOServer::Errored;
+				if (m_mapServices.at(pos)->strName == entry.strName)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			if (found)
+			{
+				guard.release();
+
+				if (!response)
+					OOBase::Logger::log(OOBase::Logger::Warning,"Service '%s' is already running",entry.strName.c_str());
+
+				err = OOServer::AlreadyExists;
 			}
 			else
 			{
-				// Check if it's running already
-				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-				bool found = false;
-				for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+				// Insert an entry with a NULL pointer, we later update it
+				int err2 = m_mapServices.push(entry);
+				if (err2)
 				{
-					if (m_mapServices.at(pos)->strName == strName.c_str())
-					{
-						found = true;
-						break;
-					}
-				}
-
-				if (found)
-				{
-					guard.release();
-
-					if (!response)
-						OOBase::Logger::log(OOBase::Logger::Warning,"Service '%s' is already running",strName.c_str());
-
-					err = OOServer::AlreadyExists;
+					LOG_ERROR(("Failed to insert service entry: %s",OOBase::system_error_text(err2)));
+					err = OOServer::Errored;
 				}
 				else
 				{
-					// Insert an entry with a NULL pointer, we later update it
-					err2 = m_mapServices.push(entry);
-					if (err2)
+					guard.release();
+
+					try
 					{
-						LOG_ERROR(("Failed to insert service entry: %s",OOBase::system_error_text(err2)));
-						err = OOServer::Errored;
-					}
-					else
-					{
+						// Wrap up a registry key
+						ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateObject();
+						ptrKey->init(string_t::constant("/System/Services/") + entry.strName.c_str(),key,0);
+
+						// Return a pointer to a IService interface and place in stack
+						ObjectPtr<OOCore::IServiceManager> ptrServiceManager("Omega.ServiceHost");
+						entry.ptrService = ptrServiceManager->Create(ptrKey->GetValue(string_t::constant("OID")));
+
+						guard.acquire();
+
+						for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+						{
+							if (m_mapServices.at(pos)->strName == entry.strName && !m_mapServices.at(pos)->ptrService)
+							{
+								ServiceEntry* se = const_cast<ServiceEntry*>(m_mapServices.at(pos));
+								se->ptrService = entry.ptrService;
+								found = true;
+								break;
+							}
+						}
+
 						guard.release();
 
-						try
+						if (found)
+							ptrServiceManager->Start(entry.ptrService,entry.strName.c_str(),strPipe.c_str(),ptrKey,strSecret.c_str());
+					}
+					catch (IException* pE)
+					{
+						ObjectPtr<IException> ptrE = pE;
+						OOBase::Logger::log(OOBase::Logger::Warning,"Failed to start service '%s': %s",entry.strName.c_str(),recurse_log_exception(ptrE).c_str());
+						err = OOServer::Errored;
+
+						guard.acquire();
+
+						// Remove any entries from the map
+						for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 						{
-							// Wrap up a registry key
-							ObjectPtr<ObjectImpl<Registry::RootKey> > ptrKey = ObjectImpl<User::Registry::RootKey>::CreateObject();
-							ptrKey->init(string_t::constant("/System/Services/") + strName.c_str(),key,0);
-
-							// Return a pointer to a IService interface and place in stack
-							ObjectPtr<OOCore::IServiceManager> ptrServiceManager("Omega.ServiceHost");
-							entry.ptrService = ptrServiceManager->Create(ptrKey->GetValue(string_t::constant("OID")));
-
-							guard.acquire();
-
-							for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+							if (m_mapServices.at(pos)->strName == entry.strName)
 							{
-								if (m_mapServices.at(pos)->strName == strName.c_str() && !m_mapServices.at(pos)->ptrService)
-								{
-									ServiceEntry* se = const_cast<ServiceEntry*>(m_mapServices.at(pos));
-									se->ptrService = entry.ptrService;
-									found = true;
-									break;
-								}
-							}
-
-							guard.release();
-
-							if (found)
-								ptrServiceManager->Start(entry.ptrService,strName.c_str(),strPipe.c_str(),ptrKey,strSecret.c_str());
-						}
-						catch (IException* pE)
-						{
-							ObjectPtr<IException> ptrE = pE;
-							OOBase::Logger::log(OOBase::Logger::Warning,"Failed to start service '%s': %s",strName.c_str(),recurse_log_exception(ptrE).c_str());
-							err = OOServer::Errored;
-
-							guard.acquire();
-
-							// Remove any entries from the map
-							for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
-							{
-								if (m_mapServices.at(pos)->strName == strName.c_str())
-								{
-									m_mapServices.remove_at(pos);
-									break;
-								}
+								m_mapServices.remove_at(pos);
+								break;
 							}
 						}
 					}
@@ -202,8 +193,8 @@ void User::Manager::stop_service(OOBase::CDRStream& request, OOBase::CDRStream& 
 	}
 	else
 	{
-		OOBase::LocalString strName;
-		if (!request.read(strName))
+		OOBase::String strName;
+		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read service stop request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -216,7 +207,7 @@ void User::Manager::stop_service(OOBase::CDRStream& request, OOBase::CDRStream& 
 
 			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 			{
-				if (m_mapServices.at(pos)->strName == strName.c_str())
+				if (m_mapServices.at(pos)->strName == strName)
 				{
 					entry = *m_mapServices.at(pos);
 					m_mapServices.remove_at(pos);
@@ -258,8 +249,8 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 	}
 	else
 	{
-		OOBase::LocalString strName;
-		if (!request.read(strName))
+		OOBase::String strName;
+		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read service status request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -271,7 +262,7 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
 			{
 				const ServiceEntry* entry = m_mapServices.at(pos);
-				if (entry->strName == strName.c_str())
+				if (entry->strName == strName)
 				{
 					if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
 						found = true;
@@ -441,7 +432,7 @@ System::IServiceController::service_set_t User::ServiceController::GetRunningSer
 	for (;;)
 	{
 		OOBase::LocalString strName;
-		if (!response.read(strName))
+		if (!response.read_string(strName))
 			OMEGA_THROW(response.last_error());
 
 		if (strName.empty())

@@ -68,7 +68,7 @@ namespace
 		~StringNode()
 		{
 			if (m_len >= sizeof(m_u.m_local_buffer))
-				OOBase::HeapAllocator::free(m_u.m_alloc_buffer);
+				OOBase::CrtAllocator::free(m_u.m_alloc_buffer);
 		}
 
 		char* grow(size_t extra, int& err);
@@ -204,7 +204,7 @@ char* StringNode::grow(size_t extra, int& err)
 				if (m_len)
 					memcpy(local_buffer,m_u.m_local_buffer,m_len);
 
-				m_u.m_alloc_buffer = static_cast<char*>(OOBase::HeapAllocator::allocate(m_len + extra + 1));
+				m_u.m_alloc_buffer = static_cast<char*>(OOBase::CrtAllocator::allocate(m_len + extra + 1));
 				if (!m_u.m_alloc_buffer)
 					err = ERROR_OUTOFMEMORY;
 				else
@@ -219,7 +219,7 @@ char* StringNode::grow(size_t extra, int& err)
 		else
 		{
 			// Reallocate
-			char* new_buffer = static_cast<char*>(OOBase::HeapAllocator::reallocate(m_u.m_alloc_buffer,m_len + extra + 1));
+			char* new_buffer = static_cast<char*>(OOBase::CrtAllocator::reallocate(m_u.m_alloc_buffer,m_len + extra + 1));
 			if (!new_buffer)
 				err = ERROR_OUTOFMEMORY;
 			else

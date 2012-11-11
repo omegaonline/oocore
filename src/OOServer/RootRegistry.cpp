@@ -167,7 +167,7 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
 	{
-		if (!request.read(strSubKey))
+		if (!request.read_string(strSubKey))
 		{
 			LOG_ERROR(("Failed to read key name from request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -229,7 +229,7 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
 	{
-		if (!request.read(strSubKey))
+		if (!request.read_string(strSubKey))
 		{
 			LOG_ERROR(("Failed to read key name from request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -291,7 +291,7 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 	if (err == 0)
 	{
 		OOBase::LocalString strValue;
-		if (!request.read(strValue))
+		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -315,7 +315,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	if (!err)
 	{
 		OOBase::LocalString strValue;
-		if (!request.read(strValue))
+		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -342,7 +342,7 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	if (!err)
 	{
 		OOBase::LocalString strValue;
-		if (!request.read(strValue))
+		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -350,7 +350,7 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 		else
 		{
 			OOBase::LocalString val;
-			if (!request.read(val))
+			if (!request.read_string(val))
 			{
 				LOG_ERROR(("Failed to read value data from request: %s",OOBase::system_error_text(request.last_error())));
 				err = OOServer::Errored;
@@ -392,7 +392,7 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 	if (!err)
 	{
 		OOBase::LocalString strValue;
-		if (!request.read(strValue))
+		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;

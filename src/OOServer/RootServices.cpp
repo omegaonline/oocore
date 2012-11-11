@@ -518,61 +518,51 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 	if (!err)
 	{
-		OOBase::LocalString strLName;
-		if (!request.read(strLName))
+		OOBase::String strName;
+		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
 		}
 		else
 		{
-			OOBase::String strName;
-			int err2 = strName.assign(strLName.c_str());
-			if (err2)
+			// Find the sandbox process
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+			UserProcess sandbox;
+			if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
 			{
-				LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
+				LOG_ERROR(("Failed to find sandbox process"));
 				err = OOServer::Errored;
 			}
-			else
+
+			guard.release();
+
+			if (!err)
 			{
-				// Find the sandbox process
-				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-				UserProcess sandbox;
-				if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
-				{
-					LOG_ERROR(("Failed to find sandbox process"));
-					err = OOServer::Errored;
-				}
-
-				guard.release();
-
+				Omega::int64_t key = 0;
+				err = static_cast<OOServer::RootErrCode_t>(find_service(m_registry,strName,key));
 				if (!err)
 				{
-					Omega::int64_t key = 0;
-					err = static_cast<OOServer::RootErrCode_t>(find_service(m_registry,strName,key));
+					OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
+
+					// Get the timeout value
+					unsigned long wait_secs = 0;
+					OOBase::LocalString strTimeout;
+					if (m_registry->get_value(key,"Timeout",0,strTimeout) == Db::HIVE_OK)
+						wait_secs = strtoul(strTimeout.c_str(),NULL,10);
+
+					if (wait_secs == 0)
+						wait_secs = 15;
+
+					if (Root::is_debug())
+						wait_secs = 1000;
+
+					// Create a unique local socket name
+					OOBase::RefPtr<OOBase::Socket> ptrSocket;
+					err = static_cast<OOServer::RootErrCode_t>(sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket));
 					if (!err)
-					{
-						OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
-
-						// Get the timeout value
-						unsigned long wait_secs = 0;
-						OOBase::LocalString strTimeout;
-						if (m_registry->get_value(key,"Timeout",0,strTimeout) == Db::HIVE_OK)
-							wait_secs = strtoul(strTimeout.c_str(),NULL,10);
-
-						if (wait_secs == 0)
-							wait_secs = 15;
-
-						if (Root::is_debug())
-							wait_secs = 1000;
-
-						// Create a unique local socket name
-						OOBase::RefPtr<OOBase::Socket> ptrSocket;
-						err = static_cast<OOServer::RootErrCode_t>(sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket));
-						if (!err)
-							enum_sockets(m_registry,strName,ptrSocket,key);
-					}
+						enum_sockets(m_registry,strName,ptrSocket,key);
 				}
 			}
 		}
@@ -594,7 +584,7 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 	if (!err)
 	{
 		OOBase::LocalString strName;
-		if (!request.read(strName))
+		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;
@@ -643,7 +633,7 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 	if (!err)
 	{
 		OOBase::LocalString strName;
-		if (!request.read(strName))
+		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
 			err = OOServer::Errored;

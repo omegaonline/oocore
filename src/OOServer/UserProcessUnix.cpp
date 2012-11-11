@@ -116,7 +116,7 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 	if (User::is_debug())
 	{
 		OOBase::LocalString display;
-		display.getenv("DISPLAY");
+		OOBase::Environment::getenv("DISPLAY",display);
 		if (!display.empty())
 		{
 #if 0
@@ -164,7 +164,7 @@ void UserProcessUnix::kill()
 	}
 }
 
-User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Table<OOBase::String,OOBase::String,OOBase::LocalAllocator>& tabEnv)
+User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Environment::env_table_t& tabEnv)
 {
 	OOBase::SmartPtr<UserProcessUnix> ptrProcess = new (std::nothrow) UserProcessUnix();
 	if (!ptrProcess)

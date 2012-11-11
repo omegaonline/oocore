@@ -107,7 +107,7 @@ namespace
 
 	void discover_server_port(OOBase::LocalString& strPipe, const OOBase::Timeout timeout)
 	{
-		int err = strPipe.getenv("OMEGA_SESSION_ADDRESS");
+		int err = OOBase::Environment::getenv("OMEGA_SESSION_ADDRESS",strPipe);
 		if (err != 0)
 			OMEGA_THROW(err);
 

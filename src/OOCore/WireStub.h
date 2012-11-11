@@ -55,7 +55,7 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::IObject>      m_ptrObj;
 		StdObjectManager*                   m_pManager;
 
-		OOBase::HashTable<Omega::guid_t,OTL::ObjectPtr<Omega::Remoting::IStub>,OOBase::HeapAllocator,GuidHash> m_iid_map;
+		OOBase::HashTable<Omega::guid_t,OTL::ObjectPtr<Omega::Remoting::IStub>,OOBase::CrtAllocator,GuidHash> m_iid_map;
 
 		Omega::Remoting::IStub* FindStub(const Omega::guid_t& iid);
 		Omega::Remoting::IStub* CreateStub(const Omega::guid_t& iid);

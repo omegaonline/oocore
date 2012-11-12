@@ -158,39 +158,16 @@ int main(int argc, char* argv[])
 #define SEE_MASK_NOASYNC SEE_MASK_FLAG_DDEWAIT
 #endif
 
-namespace
-{
-	template <typename T>
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > to_wchar_t(const T& str)
-	{
-		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wsz;
-		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
-		if (len == 0)
-		{
-			DWORD dwErr = GetLastError();
-			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				LOG_ERROR_RETURN(("Failed to convert UTF8 to wchar_t: %s",OOBase::system_error_text(dwErr)),wsz);
-		}
-
-		wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
-		if (!wsz)
-			LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),wsz);
-		
-		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
-		wsz[len] = L'\0';
-		return wsz;
-	}
-}
-
 int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 {
 	OOBase::String strAppName;
 	if (!args.find("@0",strAppName))
 		LOG_ERROR_RETURN(("No arguments passed with --shellex"),EXIT_FAILURE);
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wszAppName = to_wchar_t(strAppName);
-	if (!wszAppName)
-		return EXIT_FAILURE;
+	OOBase::StackPtr<wchar_t,128> wszAppName;
+	int err = OOBase::Win32::utf8_to_wchar_t(strAppName,wszAppName);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
 	OOBase::LocalString strCmdLine;
 	for (size_t i = 1;;++i)
@@ -211,12 +188,12 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wszCmdLine;
+	OOBase::StackPtr<wchar_t,128> wszCmdLine;
 	if (!strCmdLine.empty())
 	{
-		wszCmdLine = to_wchar_t(strCmdLine);
-		if (!wszCmdLine)
-			return EXIT_FAILURE;
+		err = OOBase::Win32::utf8_to_wchar_t(strCmdLine,wszCmdLine);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}
 	
 	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);

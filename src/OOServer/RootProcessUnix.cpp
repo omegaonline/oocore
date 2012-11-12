@@ -433,31 +433,21 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(err)),err);
 		}
 
-		OOBase::SmartPtr<gid_t,OOBase::FreeDestructor<OOBase::CrtAllocator> > ptrGroups;
-		gid_t temp_gids[8] = {0};
-		gid_t* pGids = temp_gids;
+		OOBase::StackArrayPtr<gid_t> ptrGroups;
+		int ngroups = ptrGroups.count();
 
-		int ngroups = 0;
-		if (getgrouplist(pw->pw_name,pw->pw_gid,NULL,&ngroups) == -1)
+		if (getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups) == -1)
 		{
-			if (ngroups > static_cast<int>(sizeof(temp_gids)/sizeof(temp_gids[0])))
-			{
-				ptrGroups = static_cast<gid_t*>(OOBase::CrtAllocator::allocate(ngroups * sizeof(gid_t)));
-				if (!ptrGroups)
-				{
-					int err = errno;
-					LOG_ERROR_RETURN(("Failed to allocate groups: %s",OOBase::system_error_text(err)),err);
-				}
-				pGids = ptrGroups;
-			}
+			if (!ptrGroups.allocate(ngroups))
+				LOG_ERROR_RETURN(("Failed to allocate groups: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
 
-			getgrouplist(pw->pw_name,pw->pw_gid,pGids,&ngroups);
+			getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups);
 		}
 
 		for (int i = 0; i< ngroups && !bAllowed; ++i)
 		{
 			// Is the file's gid the same as the specified user's
-			if (pGids[i] == sb.st_gid)
+			if (ptrGroups[i] == sb.st_gid)
 			{
 				if (mode==O_RDONLY && (sb.st_mode & S_IRGRP))
 					bAllowed = true;
@@ -652,7 +642,10 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	if (err)
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::SmartPtr<char*,OOBase::FreeDestructor<OOBase::LocalAllocator> > ptrEnv = OOBase::Environment::get_envp(tabEnv);
+	OOBase::StackPtr<char*,1024> ptrEnv;
+	err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
 
 	// Create a pair of sockets
 	int fd[2] = {-1, -1};

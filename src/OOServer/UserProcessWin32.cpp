@@ -45,31 +45,16 @@ namespace
 	private:
 		OOBase::Win32::SmartHandle m_hProcess;
 	};
-
-	template <typename T>
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > to_wchar_t(const T& str)
-	{
-		int len = MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,NULL,0);
-		if (len == 0)
-		{
-			DWORD dwErr = GetLastError();
-			if (dwErr != ERROR_INSUFFICIENT_BUFFER)
-				OMEGA_THROW(dwErr);
-		}
-
-		OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > wsz = static_cast<wchar_t*>(OOBase::LocalAllocator::allocate((len+1) * sizeof(wchar_t)));
-		if (!wsz)
-			OMEGA_THROW(GetLastError());
-		
-		MultiByteToWideChar(CP_UTF8,0,str.c_str(),-1,wsz,len);
-		wsz[len] = L'\0';
-		return wsz;
-	}
 }
 
 bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
-	return (PathIsRelativeW(to_wchar_t(strPath)) != FALSE);
+	OOBase::StackPtr<wchar_t,256> path;
+	int err = OOBase::Win32::utf8_to_wchar_t(strPath,path);
+	if (err)
+		OMEGA_THROW(err);
+
+	return (PathIsRelativeW(path) != FALSE);
 }
 
 void UserProcessWin32::exec(const wchar_t* app_name, wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block)
@@ -154,23 +139,43 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 	strProcess += "OOSvrHost32.exe";
 #endif
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<OOBase::LocalAllocator> > cmd_line;
+	OOBase::StackPtr<wchar_t,64> cmd_line;
 	if (!is_host_process)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
-		cmd_line = to_wchar_t(" --shellex -- " + strExeName);
+
+		err = OOBase::Win32::utf8_to_wchar_t(" --shellex -- " + strExeName,cmd_line);
+		if (err)
+			OMEGA_THROW(err);
 	}
 	else
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strProcess.c_str());
-		cmd_line = to_wchar_t(strExeName);
+
+		err = OOBase::Win32::utf8_to_wchar_t(strExeName,cmd_line);
+		if (err)
+			OMEGA_THROW(err);
 	}
 	
-	const wchar_t* wd = NULL;
+	OOBase::StackPtr<wchar_t,256> wd;
 	if (!strWorkingDir.IsEmpty())
-		wd = to_wchar_t(strWorkingDir);
+	{
+		err = OOBase::Win32::utf8_to_wchar_t(strWorkingDir,wd);
+		if (err)
+			OMEGA_THROW(err);
+	}
 
-	ptrProcess->exec(to_wchar_t(strProcess),cmd_line,wd,OOBase::Environment::get_block(tabEnv));
+	OOBase::StackPtr<void,1024>& env_block;
+	err = OOBase::Environment::get_block(tabEnv,env_block);
+	if (err)
+		OMEGA_THROW(err);
+
+	OOBase::StackPtr<wchar_t,256> exe;
+	err = OOBase::Win32::utf8_to_wchar_t(strProcess,exe);
+	if (err)
+		OMEGA_THROW(err);
+
+	ptrProcess->exec(exe,cmd_line,wd,env_block);
 	return ptrProcess.detach();
 }
 

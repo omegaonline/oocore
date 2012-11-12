@@ -170,9 +170,14 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
+	OOBase::StackPtr<char*,1024> ptrEnv;
+	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
+	if (err)
+		OMEGA_THROW(err);
+
 	OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
 
-	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),OOBase::Environment::get_envp(tabEnv));
+	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),ptrEnv);
 	return ptrProcess.detach();
 }
 

@@ -261,6 +261,10 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	// Now set some defaults
 	if (!m_config_args.exists("regdb_path"))
 	{
+		OOBase::String k,v;
+		if ((err = k.assign("regdb_path")) != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
 #if defined(_WIN32)
 		wchar_t wszPath[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,wszPath);
@@ -276,24 +280,23 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		char szPath[MAX_PATH * 2] = {0};
-		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
-			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v)) != 0)
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
-		const char* szPath = REGDB_PATH;
-#endif
-		OOBase::String v,k;
-		err = k.assign("regdb_path");
-		if (!err)
-			err = v.assign(szPath);
-		if (!err)
-			err = m_config_args.insert(k,v);
+		err = v.assign(REGDB_PATH);
 		if (err)
-			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+#endif
+		if ((err = m_config_args.insert(k,v)) != 0)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text(err)),false);
 	}
 
 	if (!m_config_args.exists("binary_path"))
 	{
+		OOBase::String v,k;
+		if ((err = k.assign("binary_path")) != 0)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
 #if defined(_WIN32)
 		// Get our module name
 		wchar_t wszPath[MAX_PATH] = {0};
@@ -306,20 +309,16 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		char szPath[MAX_PATH * 2] = {0};
-		if (!WideCharToMultiByte(CP_UTF8,0,wszPath,-1,szPath,sizeof(szPath),NULL,NULL))
-			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text()),false);
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v)) != 0)
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
-		const char* szPath = LIBEXEC_DIR;
-#endif
-		OOBase::String v,k;
-		err = k.assign("binary_path");
-		if (!err)
-			err = v.assign(szPath);
-		if (!err)
-			err = m_config_args.insert(k,v);
+		err = v.assign(LIBEXEC_DIR);
 		if (err)
-			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+#endif
+
+		if ((err = m_config_args.insert(k,v)) != 0)
+			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text(err)),false);
 	}
 
 	return true;

@@ -1625,7 +1625,7 @@ namespace
 {
 	struct insert_t
 	{
-		unsigned long   index;
+		unsigned long  index;
 		long            alignment;
 		string_t        strFormat;
 		string_t        strSuffix;
@@ -1633,8 +1633,8 @@ namespace
 
 	struct format_state_t
 	{
-		OOBase::Bag<insert_t>* m_inserts;
-		string_t               m_strPrefix;
+		OOBase::Bag<insert_t> m_inserts;
+		string_t              m_strPrefix;
 	};
 
 	size_t find_brace(const string_t& strIn, size_t start, char brace)
@@ -1769,10 +1769,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Ome
 {
 	OOBase::SmartPtr<format_state_t> s = new (OOCore::throwing) format_state_t();
 
-	s->m_inserts = new (OOCore::throwing) OOBase::Bag<insert_t>();
-
 	// Split up the string
-	parse_format(format,s->m_strPrefix,*s->m_inserts);
+	parse_format(format,s->m_strPrefix,s->m_inserts);
 
 	return s.detach();
 }
@@ -1780,30 +1778,27 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Ome
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle))
 {
 	const format_state_t* s = static_cast<const format_state_t*>(handle);
-	if (!s || !s->m_inserts)
+	if (!s)
 		return NULL;
 
 	OOBase::SmartPtr<format_state_t> s_new = new (OOCore::throwing) format_state_t();
 
-	s_new->m_inserts = new (OOCore::throwing) OOBase::Bag<insert_t>();
 	s_new->m_strPrefix = s->m_strPrefix;
 
 	bool pushed = false;
-	for (size_t i=0; i!=s->m_inserts->size(); ++i)
+	for (size_t i=0; i!=s->m_inserts.size(); ++i)
 	{
-		const insert_t* ins = s->m_inserts->at(i);
+		const insert_t* ins = s->m_inserts.at(i);
 		if (!pushed && ins->index == (unsigned long)-1)
 		{
 			s_new->m_strPrefix += ins->strFormat + ins->strSuffix;
 		}
 		else
 		{
-			int err = s_new->m_inserts->add(*ins);
+			int err = s_new->m_inserts.add(*ins);
 			if (err != 0)
-			{
-				delete s_new->m_inserts;
 				OMEGA_THROW(err);
-			}
+
 			pushed = true;
 		}
 	}
@@ -1815,10 +1810,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,hand
 {
 	format_state_t* s = static_cast<format_state_t*>(handle);
 	if (s)
-	{
-		delete s->m_inserts;
 		delete s;
-	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt))
@@ -1827,12 +1819,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const voi
 	fmt.Clear();
 
 	const format_state_t* s = static_cast<const format_state_t*>(handle);
-	if (s && s->m_inserts)
+	if (s)
 	{
 		// Find the lowest index (from left to right)
-		for (size_t i=0; i!=s->m_inserts->size(); ++i)
+		for (size_t i=0; i!=s->m_inserts.size(); ++i)
 		{
-			const insert_t* ins = s->m_inserts->at(i);
+			const insert_t* ins = s->m_inserts.at(i);
 			if (ins->index < index)
 			{
 				index = ins->index;
@@ -1844,13 +1836,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const voi
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,handle,(in),unsigned long,index,(in),const Omega::string_t&,arg))
 {
-	const format_state_t* s = static_cast<const format_state_t*>(handle);
-	if (s && s->m_inserts)
+	format_state_t* s = static_cast<format_state_t*>(handle);
+	if (s)
 	{
 		// Update 'index'
-		for (size_t i=0;i<s->m_inserts->size();++i)
+		for (size_t i=0;i<s->m_inserts.size();++i)
 		{
-			insert_t* ins = s->m_inserts->at(i);
+			insert_t* ins = s->m_inserts.at(i);
 			if (ins->index == index)
 			{
 				ins->strFormat = align(arg,ins->alignment);
@@ -1865,7 +1857,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 		ins2.index = (unsigned long)-1;
 		ins2.strFormat = " " + arg;
 
-		int err = s->m_inserts->add(ins2);
+		int err = s->m_inserts.add(ins2);
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
@@ -1875,14 +1867,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),c
 {
 	string_t strPrefix;
 
-	const format_state_t* s = static_cast<const format_state_t*>(handle);
-	if (s && s->m_inserts)
+	format_state_t* s = const_cast<format_state_t*>(static_cast<const format_state_t*>(handle));
+	if (s)
 	{
 		strPrefix += s->m_strPrefix;
 
-		for (size_t i=0;i<s->m_inserts->size();++i)
+		for (size_t i=0;i<s->m_inserts.size();++i)
 		{
-			insert_t* ins = s->m_inserts->at(i);
+			insert_t* ins = s->m_inserts.at(i);
 			if (ins->index != (unsigned long)-1)
 			{
 				strPrefix += '{' + Formatting::ToString(ins->index);

@@ -84,9 +84,10 @@ namespace
 	bool IsInvalidPath(const string_t& strPath)
 	{
 #if defined(_WIN32)
-		wchar_t wpath[MAX_PATH] = {0};
-		if (MultiByteToWideChar(CP_UTF8,0,strPath.c_str(),-1,wpath,MAX_PATH-1) <= 0)
-			return true;
+		OOBase::StackPtr<wchar_t,512> wpath;
+		int err = OOBase::Win32::utf8_to_wchar_t(strPath,wpath);
+		if (err)
+			OMEGA_THROW(err);
 
 		return (PathIsRelativeW(wpath) != FALSE);
 #else

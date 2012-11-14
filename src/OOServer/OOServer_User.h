@@ -39,6 +39,7 @@
 #include <OOBase/SecurityWin32.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>
+#include <OOBase/BasicAllocator.h>
 
 #include <OOSvrBase/Proactor.h>
 

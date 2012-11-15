@@ -1021,32 +1021,27 @@ namespace
 		}
 	}
 
-	size_t parse_custom(const string_t& str, OOBase::Stack<string_t,OOBase::LocalAllocator>& parts)
+	size_t parse_custom(const string_t& str, string_t parts[3])
 	{
-		int err = 0;
+		size_t count = 0;
 		size_t pos = find_skip_quote(str,0,string_t::constant(";"));
 		if (pos == string_t::npos)
-			err = parts.push(str);
+			parts[count++] = str;
 		else
 		{
-			err = parts.push(str.Left(pos++));
-			if (err == 0)
+			parts[count++] = str.Left(pos++);
+
+			size_t pos2 = find_skip_quote(str,pos,string_t::constant(";"));
+			if (pos2 == string_t::npos)
+				parts[count++] = str.Mid(pos);
+			else
 			{
-				size_t pos2 = find_skip_quote(str,pos,string_t::constant(";"));
-				if (pos2 == string_t::npos)
-					err = parts.push(str.Mid(pos));
-				else
-				{
-					err = parts.push(str.Mid(pos,pos2-pos));
-					if (err == 0)
-						err = parts.push(str.Mid(pos2+1));
-				}
+				parts[count++] = str.Mid(pos,pos2-pos);
+				parts[count++] = str.Mid(pos2+1);
 			}
 		}
-		if (err != 0)
-			OMEGA_THROW(err);
 
-		return parts.size();
+		return count;
 	}
 
 	template <typename T>
@@ -1402,12 +1397,12 @@ namespace
 	template <typename T>
 	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID)
 	{
-		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
+		string_t parts[3];
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
 			if (val == 0)
-				return fmt_recurse(val,*parts.at(2),def_precision,false,PASS_LCID);
+				return fmt_recurse(val,parts[2],def_precision,false,PASS_LCID);
 
 			// Intentional fall-through
 
@@ -1415,16 +1410,16 @@ namespace
 #if defined(__clang__)
 			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),neg ? *parts.at(1) : *parts.at(0),def_precision,false,PASS_LCID);
+				return fmt_recurse(quick_abs(val,neg),neg ? parts[1] : parts[0],def_precision,false,PASS_LCID);
  			}
 #else
 			if (val < 0)
  			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),*parts.at(1),def_precision,false,PASS_LCID);
+				return fmt_recurse(quick_abs(val,neg),parts[1],def_precision,false,PASS_LCID);
  			}
 			else
-				return fmt_recurse(val,*parts.at(0),def_precision,false,PASS_LCID);
+				return fmt_recurse(val,parts[0],def_precision,false,PASS_LCID);
 #endif
 
 		default:
@@ -1523,9 +1518,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	// These need internationalisation...
 	if (!strFormat.IsEmpty())
 	{
-		OOBase::Stack<string_t,OOBase::LocalAllocator> parts;
+		string_t parts[3];
 		if (parse_custom(strFormat,parts) == 2)
-			return val ? *parts.at(0) : *parts.at(1);
+			return val ? parts[0] : parts[1];
 	}
 
 	return (val ? string_t::constant("true") : string_t::constant("false"));

@@ -50,7 +50,7 @@
 
 namespace
 {
-	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys, OOBase::AllocatorInstance& allocator)
+	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
 		int err2 = strSubKey.assign(strName.c_str(),strName.length());
@@ -81,14 +81,14 @@ namespace
 			LOG_ERROR_RETURN(("Failed to open the '/System/Services/%s/Dependencies' key in the registry",strName.c_str()),false);
 		else if (!err)
 		{
-			Db::Hive::registry_set_t names(allocator);
+			Db::Hive::registry_set_t names(queueNames.get_allocator());
 			err = ptrRegistry->enum_values(depskey,0,names);
 			if (err)
 				LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services/%s/Dependencies' values in the user registry",strName.c_str()),false);
 
 			for (OOBase::String strDep;names.pop(&strDep);)
 			{
-				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueKeys,allocator))
+				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueKeys))
 					return false;
 			}
 		}
@@ -96,7 +96,7 @@ namespace
 		return true;
 	}
 
-	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::LocalAllocator>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator>& queueKeys)
+	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
 		Omega::int64_t key = 0;
 		OOBase::LocalString strSubKey,strLink,strFullKeyName;
@@ -114,15 +114,14 @@ namespace
 		}
 
 		// Enum each service, building a queue of dependencies...
-		OOBase::StackAllocator<256> allocator;
-		Db::Hive::registry_set_t keys(allocator);
+		Db::Hive::registry_set_t keys(queueNames.get_allocator());
 		err = ptrRegistry->enum_subkeys(key,0,keys);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services' values in the registry"),false);
 
 		for (OOBase::String strName;keys.pop(&strName);)
 		{
-			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueKeys,allocator))
+			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueKeys))
 				return false;
 		}
 
@@ -455,8 +454,9 @@ bool Root::Manager::start_services()
 	guard.release();
 
 	// Get the list of services, ordered by dependency
-	OOBase::Queue<OOBase::String,OOBase::LocalAllocator> queueNames;
-	OOBase::Queue<Omega::int64_t,OOBase::LocalAllocator> queueKeys;
+	OOBase::StackAllocator<1024> allocator;
+	OOBase::Queue<OOBase::String,OOBase::AllocatorInstance> queueNames(allocator);
+	OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance> queueKeys(allocator);
 	if (!enum_services(m_registry,queueNames,queueKeys))
 		return false;
 

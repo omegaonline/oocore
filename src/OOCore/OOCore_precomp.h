@@ -39,6 +39,7 @@
 #include <OOBase/Posix.h>
 #include <OOBase/Win32.h>
 #include <OOBase/utf8.h>
+#include <OOBase/StackAllocator.h>
 
 #include "../oocore-config.h"
 

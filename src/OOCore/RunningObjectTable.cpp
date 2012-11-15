@@ -103,7 +103,8 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 		info.m_rot_cookie = GetUpstreamROT(true)->RegisterObject(oid,pObject,flags);
 	}
 
-	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
+	OOBase::StackAllocator<128> allocator;
+	OOBase::Stack<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
 	uint32_t nCookie = 0;
 
 	try
@@ -157,7 +158,8 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 
 void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject)
 {
-	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
+	OOBase::StackAllocator<128> allocator;
+	OOBase::Stack<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);

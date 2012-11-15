@@ -221,7 +221,8 @@ void OOCore::UserSession::close_compartments()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Do these in reverse order...
-	OOBase::Stack<OOBase::SmartPtr<Compartment>,OOBase::LocalAllocator> vecCompts;
+	OOBase::StackAllocator<128> allocator;
+	OOBase::Stack<OOBase::SmartPtr<Compartment>,OOBase::AllocatorInstance> vecCompts(allocator);
 	for (size_t i = m_mapCompartments.begin();i!=m_mapCompartments.npos;i=m_mapCompartments.next(i))
 		vecCompts.push(*m_mapCompartments.at(i));
 

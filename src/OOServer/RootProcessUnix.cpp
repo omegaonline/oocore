@@ -628,13 +628,13 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	}
 
 	// Get the environment settings
-	OOBase::TempAllocator<4096> temp_allocator;
-	OOBase::Environment::env_table_t tabSysEnv(temp_allocator);
+	OOBase::StackAllocator<2048> allocator;
+	OOBase::Environment::env_table_t tabSysEnv(allocator);
 	err = OOBase::Environment::get_current(tabSysEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::Environment::env_table_t tabEnv(temp_allocator);
+	OOBase::Environment::env_table_t tabEnv(tabSysEnv.get_allocator());
 	if (!load_user_env(process.m_ptrRegistry,tabEnv))
 		return false;
 

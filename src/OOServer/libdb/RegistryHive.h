@@ -59,7 +59,7 @@ namespace Db
 
 		bool open(int flags);
 
-		typedef OOBase::Set<OOBase::String,OOBase::LocalAllocator> registry_set_t;
+		typedef OOBase::Set<OOBase::String,OOBase::AllocatorInstance> registry_set_t;
 
 		hive_errors access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
 		hive_errors create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
@@ -102,7 +102,7 @@ namespace Db
 		hive_errors find_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
 		hive_errors insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask);
 		hive_errors check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
-		hive_errors delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName);
+		hive_errors delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName, OOBase::AllocatorInstance& allocator);
 		hive_errors value_exists_i(const Omega::int64_t& uKey, const char* pszValue);
 		hive_errors set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue);
 		void prepare_statement(Statement& stmt, const char* pszSql);

@@ -417,12 +417,14 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
+	OOBase::StackAllocator<256> allocator;
+
 	for (int attempts = 0;attempts < 2;++attempts)
 	{
 		// See if we have a process already
 		OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator> vecDead;
+		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> vecDead(allocator);
 		bool bFound = false;
 
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
@@ -510,7 +512,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 		return true;
 	}
 
-	Db::Hive::registry_set_t names;
+	Db::Hive::registry_set_t names(tabEnv.get_allocator());
 	err = ptrRegistry->enum_values(key,0,names);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text),false);

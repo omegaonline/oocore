@@ -43,6 +43,7 @@
 #include <OOBase/Stack.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Thread.h>
+#include <OOBase/StackAllocator.h>
 
 #include <OOSvrBase/Proactor.h>
 
@@ -576,7 +577,8 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Propogate the message to all user processes...
-		OOBase::Stack<Omega::uint32_t,OOBase::LocalAllocator> send_to;
+		OOBase::StackAllocator<256> allocator;
+		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> send_to(allocator);
 		for (size_t i=m_mapChannelIds.begin(); i!=m_mapChannelIds.npos; i=m_mapChannelIds.next(i))
 		{
 			// Always route upstream, and/or follow routing rules

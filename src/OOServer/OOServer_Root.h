@@ -42,7 +42,7 @@
 #include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
 #include <OOBase/BoundedQueue.h>
-#include <OOBase/BasicAllocator.h>
+#include <OOBase/StackAllocator.h>
 #include <OOBase/HandleTable.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Socket.h>

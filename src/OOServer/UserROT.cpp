@@ -71,7 +71,8 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 	if (ptrCC)
 		info.m_source = ptrCC->SourceId();
 
-	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
+	OOBase::StackAllocator<256> allocator;
+	OOBase::Stack<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
 	uint32_t nCookie = 0;
 
 	try
@@ -135,7 +136,8 @@ void User::RunningObjectTable::GetObject(const any_t& oid, const guid_t& iid, IO
 	if (flags == Remoting::RemoteMachine && !m_ptrROT)
 		search_flags = Activation::ExternalPublic;
 
-	OOBase::Stack<uint32_t,OOBase::LocalAllocator> revoke_list;
+	OOBase::StackAllocator<256> allocator;
+	OOBase::Stack<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);

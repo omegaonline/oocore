@@ -25,6 +25,7 @@
 
 #include <OOBase/Logger.h>
 #include <OOBase/CDRStream.h>
+#include <OOBase/StackAllocator.h>
 
 #include <stdlib.h>
 
@@ -420,7 +421,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName, OOBase::AllocatorInstance& allocator)
 {
 	// This one is recursive, within a transaction and a lock...
 
@@ -442,7 +443,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	}
 
 	// Get the set of subkeys
-	OOBase::Stack<Omega::int64_t,OOBase::LocalAllocator> ids;
+	OOBase::Stack<Omega::int64_t,OOBase::AllocatorInstance> ids(allocator);
 	{
 		Resetter resetter(m_EnumKeyIds_Stmt);
 		
@@ -471,7 +472,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	{
 		for (Omega::int64_t id;ids.pop(&id);)
 		{
-			err = delete_subkeys(id,channel_id,strSubKey);
+			err = delete_subkeys(id,channel_id,strSubKey,allocator);
 			if (err)
 			{
 				// Update strFullKeyName on err
@@ -544,7 +545,8 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	if (trans.begin() != SQLITE_OK)
 		return HIVE_ERRORED;
 
-	err = delete_subkeys(uKey,channel_id,strFullKeyName);
+	OOBase::StackAllocator<256> allocator;
+	err = delete_subkeys(uKey,channel_id,strFullKeyName,allocator);
 	if (err)
 		return err;
 

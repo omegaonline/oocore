@@ -29,7 +29,7 @@
 #include <OOBase/Thread.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Socket.h>
-#include <OOBase/StackPtr.h>
+#include <OOBase/StackAllocator.h>
 
 //////////////////////////////////////////////
 

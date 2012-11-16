@@ -170,7 +170,8 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	OOBase::StackPtr<char*,1024> ptrEnv;
+	OOBase::StackAllocator<2048> allocator;
+	OOBase::TempPtr<char*> ptrEnv(allocator);
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		OMEGA_THROW(err);

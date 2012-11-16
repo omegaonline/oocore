@@ -75,7 +75,9 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 	try
 	{
 		// Now loop reading socket handles from ptrSocket
-		for (OOBase::StackPtr<char,64> ptrName;;)
+		OOBase::StackAllocator<256> allocator;
+		OOBase::TempPtr<char> ptrName(allocator);
+		for (;;)
 		{
 			uint32_t len = 0;
 			err = ptrSocket->recv(len);
@@ -85,7 +87,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			if (!len)
 				break;
 
-			if (!ptrName.allocate(len))
+			if (!ptrName.reallocate(len))
 				OMEGA_THROW(ERROR_OUTOFMEMORY);
 
 			ptrSocket->recv(ptrName,len,true,err);

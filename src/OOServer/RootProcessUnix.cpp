@@ -87,7 +87,8 @@ namespace
 	bool get_registry_hive(uid_t uid, OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
 	{
 		int err = 0;
-		OOBase::POSIX::pw_info pw(uid);
+		OOBase::StackAllocator<256> allocator;
+		OOBase::POSIX::pw_info pw(allocator,uid);
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
@@ -301,7 +302,8 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	if (bChangeUid)
 	{
 		// get our pw_info
-		OOBase::POSIX::pw_info pw(m_uid);
+		OOBase::StackAllocator<256> allocator;
+		OOBase::POSIX::pw_info pw(allocator,m_uid);
 		if (!pw)
 			exit_msg("getpwuid() failed: %s\n",OOBase::system_error_text());
 
@@ -426,23 +428,22 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 	if (!bAllowed)
 	{
 		// Get the supplied user's group see if that is the same as the file's group
-		OOBase::POSIX::pw_info pw(m_uid);
+		OOBase::StackAllocator<512> allocator;
+		OOBase::POSIX::pw_info pw(allocator,m_uid);
 		if (!pw)
 		{
 			int err = errno;
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(err)),err);
 		}
 
-		OOBase::StackArrayPtr<gid_t> ptrGroups;
-		int ngroups = ptrGroups.count();
-
-		if (getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups) == -1)
+		OOBase::TempPtr<gid_t> ptrGroups(allocator);
+		int ngroups = 8;
+		do
 		{
-			if (!ptrGroups.allocate(ngroups))
+			if (!ptrGroups.reallocate(ngroups))
 				LOG_ERROR_RETURN(("Failed to allocate groups: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
-
-			getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups);
 		}
+		while (getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups) == -1);
 
 		for (int i = 0; i< ngroups && !bAllowed; ++i)
 		{
@@ -642,7 +643,7 @@ bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncL
 	if (err)
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::StackPtr<char*,1024> ptrEnv;
+	OOBase::TempPtr<char*> ptrEnv(allocator);
 	err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
@@ -693,7 +694,8 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 {
 	uid = getuid();
 
-	OOBase::POSIX::pw_info pw(uid);
+	OOBase::StackAllocator<256> allocator;
+	OOBase::POSIX::pw_info pw(allocator,uid);
 	if (!pw)
 	{
 		if (errno)
@@ -714,7 +716,8 @@ bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::A
 	bAgain = false;
 
 	// Resolve to uid
-	OOBase::POSIX::pw_info pw(strUName.c_str());
+	OOBase::StackAllocator<256> allocator;
+	OOBase::POSIX::pw_info pw(allocator,strUName.c_str());
 	if (!pw)
 	{
 		if (errno)

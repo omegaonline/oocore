@@ -12,7 +12,7 @@ testservice_la_LIBADD = $(top_builddir)/src/OOCore/OOCore64.la
 else
 testservice_la_LIBADD = $(top_builddir)/src/OOCore/OOCore32.la
 endif
-testservice_la_LDFLAGS += -avoid-version
+testservice_la_LDFLAGS += -avoid-version -lws2_32
 else
 testservice_la_LIBADD = $(top_builddir)/src/OOCore/liboocore.la
 testservice_la_LDFLAGS += -release $(VERSION) -no-undefined -export-symbols-regex '^(OID_|Omega_)'

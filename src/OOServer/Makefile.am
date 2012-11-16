@@ -76,7 +76,7 @@ oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_buil
 if WIN32
 if WIN64_HYBRID
 
-oosvruser_CPPFLAGS = -DWIN64_HYBRID $(AM_CPPFLAGS)
+oosvruser_CPPFLAGS += -DWIN64_HYBRID $(AM_CPPFLAGS)
 oosvruser_LDADD += ../OOCore/OOCore64.la
 
 pkglibexec_PROGRAMS += oosvrhost64

@@ -38,7 +38,7 @@
 #include <stdlib.h>
 
 #if defined(_WIN32)
-#include <Shlwapi.h>
+#include <shlwapi.h>
 #endif
 
 #if defined(HAVE_UNISTD_H)

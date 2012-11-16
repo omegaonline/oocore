@@ -25,7 +25,10 @@
 #include "./Registry.h"
 
 #if defined(_WIN32)
-#include <WinSock2.h>
+#if defined(__MINGW32__) && defined(_WINSOCKAPI_)
+#undef _WINSOCKAPI_
+#endif
+#include <winsock2.h>
 #endif
 
 namespace Omega

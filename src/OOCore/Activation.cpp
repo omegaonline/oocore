@@ -84,8 +84,9 @@ namespace
 	bool IsInvalidPath(const string_t& strPath)
 	{
 #if defined(_WIN32)
-		OOBase::StackPtr<wchar_t,512> wpath;
-		int err = OOBase::Win32::utf8_to_wchar_t(strPath,wpath);
+		OOBase::StackAllocator<512> allocator;
+		OOBase::TempPtr<wchar_t> wpath(allocator);
+		int err = OOBase::Win32::utf8_to_wchar_t(strPath.c_str(),wpath);
 		if (err)
 			OMEGA_THROW(err);
 

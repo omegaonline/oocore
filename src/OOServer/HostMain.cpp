@@ -38,7 +38,7 @@ extern "C" int _setenvp() { return 0; }
 #endif
 
 #if defined(_WIN32)
-#include <ShellAPI.h>
+#include <shellapi.h>
 #endif
 
 namespace
@@ -164,8 +164,9 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 	if (!args.find("@0",strAppName))
 		LOG_ERROR_RETURN(("No arguments passed with --shellex"),EXIT_FAILURE);
 
-	OOBase::StackPtr<wchar_t,128> wszAppName;
-	int err = OOBase::Win32::utf8_to_wchar_t(strAppName,wszAppName);
+	OOBase::StackAllocator<512> allocator;
+	OOBase::TempPtr<wchar_t> wszAppName(allocator);
+	int err = OOBase::Win32::utf8_to_wchar_t(strAppName.c_str(),wszAppName);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
@@ -188,10 +189,10 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}
 
-	OOBase::StackPtr<wchar_t,128> wszCmdLine;
+	OOBase::TempPtr<wchar_t> wszCmdLine(allocator);
 	if (!strCmdLine.empty())
 	{
-		err = OOBase::Win32::utf8_to_wchar_t(strCmdLine,wszCmdLine);
+		err = OOBase::Win32::utf8_to_wchar_t(strCmdLine.c_str(),wszCmdLine);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}

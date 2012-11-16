@@ -39,8 +39,8 @@
 #include <limits.h>
 
 #if defined(_WIN32)
-#include <Shlwapi.h>
-#include <ShlObj.h>
+#include <shlwapi.h>
+#include <shlobj.h>
 #endif
 
 template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
@@ -253,7 +253,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		OOBase::ConfigFile::error_pos_t error = {0};
 		err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
 		if (err == EINVAL)
-			LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %lu, column %lu",rpath,error.line,error.col),false);
+			LOG_ERROR_RETURN(("Failed read configuration file %s: Syntax error at line %u, column %u",rpath,error.line,error.col),false);
 		else if (err)
 			LOG_ERROR_RETURN(("Failed load configuration file %s: %s",rpath,OOBase::system_error_text(err)),false);
 	}

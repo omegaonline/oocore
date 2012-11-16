@@ -49,8 +49,9 @@ namespace
 
 bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
-	OOBase::StackPtr<wchar_t,256> path;
-	int err = OOBase::Win32::utf8_to_wchar_t(strPath,path);
+	OOBase::StackAllocator<256> allocator;
+	OOBase::TempPtr<wchar_t> path(allocator);
+	int err = OOBase::Win32::utf8_to_wchar_t(strPath.c_str(),path);
 	if (err)
 		OMEGA_THROW(err);
 
@@ -139,12 +140,14 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 	strProcess += "OOSvrHost32.exe";
 #endif
 
-	OOBase::StackPtr<wchar_t,64> cmd_line;
+	int err = 0;
+	OOBase::StackAllocator<2048> allocator;
+	OOBase::TempPtr<wchar_t> cmd_line(allocator);
 	if (!is_host_process)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
 
-		err = OOBase::Win32::utf8_to_wchar_t(" --shellex -- " + strExeName,cmd_line);
+		err = OOBase::Win32::utf8_to_wchar_t((" --shellex -- " + strExeName).c_str(),cmd_line);
 		if (err)
 			OMEGA_THROW(err);
 	}
@@ -152,26 +155,26 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strProcess.c_str());
 
-		err = OOBase::Win32::utf8_to_wchar_t(strExeName,cmd_line);
+		err = OOBase::Win32::utf8_to_wchar_t(strExeName.c_str(),cmd_line);
 		if (err)
 			OMEGA_THROW(err);
 	}
 	
-	OOBase::StackPtr<wchar_t,256> wd;
+	OOBase::TempPtr<wchar_t> wd(allocator);
 	if (!strWorkingDir.IsEmpty())
 	{
-		err = OOBase::Win32::utf8_to_wchar_t(strWorkingDir,wd);
+		err = OOBase::Win32::utf8_to_wchar_t(strWorkingDir.c_str(),wd);
 		if (err)
 			OMEGA_THROW(err);
 	}
 
-	OOBase::StackPtr<void,1024>& env_block;
+	OOBase::TempPtr<wchar_t> env_block(allocator);
 	err = OOBase::Environment::get_block(tabEnv,env_block);
 	if (err)
 		OMEGA_THROW(err);
 
-	OOBase::StackPtr<wchar_t,256> exe;
-	err = OOBase::Win32::utf8_to_wchar_t(strProcess,exe);
+	OOBase::TempPtr<wchar_t> exe(allocator);
+	err = OOBase::Win32::utf8_to_wchar_t(strProcess.c_str(),exe);
 	if (err)
 		OMEGA_THROW(err);
 

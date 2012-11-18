@@ -205,6 +205,8 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
+	OOBase::StackAllocator<512> allocator;
+
 	int err = 0;
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -280,7 +282,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v)) != 0)
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,allocator)) != 0)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
 		err = v.assign(REGDB_PATH);
@@ -309,7 +311,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v)) != 0)
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,allocator)) != 0)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
 		err = v.assign(LIBEXEC_DIR);

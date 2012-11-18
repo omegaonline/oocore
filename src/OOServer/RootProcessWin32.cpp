@@ -86,7 +86,7 @@ namespace
 			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
 				LOG_ERROR_RETURN(("CreateDirectoryW %ls failed: %s",szBuf,OOBase::system_error_text()),false);
 
-			if ((err = OOBase::Win32::wchar_t_to_utf8(szBuf,strHive)) != 0)
+			if ((err = OOBase::Win32::wchar_t_to_utf8(szBuf,strHive,allocator)) != 0)
 				LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 
 			if ((err = strHive.append("\\user.regdb")) != 0)
@@ -994,7 +994,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 
 bool Root::Manager::platform_spawn(OOBase::String& strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
-	OOBase::StackAllocator<4096> allocator;
+	OOBase::StackAllocator<16000> allocator;
 
 	int err = strAppName.append("OOSvrUser.exe");
 	if (err != 0)

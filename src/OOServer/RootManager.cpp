@@ -367,7 +367,7 @@ bool Root::Manager::spawn_sandbox()
 				return false;
 
 			OOBase::Logger::log(OOBase::Logger::Warning,
-								   APPNAME " is running under a user account that does not have the priviledges required to impersonate a different user.\n\n"
+								   APPNAME " is running under a user account that does not have the privileges required to impersonate a different user.\n\n"
 								   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 								   strOurUName.c_str());
@@ -385,7 +385,7 @@ bool Root::Manager::spawn_sandbox()
 			return false;
 
 		OOBase::Logger::log(OOBase::Logger::Warning,
-							   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
+							   APPNAME " is running under a user account that does not have the privileges required to create new processes as a different user.\n\n"
 							   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
@@ -475,7 +475,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 					return false;
 
 				OOBase::Logger::log(OOBase::Logger::Warning,
-									   APPNAME " is running under a user account that does not have the priviledges required to create new processes as a different user.\n\n"
+									   APPNAME " is running under a user account that does not have the privileges required to create new processes as a different user.\n\n"
 									   "Because the 'unsafe' mode is set the new user process will be started under the current user account '%s'.\n\n"
 									   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 									   strOurUName.c_str());
@@ -542,18 +542,17 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 
 Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
+	// Get the binary path
+	OOBase::String strBinPath;
+	if (!get_config_arg("binary_path",strBinPath))
+		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),0);
+
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
 	OOBase::RefPtr<OOServer::MessageConnection> ptrMC;
-
-	// Get the binary path
-	OOBase::String strAppName;
-	if (!get_config_arg("binary_path",strAppName))
-		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),0);
-
 	UserProcess process;
 	process.m_ptrRegistry = ptrRegistry;
-	if (!platform_spawn(strAppName,uid,session_id,process,channel_id,ptrMC,bAgain))
+	if (!platform_spawn(strBinPath,uid,session_id,process,channel_id,ptrMC,bAgain))
 		return 0;
 
 	// Insert the data into the process map...

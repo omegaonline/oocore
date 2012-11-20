@@ -597,7 +597,7 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 
 			// Send the stop message to the sandbox oosvruser process
 			OOBase::CDRStream request2;
-			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Stop)) || !request2.write(strName.c_str()))
+			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Stop)) || !request2.write_string(strName))
 			{
 				LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request2.last_error())));
 				err = OOServer::Errored;
@@ -643,7 +643,7 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 		else
 		{
 			OOBase::CDRStream request2;
-			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_IsRunning)) || !request2.write(strName.c_str()))
+			if (!request2.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_IsRunning)) || !request2.write_string(strName))
 			{
 				LOG_ERROR(("Failed to write request data: %s",OOBase::system_error_text(request2.last_error())));
 				err = OOServer::Errored;

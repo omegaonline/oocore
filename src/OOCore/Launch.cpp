@@ -135,7 +135,7 @@ namespace
 			get_session_id(strSid);
 
 			OOBase::CDRStream stream;
-			if (!stream.write(version) || !stream.write(strSid.c_str()))
+			if (!stream.write(version) || !stream.write_string(strSid))
 				OMEGA_THROW(stream.last_error());
 
 			err = root_socket->send(stream.buffer());

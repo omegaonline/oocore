@@ -252,7 +252,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 	OOBase::CDRStream stream;
 
 	// Send our port name
-	if (!stream.write(strNewPipe.c_str()))
+	if (!stream.write_string(strNewPipe))
 		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	if ((err = local_socket->send(stream.buffer())) != 0)
@@ -294,7 +294,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 
 	// Now bootstrap
 	stream.reset();
-	if (!stream.write(sandbox_channel) || !stream.write(strNewPipe.c_str()))
+	if (!stream.write(sandbox_channel) || !stream.write_string(strNewPipe))
 	{
 		ptrMC->shutdown();
 		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);

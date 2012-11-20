@@ -936,10 +936,10 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
 	OOBase::CDRStream request;
 	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Start)) ||
-			!request.write(strPipe.c_str()) ||
-			!request.write(strName.c_str()) ||
+			!request.write_string(strPipe) ||
+			!request.write_string(strName) ||
 			!request.write(key) ||
-			!request.write(strSecret.c_str()))
+			!request.write_string(strSecret))
 	{
 		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),OOServer::Errored);
 	}

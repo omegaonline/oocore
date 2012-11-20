@@ -199,7 +199,7 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 	OOBase::String strValue;
 	get_config_arg(strArg.c_str(),strValue);
 
-	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write(strValue.c_str(),strValue.length()))
+	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write_string(strValue))
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
@@ -752,7 +752,7 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 						UserProcess user_process;
 						if (get_user_process(uid,strSid,user_process))
 						{
-							if (!stream.write(user_process.m_strPipe.c_str()))
+							if (!stream.write_string(user_process.m_strPipe))
 								LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
 							else
 								ptrSocket->send(stream.buffer());

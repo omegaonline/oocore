@@ -199,12 +199,12 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 	response.write(err);
 	if (err != Db::HIVE_ERRORED)
 	{
-		response.write(strFullKeyName.c_str(),strFullKeyName.length());
+		response.write_string(strFullKeyName);
 
 		if (err == Db::HIVE_LINK)
 		{
-			response.write(strLink.c_str(),strLink.length());
-			response.write(strSubKey.c_str(),strSubKey.length());
+			response.write_string(strLink);
+			response.write_string(strSubKey);
 		}
 		else if (err == Db::HIVE_OK)
 		{
@@ -252,12 +252,12 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	response.write(err);
 	if (err != Db::HIVE_ERRORED)
 	{
-		response.write(strFullKeyName.c_str(),strFullKeyName.length());
+		response.write_string(strFullKeyName);
 
 		if (err == Db::HIVE_LINK)
 		{
-			response.write(strLink.c_str(),strLink.length());
-			response.write(strSubKey.c_str(),strSubKey.length());
+			response.write_string(strLink);
+			response.write_string(strSubKey);
 		}
 	}
 
@@ -326,7 +326,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 
 	response.write(err);
 	if (!err)
-		response.write(val.c_str());
+		response.write_string(val);
 
 	if (response.last_error())
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));

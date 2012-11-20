@@ -532,8 +532,8 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
 	OOBase::CDRStream request;
 	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Start)) ||
-			!request.write(strPipe.c_str()) ||
-			!request.write(strName.c_str()) ||
+			!request.write_string(strPipe) ||
+			!request.write_string(strName) ||
 			!request.write(key) ||
 			!request.write(secret))
 	{

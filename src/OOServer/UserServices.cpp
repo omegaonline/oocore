@@ -297,7 +297,7 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 			const ServiceEntry* entry = m_mapServices.at(pos);
 			if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
 			{
-				if (!response.write(m_mapServices.at(pos)->strName.c_str()))
+				if (!response.write_string(m_mapServices.at(pos)->strName))
 					break;
 			}
 			else
@@ -306,7 +306,7 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 
 		guard.release();
 
-		response.write("");
+		response.write("",0);
 
 		if (response.last_error())
 		{

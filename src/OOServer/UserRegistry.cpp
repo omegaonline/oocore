@@ -148,7 +148,8 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 
 	if (err != OOServer::Errored)
 	{
-		OOBase::LocalString strFullKeyName;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strFullKeyName(allocator);
 		if (!response.read_string(strFullKeyName))
 			OMEGA_THROW(response.last_error());
 
@@ -158,7 +159,7 @@ OOServer::RootErrCode_t RootKey::open_key(const string_t& strSubKey, Omega::Regi
 
 		if (err == OOServer::Linked)
 		{
-			OOBase::LocalString strLink,strLinkSubKey;
+			OOBase::LocalString strLink(allocator),strLinkSubKey(allocator);
 			if (!response.read_string(strLink) || !response.read_string(strLinkSubKey))
 				OMEGA_THROW(response.last_error());
 
@@ -236,7 +237,8 @@ any_t RootKey::GetValue(const string_t& strName)
 	else
 		ThrowCorrectException(err,m_strKey);
 
-	OOBase::LocalString strValue;
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString strValue(allocator);
 	if (!response.read_string(strValue))
 		OMEGA_THROW(response.last_error());
 
@@ -309,10 +311,11 @@ IKey::string_set_t RootKey::EnumSubKeys()
 
 	ThrowCorrectException(err,m_strKey);
 
+	OOBase::StackAllocator<512> allocator;
 	IKey::string_set_t sub_keys;
 	for (;;)
 	{
-		OOBase::LocalString strName;
+		OOBase::LocalString strName(allocator);
 		if (!response.read_string(strName))
 			OMEGA_THROW(response.last_error());
 
@@ -342,10 +345,11 @@ IKey::string_set_t RootKey::EnumValues()
 
 	ThrowCorrectException(err,m_strKey);
 
+	OOBase::StackAllocator<512> allocator;
 	IKey::string_set_t values;
 	for (;;)
 	{
-		OOBase::LocalString strName;
+		OOBase::LocalString strName(allocator);
 		if (!response.read_string(strName))
 			OMEGA_THROW(response.last_error());
 
@@ -378,7 +382,8 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 	string_t strFullKey = m_strKey;
 	if (err != OOServer::Errored)
 	{
-		OOBase::LocalString strFullKeyName;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strFullKeyName(allocator);
 		if (!response.read_string(strFullKeyName))
 			OMEGA_THROW(response.last_error());
 
@@ -388,7 +393,7 @@ void RootKey::DeleteSubKey(const string_t& strSubKey)
 
 		if (err == OOServer::Linked)
 		{
-			OOBase::LocalString strLink,strLinkSubKey;
+			OOBase::LocalString strLink(allocator),strLinkSubKey(allocator);
 			if (!response.read_string(strLink) || !response.read_string(strLinkSubKey))
 				OMEGA_THROW(response.last_error());
 

@@ -91,8 +91,11 @@ int main(int argc, char* argv[])
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
 
+	// Declare a local stack allocator
+	OOBase::StackAllocator<1024> allocator;
+
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args(allocator);
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("debug");
@@ -104,11 +107,11 @@ int main(int argc, char* argv[])
 #endif
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args;
+	OOBase::CmdArgs::results_t args(allocator);
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::String strErr;
+		OOBase::LocalString strErr(allocator);
 		if (args.find("missing",strErr))
 			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Missing value for option %s",strErr.c_str());
 		else if (args.find("unknown",strErr))
@@ -160,26 +163,25 @@ int main(int argc, char* argv[])
 
 int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 {
-	OOBase::String strAppName;
+	OOBase::LocalString strAppName(args.get_allocator());
 	if (!args.find("@0",strAppName))
 		LOG_ERROR_RETURN(("No arguments passed with --shellex"),EXIT_FAILURE);
 
-	OOBase::StackAllocator<512> allocator;
-	OOBase::TempPtr<wchar_t> wszAppName(allocator);
+	OOBase::TempPtr<wchar_t> wszAppName(args.get_allocator());
 	int err = OOBase::Win32::utf8_to_wchar_t(strAppName.c_str(),wszAppName);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
-	OOBase::LocalString strCmdLine;
+	OOBase::LocalString strCmdLine(args.get_allocator());
 	for (size_t i = 1;;++i)
 	{
-		OOBase::LocalString strId;
+		OOBase::LocalString strId(args.get_allocator());
 		int err = strId.printf("@%u",i);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
-		OOBase::String strArg;
-		if (!args.find(strId.c_str(),strArg))
+		OOBase::LocalString strArg(args.get_allocator());
+		if (!args.find(strId,strArg))
 			break;
 
 		err = strCmdLine.append(strArg.c_str());
@@ -189,7 +191,7 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}
 
-	OOBase::TempPtr<wchar_t> wszCmdLine(allocator);
+	OOBase::TempPtr<wchar_t> wszCmdLine(args.get_allocator());
 	if (!strCmdLine.empty())
 	{
 		err = OOBase::Win32::utf8_to_wchar_t(strCmdLine.c_str(),wszCmdLine);

@@ -38,7 +38,8 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 	else
 	{
 		ServiceEntry entry;
-		OOBase::LocalString strPipe,strSecret;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strPipe(allocator),strSecret(allocator);
 		int64_t key = 0;
 		if (!request.read_string(strPipe) ||
 				!request.read_string(entry.strName) ||
@@ -428,10 +429,11 @@ System::IServiceController::service_set_t User::ServiceController::GetRunningSer
 
 	ThrowCorrectException(err);
 
+	OOBase::StackAllocator<512> allocator;
 	System::IServiceController::service_set_t values;
 	for (;;)
 	{
-		OOBase::LocalString strName;
+		OOBase::LocalString strName(allocator);
 		if (!response.read_string(strName))
 			OMEGA_THROW(response.last_error());
 

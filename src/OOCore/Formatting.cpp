@@ -168,7 +168,7 @@ namespace
 		size_t pos = str.find(orig);
 		if (pos != str.npos && strcmp(orig,repl) != 0)
 		{
-			OOBase::LocalString str2;
+			OOBase::LocalString str2(str.get_allocator());
 			int err = str2.assign(str.c_str(),pos);
 			if (err == 0)
 			{
@@ -189,7 +189,7 @@ namespace
 
 	void insert(OOBase::LocalString& str, size_t pos, const char* sz)
 	{
-		OOBase::LocalString str2;
+		OOBase::LocalString str2(str.get_allocator());
 		int err = str2.assign(str.c_str(),pos);
 		if (err == 0)
 		{
@@ -207,7 +207,7 @@ namespace
 
 	void insert(OOBase::LocalString& str, size_t pos, size_t count, char c)
 	{
-		OOBase::LocalString str2;
+		OOBase::LocalString str2(str.get_allocator());
 		int err = str2.assign(str.c_str(),pos);
 
 		while (count-- > 0 && err == 0)
@@ -226,7 +226,7 @@ namespace
 
 	void erase(OOBase::LocalString& str, size_t start, size_t len)
 	{
-		OOBase::LocalString str2;
+		OOBase::LocalString str2(str.get_allocator());
 		int err = str2.assign(str.c_str(),start);
 		if (err == 0)
 		{
@@ -685,7 +685,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_currency(const T& val, int precision, EXTRA_LCID)
+	string_t fmt_currency(OOBase::AllocatorInstance& allocator, const T& val, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
@@ -705,7 +705,7 @@ namespace
 #endif
 		}
 
-		OOBase::LocalString ret;
+		OOBase::LocalString ret(allocator);
 		fmt_fixed_i(ret,val,precision);
 		if (!ret.empty() && (ret[0]=='-' || ret[0]=='+'))
 			erase(ret,0,1);
@@ -714,7 +714,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_number(const T& val, int precision, EXTRA_LCID)
+	string_t fmt_number(OOBase::AllocatorInstance& allocator, const T& val, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
@@ -734,7 +734,7 @@ namespace
 #endif
 		}
 
-		OOBase::LocalString ret;
+		OOBase::LocalString ret(allocator);
 		fmt_fixed_i(ret,val,precision);
 
 		do_intl(ret,true,PASS_LCID);
@@ -772,9 +772,9 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_decimal(const T& val, int precision)
+	string_t fmt_decimal(OOBase::AllocatorInstance& allocator, const T& val, int precision)
 	{
-		OOBase::LocalString str;
+		OOBase::LocalString str(allocator);
 		fmt_decimal_i(str,val,precision);
 		return str.c_str();
 	}
@@ -802,15 +802,15 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_hex(const T& val, bool capital, int precision)
+	string_t fmt_hex(OOBase::AllocatorInstance& allocator, const T& val, bool capital, int precision)
 	{
-		OOBase::LocalString str;
+		OOBase::LocalString str(allocator);
 		fmt_hex_i(str,val,capital,precision);
 		return str.c_str();
 	}
 
 	template <typename T>
-	string_t fmt_fixed(const T& val, int precision, EXTRA_LCID)
+	string_t fmt_fixed(OOBase::AllocatorInstance& allocator, const T& val, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 		{
@@ -830,7 +830,7 @@ namespace
 #endif
 		}
 
-		OOBase::LocalString ret;
+		OOBase::LocalString ret(allocator);
 		fmt_fixed_i(ret,val,precision);
 
 		do_intl(ret,false,PASS_LCID);
@@ -887,12 +887,12 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_scientific(const T& val, bool capital, int precision, EXTRA_LCID)
+	string_t fmt_scientific(OOBase::AllocatorInstance& allocator, const T& val, bool capital, int precision, EXTRA_LCID)
 	{
 		if (precision < 0)
 			precision = 6;
 
-		OOBase::LocalString str;
+		OOBase::LocalString str(allocator);
 		fmt_scientific_i(str,val,capital,precision,PASS_LCID);
 		return str.c_str();
 	}
@@ -936,9 +936,9 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_general(const T& val, bool capital, int precision, bool use_locale, EXTRA_LCID)
+	string_t fmt_general(OOBase::AllocatorInstance& allocator, const T& val, bool capital, int precision, bool use_locale, EXTRA_LCID)
 	{
-		OOBase::LocalString str;
+		OOBase::LocalString str(allocator);
 		fmt_general_i(str,val,capital,precision);
 
 		if (use_locale)
@@ -950,21 +950,21 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_round_trip(const T& val, int /*precision*/, EXTRA_LCID)
+	string_t fmt_round_trip(OOBase::AllocatorInstance& allocator, const T& val, int /*precision*/, EXTRA_LCID)
 	{
 		OMEGA_UNUSED_ARG(lc);
 #if defined(_WIN32)
 		OMEGA_UNUSED_ARG(lcid);
 #endif
-		return fmt_decimal(val,0);
+		return fmt_decimal(allocator,val,0);
 	}
 
-	string_t fmt_round_trip(System::Internal::optimal_param<double>::type val, int precision, EXTRA_LCID)
+	string_t fmt_round_trip(OOBase::AllocatorInstance& allocator, System::Internal::optimal_param<double>::type val, int precision, EXTRA_LCID)
 	{
 		string_t s;
 		for (int i=0; i<2; i+=2)
 		{
-			s = fmt_general(val,false,precision+i,false,PASS_LCID);
+			s = fmt_general(allocator,val,false,precision+i,false,PASS_LCID);
 
 			const char* end = NULL;
 			if (val == OOCore::strtod(s.c_str(),end))
@@ -1045,21 +1045,21 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID);
+	string_t fmt_custom(OOBase::AllocatorInstance& allocator, const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID);
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, int def_precision, bool bRecurse, EXTRA_LCID);
+	string_t fmt_recurse(OOBase::AllocatorInstance& allocator, const T& val, const string_t& strFormat, int def_precision, bool bRecurse, EXTRA_LCID);
 
 	template <typename T>
-	string_t fmt_rnd_away(const T& val)
+	string_t fmt_rnd_away(OOBase::AllocatorInstance& allocator, const T& val)
 	{
-		return fmt_decimal(val,0);
+		return fmt_decimal(allocator,val,0);
 	}
 
-	string_t fmt_rnd_away(System::Internal::optimal_param<double>::type val)
+	string_t fmt_rnd_away(OOBase::AllocatorInstance& allocator, System::Internal::optimal_param<double>::type val)
 	{
 		double res = ceil(fabs(val));
-		return fmt_decimal(res < 0.0 ? -res : res,0);
+		return fmt_decimal(allocator,res < 0.0 ? -res : res,0);
 	}
 
 	template <typename T>
@@ -1076,10 +1076,10 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom_i(const T& val, const string_t& strFormat, EXTRA_LCID)
+	string_t fmt_custom_i(OOBase::AllocatorInstance& allocator, const T& val, const string_t& strFormat, EXTRA_LCID)
 	{
 		if (strFormat == "##" || strFormat == "00")
-			return fmt_rnd_away(val);
+			return fmt_rnd_away(allocator,val);
 
 		bool negative;
 		T abs_val = quick_abs(val,negative);
@@ -1156,7 +1156,7 @@ namespace
 		}
 
 		// Create the base number string
-		OOBase::LocalString strNumber;
+		OOBase::LocalString strNumber(allocator);
 		if (sci != string_t::npos)
 		{
 			fmt_scientific_i(strNumber,abs_val,strFormat[sci] == 'E',precision,PASS_LCID);
@@ -1344,7 +1344,7 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_recurse(const T& val, const string_t& strFormat, int def_precision, bool bRecurse, EXTRA_LCID)
+	string_t fmt_recurse(OOBase::AllocatorInstance& allocator, const T& val, const string_t& strFormat, int def_precision, bool bRecurse, EXTRA_LCID)
 	{
 		num_fmt fmt;
 		bool capital;
@@ -1354,55 +1354,55 @@ namespace
 			switch (fmt)
 			{
 			case currency:
-				return fmt_currency(val,precision,PASS_LCID);
+				return fmt_currency(allocator,val,precision,PASS_LCID);
 
 			case decimal:
-				return fmt_decimal(val,precision);
+				return fmt_decimal(allocator,val,precision);
 
 			case scientific:
-				return fmt_scientific(val,capital,precision,PASS_LCID);
+				return fmt_scientific(allocator,val,capital,precision,PASS_LCID);
 
 			case fixed_point:
-				return fmt_fixed(val,precision,PASS_LCID);
+				return fmt_fixed(allocator,val,precision,PASS_LCID);
 
 			case number:
-				return fmt_number(val,precision,PASS_LCID);
+				return fmt_number(allocator,val,precision,PASS_LCID);
 
 			case hexadecimal:
-				return fmt_hex(val,capital,precision);
+				return fmt_hex(allocator,val,capital,precision);
 
 			case round_trip:
-				return fmt_round_trip(val,def_precision,PASS_LCID);
+				return fmt_round_trip(allocator,val,def_precision,PASS_LCID);
 
 			case general:
 				if (precision <= 0)
 					precision = def_precision;
 
-				return fmt_general(val,capital,precision,true,PASS_LCID);
+				return fmt_general(allocator,val,capital,precision,true,PASS_LCID);
 
 			default:
-				return fmt_general(val,capital,-1,true,PASS_LCID);
+				return fmt_general(allocator,val,capital,-1,true,PASS_LCID);
 			}
 		}
 		else if (bRecurse)
 		{
-			return fmt_custom(val,strFormat,def_precision,PASS_LCID);
+			return fmt_custom(allocator,val,strFormat,def_precision,PASS_LCID);
 		}
 		else
 		{
-			return fmt_custom_i(val,strFormat,PASS_LCID);
+			return fmt_custom_i(allocator,val,strFormat,PASS_LCID);
 		}
 	}
 
 	template <typename T>
-	string_t fmt_custom(const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID)
+	string_t fmt_custom(OOBase::AllocatorInstance& allocator, const T& val, const string_t& strFormat, int def_precision, EXTRA_LCID)
 	{
 		string_t parts[3];
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
 			if (val == 0)
-				return fmt_recurse(val,parts[2],def_precision,false,PASS_LCID);
+				return fmt_recurse(allocator,val,parts[2],def_precision,false,PASS_LCID);
 
 			// Intentional fall-through
 
@@ -1410,20 +1410,20 @@ namespace
 #if defined(__clang__)
 			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),neg ? parts[1] : parts[0],def_precision,false,PASS_LCID);
+				return fmt_recurse(allocator,quick_abs(val,neg),neg ? parts[1] : parts[0],def_precision,false,PASS_LCID);
  			}
 #else
 			if (val < 0)
  			{
  				bool neg;
-				return fmt_recurse(quick_abs(val,neg),parts[1],def_precision,false,PASS_LCID);
+				return fmt_recurse(allocator,quick_abs(val,neg),parts[1],def_precision,false,PASS_LCID);
  			}
 			else
-				return fmt_recurse(val,parts[0],def_precision,false,PASS_LCID);
+				return fmt_recurse(allocator,val,parts[0],def_precision,false,PASS_LCID);
 #endif
 
 		default:
-			return fmt_custom_i(val,strFormat,PASS_LCID);
+			return fmt_custom_i(allocator,val,strFormat,PASS_LCID);
 		}
 	}
 }
@@ -1456,7 +1456,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,v
 #endif
 	const lconv* lc = localeconv();
 
-	return fmt_recurse(val,strFormat,def_precision,true,PASS_LCID);
+	OOBase::StackAllocator<512> allocator;
+	return fmt_recurse(allocator,val,strFormat,def_precision,true,PASS_LCID);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
@@ -1487,7 +1488,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t
 #endif
 	const lconv* lc = localeconv();
 
-	return fmt_recurse(val,strFormat,def_precision,true,PASS_LCID);
+	OOBase::StackAllocator<512> allocator;
+	return fmt_recurse(allocator,val,strFormat,def_precision,true,PASS_LCID);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
@@ -1510,7 +1512,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_
 #endif
 	const lconv* lc = localeconv();
 
-	return fmt_recurse(val,strFormat,def_precision,true,PASS_LCID);
+	OOBase::StackAllocator<512> allocator;
+	return fmt_recurse(allocator,val,strFormat,def_precision,true,PASS_LCID);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,val,(in),const string_t&,strFormat))

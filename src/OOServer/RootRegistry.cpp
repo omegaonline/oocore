@@ -98,17 +98,12 @@ OOServer::RootErrCode_t Root::Manager::registry_open_hive(Omega::uint32_t channe
 	return OOServer::Ok;
 }
 
-Db::hive_errors Root::Manager::registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id)
+Db::hive_errors Root::Manager::registry_open_key(Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::LocalString strSubKey;
-	int err = strSubKey.assign(pszSubKey);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),Db::HIVE_ERRORED);
-
-	OOBase::LocalString strLink,strFullKeyName;
-	return m_registry->create_key(0,uKey,strSubKey,0,channel_id,strLink,strFullKeyName);
+	OOBase::LocalString strSubKey2(strSubKey),strLink(strSubKey.get_allocator()),strFullKeyName(strSubKey.get_allocator());
+	return m_registry->create_key(0,uKey,strSubKey2,0,channel_id,strLink,strFullKeyName);
 }
 
 OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
@@ -119,7 +114,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 		{
 			// We link to /System/Sandbox/
 
-			OOBase::LocalString strNew;
+			OOBase::LocalString strNew(strLink.get_allocator());
 			int err = strNew.concat("/System/Sandbox",strSubKey.c_str());
 			if (!err)
 				err = strSubKey.assign(strNew.c_str());
@@ -129,7 +124,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 		}
 		else
 		{
-			OOBase::LocalString strNew;
+			OOBase::LocalString strNew(strLink.get_allocator());
 			int err = strNew.concat(strLink.c_str()+12,strSubKey.c_str());
 			if (!err)
 				err = strSubKey.assign(strNew.c_str());
@@ -160,9 +155,10 @@ void Root::Manager::registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStr
 	Omega::int64_t uKey = 0;
 	Omega::byte_t nType;
 	Omega::int64_t uSubKey;
-	OOBase::LocalString strLink;
-	OOBase::LocalString strSubKey;
-	OOBase::LocalString strFullKeyName;
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString strLink(allocator);
+	OOBase::LocalString strSubKey(allocator);
+	OOBase::LocalString strFullKeyName(allocator);
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
@@ -222,9 +218,10 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
-	OOBase::LocalString strLink;
-	OOBase::LocalString strSubKey;
-	OOBase::LocalString strFullKeyName;
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString strLink(allocator);
+	OOBase::LocalString strSubKey(allocator);
+	OOBase::LocalString strFullKeyName(allocator);
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
@@ -290,7 +287,8 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
-		OOBase::LocalString strValue;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strValue(allocator);
 		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
@@ -306,7 +304,8 @@ void Root::Manager::registry_value_exists(Omega::uint32_t channel_id, OOBase::CD
 
 void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::LocalString val;
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString val(allocator);
 	OOBase::SmartPtr<Db::Hive> ptrHive;
 	Omega::int64_t uKey;
 	Omega::byte_t nType;
@@ -314,7 +313,7 @@ void Root::Manager::registry_get_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
 	{
-		OOBase::LocalString strValue;
+		OOBase::LocalString strValue(allocator);
 		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
@@ -341,7 +340,8 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
 	{
-		OOBase::LocalString strValue;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strValue(allocator);
 		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));
@@ -349,7 +349,7 @@ void Root::Manager::registry_set_value(Omega::uint32_t channel_id, OOBase::CDRSt
 		}
 		else
 		{
-			OOBase::LocalString val;
+			OOBase::LocalString val(allocator);
 			if (!request.read_string(val))
 			{
 				LOG_ERROR(("Failed to read value data from request: %s",OOBase::system_error_text(request.last_error())));
@@ -391,7 +391,8 @@ void Root::Manager::registry_delete_value(Omega::uint32_t channel_id, OOBase::CD
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
 	{
-		OOBase::LocalString strValue;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strValue(allocator);
 		if (!request.read_string(strValue))
 		{
 			LOG_ERROR(("Failed to read value name from request: %s",OOBase::system_error_text(request.last_error())));

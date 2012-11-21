@@ -57,9 +57,9 @@ namespace
 		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 
-		bool Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
+		bool Spawn(OOBase::LocalString& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
 		bool IsRunning() const;
-		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
+		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
 		OOBase::String m_sid;
@@ -68,34 +68,33 @@ namespace
 		pid_t          m_pid;
 	};
 
-	void exit_msg(const char* fmt, ...)
+	void exit_msg(OOBase::AllocatorInstance& allocator, const char* fmt, ...)
 	{
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::LocalString msg;
-		int err = msg.vprintf(fmt,args);
+		OOBase::TempPtr<char> msg(allocator);
+		int err = OOBase::vprintf(msg,fmt,args);
 
 		va_end(args);
 
 		if (err == 0)
-			OOBase::stderr_write(msg.c_str());
+			OOBase::stderr_write(msg);
 
 		_exit(127);
 	}
 
-	bool get_registry_hive(uid_t uid, OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::LocalString& strHive)
+	bool get_registry_hive(uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 	{
 		int err = 0;
-		OOBase::StackAllocator<256> allocator;
-		OOBase::POSIX::pw_info pw(allocator,uid);
+		OOBase::POSIX::pw_info pw(strSysDir.get_allocator(),uid);
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
 		bool bAddDot = false;
 		if (strUsersDir.empty())
 		{
-			OOBase::LocalString strHome;
+			OOBase::LocalString strHome(strSysDir.get_allocator());
 			err = strHome.assign(pw->pw_dir);
 			if (err)
 				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
@@ -261,7 +260,7 @@ RootProcessUnix::~RootProcessUnix()
 	}
 }
 
-bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
+bool RootProcessUnix::Spawn(OOBase::LocalString& strAppName, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
 {
 	m_bSandbox = (session_id == NULL);
 	int err = m_sid.assign(session_id);
@@ -302,38 +301,37 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	if (bChangeUid)
 	{
 		// get our pw_info
-		OOBase::StackAllocator<256> allocator;
-		OOBase::POSIX::pw_info pw(allocator,m_uid);
+		OOBase::POSIX::pw_info pw(strAppName.get_allocator(),m_uid);
 		if (!pw)
-			exit_msg("getpwuid() failed: %s\n",OOBase::system_error_text());
+			exit_msg(strAppName.get_allocator(),"getpwuid() failed: %s\n",OOBase::system_error_text());
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
-			exit_msg("setgid() failed: %s\n",OOBase::system_error_text());
+			exit_msg(strAppName.get_allocator(),"setgid() failed: %s\n",OOBase::system_error_text());
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-			exit_msg("initgroups() failed: %s\n",OOBase::system_error_text());
+			exit_msg(strAppName.get_allocator(),"initgroups() failed: %s\n",OOBase::system_error_text());
 
 		// Stop being privileged!
 		if (setuid(m_uid) != 0)
-			exit_msg("setuid() failed: %s\n",OOBase::system_error_text());
+			exit_msg(strAppName.get_allocator(),"setuid() failed: %s\n",OOBase::system_error_text());
 	}
 
 	// Build the pipe name
-	OOBase::LocalString strPipe;
+	OOBase::LocalString strPipe(strAppName.get_allocator());
 	if ((err = strPipe.printf("--pipe=%u",pass_fd)) != 0)
-		exit_msg("Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
+		exit_msg(strAppName.get_allocator(),"Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
 
 	// Close all open handles
 	int except[] = { STDERR_FILENO, pass_fd };
 	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
 	if (err)
-		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+		exit_msg(strAppName.get_allocator(),"close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 
 	int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
 	if (n == -1)
-		exit_msg("Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
+		exit_msg(strAppName.get_allocator(),"Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
 
 	// Now close off stdin/stdout/stderr
 	dup2(n,STDIN_FILENO);
@@ -343,11 +341,11 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 
 	if (Root::is_debug())
 	{
-		OOBase::LocalString display;
+		OOBase::LocalString display(strAppName.get_allocator());
 		OOBase::Environment::getenv("DISPLAY",display);
 		if (!display.empty())
 		{
-			OOBase::String strTitle;
+			OOBase::LocalString strTitle(strAppName.get_allocator());
 			if (m_bSandbox)
 				strTitle.assign("oosvruser:/sandbox");
 			else
@@ -374,7 +372,7 @@ bool RootProcessUnix::Spawn(OOBase::String& strAppName, const char* session_id, 
 	execve(strAppName.c_str(),(char* const*)argv,envp);
 
 	err = errno;
-	exit_msg("Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
+	exit_msg(strAppName.get_allocator(),"Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
 	return false;
 }
 
@@ -481,7 +479,7 @@ bool RootProcessUnix::IsSameUser(uid_t uid) const
 	return (m_uid == uid);
 }
 
-OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::String& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
+OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
 {
 	// Create a new socket
 	OOBase::POSIX::SmartFD fd(::socket(AF_UNIX,SOCK_STREAM,0));
@@ -521,7 +519,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	if (err)
 		LOG_ERROR_RETURN(("Failed to read random bytes: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
-	OOBase::LocalString strPipe;
+	OOBase::LocalString strPipe(strName.get_allocator());
 	if (addr.sun_path[0] == '\0')
 		err = strPipe.concat(" ",addr.sun_path+1);
 	else
@@ -600,7 +598,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	return OOServer::Errored;
 }
 
-bool Root::Manager::platform_spawn(OOBase::String strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
 {
 	int err = strAppName.append("oosvruser");
 	if (err != 0)
@@ -609,13 +607,14 @@ bool Root::Manager::platform_spawn(OOBase::String strAppName, OOSvrBase::AsyncLo
 	// Init the registry, if necessary
 	if (session_id && !process.m_ptrRegistry)
 	{
-		OOBase::String strRegPath, strUsersPath;
+		OOBase::LocalString strRegPath(strAppName.get_allocator());
 		if (!get_config_arg("regdb_path",strRegPath))
 			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
+		OOBase::LocalString strUsersPath(strAppName.get_allocator());
 		get_config_arg("users_path",strUsersPath);
 
-		OOBase::LocalString strHive;
+		OOBase::LocalString strHive(strAppName.get_allocator());
 		if (!get_registry_hive(uid,strRegPath,strUsersPath,strHive))
 			return false;
 
@@ -629,8 +628,7 @@ bool Root::Manager::platform_spawn(OOBase::String strAppName, OOSvrBase::AsyncLo
 	}
 
 	// Get the environment settings
-	OOBase::StackAllocator<2048> allocator;
-	OOBase::Environment::env_table_t tabSysEnv(allocator);
+	OOBase::Environment::env_table_t tabSysEnv(strAppName.get_allocator());
 	err = OOBase::Environment::get_current(tabSysEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
@@ -643,7 +641,7 @@ bool Root::Manager::platform_spawn(OOBase::String strAppName, OOSvrBase::AsyncLo
 	if (err)
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::TempPtr<char*> ptrEnv(allocator);
+	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
 	err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
@@ -694,8 +692,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 {
 	uid = getuid();
 
-	OOBase::StackAllocator<256> allocator;
-	OOBase::POSIX::pw_info pw(allocator,uid);
+	OOBase::POSIX::pw_info pw(strUName.get_allocator(),uid);
 	if (!pw)
 	{
 		if (errno)
@@ -711,13 +708,12 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
 {
 	bAgain = false;
 
 	// Resolve to uid
-	OOBase::StackAllocator<256> allocator;
-	OOBase::POSIX::pw_info pw(allocator,strUName.c_str());
+	OOBase::POSIX::pw_info pw(strUName.get_allocator(),strUName.c_str());
 	if (!pw)
 	{
 		if (errno)

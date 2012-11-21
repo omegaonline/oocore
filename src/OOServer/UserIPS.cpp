@@ -167,7 +167,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	bool is_host_process = false;
 	string_t strProcess,strWorkingDir;
 
-	OOBase::StackAllocator<4096> allocator;
+	OOBase::StackAllocator<512> allocator;
 	OOBase::Environment::env_table_t tabEnv(allocator);
 
 	// Find the name of the executable to run...
@@ -199,7 +199,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		Omega::Registry::IKey::string_set_t setVals = ptrKey->EnumValues();
 		for (Omega::Registry::IKey::string_set_t::const_iterator i=setVals.begin();i!=setVals.end();++i)
 		{
-			OOBase::String strKey,strVal;
+			OOBase::LocalString strKey(allocator),strVal(allocator);
 			int err = strKey.assign(i->c_str(),i->Length());
 			if (err)
 				OMEGA_THROW(err);
@@ -215,7 +215,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 
 	// Get the environment settings
-	OOBase::Environment::env_table_t tabSysEnv(tabEnv.get_allocator());
+	OOBase::Environment::env_table_t tabSysEnv(allocator);
 	int err = OOBase::Environment::get_current(tabSysEnv);
 	if (err)
 		OMEGA_THROW(err);

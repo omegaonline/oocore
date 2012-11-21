@@ -118,7 +118,7 @@ static int help()
 	return EXIT_SUCCESS;
 }
 
-static bool key_path(const OOBase::String& str, Omega::string_t& key)
+static bool key_path(const OOBase::LocalString& str, Omega::string_t& key)
 {
 	if (str == "/")
 		return true;
@@ -130,7 +130,7 @@ static bool key_path(const OOBase::String& str, Omega::string_t& key)
 	return true;
 }
 
-static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::string_t& value)
+static bool value_path(const OOBase::LocalString& str, Omega::string_t& key, Omega::string_t& value)
 {
 	if (str.empty() || str[str.length()-1] == '/')
 		return false;
@@ -152,18 +152,21 @@ static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::s
 
 int main(int argc, char* argv[])
 {
+	// Declare a local stack allocator
+	OOBase::StackAllocator<1024> allocator;
+
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args(allocator);
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("args",0,true);
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args;
+	OOBase::CmdArgs::results_t args(allocator);
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::String strErr;
+		OOBase::LocalString strErr(allocator);
 		if (args.find("missing",strErr))
 		{
 			OOBase::stderr_write("Missing value for option ");
@@ -188,15 +191,15 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return version();
 
-	OOBase::String method;
+	OOBase::LocalString method(allocator);
 	if (!args.find("@0",method))
 	{
 		OOBase::stderr_write("Mode expected, use --help for information.");
 		return EXIT_FAILURE;
 	}
 
-	OOBase::String params[2];
-	if (!args.find("@1",params[0]))
+	OOBase::LocalString param0(allocator),param1(allocator),param2(allocator);
+	if (!args.find("@1",param0))
 	{
 		OOBase::stderr_write("Too few arguments to '");
 		OOBase::stderr_write(method.c_str());
@@ -210,7 +213,7 @@ int main(int argc, char* argv[])
 		OOBase::stderr_write("', use --help for information.");
 		return EXIT_FAILURE;
 	}
-	args.find("@2",params[1]);
+	args.find("@2",param1);
 
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
@@ -226,15 +229,15 @@ int main(int argc, char* argv[])
 
 		if (method == "set")
 		{
-			if (!value_path(params[0],key,value))
+			if (!value_path(param0,key,value))
 				OOBase::stderr_write("set requires a value_path, use --help for information.");
 			else
 			{
-				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,params[1].c_str());
+				OTL::ObjectPtr<Omega::Registry::IKey>(key)->SetValue(value,param1.c_str());
 				result = EXIT_SUCCESS;
 			}
 		}
-		else if (!params[1].empty())
+		else if (!param1.empty())
 		{
 			OOBase::stderr_write("Too many arguments to '");
 			OOBase::stderr_write(method.c_str());
@@ -242,7 +245,7 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "get")
 		{
-			if (!value_path(params[0],key,value))
+			if (!value_path(param0,key,value))
 				OOBase::stderr_write("get requires a value_path, use --help for information.");
 			else
 			{
@@ -252,12 +255,12 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "delete")
 		{
-			if (key_path(params[0],key))
+			if (key_path(param0,key))
 			{
 				OTL::ObjectPtr<Omega::Registry::IKey>("")->DeleteSubKey(key);
 				result = EXIT_SUCCESS;
 			}
-			if (value_path(params[0],key,value))
+			if (value_path(param0,key,value))
 			{
 				OTL::ObjectPtr<Omega::Registry::IKey>(key)->DeleteValue(value);
 				result = EXIT_SUCCESS;
@@ -267,16 +270,16 @@ int main(int argc, char* argv[])
 		}
 		else if (method == "exists")
 		{
-			if (key_path(params[0],key))
+			if (key_path(param0,key))
 				result = (OTL::ObjectPtr<Omega::Registry::IKey>("")->IsKey(key) ? EXIT_SUCCESS : EXIT_FAILURE);
-			if (value_path(params[0],key,value))
+			if (value_path(param0,key,value))
 				result = (OTL::ObjectPtr<Omega::Registry::IKey>(key)->IsValue(value) ? EXIT_SUCCESS : EXIT_FAILURE);
 			else
 				OOBase::stderr_write("exists requires a key_path or a value_path, use --help for information.");
 		}
 		else if (method == "list")
 		{
-			if (!key_path(params[0],key))
+			if (!key_path(param0,key))
 				OOBase::stderr_write("list requires a key_path, use --help for information.");
 			else
 			{

@@ -50,9 +50,9 @@
 
 namespace
 {
-	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::String& strName, OOBase::Queue<OOBase::String,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
+	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::LocalString& strName, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
-		OOBase::LocalString strSubKey,strLink,strFullKeyName;
+		OOBase::LocalString strSubKey(queueNames.get_allocator()),strLink(queueNames.get_allocator()),strFullKeyName(queueNames.get_allocator());
 		int err2 = strSubKey.assign(strName.c_str(),strName.length());
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
@@ -86,7 +86,7 @@ namespace
 			if (err)
 				LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services/%s/Dependencies' values in the user registry",strName.c_str()),false);
 
-			for (OOBase::String strDep;names.pop(&strDep);)
+			for (OOBase::LocalString strDep(names.get_allocator());names.pop(&strDep);)
 			{
 				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueKeys))
 					return false;
@@ -96,10 +96,10 @@ namespace
 		return true;
 	}
 
-	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::String,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
+	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
 		Omega::int64_t key = 0;
-		OOBase::LocalString strSubKey,strLink,strFullKeyName;
+		OOBase::LocalString strSubKey(queueNames.get_allocator()),strLink(queueNames.get_allocator()),strFullKeyName(queueNames.get_allocator());
 		int err2 = strSubKey.assign("/System/Services");
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
@@ -119,7 +119,7 @@ namespace
 		if (err)
 			LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services' values in the registry"),false);
 
-		for (OOBase::String strName;keys.pop(&strName);)
+		for (OOBase::LocalString strName(keys.get_allocator());keys.pop(&strName);)
 		{
 			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueKeys))
 				return false;
@@ -128,9 +128,9 @@ namespace
 		return true;
 	}
 
-	OOServer::RootErrCode find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, Omega::int64_t& key)
+	OOServer::RootErrCode find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, Omega::int64_t& key)
 	{
-		OOBase::LocalString strSubKey,strLink,strFullKeyName;
+		OOBase::LocalString strSubKey(strName.get_allocator()),strLink(strName.get_allocator()),strFullKeyName(strName.get_allocator());
 		int err2 = strSubKey.printf("/System/Services/%s",strName.c_str());
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),OOServer::Errored);
@@ -169,9 +169,9 @@ namespace
 	}
 
 #if defined(_WIN32)
-	bool create_and_forward_socket(DWORD pid, const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
+	bool create_and_forward_socket(DWORD pid, const OOBase::LocalString& strName, const OOBase::LocalString& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
 #else
-	bool create_and_forward_socket(const OOBase::String& strName, const OOBase::String& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
+	bool create_and_forward_socket(const OOBase::LocalString& strName, const OOBase::LocalString& strSocketName, const OOBase::LocalString& strValue, OOBase::RefPtr<OOBase::Socket> ptrSocket)
 #endif
 	{
 		/* The format is:
@@ -195,7 +195,7 @@ namespace
 		ai.ai_flags = AI_PASSIVE | AI_NUMERICHOST | AI_NUMERICSERV | AI_ADDRCONFIG;
 
 		// Parse address family
-		OOBase::LocalString strSub;
+		OOBase::LocalString strSub(strName.get_allocator());
 		size_t pos = 0;
 		if (!split_string(strValue,pos,strSub))
 			return false;
@@ -259,7 +259,7 @@ namespace
 		// Bind if required
 		if (!strSub.empty())
 		{
-			OOBase::LocalString strPort;
+			OOBase::LocalString strPort(strName.get_allocator());
 			if (!split_string(strValue,pos,strPort))
 			{
 				OOBase::Net::close_socket(new_sock);
@@ -373,7 +373,7 @@ namespace
 		return true;
 	}
 
-	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::String& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const Omega::int64_t& key)
+	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const Omega::int64_t& key)
 	{
 #if defined(_WIN32)
 		DWORD pid = 0;
@@ -386,7 +386,7 @@ namespace
 #endif
 
 		Omega::int64_t sub_key = 0;
-		OOBase::LocalString strSubKey,strLink,strFullKeyName;
+		OOBase::LocalString strSubKey(strName.get_allocator()),strLink(strName.get_allocator()),strFullKeyName(strName.get_allocator());
 		int err2 = strSubKey.assign("Connections");
 		if (err2)
 			LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err2)));
@@ -401,14 +401,13 @@ namespace
 			else
 			{
 				// Enum each connection...
-				OOBase::StackAllocator<256> allocator;
-				Db::Hive::registry_set_t values(allocator);
+				Db::Hive::registry_set_t values(strName.get_allocator());
 				err = ptrRegistry->enum_values(sub_key,0,values);
 				if (err)
 					LOG_ERROR(("Failed to enumerate the '/System/Services/%s/Connections' values in the registry",strName.c_str()));
 				else
 				{
-					OOBase::String strSocketName;
+					OOBase::LocalString strSocketName(strName.get_allocator());
 					for (unsigned long idx = 0;values.pop(&strSocketName);)
 					{
 						// Make sure we have some kind of name!
@@ -418,7 +417,7 @@ namespace
 						if (strSocketName[0] == '.')
 							continue;
 
-						OOBase::LocalString strValue;
+						OOBase::LocalString strValue(strName.get_allocator());
 						err = ptrRegistry->get_value(sub_key,strSocketName.c_str(),0,strValue);
 						if (err)
 							LOG_ERROR(("Failed to get '%s' from '/System/Services/%s/Connections' in the registry",strSocketName.c_str(),strName.c_str()));
@@ -454,13 +453,13 @@ bool Root::Manager::start_services()
 	guard.release();
 
 	// Get the list of services, ordered by dependency
-	OOBase::StackAllocator<1024> allocator;
-	OOBase::Queue<OOBase::String,OOBase::AllocatorInstance> queueNames(allocator);
+	OOBase::StackAllocator<512> allocator;
+	OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance> queueNames(allocator);
 	OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance> queueKeys(allocator);
 	if (!enum_services(m_registry,queueNames,queueKeys))
 		return false;
 
-	OOBase::String strName;
+	OOBase::LocalString strName(allocator);
 	Omega::int64_t key;
 	while (queueNames.pop(&strName) && queueKeys.pop(&key))
 	{
@@ -468,7 +467,7 @@ bool Root::Manager::start_services()
 
 		// Get the timeout value
 		unsigned long wait_secs = 0;
-		OOBase::LocalString strTimeout;
+		OOBase::LocalString strTimeout(allocator);
 		if (m_registry->get_value(key,"Timeout",0,strTimeout) == Db::HIVE_OK)
 			wait_secs = strtoul(strTimeout.c_str(),NULL,10);
 		
@@ -520,7 +519,8 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 	if (!err)
 	{
-		OOBase::String strName;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strName(allocator);
 		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
@@ -550,7 +550,7 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 					// Get the timeout value
 					unsigned long wait_secs = 0;
-					OOBase::LocalString strTimeout;
+					OOBase::LocalString strTimeout(allocator);
 					if (m_registry->get_value(key,"Timeout",0,strTimeout) == Db::HIVE_OK)
 						wait_secs = strtoul(strTimeout.c_str(),NULL,10);
 
@@ -585,7 +585,8 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 
 	if (!err)
 	{
-		OOBase::LocalString strName;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strName(allocator);
 		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));
@@ -634,7 +635,8 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 
 	if (!err)
 	{
-		OOBase::LocalString strName;
+		OOBase::StackAllocator<512> allocator;
+		OOBase::LocalString strName(allocator);
 		if (!request.read_string(strName))
 		{
 			LOG_ERROR(("Failed to read request data: %s",OOBase::system_error_text(request.last_error())));

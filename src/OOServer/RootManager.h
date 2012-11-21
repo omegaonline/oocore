@@ -55,7 +55,7 @@ namespace Root
 		Manager();
 		virtual ~Manager();
 
-		int run(const OOBase::CmdArgs::results_t& cmd_args);
+		int run(OOBase::AllocatorInstance& allocator, const OOBase::CmdArgs::results_t& cmd_args);
 
 		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs = 0);
 
@@ -69,13 +69,13 @@ namespace Root
 
 		// Init and run members
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
-		bool init_database();
-		bool spawn_sandbox();
+		bool init_database(OOBase::AllocatorInstance& allocator);
+		bool spawn_sandbox(OOBase::AllocatorInstance& allocator);
 		static int run_proactor(void* param);
 
 		// Configuration members
 		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
-		bool get_config_arg(const char* name, OOBase::String& val);
+		bool get_config_arg(const char* name, OOBase::LocalString& val);
 
 		// Client handling members
 		SECURITY_ATTRIBUTES                 m_sa;
@@ -83,7 +83,7 @@ namespace Root
 #if defined(_WIN32)
 		OOBase::Win32::sec_descript_t       m_sd;
 #endif
-		bool start_client_acceptor();
+		bool start_client_acceptor(OOBase::AllocatorInstance& allocator);
 		static void accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
 		void accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err);
 
@@ -108,12 +108,12 @@ namespace Root
 		mapUserProcessesType                                   m_mapUserProcesses;
 
 		bool load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv);
-		bool platform_spawn(OOBase::String strBinPath, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
+		bool platform_spawn(OOBase::LocalString strBinPath, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
-		Omega::uint32_t spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain);
+		Omega::uint32_t spawn_user(OOBase::AllocatorInstance& allocator, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process);
 		bool get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName);
-		bool get_sandbox_uid(const OOBase::String& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
+		bool get_sandbox_uid(const OOBase::LocalString& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain);
 
 		// Message handling members
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
@@ -125,7 +125,7 @@ namespace Root
 		// Registry members
 		OOBase::SmartPtr<Db::Hive> m_registry;
 
-		Db::hive_errors registry_open_key(Omega::int64_t& uKey, const char* pszSubKey, Omega::uint32_t channel_id);
+		Db::hive_errors registry_open_key(Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id);
 		bool registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::access_rights_t access_mask, int& err);
 		OOServer::RootErrCode_t registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
 		OOServer::RootErrCode_t registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);

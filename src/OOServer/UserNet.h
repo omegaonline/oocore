@@ -54,7 +54,7 @@ namespace User
 		void process_here_i(OOBase::CDRStream& input);
 		void send_away_i(Omega::Remoting::IMessage* pPayload, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		
-		static void process_here(void* pParams, OOBase::CDRStream& input);
+		static void process_here(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance&);
 
 	// IChannelSink members
 	public:

@@ -95,18 +95,18 @@ namespace
 		return true;
 	}
 
-	int Failure(const char* fmt, ...)
+	int Failure(OOBase::AllocatorInstance& allocator, const char* fmt, ...)
 	{
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::LocalString msg;
-		int err = msg.vprintf(fmt,args);
+		OOBase::TempPtr<char> msg(allocator);
+		int err = OOBase::vprintf(msg,fmt,args);
 
 		va_end(args);
 
 		if (err == 0)
-			OOBase::stderr_write(msg.c_str());
+			OOBase::stderr_write(msg);
 
 		return EXIT_FAILURE;
 	}
@@ -124,15 +124,18 @@ int main(int argc, const char* argv[])
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure_early);
 
+	// Declare a local stack allocator
+	OOBase::StackAllocator<1024> allocator;
+
 	// Get the debug ENV var
 	{
-		OOBase::LocalString str;
+		OOBase::LocalString str(allocator);
 		OOBase::Environment::getenv("OMEGA_DEBUG",str);
 		s_is_debug = (str == "true");
 	}
 
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args(allocator);
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("conf-file",'f',true);
@@ -140,17 +143,17 @@ int main(int argc, const char* argv[])
 	cmd_args.add_option("debug");
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args;
+	OOBase::CmdArgs::results_t args(allocator);
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::String strErr;
+		OOBase::LocalString strErr(allocator);
 		if (args.find("missing",strErr))
-			return Failure("Missing value for option %s\n",strErr.c_str());
+			return Failure(allocator,"Missing value for option %s\n",strErr.c_str());
 		else if (args.find("unknown",strErr))
-			return Failure("Unknown option %s\n",strErr.c_str());
+			return Failure(allocator,"Unknown option %s\n",strErr.c_str());
 		else
-			return Failure("Failed to parse command line: %s\n",OOBase::system_error_text(err));
+			return Failure(allocator,"Failed to parse command line: %s\n",OOBase::system_error_text(err));
 	}
 
 	if (args.exists("debug"))
@@ -162,22 +165,25 @@ int main(int argc, const char* argv[])
 	if (args.exists("version"))
 		return Version();
 
-	OOBase::String strPidfile;
-	args.find("pidfile",strPidfile);
-
-	bool already_running = false;
-	const char* pszPidFile = strPidfile.empty() ? "/var/run/" APPNAME ".pid" : strPidfile.c_str();
+	OOBase::LocalString strPidfile(allocator);
+	if (!args.find("pidfile",strPidfile))
+	{
+		err = strPidfile.assign("/var/run/" APPNAME ".pid");
+		if (err)
+			return Failure(allocator,"Failed to assign string: %s\n",OOBase::system_error_text(err));
+	}
 
 	// Daemonize if not debug
+	bool already_running = false;
 	if (!s_is_debug)
-		err = OOBase::Server::daemonize(pszPidFile,already_running);
+		err = OOBase::Server::daemonize(strPidfile,already_running);
 	else
-		err = OOBase::Server::create_pid_file(pszPidFile,already_running);
+		err = OOBase::Server::create_pid_file(strPidfile,already_running);
 
 	if (err)
-		return Failure("Failed to create pid_file: %s\n",OOBase::system_error_text(err));
+		return Failure(allocator,"Failed to create pid_file: %s\n",OOBase::system_error_text(err));
 	else if (already_running)
-		return Failure(APPNAME " is already running\n");
+		return Failure(allocator,APPNAME " is already running\n");
 
 	// Start the logger - delayed because we may have forked
 	OOBase::Logger::open("OOServer",__FILE__);
@@ -224,7 +230,7 @@ int main(int argc, const char* argv[])
 #endif
 
 	// Run the one and only Root::Manager instance
-	return Root::Manager().run(args);
+	return Root::Manager().run(allocator,args);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

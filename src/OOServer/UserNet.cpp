@@ -247,7 +247,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	}
 }
 
-void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
+void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance&)
 {
 	RemoteChannel* pThis = static_cast<RemoteChannel*>(pParams);
 

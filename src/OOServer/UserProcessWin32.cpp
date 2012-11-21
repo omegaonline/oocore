@@ -141,8 +141,7 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 #endif
 
 	int err = 0;
-	OOBase::StackAllocator<2048> allocator;
-	OOBase::TempPtr<wchar_t> cmd_line(allocator);
+	OOBase::TempPtr<wchar_t> cmd_line(tabEnv.get_allocator());
 	if (!is_host_process)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
@@ -160,7 +159,7 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 			OMEGA_THROW(err);
 	}
 	
-	OOBase::TempPtr<wchar_t> wd(allocator);
+	OOBase::TempPtr<wchar_t> wd(tabEnv.get_allocator());
 	if (!strWorkingDir.IsEmpty())
 	{
 		err = OOBase::Win32::utf8_to_wchar_t(strWorkingDir.c_str(),wd);
@@ -168,12 +167,12 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 			OMEGA_THROW(err);
 	}
 
-	OOBase::TempPtr<wchar_t> env_block(allocator);
+	OOBase::TempPtr<wchar_t> env_block(tabEnv.get_allocator());
 	err = OOBase::Environment::get_block(tabEnv,env_block);
 	if (err)
 		OMEGA_THROW(err);
 
-	OOBase::TempPtr<wchar_t> exe(allocator);
+	OOBase::TempPtr<wchar_t> exe(tabEnv.get_allocator());
 	err = OOBase::Win32::utf8_to_wchar_t(strProcess.c_str(),exe);
 	if (err)
 		OMEGA_THROW(err);

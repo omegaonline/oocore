@@ -173,11 +173,12 @@ namespace OOCore
 				return read<Omega::float8_t>();
 			case Omega::TypeInfo::typeString:
 				{
-					OOBase::LocalString str;
+					OOBase::StackAllocator<256> allocator;
+					OOBase::LocalString str(allocator);
 					if (!m_stream.read_string(str))
 						OMEGA_THROW(m_stream.last_error());
 
-					return str.c_str();
+					return Omega::any_t(str.c_str());
 				}
 
 			case Omega::TypeInfo::typeGuid:

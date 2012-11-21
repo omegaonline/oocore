@@ -492,7 +492,7 @@ bool OOServer::MessageHandler::can_route(Omega::uint32_t src_channel, Omega::uin
 	return (src_channel != 0 && dest_channel != 0 && src_channel != dest_channel);
 }
 
-void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
+void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input, OOBase::AllocatorInstance&)
 {
 	MessageHandler* pThis = static_cast<MessageHandler*>(pParam);
 
@@ -574,11 +574,12 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	
 	if (bReport)
 	{
+		OOBase::StackAllocator<256> allocator;
+		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> send_to(allocator);
+
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		// Propogate the message to all user processes...
-		OOBase::StackAllocator<256> allocator;
-		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> send_to(allocator);
 		for (size_t i=m_mapChannelIds.begin(); i!=m_mapChannelIds.npos; i=m_mapChannelIds.next(i))
 		{
 			// Always route upstream, and/or follow routing rules
@@ -897,10 +898,11 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::process_chan
 
 bool OOServer::MessageHandler::process_async_function(Message& msg)
 {
-	OOBase::LocalString strFn;
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString strFn(allocator);
 	msg.m_payload.read_string(strFn);
 
-	void (*pfnCall)(void*,OOBase::CDRStream&);
+	void (*pfnCall)(void*,OOBase::CDRStream&,OOBase::AllocatorInstance&);
 	msg.m_payload.read(pfnCall);
 
 	void* pParam = 0;
@@ -916,7 +918,7 @@ bool OOServer::MessageHandler::process_async_function(Message& msg)
 	try
 	{
 		// Make the call...
-		(*pfnCall)(pParam,msg.m_payload);
+		(*pfnCall)(pParam,msg.m_payload,allocator);
 		return true;
 	}
 	catch (...)
@@ -932,7 +934,7 @@ void OOServer::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_i
 		send_request(dest_channel_id,&msg,NULL,Message_t::asynchronous | Message_t::channel_close);
 }
 
-bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
+bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&,OOBase::AllocatorInstance&), void* pParam, const OOBase::CDRStream* stream)
 {
 	if (!pfnCall)
 		return false;

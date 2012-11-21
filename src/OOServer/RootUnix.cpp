@@ -55,7 +55,7 @@
     return true;
 }*/
 
-bool Root::Manager::start_client_acceptor()
+bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 {
 #if defined(__linux__)
 	#define ROOT_NAME "\0/org/omegaonline"

@@ -57,13 +57,13 @@ Root::Manager::~Manager()
 {
 }
 
-int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
+int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdArgs::results_t& cmd_args)
 {
 	int ret = EXIT_FAILURE;
 
 	// Load the config
 	// Open the root registry
-	if (load_config(cmd_args) && init_database())
+	if (load_config(cmd_args) && init_database(allocator))
 	{
 		// Start the proactor pool
 		int err = 0;
@@ -81,10 +81,10 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 				if (start_request_threads(2))
 				{
 					// Spawn the sandbox
-					if (spawn_sandbox())
+					if (spawn_sandbox(allocator))
 					{
 						// Start listening for clients
-						if (start_client_acceptor())
+						if (start_client_acceptor(allocator))
 						{
 							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
@@ -133,10 +133,10 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	return ret;
 }
 
-bool Root::Manager::init_database()
+bool Root::Manager::init_database(OOBase::AllocatorInstance& allocator)
 {
 	// Get dir from config
-	OOBase::String dir;
+	OOBase::LocalString dir(allocator);
 	if (!get_config_arg("regdb_path",dir) || dir.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
@@ -152,17 +152,28 @@ bool Root::Manager::init_database()
 	return m_registry->open(SQLITE_OPEN_READWRITE);
 }
 
-bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
+bool Root::Manager::get_config_arg(const char* name, OOBase::LocalString& val)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	if (m_config_args.find(name,val))
+	OOBase::String val2;
+	if (m_config_args.find(name,val2))
+	{
+		int err = val.assign(val2);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 		return true;
+	}
 
 	if (m_registry)
 	{
+		OOBase::LocalString strSubKey(val.get_allocator());
+		int err2 = strSubKey.assign("/System/Server/Settings");
+		if (err2)
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
+
 		Omega::int64_t key = 0;
-		Db::hive_errors err = registry_open_key(key,"/System/Server/Settings",0);
+		Db::hive_errors err = registry_open_key(key,strSubKey,0);
 		if (err)
 		{
 			if (err != Db::HIVE_NOTFOUND)
@@ -170,20 +181,11 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 		}
 		else
 		{
-			OOBase::LocalString str;
-			if ((err = m_registry->get_value(key,name,0,str)) != 0)
-			{
-				if (err != Db::HIVE_NOTFOUND)
-					LOG_ERROR_RETURN(("Failed to get the '/System/Server/Settings/%s' setting in the system registry",name),false);
-			}
-			else 
-			{
-				int err2 = val.assign(str.c_str());
-				if (err2 != 0)
-					LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
-			
+			if ((err = m_registry->get_value(key,name,0,val)) == 0)
 				return true;
-			}
+			
+			if (err != Db::HIVE_NOTFOUND)
+				LOG_ERROR_RETURN(("Failed to get the '/System/Server/Settings/%s' setting in the system registry",name),false);
 		}
 	}
 
@@ -192,11 +194,12 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 
 void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::LocalString strArg;
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString strArg(allocator);
 	if (!request.read_string(strArg))
 		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
 
-	OOBase::String strValue;
+	OOBase::LocalString strValue(allocator);
 	get_config_arg(strArg.c_str(),strValue);
 
 	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write_string(strValue))
@@ -205,8 +208,6 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
-	OOBase::StackAllocator<512> allocator;
-
 	int err = 0;
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -216,7 +217,13 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	// Copy command line args
 	for (size_t i=0; i < cmd_args.size(); ++i)
 	{
-		err = m_config_args.insert(*cmd_args.key_at(i),*cmd_args.at(i));
+		OOBase::String strKey,strValue;
+		err = strKey.assign(*cmd_args.key_at(i));
+		if (!err)
+			err = strValue.assign(*cmd_args.at(i));
+		if (!err)
+			err = m_config_args.insert(strKey,strValue);
+
 		if (err)
 			LOG_ERROR_RETURN(("Failed to copy command args: %s",OOBase::system_error_text(err)),false);
 	}
@@ -282,7 +289,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,allocator)) != 0)
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,cmd_args.get_allocator())) != 0)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
 		err = v.assign(REGDB_PATH);
@@ -311,7 +318,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,allocator)) != 0)
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,cmd_args.get_allocator())) != 0)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
 		err = v.assign(LIBEXEC_DIR);
@@ -332,15 +339,15 @@ int Root::Manager::run_proactor(void* p)
 	return static_cast<OOSvrBase::Proactor*>(p)->run(err);
 }
 
-bool Root::Manager::spawn_sandbox()
+bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
 {
-	OOBase::String strUnsafe;
+	OOBase::LocalString strUnsafe(allocator);
 	bool bUnsafe = false;
 	if (Root::is_debug() && get_config_arg("unsafe",strUnsafe))
 		bUnsafe = (strUnsafe == "true");
 
 	// Get username from config
-	OOBase::String strUName;
+	OOBase::LocalString strUName(allocator);
 	if (!get_config_arg("sandbox_uname",strUName) && !bUnsafe)
 		LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 	
@@ -348,7 +355,7 @@ bool Root::Manager::spawn_sandbox()
 	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
 	{
-		OOBase::LocalString strOurUName;
+		OOBase::LocalString strOurUName(allocator);
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
@@ -362,7 +369,7 @@ bool Root::Manager::spawn_sandbox()
 	{
 		if (bAgain && bUnsafe)
 		{
-			OOBase::LocalString strOurUName;
+			OOBase::LocalString strOurUName(allocator);
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
@@ -377,10 +384,10 @@ bool Root::Manager::spawn_sandbox()
 	}
 
 	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user(uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
+	m_sandbox_channel = spawn_user(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
 	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
 	{
-		OOBase::LocalString strOurUName;
+		OOBase::LocalString strOurUName(allocator);
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
@@ -390,7 +397,7 @@ bool Root::Manager::spawn_sandbox()
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user(uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
+		m_sandbox_channel = spawn_user(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
 	}
 
 #if defined(_WIN32)
@@ -419,14 +426,12 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 
 bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
-	OOBase::StackAllocator<256> allocator;
-
 	for (int attempts = 0;attempts < 2;++attempts)
 	{
 		// See if we have a process already
 		OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> vecDead(allocator);
+		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> vecDead(session_id.get_allocator());
 		bool bFound = false;
 
 		for (size_t i=m_mapUserProcesses.begin(); i!=m_mapUserProcesses.npos; i=m_mapUserProcesses.next(i))
@@ -462,15 +467,15 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 
 		// Spawn a new user process
 		bool bAgain = false;
-		if (spawn_user(uid,session_id.c_str(),user_process.m_ptrRegistry,user_process.m_strPipe,bAgain) != 0)
+		if (spawn_user(session_id.get_allocator(),uid,session_id.c_str(),user_process.m_ptrRegistry,user_process.m_strPipe,bAgain) != 0)
 			return true;
 
 		if (attempts == 0 && bAgain)
 		{
-			OOBase::String strUnsafe;
+			OOBase::LocalString strUnsafe(session_id.get_allocator());
 			if (Root::is_debug() && get_config_arg("unsafe",strUnsafe) && strUnsafe == "true")
 			{
-				OOBase::LocalString strOurUName;
+				OOBase::LocalString strOurUName(session_id.get_allocator());
 				if (!get_our_uid(uid,strOurUName))
 					return false;
 
@@ -491,7 +496,7 @@ bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, co
 bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv)
 {
 	Omega::int64_t key = 0;
-	OOBase::LocalString strSubKey,strLink,strFullKeyName;
+	OOBase::LocalString strSubKey(tabEnv.get_allocator()),strLink(tabEnv.get_allocator()),strFullKeyName(tabEnv.get_allocator());
 	int err2 = 0;
 	const char* key_text = (ptrRegistry ? "Local User" : "System/Sandbox");
 	if (!ptrRegistry)
@@ -519,20 +524,15 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enumerate the '/%s/Environment' values in the user registry",key_text),false);
 
-	OOBase::String strName;
+	OOBase::LocalString strName(names.get_allocator());
 	while (names.pop(&strName))
 	{
-		OOBase::LocalString strVal;
+		OOBase::LocalString strVal(tabEnv.get_allocator());
 		err = ptrRegistry->get_value(key,strName.c_str(),0,strVal);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to get the '/%s/Environment/%s' value from the user registry",key_text,strName.c_str()),false);
 
-		OOBase::String strValue;
-		err2 = strValue.assign(strVal.c_str(),strVal.length());
-		if (err2)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
-
-		err2 = tabEnv.insert(strName,strValue);
+		err2 = tabEnv.insert(strName,strVal);
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to insert environment string: %s",OOBase::system_error_text(err2)),false);
 	}
@@ -540,10 +540,10 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Get the binary path
-	OOBase::String strBinPath;
+	OOBase::LocalString strBinPath(allocator);
 	if (!get_config_arg("binary_path",strBinPath))
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),0);
 
@@ -592,13 +592,8 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 {
 	OOBase::CDRStream stream;
 
-	OOBase::LocalString strPipeL;
-	if (!stream.recv_string(ptrSocket,strPipeL))
+	if (!stream.recv_string(ptrSocket,strPipe))
 		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
-
-	int err = strPipe.assign(strPipeL.c_str());
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
@@ -615,7 +610,8 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLoc
 		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
 	}
 
-	if ((err = ptrMC->send(stream.buffer(),NULL)) != 0)
+	int err = ptrMC->send(stream.buffer(),NULL);
+	if (err)
 	{
 		channel_closed(channel_id,0);
 		channel_id = 0;
@@ -738,7 +734,8 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 				LOG_WARNING(("Unsupported version received: %u",version));
 			else
 			{
-				OOBase::LocalString strSid;
+				OOBase::StackAllocator<512> allocator;
+				OOBase::LocalString strSid(allocator);
 				if (!stream.recv_string(ptrSocket,strSid))
 					LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
 				else

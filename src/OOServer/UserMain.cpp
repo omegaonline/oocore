@@ -89,19 +89,22 @@ int main(int argc, char* argv[])
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
 
+	// Declare a local stack allocator
+	OOBase::StackAllocator<1024> allocator;
+
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args(allocator);
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("debug");
 	cmd_args.add_option("pipe",0,true);
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args;
+	OOBase::CmdArgs::results_t args(allocator);
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::String strErr;
+		OOBase::LocalString strErr(allocator);
 		if (args.find("missing",strErr))
 			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Missing value for option %s",strErr.c_str());
 		else if (args.find("unknown",strErr))
@@ -143,7 +146,7 @@ int main(int argc, char* argv[])
 
 #endif
 
-	OOBase::String strPipe;
+	OOBase::LocalString strPipe(allocator);
 	if (!args.find("pipe",strPipe))
 	{
 		// Oops...
@@ -151,5 +154,5 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	return User::Manager().run(strPipe.c_str());
+	return User::Manager().run(strPipe);
 }

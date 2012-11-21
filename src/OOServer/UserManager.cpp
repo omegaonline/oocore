@@ -89,8 +89,7 @@ namespace
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 		// Get the logon SID of the Token
-		OOBase::StackAllocator<64> allocator;
-		OOBase::TempPtr<void> ptrSIDLogon(allocator);
+		OOBase::TempPtr<void> ptrSIDLogon(name.get_allocator());
 		DWORD dwRes = OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
@@ -154,7 +153,7 @@ User::Manager::~Manager()
 	s_instance = NULL;
 }
 
-int User::Manager::run(const char* pszPipe)
+int User::Manager::run(const OOBase::LocalString& strPipe)
 {
 	int ret = EXIT_FAILURE;
 	int err = 0;
@@ -171,7 +170,7 @@ int User::Manager::run(const char* pszPipe)
 			// Start the handler
 			if (start_request_threads(2))
 			{
-				if (connect_root(pszPipe))
+				if (connect_root(strPipe))
 				{
 					OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
@@ -212,20 +211,20 @@ int User::Manager::run_proactor(void* p)
 	return static_cast<OOSvrBase::Proactor*>(p)->run(err);
 }
 
-bool User::Manager::connect_root(const char* pszPipe)
+bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 {
 #if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->connect_local_socket(pszPipe,err,timeout));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->connect_local_socket(strPipe.c_str(),err,timeout));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
 #else
 
 	// Use the passed fd
-	int fd = atoi(pszPipe);
+	int fd = atoi(strPipe.c_str());
 
 	int err = 0;
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->attach_local_socket(fd,err));
@@ -238,7 +237,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 #endif
 
 	// Invent a new pipe name...
-	OOBase::LocalString strNewPipe;
+	OOBase::LocalString strNewPipe(strPipe.get_allocator());
 	if (!unique_name(strNewPipe))
 		return false;
 		
@@ -309,7 +308,7 @@ bool User::Manager::connect_root(const char* pszPipe)
 	return true;
 }
 
-void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
+void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator)
 {
 	Manager* pThis = static_cast<Manager*>(pParams);
 
@@ -318,7 +317,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	uint32_t sandbox_channel = 0;
 	input.read(sandbox_channel);
 
-	OOBase::LocalString strPipe;
+	OOBase::LocalString strPipe(allocator);
 	input.read_string(strPipe);
 
 	if (input.last_error() != 0)
@@ -389,8 +388,7 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::StackAllocator<64> allocator;
-	OOBase::TempPtr<void> ptrSIDLogon(allocator);
+	OOBase::TempPtr<void> ptrSIDLogon(strPipe.get_allocator());
 	DWORD dwRes = OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
@@ -519,23 +517,22 @@ void User::Manager::on_channel_closed(uint32_t channel)
 		call_async_function_i("do_channel_closed",&do_channel_closed,this,&stream);
 }
 
-void User::Manager::do_channel_closed(void* pParams, OOBase::CDRStream& stream)
+void User::Manager::do_channel_closed(void* pParams, OOBase::CDRStream& stream, OOBase::AllocatorInstance& allocator)
 {
 	uint32_t channel_id = 0;
 	if (!stream.read(channel_id))
 		LOG_ERROR(("Failed to read channel_close data: %s",OOBase::system_error_text(stream.last_error())));
 	else
-		static_cast<Manager*>(pParams)->do_channel_closed_i(channel_id);
+		static_cast<Manager*>(pParams)->do_channel_closed_i(channel_id,allocator);
 }
 
-void User::Manager::do_channel_closed_i(uint32_t channel_id)
+void User::Manager::do_channel_closed_i(uint32_t channel_id, OOBase::AllocatorInstance& allocator)
 {
 	// Close the corresponding Object Manager
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::StackAllocator<256> allocator;
 		OOBase::Stack<uint32_t,OOBase::AllocatorInstance> dead_channels(allocator);
 		for (size_t i=m_mapChannels.begin(); i!=m_mapChannels.npos;i=m_mapChannels.next(i))
 		{
@@ -586,7 +583,7 @@ void User::Manager::do_channel_closed_i(uint32_t channel_id)
 	}
 }
 
-void User::Manager::do_quit(void* pParams, OOBase::CDRStream&)
+void User::Manager::do_quit(void* pParams, OOBase::CDRStream&, OOBase::AllocatorInstance&)
 {
 	static_cast<Manager*>(pParams)->do_quit_i();
 }
@@ -798,7 +795,8 @@ void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strVal
 	sendrecv_root(request,&response,TypeInfo::Synchronous);
 
 	OOServer::RootErrCode_t err;
-	OOBase::LocalString strVal;
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString strVal(allocator);
 	if (!response.read(err) || (!err && !response.read_string(strVal)))
 		OMEGA_THROW(response.last_error());
 

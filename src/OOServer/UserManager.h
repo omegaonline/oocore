@@ -46,7 +46,7 @@ namespace User
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		static OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 
-		int run(const char* pszPipe);
+		int run(const OOBase::LocalString& pszPipe);
 		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
 		void close_socket(Omega::uint32_t id);
 		
@@ -68,10 +68,10 @@ namespace User
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		virtual void on_channel_closed(Omega::uint32_t channel);
-		static void do_channel_closed(void* pParams, OOBase::CDRStream& input);
-		void do_channel_closed_i(Omega::uint32_t channel_id);
+		static void do_channel_closed(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
+		void do_channel_closed_i(Omega::uint32_t channel_id, OOBase::AllocatorInstance& allocator);
 
-		bool connect_root(const char* pszPipe);
+		bool connect_root(const OOBase::LocalString& strPipe);
 		static int run_proactor(void*);
 
 		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
@@ -82,12 +82,12 @@ namespace User
 		OOBase::Win32::sec_descript_t m_sd;
 #endif
 
-		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
+		static void do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
 		bool handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 		bool start_acceptor(OOBase::LocalString& strPipe);
 
-		static void do_quit(void* pParams, OOBase::CDRStream& input);
+		static void do_quit(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
 		void do_quit_i();
 
 		OTL::ObjectImpl<Channel>* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);

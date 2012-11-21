@@ -102,7 +102,7 @@ namespace OOServer
 	public:
 		int pump_requests(const OOBase::Timeout& timeout = OOBase::Timeout(), bool bOnce = false);
 		bool parse_message(OOBase::CDRStream& input);
-		bool call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream);
+		bool call_async_function_i(const char* pszFn, void (*pfnCall)(void*,OOBase::CDRStream&,OOBase::AllocatorInstance&), void* pParam, const OOBase::CDRStream* stream);
 
 		struct io_result
 		{
@@ -250,7 +250,7 @@ namespace OOServer
 		io_result::type process_channel_close(Message& msg);
 		bool process_async_function(Message& msg);
 
-		static void do_route_off(void* pParam, OOBase::CDRStream& input);
+		static void do_route_off(void* pParam, OOBase::CDRStream& input, OOBase::AllocatorInstance&);
 	};
 }
 

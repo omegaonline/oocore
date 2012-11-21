@@ -48,17 +48,20 @@ static int help()
 
 int main(int argc, char* argv[])
 {
+	// Declare a local stack allocator
+	OOBase::StackAllocator<1024> allocator;
+
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args;
+	OOBase::CmdArgs cmd_args(allocator);
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args;
+	OOBase::CmdArgs::results_t args(allocator);
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::String strErr;
+		OOBase::LocalString strErr(allocator);
 		if (args.find("missing",strErr))
 		{
 			OOBase::stderr_write("Missing value for option ");

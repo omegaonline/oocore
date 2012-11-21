@@ -30,7 +30,8 @@ using namespace OTL;
 
 void Host::StartService(System::IService* pService, const string_t& strName, const string_t& strPipe, Registry::IKey* pKey, const string_t& strSecret)
 {
-	OOBase::LocalString strPipe2;
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString strPipe2(allocator);
 	int err = strPipe2.assign(strPipe.c_str());
 	if (err)
 		OMEGA_THROW(err);
@@ -75,7 +76,6 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 	try
 	{
 		// Now loop reading socket handles from ptrSocket
-		OOBase::StackAllocator<256> allocator;
 		OOBase::TempPtr<char> ptrName(allocator);
 		for (;;)
 		{

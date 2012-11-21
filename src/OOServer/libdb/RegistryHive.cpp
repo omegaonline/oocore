@@ -25,7 +25,6 @@
 
 #include <OOBase/Logger.h>
 #include <OOBase/CDRStream.h>
-#include <OOBase/StackAllocator.h>
 
 #include <stdlib.h>
 
@@ -223,7 +222,7 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 		size_t pos = strSubKey.find('/',start);
 		if (pos > start)
 		{
-			OOBase::LocalString strFirst;
+			OOBase::LocalString strFirst(strSubKey.get_allocator());
 			int err2 = 0;
 			if (pos == OOBase::LocalString::npos)
 			{
@@ -249,7 +248,7 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 				if (!strFullKeyName.empty())
 					err2 = strFullKeyName.append("/",1);
 				if (!err2)
-					err2 = strFullKeyName.append(strFirst.c_str());
+					err2 = strFullKeyName.append(strFirst);
 				if (err2)
 					LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 
@@ -260,7 +259,7 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 					else
 					{
 						// Assign remains of strSubKey to strSubKey
-						OOBase::LocalString strSecond;
+						OOBase::LocalString strSecond(strSubKey.get_allocator());
 						err2 = strSecond.assign(strSubKey.c_str()+pos);
 						if (!err2)
 							err2 = strSubKey.assign(strSecond.c_str());
@@ -272,7 +271,7 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 			else
 			{
 				// Assign remains of strSubKey to strSubKey
-				OOBase::LocalString strSecond;
+				OOBase::LocalString strSecond(strSubKey.get_allocator());
 				err2 = strSecond.assign(strSubKey.c_str()+start);
 				if (!err2)
 					err2 = strSubKey.assign(strSecond.c_str());
@@ -296,13 +295,13 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 	}
 }
 
-Db::hive_errors Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const char* pszSubKey, access_rights_t access_mask)
+Db::hive_errors Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, access_rights_t access_mask)
 {
 	// Lock must be held first...
 
 	Resetter resetter(m_InsertKey_Stmt);
 	
-	if (m_InsertKey_Stmt.bind_string(1,pszSubKey,strlen(pszSubKey)) != SQLITE_OK ||
+	if (m_InsertKey_Stmt.bind_string(1,strSubKey.c_str(),strSubKey.length()) != SQLITE_OK ||
 			m_InsertKey_Stmt.bind_int64(2,uParent) != SQLITE_OK)
 	{
 		return HIVE_ERRORED;
@@ -318,7 +317,7 @@ Db::hive_errors Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64
 
 	if (access_mask != 0)
 	{
-		OOBase::LocalString strAc;
+		OOBase::LocalString strAc(strSubKey.get_allocator());
 		int err2 = strAc.printf("%u",access_mask);
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
@@ -348,7 +347,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 			if (!strFullKeyName.empty())
 				err2 = strFullKeyName.append("/",1);
 			if (!err2)
-				err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
+				err2 = strFullKeyName.append(strSubKey);
 		}
 		return err;
 	}
@@ -380,7 +379,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 		size_t pos = strSubKey.find('/',start);
 		if (pos > start)
 		{
-			OOBase::LocalString strFirst;
+			OOBase::LocalString strFirst(strSubKey.get_allocator());
 			int err2 = 0;
 			if (pos == OOBase::LocalString::npos)
 			{
@@ -398,11 +397,11 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 			if (!err2 && !strFullKeyName.empty())
 				err2 = strFullKeyName.append("/",1);
 			if (!err2)
-				err2 = strFullKeyName.append(strFirst.c_str());
+				err2 = strFullKeyName.append(strFirst);
 			if (err2)
 				LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 
-			err = insert_key(uParent,uKey,strFirst.c_str(),access_mask);
+			err = insert_key(uParent,uKey,strFirst,access_mask);
 			if (err)
 				return err;
 
@@ -421,7 +420,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName, OOBase::AllocatorInstance& allocator)
+Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName)
 {
 	// This one is recursive, within a transaction and a lock...
 
@@ -443,7 +442,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	}
 
 	// Get the set of subkeys
-	OOBase::Stack<Omega::int64_t,OOBase::AllocatorInstance> ids(allocator);
+	OOBase::Stack<Omega::int64_t,OOBase::AllocatorInstance> ids(strFullKeyName.get_allocator());
 	{
 		Resetter resetter(m_EnumKeyIds_Stmt);
 		
@@ -467,12 +466,12 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 		}
 	}
 	
-	OOBase::LocalString strSubKey;
+	OOBase::LocalString strSubKey(strFullKeyName.get_allocator());
 	if (!ids.empty())
 	{
 		for (Omega::int64_t id;ids.pop(&id);)
 		{
-			err = delete_subkeys(id,channel_id,strSubKey,allocator);
+			err = delete_subkeys(id,channel_id,strSubKey);
 			if (err)
 			{
 				// Update strFullKeyName on err
@@ -480,7 +479,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 				if (!strFullKeyName.empty())
 					err2 = strFullKeyName.append("/",1);
 				if (!err2)
-					err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
+					err2 = strFullKeyName.append(strSubKey);
 
 				return err;
 			}
@@ -523,7 +522,7 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 			if (!strFullKeyName.empty())
 				err2 = strFullKeyName.append("/",1);
 			if (!err2)
-				err2 = strFullKeyName.append(strSubKey.c_str(),strSubKey.length());
+				err2 = strFullKeyName.append(strSubKey);
 			if (err2)
 				LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
 		}
@@ -545,8 +544,7 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	if (trans.begin() != SQLITE_OK)
 		return HIVE_ERRORED;
 
-	OOBase::StackAllocator<256> allocator;
-	err = delete_subkeys(uKey,channel_id,strFullKeyName,allocator);
+	err = delete_subkeys(uKey,channel_id,strFullKeyName);
 	if (err)
 		return err;
 
@@ -612,7 +610,7 @@ Db::hive_errors Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32
 				const char* v = m_EnumKeys_Stmt.column_text(1);
 				if (v)
 				{
-					OOBase::String strSubKey;
+					OOBase::LocalString strSubKey(setSubKeys.get_allocator());
 					int err3 = strSubKey.assign(v);
 					if (err3)
 						LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err3)),HIVE_ERRORED);
@@ -785,7 +783,7 @@ Db::hive_errors Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_
 				const char* v = m_EnumValues_Stmt.column_text(0);
 				if (v)
 				{
-					OOBase::String val;
+					OOBase::LocalString val(setValues.get_allocator());
 					int err2 = val.assign(m_EnumValues_Stmt.column_text(0));
 					if (err2)
 						LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),HIVE_ERRORED);
@@ -866,7 +864,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 
 		case SQLITE_DONE:
 			// Write terminating null
-			if (!response.write(""))
+			if (!response.write("",0))
 			{
 				LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 				response.reset();

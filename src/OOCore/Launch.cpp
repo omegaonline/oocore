@@ -131,7 +131,7 @@ namespace
 
 			uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 
-			OOBase::LocalString strSid;
+			OOBase::LocalString strSid(strPipe.get_allocator());
 			get_session_id(strSid);
 
 			OOBase::CDRStream stream;
@@ -169,7 +169,8 @@ void OOCore::UserSession::start()
 	OOBase::Timeout timeout;
 #endif
 
-	OOBase::LocalString strPipe;
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString strPipe(allocator);
 	discover_server_port(strPipe,timeout);
 
 	// Connect up to the user process...

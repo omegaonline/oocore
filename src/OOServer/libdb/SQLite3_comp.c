@@ -38,11 +38,7 @@
 
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable:4127)
-#pragma warning(disable:4244)
-#pragma warning(disable:4132)
-#pragma warning(disable:4706)
-#pragma warning(disable:4306)
+#pragma warning(disable:4127 4244 4132 4706 4306)
 
 #if (_MSC_VER >= 1600) && defined(CODE_ANALYSIS)
 #include <codeanalysis\warnings.h>

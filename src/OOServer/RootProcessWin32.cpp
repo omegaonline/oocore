@@ -49,7 +49,8 @@ namespace
 	class RootProcessWin32 : public Root::Process
 	{
 	public:
-		RootProcessWin32();
+		static RootProcessWin32* Spawn(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+
 		virtual ~RootProcessWin32();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -57,10 +58,12 @@ namespace
 		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
 
 		bool IsRunning() const;
-		bool Spawn(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
+		RootProcessWin32();
+
 		bool                       m_bSandbox;
 		OOBase::Win32::SmartHandle m_hToken;
 		OOBase::Win32::SmartHandle m_hProcess;
@@ -69,84 +72,6 @@ namespace
 		DWORD SpawnFromToken(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
-	bool GetRegistryHive(HANDLE hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
-	{
-		int err = 0;
-		if (strUsersDir.empty())
-		{
-			// This does need to be ASCII
-			wchar_t szBuf[MAX_PATH] = {0};
-			HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,hToken,SHGFP_TYPE_DEFAULT,szBuf);
-			if FAILED(hr)
-				LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text()),false);
-
-			if (!PathAppendW(szBuf,L"Omega Online"))
-				LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
-
-			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
-				LOG_ERROR_RETURN(("CreateDirectoryW %ls failed: %s",szBuf,OOBase::system_error_text()),false);
-
-			if ((err = OOBase::Win32::wchar_t_to_utf8(szBuf,strHive)) != 0)
-				LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
-
-			if ((err = strHive.append("\\user.regdb")) != 0)
-				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
-		}
-		else
-		{
-			// Get the names associated with the user SID
-			OOBase::TempPtr<wchar_t> ptrUsersDir(strHive.get_allocator());
-			if ((err = OOBase::Win32::utf8_to_wchar_t(strUsersDir.c_str(),ptrUsersDir)) != 0)
-				LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),false);
-
-			OOBase::TempPtr<wchar_t> ptrUserName(strHive.get_allocator()),ptrDomainName(strHive.get_allocator());
-			err = OOBase::Win32::GetNameFromToken(hToken,ptrUserName,ptrDomainName);
-			if (err)
-				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(err)),false);
-
-			OOBase::LocalString strUsersDir(strHive.get_allocator()),strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
-			err = OOBase::Win32::wchar_t_to_utf8(ptrUsersDir,strUsersDir);
-			if (!err)
-				err = OOBase::Win32::wchar_t_to_utf8(ptrUserName,strUserName);
-			if (!err && ptrDomainName)
-				err = OOBase::Win32::wchar_t_to_utf8(ptrDomainName,strDomainName);
-			if (err)
-				LOG_ERROR_RETURN(("Failed to convert strings: %s",OOBase::system_error_text(err)),false);
-
-			if (strDomainName.empty())
-				err = strHive.printf("%s%s.regdb",strUsersDir.c_str(),strUserName.c_str());
-			else
-				err = strHive.printf("%s%s.%s.regdb",strUsersDir.c_str(),strUserName.c_str(),strDomainName.c_str());
-
-			if (err != 0)
-				LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
-		}
-
-		// Now confirm the file exists, and if it doesn't, copy user_template.regdb
-		OOBase::TempPtr<wchar_t> ptrHive(strHive.get_allocator());
-		if ((err = OOBase::Win32::utf8_to_wchar_t(strHive.c_str(),ptrHive)) != 0)
-			LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
-
-		if (!PathFileExistsW(ptrHive))
-		{
-			if ((err = strSysDir.append("user_template.regdb")) != 0)
-				LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
-
-			OOBase::TempPtr<wchar_t> ptrSysDir(strSysDir.get_allocator());
-			if ((err = OOBase::Win32::utf8_to_wchar_t(strSysDir.c_str(),ptrSysDir)) != 0)
-				LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
-
-			if (!CopyFileW(ptrSysDir,ptrHive,TRUE))
-				LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
-
-			::SetFileAttributesW(ptrHive,FILE_ATTRIBUTE_NORMAL);
-
-			void* ISSUE_11;
-		}
-
-		return true;
-	}
-	
 	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
 	{
 		// Create a new unique pipe
@@ -730,15 +655,25 @@ Cleanup:
 	return dwRes;
 }
 
-bool RootProcessWin32::Spawn(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+RootProcessWin32* RootProcessWin32::Spawn(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
-	m_bSandbox = bSandbox;
+	RootProcessWin32* pSpawn = new (std::nothrow) RootProcessWin32();
+	if (!pSpawn)
+		LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
 
-	DWORD dwRes = SpawnFromToken(strAppName,hToken,lpEnv,hPipe,bSandbox);
+	pSpawn->m_bSandbox = bSandbox;
+
+	DWORD dwRes = pSpawn->SpawnFromToken(strAppName,hToken,lpEnv,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
 
-	return (dwRes == ERROR_SUCCESS);
+	if (dwRes != ERROR_SUCCESS)
+	{
+		delete pSpawn;
+		pSpawn = NULL;
+	}
+
+	return pSpawn;
 }
 
 bool RootProcessWin32::IsRunning() const
@@ -939,7 +874,85 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	return OOServer::Ok;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain)
+bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+{
+	int err = 0;
+	if (strUsersDir.empty())
+	{
+		// This does need to be ASCII
+		wchar_t szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,hToken,SHGFP_TYPE_DEFAULT,szBuf);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathAppendW(szBuf,L"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::system_error_text()),false);
+
+		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
+			LOG_ERROR_RETURN(("CreateDirectoryW %ls failed: %s",szBuf,OOBase::system_error_text()),false);
+
+		if ((err = OOBase::Win32::wchar_t_to_utf8(szBuf,strHive)) != 0)
+			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
+
+		if ((err = strHive.append("\\user.regdb")) != 0)
+			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+	}
+	else
+	{
+		// Get the names associated with the user SID
+		OOBase::TempPtr<wchar_t> ptrUsersDir(strHive.get_allocator());
+		if ((err = OOBase::Win32::utf8_to_wchar_t(strUsersDir.c_str(),ptrUsersDir)) != 0)
+			LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),false);
+
+		OOBase::TempPtr<wchar_t> ptrUserName(strHive.get_allocator()),ptrDomainName(strHive.get_allocator());
+		err = OOBase::Win32::GetNameFromToken(hToken,ptrUserName,ptrDomainName);
+		if (err)
+			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(err)),false);
+
+		OOBase::LocalString strUsersDir(strHive.get_allocator()),strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
+		err = OOBase::Win32::wchar_t_to_utf8(ptrUsersDir,strUsersDir);
+		if (!err)
+			err = OOBase::Win32::wchar_t_to_utf8(ptrUserName,strUserName);
+		if (!err && ptrDomainName)
+			err = OOBase::Win32::wchar_t_to_utf8(ptrDomainName,strDomainName);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to convert strings: %s",OOBase::system_error_text(err)),false);
+
+		if (strDomainName.empty())
+			err = strHive.printf("%s%s.regdb",strUsersDir.c_str(),strUserName.c_str());
+		else
+			err = strHive.printf("%s%s.%s.regdb",strUsersDir.c_str(),strUserName.c_str(),strDomainName.c_str());
+
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);
+	}
+
+	// Now confirm the file exists, and if it doesn't, copy user_template.regdb
+	OOBase::TempPtr<wchar_t> ptrHive(strHive.get_allocator());
+	if ((err = OOBase::Win32::utf8_to_wchar_t(strHive.c_str(),ptrHive)) != 0)
+		LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
+
+	if (!PathFileExistsW(ptrHive))
+	{
+		if ((err = strSysDir.append("user_template.regdb")) != 0)
+			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
+
+		OOBase::TempPtr<wchar_t> ptrSysDir(strSysDir.get_allocator());
+		if ((err = OOBase::Win32::utf8_to_wchar_t(strSysDir.c_str(),ptrSysDir)) != 0)
+			LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
+
+		if (!CopyFileW(ptrSysDir,ptrHive,TRUE))
+			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
+
+		::SetFileAttributesW(ptrHive,FILE_ATTRIBUTE_NORMAL);
+
+		void* ISSUE_11;
+	}
+
+	return true;
+}
+
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
 {
 	int err = strAppName.append("OOSvrUser.exe");
 	if (err != 0)
@@ -952,75 +965,26 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::As
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	// Init the registry, if necessary
-	if (session_id && !process.m_ptrRegistry)
-	{
-		OOBase::LocalString strRegPath(strAppName.get_allocator());
-		if (!get_config_arg("regdb_path",strRegPath))
-			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
-
-		OOBase::LocalString strUsersPath(strAppName.get_allocator());
-		get_config_arg("users_path",strUsersPath);
-
-		OOBase::LocalString strHive(strAppName.get_allocator());
-		if (!GetRegistryHive(uid,strRegPath,strUsersPath,strHive))
-			return false;
-
-		// Create a new database
-		process.m_ptrRegistry = new (std::nothrow) Db::Hive(this,strHive.c_str());
-		if (!process.m_ptrRegistry)
-			LOG_ERROR_RETURN(("Failed to allocate hive: %s",OOBase::system_error_text()),false);
-
-		if (!process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE))
-			LOG_ERROR_RETURN(("Failed to open hive: %s",strHive.c_str()),false);
-	}
-
-	// Get the environment settings
-	OOBase::Environment::env_table_t tabSysEnv(strAppName.get_allocator());
-	err = OOBase::Environment::get_user(uid,tabSysEnv);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
-
-	OOBase::Environment::env_table_t tabEnv(strAppName.get_allocator());
-	if (!load_user_env(process.m_ptrRegistry,tabEnv))
-		return false;
-
-	err = OOBase::Environment::substitute(tabEnv,tabSysEnv);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
-
-	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
-
-	// Alloc a new SpawnedProcess
-	RootProcessWin32* pSpawn32 = new (std::nothrow) RootProcessWin32();
-	if (!pSpawn32)
-		LOG_ERROR_RETURN(("Failed to allocate RootProcessWin32: %s",OOBase::system_error_text()),false);
-
-	OOBase::SmartPtr<Root::Process> ptrSpawn(pSpawn32);
-
 	OOBase::TempPtr<wchar_t> env_block(strAppName.get_allocator());
 	err = OOBase::Environment::get_block(tabEnv,env_block);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to retrieve environment block: %s",OOBase::system_error_text(err)),false);
 
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
+
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
-	if (!pSpawn32->Spawn(strAppName,uid,env_block,hPipe,session_id == NULL,bAgain))
+	ptrSpawn = RootProcessWin32::Spawn(strAppName,uid,env_block,hPipe,session_id == NULL,bAgain);
+	if (!ptrSpawn)
 		return false;
 
 	// Wait for the connect attempt
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(m_proactor->accept_local_socket(hPipe,err,OOBase::Timeout(15,0)));
+	ptrSocket = m_proactor->accept_local_socket(hPipe,err,OOBase::Timeout(15,0));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
 	hPipe.detach();
 
-	// Bootstrap the user process...
-	channel_id = bootstrap_user(ptrSocket,ptrMC,process.m_strPipe);
-	if (!channel_id)
-		return false;
-
-	process.m_ptrProcess = ptrSpawn;
 	return true;
 }
 

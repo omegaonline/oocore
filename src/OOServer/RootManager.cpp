@@ -548,12 +548,62 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),0);
 
 	// Do a platform specific spawn
-	Omega::uint32_t channel_id = 0;
-	OOBase::RefPtr<OOServer::MessageConnection> ptrMC;
 	UserProcess process;
 	process.m_ptrRegistry = ptrRegistry;
-	if (!platform_spawn(strBinPath,uid,session_id,process,channel_id,ptrMC,bAgain))
+
+	// Init the registry, if necessary
+	if (session_id && !process.m_ptrRegistry)
+	{
+		OOBase::LocalString strRegPath(allocator);
+		if (!get_config_arg("regdb_path",strRegPath))
+			LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),0);
+
+		OOBase::LocalString strUsersPath(allocator);
+		get_config_arg("users_path",strUsersPath);
+
+		OOBase::LocalString strHive(allocator);
+		if (!get_registry_hive(uid,strRegPath,strUsersPath,strHive))
+			return false;
+
+		// Create a new database
+		process.m_ptrRegistry = new (std::nothrow) Db::Hive(this,strHive.c_str());
+		if (!process.m_ptrRegistry)
+			LOG_ERROR_RETURN(("Failed to allocate hive: %s",OOBase::system_error_text()),0);
+
+		if (!process.m_ptrRegistry->open(SQLITE_OPEN_READWRITE))
+			LOG_ERROR_RETURN(("Failed to open hive: %s",strHive.c_str()),0);
+	}
+
+	// Get the environment settings
+	OOBase::Environment::env_table_t tabSysEnv(allocator);
+#if defined(_WIN32)
+	int err = OOBase::Environment::get_user(uid,tabSysEnv);
+#else
+	int err = OOBase::Environment::get_current(tabSysEnv);
+#endif
+	if (err)
+		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),0);
+
+	OOBase::Environment::env_table_t tabEnv(allocator);
+	if (!load_user_env(process.m_ptrRegistry,tabEnv))
+		return false;
+
+	err = OOBase::Environment::substitute(tabEnv,tabSysEnv);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),0);
+
+	OOBase::SmartPtr<Root::Process> ptrSpawn;
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket;
+	if (!platform_spawn(strBinPath,uid,session_id,tabEnv,ptrSpawn,ptrSocket,bAgain))
 		return 0;
+
+	// Bootstrap the user process...
+	OOBase::RefPtr<OOServer::MessageConnection> ptrMC;
+	Omega::uint32_t channel_id = bootstrap_user(ptrSocket,ptrMC,process.m_strPipe);
+	if (!channel_id)
+		return false;
+
+	process.m_ptrProcess = ptrSpawn;
 
 	// Insert the data into the process map...
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -572,7 +622,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 		}
 	}
 
-	int err = m_mapUserProcesses.insert(channel_id,process);
+	err = m_mapUserProcesses.insert(channel_id,process);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to insert into map: %s",OOBase::system_error_text(err)),0);
 

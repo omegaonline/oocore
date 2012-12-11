@@ -107,8 +107,9 @@ namespace Root
 		typedef OOBase::HashTable<Omega::uint32_t,UserProcess> mapUserProcessesType;
 		mapUserProcessesType                                   m_mapUserProcesses;
 
+		bool get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive);
 		bool load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv);
-		bool platform_spawn(OOBase::LocalString strBinPath, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, UserProcess& process, Omega::uint32_t& channel_id, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, bool& bAgain);
+		bool platform_spawn(OOBase::LocalString strBinPath, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, bool& bAgain);
 		Omega::uint32_t bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe);
 		Omega::uint32_t spawn_user(OOBase::AllocatorInstance& allocator, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain);
 		bool get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process);

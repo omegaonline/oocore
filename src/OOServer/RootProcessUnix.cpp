@@ -159,9 +159,10 @@ RootProcessUnix::~RootProcessUnix()
 RootProcessUnix* RootProcessUnix::Spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
 {
 	char* rpath = realpath(strAppName.c_str(),NULL);
-	if (rpath && strAppName != rpath)
+	if (rpath)
 	{
-		OOBase::Logger::log(OOBase::Logger::Information,"Mapping %s to %s",strAppName.c_str(),rpath);
+		if (strAppName != rpath)
+			OOBase::Logger::log(OOBase::Logger::Information,"Mapping %s to %s",strAppName.c_str(),rpath);
 		::free(rpath);
 	}
 

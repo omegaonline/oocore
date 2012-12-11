@@ -50,7 +50,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 	while (!timeout.has_expired())
 	{
 		ptrSocket = OOBase::Socket::connect_local(strPipe2.c_str(),err,timeout);
-		if (!err || (err != ENOENT && err != ECONNREFUSED))
+		if (!err)
 			break;
 
 		// We ignore the error, and try again until we timeout

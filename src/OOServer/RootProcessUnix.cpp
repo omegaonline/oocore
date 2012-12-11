@@ -446,6 +446,10 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 		LOG_ERROR_RETURN(("Failed to write request data: %s",OOBase::system_error_text(request.last_error())),OOServer::Errored);
 	}
 
+	// Set the socket listening
+	if (::listen(fd,1) != 0)
+		LOG_ERROR_RETURN(("Failed to listen on pipe: %s",OOBase::system_error_text()),OOServer::Errored);
+
 	OOBase::CDRStream response;
 	OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<Omega::uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
 	if (res != OOServer::MessageHandler::io_result::success)
@@ -463,10 +467,6 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 			return static_cast<OOServer::RootErrCode>(err2);
 		}
 	}
-
-	// Set the socket listening
-	if (::listen(fd,1) != 0)
-		LOG_ERROR_RETURN(("Failed to listen on pipe: %s",OOBase::system_error_text()),OOServer::Errored);
 
 	// accept() a connection
 	OOBase::POSIX::SmartFD new_fd;

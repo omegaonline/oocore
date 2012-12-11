@@ -97,17 +97,26 @@ namespace
 			// Get the names associated with the user SID
 			OOBase::TempPtr<wchar_t> ptrUsersDir(strHive.get_allocator());
 			if ((err = OOBase::Win32::utf8_to_wchar_t(strUsersDir.c_str(),ptrUsersDir)) != 0)
-				LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
+				LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),false);
 
-			OOBase::TempPtr<wchar_t> strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
-			DWORD dwErr = OOBase::Win32::GetNameFromToken(hToken,strUserName,strDomainName);
-			if (dwErr != ERROR_SUCCESS)
-				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(dwErr)),false);
+			OOBase::TempPtr<wchar_t> ptrUserName(strHive.get_allocator()),ptrDomainName(strHive.get_allocator());
+			err = OOBase::Win32::GetNameFromToken(hToken,ptrUserName,ptrDomainName);
+			if (err)
+				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(err)),false);
 
-			if (!strDomainName)
-				err = strHive.printf("%ls%ls.regdb",static_cast<const wchar_t*>(ptrUsersDir),static_cast<const wchar_t*>(strUserName));
+			OOBase::LocalString strUsersDir(strHive.get_allocator()),strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
+			err = OOBase::Win32::wchar_t_to_utf8(ptrUsersDir,strUsersDir);
+			if (!err)
+				err = OOBase::Win32::wchar_t_to_utf8(ptrUserName,strUserName);
+			if (!err && ptrDomainName)
+				err = OOBase::Win32::wchar_t_to_utf8(ptrDomainName,strDomainName);
+			if (err)
+				LOG_ERROR_RETURN(("Failed to convert strings: %s",OOBase::system_error_text(err)),false);
+
+			if (strDomainName.empty())
+				err = strHive.printf("%s%s.regdb",strUsersDir.c_str(),strUserName.c_str());
 			else
-				err = strHive.printf("%ls%ls.%ls.regdb",static_cast<const wchar_t*>(ptrUsersDir),static_cast<const wchar_t*>(strUserName),static_cast<const wchar_t*>(strDomainName));
+				err = strHive.printf("%s%s.%s.regdb",strUsersDir.c_str(),strUserName.c_str(),strDomainName.c_str());
 
 			if (err != 0)
 				LOG_ERROR_RETURN(("Failed to format strings: %s",OOBase::system_error_text(err)),false);

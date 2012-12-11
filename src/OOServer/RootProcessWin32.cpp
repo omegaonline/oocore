@@ -159,12 +159,17 @@ namespace
 
 		if (strPipe.empty())
 		{
-			char* pszSid = NULL;
-			if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+			wchar_t* pszSid = NULL;
+			if (!ConvertSidToStringSidW(ptrSIDLogon,&pszSid))
 				LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 
-			int err = strPipe.printf("OOR%s-%lu-%lu",pszSid,GetCurrentProcessId(),GetTickCount());
+			OOBase::LocalString strSid(strPipe.get_allocator());
+			int err = OOBase::Win32::wchar_t_to_utf8(pszSid,strSid);
+
 			::LocalFree(pszSid);
+
+			if (!err)
+				err = strPipe.printf("OOR%s-%lu-%lu",strSid.c_str(),GetCurrentProcessId(),GetTickCount());
 
 			if (err != 0)
 				LOG_ERROR_RETURN(("Failed to compose pipe name: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
@@ -218,79 +223,21 @@ namespace
 		if (err)
 			LOG_ERROR_RETURN(("Failed to concat strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
 
-		HANDLE hPipe = CreateNamedPipeA(strFullPipe.c_str(),
+		OOBase::TempPtr<wchar_t> wname(strPipe.get_allocator());
+		err = OOBase::Win32::utf8_to_wchar_t(strFullPipe.c_str(),wname);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to convert strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
+
+		HANDLE hPipe = CreateNamedPipeW(wname,
 										PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
 										PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-										1,
-										0,
-										0,
-										0,
+										1,0,0,0,
 										&sa);
 
 		if (hPipe == INVALID_HANDLE_VALUE)
-			LOG_ERROR(("CreateNamedPipeA failed: %s",OOBase::system_error_text()));
+			LOG_ERROR(("CreateNamedPipeW failed: %s",OOBase::system_error_text()));
 
 		return hPipe;
-	}
-
-	bool WaitForConnect(HANDLE hPipe, const OOBase::Timeout& timeout)
-	{
-		OVERLAPPED ov = {0};
-		ov.hEvent = CreateEventW(NULL,TRUE,TRUE,NULL);
-		if (!ov.hEvent)
-			OOBase_CallCriticalFailure(GetLastError());
-
-		// Control handle lifetime
-		OOBase::Win32::SmartHandle ev(ov.hEvent);
-
-		DWORD dwErr = 0;
-		if (ConnectNamedPipe(hPipe,&ov))
-			dwErr = ERROR_PIPE_CONNECTED;
-		else
-		{
-			dwErr = GetLastError();
-			if (dwErr == ERROR_IO_PENDING)
-				dwErr = 0;
-		}
-
-		if (dwErr == ERROR_PIPE_CONNECTED)
-		{
-			dwErr = 0;
-			if (!SetEvent(ov.hEvent))
-				OOBase_CallCriticalFailure(GetLastError());
-		}
-
-		if (dwErr != 0)
-			LOG_ERROR(("ConnectNamedPipe failed: %s",OOBase::system_error_text(dwErr)));
-		else
-		{
-			if (!timeout.is_infinite())
-			{
-				DWORD dwRes = WaitForSingleObject(ov.hEvent,timeout.millisecs());
-				if (dwRes == WAIT_TIMEOUT)
-				{
-					dwErr = ERROR_TIMEOUT;
-					LOG_ERROR(("Timed out waiting for pipe connection"));
-				}
-				else if (dwRes != WAIT_OBJECT_0)
-				{
-					dwErr = GetLastError();
-					LOG_ERROR(("WaitForSingleObject failed: %s",OOBase::system_error_text(dwErr)));
-				}
-			}
-
-			if (dwErr == 0)
-			{
-				DWORD dw = 0;
-				if (!GetOverlappedResult(hPipe,&ov,&dw,TRUE))
-					LOG_ERROR(("GetOverlappedResult failed: %s",OOBase::system_error_text()));
-			}
-		}
-
-		if (dwErr != 0)
-			LOG_ERROR(("WaitForConnect failed: %s",OOBase::system_error_text(dwErr)));
-
-		return (dwErr == 0);
 	}
 
 	DWORD LogonSandboxUser(const OOBase::LocalString& strUName, HANDLE& hToken)
@@ -970,13 +917,9 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	if (Root::is_debug())
 		timeout = OOBase::Timeout();
 
-	if (!WaitForConnect(hPipe,timeout))
-		return OOServer::Errored;
-
-	// Connect up
-	ptrSocket = OOBase::Socket::attach_local((SOCKET)(HANDLE)hPipe,err);
+	ptrSocket = OOBase::Socket::accept_local_socket(hPipe,err,timeout);
 	if (err)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
+		LOG_ERROR_RETURN(("Failed to accept local pipe socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
 	hPipe.detach();
 
@@ -1066,11 +1009,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::As
 		return false;
 
 	// Wait for the connect attempt
-	if (!WaitForConnect(hPipe,OOBase::Timeout(15,0)))
-		return false;
-
-	// Connect up
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(m_proactor->attach_local_socket((SOCKET)(HANDLE)hPipe,err));
+	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket(m_proactor->accept_local_socket(hPipe,err,OOBase::Timeout(15,0)));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
@@ -1088,7 +1027,10 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::As
 bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
 {
 	if (uid != INVALID_HANDLE_VALUE)
+	{
 		CloseHandle(uid);
+		uid = INVALID_HANDLE_VALUE;
+	}
 
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);

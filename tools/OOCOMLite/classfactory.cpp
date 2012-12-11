@@ -218,7 +218,7 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	}
 	
 	Omega::IObject* pObj = NULL;
-	m_ptrCompt->CreateInstance(values[0],values[1].cast<Omega::Activation::Flags_t>(),OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObj);
+	m_ptrCompt->CreateObject(values[0],values[1].cast<Omega::Activation::Flags_t>(),OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObj);
 	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI = static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pObj);
 
 	if (!ptrPOI)

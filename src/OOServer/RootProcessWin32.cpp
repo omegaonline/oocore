@@ -1112,14 +1112,6 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(dwRes)),false);
 	}
 
-	// Restrict the Token
-	dwRes = OOBase::Win32::RestrictToken(uid);
-	if (dwRes != ERROR_SUCCESS)
-	{
-		CloseHandle(uid);
-		LOG_ERROR_RETURN(("OOBase::Win32::RestrictToken failed: %s",OOBase::system_error_text(dwRes)),false);
-	}
-
 	return true;
 }
 

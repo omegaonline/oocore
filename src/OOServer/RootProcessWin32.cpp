@@ -959,10 +959,7 @@ bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t hToken,
 
 bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
 {
-	int err = strAppName.append("OOSvrUser.exe");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
+	int err = 0;
 	if (strAppName.length() >= MAX_PATH)
 	{
 		// Prefix with '\\?\'

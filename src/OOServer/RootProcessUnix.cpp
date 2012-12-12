@@ -613,12 +613,8 @@ bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t uid, OO
 
 bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
 {
-	int err = strAppName.append("oosvruser");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
 	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
-	err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
+	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
 

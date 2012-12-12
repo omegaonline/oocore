@@ -592,6 +592,14 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 	if (err)
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),0);
 
+#if defined(_WIN32)
+	err = strBinPath.append("OOSvrUser.exe");
+#else
+	err = strBinPath.append("oosvruser");
+#endif
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
+
 	OOBase::SmartPtr<Root::Process> ptrSpawn;
 	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket;
 	if (!platform_spawn(strBinPath,uid,session_id,tabEnv,ptrSpawn,ptrSocket,bAgain))

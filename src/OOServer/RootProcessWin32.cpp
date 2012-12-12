@@ -852,9 +852,14 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	if (Root::is_debug())
 		timeout = OOBase::Timeout();
 
-	ptrSocket = OOBase::Socket::accept_local_socket(hPipe,err,timeout);
+	// Wait for the connect attempt
+	err = OOBase::Net::accept_local_socket(hPipe,timeout);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to accept local pipe: %s",OOBase::system_error_text(err)),OOServer::Errored);
+
+	ptrSocket = OOBase::Socket::attach_local((SOCKET)(HANDLE)hPipe,err);
 	if (err)
-		LOG_ERROR_RETURN(("Failed to accept local pipe socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
+		LOG_ERROR_RETURN(("Failed to attach local pipe: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
 	hPipe.detach();
 
@@ -979,7 +984,11 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::As
 		return false;
 
 	// Wait for the connect attempt
-	ptrSocket = m_proactor->accept_local_socket(hPipe,err,OOBase::Timeout(15,0));
+	err = OOBase::Net::accept_local_socket(hPipe,OOBase::Timeout(15,0));
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to accept local pipe: %s",OOBase::system_error_text(err)),false);
+
+	ptrSocket = m_proactor->attach_local_socket((SOCKET)(HANDLE)hPipe,err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 

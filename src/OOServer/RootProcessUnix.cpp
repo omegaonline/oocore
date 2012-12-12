@@ -54,14 +54,14 @@ namespace
 		virtual ~RootProcessUnix();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
-		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
+		bool IsSameUser(OOBase::AsyncLocalSocket::uid_t uid) const;
 
 		bool IsRunning() const;
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
-		RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id);
+		RootProcessUnix(OOBase::AsyncLocalSocket::uid_t id);
 
 		OOBase::String m_sid;
 		bool           m_bSandbox;
@@ -117,7 +117,7 @@ namespace
 	}
 }
 
-RootProcessUnix::RootProcessUnix(OOSvrBase::AsyncLocalSocket::uid_t id) :
+RootProcessUnix::RootProcessUnix(OOBase::AsyncLocalSocket::uid_t id) :
 		m_bSandbox(true),
 		m_uid(id),
 		m_pid(0)
@@ -506,7 +506,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	return OOServer::Errored;
 }
 
-bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(OOBase::AsyncLocalSocket::uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 {
 	int err = 0;
 	OOBase::POSIX::pw_info pw(strSysDir.get_allocator(),uid);
@@ -611,7 +611,7 @@ bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t uid, OO
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
 {
 	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
@@ -648,7 +648,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::As
 	return true;
 }
 
-bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
+bool Root::Manager::get_our_uid(OOBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
 {
 	uid = getuid();
 
@@ -668,7 +668,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
 {
 	bAgain = false;
 

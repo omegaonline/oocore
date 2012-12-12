@@ -43,7 +43,7 @@
 #include <shlobj.h>
 #endif
 
-template class OOBase::Singleton<OOSvrBase::Proactor,Root::Manager>;
+template class OOBase::Singleton<OOBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
 		m_proactor(NULL),
@@ -51,10 +51,6 @@ Root::Manager::Manager() :
 {
 	// Root channel is fixed
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
-}
-
-Root::Manager::~Manager()
-{
 }
 
 int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdArgs::results_t& cmd_args)
@@ -66,7 +62,7 @@ int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdAr
 	{
 		// Start the proactor pool
 		int err = 0;
-		m_proactor = OOSvrBase::Proactor::create(err);
+		m_proactor = OOBase::Proactor::create(err);
 		if (err)
 			LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 		else
@@ -117,7 +113,7 @@ int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdAr
 				m_proactor_pool.join();
 			}
 
-			OOSvrBase::Proactor::destroy(m_proactor);
+			OOBase::Proactor::destroy(m_proactor);
 		}
 	}
 
@@ -335,7 +331,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 int Root::Manager::run_proactor(void* p)
 {
 	int err = 0;
-	return static_cast<OOSvrBase::Proactor*>(p)->run(err);
+	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
 bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
@@ -351,7 +347,7 @@ bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 	
 	bool bAgain = false;
-	OOSvrBase::AsyncLocalSocket::uid_t uid = OOSvrBase::AsyncLocalSocket::uid_t(-1);
+	OOBase::AsyncLocalSocket::uid_t uid = OOBase::AsyncLocalSocket::uid_t(-1);
 	if (strUName.empty())
 	{
 		OOBase::LocalString strOurUName(allocator);
@@ -423,7 +419,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	m_mapUserProcesses.remove(channel);
 }
 
-bool Root::Manager::get_user_process(OOSvrBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
+bool Root::Manager::get_user_process(OOBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
 	for (int attempts = 0;attempts < 2;++attempts)
 	{
@@ -539,7 +535,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, OOBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Get the binary path
 	OOBase::LocalString strBinPath(allocator);
@@ -600,7 +596,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	OOBase::SmartPtr<Root::Process> ptrSpawn;
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket;
+	OOBase::RefPtr<OOBase::AsyncLocalSocket> ptrSocket;
 	if (!platform_spawn(strBinPath,uid,session_id,tabEnv,ptrSpawn,ptrSocket,bAgain))
 		return 0;
 
@@ -645,7 +641,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 	return channel_id;
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
 {
 	OOBase::CDRStream stream;
 
@@ -763,16 +759,16 @@ OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const 
 	return send_request(m_sandbox_channel,&request,response,attribs);
 }
 
-void Root::Manager::accept_client(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
+void Root::Manager::accept_client(void* pThis, OOBase::AsyncLocalSocket* pSocket, int err)
 {
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
+	OOBase::RefPtr<OOBase::AsyncLocalSocket> ptrSocket = pSocket;
 
 	static_cast<Manager*>(pThis)->accept_client_i(ptrSocket,err);
 }
 
 #include "../../include/Omega/OOCore_version.h"
 
-void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err)
+void Root::Manager::accept_client_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, int err)
 {
 	if (err != 0)
 		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
@@ -797,7 +793,7 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>&
 					LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
-					OOSvrBase::AsyncLocalSocket::uid_t uid;
+					OOBase::AsyncLocalSocket::uid_t uid;
 					err = ptrSocket->get_uid(uid);
 					if (err != 0)
 						LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));

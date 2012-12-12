@@ -11,7 +11,7 @@ endif
 
 bin_PROGRAMS = ooguidgen
 
-ooguidgen_LDADD = @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+ooguidgen_LDADD = @top_builddir@/oobase/liboobase.la
 
 if WIN32
 if WIN64_HYBRID

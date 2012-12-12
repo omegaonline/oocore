@@ -46,8 +46,8 @@ namespace Root
 		virtual ~Process() {}
 
 		virtual int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
-		virtual bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const = 0;
-		virtual bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const = 0;
+		virtual bool IsSameLogin(OOBase::AsyncLocalSocket::uid_t uid, const char* session_id) const = 0;
+		virtual bool IsSameUser(OOBase::AsyncLocalSocket::uid_t uid) const = 0;
 
 		virtual bool IsRunning() const = 0;
 		virtual OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const = 0;

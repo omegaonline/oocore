@@ -54,8 +54,8 @@ namespace
 		virtual ~RootProcessWin32();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
-		bool IsSameUser(OOSvrBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(OOBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
+		bool IsSameUser(OOBase::AsyncLocalSocket::uid_t uid) const;
 
 		bool IsRunning() const;
 
@@ -879,7 +879,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	return OOServer::Ok;
 }
 
-bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(OOBase::AsyncLocalSocket::uid_t hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 {
 	int err = 0;
 	if (strUsersDir.empty())
@@ -957,7 +957,7 @@ bool Root::Manager::get_registry_hive(OOSvrBase::AsyncLocalSocket::uid_t hToken,
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
 {
 	int err = 0;
 	if (strAppName.length() >= MAX_PATH)
@@ -994,7 +994,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOSvrBase::As
 	return true;
 }
 
-bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
+bool Root::Manager::get_our_uid(OOBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
 {
 	if (uid != INVALID_HANDLE_VALUE)
 	{
@@ -1027,7 +1027,7 @@ bool Root::Manager::get_our_uid(OOSvrBase::AsyncLocalSocket::uid_t& uid, OOBase:
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOSvrBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
 {
 	DWORD dwErr = LogonSandboxUser(strUName,uid);
 	if (dwErr == ERROR_ACCESS_DENIED)

@@ -60,10 +60,10 @@ namespace User
 		Manager& operator = (const Manager&);
 
 		OOBase::RWMutex                                                               m_lock;
-		OOSvrBase::Proactor*                                                          m_proactor;
+		OOBase::Proactor*                                                             m_proactor;
 		OOBase::ThreadPool                                                            m_proactor_pool;
 		bool                                                                          m_bIsSandbox;
-		OOBase::RefPtr<OOSvrBase::Acceptor>                                           m_ptrAcceptor;
+		OOBase::RefPtr<OOBase::Acceptor>                                              m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
@@ -74,8 +74,8 @@ namespace User
 		bool connect_root(const OOBase::LocalString& strPipe);
 		static int run_proactor(void*);
 
-		static void on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err);
-		void on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err);
+		static void on_accept(void* pThis, OOBase::AsyncLocalSocket* pSocket, int err);
+		void on_accept_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, int err);
 
 		SECURITY_ATTRIBUTES           m_sa;
 #if defined(_WIN32)
@@ -83,7 +83,7 @@ namespace User
 #endif
 
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
-		bool handshake_root(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe);
+		bool handshake_root(OOBase::RefPtr<OOBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 		bool start_acceptor(OOBase::LocalString& strPipe);
 

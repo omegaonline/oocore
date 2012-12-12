@@ -44,8 +44,7 @@
 #include <OOBase/Logger.h>
 #include <OOBase/Thread.h>
 #include <OOBase/StackAllocator.h>
-
-#include <OOSvrBase/Proactor.h>
+#include <OOBase/Proactor.h>
 
 //////////////////////////////////////////////
 
@@ -65,7 +64,7 @@ namespace
 	static const size_t     s_header_len = 2 * sizeof(Omega::uint32_t);
 }
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket) :
 		m_pHandler(pHandler),
 		m_ptrSocket(ptrSocket),
 		m_channel_id(0)

@@ -53,8 +53,7 @@
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>
 #include <OOBase/ConfigFile.h>
-
-#include <OOSvrBase/Proactor.h>
+#include <OOBase/Proactor.h>
 
 //////////////////////////////////////////////
 

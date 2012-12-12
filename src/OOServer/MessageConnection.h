@@ -41,7 +41,7 @@ namespace OOServer
 	class MessageConnection : public OOBase::RefCounted<OOBase::CrtAllocator>
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
+		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket);
 		
 		void set_channel_id(Omega::uint32_t channel_id);
 
@@ -54,10 +54,10 @@ namespace OOServer
 		MessageConnection& operator = (const MessageConnection&);
 		virtual ~MessageConnection();
 
-		OOBase::SpinLock                            m_lock;
-		MessageHandler*                             m_pHandler;
-		OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
-		Omega::uint32_t                             m_channel_id;
+		OOBase::SpinLock                         m_lock;
+		MessageHandler*                          m_pHandler;
+		OOBase::RefPtr<OOBase::AsyncLocalSocket> m_ptrSocket;
+		Omega::uint32_t                          m_channel_id;
 
 		static void on_recv1(void* param, OOBase::Buffer* buffer, int err);
 		static void on_recv2(void* param, OOBase::Buffer* buffer, int err);

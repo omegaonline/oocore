@@ -61,8 +61,7 @@ int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdAr
 {
 	int ret = EXIT_FAILURE;
 
-	// Load the config
-	// Open the root registry
+	// Load the config and open the root registry
 	if (load_config(cmd_args) && init_database(allocator))
 	{
 		// Start the proactor pool

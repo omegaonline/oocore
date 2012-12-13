@@ -114,9 +114,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),&response,attribs);
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
-			if (res == OOServer::MessageHandler::io_result::timedout)
-				throw Omega::ITimeoutException::Create();
-			else if (res == OOServer::MessageHandler::io_result::channel_closed)
+			if (res == OOServer::MessageHandler::io_result::channel_closed)
 			{
 				disconnect();
 				throw Omega::Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send request"));
@@ -202,9 +200,7 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	OOServer::MessageHandler::io_result::type res = Manager::instance()->send_request(m_channel_id,NULL,&response,OOServer::Message_t::synchronous | OOServer::Message_t::channel_reflect);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
-		if (res == OOServer::MessageHandler::io_result::timedout)
-			throw Omega::ITimeoutException::Create();
-		else if (res == OOServer::MessageHandler::io_result::channel_closed)
+		if (res == OOServer::MessageHandler::io_result::channel_closed)
 		{
 			disconnect();
 			throw Omega::Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send channel_reflect request"));

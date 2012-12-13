@@ -673,7 +673,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOBase::AsyncLocalS
 	return channel_id;
 }
 
-void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& /*timeout*/, Omega::uint32_t attribs)
+void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	request.read(op_code);

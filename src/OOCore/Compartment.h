@@ -65,7 +65,7 @@ namespace OOCore
 
 		Omega::Remoting::IObjectManager* get_channel_om(Omega::uint32_t src_channel_id);
 		OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
-		void process_request(const Message& msg, const OOBase::Timeout& timeout);
+		void process_request(const Message& msg);
 
 		OTL::ObjectImpl<ComptChannel>* create_compartment_channel(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);
 		Omega::IException* compartment_message(Omega::uint16_t src_compt_id, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv);
@@ -77,7 +77,7 @@ namespace OOCore
 
 		struct ComptState
 		{
-			ComptState(Compartment* cmpt, OOBase::Timeout* pTimeout = NULL);
+			ComptState(Compartment* cmpt);
 			~ComptState();
 
 		private:

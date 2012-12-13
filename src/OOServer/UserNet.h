@@ -33,7 +33,7 @@ namespace User
 
 		OTL::ObjectImpl<Channel>* client_init(Omega::Remoting::IEndpoint* pEndpoint, const Omega::string_t& strEndpoint, Omega::uint32_t channel_id);
 		void server_init(Omega::Remoting::IChannelSink* pSink, const Omega::guid_t& message_oid, Omega::uint32_t channel_id);
-		void send_away(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
+		void send_away(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		void channel_closed(Omega::uint32_t channel_id);
 
 		BEGIN_INTERFACE_MAP(RemoteChannel)
@@ -52,13 +52,13 @@ namespace User
 		OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t channel_id);
 		Omega::Remoting::IObjectManager* create_object_manager(Omega::uint32_t channel_id);
 		void process_here_i(OOBase::CDRStream& input);
-		void send_away_i(Omega::Remoting::IMessage* pPayload, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
+		void send_away_i(Omega::Remoting::IMessage* pPayload, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		
 		static void process_here(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance&);
 
 	// IChannelSink members
 	public:
-		void Send(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pMsg, Omega::uint32_t timeout);
+		void Send(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pMsg);
 		void Close();
 	};
 }

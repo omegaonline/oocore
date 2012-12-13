@@ -66,7 +66,7 @@ namespace User
 		OOBase::RefPtr<OOBase::Acceptor>                                              m_ptrAcceptor;
 		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
-		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
+		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
 		virtual void on_channel_closed(Omega::uint32_t channel);
 		static void do_channel_closed(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
 		void do_channel_closed_i(Omega::uint32_t channel_id, OOBase::AllocatorInstance& allocator);
@@ -92,9 +92,9 @@ namespace User
 
 		OTL::ObjectImpl<Channel>* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		Omega::Remoting::IObjectManager* create_object_manager(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
-		void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs);
-		void process_user_request(OOBase::CDRStream& input, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs);
-		void process_root_request(OOBase::CDRStream& input, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs);
+		void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs);
+		void process_user_request(OOBase::CDRStream& input, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs);
+		void process_root_request(OOBase::CDRStream& input, Omega::uint16_t src_thread_id, Omega::uint32_t attribs);
 
 		// Remote channel handling
 		OOBase::RWMutex m_remote_lock;

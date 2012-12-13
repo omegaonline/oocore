@@ -39,14 +39,14 @@ void OOCore::Compartment::set_id(Omega::uint16_t id)
 	m_id = id;
 }
 
-OOCore::Compartment::ComptState::ComptState(Compartment* cmpt, OOBase::Timeout* pTimeout) : m_cmpt(cmpt)
+OOCore::Compartment::ComptState::ComptState(Compartment* cmpt) : m_cmpt(cmpt)
 {
-	m_prev_id = m_cmpt->m_pSession->update_state(m_cmpt->m_id,pTimeout);
+	m_prev_id = m_cmpt->m_pSession->update_state(m_cmpt->m_id);
 }
 
 OOCore::Compartment::ComptState::~ComptState()
 {
-	m_cmpt->m_pSession->update_state(m_prev_id,NULL);
+	m_cmpt->m_pSession->update_state(m_prev_id);
 }
 
 void OOCore::Compartment::shutdown()
@@ -194,7 +194,7 @@ ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_ch
 	return info.m_ptrChannel.AddRef();
 }
 
-void OOCore::Compartment::process_request(const Message& msg, const OOBase::Timeout& timeout)
+void OOCore::Compartment::process_request(const Message& msg)
 {
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(msg.m_src_channel_id);
@@ -212,12 +212,8 @@ void OOCore::Compartment::process_request(const Message& msg, const OOBase::Time
 	ObjectPtr<Remoting::IMessage> ptrRequest;
 	ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
 
-	// Check timeout - at the last possible moment...
-	if (timeout.has_expired())
-		throw ITimeoutException::Create();
-
 	// Make the call
-	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.is_infinite() ? 0 : timeout.millisecs());
+	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest);
 
 	if (!(msg.m_attribs & TypeInfo::Asynchronous))
 	{
@@ -287,7 +283,7 @@ IException* OOCore::Compartment::compartment_message(Omega::uint16_t src_cmpt_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel->GetObjectManager();
 
 		// Make the call
-		pRecv = ptrOM->Invoke(pSend,0);
+		pRecv = ptrOM->Invoke(pSend);
 	}
 	catch (IException* pE)
 	{

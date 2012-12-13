@@ -72,7 +72,6 @@ namespace OOCore
 
 		// This is the order for I/O
 		Omega::uint32_t    m_src_channel_id;
-		OOBase::Timeout    m_timeout;
 		Omega::uint32_t    m_attribs;
 		Omega::uint16_t    m_dest_thread_id;
 		Omega::uint16_t    m_src_thread_id;
@@ -100,7 +99,7 @@ namespace OOCore
 		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment(const Omega::guid_t& channel_oid);
 		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
 		void remove_compartment(Omega::uint16_t id);
-		Omega::uint16_t update_state(Omega::uint16_t compartment_id, OOBase::Timeout* pTimeout);
+		Omega::uint16_t update_state(Omega::uint16_t compartment_id);
 
 	private:
 		friend class ThreadContext;
@@ -136,7 +135,6 @@ namespace OOCore
 
 			// 'Private' thread-local data
 			OOBase::Atomic<size_t>        m_usage_count;
-			OOBase::Timeout               m_timeout;
 			Omega::uint16_t               m_current_cmpt;
 
 			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
@@ -172,7 +170,7 @@ namespace OOCore
 		void send_response_catch(const Message& msg, OOBase::CDRStream* response);
 		void process_request(ThreadContext* pContext, const Message& msg);
 		void wait_for_response(ThreadContext* pContext, OOBase::CDRStream& response, Omega::uint32_t from_channel_id);
-		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Message::Type type, Omega::uint32_t attribs);
+		void build_header(OOBase::CDRStream& header, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* request, Message::Type type, Omega::uint32_t attribs);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		void wait_or_alert(const OOBase::Atomic<size_t>& usage);
 

@@ -42,8 +42,6 @@
 #include <shlobj.h>
 #include <ntsecapi.h>
 
-void AttachDebugger(DWORD pid);
-
 namespace
 {
 	class RootProcessWin32 : public Root::Process
@@ -597,7 +595,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, HANDLE h
 	}
 
 	if (Root::is_debug())
-		AttachDebugger(process_info.dwProcessId);
+		OOBase::Win32::AttachDebugger(process_info.dwProcessId);
 
 	// Attach a debugger if we are debugging
 	if (hDebugEvent)

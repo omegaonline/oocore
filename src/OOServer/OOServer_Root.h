@@ -49,7 +49,7 @@
 #include <OOBase/Set.h>
 #include <OOBase/String.h>
 #include <OOBase/CmdArgs.h>
-#include <OOBase/SecurityWin32.h>
+#include <OOBase/Win32Security.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>
 #include <OOBase/ConfigFile.h>

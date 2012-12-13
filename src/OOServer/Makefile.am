@@ -14,7 +14,6 @@ endif
 noinst_LTLIBRARIES = liboosvrcmn.la
 
 liboosvrcmn_la_SOURCES = \
-	DebuggerWin32.cpp \
 	MessageConnection.h \
 	MessageConnection.cpp \
 	Protocol.h

@@ -14,7 +14,6 @@ endif
 noinst_LTLIBRARIES = liboosvrcmn.la
 
 liboosvrcmn_la_SOURCES = \
-	DebuggerWin32.cpp \
 	MessageConnection.h \
 	MessageConnection.cpp \
 	Protocol.h
@@ -27,7 +26,7 @@ ooserverd_CPPFLAGS = $(SQLITE3_CFLAGS) \
 	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" \
 	$(AM_CPPFLAGS) 
 		
-ooserverd_LDADD = liboosvrcmn.la libdb/libdb.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+ooserverd_LDADD = liboosvrcmn.la libdb/libdb.la @top_builddir@/oobase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \
@@ -71,7 +70,7 @@ oosvruser_SOURCES = \
 	UserServices.cpp
 
 oosvruser_CPPFLAGS = $(AM_CPPFLAGS)
-oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboosvrbase.la @top_builddir@/oobase/liboobase.la
+oosvruser_LDADD = liboosvrcmn.la @top_builddir@/oobase/liboobase.la
 
 if WIN32
 if WIN64_HYBRID

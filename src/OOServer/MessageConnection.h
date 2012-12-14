@@ -41,7 +41,7 @@ namespace OOServer
 	class MessageConnection : public OOBase::RefCounted<OOBase::CrtAllocator>
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket);
+		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket);
 		
 		void set_channel_id(Omega::uint32_t channel_id);
 
@@ -54,10 +54,10 @@ namespace OOServer
 		MessageConnection& operator = (const MessageConnection&);
 		virtual ~MessageConnection();
 
-		OOBase::SpinLock                            m_lock;
-		MessageHandler*                             m_pHandler;
-		OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> m_ptrSocket;
-		Omega::uint32_t                             m_channel_id;
+		OOBase::SpinLock                         m_lock;
+		MessageHandler*                          m_pHandler;
+		OOBase::RefPtr<OOBase::AsyncLocalSocket> m_ptrSocket;
+		Omega::uint32_t                          m_channel_id;
 
 		static void on_recv1(void* param, OOBase::Buffer* buffer, int err);
 		static void on_recv2(void* param, OOBase::Buffer* buffer, int err);
@@ -110,12 +110,11 @@ namespace OOServer
 			{
 				success,
 				channel_closed,
-				timedout,
 				failed
 			};
 		};
 
-		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type, OOBase::CDRStream& message);
+		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type, OOBase::CDRStream& message);
 		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t attribs);
 
 		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
@@ -129,10 +128,10 @@ namespace OOServer
 
 		Omega::uint32_t register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
 
-		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs) = 0;
+		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs) = 0;
 		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
 		virtual void on_channel_closed(Omega::uint32_t channel) = 0;
-		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type);
+		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type);
 
 		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
 		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
@@ -198,7 +197,6 @@ namespace OOServer
 
 			// This is the order for I/O as well
 			Omega::uint32_t   m_src_channel_id;
-			OOBase::Timeout   m_timeout;
 			Omega::uint32_t   m_attribs;
 			Omega::uint16_t   m_dest_thread_id;
 			Omega::uint16_t   m_src_thread_id;
@@ -219,8 +217,6 @@ namespace OOServer
 			MessageHandler*               m_pHandler;
 
 			// 'Private' thread-local data
-			OOBase::Timeout             m_timeout;
-
 			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
 
 			static ThreadContext* instance(MessageHandler* pHandler);
@@ -243,9 +239,9 @@ namespace OOServer
 		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
 		io_result::type queue_message(const Message& msg);
 		io_result::type handle_message(Message& msg);
-		io_result::type wait_for_response(OOBase::CDRStream& response, const OOBase::Timeout& timeout, Omega::uint32_t from_channel_id);
+		io_result::type wait_for_response(OOBase::CDRStream& response, Omega::uint32_t from_channel_id);
 		io_result::type send_message(Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
-		bool process_request_context(ThreadContext* pContext, Message& msg, const OOBase::Timeout& timeout);
+		bool process_request_context(ThreadContext* pContext, Message& msg);
 
 		io_result::type process_channel_close(Message& msg);
 		bool process_async_function(Message& msg);

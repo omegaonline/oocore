@@ -36,12 +36,11 @@
 #include <OOBase/Thread.h>
 #include <OOBase/Set.h>
 #include <OOBase/Environment.h>
-#include <OOBase/SecurityWin32.h>
+#include <OOBase/Win32Security.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>
 #include <OOBase/StackAllocator.h>
-
-#include <OOSvrBase/Proactor.h>
+#include <OOBase/Proactor.h>
 
 //////////////////////////////////////////////
 

@@ -26,8 +26,6 @@
 
 #include <shlwapi.h>
 
-void AttachDebugger(DWORD pid);
-
 #if defined(_MSC_VER)
 #define wcsicmp _wcsicmp
 #endif
@@ -84,7 +82,7 @@ void UserProcessWin32::exec(const wchar_t* app_name, wchar_t* cmd_line, const wc
 	}
 
 	if (User::is_debug())
-		AttachDebugger(pi.dwProcessId);
+		OOBase::Win32::AttachDebugger(pi.dwProcessId);
 
 	if (hDebugEvent)
 		SetEvent(hDebugEvent);

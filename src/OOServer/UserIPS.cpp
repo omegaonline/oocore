@@ -150,16 +150,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 		return;
 	}
 
-	// The timeout needs to be related to the request timeout...
-	OOBase::Timeout timeout;
-	ObjectPtr<Remoting::ICallContext> ptrCC = Remoting::GetCallContext();
-	if (ptrCC)
-	{
-		uint32_t msecs = ptrCC->Timeout();
-		if (msecs != 0xFFFFFFFF)
-			timeout = OOBase::Timeout(msecs / 1000,(msecs % 1000) * 1000);
-	}
-
 	// Find the OID key...
 	ObjectPtr<Omega::Registry::IKey> ptrLU = ObjectPtr<Omega::Registry::IOverlayKeyFactory>(Omega::Registry::OID_OverlayKeyFactory)->Overlay("Local User","All Users");
 	ObjectPtr<Omega::Registry::IKey> ptrKey = ptrLU->OpenKey("Objects/OIDs");
@@ -254,25 +244,17 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	ROTNotifier notifier(ptrNotify,oid);
 
 	// Wait for the process to start and register its parts...
-	while (!timeout.has_expired())
+	OOBase::Timeout wait(30,0);
+
+	// Wait for the oid to be registered
+	if (notifier.wait(wait))
 	{
-		OOBase::Timeout wait(1,0);
-		if (!timeout.is_infinite() && timeout < wait)
-			wait = timeout;
-
-		// Wait for the oid to be registered
-		if (notifier.wait(wait))
-		{
-			// Get the object from the ROT
-			m_ptrROT->GetObject(oid,iid,pObject);
-			if (pObject)
-				break;
-		}
-
-		// Check the process is still alive
-		if (!ptrProcess->is_running(exit_code))
-			break;
+		// Get the object from the ROT
+		m_ptrROT->GetObject(oid,iid,pObject);
 	}
+
+	// Check the process is still alive
+	bool bRunning = ptrProcess->is_running(exit_code);
 
 	// Remove from the map
 	guard.acquire();
@@ -281,7 +263,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 	if (!pObject)
 	{
-		if (timeout.has_expired())
+		if (bRunning)
 		{
 			OOBase::Logger::log(OOBase::Logger::Debug,"Given up waiting for process %s",strProcess.c_str());
 

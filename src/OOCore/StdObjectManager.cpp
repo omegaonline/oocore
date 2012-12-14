@@ -42,7 +42,6 @@ namespace
 		{
 		}
 
-		OOBase::Timeout          m_timeout;
 		uint32_t                 m_src_id;
 		Remoting::MarshalFlags_t m_flags;
 	};
@@ -56,8 +55,6 @@ namespace
 		END_INTERFACE_MAP()
 
 	public:
-		uint32_t Timeout();
-		bool_t HasTimedOut();
 		uint32_t SourceId();
 		Remoting::MarshalFlags_t SourceType();
 
@@ -67,16 +64,6 @@ namespace
 }
 
 template class OOBase::TLSSingleton<CallContext,OOCore::DLL>;
-
-uint32_t StdCallContext::Timeout()
-{
-	return m_cc.m_timeout.millisecs();
-}
-
-bool_t StdCallContext::HasTimedOut()
-{
-	return m_cc.m_timeout.has_expired();
-}
 
 uint32_t StdCallContext::SourceId()
 {
@@ -146,7 +133,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	MarshalInterface(string_t::constant("$retval"),pResponse,iid,ptrObject);
 }
 
-Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t millisecs)
+Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn)
 {
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Invoke() called on disconnected ObjectManager"));
@@ -162,14 +149,6 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		old_context = *pCC;
 	else
 		pCC = &old_context;
-
-	if (millisecs)
-	{
-		// Use a decreasing timeout if needed
-		pCC->m_timeout = OOBase::Timeout(millisecs / 1000, (millisecs % 1000) * 1000);
-		if (old_context.m_timeout < pCC->m_timeout)
-			pCC->m_timeout = old_context.m_timeout;
-	}
 
 	try
 	{

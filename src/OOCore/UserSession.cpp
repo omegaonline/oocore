@@ -335,9 +335,6 @@ int OOCore::UserSession::run_read_loop()
 		msg.m_payload.read(dest_channel_id);
 		msg.m_payload.read(msg.m_src_channel_id);
 
-		// Read the timeout
-		msg.m_payload.read(msg.m_timeout);
-		
 		// Read the rest of the message
 		msg.m_payload.read(msg.m_attribs);
 		msg.m_payload.read(msg.m_dest_thread_id);
@@ -403,7 +400,7 @@ int OOCore::UserSession::run_read_loop()
 			ThreadContext* pContext = NULL;
 			if (m_mapThreadContexts.find(msg.m_dest_thread_id,pContext))
 			{
-				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg,msg.m_timeout);
+				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg);
 				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = pContext->m_msg_queue.last_error();
@@ -418,7 +415,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				size_t waiting = m_usage_count;
 
-				OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.push(msg,msg.m_timeout);
+				OOBase::BoundedQueue<Message>::Result res = m_default_msg_queue.push(msg);
 				if (res == OOBase::BoundedQueue<Message>::error)
 				{
 					err = m_default_msg_queue.last_error();
@@ -528,7 +525,7 @@ void OOCore::UserSession::wait_for_response(ThreadContext* pContext, OOBase::CDR
 
 		// Get the next message
 		Message msg;
-		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg,pContext->m_timeout);
+		OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.pop(msg);
 
 		// Decrement the usage count
 		--pContext->m_usage_count;
@@ -549,13 +546,8 @@ void OOCore::UserSession::wait_for_response(ThreadContext* pContext, OOBase::CDR
 			break;
 
 		case OOBase::BoundedQueue<Message>::closed:
-			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
-
-		case OOBase::BoundedQueue<Message>::timedout:
-			throw ITimeoutException::Create();
-
 		default:
-			break;
+			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
 		}
 	}
 }
@@ -614,29 +606,20 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 
 	// Write the header info
 	OOBase::CDRStream header;
-	build_header(header,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,pContext->m_timeout,Message::Request,attribs);
+	build_header(header,m_channel_id | pContext->m_current_cmpt,src_thread_id,dest_channel_id,dest_thread_id,request,Message::Request,attribs);
 
 	// Send to the handle
 	int err = 0;
 	if (request)
 	{
 		OOBase::Buffer* bufs[2] = { header.buffer(), request->buffer() };
-		err = m_stream->send_v(bufs,2,pContext->m_timeout);
+		err = m_stream->send_v(bufs,2);
 	}
 	else
-		err = m_stream->send(header.buffer(),pContext->m_timeout);
+		err = m_stream->send(header.buffer());
 
 	if (err != 0)
 	{
-#if defined(_WIN32)
-		if (err == WSAETIMEDOUT)
-#else
-		if (err == ETIMEDOUT)
-#endif
-		{
-			throw ITimeoutException::Create();
-		}
-
 		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
@@ -667,27 +650,18 @@ void OOCore::UserSession::send_response(const Message& msg, OOBase::CDRStream* r
 
 	// Write the header info
 	OOBase::CDRStream header;
-	build_header(header,m_channel_id | msg.m_dest_cmpt_id,pContext->m_thread_id,msg.m_src_channel_id,msg.m_src_thread_id,response,msg.m_timeout,Message::Response,msg.m_attribs);
+	build_header(header,m_channel_id | msg.m_dest_cmpt_id,pContext->m_thread_id,msg.m_src_channel_id,msg.m_src_thread_id,response,Message::Response,msg.m_attribs);
 
 	OOBase::Buffer* bufs[2] = { header.buffer(), response->buffer() };
-	int err = m_stream->send_v(bufs,2,msg.m_timeout);
+	int err = m_stream->send_v(bufs,2);
 	if (err != 0)
 	{
-#if defined(_WIN32)
-		if (err == WSAETIMEDOUT)
-#else
-		if (err == ETIMEDOUT)
-#endif
-		{
-			throw ITimeoutException::Create();
-		}
-
 		ObjectPtr<IException> ptrE = ISystemException::Create(err,OMEGA_CREATE_INTERNAL("Failed to send message buffer"));
 		throw Remoting::IChannelClosedException::Create(ptrE);
 	}
 }
 
-void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, const OOBase::Timeout& timeout, Message::Type type, uint32_t attribs)
+void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* request, Message::Type type, uint32_t attribs)
 {
 	header.write_endianess();
 	header.write(byte_t(1));     // version
@@ -699,7 +673,6 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 
 	header.write(dest_channel_id);
 	header.write(src_channel_id);
-	header.write(timeout);
 	header.write(attribs);
 	header.write(dest_thread_id);
 	header.write(src_thread_id);
@@ -804,15 +777,10 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	uint16_t old_id = pContext->m_current_cmpt;
 	pContext->m_current_cmpt = msg.m_dest_cmpt_id;
 
-	// Update timeout
-	OOBase::Timeout old_timeout = pContext->m_timeout;
-	if (msg.m_timeout < pContext->m_timeout)
-		pContext->m_timeout = msg.m_timeout;
-
 	try
 	{
 		// Process the message...
-		ptrCompt->process_request(msg,pContext->m_timeout);
+		ptrCompt->process_request(msg);
 	}
 	catch (IException* pE)
 	{
@@ -838,7 +806,6 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	else
 		pContext->m_mapChannelThreads.remove(msg.m_src_channel_id);
 
-	pContext->m_timeout = old_timeout;
 	pContext->m_current_cmpt = old_id;
 }
 
@@ -885,16 +852,13 @@ void OOCore::UserSession::remove_compartment(uint16_t id)
 	m_mapCompartments.remove(id);
 }
 
-uint16_t OOCore::UserSession::update_state(uint16_t compartment_id, OOBase::Timeout* pTimeout)
+uint16_t OOCore::UserSession::update_state(uint16_t compartment_id)
 {
 	ThreadContext* pContext = ThreadContext::instance();
 
 	uint16_t old_id = pContext->m_current_cmpt;
 	pContext->m_current_cmpt = compartment_id;
 
-	if (pTimeout)
-		*pTimeout = pContext->m_timeout;
-	
 	return old_id;
 }
 

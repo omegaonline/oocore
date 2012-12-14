@@ -18,9 +18,6 @@
     <ClCompile Include="UserChannel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DebuggerWin32.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MessageConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

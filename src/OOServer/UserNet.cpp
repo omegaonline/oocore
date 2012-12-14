@@ -82,7 +82,7 @@ Remoting::IObjectManager* User::RemoteChannel::create_object_manager(uint32_t ch
 	return ptrChannel->GetObjectManager();
 }
 
-void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::Timeout& timeout, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, OOServer::Message_t::Type type)
+void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, OOServer::Message_t::Type type)
 {
 	// Make sure we have the source in the map...
 	if (src_channel_id != 0)
@@ -188,10 +188,10 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 		}
 	}
 
-	send_away_i(ptrPayload,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
+	send_away_i(ptrPayload,src_channel_id,dest_channel_id,attribs,dest_thread_id,src_thread_id,type);
 }
 
-void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src_channel_id, uint32_t dest_channel_id, const OOBase::Timeout& timeout, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, OOServer::Message_t::Type type)
+void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src_channel_id, uint32_t dest_channel_id, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, OOServer::Message_t::Type type)
 {
 	// Create a new message of the right format...
 	ObjectPtr<Remoting::IMessage> ptrMessage;
@@ -204,7 +204,6 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	ptrMessage->WriteStructStart(string_t::constant("message"),string_t::constant("$rpc_msg"));
 	ptrMessage->WriteValue(string_t::constant("src_channel_id"),src_channel_id);
 	ptrMessage->WriteValue(string_t::constant("dest_channel_id"),dest_channel_id);
-	ptrMessage->WriteValue(string_t::constant("timeout_msecs"),static_cast<uint32_t>(timeout.millisecs()));
 	ptrMessage->WriteValue(string_t::constant("attribs"),attribs);
 	ptrMessage->WriteValue(string_t::constant("dest_thread_id"),dest_thread_id);
 	ptrMessage->WriteValue(string_t::constant("src_thread_id"),src_thread_id);
@@ -224,20 +223,16 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	{
 		ptrMessage->WriteStructEnd();
 
-		if (timeout.has_expired())
-			throw ITimeoutException::Create();
-
 		if (!m_ptrUpstream)
 			throw Remoting::IChannelClosedException::Create();
 
-		m_ptrUpstream->Send((TypeInfo::MethodAttributes_t)(attribs & 0xFFFF),ptrMessage,timeout.millisecs());
+		m_ptrUpstream->Send((TypeInfo::MethodAttributes_t)(attribs & 0xFFFF),ptrMessage);
 	}
 	catch (...)
 	{
 		ptrMessage->ReadStructStart(string_t::constant("message"),string_t::constant("$rpc_msg"));
 		ptrMessage->ReadValue(string_t::constant("src_channel_id"));
 		ptrMessage->ReadValue(string_t::constant("dest_channel_id"));
-		ptrMessage->ReadValue(string_t::constant("timeout_msecs"));
 		ptrMessage->ReadValue(string_t::constant("attribs"));
 		ptrMessage->ReadValue(string_t::constant("dest_thread_id"));
 		ptrMessage->ReadValue(string_t::constant("src_thread_id"));
@@ -273,8 +268,6 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	// Read the header
 	uint32_t src_channel_id;
 	input.read(src_channel_id);
-	OOBase::Timeout timeout;
-	input.read(timeout);
 	uint32_t ex_attribs = 0;
 	input.read(ex_attribs);
 	uint16_t dest_thread_id;
@@ -298,20 +291,16 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 	ptrPayload.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrMsg);
 
-	// Check timeout
-	if (timeout.has_expired())
-		throw ITimeoutException::Create();
-
-	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrPayload,timeout.millisecs());
+	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrPayload);
 
 	if (!(ex_attribs & OOServer::Message_t::asynchronous))
 	{
 		// Send it back...
-		send_away_i(ptrResult,0,src_channel_id,timeout,OOServer::Message_t::synchronous,src_thread_id,dest_thread_id,OOServer::Message_t::Response);
+		send_away_i(ptrResult,0,src_channel_id,OOServer::Message_t::synchronous,src_thread_id,dest_thread_id,OOServer::Message_t::Response);
 	}
 }
 
-void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage* pMsg, uint32_t millisecs)
+void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage* pMsg)
 {
 	// This is a message from the other end...
 
@@ -319,15 +308,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	pMsg->ReadStructStart(string_t::constant("message"),string_t::constant("$rpc_msg"));
 	uint32_t src_channel_id = pMsg->ReadValue(string_t::constant("src_channel_id")).cast<uint32_t>();
 	uint32_t dest_channel_id = pMsg->ReadValue(string_t::constant("dest_channel_id")).cast<uint32_t>();
-	uint32_t timeout_msecs = pMsg->ReadValue(string_t::constant("timeout_msecs")).cast<uint32_t>();
-	
-	OOBase::Timeout timeout;
-	if (millisecs < timeout_msecs)
-		timeout_msecs = millisecs;
-
-	if (timeout_msecs != 0xFFFFFFFF)
-		timeout = OOBase::Timeout(timeout_msecs / 1000,(timeout_msecs % 1000) * 1000);
-
 	uint32_t ex_attribs = pMsg->ReadValue(string_t::constant("attribs")).cast<uint32_t>();
 	uint16_t dest_thread_id = pMsg->ReadValue(string_t::constant("dest_thread_id")).cast<uint16_t>();
 	uint16_t src_thread_id = pMsg->ReadValue(string_t::constant("src_thread_id")).cast<uint16_t>();
@@ -405,7 +385,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				if (!(out_attribs & OOServer::Message_t::asynchronous))
 				{
 					// Send it back...
-					send_away_i(ptrResult,dest_channel_id,src_channel_id,timeout,out_attribs,src_thread_id,dest_thread_id,OOServer::Message_t::Response);
+					send_away_i(ptrResult,dest_channel_id,src_channel_id,out_attribs,src_thread_id,dest_thread_id,OOServer::Message_t::Response);
 				}
 			}
 			else
@@ -416,7 +396,6 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			// Need to queue this as an async func...
 			OOBase::CDRStream output;
 			output.write(src_channel_id);
-			output.write(timeout);
 			output.write(ex_attribs);
 			output.write(dest_thread_id);
 			output.write(src_thread_id);
@@ -528,15 +507,13 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 
 		// Forward through the network...
-		OOServer::MessageHandler::io_result::type res = Manager::instance()->forward_message(src_channel_id,dest_channel_id,timeout,ex_attribs,dest_thread_id,src_thread_id,type,*ptrOutput->GetCDRStream());
+		OOServer::MessageHandler::io_result::type res = Manager::instance()->forward_message(src_channel_id,dest_channel_id,ex_attribs,dest_thread_id,src_thread_id,type,*ptrOutput->GetCDRStream());
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & OOServer::Message_t::system_message))
 				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
-			if (res == OOServer::MessageHandler::io_result::timedout)
-				throw ITimeoutException::Create();
-			else if (res == OOServer::MessageHandler::io_result::channel_closed)
+			if (res == OOServer::MessageHandler::io_result::channel_closed)
 				throw Remoting::IChannelClosedException::Create();
 			else
 				OMEGA_THROW("Internal server exception");
@@ -564,7 +541,7 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 		guard.release();
 
 		// Send a sys message
-		send_away_i(ptrMsg,0,0,OOBase::Timeout(),OOServer::Message_t::asynchronous | OOServer::Message_t::channel_close,0,0,OOServer::Message_t::Request);
+		send_away_i(ptrMsg,0,0,OOServer::Message_t::asynchronous | OOServer::Message_t::channel_close,0,0,OOServer::Message_t::Request);
 	}
 }
 
@@ -712,7 +689,7 @@ void User::Manager::close_all_remotes()
 	}
 }
 
-OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::Timeout& timeout, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type)
+OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type)
 {
 	try
 	{
@@ -722,20 +699,15 @@ OOServer::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRSt
 
 			RemoteChannelEntry channel_entry;
 			if (!m_mapRemoteChannelIds.find(dest_channel_id & 0xFFF00000,channel_entry))
-				return MessageHandler::route_off(msg,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
+				return MessageHandler::route_off(msg,src_channel_id,dest_channel_id,attribs,dest_thread_id,src_thread_id,type);
 
 			ptrRemoteChannel = channel_entry.ptrRemoteChannel;
 		}
 
 		// Send it on...
-		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,timeout,attribs,dest_thread_id,src_thread_id,type);
+		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,attribs,dest_thread_id,src_thread_id,type);
 
 		return OOServer::MessageHandler::io_result::success;
-	}
-	catch (ITimeoutException* pE)
-	{
-		pE->Release();
-		return OOServer::MessageHandler::io_result::timedout;
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{

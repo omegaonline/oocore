@@ -33,7 +33,7 @@
 #include <sddl.h>
 #endif
 
-template class OOBase::Singleton<OOSvrBase::Proactor,User::Manager>;
+template class OOBase::Singleton<OOBase::Proactor,User::Manager>;
 
 namespace OTL
 {
@@ -157,7 +157,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 {
 	int ret = EXIT_FAILURE;
 	int err = 0;
-	m_proactor = OOSvrBase::Proactor::create(err);
+	m_proactor = OOBase::Proactor::create(err);
 	if (err)
 		LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 	else
@@ -191,7 +191,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 			m_proactor_pool.join();
 		}
 
-		OOSvrBase::Proactor::destroy(m_proactor);
+		OOBase::Proactor::destroy(m_proactor);
 	}
 
 	if (User::is_debug() && ret != EXIT_SUCCESS)
@@ -208,7 +208,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 int User::Manager::run_proactor(void* p)
 {
 	int err = 0;
-	return static_cast<OOSvrBase::Proactor*>(p)->run(err);
+	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
 bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
@@ -217,7 +217,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->connect_local_socket(strPipe.c_str(),err,timeout));
+	OOBase::RefPtr<OOBase::AsyncLocalSocket> local_socket(m_proactor->connect_local_socket(strPipe.c_str(),err,timeout));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -227,7 +227,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 	int fd = atoi(strPipe.c_str());
 
 	int err = 0;
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> local_socket(m_proactor->attach_local_socket(fd,err));
+	OOBase::RefPtr<OOBase::AsyncLocalSocket> local_socket(m_proactor->attach_local_socket(fd,err));
 	if (err != 0)
 	{
 		OOBase::POSIX::close(fd);
@@ -429,14 +429,14 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 	return true;
 }
 
-void User::Manager::on_accept(void* pThis, OOSvrBase::AsyncLocalSocket* pSocket, int err)
+void User::Manager::on_accept(void* pThis, OOBase::AsyncLocalSocket* pSocket, int err)
 {
-	OOBase::RefPtr<OOSvrBase::AsyncLocalSocket> ptrSocket = pSocket;
+	OOBase::RefPtr<OOBase::AsyncLocalSocket> ptrSocket = pSocket;
 
 	static_cast<Manager*>(pThis)->on_accept_i(ptrSocket,err);
 }
 
-void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptrSocket, int err)
+void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, int err)
 {
 	if (err != 0)
 	{
@@ -464,7 +464,7 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOSvrBase::AsyncLocalSocket>& ptr
 #if defined(HAVE_UNISTD_H)
 
 	// Check to see if the connection came from a process with our uid
-	OOSvrBase::AsyncLocalSocket::uid_t uid;
+	OOBase::AsyncLocalSocket::uid_t uid;
 	err = ptrSocket->get_uid(uid);
 	if (err != 0)
 	{
@@ -619,15 +619,15 @@ void User::Manager::do_quit_i()
 	quit();
 }
 
-void User::Manager::process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::Timeout& timeout, uint32_t attribs)
+void User::Manager::process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t attribs)
 {
 	if (src_channel_id == m_uUpstreamChannel)
-		process_root_request(request,src_thread_id,timeout,attribs);
+		process_root_request(request,src_thread_id,attribs);
 	else
-		process_user_request(request,src_channel_id,src_thread_id,timeout,attribs);
+		process_user_request(request,src_channel_id,src_thread_id,attribs);
 }
 
-void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, const OOBase::Timeout& timeout, uint32_t attribs)
+void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, uint32_t attribs)
 {
 	OOServer::RootOpCode_t op_code;
 	if (!request.read(op_code))
@@ -673,7 +673,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t sr
 	}
 }
 
-void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, const OOBase::Timeout& timeout, uint32_t attribs)
+void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t attribs)
 {
 	try
 	{
@@ -696,12 +696,8 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 		ObjectPtr<Remoting::IMessage> ptrRequest;
 		ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
 
-		// Check timeout
-		if (timeout.has_expired())
-			throw ITimeoutException::Create();
-
 		// Make the call
-		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest,timeout.is_infinite() ? 0 : timeout.millisecs());
+		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest);
 
 		if (!(attribs & OOServer::Message_t::asynchronous))
 		{
@@ -773,9 +769,7 @@ void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRS
 	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,attribs);
 	if (res != OOServer::MessageHandler::io_result::success)
 	{
-		if (res == OOServer::MessageHandler::io_result::timedout)
-			throw ITimeoutException::Create();
-		else if (res == OOServer::MessageHandler::io_result::channel_closed)
+		if (res == OOServer::MessageHandler::io_result::channel_closed)
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send root request"));
 		else
 			OMEGA_THROW("Internal server exception");

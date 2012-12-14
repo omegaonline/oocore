@@ -98,7 +98,7 @@ namespace OOCore
 	// IObjectManager members
 	public:
 		void Connect(Omega::Remoting::IChannel* pChannel);
-		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t millisecs);
+		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn);
 		void Shutdown();
 		void GetRemoteInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);

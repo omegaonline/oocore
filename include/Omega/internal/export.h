@@ -421,9 +421,9 @@
 		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
+		pThis__wire__->get_iface<iface >()->name( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
-		try { pThis__wire__->get_iface<iface >()->name( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
-			OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) } \
+		try { OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) } \
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
 	}
 
@@ -435,9 +435,9 @@
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
-		try { marshal_info<ret_type >::wire_type::type OMEGA_CONCAT(name,_RetVal); \
-			static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal)) = pThis__wire__->get_iface<iface >()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
-			OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
+		marshal_info<ret_type >::wire_type::type OMEGA_CONCAT(name,_RetVal); \
+		static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal)) = pThis__wire__->get_iface<iface >()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
+		try { OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
 			marshal_info<ret_type >::wire_type::write(string_t::constant("$retval"),ptrMarshaller__wire__,pParamsOut__wire__,OMEGA_CONCAT(name,_RetVal)); } \
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
 	}

@@ -546,8 +546,10 @@ void OOCore::UserSession::wait_for_response(ThreadContext* pContext, OOBase::CDR
 			break;
 
 		case OOBase::BoundedQueue<Message>::closed:
-		default:
 			return respond_exception(response,Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Thread queue closed while waiting for response")));
+
+		default:
+			break;
 		}
 	}
 }

@@ -42,7 +42,6 @@
 #include <stdlib.h>
 
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <sys/un.h>
 
 namespace
@@ -85,19 +84,6 @@ namespace
 		_exit(127);
 	}
 
-	pid_t safe_wait_pid(pid_t pid, int* status, int options)
-	{
-		for (;;)
-		{
-			pid_t ret = ::waitpid(pid,status,options);
-			if (ret != -1)
-				return ret;
-
-			if (errno != EINTR)
-				LOG_ERROR_RETURN(("waitpid() failed: %s",OOBase::system_error_text()),-1);
-		}
-	}
-
 	int unique_pipename(sockaddr_un& addr)
 	{
 		addr.sun_family = AF_UNIX;
@@ -135,9 +121,12 @@ RootProcessUnix::~RootProcessUnix()
 			for (int i=0; i<5; ++i)
 			{
 				int ec;
-				retv = safe_wait_pid(m_pid,&ec,WNOHANG);
+				retv = OOBase::POSIX::waitpid(m_pid,&ec,WNOHANG);
 				if (retv != 0)
+				{
+					LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 					break;
+				}
 
 				sleep(1);
 				retv = 0;
@@ -146,7 +135,9 @@ RootProcessUnix::~RootProcessUnix()
 		else
 		{
 			int ec;
-			retv = safe_wait_pid(m_pid,&ec,0);
+			retv = OOBase::POSIX::waitpid(m_pid,&ec,0);
+			if (retv != 0)
+				LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 		}
 
 		if (retv == 0)
@@ -290,7 +281,7 @@ bool RootProcessUnix::IsRunning() const
 		return false;
 
 	int status = 0;
-	return (safe_wait_pid(m_pid,&status,WNOHANG) == 0);
+	return (OOBase::POSIX::waitpid(m_pid,&status,WNOHANG) == 0);
 }
 
 int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const

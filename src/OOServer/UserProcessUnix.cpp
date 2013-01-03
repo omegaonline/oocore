@@ -27,7 +27,6 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/wait.h>
 
 namespace
 {
@@ -59,19 +58,6 @@ namespace
 			OOBase::stderr_write(msg);
 
 		_exit(127);
-	}
-
-	pid_t safe_wait_pid(pid_t pid, int* status, int options)
-	{
-		for (;;)
-		{
-			pid_t ret = ::waitpid(pid,status,options);
-			if (ret != -1)
-				return ret;
-
-			if (errno != EINTR)
-				OMEGA_THROW(errno);
-		}
 	}
 }
 
@@ -144,10 +130,11 @@ bool UserProcessUnix::is_running(int& exit_code)
 {
 	if (m_pid != 0)
 	{
-		pid_t retv = safe_wait_pid(m_pid,&exit_code,WNOHANG);
+		pid_t retv = OOBase::POSIX::waitpid(m_pid,&exit_code,WNOHANG);
 		if (retv == 0)
 			return true;
 
+		LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 		m_pid = 0;
 	}
 
@@ -160,7 +147,9 @@ void UserProcessUnix::kill()
 	{
 		::kill(m_pid,SIGKILL);
 
-		safe_wait_pid(m_pid,NULL,0);
+		pid_t retv = OOBase::POSIX::waitpid(m_pid,NULL,0);
+		if (retv == -1)
+			LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 
 		m_pid = 0;
 	}

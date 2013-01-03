@@ -141,7 +141,7 @@ namespace OOCore
 			}
 			pszFile += s;
 
-			if (nLine != size_t(-1))
+			if (nLine)
 			{
 				if (pszFunc)
 					pExcept->m_strSource = string_t::constant("{0}({1}): {2}") % pszFile % nLine % pszFunc;

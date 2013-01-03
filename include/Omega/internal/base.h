@@ -53,8 +53,8 @@ namespace Omega
 	{
 		virtual string_t GetSource() = 0;
 
-		static IInternalException* Create(int32_t errno_val, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL);
-		static IInternalException* Create(const string_t& desc, const char* pszFile, size_t nLine = size_t(-1), const char* pszFunc = NULL, IException* pCause = NULL);
+		static IInternalException* Create(int32_t errno_val, const char* pszFile, size_t nLine = 0, const char* pszFunc = NULL);
+		static IInternalException* Create(const string_t& desc, const char* pszFile, size_t nLine = 0, const char* pszFunc = NULL, IException* pCause = NULL);
 	};
 
 	namespace TypeInfo

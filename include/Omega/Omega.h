@@ -283,15 +283,7 @@ OMEGA_DEFINE_INTERFACE
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,2,((in),Omega::uint32_t,version,(in),Omega::IObject*,p))
 inline Omega::IException* Omega::Initialize()
 {
-	try
-	{
-		return OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),NULL);
-	}
-	catch (Omega::IException* pE)
-	{
-		// Just in case...
-		return pE;
-	}
+	return OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),NULL);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

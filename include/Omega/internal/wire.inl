@@ -71,7 +71,6 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 		m_ptrProxy->WriteKey(ptrMessage);
 		ptrMessage->WriteValue(string_t::constant("$iid"),iid);
 		ptrMessage->WriteValue(string_t::constant("$method_id"),method_id);
-		return ptrMessage;
 	}
 	catch (...)
 	{
@@ -82,6 +81,7 @@ inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega:
 		}
 		throw;
 	}
+	return ptrMessage;
 }
 
 inline void Omega::System::Internal::Wire_Proxy_Base::UnpackHeader(Remoting::IMessage* pMessage)

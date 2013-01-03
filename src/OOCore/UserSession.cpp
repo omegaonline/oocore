@@ -910,26 +910,37 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,2,((in),uint3
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 		return Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
-	ObjectPtr<OOCore::IInterProcessService> ptrIPS;
-	if (p)
+	try
 	{
-		ptrIPS = static_cast<OOCore::IInterProcessService*>(p->QueryInterface(OMEGA_GUIDOF(OOCore::IInterProcessService)));
-		if (!ptrIPS)
-			return Omega::IInternalException::Create(OOCore::get_text("Invalid interface passed"),"Omega::Initialize");
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
+		if (p)
+		{
+			ptrIPS = static_cast<OOCore::IInterProcessService*>(p->QueryInterface(OMEGA_GUIDOF(OOCore::IInterProcessService)));
+			if (!ptrIPS)
+				return Omega::IInternalException::Create(OOCore::get_text("Invalid interface passed"),"Omega::Initialize");
 
-		OTL::GetModule()->RegisterIPS(ptrIPS,true);
+			OTL::GetModule()->RegisterIPS(ptrIPS,true);
+		}
+		else
+		{
+			try
+			{
+				USER_SESSION::instance().init();
+			}
+			catch (...)
+			{
+				USER_SESSION::instance().term();
+				throw;
+			}
+		}
 	}
-	else
+	catch (IException* pE)
 	{
-		try
-		{
-			USER_SESSION::instance().init();
-		}
-		catch (IException* pE)
-		{
-			USER_SESSION::instance().term();
-			return pE;
-		}
+		return pE;
+	}
+	catch (...)
+	{
+		return Omega::IInternalException::Create(OOCore::get_text("Unhandled C++ exception"),"Omega::Initialize");
 	}
 
 	return NULL;

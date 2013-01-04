@@ -230,7 +230,7 @@ int main(int argc, const char* argv[])
 #endif
 
 	// Run the one and only Root::Manager instance
-	return Root::Manager().run(allocator,args);
+	return Root::Manager().run(args);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

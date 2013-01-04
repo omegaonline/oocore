@@ -53,12 +53,12 @@ Root::Manager::Manager() :
 	set_channel(0x80000000,0x80000000,0x7F000000,0);
 }
 
-int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdArgs::results_t& cmd_args)
+int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 {
 	int ret = EXIT_FAILURE;
 
 	// Load the config and open the root registry
-	if (load_config(cmd_args) && init_database(allocator))
+	if (load_config(cmd_args) && init_database(cmd_args.get_allocator()))
 	{
 		// Start the proactor pool
 		int err = 0;
@@ -76,10 +76,10 @@ int Root::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::CmdAr
 				if (start_request_threads(2))
 				{
 					// Spawn the sandbox
-					if (spawn_sandbox(allocator))
+					if (spawn_sandbox(cmd_args.get_allocator()))
 					{
 						// Start listening for clients
-						if (start_client_acceptor(allocator))
+						if (start_client_acceptor(cmd_args.get_allocator()))
 						{
 							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 

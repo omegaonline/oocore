@@ -54,7 +54,7 @@ namespace Root
 	public:
 		Manager();
 
-		int run(OOBase::AllocatorInstance& allocator, const OOBase::CmdArgs::results_t& cmd_args);
+		int run(const OOBase::CmdArgs::results_t& cmd_args);
 
 		io_result::type sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs = 0);
 

@@ -24,7 +24,7 @@
 
 #define OOCORE_MAJOR_VERSION  0
 #define OOCORE_MINOR_VERSION  6
-#define OOCORE_PATCH_VERSION  0
+#define OOCORE_PATCH_VERSION  1
 
 #define OOCORE_VERSION_III(n)        #n
 #define OOCORE_VERSION_II(a,b,c)     OOCORE_VERSION_III(a.b.c)

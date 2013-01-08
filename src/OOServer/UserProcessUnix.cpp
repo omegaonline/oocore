@@ -134,7 +134,9 @@ bool UserProcessUnix::is_running(int& exit_code)
 		if (retv == 0)
 			return true;
 
-		LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
+		if (retv == -1)
+			LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
+
 		m_pid = 0;
 	}
 

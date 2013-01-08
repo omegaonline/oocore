@@ -124,7 +124,8 @@ RootProcessUnix::~RootProcessUnix()
 				retv = OOBase::POSIX::waitpid(m_pid,&ec,WNOHANG);
 				if (retv != 0)
 				{
-					LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
+					if (retv == -1)
+						LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 					break;
 				}
 
@@ -136,7 +137,7 @@ RootProcessUnix::~RootProcessUnix()
 		{
 			int ec;
 			retv = OOBase::POSIX::waitpid(m_pid,&ec,0);
-			if (retv != 0)
+			if (retv == -1)
 				LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 		}
 
@@ -281,7 +282,11 @@ bool RootProcessUnix::IsRunning() const
 		return false;
 
 	int status = 0;
-	return (OOBase::POSIX::waitpid(m_pid,&status,WNOHANG) == 0);
+	pid_t ret = OOBase::POSIX::waitpid(m_pid,&status,WNOHANG);
+	if (ret == -1)
+		LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
+
+	return (ret == 0);
 }
 
 int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const

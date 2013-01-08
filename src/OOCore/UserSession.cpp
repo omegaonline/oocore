@@ -257,6 +257,7 @@ int OOCore::UserSession::io_worker_fn(void* pParam)
 	sigaddset(&set, SIGTERM);
 	sigaddset(&set, SIGHUP);
 	sigaddset(&set, SIGCHLD);
+	sigaddset(&set, SIGPIPE);
 
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 

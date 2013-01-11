@@ -28,8 +28,6 @@
 #include "UserNet.h"
 #include "UserProcess.h"
 
-int main(int, char**);
-
 namespace User
 {
 	class Manager :

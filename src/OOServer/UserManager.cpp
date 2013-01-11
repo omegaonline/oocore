@@ -33,8 +33,6 @@
 #include <sddl.h>
 #endif
 
-template class OOBase::Singleton<OOBase::Proactor,User::Manager>;
-
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -374,8 +372,8 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	{
 		ObjectPtr<IException> ptrE = pE;
 		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-		return false;
 	}
+	return false;
 }
 
 bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)

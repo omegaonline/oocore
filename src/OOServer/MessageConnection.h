@@ -38,7 +38,7 @@ namespace OOServer
 {
 	class MessageHandler;
 
-	class MessageConnection : public OOBase::RefCounted<OOBase::CrtAllocator>
+	class MessageConnection : public OOBase::RefCounted
 	{
 	public:
 		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket);

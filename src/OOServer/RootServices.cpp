@@ -361,9 +361,9 @@ namespace
 			ptrSocket->send(strSocketName.c_str(),Omega::uint32_t(strSocketName.length()),err);
 		if (!err)
 #if defined(_WIN32)
-			err = ptrSocket->send_socket(new_sock,pid);
+			//err = ptrSocket->send_socket(new_sock,pid);
 #else
-			err = ptrSocket->send_socket(new_sock);
+			//err = ptrSocket->send_socket(new_sock);
 #endif
 
 		OOBase::Net::close_socket(new_sock);

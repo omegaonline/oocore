@@ -22,7 +22,6 @@
 #include "OOServer_User.h"
 #include "UserManager.h"
 
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -46,7 +46,21 @@ ooserverd_SOURCES += OOServer.rc
 ooserverd_LDADD += -lole32 -lrpcrt4 -lshlwapi
 endif
 
-pkglibexec_PROGRAMS = oosvruser
+pkglibexec_PROGRAMS = oosvrreg
+
+oosvrreg_SOURCES = \
+	Protocol.h \
+	OOServer_Registry.h \
+	RegistryManager.h \
+	RegistryManager.cpp \
+	RegistryMain.cpp \
+	RegistryRootConn.h \
+	RegistryRootConn.cpp	
+
+oosvrreg_CPPFLAGS = $(AM_CPPFLAGS)
+oosvrreg_LDADD = @top_builddir@/oobase/liboobase.la
+
+pkglibexec_PROGRAMS += oosvruser
 
 oosvruser_SOURCES = \
 	OOServer_User.h \

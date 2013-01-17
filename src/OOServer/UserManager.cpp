@@ -215,7 +215,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 	// Use a named pipe
 	int err = 0;
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncLocalSocket> local_socket(m_proactor->connect_local_socket(strPipe.c_str(),err,timeout));
+	OOBase::RefPtr<OOBase::AsyncSocket> local_socket(m_proactor->connect(strPipe.c_str(),err,timeout));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -225,7 +225,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 	int fd = atoi(strPipe.c_str());
 
 	int err = 0;
-	OOBase::RefPtr<OOBase::AsyncLocalSocket> local_socket(m_proactor->attach_local_socket(fd,err));
+	OOBase::RefPtr<OOBase::AsyncSocket> local_socket(m_proactor->attach(fd,err));
 	if (err != 0)
 	{
 		OOBase::POSIX::close(fd);
@@ -420,21 +420,21 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 		strPipe.replace_at(0,'\0');
 
 	int err = 0;
-	m_ptrAcceptor = m_proactor->accept_local(this,&on_accept,strPipe.c_str(),err,&m_sa);
+	m_ptrAcceptor = m_proactor->accept(this,&on_accept,strPipe.c_str(),err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Proactor::accept failed: %s",OOBase::system_error_text(err)),false);
 
 	return true;
 }
 
-void User::Manager::on_accept(void* pThis, OOBase::AsyncLocalSocket* pSocket, int err)
+void User::Manager::on_accept(void* pThis, OOBase::AsyncSocket* pSocket, int err)
 {
-	OOBase::RefPtr<OOBase::AsyncLocalSocket> ptrSocket = pSocket;
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = pSocket;
 
 	static_cast<Manager*>(pThis)->on_accept_i(ptrSocket,err);
 }
 
-void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, int err)
+void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)
 {
 	if (err != 0)
 	{
@@ -462,8 +462,8 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSoc
 #if defined(HAVE_UNISTD_H)
 
 	// Check to see if the connection came from a process with our uid
-	OOBase::AsyncLocalSocket::uid_t uid;
-	err = ptrSocket->get_uid(uid);
+	uid_t uid;
+	//err = ptrSocket->get_uid(uid);
 	if (err != 0)
 	{
 		LOG_WARNING(("get_uid failure: %s",OOBase::system_error_text(err)));

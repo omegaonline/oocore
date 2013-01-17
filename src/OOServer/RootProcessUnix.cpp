@@ -53,14 +53,14 @@ namespace
 		virtual ~RootProcessUnix();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
-		bool IsSameUser(OOBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(uid_t uid, const char* session_id) const;
+		bool IsSameUser(uid_t uid) const;
 
 		bool IsRunning() const;
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
-		RootProcessUnix(OOBase::AsyncLocalSocket::uid_t id);
+		RootProcessUnix(uid_t id);
 
 		OOBase::String m_sid;
 		bool           m_bSandbox;
@@ -103,7 +103,7 @@ namespace
 	}
 }
 
-RootProcessUnix::RootProcessUnix(OOBase::AsyncLocalSocket::uid_t id) :
+RootProcessUnix::RootProcessUnix(uid_t id) :
 		m_bSandbox(true),
 		m_uid(id),
 		m_pid(0)
@@ -479,7 +479,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	else if (err)
 		LOG_ERROR_RETURN(("Failed to accept: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
-	ptrSocket = OOBase::Socket::attach_local(new_fd.detach(),err);
+	ptrSocket = OOBase::Socket::attach(new_fd.detach(),err);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
@@ -490,7 +490,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 		LOG_ERROR_RETURN(("Failed to read from socket: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
 	uid_t other_uid;
-	err = ptrSocket->get_peer_uid(other_uid);
+	//err = ptrSocket->get_peer_uid(other_uid);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to determine service user: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
@@ -502,7 +502,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	return OOServer::Errored;
 }
 
-bool Root::Manager::get_registry_hive(OOBase::AsyncLocalSocket::uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 {
 	int err = 0;
 	OOBase::POSIX::pw_info pw(strSysDir.get_allocator(),uid);
@@ -607,7 +607,7 @@ bool Root::Manager::get_registry_hive(OOBase::AsyncLocalSocket::uid_t uid, OOBas
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
 	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
@@ -635,7 +635,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::Async
 	fds[1].close();
 
 	// Create an async socket wrapper
-	ptrSocket = m_proactor->attach_local_socket(fd[0],err);
+	ptrSocket = m_proactor->attach(fd[0],err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
@@ -644,7 +644,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::Async
 	return true;
 }
 
-bool Root::Manager::get_our_uid(OOBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
+bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
 {
 	uid = getuid();
 
@@ -664,7 +664,7 @@ bool Root::Manager::get_our_uid(OOBase::AsyncLocalSocket::uid_t& uid, OOBase::Lo
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain)
 {
 	bAgain = false;
 

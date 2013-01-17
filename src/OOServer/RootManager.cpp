@@ -347,7 +347,7 @@ bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 	
 	bool bAgain = false;
-	OOBase::AsyncLocalSocket::uid_t uid = OOBase::AsyncLocalSocket::uid_t(-1);
+	uid_t uid = uid_t(-1);
 	if (strUName.empty())
 	{
 		OOBase::LocalString strOurUName(allocator);
@@ -419,7 +419,7 @@ void Root::Manager::on_channel_closed(Omega::uint32_t channel)
 	m_mapUserProcesses.remove(channel);
 }
 
-bool Root::Manager::get_user_process(OOBase::AsyncLocalSocket::uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
+bool Root::Manager::get_user_process(uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
 	for (int attempts = 0;attempts < 2;++attempts)
 	{
@@ -535,7 +535,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, OOBase::AsyncLocalSocket::uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Get the binary path
 	OOBase::LocalString strBinPath(allocator);
@@ -596,7 +596,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),0);
 
 	OOBase::SmartPtr<Root::Process> ptrSpawn;
-	OOBase::RefPtr<OOBase::AsyncLocalSocket> ptrSocket;
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	if (!platform_spawn(strBinPath,uid,session_id,tabEnv,ptrSpawn,ptrSocket,bAgain))
 		return 0;
 
@@ -641,12 +641,12 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, 
 	return channel_id;
 }
 
-Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
+Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
 {
 	OOBase::CDRStream stream;
 
-	if (!stream.recv_string(ptrSocket,strPipe))
-		LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
+	//if (!stream.recv_string(ptrSocket,strPipe))
+	//	LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
 
 	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
 	if (!ptrMC)
@@ -759,16 +759,16 @@ OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const 
 	return send_request(m_sandbox_channel,&request,response,attribs);
 }
 
-void Root::Manager::accept_client(void* pThis, OOBase::AsyncLocalSocket* pSocket, int err)
+void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int err)
 {
-	OOBase::RefPtr<OOBase::AsyncLocalSocket> ptrSocket = pSocket;
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = pSocket;
 
 	static_cast<Manager*>(pThis)->accept_client_i(ptrSocket,err);
 }
 
 #include "../../include/Omega/OOCore_version.h"
 
-void Root::Manager::accept_client_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, int err)
+void Root::Manager::accept_client_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)
 {
 	if (err != 0)
 		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
@@ -789,12 +789,12 @@ void Root::Manager::accept_client_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& pt
 			{
 				OOBase::StackAllocator<512> allocator;
 				OOBase::LocalString strSid(allocator);
-				if (!stream.recv_string(ptrSocket,strSid))
-					LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
-				else
+				//if (!stream.recv_string(ptrSocket,strSid))
+				//	LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
+				//else
 				{
-					OOBase::AsyncLocalSocket::uid_t uid;
-					err = ptrSocket->get_uid(uid);
+					uid_t uid;
+					//err = ptrSocket->get_uid(uid);
 					if (err != 0)
 						LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
 					else

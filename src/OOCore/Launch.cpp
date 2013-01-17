@@ -116,7 +116,7 @@ namespace
 			OOBase::RefPtr<OOBase::Socket> root_socket;
 			while (!timeout.has_expired())
 			{
-				root_socket = OOBase::Socket::connect_local(ROOT_NAME,err,timeout);
+				root_socket = OOBase::Socket::connect(ROOT_NAME,err,timeout);
 				if (!err || (err != ENOENT && err != ECONNREFUSED))
 					break;
 
@@ -145,8 +145,8 @@ namespace
 			stream.reset();
 
 			// Now read strPipe
-			if (!stream.recv_string(root_socket,strPipe))
-				OMEGA_THROW(stream.last_error());
+			//if (!stream.recv_string(root_socket,strPipe))
+			//	OMEGA_THROW(stream.last_error());
 
 			// Now set our pipe name as an env var
 #if defined(_WIN32)
@@ -177,7 +177,7 @@ void OOCore::UserSession::start()
 	int err = 0;
 	while (!timeout.has_expired())
 	{
-		m_stream = OOBase::Socket::connect_local(strPipe.c_str(),err,timeout);
+		m_stream = OOBase::Socket::connect(strPipe.c_str(),err,timeout);
 		if (!err || (err != ENOENT && err != ECONNREFUSED))
 			break;
 

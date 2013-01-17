@@ -72,8 +72,8 @@ namespace User
 		bool connect_root(const OOBase::LocalString& strPipe);
 		static int run_proactor(void*);
 
-		static void on_accept(void* pThis, OOBase::AsyncLocalSocket* pSocket, int err);
-		void on_accept_i(OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, int err);
+		static void on_accept(void* pThis, OOBase::AsyncSocket* pSocket, int err);
+		void on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err);
 
 		SECURITY_ATTRIBUTES           m_sa;
 #if defined(_WIN32)
@@ -81,7 +81,7 @@ namespace User
 #endif
 
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
-		bool handshake_root(OOBase::RefPtr<OOBase::AsyncLocalSocket>& local_socket, const OOBase::LocalString& strPipe);
+		bool handshake_root(OOBase::RefPtr<OOBase::AsyncSocket>& local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);
 		bool start_acceptor(OOBase::LocalString& strPipe);
 

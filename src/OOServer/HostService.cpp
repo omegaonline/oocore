@@ -49,7 +49,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 	OOBase::RefPtr<OOBase::Socket> ptrSocket;
 	while (!timeout.has_expired())
 	{
-		ptrSocket = OOBase::Socket::connect_local(strPipe2.c_str(),err,timeout);
+		ptrSocket = OOBase::Socket::connect(strPipe2.c_str(),err,timeout);
 		if (!err)
 			break;
 
@@ -95,7 +95,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 				OMEGA_THROW(err);
 
 			OOBase::socket_t sock;
-			err = ptrSocket->recv_socket(sock);
+			//err = ptrSocket->recv_socket(sock);
 			if (err)
 				OMEGA_THROW(err);
 

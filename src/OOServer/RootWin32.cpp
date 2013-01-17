@@ -212,7 +212,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 
 	const char* pipe_name = "OmegaOnline";
 	int err = 0;
-	m_client_acceptor = m_proactor->accept_local(this,&accept_client,pipe_name,err,&m_sa);
+	m_client_acceptor = m_proactor->accept(this,&accept_client,pipe_name,err,&m_sa);
 	if (err)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 

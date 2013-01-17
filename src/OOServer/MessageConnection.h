@@ -41,7 +41,7 @@ namespace OOServer
 	class MessageConnection : public OOBase::RefCounted
 	{
 	public:
-		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket);
+		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 		
 		void set_channel_id(Omega::uint32_t channel_id);
 
@@ -54,15 +54,16 @@ namespace OOServer
 		MessageConnection& operator = (const MessageConnection&);
 		virtual ~MessageConnection();
 
-		OOBase::SpinLock                         m_lock;
-		MessageHandler*                          m_pHandler;
-		OOBase::RefPtr<OOBase::AsyncLocalSocket> m_ptrSocket;
-		Omega::uint32_t                          m_channel_id;
+		OOBase::SpinLock                    m_lock;
+		MessageHandler*                     m_pHandler;
+		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
+		Omega::uint32_t                     m_channel_id;
 
 		static void on_recv1(void* param, OOBase::Buffer* buffer, int err);
 		static void on_recv2(void* param, OOBase::Buffer* buffer, int err);
 		bool on_recv(OOBase::Buffer* buffer, int err, int part);
-		static void on_sent(void* param, int err);
+		static void on_sent(void* param, OOBase::Buffer* buffer, int err);
+		static void on_sent_v(void* param, OOBase::Buffer* buffers[], size_t count, int err);
 		void on_closed();
 	};
 

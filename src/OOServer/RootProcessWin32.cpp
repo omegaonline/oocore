@@ -52,8 +52,8 @@ namespace
 		virtual ~RootProcessWin32();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(OOBase::AsyncLocalSocket::uid_t uid, const char* session_id) const;
-		bool IsSameUser(OOBase::AsyncLocalSocket::uid_t uid) const;
+		bool IsSameLogin(HANDLE uid, const char* session_id) const;
+		bool IsSameUser(HANDLE uid) const;
 
 		bool IsRunning() const;
 
@@ -851,11 +851,11 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 		timeout = OOBase::Timeout();
 
 	// Wait for the connect attempt
-	err = OOBase::Net::accept_local_socket(hPipe,timeout);
+	err = OOBase::Net::accept(hPipe,timeout);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to accept local pipe: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
-	ptrSocket = OOBase::Socket::attach_local((SOCKET)(HANDLE)hPipe,err);
+	ptrSocket = OOBase::Socket::attach(hPipe,err);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to attach local pipe: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
@@ -877,7 +877,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	return OOServer::Ok;
 }
 
-bool Root::Manager::get_registry_hive(OOBase::AsyncLocalSocket::uid_t hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(uid_t hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 {
 	int err = 0;
 	if (strUsersDir.empty())
@@ -955,7 +955,7 @@ bool Root::Manager::get_registry_hive(OOBase::AsyncLocalSocket::uid_t hToken, OO
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::AsyncLocalSocket::uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
 	int err = 0;
 	if (strAppName.length() >= MAX_PATH)
@@ -979,11 +979,11 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::Async
 		return false;
 
 	// Wait for the connect attempt
-	err = OOBase::Net::accept_local_socket(hPipe,OOBase::Timeout(15,0));
+	err = OOBase::Net::accept(hPipe,OOBase::Timeout(15,0));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to accept local pipe: %s",OOBase::system_error_text(err)),false);
 
-	ptrSocket = m_proactor->attach_local_socket((SOCKET)(HANDLE)hPipe,err);
+	ptrSocket = m_proactor->attach(hPipe,err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
@@ -992,7 +992,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, OOBase::Async
 	return true;
 }
 
-bool Root::Manager::get_our_uid(OOBase::AsyncLocalSocket::uid_t& uid, OOBase::LocalString& strUName)
+bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
 {
 	if (uid != INVALID_HANDLE_VALUE)
 	{
@@ -1025,7 +1025,7 @@ bool Root::Manager::get_our_uid(OOBase::AsyncLocalSocket::uid_t& uid, OOBase::Lo
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, OOBase::AsyncLocalSocket::uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain)
 {
 	DWORD dwErr = LogonSandboxUser(strUName,uid);
 	if (dwErr == ERROR_ACCESS_DENIED)

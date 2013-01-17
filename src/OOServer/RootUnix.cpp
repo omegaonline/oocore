@@ -68,11 +68,11 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 	m_sa.mode = 0666;
 
 	int err = 0;
-	m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
+	m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
 	if (err == EADDRINUSE)
 	{
 		::unlink(ROOT_NAME);
-		m_client_acceptor = m_proactor->accept_local(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
+		m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
 	}
 
 	if (err)

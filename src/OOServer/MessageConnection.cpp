@@ -64,7 +64,7 @@ namespace
 	static const size_t     s_header_len = 2 * sizeof(Omega::uint32_t);
 }
 
-OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncLocalSocket>& ptrSocket) :
+OOServer::MessageConnection::MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket) :
 		m_pHandler(pHandler),
 		m_ptrSocket(ptrSocket),
 		m_channel_id(0)
@@ -213,7 +213,7 @@ int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer1, OOBase::Buffer* 
 	if (pBuffer2)
 	{
 		OOBase::Buffer* bufs[2] = { pBuffer1, pBuffer2 };
-		err = m_ptrSocket->send_v(this,&MessageConnection::on_sent,bufs,2);
+		err = m_ptrSocket->send_v(this,&MessageConnection::on_sent_v,bufs,2);
 	}
 	else
 		err = m_ptrSocket->send(this,&MessageConnection::on_sent,pBuffer1);
@@ -227,7 +227,16 @@ int OOServer::MessageConnection::send(OOBase::Buffer* pBuffer1, OOBase::Buffer* 
 	return err;
 }
 
-void OOServer::MessageConnection::on_sent(void* param, int err)
+void OOServer::MessageConnection::on_sent(void* param, OOBase::Buffer* buffer, int err)
+{
+	MessageConnection* pThis = static_cast<MessageConnection*>(param);
+	if (err != 0)
+		pThis->on_closed();
+
+	pThis->release();
+}
+
+void OOServer::MessageConnection::on_sent_v(void* param, OOBase::Buffer* buffers[], size_t count, int err)
 {
 	MessageConnection* pThis = static_cast<MessageConnection*>(param);
 	if (err != 0)

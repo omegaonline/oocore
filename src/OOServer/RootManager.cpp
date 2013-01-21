@@ -76,7 +76,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 				if (start_request_threads(2))
 				{
 					// Spawn the sandbox
-					if (spawn_sandbox(cmd_args.get_allocator()))
+					if (spawn_sandbox_process(cmd_args.get_allocator()))
 					{
 						// Start listening for clients
 						if (start_client_acceptor(cmd_args.get_allocator()))
@@ -334,7 +334,7 @@ int Root::Manager::run_proactor(void* p)
 	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
-bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
+bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 {
 	OOBase::LocalString strUnsafe(allocator);
 	bool bUnsafe = false;
@@ -379,7 +379,7 @@ bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
 	}
 
 	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
+	m_sandbox_channel = spawn_user_process(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
 	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
 	{
 		OOBase::LocalString strOurUName(allocator);
@@ -392,7 +392,7 @@ bool Root::Manager::spawn_sandbox(OOBase::AllocatorInstance& allocator)
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
+		m_sandbox_channel = spawn_user_process(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
 	}
 
 #if defined(_WIN32)
@@ -462,7 +462,7 @@ bool Root::Manager::get_user_process(uid_t& uid, const OOBase::LocalString& sess
 
 		// Spawn a new user process
 		bool bAgain = false;
-		if (spawn_user(session_id.get_allocator(),uid,session_id.c_str(),user_process.m_ptrRegistry,user_process.m_strPipe,bAgain) != 0)
+		if (spawn_user_process(session_id.get_allocator(),uid,session_id.c_str(),user_process.m_ptrRegistry,user_process.m_strPipe,bAgain) != 0)
 			return true;
 
 		if (attempts == 0 && bAgain)
@@ -535,7 +535,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::AllocatorInstance& allocator, uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user_process(OOBase::AllocatorInstance& allocator, uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Get the binary path
 	OOBase::LocalString strBinPath(allocator);

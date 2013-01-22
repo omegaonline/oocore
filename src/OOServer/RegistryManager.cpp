@@ -89,6 +89,13 @@ int Registry::Manager::run_proactor(void* p)
 
 bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
 {
+	// Create a new system database
+	/*	m_registry = new (std::nothrow) Db::Hive(this,dir.c_str());
+		if (!m_registry)
+			LOG_ERROR_RETURN(("Failed to create registry hive: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
+
+		return m_registry->open(SQLITE_OPEN_READWRITE);*/
+
 	int err = 0;
 
 #if defined(_WIN32)
@@ -120,7 +127,7 @@ bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 void Registry::Manager::on_root_closed()
 {
-
+	m_proactor->stop();
 }
 
 #if defined(HAVE_UNISTD_H)

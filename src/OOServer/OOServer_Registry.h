@@ -29,7 +29,6 @@
 #include <OOBase/SmartPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/Environment.h>
-#include <OOBase/CDRStream.h>
 #include <OOBase/Posix.h>
 #include <OOBase/BoundedQueue.h>
 #include <OOBase/StackAllocator.h>
@@ -43,7 +42,7 @@
 #include <OOBase/Logger.h>
 #include <OOBase/Server.h>
 #include <OOBase/ConfigFile.h>
-#include <OOBase/Proactor.h>
+#include <OOBase/CDRIO.h>
 
 //////////////////////////////////////////////
 

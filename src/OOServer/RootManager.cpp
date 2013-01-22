@@ -58,7 +58,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	int ret = EXIT_FAILURE;
 
 	// Load the config and open the root registry
-	if (load_config(cmd_args) && init_database(cmd_args.get_allocator()))
+	if (load_config(cmd_args))
 	{
 		// Start the proactor pool
 		int err = 0;
@@ -72,11 +72,11 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 				LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 			else
 			{
-				// Start the handler
-				if (start_request_threads(2))
+				// Start the registry process
+				if (start_registry(cmd_args.get_allocator()))
 				{
 					// Spawn the sandbox
-					if (spawn_sandbox_process(cmd_args.get_allocator()))
+					//if (spawn_sandbox_process(cmd_args.get_allocator()))
 					{
 						// Start listening for clients
 						if (start_client_acceptor(cmd_args.get_allocator()))
@@ -105,9 +105,6 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 					}
 				}
 
-				// Stop the MessageHandler
-				stop_request_threads();
-
 				// Stop any proactor threads
 				m_proactor->stop();
 				m_proactor_pool.join();
@@ -126,25 +123,6 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	}
 
 	return ret;
-}
-
-bool Root::Manager::init_database(OOBase::AllocatorInstance& allocator)
-{
-	// Get dir from config
-	OOBase::LocalString dir(allocator);
-	if (!get_config_arg("regdb_path",dir) || dir.empty())
-		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
-
-	int err = dir.append("system.regdb");
-	if (err)
-		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
-
-	// Create a new system database
-	m_registry = new (std::nothrow) Db::Hive(this,dir.c_str());
-	if (!m_registry)
-		LOG_ERROR_RETURN(("Failed to create registry hive: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-
-	return m_registry->open(SQLITE_OPEN_READWRITE);
 }
 
 bool Root::Manager::get_config_arg(const char* name, OOBase::LocalString& val)
@@ -332,6 +310,64 @@ int Root::Manager::run_proactor(void* p)
 {
 	int err = 0;
 	return static_cast<OOBase::Proactor*>(p)->run(err);
+}
+
+bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
+{
+	// Get dir from config
+	OOBase::LocalString strRegPath(allocator);
+	if (!get_config_arg("regdb_path",strRegPath) || strRegPath.empty())
+		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
+
+	int err = strRegPath.append("system.regdb");
+	if (err)
+		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
+
+	// Write initial message
+	OOBase::CDRStream request;
+	size_t mark = request.buffer()->mark_wr_ptr();
+	request.write(size_t(0));
+	request.write_string(strRegPath);
+
+	void* TODO; // Send config settings
+
+	request.replace(request.buffer()->length(),mark);
+
+	if (request.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(request.last_error())),false);
+
+	// Get the binary path
+	OOBase::LocalString strBinPath(allocator);
+	if (!get_config_arg("binary_path",strBinPath))
+		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
+
+#if defined(_WIN32)
+	err = strBinPath.append("OOSvrReg.exe");
+#else
+	err = strBinPath.append("oosvrreg");
+#endif
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+	return spawn_registry_process(strBinPath,request.buffer());
+}
+
+void Root::Manager::on_registry_sent(OOBase::Buffer* buffer, int err)
+{
+	if (err != 0)
+		LOG_ERROR(("Failed to send start request to registry: %s",OOBase::system_error_text(err)));
+	else
+	{
+		//OOBase::Logger::log(OOBase::Logger::Information,"Starting registry process '%s'",strBinPath.c_str());
+
+
+	}
+
+	if (err != 0)
+	{
+		m_ptrRegistrySocket->shutdown();
+		quit();
+	}
 }
 
 bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)

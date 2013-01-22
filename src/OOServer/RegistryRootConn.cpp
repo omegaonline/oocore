@@ -37,7 +37,64 @@ Registry::RootConnection::~RootConnection()
 
 bool Registry::RootConnection::start()
 {
-	return recv_next();
+	addref();
+
+	int err = OOBase::CDRIO::recv_with_header_sync(size_t(256),m_socket,this,&RootConnection::on_message_start);
+	if (err)
+	{
+		release();
+		LOG_ERROR_RETURN(("Failed to receive from root: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
+void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int err)
+{
+	if (err)
+		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
+	else
+	{
+		// Start another receive...
+		recv_next();
+
+		OOBase::StackAllocator<256> allocator;
+		OOBase::LocalString strDb(allocator);
+		stream.read_string(strDb);
+
+		if (stream.last_error())
+			LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
+		else
+		{
+			LOG_DEBUG(("OPEN DB: %s",strDb.c_str()));
+
+			// Tell the manager to create a new connection
+			int ret_err = 0;//m_pManager->new_connection(sid,pipe);
+
+			err = stream.reset();
+			if (err)
+				LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+			else
+			{
+				size_t mark = stream.buffer()->mark_wr_ptr();
+
+				stream.write(size_t(0));
+				stream.write(ret_err);
+
+				stream.replace(stream.buffer()->length(),mark);
+				if (stream.last_error())
+					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+				else
+				{
+					err = m_socket->send(this,NULL,stream.buffer());
+					if (err)
+						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+				}
+			}
+		}
+	}
+
+	release();
 }
 
 bool Registry::RootConnection::recv_next()
@@ -124,7 +181,7 @@ void Registry::RootConnection::on_message_posix_1(OOBase::Buffer* data_buffer, O
 			LOG_ERROR(("Failed to read root request: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
-			err = m_socket->recv(this,&RootConnection::on_message_posix_2,data_buffer,msg_len);
+			err = m_socket->recv(this,&RootConnection::on_message_posix_2,data_buffer,msg_len - sizeof(size_t));
 			if (!err)
 				return;
 
@@ -214,7 +271,7 @@ void Registry::RootConnection::on_message_win32_1(OOBase::Buffer* data_buffer, i
 			LOG_ERROR(("Failed to read root request: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
-			err = m_socket->recv(this,&RootConnection::on_message_win32_2,data_buffer,msg_len);
+			err = m_socket->recv(this,&RootConnection::on_message_win32_2,data_buffer,msg_len - sizeof(size_t));
 			if (!err)
 				return;
 

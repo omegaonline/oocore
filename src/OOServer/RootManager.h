@@ -68,12 +68,17 @@ namespace Root
 
 		// Init and run members
 		bool load_config(const OOBase::CmdArgs::results_t& cmd_args);
-		bool init_database(OOBase::AllocatorInstance& allocator);
 		static int run_proactor(void* param);
 
 		// Configuration members
 		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
 		bool get_config_arg(const char* name, OOBase::LocalString& val);
+
+		// Registry handling
+		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrRegistrySocket;
+		bool start_registry(OOBase::AllocatorInstance& allocator);
+		bool spawn_registry_process(const OOBase::LocalString& strBinPath, OOBase::Buffer* buffer);
+		void on_registry_sent(OOBase::Buffer* buffer, int err);
 
 		// Client handling members
 		SECURITY_ATTRIBUTES              m_sa;

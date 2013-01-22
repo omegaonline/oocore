@@ -41,6 +41,8 @@ namespace Registry
 
 		bool recv_next();
 
+		void on_message_start(OOBase::CDRStream& request, int err);
+
 #if defined(HAVE_UNISTD_H)
 		OOBase::POSIX::SmartFD         m_passed_fd;
 

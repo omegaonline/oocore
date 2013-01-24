@@ -112,7 +112,7 @@ namespace
 		{
 			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 		}
-		OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDOwner(pSID);
+		OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDOwner(pSID);
 
 		static const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -974,7 +974,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, co
 	if (err)
 		LOG_ERROR_RETURN(("Failed to retrieve environment block: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting process '%s'",strAppName.c_str());
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
@@ -1062,7 +1062,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
-    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
+    OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
     const int NUM_ACES  = 2;
     EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
@@ -1100,7 +1100,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
     if (dwErr != 0)
         LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
-    OOBase::SmartPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
+    OOBase::LocalPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
 
     // Try to modify the object's DACL.
     dwErr = SetNamedSecurityInfoA(
@@ -1133,7 +1133,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 
-	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDSystem(pSID);
+	OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDSystem(pSID);
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -1165,7 +1165,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDEveryone(pSID);
+	OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDEveryone(pSID);
 
 	// Set read/write access for EVERYONE
 	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
@@ -1183,7 +1183,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor> pSIDNetwork(pSID);
+	OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDNetwork(pSID);
 
 	// Deny all to NETWORK
 	ea[2].grfAccessPermissions = FILE_ALL_ACCESS;

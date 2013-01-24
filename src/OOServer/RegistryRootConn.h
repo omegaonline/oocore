@@ -44,13 +44,9 @@ namespace Registry
 		void on_message_start(OOBase::CDRStream& request, int err);
 
 #if defined(HAVE_UNISTD_H)
-		OOBase::POSIX::SmartFD         m_passed_fd;
-
-		void on_message_posix_1(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err);
-		void on_message_posix_2(OOBase::Buffer* data_buffer, int err);
+		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
 #elif defined(_WIN32)
-		void on_message_win32_1(OOBase::Buffer* data_buffer, int err);
-		void on_message_win32_2(OOBase::Buffer* data_buffer, int err);
+		void on_message_win32(OOBase::CDRStream& stream, int err);
 #else
 #error Implement platform native credential and pipe handle passing
 #endif

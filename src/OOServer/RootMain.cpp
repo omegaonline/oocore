@@ -101,7 +101,7 @@ namespace
 		va_start(args,fmt);
 
 		OOBase::TempPtr<char> msg(allocator);
-		int err = OOBase::vprintf(msg,fmt,args);
+		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
 

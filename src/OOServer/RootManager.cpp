@@ -47,6 +47,8 @@ template class OOBase::Singleton<OOBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
 		m_proactor(NULL),
+		m_registry_processes(1),
+		m_root_registry(0),
 		m_sandbox_channel(0)
 {
 	// Root channel is fixed
@@ -79,10 +81,8 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 					//if (spawn_sandbox_process(cmd_args.get_allocator()))
 					{
 						// Start listening for clients
-						if (start_client_acceptor(cmd_args.get_allocator()))
+						//if (start_client_acceptor(cmd_args.get_allocator()))
 						{
-							OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
-
 							ret = EXIT_SUCCESS;
 
 							// Wait for quit
@@ -103,6 +103,9 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 						// Wait for all user processes to terminate
 						m_mapUserProcesses.clear();
 					}
+
+					// Close the connections to all the registry processes
+					m_registry_processes.clear();
 				}
 
 				// Stop any proactor threads
@@ -181,6 +184,8 @@ void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 {
+	OOBase::Logger::log(OOBase::Logger::Information,"Loading configuration...");
+
 	int err = 0;
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -314,6 +319,8 @@ int Root::Manager::run_proactor(void* p)
 
 bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 {
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting system registry...");
+
 	// Get dir from config
 	OOBase::LocalString strRegPath(allocator);
 	if (!get_config_arg("regdb_path",strRegPath) || strRegPath.empty())
@@ -349,25 +356,62 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
-	return spawn_registry_process(strBinPath,request.buffer());
+	// Get the environment settings
+	OOBase::Environment::env_table_t tabSysEnv(allocator);
+	err = OOBase::Environment::get_current(tabSysEnv);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
+
+	// Get our uid
+	uid_t uid = uid_t(-1);
+	OOBase::LocalString strOurUName(allocator);
+	if (!get_our_uid(uid,strOurUName))
+		return false;
+
+	// Spawn the process
+	SpawnedProcess p;
+	bool bAgain;
+	if (!platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain))
+		return false;
+
+	// Add to the handle map
+	err = m_registry_processes.insert(p,m_root_registry,1,size_t(-1));
+	if (err)
+		LOG_ERROR_RETURN(("Failed to insert root registry handle: %s",OOBase::system_error_text(err)),false);
+
+	// Send the start data
+	err = OOBase::CDRIO::send_and_recv_with_header_sync<size_t>(request,p.m_ptrSocket,this,&Manager::on_registry_started);
+	if (err)
+	{
+		m_registry_processes.remove(m_root_registry,NULL);
+		m_root_registry = 0;
+		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
 }
 
-void Root::Manager::on_registry_sent(OOBase::Buffer* buffer, int err)
+void Root::Manager::on_registry_started(OOBase::CDRStream& stream, int err)
 {
 	if (err != 0)
 		LOG_ERROR(("Failed to send start request to registry: %s",OOBase::system_error_text(err)));
 	else
 	{
-		//OOBase::Logger::log(OOBase::Logger::Information,"Starting registry process '%s'",strBinPath.c_str());
-
-
+		if (!stream.read(err))
+		{
+			err = stream.last_error();
+			LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(err)));
+		}
+		else if (err)
+			LOG_ERROR(("Registry failed to start properly: %s",OOBase::system_error_text(err)));
+		else
+			OOBase::Logger::log(OOBase::Logger::Information,"System registry started successfully");
 	}
 
 	if (err != 0)
-	{
-		m_ptrRegistrySocket->shutdown();
 		quit();
-	}
+	//else
+
 }
 
 bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)

@@ -74,11 +74,17 @@ namespace Root
 		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
 		bool get_config_arg(const char* name, OOBase::LocalString& val);
 
+		struct SpawnedProcess
+		{
+			OOBase::SmartPtr<Process>           m_ptrProcess;
+			OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
+		};
+		OOBase::HandleTable<size_t,SpawnedProcess> m_registry_processes;
+		size_t                                     m_root_registry;
+
 		// Registry handling
-		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrRegistrySocket;
 		bool start_registry(OOBase::AllocatorInstance& allocator);
-		bool spawn_registry_process(const OOBase::LocalString& strBinPath, OOBase::Buffer* buffer);
-		void on_registry_sent(OOBase::Buffer* buffer, int err);
+		void on_registry_started(OOBase::CDRStream& stream, int err);
 
 		// Client handling members
 		SECURITY_ATTRIBUTES              m_sa;

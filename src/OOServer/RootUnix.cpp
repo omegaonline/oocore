@@ -69,7 +69,7 @@ namespace
 		RootProcessUnix(uid_t id);
 
 		OOBase::String m_sid;
-		bool           m_bSandbox;
+		bool           m_bUnique;
 		uid_t          m_uid;
 		pid_t          m_pid;
 	};
@@ -80,7 +80,7 @@ namespace
 		va_start(args,fmt);
 
 		OOBase::TempPtr<char> msg(allocator);
-		int err = OOBase::vprintf(msg,fmt,args);
+		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
 
@@ -110,7 +110,7 @@ namespace
 }
 
 RootProcessUnix::RootProcessUnix(uid_t id) :
-		m_bSandbox(true),
+		m_bUnique(true),
 		m_uid(id),
 		m_pid(0)
 {
@@ -189,7 +189,7 @@ RootProcessUnix* RootProcessUnix::Spawn(OOBase::LocalString& strAppName, uid_t u
 		if (!pSpawn)
 			LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
 
-		pSpawn->m_bSandbox = (session_id == NULL);
+		pSpawn->m_bUnique = (session_id == NULL);
 		int err = pSpawn->m_sid.assign(session_id);
 		if (err != 0)
 		{
@@ -382,8 +382,7 @@ bool RootProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 
 bool RootProcessUnix::IsSameUser(uid_t uid) const
 {
-	// The sandbox is a 'unique' user
-	if (m_bSandbox)
+	if (m_bUnique)
 		return false;
 
 	return (m_uid == uid);
@@ -630,7 +629,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, co
 	fds[0] = fd[0];
 	fds[1] = fd[1];
 
-	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process '%s'",strAppName.c_str());
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting process '%s'",strAppName.c_str());
 
 	// Spawn the process
 	ptrSpawn = RootProcessUnix::Spawn(strAppName,uid,session_id,fd[1],bAgain,ptrEnv);
@@ -685,117 +684,6 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
 	}
 
 	uid = pw->pw_uid;
-	return true;
-}
-
-bool Root::Manager::spawn_registry_process(const OOBase::LocalString& strBinPath, OOBase::Buffer* buffer)
-{
-	char* rpath = realpath(strBinPath.c_str(),NULL);
-	if (rpath)
-	{
-		if (strBinPath != rpath)
-			OOBase::Logger::log(OOBase::Logger::Information,"Mapping %s to %s",strBinPath.c_str(),rpath);
-		::free(rpath);
-	}
-
-	// Check the file exists
-	if (access(strBinPath.c_str(),X_OK) != 0)
-		LOG_ERROR_RETURN(("Registry process %s is not executable: %s",strBinPath.c_str(),OOBase::system_error_text()),false);
-
-	// Create a pair of sockets
-	int fd[2] = {-1, -1};
-	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
-
-	// Make sure sockets are closed
-	OOBase::POSIX::SmartFD fds[2];
-	fds[0] = fd[0];
-	fds[1] = fd[1];
-
-	OOBase::Logger::log(OOBase::Logger::Information,"Starting registry process '%s'",strBinPath.c_str());
-
-	pid_t child_id = fork();
-	if (child_id == -1)
-		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text()),false);
-
-	if (child_id == 0)
-	{
-		// We are the child...
-
-		// Build the pipe name
-		OOBase::LocalString strPipe(strBinPath.get_allocator());
-		int err = strPipe.printf("--pipe=%u",fd[1]);
-		if (err)
-			exit_msg(strBinPath.get_allocator(),"Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
-
-		// Close all open handles
-		int except[] = { STDERR_FILENO, fd[1] };
-		err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
-		if (err)
-			exit_msg(strBinPath.get_allocator(),"close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
-
-		int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
-		if (n == -1)
-			exit_msg(strBinPath.get_allocator(),"Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
-
-		// Now close off stdin/stdout/stderr
-		dup2(n,STDIN_FILENO);
-		dup2(n,STDOUT_FILENO);
-		dup2(n,STDERR_FILENO);
-		OOBase::POSIX::close(n);
-		if (Root::is_debug())
-		{
-			OOBase::LocalString display(strBinPath.get_allocator());
-			OOBase::Environment::getenv("DISPLAY",display);
-			if (!display.empty())
-			{
-				OOBase::LocalString strTitle(strBinPath.get_allocator());
-				strTitle.printf("%s:/registry",strBinPath.c_str());
-
-				const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strBinPath.c_str(),strPipe.c_str(),"--debug",NULL };
-
-				//OOBase::LocalString valgrind;
-				//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
-				//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strBinPath.c_str(),strPipe.c_str(),"--debug",NULL };
-
-				//OOBase::LocalString gdb;
-				//gdb.printf("run %s --debug",strPipe.c_str());
-				//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strBinPath.c_str(),"-ex",gdb.c_str(), NULL };
-
-				execvp(argv[0],(char* const*)argv);
-			}
-		}
-
-		const char* argv[] = { strBinPath.c_str(), strPipe.c_str(), NULL, NULL };
-		if (Root::is_debug())
-			argv[2] = "--debug";
-
-		execv(strBinPath.c_str(),(char* const*)argv);
-
-		err = errno;
-		exit_msg(strBinPath.get_allocator(),"Failed to launch '%s', cwd '%s': %s\n",strBinPath.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
-	}
-
-	// We are the parent
-
-	// Done with fd[1]
-	fds[1].close();
-
-	// Create an async socket wrapper
-	int err = 0;
-	m_ptrRegistrySocket = m_proactor->attach(fd[0],err);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
-
-	fds[0].detach();
-
-	err = m_ptrRegistrySocket->send(this,&Manager::on_registry_sent,buffer);
-	if (err)
-	{
-		m_ptrRegistrySocket = NULL;
-		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
-	}
-
 	return true;
 }
 

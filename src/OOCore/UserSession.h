@@ -84,6 +84,8 @@ namespace OOCore
 
 	class UserSession
 	{
+		friend class OOBase::AllocatorInstance;
+
 	public:
 		void init();
 		void term();
@@ -142,8 +144,8 @@ namespace OOCore
 			static ThreadContext* instance();
 
 		private:
-			friend class OOBase::TLSSingleton<ThreadContext,OOCore::DLL>;
-			
+			friend class OOBase::AllocatorInstance;
+
 			ThreadContext();
 			~ThreadContext();
 		};

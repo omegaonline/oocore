@@ -361,7 +361,7 @@ namespace Omega
 							{
 								m_pVals = static_cast<T*>(System::Allocate(cbSize*sizeof(T)));
 								for (size_t i=0; i<cbSize; ++i)
-									new (m_pVals+i) T(marshal_info<T>::safe_type::coerce(vals[i]));
+									::new (m_pVals+i) T(marshal_info<T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -420,7 +420,7 @@ namespace Omega
 							{
 								m_pVals = static_cast<arr_type*>(System::Allocate(cbSize*sizeof(arr_type)));
 								for (size_t i=0; i<cbSize; ++i)
-									new (m_pVals+i) arr_type(marshal_info<T>::safe_type::coerce(vals[i]));
+									::new (m_pVals+i) arr_type(marshal_info<T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -482,7 +482,7 @@ namespace Omega
 							{
 								m_pVals = static_cast<T*>(System::Allocate(cbSize*sizeof(T)));
 								for (size_t i=0; i<cbSize; ++i)
-									new (m_pVals+i) T(marshal_info<const T>::safe_type::coerce(vals[i]));
+									::new (m_pVals+i) T(marshal_info<const T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}
@@ -533,7 +533,7 @@ namespace Omega
 							{
 								m_pVals = static_cast<arr_type*>(System::Allocate(cbSize*sizeof(arr_type)));
 								for (size_t i=0; i<cbSize; ++i)
-									new (m_pVals+i) arr_type(marshal_info<const T>::safe_type::coerce(vals[i]));
+									::new (m_pVals+i) arr_type(marshal_info<const T>::safe_type::coerce(vals[i]));
 							}
 						}
 					}

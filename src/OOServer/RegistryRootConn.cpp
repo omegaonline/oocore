@@ -55,9 +55,6 @@ void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int e
 		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		// Start another receive...
-		recv_next();
-
 		OOBase::StackAllocator<256> allocator;
 		OOBase::LocalString strDb(allocator);
 		stream.read_string(strDb);
@@ -86,9 +83,13 @@ void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int e
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
+					LOG_DEBUG(("Sending response %lu bytes",stream.buffer()->length()));
+
 					err = m_socket->send(this,NULL,stream.buffer());
 					if (err)
 						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+					else
+						recv_next();
 				}
 			}
 		}
@@ -99,10 +100,6 @@ void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int e
 
 bool Registry::RootConnection::recv_next()
 {
-	OOBase::RefPtr<OOBase::Buffer> buffer = new (std::nothrow) OOBase::Buffer(128,OOBase::CDRStream::MaxAlignment);
-	if (!buffer)
-		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
-
 #if defined(HAVE_UNISTD_H)
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = new (std::nothrow) OOBase::Buffer(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -110,12 +107,12 @@ bool Registry::RootConnection::recv_next()
 
 	addref();
 
-	int err = m_socket->recv_msg(this,&RootConnection::on_message_posix_1,buffer,ctl_buffer,sizeof(size_t));
+	int err = OOBase::CDRIO::recv_msg_with_header_sync(size_t(128),m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
 #elif defined(_WIN32)
 
 	addref();
 
-	int err = m_socket->recv(this,&RootConnection::on_message_win32_1,buffer,sizeof(size_t));
+	int err = OOBase::CDRIO::recv_with_header_sync(size_t(128),m_socket,this,&RootConnection::on_message_win32);
 #endif
 	if (err)
 	{
@@ -128,24 +125,24 @@ bool Registry::RootConnection::recv_next()
 
 #if defined(HAVE_UNISTD_H)
 
-void Registry::RootConnection::on_message_posix_1(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err)
+void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err)
 {
 	if (err)
 		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
+		// Start another receive...
+		recv_next();
+
+		OOBase::POSIX::SmartFD passed_fd;
+
 		// Read struct cmsg
 		struct msghdr msgh = {0};
 		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
 		msgh.msg_controllen = ctl_buffer->length();
 
 		struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);
-		if (!msg)
-		{
-			LOG_ERROR(("Root pipe control data missing or truncated"));
-			err = EMSGSIZE;
-		}
-		else
+		if (msg)
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
@@ -155,7 +152,7 @@ void Registry::RootConnection::on_message_posix_1(OOBase::Buffer* data_buffer, O
 					err = EINVAL;
 				}
 				else
-					m_passed_fd = *reinterpret_cast<int*>(CMSG_DATA(msg));
+					passed_fd = *reinterpret_cast<int*>(CMSG_DATA(msg));
 			}
 			else
 			{
@@ -166,88 +163,57 @@ void Registry::RootConnection::on_message_posix_1(OOBase::Buffer* data_buffer, O
 			if (CMSG_NXTHDR(&msgh,msg) != NULL)
 			{
 				LOG_ERROR(("Root pipe control data has extra stuff in it"));
-				m_passed_fd.close();
+				passed_fd.close();
 				err = EINVAL;
 			}
 		}
-	}
 
-	if (!err)
-	{
-		OOBase::CDRStream stream(data_buffer);
-
-		size_t msg_len = 0;
-		if (!stream.read(msg_len))
-			LOG_ERROR(("Failed to read root request: %s",OOBase::system_error_text(stream.last_error())));
-		else
+		if (!err)
 		{
-			err = m_socket->recv(this,&RootConnection::on_message_posix_2,data_buffer,msg_len - sizeof(size_t));
-			if (!err)
-				return;
+			// Read and cache any root parameters
+			OOBase::StackAllocator<256> allocator;
+			OOBase::LocalString p1(allocator),p2(allocator);
+			stream.read_string(p1);
+			stream.read_string(p2);
 
-			LOG_ERROR(("Failed to receive from root: %s",OOBase::system_error_text(err)));
-		}
-	}
+			uid_t uid;
+			stream.read(uid);
+			gid_t gid;
+			stream.read(gid);
 
-	// By the time we get here, we have failed... just release() our refcount
-	m_socket->shutdown();
-	release();
-}
-
-void Registry::RootConnection::on_message_posix_2(OOBase::Buffer* data_buffer, int err)
-{
-	if (err)
-		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
-	else
-	{
-		// Start another receive...
-		recv_next();
-
-		// Read and cache any root parameters
-		OOBase::CDRStream stream(data_buffer);
-
-		OOBase::StackAllocator<256> allocator;
-		OOBase::LocalString p1(allocator),p2(allocator);
-		stream.read_string(p1);
-		stream.read_string(p2);
-
-		uid_t uid;
-		stream.read(uid);
-		gid_t gid;
-		stream.read(gid);
-
-		if (stream.last_error())
-			LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
-		else
-		{
-			// Tell the manager to create a new connection
-			int ret_err = m_pManager->new_connection(m_passed_fd,uid,gid);
-
-			m_passed_fd.close();
-
-			err = stream.reset();
-			if (err)
-				LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+			if (stream.last_error())
+				LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 			else
 			{
-				size_t mark = stream.buffer()->mark_wr_ptr();
-
-				stream.write(size_t(0));
-				stream.write(ret_err);
+				// Tell the manager to create a new connection
+				int ret_err = m_pManager->new_connection(passed_fd,uid,gid);
 				if (!ret_err)
-				{
-					stream.write_string(p1);
-					stream.write_string(p2);
-				}
+					passed_fd.detach();
 
-				stream.replace(stream.buffer()->length(),mark);
-				if (stream.last_error())
-					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+				err = stream.reset();
+				if (err)
+					LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
-					err = m_socket->send(this,NULL,stream.buffer());
-					if (err)
-						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+					size_t mark = stream.buffer()->mark_wr_ptr();
+
+					stream.write(size_t(0));
+					stream.write(ret_err);
+					if (!ret_err)
+					{
+						stream.write_string(p1);
+						stream.write_string(p2);
+					}
+
+					stream.replace(stream.buffer()->length(),mark);
+					if (stream.last_error())
+						LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+					else
+					{
+						err = m_socket->send(this,NULL,stream.buffer());
+						if (err)
+							LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+					}
 				}
 			}
 		}
@@ -258,33 +224,7 @@ void Registry::RootConnection::on_message_posix_2(OOBase::Buffer* data_buffer, i
 
 #elif defined(_WIN32)
 
-void Registry::RootConnection::on_message_win32_1(OOBase::Buffer* data_buffer, int err)
-{
-	if (err)
-		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
-	else
-	{
-		OOBase::CDRStream stream(data_buffer);
-
-		size_t msg_len = 0;
-		if (!stream.read(msg_len))
-			LOG_ERROR(("Failed to read root request: %s",OOBase::system_error_text(stream.last_error())));
-		else
-		{
-			err = m_socket->recv(this,&RootConnection::on_message_win32_2,data_buffer,msg_len - sizeof(size_t));
-			if (!err)
-				return;
-
-			LOG_ERROR(("Failed to receive from root: %s",OOBase::system_error_text(err)));
-		}
-	}
-
-	// By the time we get here, we have failed... just release() our refcount
-	m_socket->shutdown();
-	release();
-}
-
-void Registry::RootConnection::on_message_win32_2(OOBase::Buffer* data_buffer, int err)
+void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 {
 	if (err)
 		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
@@ -294,8 +234,6 @@ void Registry::RootConnection::on_message_win32_2(OOBase::Buffer* data_buffer, i
 		recv_next();
 
 		// Read and cache any root parameters
-		OOBase::CDRStream stream(data_buffer);
-
 		OOBase::StackAllocator<256> allocator;
 		OOBase::LocalString p1(allocator),p2(allocator),sid(allocator),pipe(allocator);
 		stream.read_string(p1);

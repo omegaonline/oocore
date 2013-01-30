@@ -83,8 +83,6 @@ void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int e
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
-					LOG_DEBUG(("Sending response %lu bytes",stream.buffer()->length()));
-
 					err = m_socket->send(this,NULL,stream.buffer());
 					if (err)
 						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
@@ -101,18 +99,18 @@ void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int e
 bool Registry::RootConnection::recv_next()
 {
 #if defined(HAVE_UNISTD_H)
-	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = new (std::nothrow) OOBase::Buffer(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_msg_with_header_sync(size_t(128),m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
+	int err = OOBase::CDRIO::recv_msg_with_header_sync<size_t>(128,m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
 #elif defined(_WIN32)
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync(size_t(128),m_socket,this,&RootConnection::on_message_win32);
+	int err = OOBase::CDRIO::recv_with_header_sync<size_t>(128,m_socket,this,&RootConnection::on_message_win32);
 #endif
 	if (err)
 	{

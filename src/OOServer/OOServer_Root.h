@@ -53,6 +53,7 @@
 #include <OOBase/Server.h>
 #include <OOBase/ConfigFile.h>
 #include <OOBase/CDRIO.h>
+#include <OOBase/ArenaAllocator.h>
 
 //////////////////////////////////////////////
 

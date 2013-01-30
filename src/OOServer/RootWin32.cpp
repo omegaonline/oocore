@@ -51,13 +51,13 @@ namespace
 	class RootProcessWin32 : public Root::Process
 	{
 	public:
-		static RootProcessWin32* Spawn(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		static RootProcessWin32* Spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 
 		virtual ~RootProcessWin32();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(HANDLE uid, const char* session_id) const;
-		bool IsSameUser(HANDLE uid) const;
+		bool IsSameLogin(const uid_t& uid, const char* session_id) const;
+		bool IsSameUser(const uid_t& uid) const;
 
 		bool IsRunning() const;
 
@@ -71,10 +71,10 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD SpawnFromToken(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
-	HANDLE CreatePipe(HANDLE hToken, OOBase::LocalString& strPipe)
+	HANDLE CreatePipe(const uid_t& hToken, OOBase::LocalString& strPipe)
 	{
 		// Create a new unique pipe
 
@@ -167,7 +167,7 @@ namespace
 		return hPipe;
 	}
 
-	DWORD LogonSandboxUser(const OOBase::LocalString& strUName, HANDLE& hToken)
+	DWORD LogonSandboxUser(const OOBase::LocalString& strUName, uid_t& hToken)
 	{
 		// Convert UName to wide
 		OOBase::TempPtr<wchar_t> ptrUName(strUName.get_allocator());
@@ -221,20 +221,20 @@ namespace
 		if (!bRes)
 			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 
-		// Control handle lifetime
-		OOBase::Win32::SmartHandle tok(hToken);
-
 		// Restrict the Token
-		dwErr = OOBase::Win32::RestrictToken(hToken);
+		HANDLE hNewToken = INVALID_HANDLE_VALUE;
+		dwErr = OOBase::Win32::RestrictToken(hToken,&hNewToken);
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::system_error_text(dwErr)),dwErr);
+
+		hToken.close();
+		hToken = hNewToken;
 
 		// This might be needed for restricted tokens...
 		dwErr = OOBase::Win32::SetTokenDefaultDACL(hToken);
 		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::system_error_text(dwErr)),dwErr);
 
-		tok.detach();
 		return ERROR_SUCCESS;
 	}
 
@@ -309,7 +309,7 @@ namespace
 		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	}
 
-	bool OpenCorrectWindowStation(HANDLE hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	bool OpenCorrectWindowStation(const uid_t& hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
 	{
 		// Service window stations are created with the name "Service-0xZ1-Z2$",
 		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
@@ -476,7 +476,7 @@ RootProcessWin32::~RootProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	// Create the named pipe
 	OOBase::LocalString strPipe(strAppName.get_allocator());
@@ -518,7 +518,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, HANDLE h
 	HDESK hDesktop = 0;
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
-	HANDLE hPriToken = 0;
+	OOBase::Win32::SmartHandle hPriToken;
 	OOBase::LocalString strTitle(strAppName.get_allocator());
 	OOBase::TempPtr<wchar_t> ptrWS(strAppName.get_allocator()),ptrTitle(strAppName.get_allocator());
 
@@ -639,10 +639,6 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, HANDLE h
 	CloseHandle(process_info.hThread);
 
 Cleanup:
-	// Done with hPriToken
-	if (hPriToken)
-		CloseHandle(hPriToken);
-
 	// Done with Desktop
 	if (hDesktop)
 		CloseDesktop(hDesktop);
@@ -657,7 +653,7 @@ Cleanup:
 	return dwRes;
 }
 
-RootProcessWin32* RootProcessWin32::Spawn(OOBase::LocalString& strAppName, HANDLE hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+RootProcessWin32* RootProcessWin32::Spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	RootProcessWin32* pSpawn = new (std::nothrow) RootProcessWin32();
 	if (!pSpawn)
@@ -747,7 +743,7 @@ int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 	return 0;
 }
 
-bool RootProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) const
+bool RootProcessWin32::IsSameLogin(const uid_t& hToken, const char* /*session_id*/) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)
@@ -770,7 +766,7 @@ bool RootProcessWin32::IsSameLogin(HANDLE hToken, const char* /*session_id*/) co
 			OOBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
-bool RootProcessWin32::IsSameUser(HANDLE hToken) const
+bool RootProcessWin32::IsSameUser(const uid_t& hToken) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)
@@ -881,7 +877,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	return OOServer::Ok;
 }
 
-bool Root::Manager::get_registry_hive(uid_t hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(const uid_t& hToken, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 {
 	int err = 0;
 	if (strUsersDir.empty())
@@ -959,7 +955,7 @@ bool Root::Manager::get_registry_hive(uid_t hToken, OOBase::LocalString strSysDi
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
 	int err = 0;
 	if (strAppName.length() >= MAX_PATH)
@@ -998,12 +994,6 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, co
 
 bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
 {
-	if (uid != INVALID_HANDLE_VALUE)
-	{
-		CloseHandle(uid);
-		uid = INVALID_HANDLE_VALUE;
-	}
-
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
@@ -1011,20 +1001,15 @@ bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
 	OOBase::TempPtr<wchar_t> ptrUserName(strUName.get_allocator()),ptrDomainName(strUName.get_allocator());
 	DWORD dwRes = OOBase::Win32::GetNameFromToken(uid,ptrUserName,ptrDomainName);
 	if (dwRes != ERROR_SUCCESS)
-	{
-		CloseHandle(uid);
 		LOG_ERROR_RETURN(("OOBase::Win32::GetNameFromToken failed: %s",OOBase::system_error_text(dwRes)),false);
-	}
 
 	if (!ptrDomainName)
 		dwRes = strUName.printf("%ls",static_cast<const wchar_t*>(ptrUserName));
 	else
 		dwRes = strUName.printf("%ls\\%ls",static_cast<const wchar_t*>(ptrDomainName),static_cast<const wchar_t*>(ptrUserName));
+
 	if (dwRes != 0)
-	{
-		CloseHandle(uid);
 		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(dwRes)),false);
-	}
 
 	return true;
 }

@@ -59,8 +59,8 @@ namespace
 		virtual ~RootProcessUnix();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(uid_t uid, const char* session_id) const;
-		bool IsSameUser(uid_t uid) const;
+		bool IsSameLogin(const uid_t& uid, const char* session_id) const;
+		bool IsSameUser(const uid_t& uid) const;
 
 		bool IsRunning() const;
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
@@ -159,10 +159,11 @@ RootProcessUnix* RootProcessUnix::Spawn(OOBase::LocalString& strAppName, uid_t u
 	char* rpath = realpath(strAppName.c_str(),NULL);
 	if (rpath)
 	{
-		if (strAppName != rpath)
-			OOBase::Logger::log(OOBase::Logger::Information,"Mapping %s to %s",strAppName.c_str(),rpath);
+		OOBase::Logger::log(OOBase::Logger::Information,"Starting process: '%s'",rpath);
 		::free(rpath);
 	}
+	else
+		OOBase::Logger::log(OOBase::Logger::Information,"Starting process: '%s'",strAppName.c_str());
 
 	// Check the file exists
 	if (access(strAppName.c_str(),X_OK) != 0)
@@ -371,7 +372,7 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 	return 0;
 }
 
-bool RootProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
+bool RootProcessUnix::IsSameLogin(const uid_t& uid, const char* session_id) const
 {
 	if (!IsSameUser(uid))
 		return false;
@@ -380,7 +381,7 @@ bool RootProcessUnix::IsSameLogin(uid_t uid, const char* session_id) const
 	return (m_sid == session_id);
 }
 
-bool RootProcessUnix::IsSameUser(uid_t uid) const
+bool RootProcessUnix::IsSameUser(const uid_t& uid) const
 {
 	if (m_bUnique)
 		return false;
@@ -507,7 +508,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	return OOServer::Errored;
 }
 
-bool Root::Manager::get_registry_hive(uid_t uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
 {
 	int err = 0;
 	OOBase::POSIX::pw_info pw(strSysDir.get_allocator(),uid);
@@ -612,7 +613,7 @@ bool Root::Manager::get_registry_hive(uid_t uid, OOBase::LocalString strSysDir, 
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
 	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
@@ -628,8 +629,6 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, uid_t uid, co
 	OOBase::POSIX::SmartFD fds[2];
 	fds[0] = fd[0];
 	fds[1] = fd[1];
-
-	OOBase::Logger::log(OOBase::Logger::Information,"Starting process '%s'",strAppName.c_str());
 
 	// Spawn the process
 	ptrSpawn = RootProcessUnix::Spawn(strAppName,uid,session_id,fd[1],bAgain,ptrEnv);

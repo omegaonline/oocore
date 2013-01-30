@@ -48,7 +48,6 @@ template class OOBase::Singleton<OOBase::Proactor,Root::Manager>;
 Root::Manager::Manager() :
 		m_proactor(NULL),
 		m_registry_processes(1),
-		m_root_registry(0),
 		m_sandbox_channel(0)
 {
 	// Root channel is fixed
@@ -78,7 +77,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 				if (start_registry(cmd_args.get_allocator()))
 				{
 					// Spawn the sandbox
-					//if (spawn_sandbox_process(cmd_args.get_allocator()))
+					if (spawn_sandbox_process(cmd_args.get_allocator()))
 					{
 						// Start listening for clients
 						//if (start_client_acceptor(cmd_args.get_allocator()))
@@ -128,6 +127,12 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 	return ret;
 }
 
+int Root::Manager::run_proactor(void* p)
+{
+	int err = 0;
+	return static_cast<OOBase::Proactor*>(p)->run(err);
+}
+
 bool Root::Manager::get_config_arg(const char* name, OOBase::LocalString& val)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
@@ -141,45 +146,7 @@ bool Root::Manager::get_config_arg(const char* name, OOBase::LocalString& val)
 		return true;
 	}
 
-	if (m_registry)
-	{
-		OOBase::LocalString strSubKey(val.get_allocator());
-		int err2 = strSubKey.assign("/System/Server/Settings");
-		if (err2)
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
-
-		Omega::int64_t key = 0;
-		Db::hive_errors err = registry_open_key(key,strSubKey,0);
-		if (err)
-		{
-			if (err != Db::HIVE_NOTFOUND)
-				LOG_ERROR_RETURN(("Failed to open the '/System/Server/Settings' key in the system registry"),false);
-		}
-		else
-		{
-			if ((err = m_registry->get_value(key,name,0,val)) == 0)
-				return true;
-			
-			if (err != Db::HIVE_NOTFOUND)
-				LOG_ERROR_RETURN(("Failed to get the '/System/Server/Settings/%s' setting in the system registry",name),false);
-		}
-	}
-
 	return false;
-}
-
-void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	OOBase::StackAllocator<256> allocator;
-	OOBase::LocalString strArg(allocator);
-	if (!request.read_string(strArg))
-		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
-
-	OOBase::LocalString strValue(allocator);
-	get_config_arg(strArg.c_str(),strValue);
-
-	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write_string(strValue))
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
@@ -235,7 +202,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		const char* rpath = strFile.c_str();
 #endif
 
-		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: %s",rpath);
+		OOBase::Logger::log(OOBase::Logger::Information,"Using config file: '%s'",rpath);
 
 		OOBase::ConfigFile::error_pos_t error = {0};
 		err = OOBase::ConfigFile::load(strFile.c_str(),m_config_args,&error);
@@ -308,13 +275,9 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR_RETURN(("Failed to insert string: %s",OOBase::system_error_text(err)),false);
 	}
 
-	return true;
-}
+	OOBase::Logger::log(OOBase::Logger::Information,"Configuration loaded successfully");
 
-int Root::Manager::run_proactor(void* p)
-{
-	int err = 0;
-	return static_cast<OOBase::Proactor*>(p)->run(err);
+	return true;
 }
 
 bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
@@ -330,19 +293,6 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	if (err)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
 
-	// Write initial message
-	OOBase::CDRStream request;
-	size_t mark = request.buffer()->mark_wr_ptr();
-	request.write(size_t(0));
-	request.write_string(strRegPath);
-
-	void* TODO; // Send config settings
-
-	request.replace(request.buffer()->length(),mark);
-
-	if (request.last_error())
-		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(request.last_error())),false);
-
 	// Get the binary path
 	OOBase::LocalString strBinPath(allocator);
 	if (!get_config_arg("binary_path",strBinPath))
@@ -356,6 +306,19 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
+	// Write initial message
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(size_t(0));
+	stream.write_string(strRegPath);
+
+	void* TODO; // Send config settings
+
+	stream.replace(stream.buffer()->length(),mark);
+
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
 	// Get the environment settings
 	OOBase::Environment::env_table_t tabSysEnv(allocator);
 	err = OOBase::Environment::get_current(tabSysEnv);
@@ -363,7 +326,7 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
 	// Get our uid
-	uid_t uid = uid_t(-1);
+	uid_t uid;
 	OOBase::LocalString strOurUName(allocator);
 	if (!get_our_uid(uid,strOurUName))
 		return false;
@@ -374,48 +337,44 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	if (!platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain))
 		return false;
 
-	// Add to the handle map
-	err = m_registry_processes.insert(p,m_root_registry,1,size_t(-1));
+	// Send the start data - blocking is OK as we have background proactor threads waiting
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<size_t>(stream,p.m_ptrSocket);
 	if (err)
-		LOG_ERROR_RETURN(("Failed to insert root registry handle: %s",OOBase::system_error_text(err)),false);
-
-	// Send the start data
-	err = OOBase::CDRIO::send_and_recv_with_header_sync<size_t>(request,p.m_ptrSocket,this,&Manager::on_registry_started);
-	if (err)
-	{
-		m_registry_processes.remove(m_root_registry,NULL);
-		m_root_registry = 0;
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
-	}
+	if (!stream.read(err))
+		LOG_ERROR_RETURN(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
+	if (err)
+		LOG_ERROR_RETURN(("Registry failed to start properly: %s",OOBase::system_error_text(err)),false);
+
+	// Add to registry process map
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Add to the handle map
+	err = m_registry_processes.force_insert(1,p);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to insert registry handle: %s",OOBase::system_error_text(err)),false);
+
+	OOBase::Logger::log(OOBase::Logger::Information,"System registry started successfully");
 
 	return true;
 }
 
-void Root::Manager::on_registry_started(OOBase::CDRStream& stream, int err)
+OOBase::RefPtr<OOBase::AsyncSocket> Root::Manager::get_root_registry()
 {
-	if (err != 0)
-		LOG_ERROR(("Failed to send start request to registry: %s",OOBase::system_error_text(err)));
-	else
-	{
-		if (!stream.read(err))
-		{
-			err = stream.last_error();
-			LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(err)));
-		}
-		else if (err)
-			LOG_ERROR(("Registry failed to start properly: %s",OOBase::system_error_text(err)));
-		else
-			OOBase::Logger::log(OOBase::Logger::Information,"System registry started successfully");
-	}
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	if (err != 0)
-		quit();
-	//else
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
+	SpawnedProcess* p = m_registry_processes.at(1);
+	if (p)
+		ptrSocket = p->m_ptrSocket;
 
+	return ptrSocket;
 }
 
 bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 {
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting system sandbox...");
+
 	OOBase::LocalString strUnsafe(allocator);
 	bool bUnsafe = false;
 	if (Root::is_debug() && get_config_arg("unsafe",strUnsafe))
@@ -427,7 +386,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 	
 	bool bAgain = false;
-	uid_t uid = uid_t(-1);
+	uid_t uid;
 	if (strUName.empty())
 	{
 		OOBase::LocalString strOurUName(allocator);
@@ -458,9 +417,73 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 			return false;
 	}
 
-	OOBase::String strPipe;
-	m_sandbox_channel = spawn_user_process(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
-	if (m_sandbox_channel == 0 && bUnsafe && !strUName.empty() && bAgain)
+	// Get the environment settings
+	OOBase::Environment::env_table_t tabSysEnv(allocator);
+#if defined(_WIN32)
+	int err = OOBase::Environment::get_user(uid,tabSysEnv);
+#else
+	int err = OOBase::Environment::get_current(tabSysEnv);
+#endif
+	if (err)
+		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),0);
+
+	// Get sandbox environment from root registry
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot = get_root_registry();
+
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(size_t(0));
+
+	stream.replace(stream.buffer()->length(),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	void* TODO1;
+	/*if (err)
+		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
+	if (!stream.read(err))
+		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
+	if (err)
+		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
+
+	OOBase::Environment::env_table_t tabEnv(allocator);
+	for (;;)
+	{
+		OOBase::LocalString key(allocator),value(allocator);
+
+		if (!stream.read_string(key) || !stream.read_string(value))
+			LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(stream.last_error())),false);
+
+		if (key.empty())
+			break;
+
+		err = tabEnv.insert(key,value);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert environment variable into block: %s",OOBase::system_error_text(err)),false);
+	}
+
+	err = OOBase::Environment::substitute(tabEnv,tabSysEnv);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),0);
+*/
+
+	// Get the binary path
+	OOBase::LocalString strBinPath(allocator);
+	if (!get_config_arg("binary_path",strBinPath))
+		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
+
+#if defined(_WIN32)
+	err = strBinPath.append("OOSvrUser.exe");
+#else
+	err = strBinPath.append("oosvruser");
+#endif
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+	// Spawn the process
+	SpawnedProcess p;
+	bool res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain);
+	if (!res && bUnsafe && bAgain && !strUName.empty())
 	{
 		OOBase::LocalString strOurUName(allocator);
 		if (!get_our_uid(uid,strOurUName))
@@ -472,14 +495,29 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		m_sandbox_channel = spawn_user_process(allocator,uid,NULL,OOBase::SmartPtr<Db::Hive>(),strPipe,bAgain);
+		res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain);
 	}
 
-#if defined(_WIN32)
-	CloseHandle(uid);
-#endif
+	if (!res)
+		return false;
 
-	return (m_sandbox_channel != 0);
+	// Now tell the root registry to connect to the sandbox process
+	stream.reset();
+	mark = stream.buffer()->mark_wr_ptr();
+	stream.write(size_t(0));
+
+	void* TODO2; // Send config settings
+
+	stream.replace(stream.buffer()->length(),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<size_t>(stream,ptrRoot);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to negotiate with root registry: %s",OOBase::system_error_text(err)),false);
+
+
+	return true;
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
@@ -615,7 +653,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user_process(OOBase::AllocatorInstance& allocator, uid_t uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+Omega::uint32_t Root::Manager::spawn_user_process(OOBase::AllocatorInstance& allocator, const uid_t& uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Get the binary path
 	OOBase::LocalString strBinPath(allocator);
@@ -751,6 +789,20 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOBase::AsyncSocket
 	}
 
 	return channel_id;
+}
+
+void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
+{
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString strArg(allocator);
+	if (!request.read_string(strArg))
+		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
+
+	OOBase::LocalString strValue(allocator);
+	get_config_arg(strArg.c_str(),strValue);
+
+	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write_string(strValue))
+		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
 void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs)

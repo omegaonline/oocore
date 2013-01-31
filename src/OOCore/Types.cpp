@@ -191,6 +191,9 @@ char* StringNode::grow(size_t extra, int& err)
 {
 	char* buffer = NULL;
 
+	// This is not race-safe... don't do it
+	void* WRONG;
+
 	if (++m_refcount == 2)
 	{
 		// We have only one reference, so we can grow

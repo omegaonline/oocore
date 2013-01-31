@@ -356,7 +356,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		OOBase::TempPtr<TOKEN_USER> ptrProcessUser(strWindowStation.get_allocator());
+		OOBase::LocalPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::AllocatorInstance> > ptrProcessUser(strWindowStation.get_allocator());
 		if ((err = OOBase::Win32::GetTokenInfo(hProcessToken,TokenUser,ptrProcessUser)) != 0)
 			LOG_ERROR_RETURN(("OOBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
 
@@ -751,7 +751,7 @@ bool RootProcessWin32::IsSameLogin(const uid_t& hToken, const char* /*session_id
 
 	// Check the SIDs and priviledges are the same..
 	OOBase::StackAllocator<256> allocator;
-	OOBase::TempPtr<TOKEN_GROUPS_AND_PRIVILEGES> pStats1(allocator),pStats2(allocator);
+	OOBase::LocalPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<OOBase::AllocatorInstance> > pStats1(allocator),pStats2(allocator);
 	if (OOBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges,pStats1) != ERROR_SUCCESS ||
 			OOBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges,pStats2) != ERROR_SUCCESS)
 	{
@@ -773,7 +773,7 @@ bool RootProcessWin32::IsSameUser(const uid_t& hToken) const
 		return false;
 
 	OOBase::StackAllocator<256> allocator;
-	OOBase::TempPtr<TOKEN_USER> ptrUserInfo1(allocator),ptrUserInfo2(allocator);
+	OOBase::LocalPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::AllocatorInstance> > ptrUserInfo1(allocator),ptrUserInfo2(allocator);
 	if (OOBase::Win32::GetTokenInfo(hToken,TokenUser,ptrUserInfo1) != ERROR_SUCCESS ||
 			OOBase::Win32::GetTokenInfo(m_hToken,TokenUser,ptrUserInfo2) != ERROR_SUCCESS)
 	{

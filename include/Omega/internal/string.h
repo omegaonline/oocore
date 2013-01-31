@@ -103,7 +103,7 @@ namespace Omega
 	private:
 		handle_t m_handle;
 
-		explicit string_t(const handle_t& h, bool addref);
+		string_t(const handle_t& h, bool addref);
 
 		static void addref(handle_t& h, bool own);
 		static void release(handle_t& h);

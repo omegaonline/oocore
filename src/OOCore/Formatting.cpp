@@ -1765,7 +1765,7 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Omega::string_t&,format))
 {
-	OOBase::SmartPtr<format_state_t> s = new (OOCore::throwing) format_state_t();
+	OOBase::LocalPtr<format_state_t> s(new (OOCore::throwing) format_state_t());
 
 	// Split up the string
 	parse_format(format,s->m_strPrefix,s->m_inserts);
@@ -1779,7 +1779,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	if (!s)
 		return NULL;
 
-	OOBase::SmartPtr<format_state_t> s_new = new (OOCore::throwing) format_state_t();
+	OOBase::LocalPtr<format_state_t> s_new(new (OOCore::throwing) format_state_t());
 
 	s_new->m_strPrefix = s->m_strPrefix;
 

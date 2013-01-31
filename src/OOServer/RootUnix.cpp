@@ -621,17 +621,19 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
 
 	// Create a pair of sockets
-	int fd[2] = {-1, -1};
-	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
-
-	// Make sure sockets are closed
 	OOBase::POSIX::SmartFD fds[2];
-	fds[0] = fd[0];
-	fds[1] = fd[1];
+	{
+		int fd[2] = {-1, -1};
+		if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
+			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
+
+		// Make sure sockets are closed
+		fds[0] = fd[0];
+		fds[1] = fd[1];
+	}
 
 	// Spawn the process
-	ptrSpawn = RootProcessUnix::Spawn(strAppName,uid,session_id,fd[1],bAgain,ptrEnv);
+	ptrSpawn = RootProcessUnix::Spawn(strAppName,uid,session_id,fds[1],bAgain,ptrEnv);
 	if (!ptrSpawn)
 		return false;
 
@@ -639,7 +641,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 	fds[1].close();
 
 	// Create an async socket wrapper
-	ptrSocket = m_proactor->attach(fd[0],err);
+	ptrSocket = m_proactor->attach(fds[0],err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
@@ -683,6 +685,86 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
 	}
 
 	uid = pw->pw_uid;
+	return true;
+}
+
+bool Root::Manager::connect_root_registry_to_sandbox(OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox)
+{
+	// Create a pair of sockets
+	OOBase::POSIX::SmartFD fds[2];
+	{
+		int fd[2] = {-1, -1};
+		if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
+			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
+
+		// Make sure sockets are closed
+		fds[0] = fd[0];
+		fds[1] = fd[1];
+	}
+
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+	if (!ctl_buffer)
+		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
+
+	struct msghdr msg = {0};
+	msg.msg_control = ctl_buffer->wr_ptr();
+	msg.msg_controllen = ctl_buffer->space();
+
+	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    *(int*)CMSG_DATA(cmsg) = fds[0];
+    ctl_buffer->wr_ptr(cmsg->cmsg_len);
+
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(size_t(0));
+
+	void* TODO1; // OpCode
+
+	stream.replace(stream.buffer()->length(),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	int err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<size_t>(stream,ctl_buffer,ptrRoot);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
+	if (!stream.read(err))
+		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
+	if (err)
+		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
+
+	ctl_buffer->reset();
+	msg.msg_control = ctl_buffer->wr_ptr();
+	msg.msg_controllen = ctl_buffer->space();
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+	*(int*)CMSG_DATA(cmsg) = fds[1];
+	ctl_buffer->wr_ptr(cmsg->cmsg_len);
+
+	stream.reset();
+	mark = stream.buffer()->mark_wr_ptr();
+	stream.write(size_t(0));
+
+	void* TODO2; // OpCode
+
+	stream.replace(stream.buffer()->length(),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<size_t>(stream,ctl_buffer,ptrSandbox);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
+	if (!stream.read(err))
+		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
+	if (err)
+		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
+
+	// All sent, we are done here!
 	return true;
 }
 

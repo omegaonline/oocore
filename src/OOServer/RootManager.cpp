@@ -312,10 +312,15 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	stream.write(size_t(0));
 	stream.write_string(strRegPath);
 
-	void* TODO; // Send config settings
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
+	for (size_t pos = 0;pos < m_config_args.size();++pos)
+	{
+		if (!stream.write_string(*m_config_args.key_at(pos)) || !stream.write_string(*m_config_args.at(pos)))
+			break;
+	}
+	read_guard.release();
 
 	stream.replace(stream.buffer()->length(),mark);
-
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -349,7 +354,7 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	// Add to registry process map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	// Add to the handle map
+	// Add to the handle map as ID 1
 	err = m_registry_processes.force_insert(1,p);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to insert registry handle: %s",OOBase::system_error_text(err)),false);
@@ -497,25 +502,23 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 
 		res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain);
 	}
-
 	if (!res)
 		return false;
 
 	// Now tell the root registry to connect to the sandbox process
-	stream.reset();
-	mark = stream.buffer()->mark_wr_ptr();
-	stream.write(size_t(0));
+	if (!connect_root_registry_to_sandbox(ptrRoot,p.m_ptrSocket))
+		return false;
 
-	void* TODO2; // Send config settings
+	// Add to process map
+	/*OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	stream.replace(stream.buffer()->length(),mark);
-	if (stream.last_error())
-		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	err = OOBase::CDRIO::send_and_recv_with_header_blocking<size_t>(stream,ptrRoot);
+	// Add to the handle map as ID 1
+	err = m_user_processes.force_insert(1,p);
 	if (err)
-		LOG_ERROR_RETURN(("Failed to negotiate with root registry: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Failed to insert process handle: %s",OOBase::system_error_text(err)),false);
+*/
 
+	OOBase::Logger::log(OOBase::Logger::Information,"System sandbox started successfully");
 
 	return true;
 }

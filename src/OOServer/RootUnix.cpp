@@ -721,7 +721,7 @@ bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::R
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(size_t(0));
 
-	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root_NewConnection));
+	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
 	stream.write(static_cast<void*>(NULL));
 	stream.write(uid);
 
@@ -751,8 +751,7 @@ bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::R
 	stream.reset();
 	mark = stream.buffer()->mark_wr_ptr();
 	stream.write(size_t(0));
-
-	void* TODO2; // OpCode
+	stream.write(static_cast<void*>(NULL));
 
 	stream.replace(stream.buffer()->length(),mark);
 	if (stream.last_error())

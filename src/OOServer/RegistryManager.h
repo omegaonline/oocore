@@ -24,23 +24,21 @@
 
 #include "Protocol.h"
 
+#if defined(_WIN32)
+typedef OOBase::Win32::SmartHandle uid_t;
+#endif
+
 namespace Registry
 {
 	class Manager : public OOBase::Server
 	{
+		friend class RootConnection;
+
 	public:
 		Manager();
 		virtual ~Manager();
 
-		int run(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& pszPipe);
-
-		int on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings);
-
-#if defined(HAVE_UNISTD_H)
-		int new_connection(int fd, uid_t uid);
-#elif defined(_WIN32)
-		int new_connection(const OOBase::LocalString& sid, OOBase::LocalString& strPipe);
-#endif
+		int run(const OOBase::LocalString& pszPipe);
 
 	private:
 		Manager(const Manager&);
@@ -56,7 +54,11 @@ namespace Registry
 
 		int open_database();
 
-		bool connect_root(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& strPipe);
+		bool connect_root(const OOBase::LocalString& strPipe);
+
+		int on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings);
+
+		int new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, uid_t uid);
 	};
 }
 

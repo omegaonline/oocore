@@ -76,6 +76,8 @@ oosvruser_SOURCES = \
 	UserProcessUnix.cpp \
 	UserRegistry.h \
 	UserRegistry.cpp \
+	UserRootConn.h \
+	UserRootConn.cpp \
 	UserROT.h \
 	UserROT.cpp \
 	UserServices.h \

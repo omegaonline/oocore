@@ -316,6 +316,7 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(size_t(0));
+	stream.write(static_cast<void*>(NULL));
 	stream.write_string(strRegPath);
 
 	OOBase::LocalString strThreads(allocator);

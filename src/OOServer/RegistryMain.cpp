@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	return Registry::Manager().run(allocator,strPipe);
+	return Registry::Manager().run(strPipe);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

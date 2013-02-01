@@ -21,6 +21,7 @@
 
 #include "OOServer_User.h"
 #include "UserManager.h"
+#include "UserRootConn.h"
 #include "UserIPS.h"
 #include "UserChannel.h"
 #include "UserRegistry.h"
@@ -166,23 +167,17 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 		else
 		{
 			// Start the handler
-			if (start_request_threads(2))
+			if (connect_root(strPipe))
 			{
-				if (connect_root(strPipe))
-				{
-					OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
+				OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
-					// Wait for stop
-					wait_for_quit();
+				// Wait for stop
+				wait_for_quit();
 
-					// Stop services (if any)
-					stop_all_services();
+				// Stop services (if any)
+				stop_all_services();
 
-					ret = EXIT_SUCCESS;
-				}
-
-				// Stop the MessageHandler
-				stop_request_threads();
+				ret = EXIT_SUCCESS;
 			}
 
 			m_proactor->stop();
@@ -211,11 +206,12 @@ int User::Manager::run_proactor(void* p)
 
 bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 {
+	int err = 0;
+
 #if defined(_WIN32)
 	// Use a named pipe
-	int err = 0;
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncSocket> local_socket(m_proactor->connect(strPipe.c_str(),err,timeout));
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(strPipe.c_str(),err,timeout);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -223,9 +219,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 	// Use the passed fd
 	int fd = atoi(strPipe.c_str());
-
-	int err = 0;
-	OOBase::RefPtr<OOBase::AsyncSocket> local_socket(m_proactor->attach(fd,err));
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->attach(fd,err);
 	if (err != 0)
 	{
 		OOBase::POSIX::close(fd);
@@ -234,6 +228,13 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 #endif
 
+	OOBase::RefPtr<User::RootConnection> conn = new (std::nothrow) User::RootConnection(this,ptrSocket);
+	if (!conn)
+		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
+
+	return conn->start();
+
+	/*
 	// Invent a new pipe name...
 	OOBase::LocalString strNewPipe(strPipe.get_allocator());
 	if (!unique_name(strNewPipe))
@@ -303,7 +304,12 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 		return false;
 	}
 
-	return true;
+	return true;*/
+}
+
+int User::Manager::connect_registry(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket)
+{
+	return 0;
 }
 
 void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator)

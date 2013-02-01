@@ -53,12 +53,15 @@ bool Registry::RootConnection::start()
 void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 {
 	if (err)
-		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
+		// Read and cache any root parameters
+		void* p1;
+		stream.read(p1);
+
 		// Read DB name and root settings
 		OOBase::StackAllocator<512> allocator;
-
 		OOBase::LocalString strDb(allocator);
 		stream.read_string(strDb);
 
@@ -100,6 +103,7 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 				size_t mark = stream.buffer()->mark_wr_ptr();
 
 				stream.write(size_t(0));
+				stream.write(p1);
 				stream.write(ret_err);
 
 				stream.replace(stream.buffer()->length(),mark);
@@ -150,7 +154,7 @@ bool Registry::RootConnection::recv_next()
 void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err)
 {
 	if (err)
-		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
 		OOBase::POSIX::SmartFD passed_fd;
@@ -182,7 +186,6 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 			if (CMSG_NXTHDR(&msgh,msg) != NULL)
 			{
 				LOG_ERROR(("Root pipe control data has extra stuff in it"));
-				passed_fd.close();
 				err = EINVAL;
 			}
 		}
@@ -217,17 +220,20 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 			stream.write(size_t(0));
 			stream.write(p1);
 
-			// Tell the manager to create a new connection
-			int ret_err = m_pManager->new_connection(passed_fd,uid);
-			if (!ret_err)
+			// Attach to the pipe
+			int ret_err = 0;
+			OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fd,ret_err);
+			if (ret_err)
+				LOG_ERROR(("Failed to attach to user pipe: %s",OOBase::system_error_text(ret_err)));
+			else
+			{
 				passed_fd.detach();
 
+				// Tell the manager to create a new connection
+				ret_err = m_pManager->new_connection(ptrSocket,uid);
+			}
+
 			stream.write(ret_err);
-			/*if (!ret_err)
-			{
-				stream.write_string(p1);
-				stream.write_string(p2);
-			}*/
 
 			stream.replace(stream.buffer()->length(),mark);
 			if (stream.last_error())
@@ -247,7 +253,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 {
 	if (err)
-		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 		on_message(stream);
 
@@ -278,8 +284,8 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			stream.write(size_t(0));
 			stream.write(p1);
 
-			// Tell the manager to create a new connection
 			OOBase::LocalString pipe(allocator);
+
 			int ret_err = m_pManager->new_connection(sid,pipe);
 			stream.write(ret_err);
 			if (!ret_err)
@@ -311,9 +317,9 @@ void Registry::RootConnection::on_message(OOBase::CDRStream& stream)
 		LOG_ERROR(("Failed to read request opcode from root: %s",OOBase::system_error_text(stream.last_error())));
 	else
 	{
-		switch (op_code)
+		switch (static_cast<OOServer::Root2Reg_OpCode>(op_code))
 		{
-		case OOServer::Root_NewConnection:
+		case OOServer::Root2Reg_NewConnection:
 			if (recv_next())
 			{
 #if defined(HAVE_UNISTD_H)

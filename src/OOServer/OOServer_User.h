@@ -41,6 +41,7 @@
 #include <OOBase/Server.h>
 #include <OOBase/StackAllocator.h>
 #include <OOBase/Proactor.h>
+#include <OOBase/CDRIO.h>
 
 //////////////////////////////////////////////
 

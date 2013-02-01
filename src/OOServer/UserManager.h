@@ -34,6 +34,8 @@ namespace User
 			public OOServer::MessageHandler,
 			public OOBase::Server
 	{
+		friend class RootConnection;
+
 	public:
 		Manager();
 		virtual ~Manager();
@@ -70,6 +72,8 @@ namespace User
 		void do_channel_closed_i(Omega::uint32_t channel_id, OOBase::AllocatorInstance& allocator);
 
 		bool connect_root(const OOBase::LocalString& strPipe);
+		int connect_registry(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
+
 		static int run_proactor(void*);
 
 		static void on_accept(void* pThis, OOBase::AsyncSocket* pSocket, int err);

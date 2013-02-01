@@ -39,7 +39,7 @@ Registry::Manager::~Manager()
 {
 }
 
-int Registry::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& strPipe)
+int Registry::Manager::run(const OOBase::LocalString& strPipe)
 {
 	int ret = EXIT_FAILURE;
 	int err = 0;
@@ -54,7 +54,7 @@ int Registry::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::L
 			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 		else
 		{
-			if (connect_root(allocator,strPipe))
+			if (connect_root(strPipe))
 			{
 				OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
@@ -88,7 +88,7 @@ int Registry::Manager::run_proactor(void* p)
 	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
-bool Registry::Manager::connect_root(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& strPipe)
+bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
 {
 	int err = 0;
 
@@ -164,17 +164,11 @@ int Registry::Manager::open_run_proactor(void* p)
 	return err;
 }
 
-#if defined(HAVE_UNISTD_H)
-int Registry::Manager::new_connection(int fd, uid_t uid)
+int Registry::Manager::new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, uid_t uid)
 {
+
 	return 0;
 }
-#elif defined(_WIN32)
-int Registry::Manager::new_connection(const OOBase::LocalString& sid, OOBase::LocalString& strPipe)
-{
-	return 0;
-}
-#endif
 
 /*void Registry::Manager::on_root_message(OOBase::Buffer* buffer, int err)
 {

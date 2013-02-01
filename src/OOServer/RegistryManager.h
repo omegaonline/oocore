@@ -26,18 +26,18 @@
 
 namespace Registry
 {
-	class Manager
+	class Manager : public OOBase::Server
 	{
 	public:
 		Manager();
 		virtual ~Manager();
 
-		int run(const OOBase::LocalString& pszPipe);
+		int run(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& pszPipe);
 
-		void on_root_closed();
+		int on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings);
 
 #if defined(HAVE_UNISTD_H)
-		int new_connection(int fd, uid_t uid, gid_t gid);
+		int new_connection(int fd, uid_t uid);
 #elif defined(_WIN32)
 		int new_connection(const OOBase::LocalString& sid, OOBase::LocalString& strPipe);
 #endif
@@ -49,9 +49,14 @@ namespace Registry
 		OOBase::SpinLock   m_lock;
 		OOBase::Proactor*  m_proactor;
 		OOBase::ThreadPool m_proactor_pool;
+		OOBase::String     m_strDb;
 
-		bool connect_root(const OOBase::LocalString& strPipe);
-		static int run_proactor(void*);
+		static int run_proactor(void* p);
+		static int open_run_proactor(void* p);
+
+		int open_database();
+
+		bool connect_root(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& strPipe);
 	};
 }
 

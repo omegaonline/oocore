@@ -68,7 +68,13 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 		else
 		{
-			err = m_proactor_pool.run(&run_proactor,m_proactor,2);
+			OOBase::LocalString strThreads(cmd_args.get_allocator());
+			get_config_arg("concurrency",strThreads);
+			size_t threads = atoi(strThreads.c_str());
+			if (threads < 1 || threads > 8)
+				threads = 2;
+
+			err = m_proactor_pool.run(&run_proactor,m_proactor,threads);
 			if (err)
 				LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 			else
@@ -312,7 +318,16 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	stream.write(size_t(0));
 	stream.write_string(strRegPath);
 
+	OOBase::LocalString strThreads(allocator);
+	get_config_arg("registry_concurrency",strThreads);
+	size_t threads = atoi(strThreads.c_str());
+	if (threads < 1 || threads > 8)
+		threads = 2;
+
+	stream.write(threads);
+
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
+	stream.write(m_config_args.size());
 	for (size_t pos = 0;pos < m_config_args.size();++pos)
 	{
 		if (!stream.write_string(*m_config_args.key_at(pos)) || !stream.write_string(*m_config_args.at(pos)))
@@ -452,15 +467,14 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::Environment::env_table_t tabEnv(allocator);
-	for (;;)
+	size_t num_vars;
+	stream.read(num_vars);
+	for (size_t i=0;i<num_vars;++i)
 	{
 		OOBase::LocalString key(allocator),value(allocator);
 
 		if (!stream.read_string(key) || !stream.read_string(value))
 			LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(stream.last_error())),false);
-
-		if (key.empty())
-			break;
 
 		err = tabEnv.insert(key,value);
 		if (err)
@@ -506,7 +520,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		return false;
 
 	// Now tell the root registry to connect to the sandbox process
-	if (!connect_root_registry_to_sandbox(ptrRoot,p.m_ptrSocket))
+	if (!connect_root_registry_to_sandbox(uid,ptrRoot,p.m_ptrSocket))
 		return false;
 
 	// Add to process map

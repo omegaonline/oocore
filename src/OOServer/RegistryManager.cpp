@@ -39,7 +39,7 @@ Registry::Manager::~Manager()
 {
 }
 
-int Registry::Manager::run(const OOBase::LocalString& strPipe)
+int Registry::Manager::run(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& strPipe)
 {
 	int ret = EXIT_FAILURE;
 	int err = 0;
@@ -48,19 +48,20 @@ int Registry::Manager::run(const OOBase::LocalString& strPipe)
 		LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 	else
 	{
-		err = m_proactor_pool.run(&run_proactor,m_proactor,2);
+		// Only one thread at first...
+		err = m_proactor_pool.run(&run_proactor,m_proactor,1);
 		if (err != 0)
 			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 		else
 		{
-			if (connect_root(strPipe))
+			if (connect_root(allocator,strPipe))
 			{
 				OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
-				// Wait for stop
-				m_proactor->run(err);
-
 				ret = EXIT_SUCCESS;
+
+				// Wait for quit
+				wait_for_quit();
 			}
 
 			m_proactor->stop();
@@ -70,7 +71,7 @@ int Registry::Manager::run(const OOBase::LocalString& strPipe)
 		OOBase::Proactor::destroy(m_proactor);
 	}
 
-	if (Registry::is_debug() && ret != EXIT_SUCCESS)
+	if (Registry::is_debug() /*&& ret != EXIT_SUCCESS*/)
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,"Pausing to let you read the messages...");
 
@@ -87,21 +88,14 @@ int Registry::Manager::run_proactor(void* p)
 	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
-bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
+bool Registry::Manager::connect_root(OOBase::AllocatorInstance& allocator, const OOBase::LocalString& strPipe)
 {
-	// Create a new system database
-	/*	m_registry = new (std::nothrow) Db::Hive(this,dir.c_str());
-		if (!m_registry)
-			LOG_ERROR_RETURN(("Failed to create registry hive: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-
-		return m_registry->open(SQLITE_OPEN_READWRITE);*/
-
 	int err = 0;
 
 #if defined(_WIN32)
 	// Use a named pipe
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncSocket> socket = m_proactor->connect(strPipe.c_str(),err,timeout);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(strPipe.c_str(),err,timeout);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
@@ -109,7 +103,7 @@ bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 	// Use the passed fd
 	int fd = atoi(strPipe.c_str());
-	OOBase::RefPtr<OOBase::AsyncSocket> socket = m_proactor->attach(fd,err);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->attach(fd,err);
 	if (err != 0)
 	{
 		OOBase::POSIX::close(fd);
@@ -118,20 +112,60 @@ bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 #endif
 
-	OOBase::RefPtr<Registry::RootConnection> conn = new (std::nothrow) Registry::RootConnection(this,socket);
+	OOBase::RefPtr<Registry::RootConnection> conn = new (std::nothrow) Registry::RootConnection(this,ptrSocket);
 	if (!conn)
 		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
 
 	return conn->start();
 }
 
-void Registry::Manager::on_root_closed()
+int Registry::Manager::on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings)
 {
-	m_proactor->stop();
+	int err = m_strDb.assign(strDb);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
+
+	LOG_DEBUG(("Open Database: %s (%lu)",strDb.c_str(),strDb.length()));
+
+	err = open_database();
+	if (!err && !tabSettings.empty())
+	{
+		void* TODO;
+
+		// err = insert_system_settings(tabSettings);
+	}
+
+	// Start the extra threads
+	if (!err)
+		m_proactor_pool.run(&open_run_proactor,this,nThreads - 1);
+
+	return err;
+}
+
+int Registry::Manager::open_database()
+{
+	// Create a new system database
+		/*	m_registry = new (std::nothrow) Db::Hive(this,strDb.c_str());
+			if (!m_registry)
+				LOG_ERROR_RETURN(("Failed to create registry hive: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
+
+			return m_registry->open(SQLITE_OPEN_READWRITE);*/
+
+	return 0;
+}
+
+int Registry::Manager::open_run_proactor(void* p)
+{
+	Registry::Manager* pThis = static_cast<Registry::Manager*>(p);
+
+	int err = pThis->open_database();
+	if (!err)
+		err = run_proactor(pThis->m_proactor);
+	return err;
 }
 
 #if defined(HAVE_UNISTD_H)
-int Registry::Manager::new_connection(int fd, uid_t uid, gid_t gid)
+int Registry::Manager::new_connection(int fd, uid_t uid)
 {
 	return 0;
 }

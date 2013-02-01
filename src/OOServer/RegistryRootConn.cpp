@@ -32,42 +32,66 @@ Registry::RootConnection::RootConnection(Manager* pManager, OOBase::RefPtr<OOBas
 Registry::RootConnection::~RootConnection()
 {
 	// Tell the manager that we have closed
-	m_pManager->on_root_closed();
+	m_pManager->quit();
 }
 
 bool Registry::RootConnection::start()
 {
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync(size_t(256),m_socket,this,&RootConnection::on_message_start);
+	// Read start-up params
+	int err = OOBase::CDRIO::recv_with_header_sync<size_t>(256,m_socket,this,&RootConnection::on_start);
 	if (err)
 	{
 		release();
-		LOG_ERROR_RETURN(("Failed to receive from root: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Failed to read root request: %s",OOBase::system_error_text(err)),false);
 	}
 
 	return true;
 }
 
-void Registry::RootConnection::on_message_start(OOBase::CDRStream& stream, int err)
+void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 {
 	if (err)
 		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		OOBase::StackAllocator<256> allocator;
+		// Read DB name and root settings
+		OOBase::StackAllocator<512> allocator;
+
 		OOBase::LocalString strDb(allocator);
 		stream.read_string(strDb);
 
-		if (stream.last_error())
-			LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
-		else
+		size_t nThreads = 0;
+		stream.read(nThreads);
+
+		size_t nSettings = 0;
+		stream.read(nSettings);
+		OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
+		for (size_t i=0;i<nSettings && !err;++i)
 		{
-			LOG_DEBUG(("OPEN DB: %s",strDb.c_str()));
+			OOBase::LocalString k(allocator),v(allocator);
+			if (!stream.read_string(k) || !stream.read_string(v))
+				break;
 
-			// Tell the manager to create a new connection
-			int ret_err = 0;//m_pManager->new_connection(sid,pipe);
+			err = tabSettings.insert(k,v);
+			if (err)
+				LOG_ERROR(("Failed to insert setting into table: %s",OOBase::system_error_text(err)));
+		}
 
+		if (!err)
+		{
+			err = stream.last_error();
+			if (err)
+				LOG_ERROR(("Failed to read root request: %s",OOBase::system_error_text(err)));
+		}
+
+		int ret_err = 0;
+		if (!err)
+			ret_err = m_pManager->on_start(strDb,nThreads,tabSettings);
+
+		if (!err)
+		{
 			err = stream.reset();
 			if (err)
 				LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
@@ -101,7 +125,7 @@ bool Registry::RootConnection::recv_next()
 #if defined(HAVE_UNISTD_H)
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
-		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text()),false);
+		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
 	addref();
 
@@ -129,9 +153,6 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		// Start another receive...
-		recv_next();
-
 		OOBase::POSIX::SmartFD passed_fd;
 
 		// Read struct cmsg
@@ -167,57 +188,58 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 		}
 
 		if (!err)
-		{
-			// Read and cache any root parameters
-			OOBase::StackAllocator<256> allocator;
-			OOBase::LocalString p1(allocator),p2(allocator);
-			stream.read_string(p1);
-			stream.read_string(p2);
-
-			uid_t uid;
-			stream.read(uid);
-			gid_t gid;
-			stream.read(gid);
-
-			if (stream.last_error())
-				LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
-			else
-			{
-				// Tell the manager to create a new connection
-				int ret_err = m_pManager->new_connection(passed_fd,uid,gid);
-				if (!ret_err)
-					passed_fd.detach();
-
-				err = stream.reset();
-				if (err)
-					LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
-				else
-				{
-					size_t mark = stream.buffer()->mark_wr_ptr();
-
-					stream.write(size_t(0));
-					stream.write(ret_err);
-					if (!ret_err)
-					{
-						stream.write_string(p1);
-						stream.write_string(p2);
-					}
-
-					stream.replace(stream.buffer()->length(),mark);
-					if (stream.last_error())
-						LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-					else
-					{
-						err = m_socket->send(this,NULL,stream.buffer());
-						if (err)
-							LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-					}
-				}
-			}
-		}
+			on_message(stream,passed_fd);
 	}
 
 	release();
+}
+
+void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
+{
+	// Read and cache any root parameters
+	void* p1;
+	stream.read(p1);
+
+	uid_t uid;
+	stream.read(uid);
+
+	if (stream.last_error())
+		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
+	else
+	{
+		int err = stream.reset();
+		if (err)
+			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		else
+		{
+			size_t mark = stream.buffer()->mark_wr_ptr();
+
+			stream.write(size_t(0));
+			stream.write(p1);
+
+			// Tell the manager to create a new connection
+			int ret_err = m_pManager->new_connection(passed_fd,uid);
+			if (!ret_err)
+				passed_fd.detach();
+
+			stream.write(ret_err);
+			/*if (!ret_err)
+			{
+				stream.write_string(p1);
+				stream.write_string(p2);
+			}*/
+
+			stream.replace(stream.buffer()->length(),mark);
+			if (stream.last_error())
+				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+			else
+			{
+				err = m_socket->send(this,NULL,stream.buffer());
+				if (err)
+					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+			}
+		}
+	}
 }
 
 #elif defined(_WIN32)
@@ -227,54 +249,83 @@ void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int e
 	if (err)
 		LOG_ERROR(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)));
 	else
-	{
-		// Start another receive...
-		recv_next();
-
-		// Read and cache any root parameters
-		OOBase::StackAllocator<256> allocator;
-		OOBase::LocalString p1(allocator),p2(allocator),sid(allocator),pipe(allocator);
-		stream.read_string(p1);
-		stream.read_string(p2);
-		stream.read_string(sid);
-
-		if (stream.last_error())
-			LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
-		else
-		{
-			// Tell the manager to create a new connection
-			int ret_err = m_pManager->new_connection(sid,pipe);
-
-			err = stream.reset();
-			if (err)
-				LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
-			else
-			{
-				size_t mark = stream.buffer()->mark_wr_ptr();
-
-				stream.write(size_t(0));
-				stream.write(ret_err);
-				if (!ret_err)
-				{
-					stream.write_string(p1);
-					stream.write_string(p2);
-					stream.write_string(pipe);
-				}
-
-				stream.replace(stream.buffer()->length(),mark);
-				if (stream.last_error())
-					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-				else
-				{
-					err = m_socket->send(this,NULL,stream.buffer());
-					if (err)
-						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-				}
-			}
-		}
-	}
+		on_message(stream);
 
 	release();
 }
 
+void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
+{
+	// Read and cache any root parameters
+	void* p1;
+	stream.read(p1);
+
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString sid(allocator);
+	stream.read_string(sid);
+
+	if (stream.last_error())
+		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
+	else
+	{
+		int err = stream.reset();
+		if (err)
+			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		else
+		{
+			size_t mark = stream.buffer()->mark_wr_ptr();
+
+			stream.write(size_t(0));
+			stream.write(p1);
+
+			// Tell the manager to create a new connection
+			OOBase::LocalString pipe(allocator);
+			int ret_err = m_pManager->new_connection(sid,pipe);
+			stream.write(ret_err);
+			if (!ret_err)
+				stream.write_string(pipe);
+
+			stream.replace(stream.buffer()->length(),mark);
+			if (stream.last_error())
+				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+			else
+			{
+				err = m_socket->send(this,NULL,stream.buffer());
+				if (err)
+					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+			}
+		}
+	}
+}
+
 #endif
+
+#if defined(HAVE_UNISTD_H)
+void Registry::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
+#elif defined(_WIN32)
+void Registry::RootConnection::on_message(OOBase::CDRStream& stream)
+#endif
+{
+	OOServer::Root2Reg_OpCode_t op_code;
+	if (!stream.read(op_code))
+		LOG_ERROR(("Failed to read request opcode from root: %s",OOBase::system_error_text(stream.last_error())));
+	else
+	{
+		switch (op_code)
+		{
+		case OOServer::Root_NewConnection:
+			if (recv_next())
+			{
+#if defined(HAVE_UNISTD_H)
+				new_connection(stream,passed_fd);
+#else
+				new_connection(stream);
+#endif
+			}
+			break;
+
+		default:
+			break;
+		}
+	}
+}

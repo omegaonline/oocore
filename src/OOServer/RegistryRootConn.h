@@ -39,18 +39,20 @@ namespace Registry
 		Manager*                            m_pManager;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
-		bool recv_next();
-
-		void on_message_start(OOBase::CDRStream& request, int err);
-
 #if defined(HAVE_UNISTD_H)
 		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
+		void on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd);
+		void new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd);
 #elif defined(_WIN32)
 		void on_message_win32(OOBase::CDRStream& stream, int err);
+		void on_message(OOBase::CDRStream& stream);
+		void new_connection(OOBase::CDRStream& stream);
 #else
 #error Implement platform native credential and pipe handle passing
 #endif
 
+		void on_start(OOBase::CDRStream& stream, int err);
+		bool recv_next();
 	};
 }
 

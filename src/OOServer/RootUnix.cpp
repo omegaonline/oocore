@@ -260,11 +260,11 @@ RootProcessUnix* RootProcessUnix::Spawn(OOBase::LocalString& strAppName, uid_t u
 
 			const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
-			//OOBase::LocalString valgrind;
+			//OOBase::LocalString valgrind(strAppName.get_allocator());
 			//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
 			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
-			//OOBase::LocalString gdb;
+			//OOBase::LocalString gdb(strAppName.get_allocator());
 			//gdb.printf("run %s --debug",strPipe.c_str());
 			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(), NULL };
 
@@ -688,7 +688,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
 	return true;
 }
 
-bool Root::Manager::connect_root_registry_to_sandbox(OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox)
+bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox)
 {
 	// Create a pair of sockets
 	OOBase::POSIX::SmartFD fds[2];
@@ -721,7 +721,9 @@ bool Root::Manager::connect_root_registry_to_sandbox(OOBase::RefPtr<OOBase::Asyn
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(size_t(0));
 
-	void* TODO1; // OpCode
+	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root_NewConnection));
+	stream.write(static_cast<void*>(NULL));
+	stream.write(uid);
 
 	stream.replace(stream.buffer()->length(),mark);
 	if (stream.last_error())
@@ -731,7 +733,7 @@ bool Root::Manager::connect_root_registry_to_sandbox(OOBase::RefPtr<OOBase::Asyn
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 	if (!stream.read(err))
-		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
+		LOG_ERROR_RETURN(("Failed to read response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
 	if (err)
 		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
 
@@ -758,11 +760,11 @@ bool Root::Manager::connect_root_registry_to_sandbox(OOBase::RefPtr<OOBase::Asyn
 
 	err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<size_t>(stream,ctl_buffer,ptrSandbox);
 	if (err)
-		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	if (!stream.read(err))
-		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
+		LOG_ERROR_RETURN(("Failed to read response from user process: %s",OOBase::system_error_text(stream.last_error())),false);
 	if (err)
-		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("User process failed to respond properly: %s",OOBase::system_error_text(err)),false);
 
 	// All sent, we are done here!
 	return true;

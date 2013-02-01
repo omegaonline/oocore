@@ -84,7 +84,7 @@ namespace Root
 		// Registry handling
 		bool start_registry(OOBase::AllocatorInstance& allocator);
 		OOBase::RefPtr<OOBase::AsyncSocket> get_root_registry();
-		bool connect_root_registry_to_sandbox(OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox);
+		bool connect_root_registry_to_sandbox(const uid_t& uid, OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox);
 
 		// Client handling members
 		SECURITY_ATTRIBUTES              m_sa;

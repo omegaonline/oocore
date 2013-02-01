@@ -24,6 +24,12 @@
 
 namespace OOServer
 {
+	enum Root2Reg_OpCode
+	{
+		Root_NewConnection = 1
+	};
+	typedef Omega::uint16_t Root2Reg_OpCode_t;
+
 	enum RootOpCode
 	{
 		// User -> Root

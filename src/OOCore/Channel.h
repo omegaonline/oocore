@@ -36,7 +36,7 @@ namespace OOCore
 	public:
 		ChannelBase();
 
-		virtual void disconnect();
+		virtual void on_disconnect();
 
 		Omega::Remoting::IObjectManager* GetObjectManager();
 
@@ -84,7 +84,7 @@ namespace OOCore
 
 		void init(UserSession* pSession, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void shutdown(Omega::uint32_t closed_channel_id);
-		void disconnect();
+		void on_disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY_CHAIN(ChannelBase)

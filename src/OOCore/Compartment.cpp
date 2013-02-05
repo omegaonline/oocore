@@ -71,7 +71,7 @@ void OOCore::Compartment::shutdown()
 		if (info.m_bOpen)
 			info.m_ptrChannel->shutdown(our_channel_id);
 		else
-			info.m_ptrChannel->disconnect();
+			info.m_ptrChannel->on_disconnect();
 
 		guard.acquire();
 	}
@@ -94,13 +94,13 @@ void OOCore::Compartment::process_compartment_close(uint16_t src_compt_id)
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
-	m_mapCompartments.remove(src_compt_id,&ptrCompt);
+	ObjectPtr<ObjectImpl<ComptChannel> > ptrChannel;
+	m_mapCompartments.remove(src_compt_id,&ptrChannel);
 		
 	guard.release();
 
-	if (ptrCompt)
-		ptrCompt->disconnect();
+	if (ptrChannel)
+		ptrChannel->on_disconnect();
 }
 
 bool OOCore::Compartment::process_channel_close(uint32_t closed_channel_id)
@@ -305,7 +305,7 @@ void OOCore::ComptChannel::shutdown()
 {
 	m_ptrCompt->process_compartment_close(m_src_compt_id);
 
-	disconnect();
+	on_disconnect();
 }
 
 Omega::bool_t OOCore::ComptChannel::IsConnected()

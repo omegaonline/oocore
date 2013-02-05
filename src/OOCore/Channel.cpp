@@ -49,7 +49,7 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 		m_ptrOM->Connect(this);
 }
 
-void OOCore::ChannelBase::disconnect()
+void OOCore::ChannelBase::on_disconnect()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -148,9 +148,9 @@ void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting:
 		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
 }
 
-void OOCore::Channel::disconnect()
+void OOCore::Channel::on_disconnect()
 {
-	ChannelBase::disconnect();
+	ChannelBase::on_disconnect();
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -164,7 +164,7 @@ void OOCore::Channel::shutdown(uint32_t closed_channel_id)
 	if (msg.write(closed_channel_id))
 		m_pSession->send_request(m_channel_id,&msg,NULL,Message::asynchronous | Message::channel_close);
 
-	disconnect();
+	on_disconnect();
 }
 
 IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
@@ -192,7 +192,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	catch (Remoting::IChannelClosedException* pE)
 	{
 		ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
-		disconnect();
+		on_disconnect();
 		pE->Rethrow();
 	}
 	catch (...)
@@ -249,7 +249,7 @@ bool_t OOCore::Channel::IsConnected()
 	if (!connected)
 	{
 		// Disconnect ourselves
-		disconnect();
+		on_disconnect();
 	}
 
 	return connected;
@@ -265,7 +265,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	catch (Remoting::IChannelClosedException* pE)
 	{
 		// Disconnect ourselves on failure
-		disconnect();
+		on_disconnect();
 		pE->Rethrow();
 	}
 

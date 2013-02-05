@@ -344,7 +344,7 @@ namespace
 
 		case OOServer::Errored:
 		default:
-			throw IInternalException::Create(string_t::constant("The call to the service controller failed.  Check server log for details"),"IServiceController",0,NULL,NULL);
+			throw IInternalException::Create(string_t::constant("The call to the service controller failed.  Check server log for details"),"IServiceController");
 		}
 	}
 }

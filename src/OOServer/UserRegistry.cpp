@@ -98,7 +98,7 @@ namespace
 
 		case OOServer::Errored:
 		default:
-			throw IInternalException::Create(string_t::constant("Internal registry failure.  Check server log for details"),strKey.c_str(),0,NULL,NULL);
+			throw IInternalException::Create(string_t::constant("Internal registry failure.  Check server log for details"),strKey.c_str());
 		}
 	}
 }

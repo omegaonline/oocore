@@ -799,7 +799,7 @@ void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strVal
 		OMEGA_THROW(response.last_error());
 
 	if (err)
-		throw IInternalException::Create(string_t::constant("Failed to get server configuration parameter.  Check server log for details"),"get_root_config_arg",0,NULL,NULL);
+		throw IInternalException::Create(string_t::constant("Failed to get server configuration parameter.  Check server log for details"),"get_root_config_arg");
 
 	strValue = strVal.c_str();
 }

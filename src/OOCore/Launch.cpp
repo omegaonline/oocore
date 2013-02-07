@@ -105,86 +105,62 @@ namespace
 #endif // !WIN32
 	}
 
-	void discover_server_port(OOBase::LocalString& strPipe, const OOBase::Timeout timeout)
+	void connect_root(OOBase::CDRStream& response)
 	{
-		int err = OOBase::Environment::getenv("OMEGA_SESSION_ADDRESS",strPipe);
-		if (err != 0)
-			OMEGA_THROW(err);
-
-		if (strPipe.empty())
-		{
-			OOBase::RefPtr<OOBase::Socket> root_socket;
-			while (!timeout.has_expired())
-			{
-				root_socket = OOBase::Socket::connect(ROOT_NAME,err,timeout);
-				if (!err || (err != ENOENT && err != ECONNREFUSED))
-					break;
-
-				// We ignore the error, and try again until we timeout
-			}
-
-			if (err)
-			{
-				ObjectPtr<IException> ptrE = ISystemException::Create(err);
-				throw IInternalException::Create(OOCore::get_text("Failed to connect to network daemon"),"Omega::Initialize",size_t(-1),NULL,ptrE);
-			}
-
-			uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-
-			OOBase::LocalString strSid(strPipe.get_allocator());
-			get_session_id(strSid);
-
-			OOBase::CDRStream stream;
-			if (!stream.write(version) || !stream.write_string(strSid))
-				OMEGA_THROW(stream.last_error());
-
-			err = root_socket->send(stream.buffer());
-			if (err)
-				OMEGA_THROW(err);
-
-			stream.reset();
-
-			// Now read strPipe
-			//if (!stream.recv_string(root_socket,strPipe))
-			//	OMEGA_THROW(stream.last_error());
-
-			// Now set our pipe name as an env var
-#if defined(_WIN32)
-			SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strPipe.c_str());
+#if defined(NDEBUG)
+		OOBase::Timeout timeout(15,0);
 #else
-			setenv("OMEGA_SESSION_ADDRESS",strPipe.c_str(),1);
+		OOBase::Timeout timeout;
 #endif
+
+		int err = 0;
+		OOBase::RefPtr<OOBase::Socket> root_socket;
+		while (!timeout.has_expired())
+		{
+			root_socket = OOBase::Socket::connect(ROOT_NAME,err,timeout);
+			if (!err || (err != ENOENT && err != ECONNREFUSED))
+				break;
+
+			// We ignore the error, and try again until we timeout
 		}
 
-		if (strPipe[0] == ' ')
-			strPipe.replace_at(0,'\0');
+		if (err)
+		{
+			ObjectPtr<IException> ptrE = ISystemException::Create(err);
+			throw IInternalException::Create(OOCore::get_text("Failed to connect to network daemon"),"Omega::Initialize",0,NULL,ptrE);
+		}
+
+		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+
+		OOBase::StackAllocator<128> allocator;
+		OOBase::LocalString strSid(allocator);
+		get_session_id(strSid);
+
+		if (!response.write(version) || !response.write_string(strSid))
+			OMEGA_THROW(response.last_error());
+
+		err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
+		if (err)
+			OMEGA_THROW(err);
 	}
 }
 
-void OOCore::UserSession::start()
+void OOCore::UserSession::start(void* data, size_t length)
 {
-#if defined(NDEBUG)
-	OOBase::Timeout timeout(15,0);
-#else
-	OOBase::Timeout timeout;
-#endif
-
-	OOBase::StackAllocator<256> allocator;
-	OOBase::LocalString strPipe(allocator);
-	discover_server_port(strPipe,timeout);
-
-	// Connect up to the user process...
 	int err = 0;
-	while (!timeout.has_expired())
+	OOBase::CDRStream stream;
+	if (data)
 	{
-		m_stream = OOBase::Socket::connect(strPipe.c_str(),err,timeout);
-		if (!err || (err != ENOENT && err != ECONNREFUSED))
-			break;
+		err = stream.buffer()->space(length);
+		if (err)
+			OMEGA_THROW(err);
 
-		// We ignore the error, and try again until we timeout
+		memcpy(stream.buffer()->wr_ptr(),data,length);
+		stream.buffer()->wr_ptr(length);
 	}
-	if (err)
-		OMEGA_THROW(err);
+	else
+		connect_root(stream);
+
 
 	// Send version information
 	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;

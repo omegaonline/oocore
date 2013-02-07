@@ -360,7 +360,8 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		ptrIPS->init(ptrOMSb);
 
 		// Register our interprocess service so we can react to activation requests
-		OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),ptrIPS);
+		void* FIXME;
+		OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),NULL,0);
 
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrReg = ObjectImpl<User::Registry::RootKey>::CreateObject();

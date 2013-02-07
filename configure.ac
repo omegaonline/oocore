@@ -135,6 +135,11 @@ AS_IF([test -z "$SQLITE3_LIBS"],[AC_MSG_ERROR([Need a valid sqlite3 library])])
 # Check for the headers we use
 AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h inttypes.h])
 
+# Check for specifics of Unix cred passing
+AC_CHECK_TYPES([struct cmsgcred])
+AC_CHECK_TYPES([struct fcred])
+AC_CHECK_TYPES([struct sockcred])
+
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
 

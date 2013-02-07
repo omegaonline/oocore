@@ -87,7 +87,7 @@ namespace OOCore
 		friend class OOBase::AllocatorInstance;
 
 	public:
-		void init();
+		void init(void* data, size_t length);
 		void term();
 
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
@@ -159,7 +159,7 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void start();
+		void start(void* data, size_t length);
 		void stop();
 
 		// Private object factory members

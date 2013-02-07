@@ -10,6 +10,15 @@
 /* Define to 1 if you have the SQLite3 amalgamated sources */
 #undef HAVE_SQLITE3_AMALGAMATION
 
+/* Define to 1 if the system has the type `struct cmsgcred'. */
+#undef HAVE_STRUCT_CMSGCRED
+
+/* Define to 1 if the system has the type `struct fcred'. */
+#undef HAVE_STRUCT_FCRED
+
+/* Define to 1 if the system has the type `struct sockcred'. */
+#undef HAVE_STRUCT_SOCKCRED
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 

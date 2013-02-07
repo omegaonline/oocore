@@ -67,7 +67,7 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-void OOCore::UserSession::init()
+void OOCore::UserSession::init(void* data, size_t length)
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -92,7 +92,7 @@ void OOCore::UserSession::init()
 
 				try
 				{
-					start();
+					start(data,length);
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -195,13 +195,6 @@ void OOCore::UserSession::stop()
 		m_stream->close();
 		m_worker_thread.join();
 	}
-
-	// Clear our environment variable
-#if defined(_WIN32)
-	SetEnvironmentVariable("OMEGA_SESSION_ADDRESS",NULL);
-#else
-	unsetenv("OMEGA_SESSION_ADDRESS");
-#endif
 }
 
 void OOCore::UserSession::revoke_private_factories()
@@ -905,7 +898,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),IObject*,p))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,3,((in),uint32_t,version,(in),void*,data,(in),size_t,length))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
@@ -913,34 +906,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,2,((in),uint3
 
 	try
 	{
-		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
-		if (p)
-		{
-			ptrIPS = static_cast<OOCore::IInterProcessService*>(p->QueryInterface(OMEGA_GUIDOF(OOCore::IInterProcessService)));
-			if (!ptrIPS)
-				return Omega::IInternalException::Create(OOCore::get_text("Invalid interface passed"),"Omega::Initialize");
-
-			OTL::GetModule()->RegisterIPS(ptrIPS,true);
-		}
-		else
-		{
-			try
-			{
-				USER_SESSION::instance().init();
-			}
-			catch (...)
-			{
-				USER_SESSION::instance().term();
-				throw;
-			}
-		}
+		USER_SESSION::instance().init(data,length);
 	}
 	catch (IException* pE)
 	{
+		USER_SESSION::instance().term();
 		return pE;
 	}
 	catch (...)
 	{
+		USER_SESSION::instance().term();
 		return Omega::IInternalException::Create(OOCore::get_text("Unhandled C++ exception"),"Omega::Initialize");
 	}
 

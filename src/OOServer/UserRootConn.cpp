@@ -44,12 +44,12 @@ bool User::RootConnection::start()
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_msg_with_header_sync<size_t>(128,m_socket,this,&RootConnection::on_start_posix,ctl_buffer);
+	int err = OOBase::CDRIO::recv_msg_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_start_posix,ctl_buffer);
 #elif defined(_WIN32)
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync<size_t>(128,m_socket,this,&RootConnection::on_start_win32);
+	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_start_win32);
 #endif
 	if (err)
 	{
@@ -69,12 +69,12 @@ bool User::RootConnection::recv_next()
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_msg_with_header_sync<size_t>(128,m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
+	int err = OOBase::CDRIO::recv_msg_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
 #elif defined(_WIN32)
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync<size_t>(128,m_socket,this,&RootConnection::on_message_win32);
+	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_message_win32);
 #endif
 	if (err)
 	{
@@ -110,18 +110,31 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
-				if (msg->cmsg_len == CMSG_LEN(sizeof(int)))
-					passed_fds[0] = *reinterpret_cast<int*>(CMSG_DATA(msg));
-				else if (msg->cmsg_len == CMSG_LEN(2*sizeof(int)))
+				int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+				size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+				size_t fd_start = 0;
+				if (fd_count > 0)
 				{
-					passed_fds[0] = reinterpret_cast<int*>(CMSG_DATA(msg))[0];
-					passed_fds[1] = reinterpret_cast<int*>(CMSG_DATA(msg))[1];
+					err = OOBase::POSIX::set_close_on_exec(fds[0],true);
+					if (!err)
+					{
+						passed_fds[0] = fds[0];
+						fd_start = 1;
+					}
 				}
-				else
+
+				if (fd_count > 1)
 				{
-					LOG_ERROR(("Root pipe control data looks wrong"));
-					err = EINVAL;
+					err = OOBase::POSIX::set_close_on_exec(fds[1],true);
+					if (!err)
+					{
+						passed_fds[1] = fds[1];
+						fd_start = 2;
+					}
 				}
+
+				for (size_t i=fd_start;i<fd_count;++i)
+					OOBase::POSIX::close(fds[i]);
 			}
 			else
 			{
@@ -212,13 +225,21 @@ void User::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::B
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
-				if (msg->cmsg_len != CMSG_LEN(sizeof(int)))
+				int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+				size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+				size_t fd_start = 0;
+				if (fd_count > 0)
 				{
-					LOG_ERROR(("Root pipe control data looks wrong"));
-					err = EINVAL;
+					err = OOBase::POSIX::set_close_on_exec(fds[0],true);
+					if (!err)
+					{
+						passed_fd = fds[0];
+						fd_start = 1;
+					}
 				}
-				else
-					passed_fd = *reinterpret_cast<int*>(CMSG_DATA(msg));
+
+				for (size_t i=fd_start;i<fd_count;++i)
+					OOBase::POSIX::close(fds[i]);
 			}
 			else
 			{

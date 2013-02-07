@@ -40,6 +40,7 @@
 #include <OOBase/Win32.h>
 #include <OOBase/utf8.h>
 #include <OOBase/StackAllocator.h>
+#include <OOBase/CDRIO.h>
 
 #include "../oocore-config.h"
 

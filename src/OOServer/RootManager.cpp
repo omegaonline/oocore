@@ -359,7 +359,7 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 		return false;
 
 	// Send the start data - blocking is OK as we have background proactor threads waiting
-	err = OOBase::CDRIO::send_and_recv_with_header_blocking<size_t>(stream,p.m_ptrSocket);
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(stream,p.m_ptrSocket);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
 	if (!stream.read(err))
@@ -907,64 +907,4 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs)
 {
 	return send_request(m_sandbox_channel,&request,response,attribs);
-}
-
-void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int err)
-{
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = pSocket;
-
-	static_cast<Manager*>(pThis)->accept_client_i(ptrSocket,err);
-}
-
-#include "../../include/Omega/OOCore_version.h"
-
-void Root::Manager::accept_client_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)
-{
-	if (err != 0)
-		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
-	else
-	{
-		// Read the version - This forces credential passing
-		OOBase::CDRStream stream;
-		err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
-		if (err != 0)
-			LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
-		else
-		{
-			// Check the versions are correct
-			Omega::uint32_t version = 0;
-			if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-				LOG_WARNING(("Unsupported version received: %u",version));
-			else
-			{
-				OOBase::StackAllocator<512> allocator;
-				OOBase::LocalString strSid(allocator);
-				//if (!stream.recv_string(ptrSocket,strSid))
-				//	LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
-				//else
-				{
-					uid_t uid;
-					//err = ptrSocket->get_uid(uid);
-					if (err != 0)
-						LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
-					else
-					{
-						UserProcess user_process;
-						if (get_user_process(uid,strSid,user_process))
-						{
-							if (!stream.write_string(user_process.m_strPipe))
-								LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
-							else
-								ptrSocket->send(stream.buffer());
-						}
-
-					#if defined(_WIN32)
-						// Make sure the handle is closed
-						CloseHandle(uid);
-					#endif
-					}
-				}
-			}
-		}
-	}
 }

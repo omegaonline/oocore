@@ -729,7 +729,7 @@ bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::R
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	int err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<size_t>(stream,ctl_buffer,ptrRoot);
+	int err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,ptrRoot);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 	if (!stream.read(err))
@@ -757,7 +757,7 @@ bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::R
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<size_t>(stream,ctl_buffer,ptrSandbox);
+	err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,ptrSandbox);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	if (!stream.read(err))
@@ -780,31 +780,5 @@ bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::R
 
     return true;
 }*/
-
-bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
-{
-#if defined(__linux__)
-	#define ROOT_NAME "\0/org/omegaonline"
-#elif defined(P_tmpdir)
-	#define ROOT_NAME P_tmpdir "/omegaonline"
-#else
-	#define ROOT_NAME "/tmp/omegaonline"
-#endif
-
-	m_sa.mode = 0666;
-
-	int err = 0;
-	m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
-	if (err == EADDRINUSE)
-	{
-		::unlink(ROOT_NAME);
-		m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
-	}
-
-	if (err)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOBase::system_error_text(err)),false);
-
-	return true;
-}
 
 #endif // !HAVE_UNISTD_H

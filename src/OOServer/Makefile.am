@@ -35,6 +35,7 @@ ooserverd_SOURCES = \
 	RootManager.cpp \
 	RootProcess.h \
 	RootClientConn.cpp \
+	RootClientConn.h \
 	RootRegistry.cpp \
 	RootServices.cpp \
 	RootUnix.cpp \

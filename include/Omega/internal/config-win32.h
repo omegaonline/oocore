@@ -29,7 +29,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define STRICT
 
-// We support Vista API's
+// We support XP onwards
 #if !defined(_WIN32_WINNT)
 	#define _WIN32_WINNT 0x0500
 #elif _WIN32_WINNT < 0x0500

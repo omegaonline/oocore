@@ -21,30 +21,7 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-
-namespace Root
-{
-	class ClientConnection : public OOBase::RefCounted
-	{
-	public:
-		ClientConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock);
-
-		bool start();
-
-	private:
-		Manager*                            m_pManager;
-		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
-
-		pid_t  m_pid;
-		uid_t  m_uid;
-
-#if defined(HAVE_UNISTD_H)
-		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
-#endif
-
-		void on_message(OOBase::CDRStream& stream, int err);
-	};
-}
+#include "RootClientConn.h"
 
 Root::ClientConnection::ClientConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock) :
 		m_pManager(pManager),
@@ -173,7 +150,7 @@ bool Root::ClientConnection::start()
 
 	if (!bRes)
 		LOG_ERROR_RETURN(("OpenThreadToken failed: %s",OOBase::system_error_text(err)),false);
-_WIN32_WINNT
+
 	HMODULE hKernel32 = ::GetModuleHandleW(L"Kernel32.dll");
 	if (hKernel32)
 	{
@@ -320,22 +297,6 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 }
 
 #endif // HAVE_UNISTD_H
-
-void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int err)
-{
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = pSocket;
-
-	if (err)
-		LOG_ERROR(("Client acceptor failed: %s",OOBase::system_error_text(err)));
-	else
-	{
-		OOBase::RefPtr<Root::ClientConnection> ptrConn = new (std::nothrow) Root::ClientConnection(static_cast<Manager*>(pThis),ptrSocket);
-		if (!ptrConn)
-			LOG_ERROR(("Failed to allocate client connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)));
-		else
-			ptrConn->start();
-	}
-}
 
 #include "../../include/Omega/OOCore_version.h"
 

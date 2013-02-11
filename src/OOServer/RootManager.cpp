@@ -33,6 +33,7 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
+#include "RootClientConn.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -536,6 +537,22 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 	OOBase::Logger::log(OOBase::Logger::Information,"System sandbox started successfully");
 
 	return true;
+}
+
+void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int err)
+{
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = pSocket;
+
+	if (err)
+		LOG_ERROR(("Client acceptor failed: %s",OOBase::system_error_text(err)));
+	else
+	{
+		OOBase::RefPtr<Root::ClientConnection> ptrConn = new (std::nothrow) Root::ClientConnection(static_cast<Manager*>(pThis),ptrSocket);
+		if (!ptrConn)
+			LOG_ERROR(("Failed to allocate client connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)));
+		else
+			ptrConn->start();
+	}
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)

@@ -35,10 +35,10 @@ namespace Root
 		Manager*                            m_pManager;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
-#if defined(HAVE_UNISTD_H)
-		uid_t  m_uid;
 		pid_t  m_pid;
+		uid_t  m_uid;
 
+#if defined(HAVE_UNISTD_H)
 		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
 #endif
 
@@ -48,16 +48,12 @@ namespace Root
 
 Root::ClientConnection::ClientConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock) :
 		m_pManager(pManager),
-		m_socket(sock)
-#if defined(HAVE_UNISTD_H)
-		,m_uid(-1),m_pid(0)
+		m_socket(sock),
+		m_pid(0)
+#if !defined(_WIN32)
+		,m_uid(-1)
 #endif
 {
-}
-
-void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
-{
-
 }
 
 #if defined(_WIN32)
@@ -158,9 +154,40 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 
 bool Root::ClientConnection::start()
 {
+	// Get the connected uid
+	HANDLE hPipe = (HANDLE)m_socket->get_handle();
+
+	if (!ImpersonateNamedPipeClient(hPipe))
+		LOG_ERROR_RETURN(("ImpersonateNamedPipeClient failed: %s",OOBase::system_error_text()),false);
+
+	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&m_uid);
+	int err = 0;
+	if (!bRes)
+		err = GetLastError();
+
+	if (!RevertToSelf())
+	{
+		OOBase_CallCriticalFailure(GetLastError());
+		abort();
+	}
+
+	if (!bRes)
+		LOG_ERROR_RETURN(("OpenThreadToken failed: %s",OOBase::system_error_text(err)),false);
+_WIN32_WINNT
+	HMODULE hKernel32 = ::GetModuleHandleW(L"Kernel32.dll");
+	if (hKernel32)
+	{
+		typedef BOOL (WINAPI *pfn_GetNamedPipeClientProcessId)(HANDLE Pipe, PULONG ClientProcessId);
+
+		pfn_GetNamedPipeClientProcessId pfn = (pfn_GetNamedPipeClientProcessId)(GetProcAddress(hKernel32,"GetNamedPipeClientProcessId"));
+
+		if (!(*pfn)(hPipe,&m_pid))
+			LOG_ERROR_RETURN(("GetNamedPipeClientProcessId failed: %s",OOBase::system_error_text()),false);
+	}
+
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&ClientConnection::on_message);
+	err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&ClientConnection::on_message);
 	if (err)
 	{
 		release();
@@ -312,53 +339,40 @@ void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int
 
 #include "../../include/Omega/OOCore_version.h"
 
-void Root::Manager::accept_client_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)
+void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 {
-	if (err != 0)
-		LOG_ERROR(("Accept failure: %s",OOBase::system_error_text(err)));
+	// Check the versions are correct
+	Omega::uint32_t version = 0;
+	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+		LOG_WARNING(("Unsupported version received: %u",version));
 	else
 	{
-		// Read the version - This forces credential passing
-		OOBase::CDRStream stream;
-		err = ptrSocket->recv(stream.buffer(),sizeof(Omega::uint32_t));
-		if (err != 0)
-			LOG_WARNING(("Receive failure: %s",OOBase::system_error_text(err)));
+		OOBase::StackAllocator<256> allocator;
+		OOBase::LocalString strSid(allocator);
+		if (!stream.read_string(strSid))
+			LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
-			// Check the versions are correct
-			Omega::uint32_t version = 0;
-			if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-				LOG_WARNING(("Unsupported version received: %u",version));
-			else
-			{
-				OOBase::StackAllocator<512> allocator;
-				OOBase::LocalString strSid(allocator);
-				//if (!stream.recv_string(ptrSocket,strSid))
-				//	LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
-				//else
-				{
-					uid_t uid;
-					//err = ptrSocket->get_uid(uid);
-					if (err != 0)
-						LOG_ERROR(("Failed to retrieve client token: %s",OOBase::system_error_text(err)));
-					else
-					{
-						UserProcess user_process;
-						if (get_user_process(uid,strSid,user_process))
-						{
-							if (!stream.write_string(user_process.m_strPipe))
-								LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
-							else
-								ptrSocket->send(stream.buffer());
-						}
+#if defined(_WIN32)
+			// strSid is actually the PID of the child process
+			if (!m_pid)
+				m_pid = strtoul(strSid.c_str(),NULL,10);
 
-					#if defined(_WIN32)
-						// Make sure the handle is closed
-						CloseHandle(uid);
-					#endif
-					}
-				}
-			}
+			strSid.clear();
+#endif
+			m_pManager->find_user_process(this,m_uid,m_pid,strSid);
 		}
 	}
 }
+
+
+/*
+			UserProcess user_process;
+			if (m_pManager->get_user_process(uid,strSid,user_process))
+			{
+				if (!stream.write_string(user_process.m_strPipe))
+					LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
+				else
+					ptrSocket->send(stream.buffer());
+			} */
+

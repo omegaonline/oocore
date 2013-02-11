@@ -38,6 +38,7 @@
 
 #if defined(_WIN32)
 typedef OOBase::Win32::SmartHandle uid_t;
+typedef DWORD pid_t;
 #endif
 
 namespace Root

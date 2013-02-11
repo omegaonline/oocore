@@ -51,9 +51,11 @@ namespace
 {
 	void get_session_id(OOBase::LocalString& strId)
 	{
-		// We don't use session_id with Win32
 #if defined(_WIN32)
-		(void)strId;
+		// We don't use session_id with Win32,
+		// but because Windows 2000/XP does not support GetNamedPipeClientProcessId()
+		// We pass our PID as the session ID
+		strId.printf("%lu",GetCurrentProcessId());
 #else
 
 #if defined(HAVE_UNISTD_H)
@@ -105,7 +107,7 @@ namespace
 #endif // !WIN32
 	}
 
-	void connect_root(OOBase::CDRStream& response)
+	void connect_root(OOBase::CDRStream& response, OOBase::AllocatorInstance& allocator)
 	{
 #if defined(NDEBUG)
 		OOBase::Timeout timeout(15,0);
@@ -132,21 +134,74 @@ namespace
 
 		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 
-		OOBase::StackAllocator<128> allocator;
 		OOBase::LocalString strSid(allocator);
 		get_session_id(strSid);
 
 		if (!response.write(version) || !response.write_string(strSid))
 			OMEGA_THROW(response.last_error());
 
+#if !defined(HAVE_UNISTD_H)
 		err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
 		if (err)
 			OMEGA_THROW(err);
+#else
+		OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+		if (!ctl_buffer)
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+		err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(response,ctl_buffer,root_socket);
+		if (err)
+			OMEGA_THROW(err);
+
+		OOBase::POSIX::SmartFD passed_fd;
+
+		// Read struct cmsg
+		struct msghdr msgh = {0};
+		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+		msgh.msg_controllen = ctl_buffer->length();
+
+		struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);
+		if (msg)
+		{
+			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
+			{
+				int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+				size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+				size_t fd_start = 0;
+				if (fd_count > 0)
+				{
+					err = OOBase::POSIX::set_close_on_exec(fds[0],true);
+					if (!err)
+					{
+						passed_fd = fds[0];
+						fd_start = 1;
+					}
+				}
+
+				for (size_t i=fd_start;i<fd_count;++i)
+					OOBase::POSIX::close(fds[i]);
+			}
+			else
+				throw IInternalException::Create(OOCore::get_text("Root pipe control data is invalid"),"Omega::Initialize");
+
+			if (CMSG_NXTHDR(&msgh,msg) != NULL)
+				throw IInternalException::Create(OOCore::get_text("Root pipe control data is invalid"),"Omega::Initialize");
+		}
+
+		// Append fd to response
+		if (!response.write(static_cast<int>(passed_fd)))
+			OMEGA_THROW(response.last_error());
+
+		// Don't close the fd
+		passed_fd.detach();
+#endif
 	}
 }
 
 void OOCore::UserSession::start(void* data, size_t length)
 {
+	OOBase::StackAllocator<128> allocator;
+
 	int err = 0;
 	OOBase::CDRStream stream;
 	if (data)
@@ -159,17 +214,36 @@ void OOCore::UserSession::start(void* data, size_t length)
 		stream.buffer()->wr_ptr(length);
 	}
 	else
-		connect_root(stream);
+		connect_root(stream,allocator);
 
+	// Now read back all the bits we need... Don't throw yet, there may be an embedded fd
+	OOCore::pid_t stream_id = 0;
+	stream.read(stream_id);
 
-	// Send version information
-	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
-	if ((err = m_stream->send(version)) != 0)
-		OMEGA_THROW(err);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 
-	// Read our channel id
-	if ((err = m_stream->recv(m_channel_id)) != 0)
-		OMEGA_THROW(err);
+#if defined(_WIN32)
+	OOBase::LocalString strPipe(allocator);
+	stream.read_string(strPipe);
+
+#elif defined(HAVE_UNISTD_H)
+	// And read the embedded fd
+	int fd_ = -1;
+	stream.read(fd_);
+	OOBase::POSIX::SmartFD fd(fd_);
+#endif
+
+	if (stream.last_error())
+		OMEGA_THROW(stream.last_error());
+
+	// Start the proactor and threads here!
+	void* TODO;
+
+	// Spawn off the io worker thread
+	m_worker_thread.run(io_worker_fn,this);
+
+	// Now do the connect/attach
+
 
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
@@ -184,9 +258,6 @@ void OOCore::UserSession::start(void* data, size_t length)
 		OMEGA_THROW(err);
 
 	guard.release();
-
-	// Spawn off the io worker thread
-	m_worker_thread.run(io_worker_fn,this);
 
 	// Create a proxy to the server interface
 	IObject* pIPS = NULL;

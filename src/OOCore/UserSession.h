@@ -84,7 +84,9 @@ namespace OOCore
 
 	class UserSession
 	{
+		friend class ThreadContext;
 		friend class OOBase::AllocatorInstance;
+		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
 
 	public:
 		void init(void* data, size_t length);
@@ -104,9 +106,6 @@ namespace OOCore
 		Omega::uint16_t update_state(Omega::uint16_t compartment_id);
 
 	private:
-		friend class ThreadContext;
-		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
-
 		UserSession();
 		~UserSession();
 		UserSession(const UserSession&);

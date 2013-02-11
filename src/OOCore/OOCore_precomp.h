@@ -120,6 +120,12 @@ namespace OOCore
 	Omega::string_t get_text(const char* sz);
 
 	Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
+
+#if defined(_WIN32)
+	typedef DWORD pid_t;
+#elif defined(HAVE_UNISTD_H)
+	using ::pid_t;
+#endif
 }
 
 // Operator new that throws Omega::ISystemException

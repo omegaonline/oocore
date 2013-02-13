@@ -56,32 +56,25 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		// Read and cache any root parameters
-		void* p1;
-		stream.read(p1);
-
 		// Read DB name and root settings
 		OOBase::StackAllocator<512> allocator;
 		OOBase::LocalString strDb(allocator);
 		stream.read_string(strDb);
 
-		size_t nThreads = 0;
+		Omega::byte_t nThreads = 0;
 		stream.read(nThreads);
 
-		size_t nSettings = 0;
-		stream.read(nSettings);
 		OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
-		for (size_t i=0;i<nSettings && !err;++i)
+		while (!err)
 		{
 			OOBase::LocalString k(allocator),v(allocator);
-			if (!stream.read_string(k) || !stream.read_string(v))
+			if (!stream.read_string(k) || k.empty() || !stream.read_string(v))
 				break;
 
 			err = tabSettings.insert(k,v);
 			if (err)
 				LOG_ERROR(("Failed to insert setting into table: %s",OOBase::system_error_text(err)));
 		}
-
 		if (!err)
 		{
 			err = stream.last_error();
@@ -102,11 +95,10 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 			{
 				size_t mark = stream.buffer()->mark_wr_ptr();
 
-				stream.write(size_t(0));
-				stream.write(p1);
-				stream.write(ret_err);
+				stream.write(Omega::uint16_t(0));
+				stream.write(static_cast<Omega::int32_t>(ret_err));
 
-				stream.replace(stream.buffer()->length(),mark);
+				stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 				if (stream.last_error())
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
@@ -208,7 +200,7 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 {
 	// Read and cache any root parameters
-	void* p1;
+	pid_t p1;
 	stream.read(p1);
 
 	uid_t uid;
@@ -225,7 +217,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 		{
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
-			stream.write(size_t(0));
+			stream.write(Omega::uint16_t(0));
 			stream.write(p1);
 
 			// Attach to the pipe
@@ -241,9 +233,9 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 				ret_err = m_pManager->new_connection(ptrSocket,uid);
 			}
 
-			stream.write(ret_err);
+			stream.write(static_cast<Omega::int32_t>(ret_err));
 
-			stream.replace(stream.buffer()->length(),mark);
+			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 			if (stream.last_error())
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else
@@ -271,7 +263,7 @@ void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int e
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
 	// Read and cache any root parameters
-	void* p1;
+	DWORD p1;
 	stream.read(p1);
 
 	OOBase::StackAllocator<256> allocator;
@@ -289,17 +281,17 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 		{
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
-			stream.write(size_t(0));
+			stream.write(Omega::uint16_t(0));
 			stream.write(p1);
 
 			OOBase::LocalString pipe(allocator);
 
 			int ret_err = m_pManager->new_connection(sid,pipe);
-			stream.write(ret_err);
+			stream.write(static_cast<Omega::int32_t>(ret_err));
 			if (!ret_err)
 				stream.write_string(pipe);
 
-			stream.replace(stream.buffer()->length(),mark);
+			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 			if (stream.last_error())
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else

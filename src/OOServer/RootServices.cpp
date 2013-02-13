@@ -446,9 +446,9 @@ bool Root::Manager::start_services()
 	// Find the sandbox process
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	UserProcess sandbox;
+	/*UserProcess sandbox;
 	if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
-		LOG_ERROR_RETURN(("Failed to find sandbox process"),false);
+		LOG_ERROR_RETURN(("Failed to find sandbox process"),false);*/
 
 	guard.release();
 
@@ -479,8 +479,8 @@ bool Root::Manager::start_services()
 
 		// Create a unique local socket name
 		OOBase::RefPtr<OOBase::Socket> ptrSocket;
-		if (!sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,true,ptrSocket))
-			enum_sockets(m_registry,strName,ptrSocket,key);
+		//if (!sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,true,ptrSocket))
+		//	enum_sockets(m_registry,strName,ptrSocket,key);
 	}
 
 	return true;
@@ -497,9 +497,9 @@ bool Root::Manager::stop_services()
 	
 	// Make a blocking call
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request,&response,OOServer::Message_t::synchronous);
-	if (res != OOServer::MessageHandler::io_result::success)
-		LOG_ERROR_RETURN(("Failed to send service stop request to sandbox"),false);
+	//OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request,&response,OOServer::Message_t::synchronous);
+	//if (res != OOServer::MessageHandler::io_result::success)
+	//	LOG_ERROR_RETURN(("Failed to send service stop request to sandbox"),false);
 
 	OOServer::RootErrCode_t err = 0;
 	if (!response.read(err))
@@ -512,9 +512,9 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
-	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
-		err = OOServer::NoWrite;
-	else
+	//if (!m_sandbox_channel || channel_id == m_sandbox_channel)
+	//	err = OOServer::NoWrite;
+	//else
 		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
@@ -531,8 +531,8 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 			// Find the sandbox process
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			UserProcess sandbox;
-			if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
+			//UserProcess sandbox;
+			//if (!m_sandbox_channel || !m_mapUserProcesses.find(m_sandbox_channel,sandbox))
 			{
 				LOG_ERROR(("Failed to find sandbox process"));
 				err = OOServer::Errored;
@@ -562,9 +562,9 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 					// Create a unique local socket name
 					OOBase::RefPtr<OOBase::Socket> ptrSocket;
-					err = static_cast<OOServer::RootErrCode_t>(sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket));
-					if (!err)
-						enum_sockets(m_registry,strName,ptrSocket,key);
+					//err = static_cast<OOServer::RootErrCode_t>(sandbox.m_ptrProcess->LaunchService(this,strName,key,wait_secs,false,ptrSocket));
+					//if (!err)
+					//	enum_sockets(m_registry,strName,ptrSocket,key);
 				}
 			}
 		}
@@ -578,9 +578,9 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
-	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
-		err = OOServer::NoWrite;
-	else
+	//if (!m_sandbox_channel || channel_id == m_sandbox_channel)
+	//	err = OOServer::NoWrite;
+	//else
 		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
@@ -606,8 +606,8 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 			else
 			{
 				// Make a blocking call, reusing response
-				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
-				if (res != OOServer::MessageHandler::io_result::success)
+				//OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
+				//if (res != OOServer::MessageHandler::io_result::success)
 				{
 					LOG_ERROR(("Failed to send service stop request to sandbox"));
 					err = OOServer::Errored;
@@ -628,9 +628,9 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
-	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
-		err = OOServer::NoWrite;
-	else
+	//if (!m_sandbox_channel || channel_id == m_sandbox_channel)
+	//	err = OOServer::NoWrite;
+	//else
 		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
@@ -653,8 +653,8 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 			else
 			{
 				// Make a blocking call, reusing response
-				OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
-				if (res != OOServer::MessageHandler::io_result::success)
+				//OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
+				//if (res != OOServer::MessageHandler::io_result::success)
 				{
 					LOG_ERROR(("Failed to send service_is_running request to sandbox"));
 					err = OOServer::Errored;
@@ -675,9 +675,9 @@ void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDR
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
-	if (!m_sandbox_channel || channel_id == m_sandbox_channel)
-		err = OOServer::NoWrite;
-	else
+	//if (!m_sandbox_channel || channel_id == m_sandbox_channel)
+	//	err = OOServer::NoWrite;
+	//else
 		err = static_cast<OOServer::RootErrCode_t>(m_registry->access_check(channel_id,Db::write_check,Db::write_check));
 
 	if (!err)
@@ -691,8 +691,8 @@ void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDR
 		else
 		{
 			// Make a blocking call, reusing response
-			OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
-			if (res != OOServer::MessageHandler::io_result::success)
+			//OOServer::MessageHandler::io_result::type res = sendrecv_sandbox(request2,&response,OOServer::Message_t::synchronous);
+			//if (res != OOServer::MessageHandler::io_result::success)
 			{
 				LOG_ERROR(("Failed to send service_is_running request to sandbox"));
 				err = OOServer::Errored;

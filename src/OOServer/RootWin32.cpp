@@ -60,6 +60,7 @@ namespace
 		bool IsSameUser(const uid_t& uid) const;
 
 		bool IsRunning() const;
+		pid_t GetPid() const;
 
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
@@ -70,6 +71,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hToken;
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
+		DWORD                      m_pid;
 
 		DWORD SpawnFromToken(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
@@ -453,7 +455,8 @@ namespace
 RootProcessWin32::RootProcessWin32() :
 		m_hToken(NULL),
 		m_hProcess(NULL),
-		m_hProfile(NULL)
+		m_hProfile(NULL),
+		m_pid(0)
 {
 }
 
@@ -627,6 +630,7 @@ DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, const ui
 		}
 	}
 	m_hProcess = process_info.hProcess;
+	m_pid = process_info.dwProcessId;
 
 	// Stash handles to close on end...
 	m_hProfile = hProfile;
@@ -680,6 +684,11 @@ bool RootProcessWin32::IsRunning() const
 		return false;
 
 	return (WaitForSingleObject(m_hProcess,0) == WAIT_TIMEOUT);
+}
+
+pid_t RootProcessWin32::GetPid() const
+{
+	return m_pid;
 }
 
 int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const
@@ -829,8 +838,8 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	}
 
 	OOBase::CDRStream response;
-	OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<Omega::uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
-	if (res != OOServer::MessageHandler::io_result::success)
+	//OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<Omega::uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
+	//if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),OOServer::Errored);
 
 	if (!async)

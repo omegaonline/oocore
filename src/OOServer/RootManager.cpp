@@ -33,7 +33,6 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "RootClientConn.h"
 
 #include <signal.h>
 #include <stdlib.h>
@@ -48,11 +47,8 @@ template class OOBase::Singleton<OOBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
 		m_proactor(NULL),
-		m_registry_processes(1),
-		m_sandbox_channel(0)
+		m_registry_processes(1)
 {
-	// Root channel is fixed
-	set_channel(0x80000000,0x80000000,0x7F000000,0);
 }
 
 int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
@@ -103,11 +99,8 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 							m_client_acceptor = NULL;
 						}
 
-						// Close all channels
-						shutdown_channels();
-
-						// Wait for all user processes to terminate
-						m_mapUserProcesses.clear();
+						// Close the connections to all the user processes
+						m_user_processes.clear();
 					}
 
 					// Close the connections to all the registry processes
@@ -142,8 +135,6 @@ int Root::Manager::run_proactor(void* p)
 
 bool Root::Manager::get_config_arg(const char* name, OOBase::LocalString& val)
 {
-	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
-
 	OOBase::String val2;
 	if (m_config_args.find(name,val2))
 	{
@@ -161,7 +152,6 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 	OOBase::Logger::log(OOBase::Logger::Information,"Loading configuration...");
 
 	int err = 0;
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Clear current entries
 	m_config_args.clear();
@@ -316,36 +306,27 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	// Write initial message
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(size_t(0));
-	stream.write(static_cast<void*>(NULL));
+	stream.write(Omega::uint16_t(0));
 	stream.write_string(strRegPath);
 
 	OOBase::LocalString strThreads(allocator);
 	get_config_arg("registry_concurrency",strThreads);
-	size_t threads = atoi(strThreads.c_str());
+	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
 	if (threads < 1 || threads > 8)
 		threads = 2;
 
 	stream.write(threads);
 
-	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
-	stream.write(m_config_args.size());
 	for (size_t pos = 0;pos < m_config_args.size();++pos)
 	{
 		if (!stream.write_string(*m_config_args.key_at(pos)) || !stream.write_string(*m_config_args.at(pos)))
 			break;
 	}
-	read_guard.release();
+	stream.write("");
 
-	stream.replace(stream.buffer()->length(),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	// Get the environment settings
-	OOBase::Environment::env_table_t tabSysEnv(allocator);
-	err = OOBase::Environment::get_current(tabSysEnv);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
 	// Get our uid
 	uid_t uid;
@@ -356,17 +337,19 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	// Spawn the process
 	SpawnedProcess p;
 	bool bAgain;
-	if (!platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain))
+	if (!platform_spawn(strBinPath,uid,NULL,OOBase::Environment::env_table_t(allocator),p,bAgain))
 		return false;
 
 	// Send the start data - blocking is OK as we have background proactor threads waiting
 	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(stream,p.m_ptrSocket);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
-	if (!stream.read(err))
+
+	Omega::int32_t ret_err = 0;
+	if (!stream.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
-	if (err)
-		LOG_ERROR_RETURN(("Registry failed to start properly: %s",OOBase::system_error_text(err)),false);
+	if (ret_err)
+		LOG_ERROR_RETURN(("Registry failed to start properly: %s",OOBase::system_error_text(ret_err)),false);
 
 	// Add to registry process map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -454,19 +437,21 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(size_t(0));
+	stream.write(Omega::uint16_t(0));
 
-	stream.replace(stream.buffer()->length(),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	void* TODO1;
 	/*if (err)
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
-	if (!stream.read(err))
+
+	Omega::int32_t ret_err = 0;
+	if (!stream.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
-	if (err)
-		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
+	if (ret_err)
+		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(ret_err)),false);
 
 	OOBase::Environment::env_table_t tabEnv(allocator);
 	size_t num_vars;
@@ -503,8 +488,8 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 
 	// Spawn the process
 	SpawnedProcess p;
-	bool res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain);
-	if (!res && bUnsafe && bAgain && !strUName.empty())
+	bool res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p,bAgain);
+	if (!res && bAgain && bUnsafe && !strUName.empty())
 	{
 		OOBase::LocalString strOurUName(allocator);
 		if (!get_our_uid(uid,strOurUName))
@@ -516,7 +501,10 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
 							   strOurUName.c_str());
 
-		res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p.m_ptrProcess,p.m_ptrSocket,bAgain);
+
+		void* TODO; // Reload env vars
+
+		res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,p,bAgain);
 	}
 	if (!res)
 		return false;
@@ -526,13 +514,18 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		return false;
 
 	// Add to process map
-	/*OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Add to the handle map as ID 1
-	err = m_user_processes.force_insert(1,p);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to insert process handle: %s",OOBase::system_error_text(err)),false);
-*/
+	SpawnedProcess* s = m_user_processes.find(p.m_ptrProcess->GetPid());
+	if (s)
+		*s = p;
+	else
+	{
+		err = m_user_processes.insert(p.m_ptrProcess->GetPid(),p);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert process handle: %s",OOBase::system_error_text(err)),false);
+	}
 
 	OOBase::Logger::log(OOBase::Logger::Information,"System sandbox started successfully");
 
@@ -547,7 +540,7 @@ void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int
 		LOG_ERROR(("Client acceptor failed: %s",OOBase::system_error_text(err)));
 	else
 	{
-		OOBase::RefPtr<Root::ClientConnection> ptrConn = new (std::nothrow) Root::ClientConnection(static_cast<Manager*>(pThis),ptrSocket);
+		OOBase::RefPtr<ClientConnection> ptrConn = new (std::nothrow) ClientConnection(static_cast<Manager*>(pThis),ptrSocket);
 		if (!ptrConn)
 			LOG_ERROR(("Failed to allocate client connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)));
 		else
@@ -555,24 +548,169 @@ void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int
 	}
 }
 
-bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
+bool Root::Manager::find_user_process(ClientConnection* client)
 {
-	if (!OOServer::MessageHandler::can_route(src_channel,dest_channel))
-		return false;
+	OOBase::RefPtr<ClientConnection> ptrClient = client;
+	ptrClient->addref();
 
-	// Only route to or from the sandbox
-	return ((src_channel & 0xFF000000) == (m_sandbox_channel & 0xFF000000) || (dest_channel & 0xFF000000) == (m_sandbox_channel & 0xFF000000));
-}
-
-void Root::Manager::on_channel_closed(Omega::uint32_t channel)
-{
-	// Remove the associated spawned process
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	m_mapUserProcesses.remove(channel);
+	// Look for the matching user process
+	for (size_t i=m_user_processes.begin(); i!=m_user_processes.npos; i=m_user_processes.next(i))
+	{
+		SpawnedProcess* p = m_user_processes.at(i);
+		if (p->m_ptrProcess->IsSameLogin(ptrClient->get_uid(),ptrClient->get_session_id()))
+		{
+			SpawnedProcess u = *p;
+
+			guard.release();
+
+			return add_client_to_user(u,ptrClient);
+		}
+	}
+
+	// Add the client to an internal table...
+	int err = m_clients.insert(ptrClient->get_pid(),ptrClient);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to add client to client set: %s",OOBase::system_error_text(err)),false);
+
+	// Spawn correct registry if not existing
+	SpawnedProcess* pUserReg = NULL;
+	for (size_t i=m_registry_processes.begin(); i!=m_registry_processes.npos; i=m_registry_processes.next(i))
+	{
+		SpawnedProcess* p = m_registry_processes.at(i);
+		if (p->m_ptrProcess->IsSameUser(ptrClient->get_uid()))
+		{
+			pUserReg = p;
+			break;
+		}
+	}
+
+	if (!pUserReg)
+	{
+		guard.release();
+
+		return spawn_user_registry(ptrClient->get_uid());
+	}
+
+	// Spawn correct user process
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrRegistry = pUserReg->m_ptrSocket;
+
+	guard.release();
+
+	return spawn_user_process(ptrClient,ptrRegistry);
 }
 
-bool Root::Manager::get_user_process(uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
+bool Root::Manager::spawn_user_registry(const uid_t& uid)
+{
+	OOBase::Logger::log(OOBase::Logger::Information,"Starting user registry...");
+
+	OOBase::StackAllocator<512> allocator;
+
+	OOBase::LocalString strRegPath(allocator);
+	if (!get_config_arg("regdb_path",strRegPath))
+		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
+
+	OOBase::LocalString strUsersPath(allocator);
+	get_config_arg("users_path",strUsersPath);
+
+	OOBase::LocalString strHive(allocator);
+	if (!get_registry_hive(uid,strRegPath,strUsersPath,strHive))
+		return false;
+
+	// Get the binary path
+	OOBase::LocalString strBinPath(allocator);
+	if (!get_config_arg("binary_path",strBinPath))
+		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
+
+#if defined(_WIN32)
+	int err = strBinPath.append("OOSvrReg.exe");
+#else
+	int err = strBinPath.append("oosvrreg");
+#endif
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
+
+	// Write initial message
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+	stream.write_string(strRegPath);
+
+	OOBase::LocalString strThreads(allocator);
+	get_config_arg("registry_concurrency",strThreads);
+	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
+	if (threads < 1 || threads > 8)
+		threads = 2;
+
+	stream.write(threads);
+	stream.write("");
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	// Spawn the process
+	SpawnedProcess p;
+	bool bAgain;
+	if (!platform_spawn(strBinPath,uid,NULL,OOBase::Environment::env_table_t(allocator),p,bAgain))
+		return false;
+
+	// Add to registry process map
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Add to the registry map
+	size_t handle = 0;
+	err = m_registry_processes.insert(p,handle,2,size_t(-1));
+	if (err)
+		LOG_ERROR_RETURN(("Failed to insert registry handle: %s",OOBase::system_error_text(err)),false);
+
+	guard.release();
+
+	// Send the message
+	err = OOBase::CDRIO::send_and_recv_with_header_sync<Omega::uint16_t>(stream,p.m_ptrSocket,this,&Manager::on_registry_spawned);
+	if (err)
+	{
+		guard.acquire();
+
+		m_registry_processes.remove(handle);
+
+		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
+void Root::Manager::on_registry_spawned(OOBase::CDRStream& stream, int err)
+{
+	if (err)
+		LOG_ERROR(("Failed to send and receive from user registry: %s",OOBase::system_error_text(err)));
+	else
+	{
+		Omega::int32_t ret_err = 0;
+		if (!stream.read(ret_err))
+		{
+			err = stream.last_error();
+			LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(err)));
+		}
+		else if (ret_err)
+		{
+			err = ret_err;
+			LOG_ERROR(("Registry failed to start properly: %s",OOBase::system_error_text(ret_err)));
+		}
+		else
+		{
+			OOBase::Logger::log(OOBase::Logger::Information,"User registry started successfully");
+		}
+	}
+
+	if (err)
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	}
+}
+
+/*bool Root::Manager::get_user_process(uid_t& uid, const OOBase::LocalString& session_id, UserProcess& user_process)
 {
 	for (int attempts = 0;attempts < 2;++attempts)
 	{
@@ -639,7 +777,7 @@ bool Root::Manager::get_user_process(uid_t& uid, const OOBase::LocalString& sess
 	}
 
 	return false;
-}
+}*/
 
 bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv)
 {
@@ -688,7 +826,7 @@ bool Root::Manager::load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase
 	return true;
 }
 
-Omega::uint32_t Root::Manager::spawn_user_process(OOBase::AllocatorInstance& allocator, const uid_t& uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
+/*Omega::uint32_t Root::Manager::spawn_user_process(OOBase::AllocatorInstance& allocator, const uid_t& uid, const char* session_id, OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::String& strPipe, bool& bAgain)
 {
 	// Get the binary path
 	OOBase::LocalString strBinPath(allocator);
@@ -792,136 +930,4 @@ Omega::uint32_t Root::Manager::spawn_user_process(OOBase::AllocatorInstance& all
 	strPipe = process.m_strPipe;
 
 	return channel_id;
-}
-
-Omega::uint32_t Root::Manager::bootstrap_user(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::RefPtr<OOServer::MessageConnection>& ptrMC, OOBase::String& strPipe)
-{
-	OOBase::CDRStream stream;
-
-	//if (!stream.recv_string(ptrSocket,strPipe))
-	//	LOG_ERROR_RETURN(("CDRStream::read failed: %s",OOBase::system_error_text(stream.last_error())),0);
-
-	ptrMC = new (std::nothrow) OOServer::MessageConnection(this,ptrSocket);
-	if (!ptrMC)
-		LOG_ERROR_RETURN(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()),0);
-
-	Omega::uint32_t channel_id = register_channel(ptrMC,0);
-	if (!channel_id)
-		return 0;
-
-	stream.reset();
-	if (!stream.write(m_sandbox_channel) || !stream.write(channel_id))
-	{
-		channel_closed(channel_id,0);
-		LOG_ERROR_RETURN(("CDRStream::write failed: %s",OOBase::system_error_text(stream.last_error())),0);
-	}
-
-	int err = ptrMC->send(stream.buffer(),NULL);
-	if (err)
-	{
-		channel_closed(channel_id,0);
-		channel_id = 0;
-	}
-
-	return channel_id;
-}
-
-void Root::Manager::get_config_arg(OOBase::CDRStream& request, OOBase::CDRStream& response)
-{
-	OOBase::StackAllocator<256> allocator;
-	OOBase::LocalString strArg(allocator);
-	if (!request.read_string(strArg))
-		LOG_ERROR(("Failed to read get_config_arg request parameters: %s",OOBase::system_error_text(request.last_error())));
-
-	OOBase::LocalString strValue(allocator);
-	get_config_arg(strArg.c_str(),strValue);
-
-	if (!response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Ok)) || !response.write_string(strValue))
-		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
-}
-
-void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs)
-{
-	OOServer::RootOpCode_t op_code;
-	request.read(op_code);
-
-	if (request.last_error() != 0)
-	{
-		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error())));
-		return;
-	}
-
-	OOBase::CDRStream response;
-	switch (op_code)
-	{
-	case OOServer::User_NotifyStarted:
-		if (src_channel_id == m_sandbox_channel)
-			start_services();
-		break;
-
-	case OOServer::User_GetConfigArg:
-		get_config_arg(request,response);
-		break;
-
-	case OOServer::Service_Start:
-		start_service(src_channel_id,request,response);
-		break;
-
-	case OOServer::Service_Stop:
-		stop_service(src_channel_id,request,response);
-		break;
-
-	case OOServer::Service_IsRunning:
-		service_is_running(src_channel_id,request,response);
-		break;
-
-	case OOServer::Service_ListRunning:
-		service_list_running(src_channel_id,response);
-		break;
-
-	case OOServer::Registry_OpenKey:
-		registry_open_key(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_DeleteSubKey:
-		registry_delete_key(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_EnumSubKeys:
-		registry_enum_subkeys(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_ValueExists:
-		registry_value_exists(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_GetValue:
-		registry_get_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_SetValue:
-		registry_set_value(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_EnumValues:
-		registry_enum_values(src_channel_id,request,response);
-		break;
-
-	case OOServer::Registry_DeleteValue:
-		registry_delete_value(src_channel_id,request,response);
-		break;
-
-	default:
-		response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Errored));
-		LOG_ERROR(("Bad request op_code: %d",op_code));
-		break;
-	}
-
-	if (!response.last_error() && !(attribs & OOServer::Message_t::asynchronous))
-		send_response(src_channel_id,src_thread_id,response,attribs);
-}
-
-OOServer::MessageHandler::io_result::type Root::Manager::sendrecv_sandbox(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::uint16_t attribs)
-{
-	return send_request(m_sandbox_channel,&request,response,attribs);
-}
+}*/

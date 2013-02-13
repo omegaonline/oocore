@@ -47,7 +47,7 @@ bool Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t cha
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Find the process info
-	const UserProcess* pU = m_mapUserProcesses.find(channel_id);
+	/*const UserProcess* pU = m_mapUserProcesses.find(channel_id);
 	if (!pU)
 	{
 		err = EINVAL;
@@ -60,7 +60,8 @@ bool Root::Manager::registry_access_check(const char* pszDb, Omega::uint32_t cha
 	// Check access
 	bool bAllowed = false;
 	err = pU->m_ptrProcess->CheckAccess(pszDb,bRead,bWrite,bAllowed);
-	return bAllowed;
+	return bAllowed;*/
+	return false;
 }
 
 OOServer::RootErrCode_t Root::Manager::registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
@@ -81,12 +82,12 @@ OOServer::RootErrCode_t Root::Manager::registry_open_hive(Omega::uint32_t channe
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			// Find the process info
-			UserProcess* pU = m_mapUserProcesses.find(channel_id);
-			if (!pU)
+	//		UserProcess* pU = m_mapUserProcesses.find(channel_id);
+	//		if (!pU)
 				return OOServer::NoRead;
 
 			// Get the registry hive
-			ptrHive = pU->m_ptrRegistry;
+	//		ptrHive = pU->m_ptrRegistry;
 		}
 		break;
 
@@ -110,7 +111,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 {
 	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
 	{
-		if (channel_id == m_sandbox_channel)
+		/*if (channel_id == m_sandbox_channel)
 		{
 			// We link to /System/Sandbox/
 
@@ -122,7 +123,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 			if (err)
 				LOG_ERROR_RETURN(("Failed to concatenate strings: %s",OOBase::system_error_text(err)),OOServer::RootErrCode_t(OOServer::Errored));
 		}
-		else
+		else*/
 		{
 			OOBase::LocalString strNew(strLink.get_allocator());
 			int err = strNew.concat(strLink.c_str()+12,strSubKey.c_str());
@@ -134,12 +135,12 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(Omega::uint32_t channe
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			// Find the process info
-			UserProcess* pU = m_mapUserProcesses.find(channel_id);
-			if (!pU)
+			/*UserProcess* pU = m_mapUserProcesses.find(channel_id);
+			if (!pU)*/
 				return OOServer::NoRead;
 
 			nType = 1;
-			ptrHive = pU->m_ptrRegistry;
+			//ptrHive = pU->m_ptrRegistry;
 		}
 
 		return OOServer::Ok;

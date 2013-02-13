@@ -21,7 +21,6 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "RootClientConn.h"
 
 Root::ClientConnection::ClientConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock) :
 		m_pManager(pManager),
@@ -31,6 +30,21 @@ Root::ClientConnection::ClientConnection(Manager* pManager, OOBase::RefPtr<OOBas
 		,m_uid(-1)
 #endif
 {
+}
+
+pid_t Root::ClientConnection::get_pid() const
+{
+	return m_pid;
+}
+
+const uid_t& Root::ClientConnection::get_uid() const
+{
+	return m_uid;
+}
+
+const char* Root::ClientConnection::get_session_id() const
+{
+	return m_session_id.c_str();
 }
 
 #if defined(_WIN32)
@@ -269,6 +283,44 @@ void Root::ClientConnection::on_message_posix(OOBase::CDRStream& stream, OOBase:
 	release();
 }
 
+bool Root::ClientConnection::send_response(int fd, pid_t pid)
+{
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+	if (!ctl_buffer)
+		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
+
+	struct msghdr msg = {0};
+	msg.msg_control = ctl_buffer->wr_ptr();
+	msg.msg_controllen = ctl_buffer->space();
+
+	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+	*(int*)CMSG_DATA(cmsg) = fd;
+	ctl_buffer->wr_ptr(cmsg->cmsg_len);
+
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+	stream.write(pid);
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	addref();
+
+	int err = m_socket->send_msg(this,&ClientConnection::on_done,stream.buffer(),ctl_buffer);
+	if (err)
+	{
+		release();
+		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
 bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 {
 #if defined(__linux__)
@@ -298,6 +350,14 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 
 #endif // HAVE_UNISTD_H
 
+void Root::ClientConnection::on_done(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err)
+{
+	if (err)
+		LOG_WARNING(("Failed to send user process information to client process: %s",OOBase::system_error_text(err)));
+
+	release();
+}
+
 #include "../../include/Omega/OOCore_version.h"
 
 void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
@@ -308,32 +368,18 @@ void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 		LOG_WARNING(("Unsupported version received: %u",version));
 	else
 	{
-		OOBase::StackAllocator<256> allocator;
-		OOBase::LocalString strSid(allocator);
-		if (!stream.read_string(strSid))
+		if (!stream.read_string(m_session_id))
 			LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
 #if defined(_WIN32)
 			// strSid is actually the PID of the child process
 			if (!m_pid)
-				m_pid = strtoul(strSid.c_str(),NULL,10);
+				m_pid = strtoul(m_session_id.c_str(),NULL,10);
 
-			strSid.clear();
+			m_session_id.clear();
 #endif
-			m_pManager->find_user_process(this,m_uid,m_pid,strSid);
+			m_pManager->find_user_process(this);
 		}
 	}
 }
-
-
-/*
-			UserProcess user_process;
-			if (m_pManager->get_user_process(uid,strSid,user_process))
-			{
-				if (!stream.write_string(user_process.m_strPipe))
-					LOG_ERROR(("Failed to write to client: %s",OOBase::system_error_text(stream.last_error())));
-				else
-					ptrSocket->send(stream.buffer());
-			} */
-

@@ -60,7 +60,7 @@ namespace
 
 #if defined(HAVE_UNISTD_H)
 		// Just default to using the sid with POSIX
-		strId.printf("%d",getsid(0));
+		strId.printf("SID:%d",getsid(0));
 #endif
 
 #if defined(HAVE_DBUS_H)
@@ -91,7 +91,7 @@ namespace
 						if (!dbus_message_get_args(reply,&error,DBUS_TYPE_OBJECT_PATH,&session_path,DBUS_TYPE_INVALID))
 							dbus_error_free(&error);
 						else
-							strId.assign(session_path);
+							strId.concat("DBUS:",session_path);
 
 						dbus_message_unref(reply);
 					}

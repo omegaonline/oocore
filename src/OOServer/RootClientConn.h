@@ -43,18 +43,28 @@ namespace Root
 
 		bool start();
 
+		pid_t get_pid() const;
+		const uid_t& get_uid() const;
+		const char* get_session_id() const;
+
+#if defined(HAVE_UNISTD_H)
+		bool send_response(int fd, pid_t pid);
+#endif
+
 	private:
 		Manager*                            m_pManager;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
-		pid_t  m_pid;
-		uid_t  m_uid;
+		pid_t          m_pid;
+		uid_t          m_uid;
+		OOBase::String m_session_id;
 
 #if defined(HAVE_UNISTD_H)
 		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
 #endif
 
 		void on_message(OOBase::CDRStream& stream, int err);
+		void on_done(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err);
 	};
 }
 

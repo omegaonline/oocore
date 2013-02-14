@@ -221,7 +221,7 @@ void Root::ClientConnection::on_message_posix(OOBase::CDRStream& stream, OOBase:
 		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
 		msgh.msg_controllen = ctl_buffer->length();
 
-		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg && !err;CMSG_NXTHDR(&msgh,msg))
+		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
@@ -283,7 +283,7 @@ void Root::ClientConnection::on_message_posix(OOBase::CDRStream& stream, OOBase:
 	release();
 }
 
-bool Root::ClientConnection::send_response(int fd, pid_t pid)
+bool Root::ClientConnection::send_response(OOBase::POSIX::SmartFD& fd, pid_t pid)
 {
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -317,6 +317,8 @@ bool Root::ClientConnection::send_response(int fd, pid_t pid)
 		release();
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	}
+	else
+		fd.detach();
 
 	return true;
 }
@@ -352,8 +354,29 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 
 void Root::ClientConnection::on_done(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err)
 {
+	// Make sure we close all file handles...
+	ctl_buffer->mark_rd_ptr(0);
+
+	struct msghdr msgh = {0};
+	msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+	msgh.msg_controllen = ctl_buffer->length();
+
+	for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
+	{
+		if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
+		{
+			int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+			size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+
+			for (size_t i=0;i<fd_count;++i)
+				OOBase::POSIX::close(fds[i]);
+		}
+	}
+
 	if (err)
 		LOG_WARNING(("Failed to send user process information to client process: %s",OOBase::system_error_text(err)));
+
+	m_pManager->drop_client(m_pid);
 
 	release();
 }

@@ -48,7 +48,7 @@ namespace Root
 		const char* get_session_id() const;
 
 #if defined(HAVE_UNISTD_H)
-		bool send_response(int fd, pid_t pid);
+		bool send_response(OOBase::POSIX::SmartFD& fd, pid_t pid);
 #endif
 
 	private:

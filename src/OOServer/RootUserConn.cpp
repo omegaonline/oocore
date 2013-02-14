@@ -35,7 +35,7 @@ bool Root::UserConnection::same_login(const uid_t& uid, const char* session_id) 
 }
 
 #if defined(HAVE_UNISTD_H)
-bool Root::UserConnection::start(int fd)
+bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd)
 {
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -70,6 +70,8 @@ bool Root::UserConnection::start(int fd)
 
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	}
+	else
+		fd.detach();
 
 	// All sent, we are done here!
 	return true;
@@ -138,12 +140,33 @@ bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClien
 
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	}
+	else
+		fds[0].detach();
 
 	return ptrClient->send_response(fds[1],m_ptrProcess->get_pid());
 }
 
-void Root::UserConnection::on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err)
+void Root::UserConnection::on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl_buffer, int err)
 {
+	// Make sure we close all file handles...
+	ctl_buffer->mark_rd_ptr(0);
+
+	struct msghdr msgh = {0};
+	msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+	msgh.msg_controllen = ctl_buffer->length();
+
+	for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
+	{
+		if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
+		{
+			int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+			size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+
+			for (size_t i=0;i<fd_count;++i)
+				OOBase::POSIX::close(fds[i]);
+		}
+	}
+
 	if (err)
 	{
 		LOG_ERROR(("Failed to sent data to user process: %s",OOBase::system_error_text(err)));

@@ -160,8 +160,7 @@ namespace
 		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
 		msgh.msg_controllen = ctl_buffer->length();
 
-		struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);
-		if (msg)
+		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
@@ -181,11 +180,6 @@ namespace
 				for (size_t i=fd_start;i<fd_count;++i)
 					OOBase::POSIX::close(fds[i]);
 			}
-			else
-				throw IInternalException::Create(OOCore::get_text("Root pipe control data is invalid"),"Omega::Initialize");
-
-			if (CMSG_NXTHDR(&msgh,msg) != NULL)
-				throw IInternalException::Create(OOCore::get_text("Root pipe control data is invalid"),"Omega::Initialize");
 		}
 
 		// Append fd to response

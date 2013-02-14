@@ -172,15 +172,36 @@ bool Root::RegistryConnection::start_user(const uid_t& uid, OOBase::RefPtr<UserC
 
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 	}
+	else
+		fds[0].detach();
 
 	return ptrUser->start(fds[1]);
 }
 
-void Root::RegistryConnection::on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err)
+void Root::RegistryConnection::on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl_buffer, int err)
 {
+	// Make sure we close all file handles...
+	ctl_buffer->mark_rd_ptr(0);
+
+	struct msghdr msgh = {0};
+	msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+	msgh.msg_controllen = ctl_buffer->length();
+
+	for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
+	{
+		if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
+		{
+			int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+			size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+
+			for (size_t i=0;i<fd_count;++i)
+				OOBase::POSIX::close(fds[i]);
+		}
+	}
+
 	if (err)
 	{
-		LOG_ERROR(("Failed to sent data to registry process: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to send data to registry process: %s",OOBase::system_error_text(err)));
 
 		m_pManager->drop_registry_process(m_id);
 	}
@@ -304,8 +325,9 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
 
+	pid_t p1 = 0;
 	Omega::int32_t ret_err = 0;
-	if (!stream.read(ret_err))
+	if (!stream.read(p1) || !stream.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
 	if (ret_err)
 		LOG_ERROR_RETURN(("Registry failed to start properly: %s",OOBase::system_error_text(ret_err)),false);

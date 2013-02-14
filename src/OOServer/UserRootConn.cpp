@@ -100,13 +100,7 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
 		msgh.msg_controllen = ctl_buffer->length();
 
-		struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);
-		if (!msg)
-		{
-			LOG_ERROR(("Failed to receive handle from root pipe"));
-			err = EINVAL;
-		}
-		else
+		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
@@ -141,12 +135,12 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 				LOG_ERROR(("Root pipe control data has weird stuff in it"));
 				err = EINVAL;
 			}
+		}
 
-			if (CMSG_NXTHDR(&msgh,msg) != NULL)
-			{
-				LOG_ERROR(("Root pipe control data has extra stuff in it"));
-				err = EINVAL;
-			}
+		if (!passed_fds[0].is_valid())
+		{
+			err = EINVAL;
+			LOG_ERROR(("Root pipe control data invalid handle"));
 		}
 
 		if (!err)
@@ -220,8 +214,7 @@ void User::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::B
 		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
 		msgh.msg_controllen = ctl_buffer->length();
 
-		struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);
-		if (msg)
+		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
@@ -246,12 +239,12 @@ void User::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::B
 				LOG_ERROR(("Root pipe control data has weird stuff in it"));
 				err = EINVAL;
 			}
+		}
 
-			if (CMSG_NXTHDR(&msgh,msg) != NULL)
-			{
-				LOG_ERROR(("Root pipe control data has extra stuff in it"));
-				err = EINVAL;
-			}
+		if (!passed_fd.is_valid())
+		{
+			err = EINVAL;
+			LOG_ERROR(("Root pipe control data invalid handle"));
 		}
 
 		if (!err)

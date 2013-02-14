@@ -107,7 +107,7 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
-					err = m_socket->send(this,NULL,stream.buffer());
+					err = m_socket->send(NULL,NULL,stream.buffer());
 					if (err)
 						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
 					else
@@ -160,8 +160,7 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
 		msgh.msg_controllen = ctl_buffer->length();
 
-		struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);
-		if (msg)
+		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
 		{
 			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
 			{
@@ -186,12 +185,12 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 				LOG_ERROR(("Root pipe control data has weird stuff in it"));
 				err = EINVAL;
 			}
+		}
 
-			if (CMSG_NXTHDR(&msgh,msg) != NULL)
-			{
-				LOG_ERROR(("Root pipe control data has extra stuff in it"));
-				err = EINVAL;
-			}
+		if (!passed_fd.is_valid())
+		{
+			err = EINVAL;
+			LOG_ERROR(("Root pipe control data invalid handle"));
 		}
 
 		if (!err)
@@ -203,10 +202,6 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 {
-	// Read and cache any root parameters
-	pid_t p1;
-	stream.read(p1);
-
 	uid_t uid;
 	stream.read(uid);
 
@@ -214,40 +209,17 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 	else
 	{
-		int err = stream.reset();
+		// Attach to the pipe
+		int err = 0;
+		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fd,err);
 		if (err)
-			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+			LOG_ERROR(("Failed to attach to user pipe: %s",OOBase::system_error_text(err)));
 		else
 		{
-			size_t mark = stream.buffer()->mark_wr_ptr();
+			passed_fd.detach();
 
-			stream.write(Omega::uint16_t(0));
-			stream.write(p1);
-
-			// Attach to the pipe
-			int ret_err = 0;
-			OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fd,ret_err);
-			if (ret_err)
-				LOG_ERROR(("Failed to attach to user pipe: %s",OOBase::system_error_text(ret_err)));
-			else
-			{
-				passed_fd.detach();
-
-				// Tell the manager to create a new connection
-				ret_err = m_pManager->new_connection(ptrSocket,uid);
-			}
-
-			stream.write(static_cast<Omega::int32_t>(ret_err));
-
-			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
-			if (stream.last_error())
-				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-			else
-			{
-				err = m_socket->send(this,NULL,stream.buffer());
-				if (err)
-					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-			}
+			// Tell the manager to create a new connection
+			err = m_pManager->new_connection(ptrSocket,uid);
 		}
 	}
 }

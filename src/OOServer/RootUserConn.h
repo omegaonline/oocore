@@ -44,7 +44,7 @@ namespace Root
 		bool same_login(const uid_t& uid, const char* session_id) const;
 
 #if defined(HAVE_UNISTD_H)
-		bool start(int fd);
+		bool start(OOBase::POSIX::SmartFD& fd);
 #endif
 
 		bool add_client(OOBase::RefPtr<ClientConnection>& ptrClient);

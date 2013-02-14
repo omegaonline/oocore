@@ -36,10 +36,14 @@ ooserverd_SOURCES = \
 	RootProcess.h \
 	RootClientConn.cpp \
 	RootClientConn.h \
-	RootRegistry.cpp \
-	RootServices.cpp \
+	RootRegistryConn.cpp \
+	RootRegistryConn.h \
+	RootUserConn.cpp \
+	RootUserConn.h \
 	RootUnix.cpp \
-	RootWin32.cpp	
+	RootWin32.cpp \
+	RootRegistry.cpp \
+	RootServices.cpp	
 
 if WIN32
 ooserverd_SOURCES += OOServer.rc

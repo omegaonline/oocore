@@ -383,3 +383,10 @@ void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 		}
 	}
 }
+
+void Root::Manager::drop_client(pid_t id)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	m_clients.remove(id);
+}

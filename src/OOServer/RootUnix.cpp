@@ -55,15 +55,15 @@ namespace
 	class RootProcessUnix : public Root::Process
 	{
 	public:
-		static RootProcessUnix* Spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
+		static RootProcessUnix* spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
 		virtual ~RootProcessUnix();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(const uid_t& uid, const char* session_id) const;
-		bool IsSameUser(const uid_t& uid) const;
+		bool same_login(const uid_t& uid, const char* session_id) const;
+		bool same_user(const uid_t& uid) const;
 
 		bool IsRunning() const;
-		pid_t GetPid() const;
+		pid_t get_pid() const;
 
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
@@ -156,7 +156,7 @@ RootProcessUnix::~RootProcessUnix()
 	}
 }
 
-RootProcessUnix* RootProcessUnix::Spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
+RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
 {
 	char* rpath = realpath(strAppName.c_str(),NULL);
 	if (rpath)
@@ -304,7 +304,7 @@ bool RootProcessUnix::IsRunning() const
 	return (ret == 0);
 }
 
-pid_t RootProcessUnix::GetPid() const
+pid_t RootProcessUnix::get_pid() const
 {
 	return m_pid;
 }
@@ -385,16 +385,16 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 	return 0;
 }
 
-bool RootProcessUnix::IsSameLogin(const uid_t& uid, const char* session_id) const
+bool RootProcessUnix::same_login(const uid_t& uid, const char* session_id) const
 {
-	if (!IsSameUser(uid))
+	if (!same_user(uid))
 		return false;
 
 	// Compare session_ids
 	return (m_sid == session_id);
 }
 
-bool RootProcessUnix::IsSameUser(const uid_t& uid) const
+bool RootProcessUnix::same_user(const uid_t& uid) const
 {
 	if (m_bUnique)
 		return false;
@@ -537,7 +537,10 @@ bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strS
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 		if (strHome.empty())
+		{
+			void* TODO; // This won't work
 			OOBase::Environment::getenv("HOME",strHome);
+		}
 
 		if (!strHome.empty())
 		{
@@ -626,7 +629,7 @@ bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strS
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, SpawnedProcess& ptrSpawn, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
 	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
@@ -646,15 +649,15 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 	}
 
 	// Spawn the process
-	ptrSpawn.m_ptrProcess = RootProcessUnix::Spawn(strAppName,uid,session_id,fds[1],bAgain,ptrEnv);
-	if (!ptrSpawn.m_ptrProcess)
+	ptrProcess = RootProcessUnix::spawn(strAppName,uid,session_id,fds[1],bAgain,ptrEnv);
+	if (!ptrProcess)
 		return false;
 
 	// Done with fd[1]
 	fds[1].close();
 
 	// Create an async socket wrapper
-	ptrSpawn.m_ptrSocket = m_proactor->attach(fds[0],err);
+	ptrSocket = m_proactor->attach(fds[0],err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOBase::system_error_text(err)),false);
 
@@ -698,138 +701,6 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
 	}
 
 	uid = pw->pw_uid;
-	return true;
-}
-
-bool Root::Manager::connect_root_registry_to_sandbox(const uid_t& uid, OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox)
-{
-	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
-	if (!ctl_buffer)
-		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-
-	// Create a pair of sockets
-	OOBase::POSIX::SmartFD fds[2];
-	{
-		int fd[2] = {-1, -1};
-		if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
-
-		// Make sure sockets are closed
-		fds[0] = fd[0];
-		fds[1] = fd[1];
-	}
-
-	struct msghdr msg = {0};
-	msg.msg_control = ctl_buffer->wr_ptr();
-	msg.msg_controllen = ctl_buffer->space();
-
-	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_level = SOL_SOCKET;
-    cmsg->cmsg_type = SCM_RIGHTS;
-    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-    *(int*)CMSG_DATA(cmsg) = fds[0];
-    ctl_buffer->wr_ptr(cmsg->cmsg_len);
-
-	OOBase::CDRStream stream;
-	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
-
-	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
-	stream.write(static_cast<void*>(NULL));
-	stream.write(uid);
-
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
-	if (stream.last_error())
-		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	int err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,ptrRoot);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
-	if (!stream.read(err))
-		LOG_ERROR_RETURN(("Failed to read response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
-	if (err)
-		LOG_ERROR_RETURN(("Registry failed to respond properly: %s",OOBase::system_error_text(err)),false);
-
-	ctl_buffer->reset();
-	msg.msg_control = ctl_buffer->wr_ptr();
-	msg.msg_controllen = ctl_buffer->space();
-
-	cmsg = CMSG_FIRSTHDR(&msg);
-	cmsg->cmsg_level = SOL_SOCKET;
-	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	*(int*)CMSG_DATA(cmsg) = fds[1];
-	ctl_buffer->wr_ptr(cmsg->cmsg_len);
-
-	stream.reset();
-	mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
-	stream.write(static_cast<void*>(NULL));
-
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
-	if (stream.last_error())
-		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	err = OOBase::CDRIO::send_msg_and_recv_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,ptrSandbox);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
-	if (!stream.read(err))
-		LOG_ERROR_RETURN(("Failed to read response from user process: %s",OOBase::system_error_text(stream.last_error())),false);
-	if (err)
-		LOG_ERROR_RETURN(("User process failed to respond properly: %s",OOBase::system_error_text(err)),false);
-
-	// All sent, we are done here!
-	return true;
-}
-
-bool Root::Manager::add_client_to_user(SpawnedProcess& sp, OOBase::RefPtr<ClientConnection>& ptrClient)
-{
-	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
-	if (!ctl_buffer)
-		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-
-	// Create a pair of sockets
-	OOBase::POSIX::SmartFD fds[2];
-	{
-		int fd[2] = {-1, -1};
-		if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
-
-		// Make sure sockets are closed
-		fds[0] = fd[0];
-		fds[1] = fd[1];
-	}
-
-	struct msghdr msg = {0};
-	msg.msg_control = ctl_buffer->wr_ptr();
-	msg.msg_controllen = ctl_buffer->space();
-
-	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
-	cmsg->cmsg_level = SOL_SOCKET;
-	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	*(int*)CMSG_DATA(cmsg) = fds[0];
-	ctl_buffer->wr_ptr(cmsg->cmsg_len);
-
-	OOBase::CDRStream stream;
-	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
-
-	stream.write(static_cast<OOServer::Root2User_OpCode_t>(OOServer::Root2User_NewConnection));
-	stream.write(ptrClient->get_pid());
-
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
-	if (stream.last_error())
-		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	int err = sp.m_ptrSocket->send_msg(NULL,NULL,stream.buffer(),ctl_buffer);
-	if (err)
-		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
-
-	err = ptrClient->send_response(fds[1],sp.m_ptrProcess->GetPid());
-	if (err)
-		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
-
 	return true;
 }
 

@@ -64,6 +64,9 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 		Omega::byte_t nThreads = 0;
 		stream.read(nThreads);
 
+		pid_t p1 = 0;
+		stream.read(p1);
+
 		OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
 		while (!err)
 		{
@@ -96,6 +99,7 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 				size_t mark = stream.buffer()->mark_wr_ptr();
 
 				stream.write(Omega::uint16_t(0));
+				stream.write(p1);
 				stream.write(static_cast<Omega::int32_t>(ret_err));
 
 				stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);

@@ -41,6 +41,8 @@
 #include "MessageConnection.h"
 #include "RootProcess.h"
 #include "RootClientConn.h"
+#include "RootRegistryConn.h"
+#include "RootUserConn.h"
 #include "Protocol.h"
 
 namespace Root
@@ -51,12 +53,17 @@ namespace Root
 			public Db::Manager,
 			public OOBase::Server
 	{
-		friend class ClientConnection;
-
 	public:
 		Manager();
 
 		int run(const OOBase::CmdArgs::results_t& cmd_args);
+
+		bool find_user_process(ClientConnection* client);
+		bool spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryConnection>& ptrRegistry);
+
+		void drop_registry_process(size_t id);
+		void drop_user_process(pid_t id);
+		void drop_client(pid_t id);
 
 	private:
 		Manager(const Manager&);
@@ -74,21 +81,21 @@ namespace Root
 		OOBase::Table<OOBase::String,OOBase::String> m_config_args;
 		bool get_config_arg(const char* name, OOBase::LocalString& val);
 
-		struct SpawnedProcess
-		{
-			OOBase::SmartPtr<Process>           m_ptrProcess;
-			OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
-		};
-
 		// Registry handling
-		OOBase::HandleTable<size_t,SpawnedProcess>     m_registry_processes;
+		OOBase::HandleTable<size_t,OOBase::RefPtr<RegistryConnection> > m_registry_processes;
 
 		bool start_registry(OOBase::AllocatorInstance& allocator);
-		OOBase::RefPtr<OOBase::AsyncSocket> get_root_registry();
-		bool connect_root_registry_to_sandbox(const uid_t& uid, OOBase::RefPtr<OOBase::AsyncSocket> ptrRoot, OOBase::RefPtr<OOBase::AsyncSocket> ptrSandbox);
-		bool spawn_user_registry(const uid_t& uid);
-		void on_registry_spawned(OOBase::CDRStream& stream, int err);
+		OOBase::RefPtr<RegistryConnection> get_root_registry();
+		bool spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrClient);
 		bool get_registry_hive(const uid_t& uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive);
+
+		// User process handling
+		OOBase::HashTable<pid_t,OOBase::RefPtr<UserConnection> > m_user_processes;
+
+		bool platform_spawn(OOBase::LocalString strBinPath, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain);
+		bool spawn_sandbox_process(OOBase::AllocatorInstance& allocator);
+		bool get_our_uid(uid_t& uid, OOBase::LocalString& strUName);
+		bool get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain);
 
 		// Client handling members
 		SECURITY_ATTRIBUTES              m_sa;
@@ -96,20 +103,10 @@ namespace Root
 		OOBase::Win32::sec_descript_t    m_sd;
 #endif
 		OOBase::RefPtr<OOBase::Acceptor> m_client_acceptor;
-
-		OOBase::HashTable<pid_t,SpawnedProcess>                    m_user_processes;
 		OOBase::HashTable<pid_t,OOBase::RefPtr<ClientConnection> > m_clients;
 
 		bool start_client_acceptor(OOBase::AllocatorInstance& allocator);
 		static void accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int err);
-		bool find_user_process(ClientConnection* client);
-		bool add_client_to_user(SpawnedProcess& sp, OOBase::RefPtr<ClientConnection>& ptrClient);
-		bool spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRegistry);
-		bool load_user_env(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Environment::env_table_t& tabEnv);
-		bool platform_spawn(OOBase::LocalString strBinPath, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, SpawnedProcess& ptrSpawn, bool& bAgain);
-		bool spawn_sandbox_process(OOBase::AllocatorInstance& allocator);
-		bool get_our_uid(uid_t& uid, OOBase::LocalString& strUName);
-		bool get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain);
 
 		// Service handling
 		bool start_services();

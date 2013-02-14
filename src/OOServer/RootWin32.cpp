@@ -51,16 +51,16 @@ namespace
 	class RootProcessWin32 : public Root::Process
 	{
 	public:
-		static RootProcessWin32* Spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		static RootProcessWin32* spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 
 		virtual ~RootProcessWin32();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
-		bool IsSameLogin(const uid_t& uid, const char* session_id) const;
-		bool IsSameUser(const uid_t& uid) const;
+		bool same_login(const uid_t& uid, const char* session_id) const;
+		bool same_user(const uid_t& uid) const;
 
 		bool IsRunning() const;
-		pid_t GetPid() const;
+		pid_t get_pid() const;
 
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
@@ -73,7 +73,7 @@ namespace
 		HANDLE                     m_hProfile;
 		DWORD                      m_pid;
 
-		DWORD SpawnFromToken(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
+		DWORD spawn_from_token(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox);
 	};
 
 	HANDLE CreatePipe(const uid_t& hToken, OOBase::LocalString& strPipe)
@@ -479,7 +479,7 @@ RootProcessWin32::~RootProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD RootProcessWin32::SpawnFromToken(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
+DWORD RootProcessWin32::spawn_from_token(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox)
 {
 	// Create the named pipe
 	OOBase::LocalString strPipe(strAppName.get_allocator());
@@ -657,7 +657,7 @@ Cleanup:
 	return dwRes;
 }
 
-RootProcessWin32* RootProcessWin32::Spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+RootProcessWin32* RootProcessWin32::spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
 	RootProcessWin32* pSpawn = new (std::nothrow) RootProcessWin32();
 	if (!pSpawn)
@@ -665,7 +665,7 @@ RootProcessWin32* RootProcessWin32::Spawn(OOBase::LocalString& strAppName, const
 
 	pSpawn->m_bSandbox = bSandbox;
 
-	DWORD dwRes = pSpawn->SpawnFromToken(strAppName,hToken,lpEnv,hPipe,bSandbox);
+	DWORD dwRes = pSpawn->spawn_from_token(strAppName,hToken,lpEnv,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
 
@@ -686,7 +686,7 @@ bool RootProcessWin32::IsRunning() const
 	return (WaitForSingleObject(m_hProcess,0) == WAIT_TIMEOUT);
 }
 
-pid_t RootProcessWin32::GetPid() const
+pid_t RootProcessWin32::get_pid() const
 {
 	return m_pid;
 }
@@ -752,7 +752,7 @@ int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 	return 0;
 }
 
-bool RootProcessWin32::IsSameLogin(const uid_t& hToken, const char* /*session_id*/) const
+bool RootProcessWin32::same_login(const uid_t& hToken, const char* /*session_id*/) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)
@@ -775,7 +775,7 @@ bool RootProcessWin32::IsSameLogin(const uid_t& hToken, const char* /*session_id
 			OOBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
-bool RootProcessWin32::IsSameUser(const uid_t& hToken) const
+bool RootProcessWin32::same_user(const uid_t& hToken) const
 {
 	// The sandbox is a 'unique' user
 	if (m_bSandbox)

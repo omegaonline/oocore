@@ -51,11 +51,11 @@ namespace Root
 		virtual ~Process() {}
 
 		virtual int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const = 0;
-		virtual bool IsSameLogin(const uid_t& uid, const char* session_id) const = 0;
-		virtual bool IsSameUser(const uid_t& uid) const = 0;
+		virtual bool same_login(const uid_t& uid, const char* session_id) const = 0;
+		virtual bool same_user(const uid_t& uid) const = 0;
 
 		virtual bool IsRunning() const = 0;
-		virtual pid_t GetPid() const = 0;
+		virtual pid_t get_pid() const = 0;
 
 		virtual OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const = 0;
 

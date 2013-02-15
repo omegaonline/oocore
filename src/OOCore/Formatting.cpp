@@ -1456,7 +1456,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,v
 #endif
 	const lconv* lc = localeconv();
 
-	OOBase::StackAllocator<512> allocator;
+	OOBase::StackAllocator<248> allocator;
 	return fmt_recurse(allocator,val,strFormat,def_precision,true,PASS_LCID);
 }
 
@@ -1488,7 +1488,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t
 #endif
 	const lconv* lc = localeconv();
 
-	OOBase::StackAllocator<512> allocator;
+	OOBase::StackAllocator<248> allocator;
 	return fmt_recurse(allocator,val,strFormat,def_precision,true,PASS_LCID);
 }
 
@@ -1512,7 +1512,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_
 #endif
 	const lconv* lc = localeconv();
 
-	OOBase::StackAllocator<512> allocator;
+	OOBase::StackAllocator<248> allocator;
 	return fmt_recurse(allocator,val,strFormat,def_precision,true,PASS_LCID);
 }
 

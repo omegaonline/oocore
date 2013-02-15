@@ -659,7 +659,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-	OOBase::StackAllocator<32> allocator;
+	OOBase::StackAllocator<64> allocator;
 	OOBase::TempPtr<char> str(allocator);
 	int err = OOBase::temp_printf(str,"{%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X}",
 		(uint32_t)guid.Data1,guid.Data2,guid.Data3,

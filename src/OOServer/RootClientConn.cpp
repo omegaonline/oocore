@@ -192,7 +192,7 @@ bool Root::ClientConnection::start()
 
 bool Root::ClientConnection::start()
 {
-	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(128,sizeof(size_t));
 	if (!ctl_buffer)
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
@@ -350,7 +350,6 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 	return true;
 }
 
-#endif // HAVE_UNISTD_H
 
 void Root::ClientConnection::on_done(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err)
 {
@@ -381,6 +380,8 @@ void Root::ClientConnection::on_done(OOBase::Buffer* data_buffer, OOBase::Buffer
 	release();
 }
 
+#endif // HAVE_UNISTD_H
+
 #include "../../include/Omega/OOCore_version.h"
 
 void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
@@ -391,17 +392,14 @@ void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 		LOG_WARNING(("Unsupported version received: %u",version));
 	else
 	{
-		if (!stream.read_string(m_session_id))
+		pid_t pid = 0;
+		if (!stream.read_string(m_session_id) || !stream.read(pid))
 			LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
-#if defined(_WIN32)
-			// strSid is actually the PID of the child process
 			if (!m_pid)
-				m_pid = strtoul(m_session_id.c_str(),NULL,10);
+				m_pid = pid;
 
-			m_session_id.clear();
-#endif
 			m_pManager->find_user_process(this);
 		}
 	}

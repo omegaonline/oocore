@@ -55,7 +55,7 @@ namespace
 	class RootProcessUnix : public Root::Process
 	{
 	public:
-		static RootProcessUnix* spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[]);
+		static RootProcessUnix* spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[]);
 		virtual ~RootProcessUnix();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -156,7 +156,7 @@ RootProcessUnix::~RootProcessUnix()
 	}
 }
 
-RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, int pass_fd, bool& bAgain, char* const envp[])
+RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[])
 {
 	char* rpath = realpath(strAppName.c_str(),NULL);
 	if (rpath)
@@ -188,6 +188,8 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 	if (child_id != 0)
 	{
 		// We are the parent
+		pass_fd.close();
+
 		RootProcessUnix* pSpawn = new (std::nothrow) RootProcessUnix(uid);
 		if (!pSpawn)
 			LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
@@ -228,7 +230,7 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 
 	// Build the pipe name
 	OOBase::LocalString strPipe(strAppName.get_allocator());
-	int err = strPipe.printf("--pipe=%u",pass_fd);
+	int err = strPipe.printf("--pipe=%u",(int)pass_fd);
 	if (err)
 		exit_msg(strAppName.get_allocator(),"Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
 
@@ -270,6 +272,8 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 			//gdb.printf("run %s --debug",strPipe.c_str());
 			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(), NULL };
 
+			OOBase::POSIX::set_close_on_exec(pass_fd,false);
+
 			if (envp)
 				execvpe(argv[0],(char* const*)argv,envp);
 			else
@@ -280,6 +284,8 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 	const char* argv[] = { strAppName.c_str(), strPipe.c_str(), NULL, NULL };
 	if (Root::is_debug())
 		argv[2] = "--debug";
+
+	OOBase::POSIX::set_close_on_exec(pass_fd,false);
 
 	if (envp)
 		execve(strAppName.c_str(),(char* const*)argv,envp);
@@ -638,23 +644,14 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 
 	// Create a pair of sockets
 	OOBase::POSIX::SmartFD fds[2];
-	{
-		int fd[2] = {-1, -1};
-		if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
-
-		// Make sure sockets are closed
-		fds[0] = fd[0];
-		fds[1] = fd[1];
-	}
+	err = OOBase::POSIX::socketpair(SOCK_STREAM,fds);
+	if (err)
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
 
 	// Spawn the process
 	ptrProcess = RootProcessUnix::spawn(strAppName,uid,session_id,fds[1],bAgain,ptrEnv);
 	if (!ptrProcess)
 		return false;
-
-	// Done with fd[1]
-	fds[1].close();
 
 	// Create an async socket wrapper
 	ptrSocket = m_proactor->attach(fds[0],err);

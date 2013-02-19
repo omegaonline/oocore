@@ -53,9 +53,7 @@ namespace
 	{
 #if defined(_WIN32)
 		// We don't use session_id with Win32,
-		// but because Windows 2000/XP does not support GetNamedPipeClientProcessId()
-		// We pass our PID as the session ID
-		strId.printf("%lu",GetCurrentProcessId());
+		strId.clear();
 #else
 
 #if defined(HAVE_UNISTD_H)
@@ -137,14 +135,30 @@ namespace
 		OOBase::LocalString strSid(allocator);
 		get_session_id(strSid);
 
-		if (!response.write(version) || !response.write_string(strSid))
+		size_t mark = response.buffer()->mark_wr_ptr();
+
+		response.write(Omega::uint16_t(0));
+		response.write(version);
+		response.write_string(strSid);
+
+#if defined(_WIN32)
+		response.write(GetCurrentProcessId());
+#elif defined(HAVE_UNISTD_H)
+		response.write(getpid());
+#endif
+		response.replace(static_cast<Omega::uint16_t>(response.buffer()->length()),mark);
+		if (response.last_error())
 			OMEGA_THROW(response.last_error());
 
 #if !defined(HAVE_UNISTD_H)
 		err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
-		if (err)
-			OMEGA_THROW(err);
 #else
+
+#if defined(SO_PASSCRED)
+		int val = 1;
+		if (::setsockopt(root_socket->get_handle(), SOL_SOCKET, SO_PASSCRED, &val, sizeof(val)) != 0)
+			OMEGA_THROW(errno);
+#endif
 		OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 		if (!ctl_buffer)
 			OMEGA_THROW(ERROR_OUTOFMEMORY);

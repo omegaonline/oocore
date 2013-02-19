@@ -143,7 +143,7 @@ namespace OOCore
 			static ThreadContext* instance();
 
 		private:
-			friend class OOBase::AllocatorInstance;
+			friend class OOBase::TLSSingleton<ThreadContext,OOCore::DLL>;
 
 			ThreadContext();
 			~ThreadContext();

@@ -113,18 +113,12 @@ bool Root::RegistryConnection::start_user(const uid_t& uid, OOBase::RefPtr<UserC
 {
 	// Create a pair of sockets
 	OOBase::POSIX::SmartFD fds[2];
+	int err = OOBase::POSIX::socketpair(SOCK_STREAM,fds);
+	if (err)
 	{
-		int fd[2] = {-1, -1};
-		if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
-		{
-			m_pManager->drop_registry_process(m_id);
+		m_pManager->drop_registry_process(m_id);
 
-			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text()),false);
-		}
-
-		// Make sure sockets are closed
-		fds[0] = fd[0];
-		fds[1] = fd[1];
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
 	}
 
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
@@ -163,7 +157,7 @@ bool Root::RegistryConnection::start_user(const uid_t& uid, OOBase::RefPtr<UserC
 
 	addref();
 
-	int err = m_ptrSocket->send_msg(this,&RegistryConnection::on_sent_msg,stream.buffer(),ctl_buffer);
+	err = m_ptrSocket->send_msg(this,&RegistryConnection::on_sent_msg,stream.buffer(),ctl_buffer);
 	if (err)
 	{
 		m_pManager->drop_registry_process(m_id);

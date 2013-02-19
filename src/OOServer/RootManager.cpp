@@ -83,7 +83,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 					if (spawn_sandbox_process(cmd_args.get_allocator()))
 					{
 						// Start listening for clients
-						//if (start_client_acceptor(cmd_args.get_allocator()))
+						if (start_client_acceptor(cmd_args.get_allocator()))
 						{
 							ret = EXIT_SUCCESS;
 

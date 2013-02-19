@@ -983,7 +983,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
-	ptrSpawn = RootProcessWin32::Spawn(strAppName,uid,env_block,hPipe,session_id == NULL,bAgain);
+	ptrSpawn = RootProcessWin32::spawn(strAppName,uid,env_block,hPipe,session_id == NULL,bAgain);
 	if (!ptrSpawn)
 		return false;
 

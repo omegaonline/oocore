@@ -52,12 +52,17 @@ namespace Root
 		bool get_environment(const char* key, OOBase::Environment::env_table_t& tabEnv);
 
 	private:
+		OOBase::SpinLock                    m_lock;
 		Manager*                            m_pManager;
 		OOBase::SmartPtr<Process>           m_ptrProcess;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 		size_t                              m_id;
 
+		typedef int (RegistryConnection::*pfn_response_t)(OOBase::CDRStream&);
+		OOBase::HandleTable<uint16_t,pfn_response_t> m_response_table;
+
 		void on_started(OOBase::CDRStream& stream, int err);
+		void on_response(OOBase::Buffer* buffer, int err);
 
 #if defined(HAVE_UNISTD_H)
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);

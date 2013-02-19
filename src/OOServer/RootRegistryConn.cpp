@@ -28,7 +28,8 @@ Root::RegistryConnection::RegistryConnection(Manager* pManager, OOBase::SmartPtr
 	m_pManager(pManager),
 	m_ptrProcess(ptrProcess),
 	m_ptrSocket(ptrSocket),
-	m_id(0)
+	m_id(0),
+	m_response_table(1)
 {
 }
 
@@ -42,13 +43,11 @@ bool Root::RegistryConnection::start(OOBase::CDRStream& stream, size_t id)
 	int err = OOBase::CDRIO::send_and_recv_with_header_sync<Omega::uint16_t>(stream,m_ptrSocket,this,&RegistryConnection::on_started);
 	if (err)
 	{
-		release();
-
 		m_pManager->drop_registry_process(m_id);
 
-		LOG_ERROR(("Failed to send registry start data: %s",OOBase::system_error_text(err)));
+		release();
 
-		return false;
+		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
 	}
 
 	return true;
@@ -97,10 +96,101 @@ bool Root::RegistryConnection::start(size_t id)
 {
 	m_id = id;
 
-	// Start recv loop
-	void* TODO;
+	OOBase::RefPtr<OOBase::Buffer> buffer = OOBase::Buffer::create(256,OOBase::CDRStream::MaxAlignment);
+	if (!buffer)
+	{
+		m_pManager->drop_registry_process(m_id);
+
+		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
+	}
+
+	addref();
+
+	int err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer);
+	if (err)
+	{
+		m_pManager->drop_registry_process(m_id);
+
+		release();
+
+		LOG_ERROR_RETURN(("Failed to start response io: %s",OOBase::system_error_text(err)),false);
+	}
 
 	return true;
+}
+
+void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
+{
+	if (err)
+		LOG_ERROR(("Failed to receive from user registry: %s",OOBase::system_error_text(err)));
+	else if (buffer->length() == 0)
+	{
+		LOG_WARNING(("Registry process %u has closed",m_ptrProcess->get_pid()));
+		err = -1;
+	}
+
+	while (!err && buffer->length() >= sizeof(uint16_t))
+	{
+		OOBase::CDRStream response(buffer);
+
+		uint16_t len = 0;
+		if (!response.read(len))
+		{
+			err = response.last_error();
+			LOG_ERROR(("Failed to receive from user registry: %s",OOBase::system_error_text(err)));
+		}
+		else if (buffer->length() < len)
+		{
+			// Read the rest of the message
+			err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer,len);
+			if (!err)
+				return;
+
+			LOG_ERROR(("Failed to continue response io: %s",OOBase::system_error_text(err)));
+		}
+		else
+		{
+			uint16_t id = 0;
+			if (!response.read(id))
+			{
+				err = response.last_error();
+				LOG_ERROR(("Failed to read id from user registry: %s",OOBase::system_error_text(err)));
+			}
+			else
+			{
+				OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+				pfn_response_t resp;
+				if (!m_response_table.remove(id,&resp))
+				{
+					err = ENOENT;
+					LOG_ERROR(("Failed to match response id"));
+				}
+				else
+				{
+					guard.release();
+
+					err = (this->*resp)(response);
+					if (!err)
+						buffer->compact();
+				}
+			}
+		}
+	}
+
+	if (!err)
+	{
+		err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer);
+		if (err)
+			LOG_ERROR(("Failed to continue response io: %s",OOBase::system_error_text(err)));
+	}
+
+	if (err)
+	{
+		m_pManager->drop_registry_process(m_id);
+
+		release();
+	}
 }
 
 bool Root::RegistryConnection::same_user(const uid_t& uid) const

@@ -56,6 +56,9 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
+		Omega::uint16_t trans_id = 0;
+		stream.read(trans_id);
+
 		// Read DB name and root settings
 		OOBase::StackAllocator<512> allocator;
 		OOBase::LocalString strDb(allocator);
@@ -63,9 +66,6 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 
 		Omega::byte_t nThreads = 0;
 		stream.read(nThreads);
-
-		pid_t p1 = 0;
-		stream.read(p1);
 
 		OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
 		while (!err)
@@ -99,7 +99,7 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 				size_t mark = stream.buffer()->mark_wr_ptr();
 
 				stream.write(Omega::uint16_t(0));
-				stream.write(p1);
+				stream.write(trans_id);
 				stream.write(static_cast<Omega::int32_t>(ret_err));
 
 				stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
@@ -149,7 +149,9 @@ bool Registry::RootConnection::recv_next()
 
 void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err)
 {
-	if (err)
+	if (stream.buffer()->length() == 0)
+		LOG_ERROR(("Root pipe disconnected"));
+	else if (err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{

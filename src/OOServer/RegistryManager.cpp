@@ -125,7 +125,7 @@ int Registry::Manager::on_start(const OOBase::LocalString& strDb, size_t nThread
 	if (err)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),err);
 
-	LOG_DEBUG(("Open Database: %s (%lu)",strDb.c_str(),strDb.length()));
+	LOG_DEBUG(("Open Database: %s",strDb.c_str()));
 
 	err = open_database();
 	if (!err && !tabSettings.empty())

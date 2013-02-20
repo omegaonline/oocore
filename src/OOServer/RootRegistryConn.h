@@ -44,7 +44,7 @@ namespace Root
 		RegistryConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 
 		bool start(size_t id);
-		bool start(OOBase::CDRStream& stream, size_t id);
+		bool start(const OOBase::LocalString& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id);
 
 		bool same_user(const uid_t& uid) const;
 
@@ -58,11 +58,27 @@ namespace Root
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 		size_t                              m_id;
 
-		typedef int (RegistryConnection::*pfn_response_t)(OOBase::CDRStream&);
-		OOBase::HandleTable<uint16_t,pfn_response_t> m_response_table;
+		static const size_t s_param_count = 3;
+		union response_param_t
+		{
+			Omega::uint16_t m_uint16;
+			pid_t           m_pid;
+		};
+		typedef bool (RegistryConnection::*pfn_response_t)(OOBase::CDRStream&, response_param_t params[s_param_count]);
+		struct response_data_t
+		{
+			pfn_response_t   m_callback;
+			response_param_t m_params[s_param_count];
+		};
+		OOBase::HandleTable<Omega::uint16_t,response_data_t> m_response_table;
 
-		void on_started(OOBase::CDRStream& stream, int err);
+		bool add_response(pfn_response_t callback, response_param_t params[s_param_count], Omega::uint16_t& handle);
+		void drop_response(Omega::uint16_t handle);
+
+		void on_sent(OOBase::Buffer* buffer, int err);
 		void on_response(OOBase::Buffer* buffer, int err);
+
+		bool on_started(OOBase::CDRStream& stream, response_param_t params[s_param_count]);
 
 #if defined(HAVE_UNISTD_H)
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);

@@ -26,9 +26,7 @@ using namespace Omega;
 using namespace OTL;
 
 User::RunningObjectTable::RunningObjectTable() :
-		m_notify_cookie(0),
-		m_mapObjectsByCookie(1),
-		m_mapNotify(1)
+		m_notify_cookie(0)
 {
 }
 
@@ -96,7 +94,7 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 			}
 		}
 
-		int err = m_mapObjectsByCookie.insert(info,nCookie,1,0xFFFFFFFF);
+		int err = m_mapObjectsByCookie.insert(info,nCookie);
 		if (err == 0)
 		{
 			err = m_mapObjectsByOid.insert(info.m_oid,nCookie);
@@ -256,7 +254,7 @@ void User::RunningObjectTable::OnRegisterObject(const any_t& oid, Activation::Re
 		if (guard.try_acquire())
 		{
 			for (uint32_t i = 0;stackRemove.pop(&i);)
-				m_mapNotify.remove(i,NULL);
+				m_mapNotify.remove(i);
 		}
 	}
 }
@@ -291,7 +289,7 @@ void User::RunningObjectTable::OnRevokeObject(const any_t& oid, Activation::Regi
 		if (guard.try_acquire())
 		{
 			for (uint32_t i = 0;stackRemove.pop(&i);)
-				m_mapNotify.remove(i,NULL);
+				m_mapNotify.remove(i);
 		}
 	}
 }
@@ -307,7 +305,7 @@ uint32_t User::RunningObjectTable::RegisterNotify(const guid_t& iid, IObject* pO
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		int err = m_mapNotify.insert(ptrNotify,nCookie,1,0xFFFFFFFF);
+		int err = m_mapNotify.insert(ptrNotify,nCookie);
 		if (err)
 			OMEGA_THROW(err);
 	}
@@ -321,7 +319,7 @@ void User::RunningObjectTable::UnregisterNotify(const guid_t& iid, uint32_t cook
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapNotify.remove(cookie,NULL);
+		m_mapNotify.remove(cookie);
 	}
 }
 

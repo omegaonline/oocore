@@ -207,42 +207,43 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 	}
 
 	// We are the child...
+	OOBase::StackAllocator<512> allocator;
 
 	if (bChangeUid)
 	{
 		// get our pw_info
-		OOBase::POSIX::pw_info pw(strAppName.get_allocator(),uid);
+		OOBase::POSIX::pw_info pw(allocator,uid);
 		if (!pw)
-			exit_msg(strAppName.get_allocator(),"getpwuid() failed: %s\n",OOBase::system_error_text());
+			exit_msg(allocator,"getpwuid() failed: %s\n",OOBase::system_error_text());
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
-			exit_msg(strAppName.get_allocator(),"setgid() failed: %s\n",OOBase::system_error_text());
+			exit_msg(allocator,"setgid() failed: %s\n",OOBase::system_error_text());
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-			exit_msg(strAppName.get_allocator(),"initgroups() failed: %s\n",OOBase::system_error_text());
+			exit_msg(allocator,"initgroups() failed: %s\n",OOBase::system_error_text());
 
 		// Stop being privileged!
 		if (setuid(uid) != 0)
-			exit_msg(strAppName.get_allocator(),"setuid() failed: %s\n",OOBase::system_error_text());
+			exit_msg(allocator,"setuid() failed: %s\n",OOBase::system_error_text());
 	}
 
 	// Build the pipe name
-	OOBase::LocalString strPipe(strAppName.get_allocator());
+	OOBase::LocalString strPipe(allocator);
 	int err = strPipe.printf("--pipe=%u",(int)pass_fd);
 	if (err)
-		exit_msg(strAppName.get_allocator(),"Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
+		exit_msg(allocator,"Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
 
 	// Close all open handles
 	int except[] = { STDERR_FILENO, pass_fd };
 	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
 	if (err)
-		exit_msg(strAppName.get_allocator(),"close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+		exit_msg(allocator,"close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 
 	int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
 	if (n == -1)
-		exit_msg(strAppName.get_allocator(),"Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
+		exit_msg(allocator,"Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
 
 	// Now close off stdin/stdout/stderr
 	dup2(n,STDIN_FILENO);
@@ -252,23 +253,23 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 
 	if (Root::is_debug())
 	{
-		OOBase::LocalString display(strAppName.get_allocator());
+		OOBase::LocalString display(allocator);
 		OOBase::Environment::getenv("DISPLAY",display);
 		if (!display.empty())
 		{
-			OOBase::LocalString strTitle(strAppName.get_allocator());
+			OOBase::LocalString strTitle(allocator);
 			if (session_id == NULL)
-				strTitle.printf("%s:/sandbox",strAppName.c_str());
+				strTitle.printf("%s:/system",strAppName.c_str());
 			else
 				strTitle.printf("%s:%s",strAppName.c_str(),session_id);
 
 			const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
-			//OOBase::LocalString valgrind(strAppName.get_allocator());
+			//OOBase::LocalString valgrind(allocator);
 			//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
 			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","valgrind","--leak-check=full",valgrind.c_str(),strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
-			//OOBase::LocalString gdb(strAppName.get_allocator());
+			//OOBase::LocalString gdb(allocator);
 			//gdb.printf("run %s --debug",strPipe.c_str());
 			//const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e","libtool","--mode=execute","gdb",strAppName.c_str(),"-ex",gdb.c_str(), NULL };
 
@@ -293,7 +294,7 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 		execv(strAppName.c_str(),(char* const*)argv);
 
 	err = errno;
-	exit_msg(strAppName.get_allocator(),"Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
+	exit_msg(allocator,"Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
 	return NULL;
 }
 

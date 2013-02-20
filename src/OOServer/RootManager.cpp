@@ -46,8 +46,7 @@
 template class OOBase::Singleton<OOBase::Proactor,Root::Manager>;
 
 Root::Manager::Manager() :
-		m_proactor(NULL),
-		m_registry_processes(1)
+		m_proactor(NULL)
 {
 }
 
@@ -77,7 +76,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 			else
 			{
 				// Start the registry process
-				if (start_registry(cmd_args.get_allocator()))
+				if (start_system_registry(cmd_args.get_allocator()))
 				{
 					// Spawn the sandbox
 					if (spawn_sandbox_process(cmd_args.get_allocator()))
@@ -335,5 +334,5 @@ bool Root::Manager::find_user_process(ClientConnection* client)
 		return spawn_user_registry(ptrClient);
 
 	// Spawn correct user process
-	return spawn_user_process(ptrClient->get_pid(),ptrRegistry);
+	return spawn_user_process(ptrClient,ptrRegistry);
 }

@@ -28,68 +28,8 @@ Root::RegistryConnection::RegistryConnection(Manager* pManager, OOBase::SmartPtr
 	m_pManager(pManager),
 	m_ptrProcess(ptrProcess),
 	m_ptrSocket(ptrSocket),
-	m_id(0),
-	m_response_table(1)
+	m_id(0)
 {
-}
-
-bool Root::RegistryConnection::start(OOBase::CDRStream& stream, size_t id)
-{
-	m_id = id;
-
-	addref();
-
-	// Send the message
-	int err = OOBase::CDRIO::send_and_recv_with_header_sync<Omega::uint16_t>(stream,m_ptrSocket,this,&RegistryConnection::on_started);
-	if (err)
-	{
-		m_pManager->drop_registry_process(m_id);
-
-		release();
-
-		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
-	}
-
-	return true;
-}
-
-void Root::RegistryConnection::on_started(OOBase::CDRStream& stream, int err)
-{
-	bool bSuccess = false;
-	if (err)
-		LOG_ERROR(("Failed to send and receive from user registry: %s",OOBase::system_error_text(err)));
-	else
-	{
-		pid_t client_id = 0;
-		if (!stream.read(client_id))
-			LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())));
-		else
-		{
-			Omega::int32_t ret_err = 0;
-			if (!stream.read(ret_err))
-				LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())));
-			else if (ret_err)
-				LOG_ERROR(("Registry failed to start properly: %s",OOBase::system_error_text(ret_err)));
-			else
-			{
-				OOBase::RefPtr<RegistryConnection> ptrThis = this;
-				ptrThis->addref();
-
-				if (start(m_id) && m_pManager->spawn_user_process(client_id,ptrThis))
-				{
-					bSuccess = true;
-					OOBase::Logger::log(OOBase::Logger::Information,"User registry started successfully");
-				}
-			}
-
-			m_pManager->drop_client(client_id);
-		}
-	}
-
-	if (!bSuccess)
-		m_pManager->drop_registry_process(m_id);
-
-	release();
 }
 
 bool Root::RegistryConnection::start(size_t id)
@@ -98,19 +38,13 @@ bool Root::RegistryConnection::start(size_t id)
 
 	OOBase::RefPtr<OOBase::Buffer> buffer = OOBase::Buffer::create(256,OOBase::CDRStream::MaxAlignment);
 	if (!buffer)
-	{
-		m_pManager->drop_registry_process(m_id);
-
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-	}
 
 	addref();
 
 	int err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer);
 	if (err)
 	{
-		m_pManager->drop_registry_process(m_id);
-
 		release();
 
 		LOG_ERROR_RETURN(("Failed to start response io: %s",OOBase::system_error_text(err)),false);
@@ -139,7 +73,7 @@ void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
 			err = response.last_error();
 			LOG_ERROR(("Failed to receive from user registry: %s",OOBase::system_error_text(err)));
 		}
-		else if (buffer->length() < len)
+		else if (buffer->length() < len - sizeof(uint16_t))
 		{
 			// Read the rest of the message
 			err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer,len);
@@ -160,7 +94,7 @@ void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
 			{
 				OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-				pfn_response_t resp;
+				response_data_t resp;
 				if (!m_response_table.remove(id,&resp))
 				{
 					err = ENOENT;
@@ -170,8 +104,9 @@ void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
 				{
 					guard.release();
 
-					err = (this->*resp)(response);
-					if (!err)
+					if (!(this->*resp.m_callback)(response,resp.m_params))
+						err = -1;
+					else
 						buffer->compact();
 				}
 			}
@@ -193,6 +128,128 @@ void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
 	}
 }
 
+void Root::RegistryConnection::on_sent(OOBase::Buffer* buffer, int err)
+{
+	if (err)
+	{
+		LOG_ERROR(("Failed to send data to root: %s",OOBase::system_error_text(err)));
+
+		buffer->mark_rd_ptr(0);
+
+		OOBase::CDRStream stream(buffer);
+
+		Omega::uint16_t len = 0;
+		Omega::uint16_t trans_id = 0;
+		if (stream.read(len) && stream.read(trans_id) && trans_id)
+			drop_response(trans_id);
+
+		m_pManager->drop_registry_process(m_id);
+	}
+
+	release();
+}
+
+bool Root::RegistryConnection::add_response(pfn_response_t callback, response_param_t params[s_param_count], Omega::uint16_t& handle)
+{
+	response_data_t response = {0};
+	response.m_callback = callback;
+	memcpy(response.m_params,params,sizeof(params));
+
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	int err = m_response_table.insert(response,handle);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to insert response: %s",OOBase::system_error_text(err)),false);
+
+	return true;
+}
+
+void Root::RegistryConnection::drop_response(Omega::uint16_t handle)
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	m_response_table.remove(handle);
+}
+
+bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id)
+{
+	if (!start(id))
+		return false;
+
+	response_param_t params[s_param_count];
+	params[0].m_pid = ptrClient->get_pid();
+
+	Omega::uint16_t resp_id = 0;
+	if (!add_response(&RegistryConnection::on_started,params,resp_id))
+		return false;
+
+	// Write initial message
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+	stream.write(resp_id);
+	stream.write_string(strRegPath);
+
+	OOBase::LocalString strThreads(strRegPath.get_allocator());
+	m_pManager->get_config_arg("registry_concurrency",strThreads);
+	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
+	if (threads < 1 || threads > 8)
+		threads = 2;
+
+	stream.write(threads);
+	stream.write("");
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	if (stream.last_error())
+	{
+		drop_response(resp_id);
+
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+	}
+
+	addref();
+
+	// Send the message
+	int err = m_ptrSocket->send(this,&RegistryConnection::on_sent,stream.buffer());
+	if (err)
+	{
+		drop_response(resp_id);
+
+		release();
+
+		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
+bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, response_param_t params[s_param_count])
+{
+	bool bSuccess = false;
+
+	Omega::int32_t ret_err = 0;
+	if (!stream.read(ret_err))
+		LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())));
+	else if (ret_err)
+		LOG_ERROR(("Registry failed to start properly: %s",OOBase::system_error_text(ret_err)));
+	else
+	{
+		OOBase::RefPtr<RegistryConnection> ptrThis = this;
+		ptrThis->addref();
+
+		if (m_pManager->spawn_user_process(params[0].m_pid,ptrThis))
+		{
+			bSuccess = true;
+			OOBase::Logger::log(OOBase::Logger::Information,"User registry started successfully");
+		}
+	}
+
+	if (!bSuccess)
+		m_pManager->drop_registry_process(m_id);
+
+	return bSuccess;
+}
+
 bool Root::RegistryConnection::same_user(const uid_t& uid) const
 {
 	return m_ptrProcess->same_user(uid);
@@ -205,19 +262,11 @@ bool Root::RegistryConnection::start_user(const uid_t& uid, OOBase::RefPtr<UserC
 	OOBase::POSIX::SmartFD fds[2];
 	int err = OOBase::POSIX::socketpair(SOCK_STREAM,fds);
 	if (err)
-	{
-		m_pManager->drop_registry_process(m_id);
-
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
-	}
 
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
-	{
-		m_pManager->drop_registry_process(m_id);
-
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-	}
 
 	struct msghdr msg = {0};
 	msg.msg_control = ctl_buffer->wr_ptr();
@@ -239,11 +288,7 @@ bool Root::RegistryConnection::start_user(const uid_t& uid, OOBase::RefPtr<UserC
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
-	{
-		m_pManager->drop_registry_process(m_id);
-
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-	}
 
 	addref();
 
@@ -335,7 +380,7 @@ bool Root::RegistryConnection::get_environment(const char* key, OOBase::Environm
 	return true;
 }
 
-bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
+bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 {
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting system registry...");
 
@@ -365,6 +410,7 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(Omega::uint16_t(0));
+	stream.write(Omega::uint16_t(0));
 	stream.write_string(strRegPath);
 
 	OOBase::LocalString strThreads(allocator);
@@ -372,9 +418,7 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
 	if (threads < 1 || threads > 8)
 		threads = 2;
-
 	stream.write(threads);
-	stream.write(pid_t(0));
 
 	for (size_t pos = 0;pos < m_config_args.size();++pos)
 	{
@@ -409,9 +453,9 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
 
-	pid_t p1 = 0;
+	Omega::uint16_t trans_id = 0;
 	Omega::int32_t ret_err = 0;
-	if (!stream.read(p1) || !stream.read(ret_err))
+	if (!stream.read(trans_id) || !stream.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
 	if (ret_err)
 		LOG_ERROR_RETURN(("Registry failed to start properly: %s",OOBase::system_error_text(ret_err)),false);
@@ -428,7 +472,10 @@ bool Root::Manager::start_registry(OOBase::AllocatorInstance& allocator)
 
 	if (!ptrRegistry->start(1))
 	{
-		drop_registry_process(1);
+		guard.acquire();
+
+		m_registry_processes.remove(1);
+
 		return false;
 	}
 
@@ -467,26 +514,6 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
-	// Write initial message
-	OOBase::CDRStream stream;
-	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
-	stream.write_string(strRegPath);
-
-	OOBase::LocalString strThreads(allocator);
-	get_config_arg("registry_concurrency",strThreads);
-	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
-	if (threads < 1 || threads > 8)
-		threads = 2;
-
-	stream.write(threads);
-	stream.write(ptrClient->get_pid());
-	stream.write("");
-
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
-	if (stream.last_error())
-		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-
 	// Spawn the process
 	OOBase::SmartPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
@@ -503,11 +530,22 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 
 	// Add to the registry map
 	size_t handle = 0;
-	err = m_registry_processes.insert(ptrRegistry,handle,2,size_t(-1));
+	err = m_registry_processes.insert(ptrRegistry,handle);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to insert registry handle: %s",OOBase::system_error_text(err)),false);
 
-	return ptrRegistry->start(stream,handle);
+	guard.release();
+
+	if (!ptrRegistry->start(strHive,ptrClient,handle))
+	{
+		guard.acquire();
+
+		m_registry_processes.remove(handle);
+
+		return false;
+	}
+
+	return true;
 }
 
 OOBase::RefPtr<Root::RegistryConnection> Root::Manager::get_root_registry()
@@ -516,6 +554,7 @@ OOBase::RefPtr<Root::RegistryConnection> Root::Manager::get_root_registry()
 
 	OOBase::RefPtr<RegistryConnection> ptr;
 	m_registry_processes.find(1,ptr);
+
 	return ptr;
 }
 

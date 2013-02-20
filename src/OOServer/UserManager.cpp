@@ -141,8 +141,7 @@ User::Manager* User::Manager::s_instance = NULL;
 
 User::Manager::Manager() :
 		m_proactor(NULL),
-		m_bIsSandbox(false),
-		m_mapRemoteChannelIds(1)
+		m_bIsSandbox(false)
 {
 	s_instance = this;
 }

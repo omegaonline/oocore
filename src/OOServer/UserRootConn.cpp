@@ -172,6 +172,8 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 					{
 						passed_fds[0].detach();
 
+						LOG_DEBUG(("Started!"));
+
 						// Tell the manager to create a new connection
 						ret_err = m_pManager->connect_registry(ptrSocket);
 						if (!ret_err && passed_fds[1].is_valid())

@@ -83,19 +83,11 @@ bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClien
 	OOBase::POSIX::SmartFD fds[2];
 	int err = OOBase::POSIX::socketpair(SOCK_STREAM,fds);
 	if (err)
-	{
-		m_pManager->drop_user_process(m_ptrProcess->get_pid());
-
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
-	}
 
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
-	{
-		m_pManager->drop_user_process(m_ptrProcess->get_pid());
-
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
-	}
 
 	struct msghdr msg = {0};
 	msg.msg_control = ctl_buffer->wr_ptr();
@@ -117,11 +109,7 @@ bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClien
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
-	{
-		m_pManager->drop_user_process(m_ptrProcess->get_pid());
-
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-	}
 
 	addref();
 
@@ -290,7 +278,10 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 
 	if (!ptrRoot->start_user(uid,ptrUser))
 	{
-		drop_user_process(ptrProcess->get_pid());
+		guard.acquire();
+
+		m_user_processes.remove(ptrProcess->get_pid());
+
 		return false;
 	}
 
@@ -312,6 +303,20 @@ bool Root::Manager::spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryC
 
 	guard.release();
 
+	if (!spawn_user_process(ptrClient,ptrRegistry))
+	{
+		guard.acquire();
+
+		m_clients.remove(client_id);
+
+		return false;
+	}
+
+	return true;
+}
+
+bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<RegistryConnection>& ptrRegistry)
+{
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process...");
 
 	// Get the environment settings
@@ -358,7 +363,7 @@ bool Root::Manager::spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryC
 		LOG_ERROR_RETURN(("Failed to create new user connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
 	// Add to process map
-	guard.acquire();
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Add to the map
 	err = m_user_processes.insert(ptrProcess->get_pid(),ptrUser);
@@ -369,13 +374,16 @@ bool Root::Manager::spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryC
 
 	if (!ptrRegistry->start_user(ptrClient->get_uid(),ptrUser))
 	{
-		drop_user_process(ptrProcess->get_pid());
+		guard.acquire();
+
+		m_user_processes.remove(ptrProcess->get_pid());
+
 		return false;
 	}
 
 	OOBase::Logger::log(OOBase::Logger::Information,"User process started successfully");
 
-	return true;
+	return ptrUser->add_client(ptrClient);
 }
 
 void Root::Manager::drop_user_process(pid_t id)

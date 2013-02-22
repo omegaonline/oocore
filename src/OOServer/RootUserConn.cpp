@@ -34,10 +34,28 @@ bool Root::UserConnection::same_login(const uid_t& uid, const char* session_id) 
 	return m_ptrProcess->same_login(uid,session_id);
 }
 
-#if defined(HAVE_UNISTD_H)
-bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd)
+const uid_t& Root::UserConnection::get_uid() const
 {
-	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+	return m_ptrProcess->get_uid();
+}
+
+pid_t Root::UserConnection::get_pid() const
+{
+	return m_ptrProcess->get_pid();
+}
+
+#if defined(_WIN32)
+
+bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClient)
+{
+	//return ptrClient->send_response(fds[1],m_ptrProcess->get_pid());
+	return false;
+}
+
+#elif defined(HAVE_UNISTD_H)
+bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root)
+{
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)*2),sizeof(size_t));
 	if (!ctl_buffer)
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
@@ -48,14 +66,24 @@ bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd)
 	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	*(int*)CMSG_DATA(cmsg) = fd;
+
+	if (fd_root.is_valid())
+	{
+		cmsg->cmsg_len = CMSG_LEN(sizeof(int) * 2);
+		int* fds = (int*)CMSG_DATA(cmsg);
+		fds[0] = fd_user;
+		fds[1] = fd_root;
+	}
+	else
+	{
+		cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+		*(int*)CMSG_DATA(cmsg) = fd_user;
+	}
 	ctl_buffer->wr_ptr(cmsg->cmsg_len);
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(Omega::uint16_t(0));
-	stream.write(static_cast<void*>(NULL));
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
@@ -71,7 +99,10 @@ bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd)
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	}
 	else
-		fd.detach();
+	{
+		fd_user.detach();
+		fd_root.detach();
+	}
 
 	// All sent, we are done here!
 	return true;
@@ -276,7 +307,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 
 	guard.release();
 
-	if (!ptrRoot->start_user(uid,ptrUser))
+	if (!ptrRoot->start_user(ptrUser))
 	{
 		guard.acquire();
 
@@ -372,7 +403,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 
 	guard.release();
 
-	if (!ptrRegistry->start_user(ptrClient->get_uid(),ptrUser))
+	if (!ptrRegistry->start_user(ptrUser))
 	{
 		guard.acquire();
 
@@ -384,6 +415,13 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 	OOBase::Logger::log(OOBase::Logger::Information,"User process started successfully");
 
 	return ptrUser->add_client(ptrClient);
+}
+
+bool Root::Manager::get_user_process(pid_t user_id, OOBase::RefPtr<UserConnection>& ptrUser)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	return m_user_processes.find(user_id,ptrUser);
 }
 
 void Root::Manager::drop_user_process(pid_t id)

@@ -145,10 +145,6 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 
 		if (!err)
 		{
-			// Read and cache any root parameters
-			pid_t p1;
-			stream.read(p1);
-
 			if (stream.last_error())
 				LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 			else
@@ -161,7 +157,6 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 					size_t mark = stream.buffer()->mark_wr_ptr();
 
 					stream.write(Omega::uint16_t(0));
-					stream.write(p1);
 
 					// Attach to the pipe
 					int ret_err = 0;

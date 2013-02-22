@@ -61,9 +61,11 @@ namespace Root
 		bool get_config_arg(const char* name, OOBase::LocalString& val);
 
 		bool find_user_process(ClientConnection* client);
+		bool get_user_process(pid_t user_id, OOBase::RefPtr<UserConnection>& ptrUser);
 		bool spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryConnection>& ptrRegistry);
 		bool spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<RegistryConnection>& ptrRegistry);
 
+		OOBase::RefPtr<RegistryConnection> get_root_registry();
 		void drop_registry_process(size_t id);
 		void drop_user_process(pid_t id);
 		void drop_client(pid_t id);
@@ -87,7 +89,6 @@ namespace Root
 		OOBase::HandleTable<size_t,OOBase::RefPtr<RegistryConnection> > m_registry_processes;
 
 		bool start_system_registry(OOBase::AllocatorInstance& allocator);
-		OOBase::RefPtr<RegistryConnection> get_root_registry();
 		bool spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrClient);
 		bool get_registry_hive(const uid_t& uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive);
 

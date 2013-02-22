@@ -42,9 +42,13 @@ namespace Root
 		UserConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 
 		bool same_login(const uid_t& uid, const char* session_id) const;
+		const uid_t& get_uid() const;
+		pid_t get_pid() const;
 
-#if defined(HAVE_UNISTD_H)
-		bool start(OOBase::POSIX::SmartFD& fd);
+#if defined(_WIN32)
+		bool start(OOBase::String& fd_user, OOBase::String& fd_root);
+#elif defined(HAVE_UNISTD_H)
+		bool start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root);
 #endif
 
 		bool add_client(OOBase::RefPtr<ClientConnection>& ptrClient);

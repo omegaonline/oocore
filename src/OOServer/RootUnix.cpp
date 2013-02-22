@@ -64,6 +64,7 @@ namespace
 
 		bool IsRunning() const;
 		pid_t get_pid() const;
+		const uid_t& get_uid() const;
 
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
@@ -314,6 +315,11 @@ bool RootProcessUnix::IsRunning() const
 pid_t RootProcessUnix::get_pid() const
 {
 	return m_pid;
+}
+
+const uid_t& RootProcessUnix::get_uid() const
+{
+	return m_uid;
 }
 
 int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const

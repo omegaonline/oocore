@@ -71,9 +71,6 @@ namespace Root
 		void drop_client(pid_t id);
 
 	private:
-		Manager(const Manager&);
-		Manager& operator = (const Manager&);
-
 		OOBase::RWMutex                    m_lock;
 		OOBase::Proactor*                  m_proactor;
 		OOBase::ThreadPool                 m_proactor_pool;

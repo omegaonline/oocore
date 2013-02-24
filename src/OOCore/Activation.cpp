@@ -36,7 +36,7 @@ using namespace OTL;
 
 namespace
 {
-	class DLLManagerImpl
+	class DLLManagerImpl : public OOBase::NonCopyable
 	{
 	public:
 		DLLManagerImpl()
@@ -49,9 +49,6 @@ namespace
 		bool can_unload();
 
 	private:
-		DLLManagerImpl(const DLLManagerImpl&);
-		DLLManagerImpl& operator = (const DLLManagerImpl&);
-
 		OOBase::Mutex                                          m_lock;
 		OOBase::Table<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
 	};

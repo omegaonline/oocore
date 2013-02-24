@@ -30,7 +30,8 @@ namespace OOCore
 
 	class Stub :
 			public OTL::ObjectBase,
-			public Omega::Remoting::IStubController
+			public Omega::Remoting::IStubController,
+			public OOBase::NonCopyable
 	{
 	public:
 		Stub();
@@ -46,9 +47,6 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		Stub(const Stub&);
-		Stub& operator = (const Stub&);
-
 		OOBase::Atomic<Omega::uint32_t>     m_marshal_count;
 		OOBase::SpinLock                    m_lock;
 		Omega::uint32_t                     m_stub_id;

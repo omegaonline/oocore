@@ -216,6 +216,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="RootClientConn.cpp" />
     <ClCompile Include="RootMain.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -224,16 +225,21 @@
     </ClCompile>
     <ClCompile Include="RootManager.cpp" />
     <ClCompile Include="RootRegistry.cpp" />
+    <ClCompile Include="RootRegistryConn.cpp" />
     <ClCompile Include="RootServices.cpp" />
+    <ClCompile Include="RootUnix.cpp" />
+    <ClCompile Include="RootUserConn.cpp" />
     <ClCompile Include="RootWin32.cpp" />
-    <ClCompile Include="RootProcessWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MessageConnection.h" />
     <ClInclude Include="OOServer_Root.h" />
     <ClInclude Include="Protocol.h" />
+    <ClInclude Include="RootClientConn.h" />
     <ClInclude Include="RootManager.h" />
     <ClInclude Include="RootProcess.h" />
+    <ClInclude Include="RootRegistryConn.h" />
+    <ClInclude Include="RootUserConn.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="asInvoker_manifest.xml" />

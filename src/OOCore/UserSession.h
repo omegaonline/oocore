@@ -82,7 +82,7 @@ namespace OOCore
 		Omega::uint16_t    m_dest_cmpt_id;
 	};
 
-	class UserSession
+	class UserSession : public OOBase::NonCopyable
 	{
 		friend class ThreadContext;
 		friend class OOBase::AllocatorInstance;
@@ -108,9 +108,7 @@ namespace OOCore
 	private:
 		UserSession();
 		~UserSession();
-		UserSession(const UserSession&);
-		UserSession& operator = (const UserSession&);
-
+		
 		// 'Main' data
 		OOBase::RWMutex                  m_lock;
 		OOBase::Thread                   m_worker_thread;

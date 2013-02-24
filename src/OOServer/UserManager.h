@@ -56,9 +56,6 @@ namespace User
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
 
-		Manager(const Manager&);
-		Manager& operator = (const Manager&);
-
 		OOBase::RWMutex                                                               m_lock;
 		OOBase::Proactor*                                                             m_proactor;
 		OOBase::ThreadPool                                                            m_proactor_pool;

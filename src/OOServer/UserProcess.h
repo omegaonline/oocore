@@ -24,7 +24,7 @@
 
 namespace User
 {
-	class Process
+	class Process : public OOBase::NonCopyable
 	{
 	public:
 		virtual ~Process() {}
@@ -36,10 +36,6 @@ namespace User
 
 	protected:
 		Process() {}
-
-	private:
-		Process(const Process&);
-		Process& operator = (const Process&);
 	};
 }
 

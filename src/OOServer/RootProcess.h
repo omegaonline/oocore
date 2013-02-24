@@ -45,7 +45,7 @@ namespace Root
 {
 	class Manager;
 
-	class Process
+	class Process : public OOBase::NonCopyable
 	{
 	public:
 		virtual ~Process() {}
@@ -62,10 +62,6 @@ namespace Root
 
 	protected:
 		Process() {}
-
-	private:
-		Process(const Process&);
-		Process& operator = (const Process&);
 	};
 }
 

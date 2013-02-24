@@ -33,7 +33,16 @@
     <ClCompile Include="RootWin32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RootProcessWin32.cpp">
+    <ClCompile Include="RootClientConn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RootRegistryConn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RootUnix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RootUserConn.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,6 +60,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RootProcess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RootClientConn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RootRegistryConn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RootUserConn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

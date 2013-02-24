@@ -49,7 +49,8 @@ namespace OOCore
 	class StdObjectManager :
 			public OTL::ObjectBase,
 			public IStdObjectManager,
-			public Omega::Remoting::IMarshaller
+			public Omega::Remoting::IMarshaller,
+			public OOBase::NonCopyable
 	{
 	public:
 		StdObjectManager();
@@ -67,9 +68,6 @@ namespace OOCore
 		void UndoMarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pParamsOut);
 
 	private:
-		StdObjectManager(const StdObjectManager&);
-		StdObjectManager& operator = (const StdObjectManager&);
-
 		OOBase::RWMutex                           m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
 		

@@ -63,17 +63,17 @@ void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
 		err = -1;
 	}
 
-	while (!err && buffer->length() >= sizeof(uint16_t))
+	while (!err && buffer->length() >= sizeof(Omega::uint16_t))
 	{
 		OOBase::CDRStream response(buffer);
 
-		uint16_t len = 0;
+		Omega::uint16_t len = 0;
 		if (!response.read(len))
 		{
 			err = response.last_error();
 			LOG_ERROR(("Failed to receive from user registry: %s",OOBase::system_error_text(err)));
 		}
-		else if (buffer->length() < len - sizeof(uint16_t))
+		else if (buffer->length() < len - sizeof(Omega::uint16_t))
 		{
 			// Read the rest of the message
 			err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer,len);
@@ -149,7 +149,7 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 
 	OOBase::LocalString strThreads(strRegPath.get_allocator());
 	m_pManager->get_config_arg("registry_concurrency",strThreads);
-	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
+	Omega::byte_t threads = static_cast<Omega::byte_t>(strtoul(strThreads.c_str(),NULL,10));
 	if (threads < 1 || threads > 8)
 		threads = 2;
 
@@ -507,7 +507,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 
 	OOBase::LocalString strThreads(allocator);
 	get_config_arg("registry_concurrency",strThreads);
-	Omega::byte_t threads = strtoul(strThreads.c_str(),NULL,10);
+	Omega::byte_t threads = static_cast<Omega::byte_t>(strtoul(strThreads.c_str(),NULL,10));
 	if (threads < 1 || threads > 8)
 		threads = 2;
 	stream.write(threads);

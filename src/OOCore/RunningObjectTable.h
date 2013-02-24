@@ -29,7 +29,8 @@ namespace OOCore
 			public OTL::ObjectBase,
 			public Omega::Activation::IRunningObjectTable,
 			public Omega::Activation::IRunningObjectTableNotify,
-			public Omega::Notify::INotifier
+			public Omega::Notify::INotifier,
+			public OOBase::NonCopyable
 	{
 	public:
 		LocalROT();

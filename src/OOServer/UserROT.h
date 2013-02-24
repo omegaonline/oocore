@@ -32,7 +32,8 @@ namespace User
 			public OTL::IProvideObjectInfoImpl<RunningObjectTable>,
 			public Omega::Activation::IRunningObjectTable,
 			public Omega::Activation::IRunningObjectTableNotify,
-			public Omega::Notify::INotifier
+			public Omega::Notify::INotifier,
+			public OOBase::NonCopyable
 	{
 	public:
 		RunningObjectTable();
@@ -47,9 +48,6 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		RunningObjectTable(const RunningObjectTable&);
-		RunningObjectTable& operator = (const RunningObjectTable&);
-
 		OOBase::RWMutex                                        m_lock;
 		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
 		Omega::uint32_t                                        m_notify_cookie;

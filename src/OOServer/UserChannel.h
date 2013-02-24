@@ -29,7 +29,8 @@ namespace User
 	class Channel :
 			public OTL::ObjectBase,
 			public Omega::Remoting::IChannel,
-			public Omega::Remoting::IMarshal
+			public Omega::Remoting::IMarshal,
+			public OOBase::NonCopyable
 	{
 	public:
 		Channel();
@@ -52,9 +53,6 @@ namespace User
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
 		OTL::ObjectPtr<Omega::Activation::IObjectFactory> m_ptrOF;
 		OTL::ObjectPtr<Omega::Remoting::IMarshaller>      m_ptrMarshaller;
-
-		Channel(const Channel&);
-		Channel& operator = (const Channel&);
 
 	// IChannel members
 	public:

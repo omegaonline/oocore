@@ -49,7 +49,8 @@ namespace OOCore
 	class Proxy :
 			public OTL::ObjectBase,
 			public Omega::Remoting::IProxy,
-			public Omega::Remoting::IMarshal
+			public Omega::Remoting::IMarshal,
+			public OOBase::NonCopyable
 	{
 	public:
 		Proxy();
@@ -91,9 +92,6 @@ namespace OOCore
 		void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
 	private:
-		Proxy(const Proxy&);
-		Proxy& operator = (const Proxy&);
-
 		OOBase::SpinLock                      m_lock;
 		Omega::uint32_t                       m_proxy_id;
 		StdObjectManager*                     m_pManager;

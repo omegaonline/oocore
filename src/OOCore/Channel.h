@@ -31,7 +31,8 @@ namespace OOCore
 	class ChannelBase :
 			public OTL::ObjectBase,
 			public Omega::Remoting::IChannel,
-			public Omega::Remoting::IMarshal
+			public Omega::Remoting::IMarshal,
+			public OOBase::NonCopyable
 	{
 	public:
 		ChannelBase();
@@ -54,10 +55,6 @@ namespace OOCore
 		Omega::guid_t                                     m_message_oid;
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
 		OTL::ObjectPtr<Omega::Activation::IObjectFactory> m_ptrOF;
-
-	private:
-		ChannelBase(const ChannelBase&);
-		ChannelBase& operator = (const ChannelBase&);
 
 	// IChannel members
 	public:

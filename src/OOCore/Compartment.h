@@ -75,15 +75,12 @@ namespace OOCore
 		UserSession*    m_pSession;
 		Omega::uint16_t m_id;
 
-		struct ComptState
+		struct ComptState : public OOBase::NonCopyable
 		{
 			ComptState(Compartment* cmpt);
 			~ComptState();
 
 		private:
-			ComptState(const ComptState&);
-			ComptState& operator = (const ComptState&);
-
 			Compartment* const m_cmpt;
 			Omega::uint16_t    m_prev_id;
 		};

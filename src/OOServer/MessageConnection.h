@@ -223,7 +223,6 @@ namespace OOServer
 			static ThreadContext* instance(MessageHandler* pHandler);
 
 		private:
-			friend class OOBase::AllocatorInstance;
 			friend class OOBase::TLSSingleton<ThreadContext,MessageHandler>;
 
 			ThreadContext();

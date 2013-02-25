@@ -83,12 +83,13 @@ namespace Root
 		bool on_started(OOBase::CDRStream& stream, pid_t pid);
 
 #if defined(_WIN32)
-		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser);
+		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, Omega::uint16_t handle);
 		bool on_start_user(OOBase::CDRStream& response, pid_t pid);
 		bool on_start_user2(OOBase::CDRStream& response, pid_t pid, const OOBase::String& strUserFd);
-		void on_start_user3(OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd, const OOBase::String& strRootFd);
 #elif defined(HAVE_UNISTD_H)
-		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& user_fd);
+		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& fd, Omega::uint16_t handle);
+		bool on_start_user(OOBase::CDRStream& response, pid_t pid, int user_fd);
+		bool on_start_user2(OOBase::CDRStream& response, pid_t pid, int user_fd, int root_fd);
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);
 #endif
 	};

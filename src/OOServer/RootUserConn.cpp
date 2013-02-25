@@ -85,6 +85,13 @@ bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX:
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(Omega::uint16_t(0));
 
+	// Non-Omega_Initialize payload here
+
+	// Align everything, ready for the Omega_Initialize call
+	stream.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+
+	// Other stuff here!
+
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);

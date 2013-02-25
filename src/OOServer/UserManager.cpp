@@ -186,7 +186,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 		OOBase::Proactor::destroy(m_proactor);
 	}
 
-	if (User::is_debug() && ret != EXIT_SUCCESS)
+	if (User::is_debug() /*&& ret != EXIT_SUCCESS*/)
 	{
 		OOBase::Logger::log(OOBase::Logger::Debug,"Pausing to let you read the messages...");
 
@@ -306,8 +306,10 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 	return true;*/
 }
 
-int User::Manager::connect_registry(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket)
+int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::CDRStream& stream)
 {
+	LOG_DEBUG(("Started!"));
+
 	return 0;
 }
 

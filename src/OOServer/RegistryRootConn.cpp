@@ -107,9 +107,15 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
 				{
-					err = m_socket->send(NULL,NULL,stream.buffer());
+					addref();
+
+					err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
 					if (err)
+					{
 						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+
+						release();
+					}
 					else
 						recv_next();
 				}
@@ -204,24 +210,56 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 {
+	Omega::uint16_t handle;
+	stream.read(handle);
 	uid_t uid;
 	stream.read(uid);
+
+	printf("NewConenction: uid %u, handle %u\n",uid,handle);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 	else
 	{
 		// Attach to the pipe
-		int err = 0;
-		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fd,err);
-		if (err)
-			LOG_ERROR(("Failed to attach to user pipe: %s",OOBase::system_error_text(err)));
+		int ret_err = 0;
+		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fd,ret_err);
+		if (ret_err)
+			LOG_ERROR(("Failed to attach to user pipe: %s",OOBase::system_error_text(ret_err)));
 		else
 		{
 			passed_fd.detach();
 
 			// Tell the manager to create a new connection
-			err = m_pManager->new_connection(ptrSocket,uid);
+			ret_err = m_pManager->new_connection(ptrSocket,uid);
+		}
+
+		int err = stream.reset();
+		if (err)
+			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		else
+		{
+			size_t mark = stream.buffer()->mark_wr_ptr();
+
+			stream.write(Omega::uint16_t(0));
+			stream.write(handle);
+			stream.write(static_cast<Omega::int32_t>(ret_err));
+
+			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+			if (stream.last_error())
+				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+			else
+			{
+				addref();
+
+				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
+				if (err)
+				{
+					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+
+					release();
+				}
+			}
 		}
 	}
 }
@@ -240,11 +278,11 @@ void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int e
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
-	// Read and cache any root parameters
-	DWORD p1;
-	stream.read(p1);
-
 	OOBase::StackAllocator<256> allocator;
+
+	Omega::uint16_t handle;
+	stream.read(handle);
+
 	OOBase::LocalString sid(allocator);
 	stream.read_string(sid);
 
@@ -260,9 +298,11 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
 			stream.write(Omega::uint16_t(0));
-			stream.write(p1);
+			stream.write(handle);
 
 			OOBase::LocalString pipe(allocator);
+			// Create named pipe with access to OOBase::Win32::SIDFromString(sid), called 'pipe'
+
 
 			int ret_err = m_pManager->new_connection(sid,pipe);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
@@ -274,15 +314,29 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else
 			{
-				err = m_socket->send(this,NULL,stream.buffer());
+				addref();
+
+				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
 				if (err)
+				{
 					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+
+					release();
+				}
 			}
 		}
 	}
 }
 
 #endif
+
+void Registry::RootConnection::on_sent(OOBase::Buffer* buffer, int err)
+{
+	if (err)
+		LOG_ERROR(("Failed to send data to root: %s",OOBase::system_error_text(err)));
+
+	release();
+}
 
 #if defined(HAVE_UNISTD_H)
 void Registry::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)

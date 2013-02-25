@@ -152,6 +152,13 @@ namespace
 
 #if !defined(HAVE_UNISTD_H)
 		err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
+		if (err)
+			OMEGA_THROW(err);
+
+		// Read early stuff...
+
+		// Align everything, ready for the Omega_Initialize call
+		response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 #else
 
 #if defined(SO_PASSCRED)
@@ -195,6 +202,12 @@ namespace
 					OOBase::POSIX::close(fds[i]);
 			}
 		}
+
+		// Align everything, ready for the Omega_Initialize call
+		response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+		err = response.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+		if (err)
+			OMEGA_THROW(err);
 
 		// Append fd to response
 		if (!response.write(static_cast<int>(passed_fd)))

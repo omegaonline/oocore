@@ -150,7 +150,7 @@ RootProcessUnix::~RootProcessUnix()
 				LOG_ERROR(("waitpid() failed: %s",OOBase::system_error_text()));
 		}
 
-		if (retv == 0)
+		if (retv <= 0)
 			kill(m_pid,SIGKILL);
 
 		m_pid = 0;

@@ -46,9 +46,9 @@ namespace Root
 		pid_t get_pid() const;
 
 #if defined(_WIN32)
-		bool start(OOBase::String& fd_user, OOBase::String& fd_root);
+		bool start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root);
 #elif defined(HAVE_UNISTD_H)
-		bool start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root);
+		bool start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root);
 #endif
 
 		bool add_client(OOBase::RefPtr<ClientConnection>& ptrClient);
@@ -61,6 +61,7 @@ namespace Root
 #if defined(HAVE_UNISTD_H)
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);
 #endif
+		void on_sent(OOBase::Buffer* buffer, int err);
 	};
 }
 

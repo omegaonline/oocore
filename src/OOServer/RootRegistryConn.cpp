@@ -135,16 +135,16 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 	if (!start(id))
 		return false;
 
-	Omega::uint16_t resp_id = 0;
-	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_started,ptrClient->get_pid(),resp_id);
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_started,ptrClient->get_pid(),response_id);
 	if (err)
-		LOG_ERROR_RETURN(("Faield to add async response: %s",OOBase::system_error_text(err)),false);
+		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
 
 	// Write initial message
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(Omega::uint16_t(0));
-	stream.write(resp_id);
+	response_id.write(stream);
 	stream.write_string(strRegPath);
 
 	OOBase::LocalString strThreads(strRegPath.get_allocator());
@@ -158,11 +158,7 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
 	if (stream.last_error())
-	{
-		m_async_dispatcher.drop_response(resp_id);
-
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
-	}
 
 	addref();
 
@@ -170,17 +166,16 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 	err = m_ptrSocket->send(this,&RegistryConnection::on_sent,stream.buffer());
 	if (err)
 	{
-		m_async_dispatcher.drop_response(resp_id);
-
 		release();
 
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
 	}
 
+	response_id.detach();
 	return true;
 }
 
-bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, pid_t pid)
+bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, pid_t client_id)
 {
 	bool bSuccess = false;
 
@@ -194,7 +189,7 @@ bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, pid_t pid)
 		OOBase::RefPtr<RegistryConnection> ptrThis = this;
 		ptrThis->addref();
 
-		if (m_pManager->spawn_user_process(pid,ptrThis))
+		if (m_pManager->spawn_user_process(client_id,ptrThis))
 		{
 			bSuccess = true;
 			OOBase::Logger::log(OOBase::Logger::Information,"User registry started successfully");
@@ -212,35 +207,39 @@ bool Root::RegistryConnection::same_user(const uid_t& uid) const
 	return m_ptrProcess->same_user(uid);
 }
 
-#if defined(_WIN32)
-
 bool Root::RegistryConnection::start_user(OOBase::RefPtr<UserConnection>& ptrUser)
 {
+	OOBase::RefPtr<ClientConnection> ptrClient;
+	return start_user(ptrClient,ptrUser);
+}
+
+#if defined(_WIN32)
+
+bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<UserConnection>& ptrUser)
+{
 	// Create new connection for the user process
-	Omega::uint16_t handle = 0;
-	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user,ptrUser->get_pid(),handle);
+	pid_t client_id = 0;
+	if (ptrClient)
+		client_id = ptrClient->get_pid();
+
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user,client_id,ptrUser->get_pid(),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
 
-	if (!new_connection(ptrUser,handle))
-	{
-		m_async_dispatcher.drop_response(handle);
-		return false;
-	}
-
-	return true;
+	return new_connection(ptrUser,response_id);
 }
 
-bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t pid)
+bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id)
 {
 	OOBase::RefPtr<UserConnection> ptrUser;
-	if (!m_pManager->get_user_process(pid,ptrUser))
-		LOG_WARNING_RETURN(("Failed to find user process"),true);
+	if (!m_pManager->get_user_process(user_id,ptrUser))
+		return true;
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
-	else
+	else if (ret_err)
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
 	OOBase::String strUserFd;
@@ -248,33 +247,48 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
 
 	if (m_id == 1)
-		ptrUser->start(strUserFd,OOBase::String());
+	{
+		OOBase::String strRootFd;
+		ptrUser->start(client_id,strUserFd,strRootFd);
+	}
 	else
 	{
 		OOBase::RefPtr<RegistryConnection> ptrRoot = m_pManager->get_root_registry();
 		if (!ptrRoot)
 			LOG_ERROR_RETURN(("Failed to get root registry"),false);
 
-		Omega::uint16_t handle = 0;
-		int err = ptrRoot->m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,ptrUser->get_pid(),strUserFd,handle);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),true);
-
-		if (!ptrRoot->new_connection(ptrUser))
-		{
-			ptrRoot->m_async_dispatcher.drop_response(handle);
+		if (!ptrRoot->new_connection2(client_id,ptrUser,strUserFd,m_id))
 			return false;
-		}
 	}
 
 	return true;
 }
 
-bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, pid_t pid, const OOBase::String& strUserFd)
+bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd, size_t reg_id)
 {
+	user2_params_t params;
+	params.client_id = client_id;
+	params.user_id = ptrUser->get_pid();
+	params.strUserFd = strUserFd;
+	params.reg_id = reg_id;
+
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,params,response_id);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),true);
+
+	return new_connection(ptrUser,response_id);
+}
+
+bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const user2_params_t& params)
+{
+	OOBase::RefPtr<RegistryConnection> ptrReg;
+	if (!m_pManager->get_registry_process(params.reg_id,ptrReg))
+		return true;
+
 	OOBase::RefPtr<UserConnection> ptrUser;
-	if (!m_pManager->get_user_process(pid,ptrUser))
-		LOG_WARNING_RETURN(("Failed to find user process"),true);
+	if (!m_pManager->get_user_process(params.user_id,ptrUser))
+		return true;
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
@@ -286,11 +300,11 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, pid_t
 	if (!response.read_string(strRootFd))
 		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
 
-	ptrUser->start(strUserFd,strRootFd);
+	ptrUser->start(params.client_id,params.strUserFd,strRootFd);
 	return true;
 }
 
-bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, Omega::uint16_t handle)
+bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
 {
 	OOBase::StackAllocator<256> allocator;
 	OOBase::TempPtr<void> ptrSIDLogon(allocator);
@@ -307,7 +321,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 	stream.write(Omega::uint16_t(0));
 
 	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
-	stream.write(handle);
+	response_id.write(stream);
 	stream.write_string(strSID);
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
@@ -326,12 +340,13 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 	}
 
+	response_id.detach();
 	return true;
 }
 
 #elif defined(HAVE_UNISTD_H)
 
-bool Root::RegistryConnection::start_user(OOBase::RefPtr<UserConnection>& ptrUser)
+bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<UserConnection>& ptrUser)
 {
 	// Create a pair of sockets
 	OOBase::POSIX::SmartFD fds[2];
@@ -340,29 +355,30 @@ bool Root::RegistryConnection::start_user(OOBase::RefPtr<UserConnection>& ptrUse
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
 
 	// Create new connection for the user process
-	Omega::uint16_t handle = 0;
-	err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user,ptrUser->get_pid(),static_cast<int>(fds[0]),handle);
+	pid_t client_id = 0;
+	if (ptrClient)
+		client_id = ptrClient->get_pid();
+
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user,client_id,ptrUser->get_pid(),static_cast<int>(fds[0]),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
 
 	// Create a pair of sockets
-	if (!new_connection(ptrUser,fds[1],handle))
-	{
-		m_async_dispatcher.drop_response(handle);
+	if (!new_connection(ptrUser,fds[1],response_id))
 		return false;
-	}
 
 	fds[0].detach();
 	return true;
 }
 
-bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t pid, int user_fd)
+bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id, int user_fd)
 {
 	OOBase::POSIX::SmartFD ptrUserFd(user_fd);
 
 	OOBase::RefPtr<UserConnection> ptrUser;
-	if (!m_pManager->get_user_process(pid,ptrUser))
-		LOG_WARNING_RETURN(("Failed to find user process"),true);
+	if (!m_pManager->get_user_process(user_id,ptrUser))
+		return true;
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
@@ -373,7 +389,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 	if (m_id == 1)
 	{
 		OOBase::POSIX::SmartFD ptrRootFd;
-		ptrUser->start(ptrUserFd,ptrRootFd);
+		ptrUser->start(client_id,ptrUserFd,ptrRootFd);
 	}
 	else
 	{
@@ -381,39 +397,55 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 		if (!ptrRoot)
 			LOG_ERROR_RETURN(("Failed to get root registry"),false);
 
-		// Create a pair of sockets
-		OOBase::POSIX::SmartFD fds[2];
-		int err = OOBase::POSIX::socketpair(SOCK_STREAM,fds);
-		if (err)
-			LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
-
-		Omega::uint16_t handle = 0;
-		err = ptrRoot->m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,ptrUser->get_pid(),static_cast<int>(ptrUserFd),static_cast<int>(fds[0]),handle);
-		if (err)
-			LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),true);
-
-		OOBase::POSIX::SmartFD fd_root;
-		if (!ptrRoot->new_connection(ptrUser,fds[1],handle))
-		{
-			ptrRoot->m_async_dispatcher.drop_response(handle);
+		if (!ptrRoot->new_connection2(client_id,ptrUser,ptrUserFd,m_id))
 			return false;
-		}
-
-		ptrUserFd.detach();
-		fds[0].detach();
 	}
 
 	return true;
 }
 
-bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, pid_t pid, int user_fd, int root_fd)
+bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& ptrUserFd, size_t reg_id)
 {
-	OOBase::POSIX::SmartFD ptrUserFd(user_fd);
-	OOBase::POSIX::SmartFD ptrRootFd(root_fd);
+	// Create a pair of sockets
+	OOBase::POSIX::SmartFD fds[2];
+	int err = OOBase::POSIX::socketpair(SOCK_STREAM,fds);
+	if (err)
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),true);
+
+	user2_params_t params;
+	params.client_id = client_id;
+	params.user_id = ptrUser->get_pid();
+	params.user_fd = static_cast<int>(ptrUserFd);
+	params.root_fd = static_cast<int>(fds[0]);
+	params.reg_id = reg_id;
+
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,params,response_id);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),true);
+
+	OOBase::POSIX::SmartFD fd_root;
+	if (!new_connection(ptrUser,fds[1],response_id))
+		return false;
+
+	ptrUserFd.detach();
+	fds[0].detach();
+
+	return true;
+}
+
+bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const user2_params_t& params)
+{
+	OOBase::POSIX::SmartFD ptrUserFd(params.user_fd);
+	OOBase::POSIX::SmartFD ptrRootFd(params.root_fd);
+
+	OOBase::RefPtr<RegistryConnection> ptrReg;
+	if (!m_pManager->get_registry_process(params.reg_id,ptrReg))
+		return true;
 
 	OOBase::RefPtr<UserConnection> ptrUser;
-	if (!m_pManager->get_user_process(pid,ptrUser))
-		LOG_WARNING_RETURN(("Failed to find user process"),true);
+	if (!m_pManager->get_user_process(params.user_id,ptrUser))
+		return true;
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
@@ -421,11 +453,11 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, pid_t
 	else if (ret_err)
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
-	ptrUser->start(ptrUserFd,ptrRootFd);
+	ptrUser->start(params.client_id,ptrUserFd,ptrRootFd);
 	return true;
 }
 
-bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& fd, Omega::uint16_t handle)
+bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
 {
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -447,7 +479,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 	stream.write(Omega::uint16_t(0));
 
 	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
-	stream.write(handle);
+	response_id.write(stream);
 	stream.write(ptrUser->get_uid());
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
@@ -465,8 +497,9 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 	}
-	else
-		fd.detach();
+
+	fd.detach();
+	response_id.detach();
 
 	return true;
 }
@@ -713,6 +746,13 @@ OOBase::RefPtr<Root::RegistryConnection> Root::Manager::get_root_registry()
 	m_registry_processes.find(1,ptr);
 
 	return ptr;
+}
+
+bool Root::Manager::get_registry_process(size_t id, OOBase::RefPtr<RegistryConnection>& ptrReg)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	return m_registry_processes.find(id,ptrReg);
 }
 
 void Root::Manager::drop_registry_process(size_t id)

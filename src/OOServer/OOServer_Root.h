@@ -54,6 +54,7 @@
 #include <OOBase/ConfigFile.h>
 #include <OOBase/CDRIO.h>
 #include <OOBase/ArenaAllocator.h>
+#include <OOBase/AsyncResponse.h>
 
 //////////////////////////////////////////////
 

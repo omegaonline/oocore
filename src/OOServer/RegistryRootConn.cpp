@@ -56,8 +56,8 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		Omega::uint16_t trans_id = 0;
-		stream.read(trans_id);
+		Omega::uint16_t response_id = 0;
+		stream.read(response_id);
 
 		// Read DB name and root settings
 		OOBase::StackAllocator<512> allocator;
@@ -99,7 +99,7 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 				size_t mark = stream.buffer()->mark_wr_ptr();
 
 				stream.write(Omega::uint16_t(0));
-				stream.write(trans_id);
+				stream.write(response_id);
 				stream.write(static_cast<Omega::int32_t>(ret_err));
 
 				stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
@@ -210,12 +210,12 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 {
-	Omega::uint16_t handle;
-	stream.read(handle);
+	Omega::uint16_t response_id;
+	stream.read(response_id);
 	uid_t uid;
 	stream.read(uid);
 
-	printf("NewConenction: uid %u, handle %u\n",uid,handle);
+	printf("NewConenction: uid %u, response_id %u\n",uid,response_id);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
@@ -242,7 +242,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
 			stream.write(Omega::uint16_t(0));
-			stream.write(handle);
+			stream.write(response_id);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
 
 			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
@@ -280,8 +280,8 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
 	OOBase::StackAllocator<256> allocator;
 
-	Omega::uint16_t handle;
-	stream.read(handle);
+	Omega::uint16_t response_id;
+	stream.read(response_id);
 
 	OOBase::LocalString sid(allocator);
 	stream.read_string(sid);
@@ -298,7 +298,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
 			stream.write(Omega::uint16_t(0));
-			stream.write(handle);
+			stream.write(response_id);
 
 			OOBase::LocalString pipe(allocator);
 			// Create named pipe with access to OOBase::Win32::SIDFromString(sid), called 'pipe'

@@ -60,15 +60,18 @@ namespace Root
 
 		bool get_config_arg(const char* name, OOBase::LocalString& val);
 
-		bool find_user_process(ClientConnection* client);
+		bool connect_client(ClientConnection* client);
+		bool get_client(pid_t client_id, OOBase::RefPtr<ClientConnection>& ptrClient);
+		void drop_client(pid_t id);
+
 		bool get_user_process(pid_t user_id, OOBase::RefPtr<UserConnection>& ptrUser);
 		bool spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryConnection>& ptrRegistry);
 		bool spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<RegistryConnection>& ptrRegistry);
+		void drop_user_process(pid_t id);
 
 		OOBase::RefPtr<RegistryConnection> get_root_registry();
+		bool get_registry_process(size_t id, OOBase::RefPtr<RegistryConnection>& ptrReg);
 		void drop_registry_process(size_t id);
-		void drop_user_process(pid_t id);
-		void drop_client(pid_t id);
 
 	private:
 		OOBase::RWMutex                    m_lock;

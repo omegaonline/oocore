@@ -145,7 +145,7 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 
 		if (!err)
 		{
-			//printf("NewConenction: pid %u, handle %u\n",pid,handle);
+			//printf("NewConenction: pid %u, response_id %u\n",pid,response_id);
 
 
 			if (stream.last_error())
@@ -261,12 +261,12 @@ void User::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::B
 void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 {
 	// Read and cache any root parameters
-	Omega::uint16_t handle = 0;
-	stream.read(handle);
+	Omega::uint16_t response_id = 0;
+	//stream.read(response_id);
 	pid_t pid;
 	stream.read(pid);
 
-	printf("NewConenction: pid %u, handle %u\n",pid,handle);
+	printf("NewConnection: pid %u, response_id %u\n",pid,response_id);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
@@ -285,7 +285,7 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
 			stream.write(Omega::uint16_t(0));
-			stream.write(handle);
+			stream.write(response_id);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
 
 			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
@@ -311,13 +311,10 @@ void User::RootConnection::on_start_win32(OOBase::CDRStream& stream, int err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		// Read and cache any root parameters
-		DWORD p1;
-		stream.read(p1);
-
 		OOBase::StackAllocator<256> allocator;
-		OOBase::LocalString strPipe(allocator);
-		stream.read_string(strPipe);
+		OOBase::LocalString strUserPipe(allocator),strRootPipe(allocator);
+		stream.read_string(strUserPipe);
+		stream.read_string(strRootPipe);
 
 		if (stream.last_error())
 			LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
@@ -374,8 +371,8 @@ void User::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
 	// Read and cache any root parameters
-	Omega::uint16_t handle;
-	stream.read(handle);
+	//Omega::uint16_t response_id;
+	//stream.read(response_id);
 	DWORD pid;
 	stream.read(pid);
 
@@ -391,7 +388,7 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 			size_t mark = stream.buffer()->mark_wr_ptr();
 
 			stream.write(Omega::uint16_t(0));
-			stream.write(handle);
+			stream.write(response_id);
 
 			OOBase::StackAllocator<256> allocator;
 			OOBase::LocalString pipe(allocator);

@@ -46,6 +46,47 @@ pid_t Root::UserConnection::get_pid() const
 
 #if defined(_WIN32)
 
+bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root)
+{
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+
+	// Non-Omega_Initialize payload here
+	stream.write_string(fd_user);
+	stream.write_string(fd_root);
+
+	// Align everything, ready for the Omega_Initialize call
+	stream.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+
+	// Other stuff here!
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	addref();
+
+	int err = m_ptrSocket->send(this,&UserConnection::on_sent,stream.buffer());
+	if (err)
+	{
+		release();
+
+		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	OOBase::Logger::log(OOBase::Logger::Information,"User process started successfully");
+
+	if (client_id)
+	{
+		OOBase::RefPtr<ClientConnection> ptrClient;
+		if (m_pManager->get_client(client_id,ptrClient))
+			return add_client(ptrClient);
+	}
+
+	return true;
+}
+
 bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClient)
 {
 	//return ptrClient->send_response(fds[1],m_ptrProcess->get_pid());
@@ -53,7 +94,7 @@ bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClien
 }
 
 #elif defined(HAVE_UNISTD_H)
-bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root)
+bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root)
 {
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)*2),sizeof(size_t));
 	if (!ctl_buffer)
@@ -111,7 +152,15 @@ bool Root::UserConnection::start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX:
 		fd_root.detach();
 	}
 
-	// All sent, we are done here!
+	OOBase::Logger::log(OOBase::Logger::Information,"User process started successfully");
+
+	if (client_id)
+	{
+		OOBase::RefPtr<ClientConnection> ptrClient;
+		if (m_pManager->get_client(client_id,ptrClient))
+			return add_client(ptrClient);
+	}
+
 	return true;
 }
 
@@ -187,16 +236,30 @@ void Root::UserConnection::on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl
 		}
 	}
 
+	on_sent(data,err);
+}
+#endif
+
+void Root::UserConnection::on_sent(OOBase::Buffer* buffer, int err)
+{
 	if (err)
 	{
-		LOG_ERROR(("Failed to sent data to user process: %s",OOBase::system_error_text(err)));
+		LOG_ERROR(("Failed to send data to user process: %s",OOBase::system_error_text(err)));
+
+		/*buffer->mark_rd_ptr(0);
+
+		OOBase::CDRStream stream(buffer);
+
+		Omega::uint16_t len = 0;
+		Omega::uint16_t trans_id = 0;
+		if (stream.read(len) && stream.read(trans_id) && trans_id)
+			m_async_dispatcher.drop_response(trans_id);*/
 
 		m_pManager->drop_user_process(m_ptrProcess->get_pid());
 	}
 
 	release();
 }
-#endif
 
 bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 {
@@ -410,7 +473,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 
 	guard.release();
 
-	if (!ptrRegistry->start_user(ptrUser))
+	if (!ptrRegistry->start_user(ptrClient,ptrUser))
 	{
 		guard.acquire();
 
@@ -419,9 +482,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 		return false;
 	}
 
-	OOBase::Logger::log(OOBase::Logger::Information,"User process started successfully");
-
-	return ptrUser->add_client(ptrClient);
+	return true;
 }
 
 bool Root::Manager::get_user_process(pid_t user_id, OOBase::RefPtr<UserConnection>& ptrUser)

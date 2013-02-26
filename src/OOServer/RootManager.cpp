@@ -292,7 +292,7 @@ void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int
 	}
 }
 
-bool Root::Manager::find_user_process(ClientConnection* client)
+bool Root::Manager::connect_client(ClientConnection* client)
 {
 	OOBase::RefPtr<ClientConnection> ptrClient = client;
 	ptrClient->addref();

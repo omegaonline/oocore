@@ -400,10 +400,18 @@ void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 			if (!m_pid)
 				m_pid = pid;
 
-			m_pManager->find_user_process(this);
+			m_pManager->connect_client(this);
 		}
 	}
 }
+
+bool Root::Manager::get_client(pid_t id, OOBase::RefPtr<ClientConnection>& ptrClient)
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	return m_clients.find(id,ptrClient);
+}
+
 
 void Root::Manager::drop_client(pid_t id)
 {

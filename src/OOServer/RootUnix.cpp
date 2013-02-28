@@ -260,9 +260,9 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 		{
 			OOBase::LocalString strTitle(allocator);
 			if (session_id == NULL)
-				strTitle.printf("%s:/system",strAppName.c_str());
+				strTitle.printf("%s - system",strAppName.c_str());
 			else
-				strTitle.printf("%s:%s",strAppName.c_str(),session_id);
+				strTitle.printf("%s - %s",strAppName.c_str(),session_id);
 
 			const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
 
@@ -548,12 +548,6 @@ bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strS
 		err = strHome.assign(pw->pw_dir);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
-
-		if (strHome.empty())
-		{
-			void* TODO; // This won't work
-			OOBase::Environment::getenv("HOME",strHome);
-		}
 
 		if (!strHome.empty())
 		{

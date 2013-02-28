@@ -146,7 +146,7 @@ namespace
 #elif defined(HAVE_UNISTD_H)
 		response.write(getpid());
 #endif
-		response.replace(static_cast<Omega::uint16_t>(response.buffer()->length()),mark);
+		response.replace(static_cast<Omega::uint16_t>(response.length()),mark);
 		if (response.last_error())
 			OMEGA_THROW(response.last_error());
 

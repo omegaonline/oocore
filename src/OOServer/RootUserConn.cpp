@@ -44,6 +44,12 @@ pid_t Root::UserConnection::get_pid() const
 	return m_ptrProcess->get_pid();
 }
 
+Root::UserConnection::AutoDrop::~AutoDrop()
+{
+	if (m_id)
+		m_pManager->drop_user_process(m_id);
+}
+
 #if defined(_WIN32)
 
 bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root)
@@ -61,7 +67,7 @@ bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user,
 
 	// Other stuff here!
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -133,7 +139,7 @@ bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_use
 
 	// Other stuff here!
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -194,7 +200,7 @@ bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClien
 	stream.write(static_cast<OOServer::Root2User_OpCode_t>(OOServer::Root2User_NewConnection));
 	stream.write(ptrClient->get_pid());
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 

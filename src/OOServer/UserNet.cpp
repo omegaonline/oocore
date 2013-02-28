@@ -171,7 +171,7 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 	else
 	{
 		// Unmarshal the payload
-		if (msg.buffer()->length() > 0)
+		if (msg.length() > 0)
 		{
 			// Wrap the message block
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrInput = ObjectImpl<OOCore::CDRMessage>::CreateObject();

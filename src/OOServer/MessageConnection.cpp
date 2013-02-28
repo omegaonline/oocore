@@ -356,7 +356,7 @@ bool OOServer::MessageHandler::parse_message(OOBase::CDRStream& input)
 		msg.m_type = (t ? Message_t::Request : Message_t::Response);
 
 		// Align to the next boundary
-		if (msg.m_payload.buffer()->length() > 0)
+		if (msg.m_payload.length() > 0)
 			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
 		// Did everything make sense?
@@ -536,7 +536,7 @@ void OOServer::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& inp
 		LOG_ERROR(("Corrupt input: %s",OOBase::system_error_text(err)));
 	else
 	{
-		if (input.buffer()->length() > 0)
+		if (input.length() > 0)
 			input.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
 		pThis->route_off(input,src_channel_id,dest_channel_id,attribs,dest_thread_id,src_thread_id,type);
@@ -889,7 +889,7 @@ bool OOServer::MessageHandler::process_async_function(Message& msg)
 	void* pParam = 0;
 	msg.m_payload.read(pParam);
 
-	if (msg.m_payload.buffer()->length() > 0)
+	if (msg.m_payload.length() > 0)
 		msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
 	int err = msg.m_payload.last_error();
@@ -921,7 +921,7 @@ bool OOServer::MessageHandler::call_async_function_i(const char* pszFn, void (*p
 		return false;
 
 	// Create a new message
-	MessageHandler::Message msg(sizeof(pszFn) + sizeof(pfnCall) + sizeof(pParam) + (stream ? stream->buffer()->length() : 0));
+	MessageHandler::Message msg(sizeof(pszFn) + sizeof(pfnCall) + sizeof(pParam) + (stream ? stream->length() : 0));
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_dest_thread_id = 0;
 	msg.m_src_thread_id = 0;
@@ -1101,17 +1101,17 @@ OOServer::MessageHandler::io_result::type OOServer::MessageHandler::send_message
 	header.write(msg.m_type == Message_t::Request ? true : false);
 
 	size_t len = 0;
-	size_t msg_len = msg.m_payload.buffer()->length();
+	size_t msg_len = msg.m_payload.length();
 	if (msg_len == 0)
-		len = header.buffer()->length() - s_header_len;
+		len = header.length() - s_header_len;
 	else
 	{
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
-		len = header.buffer()->length() - s_header_len;
+		len = header.length() - s_header_len;
 
 		// Check the size
-		if (msg.m_payload.buffer()->length() > 0xFFFFFFFF - len)
+		if (msg.m_payload.length() > 0xFFFFFFFF - len)
 			LOG_ERROR_RETURN(("Message too big"),io_result::failed);
 
 		len += msg_len;

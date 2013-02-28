@@ -47,6 +47,12 @@ const char* Root::ClientConnection::get_session_id() const
 	return m_session_id.c_str();
 }
 
+Root::ClientConnection::AutoDrop::~AutoDrop()
+{
+	if (m_id)
+		m_pManager->drop_client(m_id);
+}
+
 #if defined(_WIN32)
 
 bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
@@ -305,7 +311,7 @@ bool Root::ClientConnection::send_response(OOBase::POSIX::SmartFD& fd, pid_t pid
 	stream.write(Omega::uint16_t(0));
 	stream.write(pid);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 

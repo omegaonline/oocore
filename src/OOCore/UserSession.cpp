@@ -339,7 +339,7 @@ int OOCore::UserSession::run_read_loop()
 		msg.m_type = (t ? Message::Request : Message::Response);
 
 		// Align to the next boundary
-		if (msg.m_payload.buffer()->length() > 0)
+		if (msg.m_payload.length() > 0)
 			msg.m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 		
 		// Did everything make sense?
@@ -679,14 +679,14 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 
 	size_t len = 0;
 	if (!request)
-		len = header.buffer()->length() - s_header_len;
+		len = header.length() - s_header_len;
 	else
 	{
 		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
-		len = header.buffer()->length() - s_header_len;
+		len = header.length() - s_header_len;
 
-		size_t request_len = request->buffer()->length();
+		size_t request_len = request->length();
 
 		// Check the size
 		if (request_len > 0xFFFFFFFF - len)

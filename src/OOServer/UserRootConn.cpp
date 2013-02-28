@@ -186,7 +186,7 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 					stream.write(Omega::uint16_t(0));
 					stream.write(static_cast<Omega::int32_t>(ret_err));
 
-					stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+					stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 					if (stream.last_error())
 						LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 					else
@@ -207,7 +207,9 @@ void User::RootConnection::on_start_posix(OOBase::CDRStream& stream, OOBase::Buf
 
 void User::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err)
 {
-	if (err)
+	if (stream.length() == 0)
+		LOG_ERROR(("Root pipe disconnected"));
+	else if (err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
@@ -288,7 +290,7 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 			stream.write(response_id);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
 
-			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 			if (stream.last_error())
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else
@@ -296,8 +298,6 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 				err = m_socket->send(this,NULL,stream.buffer());
 				if (err)
 					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-				else
-					recv_next();
 			}
 		}
 	}
@@ -340,7 +340,7 @@ void User::RootConnection::on_start_win32(OOBase::CDRStream& stream, int err)
 
 				stream.write(static_cast<Omega::int32_t>(ret_err));
 
-				stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+				stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 				if (stream.last_error())
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
@@ -360,7 +360,9 @@ void User::RootConnection::on_start_win32(OOBase::CDRStream& stream, int err)
 
 void User::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 {
-	if (err)
+	if (stream.length() == 0)
+		LOG_ERROR(("Root pipe disconnected"));
+	else if (err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 		on_message(stream);
@@ -398,7 +400,7 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 			if (!ret_err)
 				stream.write_string(pipe);
 
-			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 			if (stream.last_error())
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else

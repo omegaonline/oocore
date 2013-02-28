@@ -62,6 +62,27 @@ namespace Root
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);
 #endif
 		void on_sent(OOBase::Buffer* buffer, int err);
+
+	public:
+		class AutoDrop
+		{
+		public:
+			AutoDrop(Manager* pManager, pid_t id) : m_pManager(pManager), m_id(id)
+			{}
+
+			~AutoDrop();
+
+			pid_t detach()
+			{
+				pid_t id = m_id;
+				m_id = 0;
+				return id;
+			}
+
+		private:
+			Manager* m_pManager;
+			pid_t    m_id;
+		};
 	};
 }
 

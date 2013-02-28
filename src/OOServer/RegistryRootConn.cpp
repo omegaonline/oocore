@@ -102,7 +102,7 @@ void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
 				stream.write(response_id);
 				stream.write(static_cast<Omega::int32_t>(ret_err));
 
-				stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+				stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 				if (stream.last_error())
 					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 				else
@@ -155,7 +155,7 @@ bool Registry::RootConnection::recv_next()
 
 void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err)
 {
-	if (stream.buffer()->length() == 0)
+	if (stream.length() == 0)
 		LOG_ERROR(("Root pipe disconnected"));
 	else if (err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
@@ -245,7 +245,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 			stream.write(response_id);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
 
-			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 			if (stream.last_error())
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else
@@ -268,7 +268,9 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 
 void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 {
-	if (err)
+	if (stream.length() == 0)
+		LOG_ERROR(("Root pipe disconnected"));
+	else if (err)
 		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
 	else
 		on_message(stream);
@@ -309,7 +311,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			if (!ret_err)
 				stream.write_string(pipe);
 
-			stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 			if (stream.last_error())
 				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 			else

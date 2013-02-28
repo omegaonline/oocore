@@ -216,7 +216,7 @@ int Registry::Manager::new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSoc
 		if (!err)
 		{
 			// Update the length in the response
-			response.replace(Omega::uint16_t(response.buffer()->length()),mark);
+			response.replace(Omega::uint16_t(response.length()),mark);
 
 			err = m_root_socket->send(NULL,NULL,response.buffer());
 			if (err)

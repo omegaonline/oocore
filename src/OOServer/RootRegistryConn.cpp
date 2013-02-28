@@ -156,7 +156,7 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 	stream.write(threads);
 	stream.write("");
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -179,6 +179,8 @@ bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, pid_t clien
 {
 	bool bSuccess = false;
 
+	ClientConnection::AutoDrop drop(m_pManager,client_id);
+
 	Omega::int32_t ret_err = 0;
 	if (!stream.read(ret_err))
 		LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())));
@@ -191,6 +193,7 @@ bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, pid_t clien
 
 		if (m_pManager->spawn_user_process(client_id,ptrThis))
 		{
+			drop.detach();
 			bSuccess = true;
 			OOBase::Logger::log(OOBase::Logger::Information,"User registry started successfully");
 		}
@@ -232,9 +235,13 @@ bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrC
 
 bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id)
 {
+	ClientConnection::AutoDrop drop1(m_pManager,client_id);
+
 	OOBase::RefPtr<UserConnection> ptrUser;
 	if (!m_pManager->get_user_process(user_id,ptrUser))
 		return true;
+
+	UserConnection::AutoDrop drop2(m_pManager,user_id);
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
@@ -261,6 +268,9 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 			return false;
 	}
 
+	drop1.detach();
+	drop2.detach();
+
 	return true;
 }
 
@@ -282,6 +292,9 @@ bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<U
 
 bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const user2_params_t& params)
 {
+	ClientConnection::AutoDrop drop1(m_pManager,params.client_id);
+	UserConnection::AutoDrop drop2(m_pManager,params.user_id);
+
 	OOBase::RefPtr<RegistryConnection> ptrReg;
 	if (!m_pManager->get_registry_process(params.reg_id,ptrReg))
 		return true;
@@ -301,6 +314,10 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
 
 	ptrUser->start(params.client_id,params.strUserFd,strRootFd);
+
+	drop1.detach();
+	drop2.detach();
+
 	return true;
 }
 
@@ -324,7 +341,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 	response_id.write(stream);
 	stream.write_string(strSID);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -374,11 +391,15 @@ bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrC
 
 bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id, int user_fd)
 {
+	ClientConnection::AutoDrop drop1(m_pManager,client_id);
+
 	OOBase::POSIX::SmartFD ptrUserFd(user_fd);
 
 	OOBase::RefPtr<UserConnection> ptrUser;
 	if (!m_pManager->get_user_process(user_id,ptrUser))
 		return true;
+
+	UserConnection::AutoDrop drop2(m_pManager,user_id);
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
@@ -400,6 +421,9 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 		if (!ptrRoot->new_connection2(client_id,ptrUser,ptrUserFd,m_id))
 			return false;
 	}
+
+	drop1.detach();
+	drop2.detach();
 
 	return true;
 }
@@ -439,6 +463,9 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 	OOBase::POSIX::SmartFD ptrUserFd(params.user_fd);
 	OOBase::POSIX::SmartFD ptrRootFd(params.root_fd);
 
+	ClientConnection::AutoDrop drop1(m_pManager,params.client_id);
+	UserConnection::AutoDrop drop2(m_pManager,params.user_id);
+
 	OOBase::RefPtr<RegistryConnection> ptrReg;
 	if (!m_pManager->get_registry_process(params.reg_id,ptrReg))
 		return true;
@@ -454,6 +481,10 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
 	ptrUser->start(params.client_id,ptrUserFd,ptrRootFd);
+
+	drop1.detach();
+	drop2.detach();
+
 	return true;
 }
 
@@ -482,7 +513,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 	response_id.write(stream);
 	stream.write(ptrUser->get_uid());
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -537,7 +568,7 @@ bool Root::RegistryConnection::get_environment(const char* key, OOBase::Environm
 	size_t mark = stream.buffer()->mark_wr_ptr();
 	stream.write(Omega::uint16_t(0));
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -617,7 +648,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 	}
 	stream.write("");
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.buffer()->length()),mark);
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 

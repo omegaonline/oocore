@@ -51,7 +51,6 @@ namespace Registry
 #error Implement platform native credential and pipe handle passing
 #endif
 
-		void on_start(OOBase::CDRStream& stream, int err);
 		void on_sent(OOBase::Buffer* buffer, int err);
 		bool recv_next();
 	};

@@ -37,93 +37,59 @@ Registry::RootConnection::~RootConnection()
 
 bool Registry::RootConnection::start()
 {
-	addref();
-
 	// Read start-up params
-	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(256,m_socket,this,&RootConnection::on_start);
+	OOBase::CDRStream stream;
+	int err = OOBase::CDRIO::recv_with_header_blocking<Omega::uint16_t>(stream,m_socket);
 	if (err)
-	{
-		release();
 		LOG_ERROR_RETURN(("Failed to read root request: %s",OOBase::system_error_text(err)),false);
-	}
 
-	return true;
-}
+	Omega::uint16_t response_id = 0;
+	stream.read(response_id);
 
-void Registry::RootConnection::on_start(OOBase::CDRStream& stream, int err)
-{
-	if (err)
-		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
-	else
+	// Read DB name and root settings
+	OOBase::StackAllocator<512> allocator;
+	OOBase::LocalString strDb(allocator);
+	stream.read_string(strDb);
+
+	Omega::byte_t nThreads = 0;
+	stream.read(nThreads);
+
+	OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
+	for (;;)
 	{
-		Omega::uint16_t response_id = 0;
-		stream.read(response_id);
+		OOBase::LocalString k(allocator),v(allocator);
+		if (!stream.read_string(k) || k.empty() || !stream.read_string(v))
+			break;
 
-		// Read DB name and root settings
-		OOBase::StackAllocator<512> allocator;
-		OOBase::LocalString strDb(allocator);
-		stream.read_string(strDb);
-
-		Omega::byte_t nThreads = 0;
-		stream.read(nThreads);
-
-		OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
-		while (!err)
-		{
-			OOBase::LocalString k(allocator),v(allocator);
-			if (!stream.read_string(k) || k.empty() || !stream.read_string(v))
-				break;
-
-			err = tabSettings.insert(k,v);
-			if (err)
-				LOG_ERROR(("Failed to insert setting into table: %s",OOBase::system_error_text(err)));
-		}
-		if (!err)
-		{
-			err = stream.last_error();
-			if (err)
-				LOG_ERROR(("Failed to read root request: %s",OOBase::system_error_text(err)));
-		}
-
-		int ret_err = 0;
-		if (!err)
-			ret_err = m_pManager->on_start(strDb,nThreads,tabSettings);
-
-		if (!err)
-		{
-			err = stream.reset();
-			if (err)
-				LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
-			else
-			{
-				size_t mark = stream.buffer()->mark_wr_ptr();
-
-				stream.write(Omega::uint16_t(0));
-				stream.write(response_id);
-				stream.write(static_cast<Omega::int32_t>(ret_err));
-
-				stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
-				if (stream.last_error())
-					LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-				else
-				{
-					addref();
-
-					err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
-					if (err)
-					{
-						LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-
-						release();
-					}
-					else
-						recv_next();
-				}
-			}
-		}
+		err = tabSettings.insert(k,v);
+		if (err)
+			LOG_ERROR_RETURN(("Failed to insert setting into table: %s",OOBase::system_error_text(err)),false);
 	}
+	err = stream.last_error();
+	if (err)
+		LOG_ERROR_RETURN(("Failed to read root request: %s",OOBase::system_error_text(err)),false);
 
-	release();
+	int ret_err = m_pManager->on_start(strDb,nThreads,tabSettings);
+
+	err = stream.reset();
+	if (err)
+		LOG_ERROR_RETURN(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	size_t mark = stream.buffer()->mark_wr_ptr();
+
+	stream.write(Omega::uint16_t(0));
+	stream.write(response_id);
+	stream.write(static_cast<Omega::int32_t>(ret_err));
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	err = m_socket->send(stream.buffer());
+	if (err)
+		LOG_ERROR_RETURN(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	return recv_next();
 }
 
 bool Registry::RootConnection::recv_next()
@@ -215,7 +181,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 	uid_t uid;
 	stream.read(uid);
 
-	printf("NewConenction: uid %u, response_id %u\n",uid,response_id);
+	printf("NewConnection: uid %u, response_id %u\n",uid,response_id);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));

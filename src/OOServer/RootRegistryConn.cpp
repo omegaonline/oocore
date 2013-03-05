@@ -245,13 +245,13 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
-		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
-	else if (ret_err)
+		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
+	if (ret_err)
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
 	OOBase::String strUserFd;
 	if (!response.read_string(strUserFd))
-		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
+		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 
 	if (m_id == 1)
 	{
@@ -305,18 +305,19 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
-		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
-	else
+		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
+	if (ret_err)
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
 	OOBase::String strRootFd;
 	if (!response.read_string(strRootFd))
 		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
 
-	ptrUser->start(params.client_id,params.strUserFd,strRootFd);
-
-	drop1.detach();
-	drop2.detach();
+	if (ptrUser->start(params.client_id,params.strUserFd,strRootFd))
+	{
+		drop1.detach();
+		drop2.detach();
+	}
 
 	return true;
 }
@@ -331,6 +332,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 
 	OOBase::LocalString strSID(allocator);
 	dwErr = OOBase::Win32::SIDToString(static_cast<void*>(ptrSIDLogon),strSID);
+	if (dwErr)
 		LOG_ERROR_RETURN(("Failed to format logon SID: %s",OOBase::system_error_text(dwErr)),false);
 
 	OOBase::CDRStream stream;
@@ -403,8 +405,8 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
-		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
-	else if (ret_err)
+		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
+	if (ret_err)
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
 	if (m_id == 1)
@@ -476,14 +478,15 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 
 	Omega::int32_t ret_err = 0;
 	if (!response.read(ret_err))
-		LOG_ERROR_RETURN(("Failed to read start response: %s",OOBase::system_error_text(response.last_error())),true);
-	else if (ret_err)
+		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
+	if (ret_err)
 		LOG_WARNING_RETURN(("Registry refused user connection: %s",OOBase::system_error_text(ret_err)),true);
 
-	ptrUser->start(params.client_id,ptrUserFd,ptrRootFd);
-
-	drop1.detach();
-	drop2.detach();
+	if (ptrUser->start(params.client_id,ptrUserFd,ptrRootFd))
+	{
+		drop1.detach();
+		drop2.detach();
+	}
 
 	return true;
 }

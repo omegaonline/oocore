@@ -181,8 +181,6 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 	uid_t uid;
 	stream.read(uid);
 
-	printf("NewConnection: uid %u, response_id %u\n",uid,response_id);
-
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 	else

@@ -49,19 +49,25 @@ namespace Root
 		bool start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root);
 #elif defined(HAVE_UNISTD_H)
 		bool start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root);
+		bool on_add_client(OOBase::CDRStream& stream, pid_t client_id, int client_fd);
 #endif
-
-		bool add_client(OOBase::RefPtr<ClientConnection>& ptrClient);
+		bool add_client(pid_t client_id);
 
 	private:
 		Manager*                            m_pManager;
 		OOBase::SmartPtr<Process>           m_ptrProcess;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 
+		OOBase::AsyncResponseDispatcher<Omega::uint16_t> m_async_dispatcher;
+
+		bool start();
+		bool on_started(OOBase::CDRStream& stream, pid_t client_id);
+
 #if defined(HAVE_UNISTD_H)
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);
 #endif
 		void on_sent(OOBase::Buffer* buffer, int err);
+		void on_response(OOBase::Buffer* buffer, int err);
 
 	public:
 		class AutoDrop

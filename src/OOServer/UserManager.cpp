@@ -308,7 +308,6 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::CDRStream& stream)
 {
-	LOG_DEBUG(("Started!"));
 
 	return 0;
 }

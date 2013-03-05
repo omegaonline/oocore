@@ -323,9 +323,8 @@ bool Root::ClientConnection::send_response(OOBase::POSIX::SmartFD& fd, pid_t pid
 		release();
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	}
-	else
-		fd.detach();
 
+	fd.detach();
 	return true;
 }
 

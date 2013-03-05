@@ -92,7 +92,8 @@ bool User::RootConnection::start()
 	if (!passed_fds[0].is_valid())
 		LOG_ERROR_RETURN(("Root pipe control data invalid handle"),false);
 
-	if (stream.last_error())
+	Omega::uint16_t response_id = 0;
+	if (!stream.read(response_id))
 		LOG_ERROR_RETURN(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	// Attach to the pipe
@@ -115,27 +116,23 @@ bool User::RootConnection::start()
 	// Tell the manager to create a new connection
 	int ret_err = m_pManager->start(ptrSocket,stream);
 
-	/*err = stream.reset();
+	err = stream.reset();
 	if (err)
-		LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
-	else
-	{
-		size_t mark = stream.buffer()->mark_wr_ptr();
+		LOG_ERROR_RETURN(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())),false);
 
-		stream.write(Omega::uint16_t(0));
-		stream.write(static_cast<Omega::int32_t>(ret_err));
+	size_t mark = stream.buffer()->mark_wr_ptr();
 
-		stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
-		if (stream.last_error())
-			LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-		else
-		{
-			err = m_socket->send(this,NULL,stream.buffer());
-			if (err)
-				LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+	stream.write(Omega::uint16_t(0));
+	stream.write(response_id);
+	stream.write(static_cast<Omega::int32_t>(ret_err));
 
-		}
-	}*/
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	err = m_socket->send(stream.buffer());
+	if (err)
+		LOG_ERROR_RETURN(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	return recv_next();
 }
@@ -199,11 +196,9 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 {
 	// Read and cache any root parameters
 	Omega::uint16_t response_id = 0;
-	//stream.read(response_id);
+	stream.read(response_id);
 	pid_t pid;
 	stream.read(pid);
-
-	printf("NewConnection: pid %u, response_id %u\n",pid,response_id);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
@@ -247,6 +242,9 @@ bool User::RootConnection::start()
 	if (err)
 		LOG_ERROR_RETURN(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)),false);
 
+	Omega::uint16_t response_id = 0;
+	stream.read(response_id);
+
 	OOBase::StackAllocator<256> allocator;
 	OOBase::LocalString strUserPipe(allocator),strRootPipe(allocator);
 	stream.read_string(strUserPipe);
@@ -255,29 +253,27 @@ bool User::RootConnection::start()
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	err = stream.reset();
-	if (err)
-		LOG_ERROR_RETURN(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	size_t mark = stream.buffer()->mark_wr_ptr();
-
-	stream.write(Omega::uint16_t(0));
-
-
 	OOBase::Timeout timeout(20,0);
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->connect(strPipe.c_str(),err,timeout);
 	if (err)
 		LOG_ERROR(("Failed to connect to registry pipe: %s",OOBase::system_error_text(err)));
 
-	int ret_err = m_pManager->connect_registry(ptrSocket);
+	err = stream.reset();
+	if (err)
+		LOG_ERROR_RETURN(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())),false);
 
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+	stream.write(response_id);
+
+	int ret_err = m_pManager->connect_registry(ptrSocket);
 	stream.write(static_cast<Omega::int32_t>(ret_err));
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	err = m_socket->send(this,NULL,stream.buffer());
+	err = m_socket->send(stream.buffer());
 	if (err)
 		LOG_ERROR_RETURN(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -299,8 +295,8 @@ void User::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
 	// Read and cache any root parameters
-	//Omega::uint16_t response_id;
-	//stream.read(response_id);
+	Omega::uint16_t response_id;
+	stream.read(response_id);
 	DWORD pid;
 	stream.read(pid);
 

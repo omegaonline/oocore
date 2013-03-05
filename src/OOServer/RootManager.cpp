@@ -307,7 +307,7 @@ bool Root::Manager::connect_client(ClientConnection* client)
 		{
 			guard.release();
 
-			return p->add_client(ptrClient);
+			return p->add_client(ptrClient->get_pid());
 		}
 	}
 

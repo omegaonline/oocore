@@ -134,7 +134,7 @@ bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user,
 
 	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
-	if (err)start
+	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::CDRStream stream;
@@ -169,7 +169,7 @@ bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user,
 	return true;
 }
 
-bool Root::UserConnection::add_client(OOBase::RefPtr<ClientConnection>& ptrClient)
+bool Root::UserConnection::add_client(pid_t client_id)
 {
 	//return ptrClient->send_response(fds[1],m_ptrProcess->get_pid());
 	return false;

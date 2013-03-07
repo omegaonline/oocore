@@ -270,7 +270,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			// Create named pipe with access to OOBase::Win32::SIDFromString(sid), called 'pipe'
 
 
-			int ret_err = m_pManager->new_connection(sid,pipe);
+			int ret_err = 0; //m_pManager->new_connection(sid,pipe);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
 			if (!ret_err)
 				stream.write_string(pipe);

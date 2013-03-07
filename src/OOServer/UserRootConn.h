@@ -51,6 +51,7 @@ namespace User
 #error Implement platform native credential and pipe handle passing
 #endif
 
+		void on_sent(OOBase::Buffer* buffer, int err);
 		void on_start(OOBase::CDRStream& stream, int err);
 		bool recv_next();
 	};

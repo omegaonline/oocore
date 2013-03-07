@@ -232,84 +232,84 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
 
 	return conn->start();
-
-	/*
-	// Invent a new pipe name...
-	OOBase::LocalString strNewPipe(strPipe.get_allocator());
-	if (!unique_name(strNewPipe))
-		return false;
-		
-	// Set our pipe name
-#if defined(_WIN32)
-	SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strNewPipe.c_str());
-#else
-	setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1);
-#endif
-
-	OOBase::CDRStream stream;
-
-	// Send our port name
-	if (!stream.write_string(strNewPipe))
-		LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
-
-	if ((err = local_socket->send(stream.buffer())) != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
-
-	// Read the sandbox channel
-	stream.reset();
-	if ((err = local_socket->recv(stream.buffer(),2*sizeof(uint32_t))) != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
-
-	uint32_t sandbox_channel = 0;
-	uint32_t our_channel = 0;
-	if (!stream.read(sandbox_channel) || !stream.read(our_channel))
-	{
-		LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
-	}
-
-	// Set the sandbox flag
-	m_bIsSandbox = (sandbox_channel == 0);
-
-	// Init our channel id
-	set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
-
-	// Create a new MessageConnection
-	OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
-	if (!ptrMC)
-		LOG_ERROR_RETURN(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()),false);
-
-	// Attach it to ourselves
-	if (register_channel(ptrMC,m_uUpstreamChannel) == 0)
-		return false;
-
-	// Start I/O with root
-	if (ptrMC->recv() != 0)
-	{
-		channel_closed(m_uUpstreamChannel,0);
-		return false;
-	}
-
-	// Now bootstrap
-	stream.reset();
-	if (!stream.write(sandbox_channel) || !stream.write_string(strNewPipe))
-	{
-		ptrMC->shutdown();
-		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);
-	}
-
-	if (!call_async_function_i("do_bootstrap",&do_bootstrap,this,&stream))
-	{
-		ptrMC->shutdown();
-		return false;
-	}
-
-	return true;*/
 }
 
 int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::CDRStream& stream)
 {
 
 	return 0;
+
+	/*
+		// Invent a new pipe name...
+		OOBase::LocalString strNewPipe(strPipe.get_allocator());
+		if (!unique_name(strNewPipe))
+			return false;
+
+		// Set our pipe name
+	#if defined(_WIN32)
+		SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strNewPipe.c_str());
+	#else
+		setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1);
+	#endif
+
+		OOBase::CDRStream stream;
+
+		// Send our port name
+		if (!stream.write_string(strNewPipe))
+			LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
+
+		if ((err = local_socket->send(stream.buffer())) != 0)
+			LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
+
+		// Read the sandbox channel
+		stream.reset();
+		if ((err = local_socket->recv(stream.buffer(),2*sizeof(uint32_t))) != 0)
+			LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
+
+		uint32_t sandbox_channel = 0;
+		uint32_t our_channel = 0;
+		if (!stream.read(sandbox_channel) || !stream.read(our_channel))
+		{
+			LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
+		}
+
+		// Set the sandbox flag
+		m_bIsSandbox = (sandbox_channel == 0);
+
+		// Init our channel id
+		set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
+
+		// Create a new MessageConnection
+		OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
+		if (!ptrMC)
+			LOG_ERROR_RETURN(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()),false);
+
+		// Attach it to ourselves
+		if (register_channel(ptrMC,m_uUpstreamChannel) == 0)
+			return false;
+
+		// Start I/O with root
+		if (ptrMC->recv() != 0)
+		{
+			channel_closed(m_uUpstreamChannel,0);
+			return false;
+		}
+
+		// Now bootstrap
+		stream.reset();
+		if (!stream.write(sandbox_channel) || !stream.write_string(strNewPipe))
+		{
+			ptrMC->shutdown();
+			LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);
+		}
+
+		if (!call_async_function_i("do_bootstrap",&do_bootstrap,this,&stream))
+		{
+			ptrMC->shutdown();
+			return false;
+		}
+
+		return true;*/
 }
 
 void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator)

@@ -44,12 +44,6 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
-#if defined(ECLIPSE_PARSER)
-#define REGDB_PATH  "/var/lib/omegaonline"
-#define LIBEXEC_DIR "/usr/libexec"
-#define CONFIG_DIR "/etc"
-#endif
-
 namespace
 {
 	class RootProcessUnix : public Root::Process

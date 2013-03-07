@@ -76,11 +76,6 @@ namespace User
 		static void on_accept(void* pThis, OOBase::AsyncSocket* pSocket, int err);
 		void on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err);
 
-		SECURITY_ATTRIBUTES           m_sa;
-#if defined(_WIN32)
-		OOBase::Win32::sec_descript_t m_sd;
-#endif
-
 		static void do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
 		bool handshake_root(OOBase::RefPtr<OOBase::AsyncSocket>& local_socket, const OOBase::LocalString& strPipe);
 		bool bootstrap(Omega::uint32_t sandbox_channel);

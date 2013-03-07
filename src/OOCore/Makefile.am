@@ -52,7 +52,7 @@ AM_CPPFLAGS += -DWIN64_HYBRID
 
 lib_LTLIBRARIES = OOCore64.la
 
-OOCore64_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4 -lshlwapi
+OOCore64_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4
 OOCore64_la_LDFLAGS = -module -avoid-version -no-undefined $(AM_LDFLAGS)
 
 OOCore64_la_SOURCES = \
@@ -63,7 +63,7 @@ else
 
 lib_LTLIBRARIES = OOCore32.la
 
-OOCore32_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4 -lshlwapi
+OOCore32_la_LIBADD = @top_builddir@/oobase/liboobase.la -lrpcrt4
 OOCore32_la_LDFLAGS = -module -avoid-version -no-undefined $(AM_LDFLAGS)
 
 OOCore32_la_SOURCES = \

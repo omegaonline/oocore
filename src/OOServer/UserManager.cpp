@@ -408,18 +408,22 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 	ea.Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 	// Create a new ACL
-	DWORD dwErr = m_sd.SetEntriesInAcl(1,&ea,NULL);
+	OOBase::Win32::sec_descript_t sd;
+	DWORD dwErr = sd.SetEntriesInAcl(1,&ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
 
 	// Create a new security descriptor
-	m_sa.nLength = sizeof(m_sa);
-	m_sa.bInheritHandle = FALSE;
-	m_sa.lpSecurityDescriptor = m_sd.descriptor();
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength = sizeof(sa);
+	sa.bInheritHandle = FALSE;
+	sa.lpSecurityDescriptor = sd.descriptor();
 
 #elif defined(HAVE_UNISTD_H)
 
-	m_sa.mode = 0600;
+	SECURITY_ATTRIBUTES sa;
+	sa.mode = 0600;
+	sa.pass_credentials = false;
 
 #endif
 
@@ -427,7 +431,7 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 		strPipe.replace_at(0,'\0');
 
 	int err = 0;
-	m_ptrAcceptor = m_proactor->accept(this,&on_accept,strPipe.c_str(),err,&m_sa);
+	m_ptrAcceptor = m_proactor->accept(this,&on_accept,strPipe.c_str(),err,&sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept failed: %s",OOBase::system_error_text(err)),false);
 

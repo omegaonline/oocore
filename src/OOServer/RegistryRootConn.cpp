@@ -94,7 +94,12 @@ bool Registry::RootConnection::start()
 
 bool Registry::RootConnection::recv_next()
 {
-#if defined(HAVE_UNISTD_H)
+#if defined(_WIN32)
+
+	addref();
+
+	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_message_win32);
+#elif defined(HAVE_UNISTD_H)
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
@@ -102,11 +107,6 @@ bool Registry::RootConnection::recv_next()
 	addref();
 
 	int err = OOBase::CDRIO::recv_msg_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
-#elif defined(_WIN32)
-
-	addref();
-
-	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&RootConnection::on_message_win32);
 #endif
 	if (err)
 	{
@@ -117,7 +117,74 @@ bool Registry::RootConnection::recv_next()
 	return true;
 }
 
-#if defined(HAVE_UNISTD_H)
+#if defined(_WIN32)
+
+void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
+{
+	if (stream.length() == 0)
+		LOG_ERROR(("Root pipe disconnected"));
+	else if (err)
+		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
+	else
+		on_message(stream);
+
+	release();
+}
+
+void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
+{
+	Omega::uint16_t response_id;
+	stream.read(response_id);
+
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString sid(allocator);
+	stream.read_string(sid);
+
+	if (stream.last_error())
+		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
+	else
+	{
+		int err = stream.reset();
+		if (err)
+			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		else
+		{
+			size_t mark = stream.buffer()->mark_wr_ptr();
+
+			stream.write(Omega::uint16_t(0));
+			stream.write(response_id);
+
+			OOBase::LocalString pipe(allocator);
+
+
+			// Create named pipe with access to OOBase::Win32::SIDFromString(sid), called 'pipe'
+
+
+			int ret_err = 0; //m_pManager->new_connection(sid,pipe);
+			stream.write(static_cast<Omega::int32_t>(ret_err));
+			if (!ret_err)
+				stream.write_string(pipe);
+
+			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+			if (stream.last_error())
+				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+			else
+			{
+				addref();
+
+				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
+				if (err)
+				{
+					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
+
+					release();
+				}
+			}
+		}
+	}
+}
+
+#elif defined(HAVE_UNISTD_H)
 
 void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err)
 {
@@ -228,72 +295,6 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 	}
 }
 
-#elif defined(_WIN32)
-
-void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
-{
-	if (stream.length() == 0)
-		LOG_ERROR(("Root pipe disconnected"));
-	else if (err)
-		LOG_ERROR(("Failed to receive from root pipe: %s",OOBase::system_error_text(err)));
-	else
-		on_message(stream);
-
-	release();
-}
-
-void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
-{
-	OOBase::StackAllocator<256> allocator;
-
-	Omega::uint16_t response_id;
-	stream.read(response_id);
-
-	OOBase::LocalString sid(allocator);
-	stream.read_string(sid);
-
-	if (stream.last_error())
-		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
-	else
-	{
-		int err = stream.reset();
-		if (err)
-			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
-		else
-		{
-			size_t mark = stream.buffer()->mark_wr_ptr();
-
-			stream.write(Omega::uint16_t(0));
-			stream.write(response_id);
-
-			OOBase::LocalString pipe(allocator);
-			// Create named pipe with access to OOBase::Win32::SIDFromString(sid), called 'pipe'
-
-
-			int ret_err = 0; //m_pManager->new_connection(sid,pipe);
-			stream.write(static_cast<Omega::int32_t>(ret_err));
-			if (!ret_err)
-				stream.write_string(pipe);
-
-			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
-			if (stream.last_error())
-				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-			else
-			{
-				addref();
-
-				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
-				if (err)
-				{
-					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-
-					release();
-				}
-			}
-		}
-	}
-}
-
 #endif
 
 void Registry::RootConnection::on_sent(OOBase::Buffer* buffer, int err)
@@ -304,10 +305,10 @@ void Registry::RootConnection::on_sent(OOBase::Buffer* buffer, int err)
 	release();
 }
 
-#if defined(HAVE_UNISTD_H)
-void Registry::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
-#elif defined(_WIN32)
+#if defined(_WIN32)
 void Registry::RootConnection::on_message(OOBase::CDRStream& stream)
+#elif defined(HAVE_UNISTD_H)
+void Registry::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 #endif
 {
 	OOServer::Root2Reg_OpCode_t op_code;
@@ -320,10 +321,10 @@ void Registry::RootConnection::on_message(OOBase::CDRStream& stream)
 		case OOServer::Root2Reg_NewConnection:
 			if (recv_next())
 			{
-#if defined(HAVE_UNISTD_H)
-				new_connection(stream,passed_fd);
-#else
+#if defined(_WIN32)
 				new_connection(stream);
+#elif defined(HAVE_UNISTD_H)
+				new_connection(stream,passed_fd);
 #endif
 			}
 			break;

@@ -101,10 +101,6 @@ namespace Root
 		bool get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain);
 
 		// Client handling members
-		SECURITY_ATTRIBUTES              m_sa;
-#if defined(_WIN32)
-		OOBase::Win32::sec_descript_t    m_sd;
-#endif
 		OOBase::RefPtr<OOBase::Acceptor> m_client_acceptor;
 		OOBase::HashTable<pid_t,OOBase::RefPtr<ClientConnection> > m_clients;
 

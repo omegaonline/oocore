@@ -39,14 +39,14 @@ namespace User
 		Manager*                            m_pManager;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
-#if defined(HAVE_UNISTD_H)
-		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
-		void on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd);
-		void new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd);
-#elif defined(_WIN32)
+#if defined(_WIN32)
 		void on_message_win32(OOBase::CDRStream& stream, int err);
 		void on_message(OOBase::CDRStream& stream);
 		void new_connection(OOBase::CDRStream& stream);
+#elif defined(HAVE_UNISTD_H)
+		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
+		void on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd);
+		void new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd);
 #else
 #error Implement platform native credential and pipe handle passing
 #endif

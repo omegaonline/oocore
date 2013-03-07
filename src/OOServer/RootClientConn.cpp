@@ -131,18 +131,20 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	ea[2].Trustee.ptstrName = (LPWSTR)pSIDNetwork;
 
 	// Create a new ACL
-	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+	OOBase::Win32::sec_descript_t sd;
+	DWORD dwErr = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
 
 	// Create a new security descriptor
-	m_sa.nLength = sizeof(m_sa);
-	m_sa.bInheritHandle = FALSE;
-	m_sa.lpSecurityDescriptor = m_sd.descriptor();
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength = sizeof(sa);
+	sa.bInheritHandle = FALSE;
+	sa.lpSecurityDescriptor = sd.descriptor();
 
 	const char* pipe_name = "OmegaOnline";
 	int err = 0;
-	m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,pipe_name,err,&m_sa);
+	m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,pipe_name,err,&sa);
 	if (err)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: '%s' %s",pipe_name,OOBase::system_error_text(err)),false);
 
@@ -338,15 +340,16 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
 	#define ROOT_NAME "/tmp/omegaonline"
 #endif
 
-	m_sa.mode = 0666;
-	m_sa.pass_credentials = true;
+	SECURITY_ATTRIBUTES sa;
+	sa.mode = 0666;
+	sa.pass_credentials = true;
 
 	int err = 0;
-	m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
+	m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&sa);
 	if (err == EADDRINUSE)
 	{
 		::unlink(ROOT_NAME);
-		m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&m_sa);
+		m_client_acceptor = m_proactor->accept(this,&Manager::accept_client,ROOT_NAME,err,&sa);
 	}
 
 	if (err)

@@ -164,7 +164,7 @@ int Registry::Manager::open_run_proactor(void* p)
 	return err;
 }
 
-int Registry::Manager::new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, uid_t uid)
+int Registry::Manager::new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, const uid_t& uid)
 {
 
 	return 0;

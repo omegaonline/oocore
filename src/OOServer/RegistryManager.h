@@ -58,7 +58,7 @@ namespace Registry
 
 		int on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings);
 
-		int new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, uid_t uid);
+		int new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, const uid_t& uid);
 	};
 }
 

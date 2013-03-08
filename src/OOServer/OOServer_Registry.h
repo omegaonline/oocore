@@ -64,4 +64,9 @@ namespace Registry
 	bool is_debug();
 }
 
+#if defined(_WIN32)
+typedef OOBase::Win32::SmartHandle uid_t;
+typedef DWORD pid_t;
+#endif
+
 #endif // OOSERVER_REGISTRY_H_INCLUDED_

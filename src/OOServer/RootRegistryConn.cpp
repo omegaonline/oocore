@@ -342,6 +342,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
 	response_id.write(stream);
 	stream.write_string(strSID);
+	stream.write(ptrUser->get_pid());
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())

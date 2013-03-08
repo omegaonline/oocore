@@ -40,6 +40,31 @@ namespace Registry
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
 #if defined(_WIN32)
+		class PipeConnection : public OOBase::RefCounted
+		{
+		public:
+			PipeConnection(RootConnection* parent) : m_parent(parent)
+			{}
+
+			int start(DWORD pid, OOBase::LocalString& strPipe, const char* pszSID);
+
+		private:
+			RootConnection* m_parent;
+			OOBase::RefPtr<OOBase::Acceptor> m_wait;
+			OOBase::RefPtr<OOBase::Acceptor> m_pipe;
+
+			void destroy()
+			{
+				OOBase::CrtAllocator::delete_free(this);
+			}
+			static void onWait(void* param, HANDLE hObject, bool bTimedout, int err);
+			static void onAccept(void* param, OOBase::AsyncSocket* pSocket, int err);
+		};
+		friend class PipeConnection;
+
+		OOBase::SpinLock m_lock;
+		OOBase::HashTable<const PipeConnection*,OOBase::RefPtr<PipeConnection> > m_mapConns;
+
 		void on_message_win32(OOBase::CDRStream& stream, int err);
 		void on_message(OOBase::CDRStream& stream);
 		void new_connection(OOBase::CDRStream& stream);

@@ -131,14 +131,124 @@ void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int e
 	release();
 }
 
+void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObject, bool bTimedout, int err)
+{
+	PipeConnection* pThis = static_cast<PipeConnection*>(param);
+	OOBase::Win32::SmartHandle hProcess(hObject);
+
+	if (err)
+		LOG_ERROR(("Failed to wait for user process: %s",OOBase::system_error_text(err)));
+	else
+		LOG_WARNING(("User process died before connecting to unique pipe"));
+
+	// Close the pipe, the process has died
+	pThis->m_pipe = NULL;
+
+	// Remove us from the waiting list
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_parent->m_lock);
+	pThis->m_parent->m_mapConns.remove(pThis);
+	guard.release();
+
+	// Done here
+	pThis->release();
+}
+
+void Registry::RootConnection::PipeConnection::onAccept(void* param, OOBase::AsyncSocket* pSocket, int err)
+{
+	PipeConnection* pThis = static_cast<PipeConnection*>(param);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket(pSocket);
+
+	if (err)
+		LOG_ERROR(("User process pipe accept failed: %s",OOBase::system_error_text(err)));
+	else
+	{
+		HANDLE hPipe = (HANDLE)pSocket->get_handle();
+
+		if (!ImpersonateNamedPipeClient(hPipe))
+			LOG_ERROR(("ImpersonateNamedPipeClient failed: %s",OOBase::system_error_text()));
+		else
+		{
+			uid_t uid;
+			BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
+			if (!bRes)
+				err = GetLastError();
+
+			if (!RevertToSelf())
+			{
+				OOBase_CallCriticalFailure(GetLastError());
+				abort();
+			}
+
+			if (!err)
+				pThis->m_parent->m_pManager->new_connection(ptrSocket,uid);
+		}
+	}
+
+	// Close the wait, something happened on the pipe
+	pThis->m_wait = NULL;
+
+	// Remove us from the waiting list
+	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_parent->m_lock);
+	pThis->m_parent->m_mapConns.remove(pThis);
+	guard.release();
+
+	// Done here
+	pThis->release();
+}
+
+int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalString& strPipe, const char* pszSID)
+{
+	OOBase::Win32::SmartHandle hProcess(OpenProcess(SYNCHRONIZE,FALSE,pid));
+	if (!hProcess)
+		return GetLastError();
+
+	addref();
+
+	int err = 0;
+	m_wait = m_parent->m_pManager->m_proactor->wait_for_object(this,&onWait,hProcess,err);
+	if (err)
+	{
+		LOG_ERROR(("Failed to wait on process handle: %s",OOBase::system_error_text(err)));
+		release();
+		return err;
+	}
+
+	hProcess.detach();
+
+	addref();
+
+	char szPipe[64] = {0};
+	m_pipe = m_parent->m_pManager->m_proactor->accept_unique_pipe(this,&onAccept,szPipe,err,pszSID);
+	if (err)
+	{
+		LOG_ERROR(("Failed to create unique pipe: %s",OOBase::system_error_text(err)));
+		release();
+		m_wait = NULL;
+		return err;
+	}
+
+	err = strPipe.assign(szPipe);
+	if (err)
+	{
+		LOG_ERROR(("Failed to assign string: %s",OOBase::system_error_text(err)));
+		m_pipe = NULL;
+		m_wait = NULL;
+	}
+
+	return err;
+}
+
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
 	Omega::uint16_t response_id;
 	stream.read(response_id);
 
 	OOBase::StackAllocator<256> allocator;
-	OOBase::LocalString sid(allocator);
-	stream.read_string(sid);
+	OOBase::LocalString strSID(allocator);
+	stream.read_string(strSID);
+
+	pid_t pid = 0;
+	stream.read(pid);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
@@ -154,16 +264,38 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			stream.write(Omega::uint16_t(0));
 			stream.write(response_id);
 
-			OOBase::LocalString pipe(allocator);
+			int ret_err = 0;
+			OOBase::LocalString strPipe(allocator);
 
+			PipeConnection* pConn = NULL;
+			if (!OOBase::CrtAllocator::allocate_new(pConn,this))
+			{
+				ret_err = ERROR_OUTOFMEMORY;
+				LOG_ERROR(("Failed to allocate connection: %s",OOBase::system_error_text(ret_err)));
+			}
+			else
+			{
+				OOBase::RefPtr<PipeConnection> ptrConn(pConn);
 
-			// Create named pipe with access to OOBase::Win32::SIDFromString(sid), called 'pipe'
+				OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
+				ret_err = m_mapConns.insert(pConn,ptrConn);
+				if (ret_err)
+					LOG_ERROR(("Failed to insert connection: %s",OOBase::system_error_text(ret_err)));
+				else
+				{
+					ret_err = ptrConn->start(pid,strPipe,strSID.c_str());
+					if (ret_err)
+					{
+						m_mapConns.remove(pConn);
+						LOG_ERROR(("Failed to start connection: %s",OOBase::system_error_text(ret_err)));
+					}
+				}
+			}
 
-			int ret_err = 0; //m_pManager->new_connection(sid,pipe);
 			stream.write(static_cast<Omega::int32_t>(ret_err));
 			if (!ret_err)
-				stream.write_string(pipe);
+				stream.write_string(strPipe);
 
 			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 			if (stream.last_error())

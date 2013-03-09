@@ -2,20 +2,20 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOSvrHost, the Omega Online user host application.
+// This file is part of OOSvrReg, the Omega Online registry server.
 //
-// OOSvrHost is free software: you can redistribute it and/or modify
+// OOSvrReg is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// OOSvrHost is distributed in the hope that it will be useful,
+// OOSvrReg is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with OOSvrHost.  If not, see <http://www.gnu.org/licenses/>.
+// along with OOSvrReg.  If not, see <http://www.gnu.org/licenses/>.
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -69,15 +69,11 @@ BEGIN
         BLOCK "080004b0"
         BEGIN
             VALUE "CompanyName", "www.omegaonline.org.uk"
-            VALUE "FileDescription", "Omega Online service host"
+            VALUE "FileDescription", "Omega Online registry server"
             VALUE "FileVersion", OOCORE_VERSION
 			VALUE "LegalCopyright", "GNU General Public License"
-            VALUE "InternalName", "OOSvrHost"
-#ifdef WIN64_HYBRID
-            VALUE "OriginalFilename", "OOSvrHost64.exe"
-#else
-            VALUE "OriginalFilename", "OOSvrHost32.exe"
-#endif
+            VALUE "InternalName", "OOSvrReg"
+            VALUE "OriginalFilename", "OOSvrReg.exe"
             VALUE "ProductName", "Omega Online Core"
             VALUE "ProductVersion", OOCORE_VERSION
         END

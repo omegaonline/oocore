@@ -64,6 +64,10 @@ oosvrreg_SOURCES = \
 oosvrreg_CPPFLAGS = $(AM_CPPFLAGS)
 oosvrreg_LDADD = @top_builddir@/oobase/liboobase.la
 
+if WIN32
+oosvrreg_SOURCES += OOServer.rc
+endif
+
 pkglibexec_PROGRAMS += oosvruser
 
 oosvruser_SOURCES = \

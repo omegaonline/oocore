@@ -60,6 +60,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UserCA", "installers\WiX\Us
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestService", "test\TestService\TestService.vcxproj", "{E1E124DB-9221-4148-9336-9F44912D6E41}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOSvrReg", "src\OOServer\OOSvrReg.vcxproj", "{0497FDC3-37A9-44B4-8060-16CB7D662F79}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -176,6 +178,14 @@ Global
 		{E1E124DB-9221-4148-9336-9F44912D6E41}.Release|Win32.ActiveCfg = Release|Win32
 		{E1E124DB-9221-4148-9336-9F44912D6E41}.Release|Win32.Build.0 = Release|Win32
 		{E1E124DB-9221-4148-9336-9F44912D6E41}.Release|x64.ActiveCfg = Release|Win32
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Debug|Win32.Build.0 = Debug|Win32
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Debug|x64.ActiveCfg = Debug|x64
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Debug|x64.Build.0 = Debug|x64
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Release|Win32.ActiveCfg = Release|Win32
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Release|Win32.Build.0 = Release|Win32
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Release|x64.ActiveCfg = Release|x64
+		{0497FDC3-37A9-44B4-8060-16CB7D662F79}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

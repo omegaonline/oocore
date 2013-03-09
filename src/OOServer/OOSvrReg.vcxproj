@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>OOSvrUser</ProjectName>
-    <ProjectGuid>{F19DB319-BB3B-4965-A4C2-26BCB674DF99}</ProjectGuid>
+    <ProjectName>OOSvrReg</ProjectName>
+    <ProjectGuid>{0497FDC3-37A9-44B4-8060-16CB7D662F79}</ProjectGuid>
     <RootNamespace>OOHost</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -62,16 +62,16 @@
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)_User\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)_Reg\</IntDir>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</GenerateManifest>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)_User\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)_Reg\</IntDir>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GenerateManifest>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)_User\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)_Reg\</IntDir>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</GenerateManifest>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)_User\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)_Reg\</IntDir>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</GenerateManifest>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
@@ -99,7 +99,7 @@
       <AdditionalIncludeDirectories>..\..\oobase\include;C:\Program Files\Visual Leak Detector\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>OOServer_User.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>OOServer_Registry.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <EnablePREfast>true</EnablePREfast>
@@ -125,7 +125,7 @@
       <PreprocessorDefinitions>WIN64_HYBRID</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>OOServer_User.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>OOServer_Registry.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -150,7 +150,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>OOServer_User.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>OOServer_Registry.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -181,7 +181,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>OOServer_User.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>OOServer_Registry.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -195,74 +195,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="UserChannel.cpp" />
-    <ClCompile Include="MessageConnection.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PrecompiledHeaderFile>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </PrecompiledHeaderFile>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </PrecompiledHeaderFile>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </PrecompiledHeaderFile>
-    </ClCompile>
-    <ClCompile Include="UserIPS.cpp" />
-    <ClCompile Include="UserMain.cpp">
+    <ClCompile Include="RegistryMain.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UserManager.cpp" />
-    <ClCompile Include="UserNet.cpp" />
-    <ClCompile Include="UserProcessUnix.cpp" />
-    <ClCompile Include="UserProcessWin32.cpp" />
-    <ClCompile Include="UserRegistry.cpp" />
-    <ClCompile Include="UserRootConn.cpp" />
-    <ClCompile Include="UserROT.cpp" />
-    <ClCompile Include="UserServices.cpp" />
+    <ClCompile Include="RegistryManager.cpp" />
+    <ClCompile Include="RegistryRootConn.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\OOCore\CDRMessage.h" />
-    <ClInclude Include="UserChannel.h" />
-    <ClInclude Include="MessageConnection.h" />
-    <ClInclude Include="OOServer_User.h" />
+    <ClInclude Include="OOServer_Registry.h" />
+    <ClInclude Include="RegistryManager.h" />
+    <ClInclude Include="RegistryRootConn.h" />
     <ClInclude Include="Protocol.h" />
-    <ClInclude Include="..\OOCore\Server.h" />
-    <ClInclude Include="UserIPS.h" />
-    <ClInclude Include="UserManager.h" />
-    <ClInclude Include="UserNet.h" />
-    <ClInclude Include="UserProcess.h" />
-    <ClInclude Include="UserRegistry.h" />
-    <ClInclude Include="UserRootConn.h" />
-    <ClInclude Include="UserROT.h" />
-    <ClInclude Include="UserServices.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="logo.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OOSvrUser.rc" />
+    <ResourceCompile Include="OOSvrReg.rc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\oobase\src\OOBase.vcxproj">
       <Project>{10616ef7-6939-463a-9af6-8a1f3e9f5b16}</Project>
-      <Private>false</Private>
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
-    </ProjectReference>
-    <ProjectReference Include="..\OOCore\OOCore.vcxproj">
-      <Project>{b4fb5d7c-0441-426a-8457-a2e6f94d9a5b}</Project>
       <Private>false</Private>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
       <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>

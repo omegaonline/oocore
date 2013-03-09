@@ -63,12 +63,6 @@ namespace
 	bool CriticalFailure(const char* msg)
 	{
 		OOBase::Logger::log(OOBase::Logger::Error,"%s",msg);
-
-		if (User::is_debug())
-		{
-			// Give us a chance to read the errors!
-			OOBase::Thread::sleep(15000);
-		}
 		return true;
 	}
 

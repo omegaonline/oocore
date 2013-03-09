@@ -927,7 +927,7 @@ bool Root::Manager::get_registry_hive(const uid_t& hToken, OOBase::LocalString s
 		if (err)
 			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(err)),false);
 
-		OOBase::LocalString strUsersDir(strHive.get_allocator()),strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
+		OOBase::LocalString strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
 		err = OOBase::Win32::wchar_t_to_utf8(ptrUsersDir,strUsersDir);
 		if (!err)
 			err = OOBase::Win32::wchar_t_to_utf8(ptrUserName,strUserName);

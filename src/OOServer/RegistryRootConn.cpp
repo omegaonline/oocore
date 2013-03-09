@@ -131,7 +131,7 @@ void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int e
 	release();
 }
 
-void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObject, bool bTimedout, int err)
+void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObject, bool /*bTimedout*/, int err)
 {
 	PipeConnection* pThis = static_cast<PipeConnection*>(param);
 	OOBase::Win32::SmartHandle hProcess(hObject);
@@ -174,11 +174,8 @@ void Registry::RootConnection::PipeConnection::onAccept(void* param, OOBase::Asy
 				err = GetLastError();
 
 			if (!RevertToSelf())
-			{
 				OOBase_CallCriticalFailure(GetLastError());
-				abort();
-			}
-
+			
 			if (!err)
 				pThis->m_parent->m_pManager->new_connection(ptrSocket,uid);
 		}
@@ -429,7 +426,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 
 #endif
 
-void Registry::RootConnection::on_sent(OOBase::Buffer* buffer, int err)
+void Registry::RootConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err)
 		LOG_ERROR(("Failed to send data to root: %s",OOBase::system_error_text(err)));

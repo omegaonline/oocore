@@ -132,7 +132,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 
 	// Create a new ACL
 	OOBase::Win32::sec_descript_t sd;
-	DWORD dwErr = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+	DWORD dwErr = sd.SetEntriesInAcl(NUM_ACES,ea);
 	if (dwErr != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
 
@@ -165,11 +165,8 @@ bool Root::ClientConnection::start()
 		err = GetLastError();
 
 	if (!RevertToSelf())
-	{
 		OOBase_CallCriticalFailure(GetLastError());
-		abort();
-	}
-
+	
 	if (!bRes)
 		LOG_ERROR_RETURN(("OpenThreadToken failed: %s",OOBase::system_error_text(err)),false);
 
@@ -285,7 +282,7 @@ void Root::ClientConnection::on_message_posix(OOBase::CDRStream& stream, OOBase:
 		}
 
 		if (!err)
-			on_message(stream,0);
+			return on_message(stream,0);
 	}
 
 	release();
@@ -394,23 +391,30 @@ void Root::ClientConnection::on_done(OOBase::Buffer* data_buffer, OOBase::Buffer
 
 void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 {
-	// Check the versions are correct
-	Omega::uint32_t version = 0;
-	if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-		LOG_WARNING(("Unsupported version received: %u",version));
+	if (err)
+		LOG_ERROR(("Failed to receive from client pipe: %s",OOBase::system_error_text(err)));
 	else
 	{
-		pid_t pid = 0;
-		if (!stream.read_string(m_session_id) || !stream.read(pid))
-			LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
+		// Check the versions are correct
+		Omega::uint32_t version = 0;
+		if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
+			LOG_WARNING(("Unsupported version received: %u",version));
 		else
 		{
-			if (!m_pid)
-				m_pid = pid;
+			pid_t pid = 0;
+			if (!stream.read_string(m_session_id) || !stream.read(pid))
+				LOG_ERROR(("Failed to retrieve client session id: %s",OOBase::system_error_text(stream.last_error())));
+			else
+			{
+				if (!m_pid)
+					m_pid = pid;
 
-			m_pManager->connect_client(this);
+				m_pManager->connect_client(this);
+			}
 		}
 	}
+
+	release();
 }
 
 bool Root::Manager::get_client(pid_t id, OOBase::RefPtr<ClientConnection>& ptrClient)

@@ -390,7 +390,7 @@ void User::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::
 	}
 }
 
-void User::RootConnection::on_sent(OOBase::Buffer* buffer, int err)
+void User::RootConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err)
 		LOG_ERROR(("Failed to send data to root: %s",OOBase::system_error_text(err)));

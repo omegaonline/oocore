@@ -45,6 +45,12 @@
     <ClCompile Include="UserServices.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UserProcessUnix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UserRootConn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h">
@@ -84,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UserServices.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserRootConn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

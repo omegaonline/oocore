@@ -223,8 +223,10 @@
     </ClCompile>
     <ClCompile Include="UserManager.cpp" />
     <ClCompile Include="UserNet.cpp" />
+    <ClCompile Include="UserProcessUnix.cpp" />
     <ClCompile Include="UserProcessWin32.cpp" />
     <ClCompile Include="UserRegistry.cpp" />
+    <ClCompile Include="UserRootConn.cpp" />
     <ClCompile Include="UserROT.cpp" />
     <ClCompile Include="UserServices.cpp" />
   </ItemGroup>
@@ -240,6 +242,7 @@
     <ClInclude Include="UserNet.h" />
     <ClInclude Include="UserProcess.h" />
     <ClInclude Include="UserRegistry.h" />
+    <ClInclude Include="UserRootConn.h" />
     <ClInclude Include="UserROT.h" />
     <ClInclude Include="UserServices.h" />
   </ItemGroup>

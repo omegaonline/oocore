@@ -409,7 +409,7 @@ bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
 
 	// Create a new ACL
 	OOBase::Win32::sec_descript_t sd;
-	DWORD dwErr = sd.SetEntriesInAcl(1,&ea,NULL);
+	DWORD dwErr = sd.SetEntriesInAcl(1,&ea);
 	if (dwErr != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
 

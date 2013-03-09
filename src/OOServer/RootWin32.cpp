@@ -137,7 +137,7 @@ namespace
 		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 		OOBase::Win32::sec_descript_t sd;
-		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwRes)),INVALID_HANDLE_VALUE);
 
@@ -277,7 +277,7 @@ namespace
 		ea[2].Trustee.TrusteeType = TRUSTEE_IS_USER;
 		ea[2].Trustee.ptstrName = (LPWSTR)pSIDLogon;
 
-		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+		return sd.SetEntriesInAcl(NUM_ACES,ea);
 	}
 
 	DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOBase::Win32::sec_descript_t& sd)
@@ -309,7 +309,7 @@ namespace
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
 		ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
 
-		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+		return sd.SetEntriesInAcl(NUM_ACES,ea);
 	}
 
 	bool OpenCorrectWindowStation(const uid_t& hToken, OOBase::LocalString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)

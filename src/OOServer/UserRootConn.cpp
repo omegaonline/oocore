@@ -227,9 +227,7 @@ bool User::RootConnection::start()
 			passed_fds[1].detach();
 	}
 
-	err = stream.reset();
-	if (err)
-		LOG_ERROR_RETURN(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())),false);
+	stream.reset();
 
 	size_t mark = stream.buffer()->mark_wr_ptr();
 
@@ -315,37 +313,33 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 	else
 	{
-		int err = stream.reset();
-		if (err)
-			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		stream.reset();
+
+		size_t mark = stream.buffer()->mark_wr_ptr();
+
+		stream.write(Omega::uint16_t(0));
+		stream.write(response_id);
+
+		void* TODO; // Omega_ConnectChannel(passed_fd,pid) ?!?!
+		int ret_err = 0;
+
+		if (ret_err)
+			passed_fd.detach();
+
+		stream.write(static_cast<Omega::int32_t>(ret_err));
+		stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+		if (stream.last_error())
+			LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
-			size_t mark = stream.buffer()->mark_wr_ptr();
+			addref();
 
-			stream.write(Omega::uint16_t(0));
-			stream.write(response_id);
-
-			void* TODO; // Omega_ConnectChannel(passed_fd,pid) ?!?!
-			int ret_err = 0;
-
-			if (ret_err)
-				passed_fd.detach();
-
-			stream.write(static_cast<Omega::int32_t>(ret_err));
-			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
-			if (stream.last_error())
-				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-			else
+			int err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
+			if (err)
 			{
-				addref();
+				release();
 
-				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
-				if (err)
-				{
-					release();
-
-					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-				}
+				LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
 			}
 		}
 	}

@@ -397,31 +397,27 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 			ret_err = m_pManager->new_connection(ptrSocket,uid);
 		}
 
-		int err = stream.reset();
-		if (err)
-			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		stream.reset();
+
+		size_t mark = stream.buffer()->mark_wr_ptr();
+
+		stream.write(Omega::uint16_t(0));
+		stream.write(response_id);
+		stream.write(static_cast<Omega::int32_t>(ret_err));
+
+		stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+		if (stream.last_error())
+			LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 		else
 		{
-			size_t mark = stream.buffer()->mark_wr_ptr();
+			addref();
 
-			stream.write(Omega::uint16_t(0));
-			stream.write(response_id);
-			stream.write(static_cast<Omega::int32_t>(ret_err));
-
-			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
-			if (stream.last_error())
-				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-			else
+			int err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
+			if (err)
 			{
-				addref();
+				LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
 
-				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
-				if (err)
-				{
-					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-
-					release();
-				}
+				release();
 			}
 		}
 	}

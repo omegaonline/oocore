@@ -71,10 +71,8 @@ bool Registry::RootConnection::start()
 
 	int ret_err = m_pManager->on_start(strDb,nThreads,tabSettings);
 
-	err = stream.reset();
-	if (err)
-		LOG_ERROR_RETURN(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())),false);
-
+	stream.reset();
+	
 	size_t mark = stream.buffer()->mark_wr_ptr();
 
 	stream.write(Omega::uint16_t(0));
@@ -257,63 +255,59 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 	else
 	{
-		int err = stream.reset();
-		if (err)
-			LOG_ERROR(("Failed to reset stream: %s",OOBase::system_error_text(stream.last_error())));
+		stream.reset();
+		
+		size_t mark = stream.buffer()->mark_wr_ptr();
+
+		stream.write(Omega::uint16_t(0));
+		stream.write(response_id);
+
+		int ret_err = 0;
+		OOBase::LocalString strPipe(allocator);
+
+		PipeConnection* pConn = NULL;
+		if (!OOBase::CrtAllocator::allocate_new(pConn,this))
+		{
+			ret_err = ERROR_OUTOFMEMORY;
+			LOG_ERROR(("Failed to allocate connection: %s",OOBase::system_error_text(ret_err)));
+		}
 		else
 		{
-			size_t mark = stream.buffer()->mark_wr_ptr();
+			OOBase::RefPtr<PipeConnection> ptrConn(pConn);
 
-			stream.write(Omega::uint16_t(0));
-			stream.write(response_id);
+			OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-			int ret_err = 0;
-			OOBase::LocalString strPipe(allocator);
-
-			PipeConnection* pConn = NULL;
-			if (!OOBase::CrtAllocator::allocate_new(pConn,this))
-			{
-				ret_err = ERROR_OUTOFMEMORY;
-				LOG_ERROR(("Failed to allocate connection: %s",OOBase::system_error_text(ret_err)));
-			}
+			ret_err = m_mapConns.insert(pConn,ptrConn);
+			if (ret_err)
+				LOG_ERROR(("Failed to insert connection: %s",OOBase::system_error_text(ret_err)));
 			else
 			{
-				OOBase::RefPtr<PipeConnection> ptrConn(pConn);
-
-				OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-				ret_err = m_mapConns.insert(pConn,ptrConn);
+				ret_err = ptrConn->start(pid,strPipe,strSID.c_str());
 				if (ret_err)
-					LOG_ERROR(("Failed to insert connection: %s",OOBase::system_error_text(ret_err)));
-				else
 				{
-					ret_err = ptrConn->start(pid,strPipe,strSID.c_str());
-					if (ret_err)
-					{
-						m_mapConns.remove(pConn);
-						LOG_ERROR(("Failed to start connection: %s",OOBase::system_error_text(ret_err)));
-					}
+					m_mapConns.remove(pConn);
+					LOG_ERROR(("Failed to start connection: %s",OOBase::system_error_text(ret_err)));
 				}
 			}
+		}
 
-			stream.write(static_cast<Omega::int32_t>(ret_err));
-			if (!ret_err)
-				stream.write_string(strPipe);
+		stream.write(static_cast<Omega::int32_t>(ret_err));
+		if (!ret_err)
+			stream.write_string(strPipe);
 
-			stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
-			if (stream.last_error())
-				LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
-			else
+		stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+		if (stream.last_error())
+			LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
+		else
+		{
+			addref();
+
+			int err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
+			if (err)
 			{
-				addref();
+				LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
 
-				err = m_socket->send(this,&RootConnection::on_sent,stream.buffer());
-				if (err)
-				{
-					LOG_ERROR(("Failed to write response to root: %s",OOBase::system_error_text(stream.last_error())));
-
-					release();
-				}
+				release();
 			}
 		}
 	}

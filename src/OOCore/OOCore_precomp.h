@@ -38,7 +38,7 @@
 #include <OOBase/DLL.h>
 #include <OOBase/Posix.h>
 #include <OOBase/Win32.h>
-#include <OOBase/utf8.h>
+#include <OOBase/tr24731.h>
 #include <OOBase/StackAllocator.h>
 #include <OOBase/CDRIO.h>
 

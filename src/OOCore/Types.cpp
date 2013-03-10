@@ -659,17 +659,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-	OOBase::StackAllocator<64> allocator;
-	OOBase::TempPtr<char> str(allocator);
-	int err = OOBase::temp_printf(str,"{%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X}",
+	char szBuf[40] = {0};
+	snprintf_s(szBuf,sizeof(szBuf),"{%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X}",
 		(uint32_t)guid.Data1,guid.Data2,guid.Data3,
 		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
 		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);
 
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	return static_cast<char*>(str);
+	return szBuf;
 }
 
 namespace

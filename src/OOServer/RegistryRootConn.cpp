@@ -150,6 +150,7 @@ void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObjec
 	guard.release();
 
 	// Done here
+	pThis->m_parent->release();
 	pThis->release();
 }
 
@@ -190,6 +191,7 @@ void Registry::RootConnection::PipeConnection::onAccept(void* param, OOBase::Asy
 	guard.release();
 
 	// Done here
+	pThis->m_parent->release();
 	pThis->release();
 }
 
@@ -200,6 +202,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 		return GetLastError();
 
 	addref();
+	m_parent->addref();
 
 	int err = 0;
 	m_wait = m_parent->m_pManager->m_proactor->wait_for_object(this,&onWait,hProcess,err);
@@ -207,12 +210,14 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 	{
 		LOG_ERROR(("Failed to wait on process handle: %s",OOBase::system_error_text(err)));
 		release();
+		m_parent->release();
 		return err;
 	}
 
 	hProcess.detach();
 
 	addref();
+	m_parent->addref();
 
 	char szPipe[64] = {0};
 	m_pipe = m_parent->m_pManager->m_proactor->accept_unique_pipe(this,&onAccept,szPipe,err,pszSID);
@@ -220,6 +225,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 	{
 		LOG_ERROR(("Failed to create unique pipe: %s",OOBase::system_error_text(err)));
 		release();
+		m_parent->release();
 		m_wait = NULL;
 		return err;
 	}

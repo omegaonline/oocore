@@ -59,7 +59,9 @@ namespace Root
 		uid_t          m_uid;
 		OOBase::String m_session_id;
 
-#if defined(HAVE_UNISTD_H)
+#if defined(_WIN32)
+		void on_message_win32(OOBase::CDRStream& stream, int err);
+#elif defined(HAVE_UNISTD_H)
 		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
 #endif
 

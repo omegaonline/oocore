@@ -134,18 +134,21 @@ void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObjec
 	PipeConnection* pThis = static_cast<PipeConnection*>(param);
 	OOBase::Win32::SmartHandle hProcess(hObject);
 
-	if (err)
-		LOG_ERROR(("Failed to wait for user process: %s",OOBase::system_error_text(err)));
-	else
-		LOG_WARNING(("User process died before connecting to unique pipe"));
+	if (err != ERROR_CANCELLED)
+	{
+		if (err)
+			LOG_ERROR(("Failed to wait for user process: %s",OOBase::system_error_text(err)));
+		else
+			LOG_WARNING(("User process died before connecting to unique pipe"));
 
-	// Close the pipe, the process has died
-	pThis->m_pipe = NULL;
-
-	// Remove us from the waiting list
-	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_parent->m_lock);
-	pThis->m_parent->m_mapConns.remove(pThis);
-	guard.release();
+		// Close the pipe, the process has died
+		pThis->m_pipe = NULL;
+	
+		// Remove us from the waiting list
+		OOBase::Guard<OOBase::SpinLock> guard(pThis->m_parent->m_lock);
+		pThis->m_parent->m_mapConns.remove(pThis);
+		guard.release();
+	}
 
 	// Done here
 	pThis->m_parent->release();

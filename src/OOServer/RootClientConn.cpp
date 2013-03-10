@@ -153,37 +153,9 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 
 bool Root::ClientConnection::start()
 {
-	// Get the connected uid
-	HANDLE hPipe = (HANDLE)m_socket->get_handle();
-
-	if (!ImpersonateNamedPipeClient(hPipe))
-		LOG_ERROR_RETURN(("ImpersonateNamedPipeClient failed: %s",OOBase::system_error_text()),false);
-
-	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&m_uid);
-	int err = 0;
-	if (!bRes)
-		err = GetLastError();
-
-	if (!RevertToSelf())
-		OOBase_CallCriticalFailure(GetLastError());
-	
-	if (!bRes)
-		LOG_ERROR_RETURN(("OpenThreadToken failed: %s",OOBase::system_error_text(err)),false);
-
-	HMODULE hKernel32 = ::GetModuleHandleW(L"Kernel32.dll");
-	if (hKernel32)
-	{
-		typedef BOOL (WINAPI *pfn_GetNamedPipeClientProcessId)(HANDLE Pipe, PULONG ClientProcessId);
-
-		pfn_GetNamedPipeClientProcessId pfn = (pfn_GetNamedPipeClientProcessId)(GetProcAddress(hKernel32,"GetNamedPipeClientProcessId"));
-
-		if (!(*pfn)(hPipe,&m_pid))
-			LOG_ERROR_RETURN(("GetNamedPipeClientProcessId failed: %s",OOBase::system_error_text()),false);
-	}
-
 	addref();
 
-	err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&ClientConnection::on_message);
+	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&ClientConnection::on_message_win32);
 	if (err)
 	{
 		release();
@@ -191,6 +163,54 @@ bool Root::ClientConnection::start()
 	}
 
 	return true;
+}
+
+void Root::ClientConnection::on_message_win32(OOBase::CDRStream& stream, int err)
+{
+	if (!err)
+	{
+		// Get the connected uid
+		HANDLE hPipe = (HANDLE)m_socket->get_handle();
+
+		if (!ImpersonateNamedPipeClient(hPipe))
+		{
+			err = GetLastError();
+			LOG_ERROR(("ImpersonateNamedPipeClient failed: %s",OOBase::system_error_text(err)));
+		}
+		else
+		{
+			BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&m_uid);
+			if (!bRes)
+				err = GetLastError();
+
+			if (!RevertToSelf())
+				OOBase_CallCriticalFailure(GetLastError());
+	
+			if (!bRes)
+				LOG_ERROR(("OpenThreadToken failed: %s",OOBase::system_error_text(err)));
+			else
+			{
+				HMODULE hKernel32 = ::GetModuleHandleW(L"Kernel32.dll");
+				if (hKernel32)
+				{
+					typedef BOOL (WINAPI *pfn_GetNamedPipeClientProcessId)(HANDLE Pipe, PULONG ClientProcessId);
+
+					pfn_GetNamedPipeClientProcessId pfn = (pfn_GetNamedPipeClientProcessId)(GetProcAddress(hKernel32,"GetNamedPipeClientProcessId"));
+
+					if (!(*pfn)(hPipe,&m_pid))
+					{
+						err = GetLastError();
+						LOG_ERROR(("GetNamedPipeClientProcessId failed: %s",OOBase::system_error_text(err)));
+					}
+				}
+			}
+		}
+
+		if (err)
+			return;
+	}
+
+	return on_message(stream,err);
 }
 
 #elif defined(HAVE_UNISTD_H)

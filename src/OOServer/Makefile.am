@@ -26,10 +26,11 @@ ooserverd_CPPFLAGS = $(SQLITE3_CFLAGS) \
 	-DREGDB_PATH=\"@localstatedir@/lib/@PACKAGE@/\" \
 	$(AM_CPPFLAGS) 
 		
-ooserverd_LDADD = liboosvrcmn.la libdb/libdb.la @top_builddir@/oobase/liboobase.la
+ooserverd_LDADD = libdb/libdb.la @top_builddir@/oobase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \
+	Protocol.h \
 	RootMain.cpp \
 	RootManager.h \
 	RootManager.cpp \

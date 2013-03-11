@@ -143,7 +143,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>..\..\include;..\..\oobase\include;C:\Work\sqlite</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include;..\..\oobase\include;C:\work\sqlite3</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_SQLITE3_H;NDEBUG</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

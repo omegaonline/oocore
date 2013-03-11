@@ -181,7 +181,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;NDEBUG</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite3</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>

@@ -239,6 +239,36 @@ namespace
 			OMEGA_THROW(err);
 	}
 
+#if defined(_WIN32)
+	void get_locale_info(LCID Locale, LCTYPE LCType, OOBase::TempPtr<char>& val)
+	{
+		int len = GetLocaleInfoW(Locale,LCType,NULL,0);
+		if (len <= 0)
+			OMEGA_THROW(GetLastError());
+
+		OOBase::TempPtr<wchar_t> wval(val.get_allocator());
+		if (!wval.reallocate(len))
+			OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+		len = GetLocaleInfoW(Locale,LCType,wval,len);
+		if (!len)
+			OMEGA_THROW(GetLastError());
+
+		int err = OOBase::Win32::wchar_t_to_utf8(wval,val);
+		if (err)
+			OMEGA_THROW(err);
+	}
+
+	DWORD get_locale_dword(LCID Locale, LCTYPE LCType)
+	{
+		DWORD val = 0;
+		if (!GetLocaleInfoW(Locale,LCType | LOCALE_RETURN_NUMBER,(LPWSTR)&val,sizeof(val)/sizeof(wchar_t)))
+			OMEGA_THROW(GetLastError());
+
+		return val;
+	}
+#endif
+
 	string_t do_intl_mon(OOBase::LocalString& str, bool negative, EXTRA_LCID)
 	{
 		const char* src_decimal_point = ".";
@@ -246,19 +276,11 @@ namespace
 			src_decimal_point = lc->decimal_point;
 
 #if defined(_WIN32)
-		char decimal_point[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SMONDECIMALSEP,decimal_point,sizeof(decimal_point)))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> decimal_point(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SMONDECIMALSEP,decimal_point);
 
-		char grouping_buf[128] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SMONGROUPING,grouping_buf,sizeof(grouping_buf)))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> grouping_buf(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SMONGROUPING,grouping_buf);
 
 		// Build a crt style grouping
 		char grouping_trans[128] = {0};
@@ -278,12 +300,8 @@ namespace
 
 		grouping_trans[g+1] = CHAR_MAX;
 
-		char thousands_sep[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep,sizeof(thousands_sep)))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> thousands_sep(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep);
 #else
 		const char* decimal_point = src_decimal_point;
 		const char* grouping = "\x03\x00";
@@ -327,75 +345,27 @@ namespace
 		int posn = 0;
 
 #if defined(_WIN32)
-		char sign[6];
+		OOBase::TempPtr<char> sign(str.get_allocator());
 
 		if (negative)
 		{
-			DWORD val = 0;
-			if (!GetLocaleInfoA(lcid,LOCALE_INEGSEPBYSPACE | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-			sep_by_space = (val == 1);
+			sep_by_space = (get_locale_dword(lcid,LOCALE_INEGSEPBYSPACE) == 1);
+			cs_precedes = (get_locale_dword(lcid,LOCALE_INEGSYMPRECEDES) == 1);
+			posn = static_cast<int>(get_locale_dword(lcid,LOCALE_INEGSIGNPOSN));
 
-			if (!GetLocaleInfoA(lcid,LOCALE_INEGSYMPRECEDES | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-			cs_precedes = (val == 1);
-
-			if (!GetLocaleInfoA(lcid,LOCALE_INEGSIGNPOSN | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-			posn = static_cast<long>(val);
-
-			if (!GetLocaleInfoA(lcid,LOCALE_SNEGATIVESIGN,sign,sizeof(sign)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
+			get_locale_info(lcid,LOCALE_SNEGATIVESIGN,sign);
 		}
 		else
 		{
-			DWORD val = 0;
-			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSEPBYSPACE | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-			sep_by_space = (val == 1);
+			sep_by_space = (get_locale_dword(lcid,LOCALE_IPOSSEPBYSPACE) == 1);
+			cs_precedes = (get_locale_dword(lcid,LOCALE_IPOSSYMPRECEDES) == 1);
+			posn = static_cast<int>(get_locale_dword(lcid,LOCALE_IPOSSIGNPOSN));
 
-			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSYMPRECEDES | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-			cs_precedes = (val == 1);
-
-			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSIGNPOSN | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-			posn = static_cast<long>(val);
-
-			if (!GetLocaleInfoA(lcid,LOCALE_SPOSITIVESIGN,sign,sizeof(sign)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
+			get_locale_info(lcid,LOCALE_SPOSITIVESIGN,sign);
 		}
 
-		char currency[8];
-		if (!GetLocaleInfoA(lcid,LOCALE_SCURRENCY,currency,sizeof(currency)))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> currency(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SCURRENCY,currency);
 
 #else
 		const char* sign;
@@ -420,7 +390,7 @@ namespace
 		switch (posn)
 		{
 		case 0:
-			ret = currency;
+			ret = string_t((char*)currency);
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -437,7 +407,7 @@ namespace
 			break;
 
 		case 1:
-			ret = currency;
+			ret = string_t((char*)currency);
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -454,7 +424,7 @@ namespace
 			break;
 
 		case 2:
-			ret = currency;
+			ret = string_t((char*)currency);
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -514,27 +484,19 @@ namespace
 		if (lc)
 			src_decimal_point = lc->decimal_point;
 
-		char decimal_point[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> decimal_point(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point);
 
 		size_t dp = replace(str,src_decimal_point,decimal_point);
 
-		char thousands_sep[5] = {0};
+		OOBase::TempPtr<char> thousands_sep(str.get_allocator());
 		char trans_grouping[128] = {0};
 		const char* grouping = trans_grouping;
 
 		if (bThou)
 		{
-			char grouping_buf[128] = {0};
-			if (!GetLocaleInfoA(lcid,LOCALE_SGROUPING,grouping_buf,sizeof(grouping_buf)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
+			OOBase::TempPtr<char> grouping_buf(str.get_allocator());
+			get_locale_info(lcid,LOCALE_SGROUPING,grouping_buf);
 
 			// Build a crt style grouping
 
@@ -553,11 +515,7 @@ namespace
 
 			trans_grouping[g+1] = CHAR_MAX;
 
-			if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_sep,sizeof(thousands_sep)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
+			get_locale_info(lcid,LOCALE_STHOUSAND,thousands_sep);
 		}
 #else
 		const char* decimal_point = ".";
@@ -609,12 +567,8 @@ namespace
 			replace(str,lc->decimal_point,".");
 
 #if defined(_WIN32)
-		char decimal_point[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> decimal_point(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point);
 
 		replace(str,decimal_point,".");
 #endif
@@ -690,14 +644,7 @@ namespace
 		if (precision < 0)
 		{
 #if defined(_WIN32)
-			DWORD v = 0;
-			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-
-			precision = static_cast<long>(v);
+			precision = static_cast<int>(get_locale_dword(lcid,LOCALE_IDIGITS));
 #else
 			precision = 2;
 			if (lc && lc->frac_digits != CHAR_MAX)
@@ -719,14 +666,7 @@ namespace
 		if (precision < 0)
 		{
 #if defined(_WIN32)
-			DWORD v = 0;
-			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-
-			precision = static_cast<long>(v);
+			precision = static_cast<int>(get_locale_dword(lcid,LOCALE_IDIGITS));
 #else
 			precision = 2;
 			if (lc && lc->frac_digits != CHAR_MAX)
@@ -815,14 +755,7 @@ namespace
 		if (precision < 0)
 		{
 #if defined(_WIN32)
-			DWORD v = 0;
-			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
-			{
-				DWORD dwErr = GetLastError();
-				OMEGA_THROW(dwErr);
-			}
-
-			precision = static_cast<long>(v);
+			precision = static_cast<int>(get_locale_dword(lcid,LOCALE_IDIGITS));
 #else
 			precision = 2;
 			if (lc && lc->frac_digits != CHAR_MAX)
@@ -1168,12 +1101,8 @@ namespace
 			fmt_decimal_i(strNumber,abs_val,width);
 
 #if defined(_WIN32)
-		char decimal_char[5] = {0};
-		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_char,5))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
+		OOBase::TempPtr<char> decimal_char(allocator);
+		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_char);
 #else
 		const char* decimal_char = ".";
 		if (lc)

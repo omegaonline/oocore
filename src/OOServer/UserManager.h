@@ -69,7 +69,7 @@ namespace User
 		void do_channel_closed_i(Omega::uint32_t channel_id, OOBase::AllocatorInstance& allocator);
 
 		bool connect_root(const OOBase::LocalString& strPipe);
-		int start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::CDRStream& stream);
+		int start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRootSocket, OOBase::CDRStream& stream);
 
 		static int run_proactor(void*);
 

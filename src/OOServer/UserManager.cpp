@@ -234,7 +234,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 	return conn->start();
 }
 
-int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, OOBase::CDRStream& stream)
+int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRootSocket, OOBase::CDRStream& stream)
 {
 
 	return 0;

@@ -60,12 +60,21 @@ bool User::RootConnection::start()
 
 	int ret_err = 0;
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->connect(strRootPipe.c_str(),ret_err,timeout);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrUserSocket = m_pManager->m_proactor->connect(strUserPipe.c_str(),ret_err,timeout);
 	if (ret_err)
 		LOG_ERROR(("Failed to connect to registry pipe: %s",OOBase::system_error_text(ret_err)));
 	else
 	{
-		ret_err = m_pManager->start(ptrSocket,stream);
+		OOBase::RefPtr<OOBase::AsyncSocket> ptrRootSocket;
+		if (!strRootPipe.empty())
+		{
+			ptrRootSocket = m_pManager->m_proactor->connect(strRootPipe.c_str(),ret_err,timeout);
+			if (ret_err)
+				LOG_ERROR(("Failed to connect to registry pipe: %s",OOBase::system_error_text(ret_err)));
+		}
+
+		if (!ret_err)
+			ret_err = m_pManager->start(ptrUserSocket,ptrRootSocket,stream);
 	}
 
 	stream.reset();
@@ -214,17 +223,28 @@ bool User::RootConnection::start()
 
 	// Attach to the pipe
 	int ret_err = 0;
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fds[0],ret_err);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrUserSocket = m_pManager->m_proactor->attach(passed_fds[0],ret_err);
 	if (ret_err)
 		LOG_ERROR(("Failed to attach to registry pipe: %s",OOBase::system_error_text(ret_err)));
 	else
 	{
 		passed_fds[0].detach();
 
-		// Tell the manager to create a new connection
-		ret_err = m_pManager->start(ptrSocket,stream);
+		OOBase::RefPtr<OOBase::AsyncSocket> ptrRootSocket;
+		if (passed_fds[1].is_valid())
+		{
+			ptrRootSocket = m_pManager->m_proactor->attach(passed_fds[1],ret_err);
+			if (ret_err)
+				LOG_ERROR(("Failed to attach to registry pipe: %s",OOBase::system_error_text(ret_err)));
+			else
+				passed_fds[1].detach();
+		}
+
 		if (!ret_err)
-			passed_fds[1].detach();
+		{
+			// Tell the manager to create a new connection
+			ret_err = m_pManager->start(ptrUserSocket,ptrRootSocket,stream);
+		}
 	}
 
 	stream.reset();

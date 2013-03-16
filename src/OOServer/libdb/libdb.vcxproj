@@ -150,7 +150,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite3</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -162,7 +162,7 @@
       <Message>Configuring project settings...</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>make_db.bat c:\work\sqlite $(SolutionDir)bin\$(Configuration)\$(Platform)\ $(SolutionDir)</Command>
+      <Command>make_db.bat c:\work\sqlite3 $(SolutionDir)bin\$(Configuration)\$(Platform)\ $(SolutionDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Building regdb files...</Message>

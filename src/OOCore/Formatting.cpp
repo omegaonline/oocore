@@ -600,7 +600,7 @@ namespace
 		}
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, int precision)
+	void fmt_fixed_i(OOBase::LocalString& str, uint64_t val, int precision)
 	{
 		int err = str.printf("%" PRIu64,val);
 		if (err != 0)
@@ -626,7 +626,7 @@ namespace
 		}
 	}
 
-	void fmt_fixed_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, int precision)
+	void fmt_fixed_i(OOBase::LocalString& str, double val, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -694,7 +694,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, int precision)
+	void fmt_decimal_i(OOBase::LocalString& str, uint64_t val, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -706,7 +706,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_decimal_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, int precision)
+	void fmt_decimal_i(OOBase::LocalString& str, double val, int precision)
 	{
 		fmt_decimal_i(str,static_cast<int64_t>(val),precision);
 	}
@@ -719,7 +719,7 @@ namespace
 		return str.c_str();
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, bool capital, int precision)
+	void fmt_hex_i(OOBase::LocalString& str, uint64_t val, bool capital, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -736,7 +736,7 @@ namespace
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
 
-	void fmt_hex_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, int precision)
+	void fmt_hex_i(OOBase::LocalString& str, double val, bool capital, int precision)
 	{
 		fmt_hex_i(str,static_cast<uint64_t>(val),capital,precision);
 	}
@@ -798,7 +798,7 @@ namespace
 			insert(str,pos,pos+precision-str.length(),'0');
 	}
 
-	void fmt_scientific_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, int precision, EXTRA_LCID)
+	void fmt_scientific_i(OOBase::LocalString& str, double val, bool capital, int precision, EXTRA_LCID)
 	{
 		int err;
 		if (precision >= 0)
@@ -842,7 +842,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, System::Internal::optimal_param<uint64_t>::type val, bool /*capital*/, int precision)
+	void fmt_general_i(OOBase::LocalString& str, uint64_t val, bool /*capital*/, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -854,7 +854,7 @@ namespace
 			OMEGA_THROW(err);
 	}
 
-	void fmt_general_i(OOBase::LocalString& str, System::Internal::optimal_param<double>::type val, bool capital, int precision)
+	void fmt_general_i(OOBase::LocalString& str, double val, bool capital, int precision)
 	{
 		int err;
 		if (precision >= 0)
@@ -892,7 +892,7 @@ namespace
 		return fmt_decimal(allocator,val,0);
 	}
 
-	string_t fmt_round_trip(OOBase::AllocatorInstance& allocator, System::Internal::optimal_param<double>::type val, int precision, EXTRA_LCID)
+	string_t fmt_round_trip(OOBase::AllocatorInstance& allocator, double val, int precision, EXTRA_LCID)
 	{
 		string_t s;
 		for (int i=0; i<2; i+=2)
@@ -989,7 +989,7 @@ namespace
 		return fmt_decimal(allocator,val,0);
 	}
 
-	string_t fmt_rnd_away(OOBase::AllocatorInstance& allocator, System::Internal::optimal_param<double>::type val)
+	string_t fmt_rnd_away(OOBase::AllocatorInstance& allocator, double val)
 	{
 		double res = ceil(fabs(val));
 		return fmt_decimal(allocator,res < 0.0 ? -res : res,0);

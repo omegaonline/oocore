@@ -87,7 +87,7 @@ namespace Omega
 			{
 				static T* value()
 				{
-					return static_cast<T*>(0);
+					return NULL;
 				}
 			};
 
@@ -232,10 +232,8 @@ namespace Omega
 			// Optimal parameter passing
 			template <typename T> struct optimal_param
 			{
-				typedef typename if_else_t<is_c_abi<T>::result,
-					typename if_else_t<sizeof(T) <= sizeof(size_t),T,const typename remove_const<T>::type&>::result,
-					const typename remove_const<T>::type&
-				>::result type;
+				// If C-ABI compliant, then pass by value, else by const ref
+				typedef typename if_else_t<is_c_abi<T>::result,T,const typename remove_const<T>::type&>::result type;
 			};
 
 			template <> struct optimal_param<bool>
@@ -243,9 +241,9 @@ namespace Omega
 				typedef bool type;
 			};
 
-			template <> struct optimal_param<const bool>
+			template <> struct optimal_param<guid_base_t>
 			{
-				typedef const bool type;
+				typedef const guid_base_t& type;
 			};
 
 			template <typename T> struct optimal_param<T&>
@@ -256,6 +254,11 @@ namespace Omega
 			template <typename T> struct optimal_param<T*>
 			{
 				typedef T* type;
+			};
+
+			template <typename T> struct optimal_param<const T>
+			{
+				typedef typename optimal_param<T>::type type;
 			};
 		}
 	}

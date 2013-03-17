@@ -94,6 +94,7 @@ namespace Root
 
 		// User process handling
 		OOBase::HashTable<pid_t,OOBase::RefPtr<UserConnection> > m_user_processes;
+		OOBase::RefPtr<UserConnection>                           m_sandbox_process;
 
 		bool platform_spawn(OOBase::LocalString strBinPath, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain);
 		bool spawn_sandbox_process(OOBase::AllocatorInstance& allocator);

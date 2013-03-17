@@ -500,25 +500,26 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 	if (!res)
 		return false;
 
-	OOBase::RefPtr<UserConnection> ptrUser = new (std::nothrow) UserConnection(this,ptrProcess,ptrSocket);
-	if (!ptrUser)
+	m_sandbox_process = new (std::nothrow) UserConnection(this,ptrProcess,ptrSocket);
+	if (!m_sandbox_process)
 		LOG_ERROR_RETURN(("Failed to create new user connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
 	// Add to process map
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Add to the map
-	err = m_user_processes.insert(ptrProcess->get_pid(),ptrUser);
+	err = m_user_processes.insert(ptrProcess->get_pid(),m_sandbox_process);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to insert process handle: %s",OOBase::system_error_text(err)),false);
 
 	guard.release();
 
-	if (!ptrRoot->start_user(ptrUser))
+	if (!ptrRoot->start_user(m_sandbox_process))
 	{
 		guard.acquire();
 
 		m_user_processes.remove(ptrProcess->get_pid());
+		m_sandbox_process = NULL;
 
 		return false;
 	}

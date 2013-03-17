@@ -100,6 +100,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 
 						// Close the connections to all the user processes
 						m_user_processes.clear();
+						m_sandbox_process = NULL;
 					}
 
 					// Close the connections to all the registry processes

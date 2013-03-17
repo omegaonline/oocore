@@ -67,19 +67,18 @@ namespace Root
 
 #if defined(_WIN32)
 		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
-		bool new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd, size_t reg_id);
+		bool new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd);
 		bool on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id);
 		struct user2_params_t
 		{
 			pid_t client_id;
 			pid_t user_id;
 			OOBase::String strUserFd;
-			size_t reg_id;
 		};
 		bool on_start_user2(OOBase::CDRStream& response, const user2_params_t& params);
 #elif defined(HAVE_UNISTD_H)
 		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
-		bool new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& ptrUserFd, size_t reg_id);
+		bool new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& ptrUserFd);
 		bool on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id, int user_fd);
 		struct user2_params_t
 		{
@@ -87,7 +86,6 @@ namespace Root
 			pid_t user_id;
 			int user_fd;
 			int root_fd;
-			size_t reg_id;
 		};
 		bool on_start_user2(OOBase::CDRStream& response, const user2_params_t& params);
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);

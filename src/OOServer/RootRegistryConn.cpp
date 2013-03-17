@@ -264,7 +264,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 		if (!ptrRoot)
 			LOG_ERROR_RETURN(("Failed to get root registry"),false);
 
-		if (!ptrRoot->new_connection2(client_id,ptrUser,strUserFd,m_id))
+		if (!ptrRoot->new_connection2(client_id,ptrUser,strUserFd))
 			return false;
 	}
 
@@ -274,14 +274,13 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 	return true;
 }
 
-bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd, size_t reg_id)
+bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd)
 {
 	user2_params_t params;
 	params.client_id = client_id;
 	params.user_id = ptrUser->get_pid();
 	params.strUserFd = strUserFd;
-	params.reg_id = reg_id;
-
+	
 	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,params,response_id);
 	if (err)
@@ -294,10 +293,6 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 {
 	ClientConnection::AutoDrop drop1(m_pManager,params.client_id);
 	UserConnection::AutoDrop drop2(m_pManager,params.user_id);
-
-	OOBase::RefPtr<RegistryConnection> ptrReg;
-	if (!m_pManager->get_registry_process(params.reg_id,ptrReg))
-		return true;
 
 	OOBase::RefPtr<UserConnection> ptrUser;
 	if (!m_pManager->get_user_process(params.user_id,ptrUser))
@@ -421,7 +416,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 		if (!ptrRoot)
 			LOG_ERROR_RETURN(("Failed to get root registry"),false);
 
-		if (!ptrRoot->new_connection2(client_id,ptrUser,ptrUserFd,m_id))
+		if (!ptrRoot->new_connection2(client_id,ptrUser,ptrUserFd))
 			return false;
 	}
 
@@ -431,7 +426,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 	return true;
 }
 
-bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& ptrUserFd, size_t reg_id)
+bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& ptrUserFd)
 {
 	// Create a pair of sockets
 	OOBase::POSIX::SmartFD fds[2];
@@ -444,8 +439,7 @@ bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<U
 	params.user_id = ptrUser->get_pid();
 	params.user_fd = static_cast<int>(ptrUserFd);
 	params.root_fd = static_cast<int>(fds[0]);
-	params.reg_id = reg_id;
-
+	
 	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,params,response_id);
 	if (err)
@@ -468,10 +462,6 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 
 	ClientConnection::AutoDrop drop1(m_pManager,params.client_id);
 	UserConnection::AutoDrop drop2(m_pManager,params.user_id);
-
-	OOBase::RefPtr<RegistryConnection> ptrReg;
-	if (!m_pManager->get_registry_process(params.reg_id,ptrReg))
-		return true;
 
 	OOBase::RefPtr<UserConnection> ptrUser;
 	if (!m_pManager->get_user_process(params.user_id,ptrUser))

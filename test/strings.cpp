@@ -151,15 +151,11 @@ bool string_tests_format()
 
 		if (set_locale_helper(1031,"de_DE.utf8"))
 		{
-			Omega::string_t s = "12.345,68";
-			char c[20] = "\xe2\x82\xac";
 #if defined(_WIN32)
-			wchar_t b[10] = {0};
-			MultiByteToWideChar(CP_UTF8,0,c,-1,b,sizeof(b)/sizeof(b[0]));
-			WideCharToMultiByte(CP_THREAD_ACP,0,b,-1,c,sizeof(c),NULL,NULL);
-			s += " ";
+			Omega::string_t s = "12.345,68 \xe2\x82\xac";
+#else
+			Omega::string_t s = "12.345,68\xe2\x82\xac";
 #endif
-			s += c;
 			TEST(Omega::string_t("{0:C}") % 12345.678 == s);
 		}
 
@@ -201,7 +197,7 @@ bool string_tests_format()
 
 		if (set_locale_helper(1053,"sv_SE.utf8"))
 		{
-			TEST(Omega::string_t("{0:N}") % 12345.6789 == "12\xa0" "345,68");
+			TEST(Omega::string_t("{0:N}") % 12345.6789 == "12\xc2\xa0" "345,68");
 		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))

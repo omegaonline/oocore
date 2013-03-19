@@ -51,4 +51,4 @@ Release*/
 debug/
 .project
 .cproject
-.settings/
+.autotools

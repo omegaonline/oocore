@@ -337,7 +337,7 @@ namespace Omega
 				{
 					// NAN does not compare successfully to any other number including itself!
 					static const float4_t nan = std::numeric_limits<float4_t>::signaling_NaN();
-					if (*reinterpret_cast<const uint32_t*>(&val) == *reinterpret_cast<const uint32_t*>(&nan))
+					if (memcmp(&val,&nan,4) == 0)
 						return OOCore_to_string_float_t(std::numeric_limits<float8_t>::signaling_NaN(),strFormat,sizeof(float4_t));
 					else
 						return OOCore_to_string_float_t(val,strFormat,sizeof(float4_t));
@@ -430,14 +430,8 @@ inline int Omega::guid_t::Compare(const guid_t& rhs) const
 		return (Data2 < rhs.Data2 ? -1 : 1);
 	else if (Data3 != rhs.Data3)
 		return (Data3 < rhs.Data3 ? -1 : 1);
-	else if (*reinterpret_cast<const uint64_t*>(Data4) != *reinterpret_cast<const uint64_t*>(rhs.Data4))
-	{
-		for (int i=0; i<8; ++i)
-		{
-			if (Data4[i] != rhs.Data4[i])
-				return (Data4[i] < rhs.Data4[i] ? -1 : 1);
-		}
-	}
+	else
+		return memcmp(&Data4,&rhs.Data4,sizeof(Data4));
 
 	return 0;
 }

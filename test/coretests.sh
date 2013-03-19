@@ -25,7 +25,7 @@ if test -n "$TERM"; then
 	esac
 fi
 
-$server_launch --debug --conf-file $PWD/../$srcdir/test.conf --pidfile ../../test/ooserverd.pid &
+$server_launch --debug --conf-file $srcdir/test.conf --pidfile ../../test/ooserverd.pid &
 
 echo Giving ooserverd a chance to start...
 sleep 3s

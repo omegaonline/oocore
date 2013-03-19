@@ -46,9 +46,13 @@ namespace Root
 		pid_t get_pid() const;
 
 #if defined(_WIN32)
+		bool start(pid_t client_id, const OOBase::String& fd_root);
 		bool start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root);
+		bool do_start(const OOBase::String& fd_user, const OOBase::String& fd_root, const OOBase::String& fd_sandbox, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
 #elif defined(HAVE_UNISTD_H)
+		bool start(pid_t client_id, OOBase::POSIX::SmartFD& fd_root);
 		bool start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root);
+		bool do_start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root, OOBase::POSIX::SmartFD& fd_sandbox, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
 		bool on_add_client(OOBase::CDRStream& stream, pid_t client_id, int client_fd);
 #endif
 		bool add_client(pid_t client_id);
@@ -63,7 +67,10 @@ namespace Root
 		bool start();
 		bool on_started(OOBase::CDRStream& stream, pid_t client_id);
 
-#if defined(HAVE_UNISTD_H)
+#if defined(_WIN32)
+		bool new_connection(pid_t client_id, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
+#elif defined(HAVE_UNISTD_H)
+		bool new_connection(pid_t client_id, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);
 #endif
 		void on_sent(OOBase::Buffer* buffer, int err);

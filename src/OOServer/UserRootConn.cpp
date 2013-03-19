@@ -109,10 +109,15 @@ void User::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
 void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
 	// Read and cache any root parameters
-	Omega::uint16_t response_id;
+	Omega::uint16_t response_id = 0;
 	stream.read(response_id);
-	DWORD pid;
+
+	pid_t pid = 0;
 	stream.read(pid);
+
+	OOBase::StackAllocator<256> allocator;
+	OOBase::LocalString strSID(allocator);
+	stream.read_string(strSID);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
@@ -166,7 +171,8 @@ bool User::RootConnection::start()
 	if (err)
 		LOG_ERROR_RETURN(("Failed to recv from root pipe: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::POSIX::SmartFD passed_fds[2];
+	// User, Root, Sandbox
+	OOBase::POSIX::SmartFD passed_fds[3];
 
 	// Read struct cmsg
 	struct msghdr msgh = {0};
@@ -180,23 +186,13 @@ bool User::RootConnection::start()
 			int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
 			size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
 			size_t fd_start = 0;
-			if (fd_count > 0)
+			for (size_t i=0;i<fd_count && i < (sizeof(passed_fds)/sizeof(passed_fds[0]));++i)
 			{
-				err = OOBase::POSIX::set_close_on_exec(fds[0],true);
+				err = OOBase::POSIX::set_close_on_exec(fds[i],true);
 				if (!err)
 				{
-					passed_fds[0] = fds[0];
-					fd_start = 1;
-				}
-			}
-
-			if (fd_count > 1)
-			{
-				err = OOBase::POSIX::set_close_on_exec(fds[1],true);
-				if (!err)
-				{
-					passed_fds[1] = fds[1];
-					fd_start = 2;
+					passed_fds[i] = fds[i];
+					++fd_start;
 				}
 			}
 
@@ -218,7 +214,7 @@ bool User::RootConnection::start()
 	stream.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
 	// Add the extra fd to the stream
-	if (!stream.write(static_cast<int>(passed_fds[1])))
+	if (!stream.write(static_cast<int>(passed_fds[2])))
 		LOG_ERROR_RETURN(("Failed to write request from root: %s",OOBase::system_error_text(stream.last_error())),false);
 
 	// Attach to the pipe

@@ -244,15 +244,15 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
-	Omega::uint16_t response_id;
+	Omega::uint16_t response_id = 0;
 	stream.read(response_id);
+
+	pid_t pid = 0;
+	stream.read(pid);
 
 	OOBase::StackAllocator<256> allocator;
 	OOBase::LocalString strSID(allocator);
 	stream.read_string(strSID);
-
-	pid_t pid = 0;
-	stream.read(pid);
 
 	if (stream.last_error())
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));

@@ -249,9 +249,8 @@ void OOCore::UserSession::start(void* data, size_t length)
 
 #elif defined(HAVE_UNISTD_H)
 	// And read the embedded fd
-	int fd_ = -1;
-	stream.read(fd_);
-	OOBase::POSIX::SmartFD fd(fd_);
+	OOBase::POSIX::SmartFD fd;
+	stream.read(static_cast<int&>(fd));
 #endif
 
 	if (stream.last_error())
@@ -259,6 +258,8 @@ void OOCore::UserSession::start(void* data, size_t length)
 
 	// Start the proactor and threads here!
 	void* TODO;
+
+	assert(false);
 
 	// Spawn off the io worker thread
 	m_worker_thread.run(io_worker_fn,this);

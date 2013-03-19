@@ -336,8 +336,8 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 
 	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
 	response_id.write(stream);
-	stream.write_string(strSID);
 	stream.write(ptrUser->get_pid());
+	stream.write_string(strSID);
 
 	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
@@ -379,7 +379,6 @@ bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrC
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
 
-	// Create a pair of sockets
 	if (!new_connection(ptrUser,fds[1],response_id))
 		return false;
 
@@ -407,8 +406,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 
 	if (m_id == 1)
 	{
-		OOBase::POSIX::SmartFD ptrRootFd;
-		ptrUser->start(client_id,ptrUserFd,ptrRootFd);
+		ptrUser->start(client_id,ptrUserFd);
 	}
 	else
 	{

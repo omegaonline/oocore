@@ -64,6 +64,7 @@ namespace Root
 		bool get_client(pid_t client_id, OOBase::RefPtr<ClientConnection>& ptrClient);
 		void drop_client(pid_t id);
 
+		OOBase::RefPtr<UserConnection> get_sandbox_process();
 		bool get_user_process(pid_t user_id, OOBase::RefPtr<UserConnection>& ptrUser);
 		bool spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryConnection>& ptrRegistry);
 		bool spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClient, OOBase::RefPtr<RegistryConnection>& ptrRegistry);

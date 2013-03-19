@@ -127,15 +127,30 @@ void Root::UserConnection::on_response(OOBase::Buffer* buffer, int err)
 
 #if defined(_WIN32)
 
-bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root)
+bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_root)
 {
-	if (!start())
-		return false;
-
 	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
+
+	OOBase::String str1,str2;
+	return do_start(fd_root,str1,str2,response_id);
+}
+
+bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root)
+{
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
+
+}
+
+bool Root::UserConnection::do_start(const OOBase::String& fd_user, const OOBase::String& fd_root, const OOBase::String& fd_sandbox, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+{
+	if (!start())
+		return false;
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
@@ -145,6 +160,7 @@ bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user,
 	// Non-Omega_Initialize payload here
 	stream.write_string(fd_user);
 	stream.write_string(fd_root);
+	stream.write_string(fd_sandbox);
 
 	// Align everything, ready for the Omega_Initialize call
 	stream.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
@@ -157,7 +173,7 @@ bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user,
 
 	addref();
 
-	err = m_ptrSocket->send(this,&UserConnection::on_sent,stream.buffer());
+	int err = m_ptrSocket->send(this,&UserConnection::on_sent,stream.buffer());
 	if (err)
 	{
 		release();
@@ -175,18 +191,82 @@ bool Root::UserConnection::add_client(pid_t client_id)
 	return false;
 }
 
-#elif defined(HAVE_UNISTD_H)
-bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root)
+bool Root::UserConnection::new_connection(pid_t client_id, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
 {
-	if (!start())
-		return false;
+	OOBase::RefPtr<ClientConnection> ptrClient;
+	if (!m_pManager->get_client(client_id,ptrClient))
+		return true;
 
+	OOBase::StackAllocator<256> allocator;
+	OOBase::TempPtr<void> ptrSIDLogon(allocator);
+	DWORD dwErr = OOBase::Win32::GetLogonSID(ptrClient->get_uid(),ptrSIDLogon);
+	if (dwErr)
+		LOG_ERROR_RETURN(("Failed to get logon SID: %s",OOBase::system_error_text(dwErr)),false);
+
+	OOBase::LocalString strSID(allocator);
+	dwErr = OOBase::Win32::SIDToString(static_cast<void*>(ptrSIDLogon),strSID);
+	if (dwErr)
+		LOG_ERROR_RETURN(("Failed to format logon SID: %s",OOBase::system_error_text(dwErr)),false);
+
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+
+	stream.write(static_cast<OOServer::Root2User_OpCode_t>(OOServer::Root2User_NewConnection));
+	response_id.write(stream);
+	stream.write(client_id);
+	stream.write_string(strSID);
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	addref();
+
+	int err = m_ptrSocket->send(this,&UserConnection::on_sent,stream.buffer());
+	if (err)
+	{
+		m_pManager->drop_user_process(m_ptrProcess->get_pid());
+
+		release();
+
+		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	response_id.detach();
+
+	return true;
+}
+
+#elif defined(HAVE_UNISTD_H)
+bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_root)
+{
 	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)*2),sizeof(size_t));
+	OOBase::POSIX::SmartFD fd1,fd2;
+	return do_start(fd_root,fd1,fd2,response_id);
+}
+
+bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root)
+{
+	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
+	if (err)
+		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
+
+	OOBase::POSIX::SmartFD fd1;
+	return do_start(fd_user,fd_root,fd1,response_id);
+}
+
+bool Root::UserConnection::do_start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root, OOBase::POSIX::SmartFD& fd_sandbox, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+{
+	if (!start())
+		return false;
+
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)*3),sizeof(size_t));
 	if (!ctl_buffer)
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
@@ -198,7 +278,15 @@ bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_use
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
 
-	if (fd_root.is_valid())
+	if (fd_sandbox.is_valid())
+	{
+		cmsg->cmsg_len = CMSG_LEN(sizeof(int) * 3);
+		int* fds = (int*)CMSG_DATA(cmsg);
+		fds[0] = fd_user;
+		fds[1] = fd_root;
+		fds[2] = fd_sandbox;
+	}
+	else if (fd_root.is_valid())
 	{
 		cmsg->cmsg_len = CMSG_LEN(sizeof(int) * 2);
 		int* fds = (int*)CMSG_DATA(cmsg);
@@ -230,7 +318,7 @@ bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_use
 
 	addref();
 
-	err = m_ptrSocket->send_msg(this,&UserConnection::on_sent_msg,stream.buffer(),ctl_buffer);
+	int err = m_ptrSocket->send_msg(this,&UserConnection::on_sent_msg,stream.buffer(),ctl_buffer);
 	if (err)
 	{
 		release();
@@ -240,8 +328,9 @@ bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_use
 
 	fd_user.detach();
 	fd_root.detach();
-
+	fd_sandbox.detach();
 	response_id.detach();
+
 	return true;
 }
 
@@ -254,10 +343,19 @@ bool Root::UserConnection::add_client(pid_t client_id)
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
 
 	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
-	err = m_async_dispatcher.add_response(this,&UserConnection::on_add_client,client_id,static_cast<int>(fds[1]),response_id);
+	err = m_async_dispatcher.add_response(this,&UserConnection::on_add_client,client_id,static_cast<int>(fds[0]),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
 
+	if (!new_connection(client_id,fds[1],response_id))
+		return false;
+
+	fds[0].detach();
+	return true;
+}
+
+bool Root::UserConnection::new_connection(pid_t client_id, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+{
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
 		LOG_ERROR_RETURN(("Failed to allocate buffer: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
@@ -270,7 +368,7 @@ bool Root::UserConnection::add_client(pid_t client_id)
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
 	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	*(int*)CMSG_DATA(cmsg) = fds[0];
+	*(int*)CMSG_DATA(cmsg) = fd;
 	ctl_buffer->wr_ptr(cmsg->cmsg_len);
 
 	OOBase::CDRStream stream;
@@ -287,7 +385,7 @@ bool Root::UserConnection::add_client(pid_t client_id)
 
 	addref();
 
-	err = m_ptrSocket->send_msg(this,&UserConnection::on_sent_msg,stream.buffer(),ctl_buffer);
+	int err = m_ptrSocket->send_msg(this,&UserConnection::on_sent_msg,stream.buffer(),ctl_buffer);
 	if (err)
 	{
 		m_pManager->drop_user_process(m_ptrProcess->get_pid());
@@ -297,9 +395,9 @@ bool Root::UserConnection::add_client(pid_t client_id)
 		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
 	}
 
-	fds[0].detach();
-	fds[1].detach();
+	fd.detach();
 	response_id.detach();
+
 	return true;
 }
 
@@ -635,4 +733,9 @@ void Root::Manager::drop_user_process(pid_t id)
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	m_user_processes.remove(id);
+}
+
+OOBase::RefPtr<Root::UserConnection> Root::Manager::get_sandbox_process()
+{
+	return m_sandbox_process;
 }

@@ -60,17 +60,11 @@ namespace OTL
 		};
 	}
 
-	inline OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule())
-	{
-		return OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>::instance_ptr();
-	}
+	OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule());
 
 	namespace Module
 	{
-		inline OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
-		{
-			return OTL::OMEGA_PRIVATE_FN_CALL(GetModule)();
-		}
+		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)();
 	}
 }
 

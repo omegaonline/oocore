@@ -31,6 +31,22 @@
 #include <shlwapi.h>
 #endif
 
+namespace OTL
+{
+	OMEGA_PRIVATE_FN_DECL(Module::OOCore_ModuleImpl*,GetModule())
+	{
+		return OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>::instance_ptr();
+	}
+
+	namespace Module
+	{
+		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
+		{
+			return OTL::OMEGA_PRIVATE_FN_CALL(GetModule)();
+		}
+	}
+}
+
 using namespace Omega;
 using namespace OTL;
 

@@ -29,7 +29,7 @@
 #include <OOBase/Timeout.h>
 #include <OOBase/Mutex.h>
 
-#include "../include/Omega/internal/base_types.h"
+#include "../../include/Omega/internal/base_types.h"
 
 #if !defined(_MSC_VER)
 #include <oocore-autoconf.h>

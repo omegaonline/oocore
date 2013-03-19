@@ -476,7 +476,7 @@ namespace OTL
 		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)();
 	}
 
-	inline static ModuleBase* GetModuleBase()
+	inline ModuleBase* GetModuleBase()
 	{
 		return Module::OMEGA_PRIVATE_FN_CALL(GetModuleBase)();
 	}

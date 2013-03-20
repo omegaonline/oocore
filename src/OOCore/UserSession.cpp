@@ -937,9 +937,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
 {
-	if (OTL::GetModule()->IsHosted())
-		return OTL::GetModule()->GetIPS()->HandleRequest(millisecs);
-
 	OOBase::Timeout timeout;
 	if (millisecs != 0)
 		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);

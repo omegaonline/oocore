@@ -22,17 +22,13 @@
 #ifndef OOSERVER_USER_MANAGER_H_INCLUDED_
 #define OOSERVER_USER_MANAGER_H_INCLUDED_
 
-#include "MessageConnection.h"
+#include "UserRootConn.h"
 #include "Protocol.h"
-#include "UserChannel.h"
-#include "UserNet.h"
 #include "UserProcess.h"
 
 namespace User
 {
-	class Manager :
-			public OOServer::MessageHandler,
-			public OOBase::Server
+	class Manager : public OOBase::Server
 	{
 		friend class RootConnection;
 
@@ -41,10 +37,6 @@ namespace User
 		virtual ~Manager();
 
 		static Manager* instance() { return s_instance; }
-
-		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
-		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
-		static OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 
 		int run(const OOBase::LocalString& pszPipe);
 		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
@@ -56,54 +48,24 @@ namespace User
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton
 
-		OOBase::RWMutex                                                               m_lock;
-		OOBase::Proactor*                                                             m_proactor;
-		OOBase::ThreadPool                                                            m_proactor_pool;
-		bool                                                                          m_bIsSandbox;
-		OOBase::RefPtr<OOBase::Acceptor>                                              m_ptrAcceptor;
-		OOBase::HashTable<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
-
-		virtual OOServer::MessageHandler::io_result::type route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, OOServer::Message_t::Type type);
-		virtual void on_channel_closed(Omega::uint32_t channel);
-		static void do_channel_closed(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
-		void do_channel_closed_i(Omega::uint32_t channel_id, OOBase::AllocatorInstance& allocator);
+		OOBase::RWMutex                      m_lock;
+		OOBase::Proactor*                    m_proactor;
+		OOBase::ThreadPool                   m_thread_pool;
+		bool                                 m_bIsSandbox;
+		OOBase::RefPtr<User::RootConnection> m_root_connection;
 
 		bool connect_root(const OOBase::LocalString& strPipe);
 		int start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRootSocket, OOBase::CDRStream& stream);
 
-		static int run_proactor(void*);
+		static int run_proactor(void* param);
+		static int do_bootstrap(void* param);
+		static int do_handle_events(void* param);
 
-		static void on_accept(void* pThis, OOBase::AsyncSocket* pSocket, int err);
-		void on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err);
-
-		static void do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
-		bool handshake_root(OOBase::RefPtr<OOBase::AsyncSocket>& local_socket, const OOBase::LocalString& strPipe);
-		bool bootstrap(Omega::uint32_t sandbox_channel);
-		bool start_acceptor(OOBase::LocalString& strPipe);
-
-		static void do_quit(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator);
-		void do_quit_i();
-
-		OTL::ObjectImpl<Channel>* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
-		Omega::Remoting::IObjectManager* create_object_manager(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
-		void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs);
-		void process_user_request(OOBase::CDRStream& input, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs);
-		void process_root_request(OOBase::CDRStream& input, Omega::uint16_t src_thread_id, Omega::uint32_t attribs);
+		bool bootstrap();
+		void do_quit();
 
 		// Remote channel handling
-		OOBase::RWMutex m_remote_lock;
-		struct RemoteChannelEntry
-		{
-			Omega::string_t strEndpoint;
-			OTL::ObjectPtr<OTL::ObjectImpl<RemoteChannel> > ptrRemoteChannel;
-		};
-		OOBase::HandleTable<Omega::uint32_t,RemoteChannelEntry>                   m_mapRemoteChannelIds;
-		OOBase::Table<Omega::string_t,OTL::ObjectPtr<Omega::Remoting::IChannel> > m_mapRemoteChannels;
-
 		Omega::Remoting::IChannel* open_remote_channel_i(const Omega::string_t& strEndpoint);
-		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
-		void close_all_remotes();
-		void local_channel_closed(OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance>& channels);
 
 		// Service management (only for sandbox)
 		struct ServiceEntry

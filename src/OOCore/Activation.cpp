@@ -457,7 +457,9 @@ IObject* OOCore::GetObject(const any_t& oid, Activation::Flags_t flags, const gu
 		}
 
 		// Open a remote channel
-		ObjectPtr<Remoting::IChannel> ptrChannel = OTL::GetModule()->GetIPS()->OpenRemoteChannel(strEndpoint);
+		ObjectPtr<Remoting::IChannel> ptrChannel;// = OTL::GetModule()->GetIPS()->OpenRemoteChannel(strEndpoint);
+		void* TODO;
+		OMEGA_THROW(EINVAL);
 
 		// Get the ObjectManager
 		IObject* pObject = NULL;
@@ -488,5 +490,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_CanUnload,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 {
-	return OTL::GetModule()->GetIPS()->OpenServerSink(message_oid,pSink);
+	void* TODO;
+	return NULL;
 }

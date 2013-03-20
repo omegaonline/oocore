@@ -73,15 +73,11 @@ pkglibexec_PROGRAMS += oosvruser
 
 oosvruser_SOURCES = \
 	OOServer_User.h \
-	UserChannel.h \
-	UserChannel.cpp \
 	UserIPS.h \
 	UserIPS.cpp \
 	UserMain.cpp \
 	UserManager.h \
 	UserManager.cpp \
-	UserNet.h \
-	UserNet.cpp \
 	UserProcess.h \
 	UserProcessWin32.cpp \
 	UserProcessUnix.cpp \

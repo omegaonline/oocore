@@ -278,29 +278,6 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	}
 }
 
-bool_t User::InterProcessService::HandleRequest(uint32_t millisecs)
-{
-	OOBase::Timeout timeout;
-	if (millisecs != 0)
-		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
-
-	int ret = Manager::instance()->pump_requests(timeout,true);
-	if (ret == -1)
-		OMEGA_THROW("Request processing failed");
-	else
-		return (ret == 1);
-}
-
-Remoting::IChannel* User::InterProcessService::OpenRemoteChannel(const string_t& strEndpoint)
-{
-	return Manager::open_remote_channel(strEndpoint);
-}
-
-Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
-{
-	return Manager::open_server_sink(message_oid,pSink);
-}
-
 const Omega::guid_t OOCore::OID_InterProcessService("{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");
 const Omega::guid_t OOCore::OID_Surrogate("{D063D32C-FB9A-004A-D2E5-BB5451808FF5}");
 const Omega::guid_t OOCore::OID_ServiceManager("{1ACC3273-8FB3-9741-E7E6-1CD4C6150FB2}");

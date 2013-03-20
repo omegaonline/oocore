@@ -23,7 +23,6 @@
 #include "UserManager.h"
 #include "UserRootConn.h"
 #include "UserIPS.h"
-#include "UserChannel.h"
 #include "UserRegistry.h"
 #include "UserServices.h"
 
@@ -75,55 +74,6 @@ template class OOBase::Singleton<OTL::Module::OOSvrUser_ProcessModuleImpl,User::
 using namespace Omega;
 using namespace OTL;
 
-namespace
-{
-	bool unique_name(OOBase::LocalString& name)
-	{
-		// Create a new unique pipe
-
-	#if defined(_WIN32)
-		// Get the current user's Logon SID
-		OOBase::Win32::SmartHandle hProcessToken;
-		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
-
-		// Get the logon SID of the Token
-		OOBase::TempPtr<void> ptrSIDLogon(name.get_allocator());
-		DWORD dwRes = OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
-		if (dwRes != ERROR_SUCCESS)
-			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
-
-		char* pszSid;
-		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
-			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),false);
-		
-		int err = name.printf("OOU%s-%ld",pszSid,GetCurrentProcessId());
-
-		LocalFree(pszSid);
-			
-	#elif defined(__linux__)
-
-		int err = name.printf(" /org/omegaonline/user-%d-%d",getuid(),getpid());
-
-	#elif defined(HAVE_UNISTD_H)
-
-		#if defined(P_tmpdir)
-			int err = name.printf(P_tmpdir "/oou-%d-%d",getuid(),getpid());
-		#else
-			int err = name.printf("/tmp/oou-%d-%d",getuid(),getpid());
-		#endif
-
-	#else
-	#error Fix me!
-	#endif
-
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err)),false);		
-
-		return true;
-	}
-}
-
 string_t User::recurse_log_exception(IException* pE)
 {
 	string_t msg = pE->GetDescription();
@@ -160,7 +110,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 		LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 	else
 	{
-		err = m_proactor_pool.run(&run_proactor,m_proactor,2);
+		err = m_thread_pool.run(&run_proactor,m_proactor,1);
 		if (err != 0)
 			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 		else
@@ -180,7 +130,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 			}
 
 			m_proactor->stop();
-			m_proactor_pool.join();
+			m_thread_pool.join();
 		}
 
 		OOBase::Proactor::destroy(m_proactor);
@@ -197,150 +147,63 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 	return ret;
 }
 
-int User::Manager::run_proactor(void* p)
+int User::Manager::run_proactor(void* param)
 {
 	int err = 0;
-	return static_cast<OOBase::Proactor*>(p)->run(err);
-}
-
-bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
-{
-	int err = 0;
-
-#if defined(_WIN32)
-	// Use a named pipe
-	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(strPipe.c_str(),err,timeout);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
-
-#else
-
-	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->attach(fd,err);
-	if (err != 0)
-	{
-		OOBase::POSIX::close(fd);
-		LOG_ERROR_RETURN(("Failed to attach to root pipe: %s",OOBase::system_error_text(err)),false);
-	}
-
-#endif
-
-	OOBase::RefPtr<User::RootConnection> conn = new (std::nothrow) User::RootConnection(this,ptrSocket);
-	if (!conn)
-		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
-
-	return conn->start();
+	return static_cast<OOBase::Proactor*>(param)->run(err);
 }
 
 int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRootSocket, OOBase::CDRStream& stream)
 {
+	// Set the sandbox flag
+	if (!ptrRootSocket)
+		m_bIsSandbox = true;
 
-	return 0;
 
-	/*
-		// Invent a new pipe name...
-		OOBase::LocalString strNewPipe(strPipe.get_allocator());
-		if (!unique_name(strNewPipe))
-			return false;
 
-		// Set our pipe name
-	#if defined(_WIN32)
-		SetEnvironmentVariableA("OMEGA_SESSION_ADDRESS",strNewPipe.c_str());
-	#else
-		setenv("OMEGA_SESSION_ADDRESS",strNewPipe.c_str(),1);
-	#endif
-
-		OOBase::CDRStream stream;
-
-		// Send our port name
-		if (!stream.write_string(strNewPipe))
-			LOG_ERROR_RETURN(("Failed to encode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
-
-		if ((err = local_socket->send(stream.buffer())) != 0)
-			LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOBase::system_error_text(err)),false);
-
-		// Read the sandbox channel
-		stream.reset();
-		if ((err = local_socket->recv(stream.buffer(),2*sizeof(uint32_t))) != 0)
-			LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOBase::system_error_text(err)),false);
-
-		uint32_t sandbox_channel = 0;
-		uint32_t our_channel = 0;
-		if (!stream.read(sandbox_channel) || !stream.read(our_channel))
-		{
-			LOG_ERROR_RETURN(("Failed to decode root pipe packet: %s",OOBase::system_error_text(stream.last_error())),false);
-		}
-
-		// Set the sandbox flag
-		m_bIsSandbox = (sandbox_channel == 0);
-
-		// Init our channel id
-		set_channel(our_channel,0xFF000000,0x00FFF000,0x80000000);
-
-		// Create a new MessageConnection
-		OOBase::RefPtr<OOServer::MessageConnection> ptrMC = new (std::nothrow) OOServer::MessageConnection(this,local_socket);
-		if (!ptrMC)
-			LOG_ERROR_RETURN(("Failed to allocate MessageConnection: %s",OOBase::system_error_text()),false);
-
-		// Attach it to ourselves
-		if (register_channel(ptrMC,m_uUpstreamChannel) == 0)
-			return false;
-
-		// Start I/O with root
-		if (ptrMC->recv() != 0)
-		{
-			channel_closed(m_uUpstreamChannel,0);
-			return false;
-		}
-
-		// Now bootstrap
-		stream.reset();
-		if (!stream.write(sandbox_channel) || !stream.write_string(strNewPipe))
-		{
-			ptrMC->shutdown();
-			LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOBase::system_error_text(stream.last_error())),false);
-		}
-
-		if (!call_async_function_i("do_bootstrap",&do_bootstrap,this,&stream))
-		{
-			ptrMC->shutdown();
-			return false;
-		}
-
-		return true;*/
+	return m_thread_pool.run(&do_bootstrap,this,1);
 }
 
-void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input, OOBase::AllocatorInstance& allocator)
+int User::Manager::do_bootstrap(void* param)
 {
-	Manager* pThis = static_cast<Manager*>(pParams);
-
-	bool bQuit = false;
-
-	uint32_t sandbox_channel = 0;
-	input.read(sandbox_channel);
-
-	OOBase::LocalString strPipe(allocator);
-	input.read_string(strPipe);
-
-	if (input.last_error() != 0)
+	Manager* pThis = static_cast<Manager*>(param);
+	if (!pThis->bootstrap())
 	{
-		LOG_ERROR(("Failed to read bootstrap data: %s",OOBase::system_error_text(input.last_error())));
-		bQuit = true;
-	}
-	else
-	{
-		bQuit = !pThis->bootstrap(sandbox_channel) ||
-			!pThis->start_acceptor(strPipe) ||
-			!pThis->notify_started();
+		pThis->do_quit();
+		return 0;
 	}
 
-	if (bQuit)
-		pThis->call_async_function_i("do_quit",&do_quit,pThis,0);
+	return do_handle_events(pThis);
 }
 
-bool User::Manager::bootstrap(uint32_t sandbox_channel)
+int User::Manager::do_handle_events(void* param)
+{
+	Manager* pThis = static_cast<Manager*>(param);
+
+	// Initially wait 15 seconds for 1st message
+	uint32_t msecs = 15000;
+	try
+	{
+		while (Omega::HandleRequest(msecs) || GetModuleBase()->HaveLocks() || !Omega::CanUnload())
+		{
+			// Once we have the first message, we can then wait a very short time
+			msecs = 500;
+		}
+
+		return 0;
+	}
+	catch (IException* pE)
+	{
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR_RETURN(("IException thrown: %s",recurse_log_exception(ptrE).c_str()),-1);
+	}
+	catch (...)
+	{
+		LOG_ERROR_RETURN(("Unrecognised exception thrown"),-1);
+	}
+}
+
+bool User::Manager::bootstrap()
 {
 	try
 	{
@@ -348,13 +211,10 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
 
-		// Register our private factories...
-		OTL::GetModule()->RegisterAutoObjectFactory<User::ChannelMarshalFactory>();
-
 		// Now get the upstream IPS...
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
-		if (sandbox_channel != 0)
-			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
+		//if (sandbox_channel != 0)
+		//	ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateObject();
 		ptrIPS->init(ptrOMSb);
@@ -373,7 +233,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 		// Now we have a ROT and a registry, register everything else
 		GetModule()->RegisterObjectFactories();
 
-		return true;
+		return notify_started();
 	}
 	catch (IException* pE)
 	{
@@ -383,69 +243,7 @@ bool User::Manager::bootstrap(uint32_t sandbox_channel)
 	return false;
 }
 
-bool User::Manager::start_acceptor(OOBase::LocalString& strPipe)
-{
-#if defined(_WIN32)
-
-	// Get the current user's Logon SID
-	OOBase::Win32::SmartHandle hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
-
-	// Get the logon SID of the Token
-	OOBase::TempPtr<void> ptrSIDLogon(strPipe.get_allocator());
-	DWORD dwRes = OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
-	if (dwRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
-
-	// Set full control for the Logon SID only
-	EXPLICIT_ACCESSW ea = {0};
-	ea.grfAccessPermissions = FILE_ALL_ACCESS;
-	ea.grfAccessMode = SET_ACCESS;
-	ea.grfInheritance = NO_INHERITANCE;
-	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea.Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
-
-	// Create a new ACL
-	OOBase::Win32::sec_descript_t sd;
-	DWORD dwErr = sd.SetEntriesInAcl(1,&ea);
-	if (dwErr != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::system_error_text(dwErr)),false);
-
-	// Create a new security descriptor
-	SECURITY_ATTRIBUTES sa;
-	sa.nLength = sizeof(sa);
-	sa.bInheritHandle = FALSE;
-	sa.lpSecurityDescriptor = sd.descriptor();
-
-#elif defined(HAVE_UNISTD_H)
-
-	SECURITY_ATTRIBUTES sa;
-	sa.mode = 0600;
-	sa.pass_credentials = false;
-
-#endif
-
-	if (strPipe[0] == ' ')
-		strPipe.replace_at(0,'\0');
-
-	int err = 0;
-	m_ptrAcceptor = m_proactor->accept(this,&on_accept,strPipe.c_str(),err,&sa);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept failed: %s",OOBase::system_error_text(err)),false);
-
-	return true;
-}
-
-void User::Manager::on_accept(void* pThis, OOBase::AsyncSocket* pSocket, int err)
-{
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = pSocket;
-
-	static_cast<Manager*>(pThis)->on_accept_i(ptrSocket,err);
-}
-
-void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)
+/*void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)
 {
 	if (err != 0)
 	{
@@ -515,97 +313,11 @@ void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, 
 			}
 		}
 	}
-}
+}*/
 
-void User::Manager::on_channel_closed(uint32_t channel)
-{
-	OOBase::CDRStream stream;
-	if (!stream.write(channel))
-		LOG_ERROR(("Failed to write channel_close data: %s",OOBase::system_error_text(stream.last_error())));
-	else
-		call_async_function_i("do_channel_closed",&do_channel_closed,this,&stream);
-}
-
-void User::Manager::do_channel_closed(void* pParams, OOBase::CDRStream& stream, OOBase::AllocatorInstance& allocator)
-{
-	uint32_t channel_id = 0;
-	if (!stream.read(channel_id))
-		LOG_ERROR(("Failed to read channel_close data: %s",OOBase::system_error_text(stream.last_error())));
-	else
-		static_cast<Manager*>(pParams)->do_channel_closed_i(channel_id,allocator);
-}
-
-void User::Manager::do_channel_closed_i(uint32_t channel_id, OOBase::AllocatorInstance& allocator)
-{
-	// Close the corresponding Object Manager
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		OOBase::Stack<uint32_t,OOBase::AllocatorInstance> dead_channels(allocator);
-		for (size_t i=m_mapChannels.begin(); i!=m_mapChannels.npos;i=m_mapChannels.next(i))
-		{
-			uint32_t k = *m_mapChannels.key_at(i);
-			bool bErase = false;
-			if (k == channel_id)
-			{
-				// Close if its an exact match
-				bErase = true;
-			}
-			else if (!(channel_id & 0xFFF) && (k & 0xFFFFF000) == channel_id)
-			{
-				// Close all compartments if 0 cmpt dies
-				bErase = true;
-			}
-			else if (channel_id == m_uUpstreamChannel && classify_channel(k) > 2)
-			{
-				// If the root channel closes, close all upstream OMs
-				bErase = true;
-			}
-
-			if (bErase)
-			{
-				(*m_mapChannels.at(i))->disconnect();
-
-				dead_channels.push(k);
-
-				m_mapChannels.remove(k);
-			}
-		}
-
-		// Give the remote layer a chance to close channels
-		if (!dead_channels.empty())
-			local_channel_closed(dead_channels);
-
-	}
-	catch (IException* pE)
-	{
-		ObjectPtr<IException> ptrE = pE;
-		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-	}
-
-	// If the root closes, we should end!
-	if (channel_id == m_uUpstreamChannel)
-	{
-		LOG_DEBUG(("Upstream channel has closed"));
-		do_quit_i();
-	}
-}
-
-void User::Manager::do_quit(void* pParams, OOBase::CDRStream&, OOBase::AllocatorInstance&)
-{
-	static_cast<Manager*>(pParams)->do_quit_i();
-}
-
-void User::Manager::do_quit_i()
+void User::Manager::do_quit()
 {
 	OOBase::Logger::log(OOBase::Logger::Information,APPNAME " closing");
-
-	// Stop accepting new clients
-	m_ptrAcceptor = NULL;
-
-	// Close all the sinks
-	close_all_remotes();
 
 	try
 	{
@@ -621,68 +333,12 @@ void User::Manager::do_quit_i()
 	// Close the OOCore
 	Uninitialize();
 
-	// Close all channels
-	shutdown_channels();
-
 	// And now call quit()
 	quit();
 }
 
-void User::Manager::process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t attribs)
-{
-	if (src_channel_id == m_uUpstreamChannel)
-		process_root_request(request,src_thread_id,attribs);
-	else
-		process_user_request(request,src_channel_id,src_thread_id,attribs);
-}
 
-void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, uint32_t attribs)
-{
-	OOServer::RootOpCode_t op_code;
-	if (!request.read(op_code))
-	{
-		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error())));
-		return;
-	}
-
-	OOBase::CDRStream response;
-	switch (op_code)
-	{
-	case OOServer::Service_Start:
-		start_service(request,attribs & OOServer::Message_t::asynchronous ? NULL : &response);
-		break;
-
-	case OOServer::Service_Stop:
-		stop_service(request,response);
-		break;
-
-	case OOServer::Service_StopAll:
-		stop_all_services(response);
-		break;
-
-	case OOServer::Service_IsRunning:
-		service_is_running(request,response);
-		break;
-
-	case OOServer::Service_ListRunning:
-		list_services(response);
-		break;
-
-	default:
-		response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Errored));
-		LOG_ERROR(("Bad request op_code: %u",op_code));
-		break;
-	}
-
-	if (!response.last_error() && !(attribs & OOServer::Message_t::asynchronous))
-	{
-		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,attribs);
-		if (res == OOServer::MessageHandler::io_result::failed)
-			LOG_ERROR(("Root response sending failed"));
-	}
-}
-
-void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t attribs)
+/*void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t attribs)
 {
 	try
 	{
@@ -732,58 +388,7 @@ void User::Manager::process_user_request(OOBase::CDRStream& request, uint32_t sr
 			send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),attribs);
 		}
 	}
-}
-
-Remoting::IObjectManager* User::Manager::create_object_manager(uint32_t src_channel_id, const guid_t& message_oid)
-{
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel_i(src_channel_id,message_oid);
-
-	return ptrChannel->GetObjectManager();
-}
-
-ObjectImpl<User::Channel>* User::Manager::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
-{
-	return s_instance->create_channel_i(src_channel_id,message_oid);
-}
-
-ObjectImpl<User::Channel>* User::Manager::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid)
-{
-	// Lookup existing..
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		if (m_mapChannels.find(src_channel_id,ptrChannel))
-			return ptrChannel.Detach();
-	}
-
-	// Create a new channel
-	ptrChannel = ObjectImpl<Channel>::CreateObject();
-	ptrChannel->init(src_channel_id,classify_channel(src_channel_id),message_oid);
-
-	// And add to the map
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	int err = m_mapChannels.insert(src_channel_id,ptrChannel);
-	if (err == EEXIST)
-		m_mapChannels.find(src_channel_id,ptrChannel);
-	else if (err != 0)
-		OMEGA_THROW(err);
-
-	return ptrChannel.Detach();
-}
-
-void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, TypeInfo::MethodAttributes_t attribs)
-{
-	OOServer::MessageHandler::io_result::type res = send_request(m_uUpstreamChannel,&request,response,attribs);
-	if (res != OOServer::MessageHandler::io_result::success)
-	{
-		if (res == OOServer::MessageHandler::io_result::channel_closed)
-			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to send root request"));
-		else
-			OMEGA_THROW("Internal server exception");
-	}
-}
+}*/
 
 void User::Manager::get_root_config_arg(const char* key, Omega::string_t& strValue)
 {
@@ -819,9 +424,14 @@ bool User::Manager::notify_started()
 		if (request.last_error() != 0)
 			LOG_ERROR_RETURN(("Failed to write start notification arguments: %s",OOBase::system_error_text(request.last_error())),false);
 
-		if (send_request(m_uUpstreamChannel,&request,NULL,TypeInfo::Asynchronous) != OOServer::MessageHandler::io_result::success)
+		//if (send_request(m_uUpstreamChannel,&request,NULL,TypeInfo::Asynchronous) != OOServer::MessageHandler::io_result::success)
 			LOG_ERROR_RETURN(("Failed to send start notification: %s",OOBase::system_error_text()),false);
 	}
 
 	return true;
+}
+
+void User::Manager::sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs)
+{
+
 }

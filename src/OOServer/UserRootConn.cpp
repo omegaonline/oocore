@@ -23,6 +23,8 @@
 #include "UserRootConn.h"
 #include "UserManager.h"
 
+#include <stdlib.h>
+
 User::RootConnection::RootConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock) :
 		m_pManager(pManager),
 		m_socket(sock)
@@ -365,36 +367,6 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 
 #endif
 
-#if defined(_WIN32)
-void User::RootConnection::on_message(OOBase::CDRStream& stream)
-#elif defined(HAVE_UNISTD_H)
-void User::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
-#endif
-{
-	OOServer::Root2User_OpCode_t op_code;
-	if (!stream.read(op_code))
-		LOG_ERROR(("Failed to read request opcode from root: %s",OOBase::system_error_text(stream.last_error())));
-	else
-	{
-		switch (static_cast<OOServer::Root2User_OpCode>(op_code))
-		{
-		case OOServer::Root2User_NewConnection:
-			if (recv_next())
-			{
-#if defined(_WIN32)
-				new_connection(stream);
-#elif defined(HAVE_UNISTD_H)
-				new_connection(stream,passed_fd);
-#endif
-			}
-			break;
-
-		default:
-			break;
-		}
-	}
-}
-
 void User::RootConnection::on_sent(OOBase::Buffer* /*buffer*/, int err)
 {
 	if (err)
@@ -427,3 +399,110 @@ bool User::RootConnection::recv_next()
 
 	return true;
 }
+
+bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
+{
+	int err = 0;
+
+#if defined(_WIN32)
+	// Use a named pipe
+	OOBase::Timeout timeout(20,0);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(strPipe.c_str(),err,timeout);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
+
+#else
+
+	// Use the passed fd
+	int fd = atoi(strPipe.c_str());
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->attach(fd,err);
+	if (err != 0)
+	{
+		OOBase::POSIX::close(fd);
+		LOG_ERROR_RETURN(("Failed to attach to root pipe: %s",OOBase::system_error_text(err)),false);
+	}
+
+#endif
+
+	m_root_connection = new (std::nothrow) User::RootConnection(this,ptrSocket);
+	if (!m_root_connection)
+		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
+
+	return m_root_connection->start();
+}
+
+#if defined(_WIN32)
+void User::RootConnection::on_message(OOBase::CDRStream& stream)
+#elif defined(HAVE_UNISTD_H)
+void User::RootConnection::on_message(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
+#endif
+{
+	OOServer::Root2User_OpCode_t op_code;
+	if (!stream.read(op_code))
+		LOG_ERROR(("Failed to read request opcode from root: %s",OOBase::system_error_text(stream.last_error())));
+	else
+	{
+		switch (static_cast<OOServer::Root2User_OpCode>(op_code))
+		{
+		case OOServer::Root2User_NewConnection:
+			if (recv_next())
+			{
+#if defined(_WIN32)
+				new_connection(stream);
+#elif defined(HAVE_UNISTD_H)
+				new_connection(stream,passed_fd);
+#endif
+			}
+			break;
+
+		default:
+			break;
+		}
+	}
+}
+
+/*void User::Manager::process_root_request(OOBase::CDRStream& request, uint16_t src_thread_id, uint32_t attribs)
+{
+	OOServer::RootOpCode_t op_code;
+	if (!request.read(op_code))
+	{
+		LOG_ERROR(("Bad request: %s",OOBase::system_error_text(request.last_error())));
+		return;
+	}
+
+	OOBase::CDRStream response;
+	switch (op_code)
+	{
+	case OOServer::Service_Start:
+		start_service(request,attribs & OOServer::Message_t::asynchronous ? NULL : &response);
+		break;
+
+	case OOServer::Service_Stop:
+		stop_service(request,response);
+		break;
+
+	case OOServer::Service_StopAll:
+		stop_all_services(response);
+		break;
+
+	case OOServer::Service_IsRunning:
+		service_is_running(request,response);
+		break;
+
+	case OOServer::Service_ListRunning:
+		list_services(response);
+		break;
+
+	default:
+		response.write(static_cast<OOServer::RootErrCode_t>(OOServer::Errored));
+		LOG_ERROR(("Bad request op_code: %u",op_code));
+		break;
+	}
+
+	if (!response.last_error() && !(attribs & OOServer::Message_t::asynchronous))
+	{
+		OOServer::MessageHandler::io_result::type res = send_response(m_uUpstreamChannel,src_thread_id,response,attribs);
+		if (res == OOServer::MessageHandler::io_result::failed)
+			LOG_ERROR(("Root response sending failed"));
+	}
+}*/

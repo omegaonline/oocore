@@ -213,6 +213,40 @@ void Root::ClientConnection::on_message_win32(OOBase::CDRStream& stream, int err
 	return on_message(stream,err);
 }
 
+bool Root::ClientConnection::send_response(const OOBase::String& strUser, pid_t pid)
+{
+	OOBase::CDRStream stream;
+	size_t mark = stream.buffer()->mark_wr_ptr();
+	stream.write(Omega::uint16_t(0));
+	stream.write(pid);
+	stream.write_string(strUser);
+
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	if (stream.last_error())
+		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
+
+	addref();
+
+	int err = m_socket->send(this,&ClientConnection::on_done,stream.buffer());
+	if (err)
+	{
+		release();
+		LOG_ERROR_RETURN(("Failed to send user process data: %s",OOBase::system_error_text(err)),false);
+	}
+
+	return true;
+}
+
+void Root::ClientConnection::on_done(OOBase::Buffer* data_buffer, int err)
+{
+	if (err)
+		LOG_WARNING(("Failed to send user process information to client process: %s",OOBase::system_error_text(err)));
+
+	m_pManager->drop_client(m_pid);
+
+	release();
+}
+
 #elif defined(HAVE_UNISTD_H)
 
 bool Root::ClientConnection::start()

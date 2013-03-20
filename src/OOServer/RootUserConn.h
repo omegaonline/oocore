@@ -48,12 +48,30 @@ namespace Root
 #if defined(_WIN32)
 		bool start(pid_t client_id, const OOBase::String& fd_root);
 		bool start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root);
-		bool do_start(const OOBase::String& fd_user, const OOBase::String& fd_root, const OOBase::String& fd_sandbox, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
+		bool do_start(pid_t client_id, const OOBase::String& fd_user, const OOBase::String& fd_root, const OOBase::String& fd_sbox);
+		bool on_add_client(OOBase::CDRStream& response, pid_t client_id);
+		struct user_params_t
+		{
+			pid_t client_id;
+			pid_t user_id;
+			OOBase::String strUserFd;
+			OOBase::String strRootFd;
+		};
+		bool on_start(OOBase::CDRStream& response, const user_params_t& params);
 #elif defined(HAVE_UNISTD_H)
 		bool start(pid_t client_id, OOBase::POSIX::SmartFD& fd_root);
 		bool start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root);
-		bool do_start(OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root, OOBase::POSIX::SmartFD& fd_sandbox, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
+		bool do_start(pid_t client_id, OOBase::POSIX::SmartFD& fd_user, OOBase::POSIX::SmartFD& fd_root, OOBase::POSIX::SmartFD& fd_sandbox);
 		bool on_add_client(OOBase::CDRStream& stream, pid_t client_id, int client_fd);
+		struct user_params_t
+		{
+			pid_t client_id;
+			pid_t user_id;
+			int user_fd;
+			int root_fd;
+			int sbox_fd;
+		};
+		bool on_start(OOBase::CDRStream& response, const user_params_t& params);
 #endif
 		bool add_client(pid_t client_id);
 

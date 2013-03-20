@@ -432,7 +432,7 @@ bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<U
 	if (err)
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),true);
 
-	user2_params_t params;
+	user2_params_t params = {0};
 	params.client_id = client_id;
 	params.user_id = ptrUser->get_pid();
 	params.user_fd = static_cast<int>(ptrUserFd);

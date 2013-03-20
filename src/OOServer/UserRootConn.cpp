@@ -329,6 +329,8 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 		LOG_ERROR(("Failed to read request from root: %s",OOBase::system_error_text(stream.last_error())));
 	else
 	{
+		LOG_DEBUG(("New user connection requested, pid %u",pid));
+
 		stream.reset();
 
 		size_t mark = stream.buffer()->mark_wr_ptr();

@@ -47,7 +47,9 @@ namespace Root
 		const uid_t& get_uid() const;
 		const char* get_session_id() const;
 
-#if defined(HAVE_UNISTD_H)
+#if defined(_WIN32)
+		bool send_response(const OOBase::String& strUser, pid_t pid);
+#elif defined(HAVE_UNISTD_H)
 		bool send_response(OOBase::POSIX::SmartFD& fd, pid_t pid);
 #endif
 
@@ -61,12 +63,12 @@ namespace Root
 
 #if defined(_WIN32)
 		void on_message_win32(OOBase::CDRStream& stream, int err);
+		void on_done(OOBase::Buffer* data_buffer, int err);
 #elif defined(HAVE_UNISTD_H)
 		void on_message_posix(OOBase::CDRStream& stream, OOBase::Buffer* ctl_buffer, int err);
-#endif
-
-		void on_message(OOBase::CDRStream& stream, int err);
 		void on_done(OOBase::Buffer* data_buffer, OOBase::Buffer* ctl_buffer, int err);
+#endif
+		void on_message(OOBase::CDRStream& stream, int err);
 
 	public:
 		class AutoDrop

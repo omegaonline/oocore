@@ -79,7 +79,7 @@ namespace OOCore
 		Channel() : m_pSession(0)
 		{}
 
-		void init(UserSession* pSession, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		void init(UserSession* pSession, Omega::Remoting::MarshalFlags_t flags, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void shutdown(Omega::uint32_t closed_channel_id);
 		void on_disconnect();
 

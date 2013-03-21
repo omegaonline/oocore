@@ -333,6 +333,9 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 
 uint32_t OOCore::StdObjectManager::GetSource()
 {
+	if (!m_ptrChannel)
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("GetSource() called on disconnected ObjectManager"));
+
 	return m_ptrChannel->GetSource();
 }
 
@@ -407,6 +410,9 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 
 bool OOCore::StdObjectManager::CustomMarshalInterface(Remoting::IMarshal* pMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
+	if (!m_ptrChannel)
+		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("MarshalInterface() called on disconnected ObjectManager"));
+
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
 	guid_t oid = pMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
@@ -437,9 +443,6 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(Remoting::IMarshal* pMarsh
 
 void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
-	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("MarshalInterface() called on disconnected ObjectManager"));
-
 	// Write a header
 	pMessage->WriteStructStart(strName,string_t::constant("$iface_marshal"));
 
@@ -588,9 +591,6 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 
 void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
-	if (!m_ptrChannel)
-		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("ReleaseMarshalData() called on disconnected ObjectManager"));
-
 	// Read the header
 	pMessage->ReadStructStart(strName,string_t::constant("$iface_marshal"));
 
@@ -627,6 +627,9 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 	}
 	else if (flag == 2)
 	{
+		if (!m_ptrChannel)
+			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("ReleaseMarshalData() called on disconnected ObjectManager"));
+
 		// Skip the guid...
 		pMessage->ReadValue(string_t::constant("$oid"));
 

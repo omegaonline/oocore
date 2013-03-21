@@ -67,7 +67,7 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-void OOCore::UserSession::init(void* data, size_t length)
+void OOCore::UserSession::init(bool bHosted)
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -92,7 +92,7 @@ void OOCore::UserSession::init(void* data, size_t length)
 
 				try
 				{
-					start(data,length);
+					start(bHosted);
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -118,6 +118,81 @@ void OOCore::UserSession::init(void* data, size_t length)
 			// Inc init count if we have started...
 			++m_init_count;
 			return;
+		}
+	}
+}
+
+void OOCore::UserSession::start(bool bHosted)
+{
+	void* TODO;
+
+	// Spawn off the io worker thread
+	//m_worker_thread.run(io_worker_fn,this);
+
+	// Create the zero compartment
+	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
+	ptrZeroCompt->set_id(0);
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	int err = m_mapCompartments.force_insert(0,ptrZeroCompt);
+	if (err)
+		OMEGA_THROW(err);
+
+	// Register our local channel factory
+	m_rot_cookies.push(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
+
+	guard.release();
+
+	if (!bHosted)
+	{
+		OOBase::StackAllocator<128> allocator;
+
+		OOBase::CDRStream stream;
+		connect_root(stream,allocator);
+
+		// Now read back all the bits we need... Don't throw yet, there may be an embedded fd
+		OOCore::pid_t stream_id = 0;
+		stream.read(stream_id);
+
+		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
+
+#if defined(_WIN32)
+		OOBase::LocalString strPipe(allocator);
+		stream.read_string(strPipe);
+
+#elif defined(HAVE_UNISTD_H)
+		// And read the embedded fd
+		OOBase::POSIX::SmartFD fd;
+		stream.read(static_cast<int&>(fd));
+#endif
+		if (stream.last_error())
+			OMEGA_THROW(stream.last_error());
+
+		// Now do the connect/attach
+
+
+
+
+		// Create a proxy to the server interface
+		IObject* pIPS = NULL;
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
+		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+		ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
+
+		// And register the Registry
+		ObjectPtr<Registry::IKey> ptrReg;
+		ptrReg.GetObject(Registry::OID_Registry_Instance);
+		if (ptrReg)
+		{
+			// Re-register the proxy locally.. it saves a lot of time!
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
+
+			guard.acquire();
+
+			m_rot_cookies.push(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
+			m_rot_cookies.push(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
 		}
 	}
 }
@@ -163,11 +238,15 @@ void OOCore::UserSession::stop()
 		// Close compartments
 		close_compartments();
 
-		// Revoke the IPS
-		OTL::GetModule()->RevokeIPS();
+		// Revoke our registered objects factories
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
 
-		// Revoke our private factories
-		revoke_private_factories();
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		uint32_t cookie;
+		while (m_rot_cookies.pop(&cookie))
+			ptrROT->RevokeObject(cookie);
 
 		// Now close Initialise singletons
 		OOCore::CloseSingletons();
@@ -195,18 +274,6 @@ void OOCore::UserSession::stop()
 		m_stream->close();
 		m_worker_thread.join();
 	}
-}
-
-void OOCore::UserSession::revoke_private_factories()
-{
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-	ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
-
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	uint32_t cookie;
-	while (m_rot_cookies.pop(&cookie))
-		ptrROT->RevokeObject(cookie);
 }
 
 void OOCore::UserSession::close_compartments()
@@ -699,23 +766,6 @@ void OOCore::UserSession::build_header(OOBase::CDRStream& header, uint32_t src_c
 	header.replace(static_cast<uint32_t>(len),msg_len_mark);
 }
 
-Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
-{
-	Remoting::MarshalFlags_t mflags;
-	if (channel == m_channel_id)
-		mflags = Remoting::Same;
-	else if ((channel & 0xFFFFF000) == (m_channel_id & 0xFFFFF000))
-		mflags = Remoting::Compartment;
-	else if ((channel & 0xFF000000) == (m_channel_id & 0xFF000000))
-		mflags = Remoting::InterProcess;
-	else if ((channel & 0x80000000) == (m_channel_id & 0x80000000))
-		mflags = Remoting::InterUser;
-	else
-		mflags = Remoting::RemoteMachine;
-
-	return mflags;
-}
-
 void OOCore::UserSession::respond_exception(OOBase::CDRStream& response, IException* pE)
 {
 	// Make sure the exception is released
@@ -858,12 +908,12 @@ uint16_t OOCore::UserSession::update_state(uint16_t compartment_id)
 	return old_id;
 }
 
-IObject* OOCore::UserSession::create_channel(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
+IObject* OOCore::UserSession::create_channel(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid, Remoting::MarshalFlags_t flags)
 {
-	return USER_SESSION::instance().create_channel_i(src_channel_id,message_oid,iid);
+	return USER_SESSION::instance().create_channel_i(src_channel_id,message_oid,iid,flags);
 }
 
-IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
+IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid, Remoting::MarshalFlags_t flags)
 {
 	// Create a channel in the context of the current compartment
 	const ThreadContext* pContext = ThreadContext::instance();
@@ -879,7 +929,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 		}
 	}
 
-	switch (classify_channel(src_channel_id))
+	switch (flags)
 	{
 	case Remoting::Same:
 		return LoopChannel::create(src_channel_id,message_oid,iid);
@@ -892,13 +942,13 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 
 	default:
 		{
-			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ptrCompt->create_channel(src_channel_id,message_oid);
+			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ptrCompt->create_channel(src_channel_id,message_oid,flags);
 			return ptrChannel->QueryInterface(iid);
 		}
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,3,((in),uint32_t,version,(in),void*,data,(in),size_t,length))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),Omega::bool_t,bHosted))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
@@ -906,7 +956,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,3,((in),uint3
 
 	try
 	{
-		USER_SESSION::instance().init(data,length);
+		USER_SESSION::instance().init(bHosted);
 	}
 	catch (IException* pE)
 	{
@@ -924,15 +974,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,3,((in),uint3
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 {
-	if (OTL::GetModule()->IsHosted())
-	{
-		OTL::GetModule()->RevokeIPS();
-
-		// Close Initialise singletons
-		OOCore::CloseSingletons();
-	}
-	else
-		USER_SESSION::instance().term();
+	USER_SESSION::instance().term();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,millisecs))
@@ -943,4 +985,3 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_
 
 	return USER_SESSION::instance().pump_request(timeout);
 }
-

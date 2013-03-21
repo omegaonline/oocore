@@ -29,17 +29,7 @@ namespace OOCore
 {
 	struct Message
 	{
-		Message() :
-				m_src_channel_id(0),
-				m_attribs(0),
-				m_dest_thread_id(0),
-				m_src_thread_id(0),
-				m_type(Response),
-				m_payload(size_t(0)),
-				m_dest_cmpt_id(0)
-		{}
-
-		Message(size_t len) :
+		Message(size_t len = 0) :
 				m_src_channel_id(0),
 				m_attribs(0),
 				m_dest_thread_id(0),
@@ -85,17 +75,15 @@ namespace OOCore
 	class UserSession : public OOBase::NonCopyable
 	{
 		friend class ThreadContext;
-		friend class OOBase::AllocatorInstance;
 		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
 
 	public:
-		void init(void* data, size_t length);
+		void init(bool bHosted);
 		void term();
 
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
 		
-		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
-		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
+		static Omega::IObject* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 		void send_request(Omega::uint32_t dest_channel_id, OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t attribs);
 		void send_response(const Message& msg, OOBase::CDRStream* response);
 		Omega::uint32_t get_channel_id() const;
@@ -156,12 +144,12 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void start(void* data, size_t length);
+		void start(bool bHosted);
 		void stop();
+		void connect_root(OOBase::CDRStream& response, OOBase::AllocatorInstance& allocator);
 
-		// Private object factory members
+		// Our object factory members
 		OOBase::Stack<Omega::uint32_t> m_rot_cookies;
-		void revoke_private_factories();
 
 		// Message pumping
 		int run_read_loop();
@@ -180,7 +168,7 @@ namespace OOCore
 
 		void close_compartments();
 		OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment_i(const Omega::guid_t& channel_oid);
-		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid);
+		Omega::IObject* create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 }
 

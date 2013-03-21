@@ -58,10 +58,8 @@ namespace User
 		int start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRootSocket, OOBase::CDRStream& stream);
 
 		static int run_proactor(void* param);
-		static int do_bootstrap(void* param);
-		static int do_handle_events(void* param);
+		static int handle_events(void* param);
 
-		bool bootstrap();
 		void do_quit();
 
 		// Remote channel handling

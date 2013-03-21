@@ -215,8 +215,7 @@ namespace
 template class OOBase::Singleton<Module::OOCore_ModuleImpl,OOCore::DLL>;
 template class Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> >;
 
-OTL::Module::OOCore_ModuleImpl::OOCore_ModuleImpl() :
-		m_hosted_by_ooserver(false)
+OTL::Module::OOCore_ModuleImpl::OOCore_ModuleImpl()
 {
 	m_ptrROT = NoLockObjectImpl<OOCore::LocalROT>::CreateObject();
 
@@ -265,37 +264,6 @@ IObject* OTL::Module::OOCore_ModuleImpl::GetROTObject(const any_t& oid, const gu
 	IObject* pObject = NULL;
 	m_ptrROT->GetObject(oid,iid,pObject);
 	return pObject;
-}
-
-bool OTL::Module::OOCore_ModuleImpl::IsHosted() const
-{
-	return m_hosted_by_ooserver;
-}
-
-void OTL::Module::OOCore_ModuleImpl::RegisterIPS(ObjectPtr<OOCore::IInterProcessService> ptrIPS, bool bHosted)
-{
-	if (!ptrIPS)
-		OMEGA_THROW("Null IPS in RegisterIPS");
-
-	ObjectPtr<Activation::IRunningObjectTable> ptrROT = ptrIPS->GetRunningObjectTable();
-
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	m_hosted_by_ooserver = bHosted;
-
-	// Stash passed in values
-	m_ptrIPS = ptrIPS;
-
-	m_ptrROT->SetUpstreamROT(ptrROT);
-}
-
-void OTL::Module::OOCore_ModuleImpl::RevokeIPS()
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	m_ptrROT->SetUpstreamROT(NULL);
-
-	m_ptrIPS.Release();
 }
 
 DLLManagerImpl::~DLLManagerImpl()

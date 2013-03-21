@@ -136,9 +136,9 @@ void OOCore::ChannelBase::ReflectMarshal(Remoting::IMessage* pMessage)
 	MarshalInterface(NULL,pMessage,guid_t::Null(),m_marshal_flags);
 }
 
-void OOCore::Channel::init(UserSession* pSession, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::Channel::init(UserSession* pSession, Remoting::MarshalFlags_t flags, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
-	ChannelBase::init(channel_id,pSession->classify_channel(channel_id),pOM,message_oid);
+	ChannelBase::init(channel_id,flags,pOM,message_oid);
 
 	m_pSession = pSession;
 	
@@ -286,7 +286,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pM
 	guid_t message_oid = pMessage->ReadValue(string_t::constant("m_message_oid")).cast<guid_t>();
 
 	// Create a new channel
-	pObject = UserSession::create_channel(channel_id,message_oid,iid);
+	pObject = UserSession::create_channel(channel_id,message_oid,iid,flags);
 }
 
 const Omega::guid_t OOCore::OID_CDRMessageMarshalFactory("{1455FCD0-A49B-4f2a-94A5-222949957123}");

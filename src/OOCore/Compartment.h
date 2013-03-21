@@ -64,7 +64,7 @@ namespace OOCore
 		bool is_channel_open(Omega::uint32_t channel_id);
 
 		Omega::Remoting::IObjectManager* get_channel_om(Omega::uint32_t src_channel_id);
-		OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
+		OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, Omega::Remoting::MarshalFlags_t flags);
 		void process_request(const Message& msg);
 
 		OTL::ObjectImpl<ComptChannel>* create_compartment_channel(Omega::uint16_t compartment_id, const Omega::guid_t& message_oid);

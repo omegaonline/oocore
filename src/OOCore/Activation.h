@@ -37,10 +37,6 @@ namespace OTL
 
 		public:
 			ObjectPtr<OOCore::IInterProcessService> GetIPS();
-			bool IsHosted() const;
-
-			void RegisterIPS(ObjectPtr<OOCore::IInterProcessService> ptrIPS, bool bHosted);
-			void RevokeIPS();
 
 			Omega::IObject* GetROTObject(const Omega::any_t& oid, const Omega::guid_t& iid);
 
@@ -50,7 +46,6 @@ namespace OTL
 			OOBase::SpinLock                               m_lock;
 			ObjectPtr<NoLockObjectImpl<OOCore::LocalROT> > m_ptrROT;
 			ObjectPtr<OOCore::IInterProcessService>        m_ptrIPS;
-			bool                                          m_hosted_by_ooserver;
 
 			ModuleBase::CreatorEntry* getCreatorEntries()
 			{

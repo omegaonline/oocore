@@ -104,204 +104,117 @@ namespace
 
 #endif // !WIN32
 	}
+}
 
-	void connect_root(OOBase::CDRStream& response, OOBase::AllocatorInstance& allocator)
-	{
+void OOCore::UserSession::connect_root(OOBase::CDRStream& response, OOBase::AllocatorInstance& allocator)
+{
 #if defined(NDEBUG)
-		OOBase::Timeout timeout(15,0);
+	OOBase::Timeout timeout(15,0);
 #else
-		OOBase::Timeout timeout;
+	OOBase::Timeout timeout;
 #endif
 
-		int err = 0;
-		OOBase::RefPtr<OOBase::Socket> root_socket;
-		while (!timeout.has_expired())
-		{
-			root_socket = OOBase::Socket::connect(ROOT_NAME,err,timeout);
-			if (!err || (err != ENOENT && err != ECONNREFUSED))
-				break;
+	int err = 0;
+	OOBase::RefPtr<OOBase::Socket> root_socket;
+	while (!timeout.has_expired())
+	{
+		root_socket = OOBase::Socket::connect(ROOT_NAME,err,timeout);
+		if (!err || (err != ENOENT && err != ECONNREFUSED))
+			break;
 
-			// We ignore the error, and try again until we timeout
-		}
+		// We ignore the error, and try again until we timeout
+	}
 
-		if (err)
-		{
-			ObjectPtr<IException> ptrE = ISystemException::Create(err);
-			throw IInternalException::Create(OOCore::get_text("Failed to connect to network daemon"),"Omega::Initialize",0,NULL,ptrE);
-		}
+	if (err)
+	{
+		ObjectPtr<IException> ptrE = ISystemException::Create(err);
+		throw IInternalException::Create(OOCore::get_text("Failed to connect to network daemon"),"Omega::Initialize",0,NULL,ptrE);
+	}
 
-		uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
+	uint32_t version = (OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16) | OOCORE_PATCH_VERSION;
 
-		OOBase::LocalString strSid(allocator);
-		get_session_id(strSid);
+	OOBase::LocalString strSid(allocator);
+	get_session_id(strSid);
 
-		size_t mark = response.buffer()->mark_wr_ptr();
+	size_t mark = response.buffer()->mark_wr_ptr();
 
-		response.write(Omega::uint16_t(0));
-		response.write(version);
-		response.write_string(strSid);
+	response.write(Omega::uint16_t(0));
+	response.write(version);
+	response.write_string(strSid);
 
 #if defined(_WIN32)
-		response.write(GetCurrentProcessId());
+	response.write(GetCurrentProcessId());
 #elif defined(HAVE_UNISTD_H)
-		response.write(getpid());
+	response.write(getpid());
 #endif
-		response.replace(static_cast<Omega::uint16_t>(response.length()),mark);
-		if (response.last_error())
-			OMEGA_THROW(response.last_error());
+	response.replace(static_cast<Omega::uint16_t>(response.length()),mark);
+	if (response.last_error())
+		OMEGA_THROW(response.last_error());
 
 #if !defined(HAVE_UNISTD_H)
-		err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
-		if (err)
-			OMEGA_THROW(err);
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
+	if (err)
+		OMEGA_THROW(err);
 
-		// Read early stuff...
+	// Read early stuff...
 
-		// Align everything, ready for the Omega_Initialize call
-		response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+	// Align everything, ready for the Omega_Initialize call
+	response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 #else
 
 #if defined(SO_PASSCRED)
-		int val = 1;
-		if (::setsockopt(root_socket->get_handle(), SOL_SOCKET, SO_PASSCRED, &val, sizeof(val)) != 0)
-			OMEGA_THROW(errno);
+	int val = 1;
+	if (::setsockopt(root_socket->get_handle(), SOL_SOCKET, SO_PASSCRED, &val, sizeof(val)) != 0)
+		OMEGA_THROW(errno);
 #endif
-		OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
-		if (!ctl_buffer)
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
+	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
+	if (!ctl_buffer)
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-		err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(response,ctl_buffer,root_socket);
-		if (err)
-			OMEGA_THROW(err);
-
-		OOBase::POSIX::SmartFD passed_fd;
-
-		// Read struct cmsg
-		struct msghdr msgh = {0};
-		msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
-		msgh.msg_controllen = ctl_buffer->length();
-
-		for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
-		{
-			if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
-			{
-				int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
-				size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
-				size_t fd_start = 0;
-				if (fd_count > 0)
-				{
-					err = OOBase::POSIX::set_close_on_exec(fds[0],true);
-					if (!err)
-					{
-						passed_fd = fds[0];
-						fd_start = 1;
-					}
-				}
-
-				for (size_t i=fd_start;i<fd_count;++i)
-					OOBase::POSIX::close(fds[i]);
-			}
-		}
-
-		// Align everything, ready for the Omega_Initialize call
-		response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-		err = response.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
-		if (err)
-			OMEGA_THROW(err);
-
-		// Append fd to response
-		if (!response.write(static_cast<int>(passed_fd)))
-			OMEGA_THROW(response.last_error());
-
-		// Don't close the fd
-		passed_fd.detach();
-#endif
-	}
-}
-
-void OOCore::UserSession::start(void* data, size_t length)
-{
-	OOBase::StackAllocator<128> allocator;
-
-	int err = 0;
-	OOBase::CDRStream stream;
-	if (data)
-	{
-		err = stream.buffer()->space(length);
-		if (err)
-			OMEGA_THROW(err);
-
-		memcpy(stream.buffer()->wr_ptr(),data,length);
-		stream.buffer()->wr_ptr(length);
-	}
-	else
-		connect_root(stream,allocator);
-
-	// Now read back all the bits we need... Don't throw yet, there may be an embedded fd
-	OOCore::pid_t stream_id = 0;
-	stream.read(stream_id);
-
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
-
-#if defined(_WIN32)
-	OOBase::LocalString strPipe(allocator);
-	stream.read_string(strPipe);
-
-#elif defined(HAVE_UNISTD_H)
-	// And read the embedded fd
-	OOBase::POSIX::SmartFD fd;
-	stream.read(static_cast<int&>(fd));
-#endif
-
-	if (stream.last_error())
-		OMEGA_THROW(stream.last_error());
-
-	// Start the proactor and threads here!
-	void* TODO;
-
-	assert(false);
-
-	// Spawn off the io worker thread
-	m_worker_thread.run(io_worker_fn,this);
-
-	// Now do the connect/attach
-
-
-	// Create the zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
-	ptrZeroCompt->set_id(0);
-
-	// Register our local channel factory
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-	m_rot_cookies.push(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
-
-	// Create a new object manager for the user channel on the zero compartment
-	if ((err = m_mapCompartments.force_insert(0,ptrZeroCompt)) != 0)
+	err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(response,ctl_buffer,root_socket);
+	if (err)
 		OMEGA_THROW(err);
 
-	guard.release();
+	OOBase::POSIX::SmartFD passed_fd;
 
-	// Create a proxy to the server interface
-	IObject* pIPS = NULL;
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
-	ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
-	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
+	// Read struct cmsg
+	struct msghdr msgh = {0};
+	msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+	msgh.msg_controllen = ctl_buffer->length();
 
-	// Register the IPS...
-	OTL::GetModule()->RegisterIPS(ptrIPS,false);
-
-	// And register the Registry
-	ObjectPtr<Registry::IKey> ptrReg;
-	ptrReg.GetObject(Registry::OID_Registry_Instance);
-	if (ptrReg)
+	for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))
 	{
-		// Re-register the proxy locally.. it saves a lot of time!
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
+		if (msg->cmsg_level == SOL_SOCKET && msg->cmsg_type == SCM_RIGHTS)
+		{
+			int* fds = reinterpret_cast<int*>(CMSG_DATA(msg));
+			size_t fd_count = (msg->cmsg_len - CMSG_LEN(0))/sizeof(int);
+			size_t fd_start = 0;
+			if (fd_count > 0)
+			{
+				err = OOBase::POSIX::set_close_on_exec(fds[0],true);
+				if (!err)
+				{
+					passed_fd = fds[0];
+					fd_start = 1;
+				}
+			}
 
-		guard.acquire();
-
-		m_rot_cookies.push(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
-		m_rot_cookies.push(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
+			for (size_t i=fd_start;i<fd_count;++i)
+				OOBase::POSIX::close(fds[i]);
+		}
 	}
+
+	// Align everything, ready for the Omega_Initialize call
+	response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+	err = response.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+	if (err)
+		OMEGA_THROW(err);
+
+	// Append fd to response
+	if (!response.write(static_cast<int>(passed_fd)))
+		OMEGA_THROW(response.last_error());
+
+	// Don't close the fd
+	passed_fd.detach();
+#endif
 }

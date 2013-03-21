@@ -159,24 +159,45 @@ int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOB
 	if (!ptrRootSocket)
 		m_bIsSandbox = true;
 
-
-
-	return m_thread_pool.run(&do_bootstrap,this,1);
-}
-
-int User::Manager::do_bootstrap(void* param)
-{
-	Manager* pThis = static_cast<Manager*>(param);
-	if (!pThis->bootstrap())
+	try
 	{
-		pThis->do_quit();
-		return 0;
+		// Start the OOCore, in hosted mode
+		IException* pE = OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),true);
+		if (pE)
+			throw pE;
+
+		// Get the local ROT
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
+
+		// Now get the upstream IPS...
+		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
+		//if (sandbox_channel != 0)
+		//	ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
+
+		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateObject();
+		ptrIPS->init(ptrOMSb);
+
+		// Create a local registry impl
+		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrReg = ObjectImpl<User::Registry::RootKey>::CreateObject();
+		ptrReg->init(string_t::constant("/"),0,0);
+
+		// Registry registry
+		ptrROT->RegisterObject(Omega::Registry::OID_Registry_Instance,ptrReg.QueryInterface<IObject>(),Activation::UserScope);
+
+		// Now we have a ROT and a registry, register everything else
+		GetModule()->RegisterObjectFactories();
+	}
+	catch (IException* pE)
+	{
+		ObjectPtr<IException> ptrE = pE;
+		LOG_ERROR_RETURN(("IException thrown: %s",recurse_log_exception(ptrE).c_str()),-1);
 	}
 
-	return do_handle_events(pThis);
+	return m_thread_pool.run(&handle_events,this,1);
 }
 
-int User::Manager::do_handle_events(void* param)
+int User::Manager::handle_events(void* param)
 {
 	Manager* pThis = static_cast<Manager*>(param);
 
@@ -201,46 +222,6 @@ int User::Manager::do_handle_events(void* param)
 	{
 		LOG_ERROR_RETURN(("Unrecognised exception thrown"),-1);
 	}
-}
-
-bool User::Manager::bootstrap()
-{
-	try
-	{
-		// Get the local ROT
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
-
-		// Now get the upstream IPS...
-		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
-		//if (sandbox_channel != 0)
-		//	ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
-
-		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateObject();
-		ptrIPS->init(ptrOMSb);
-
-		// Register our interprocess service so we can react to activation requests
-		void* FIXME;
-		OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),NULL,0);
-
-		// Create a local registry impl
-		ObjectPtr<ObjectImpl<Registry::RootKey> > ptrReg = ObjectImpl<User::Registry::RootKey>::CreateObject();
-		ptrReg->init(string_t::constant("/"),0,0);
-
-		// Registry registry
-		ptrROT->RegisterObject(Omega::Registry::OID_Registry_Instance,ptrReg.QueryInterface<IObject>(),Activation::UserScope);
-
-		// Now we have a ROT and a registry, register everything else
-		GetModule()->RegisterObjectFactories();
-
-		return notify_started();
-	}
-	catch (IException* pE)
-	{
-		ObjectPtr<IException> ptrE = pE;
-		LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-	}
-	return false;
 }
 
 /*void User::Manager::on_accept_i(OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, int err)

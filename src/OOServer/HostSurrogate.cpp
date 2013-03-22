@@ -107,38 +107,31 @@ namespace
 	{
 		int ret = EXIT_FAILURE;
 
-		IException* pE = Omega::Initialize();
-		if (pE)
+		try
+		{
+			Omega::Initialize();
+
+			GetModuleBase()->RegisterObjectFactory(oid);
+
+			OOBase::ThreadPool pool;
+			int err = pool.run(&worker,NULL,2);
+			if (err)
+				LOG_ERROR(("Failed to start thread pool: %s",OOBase::system_error_text(err)));
+			else
+				worker(NULL);
+
+			pool.join();
+
+			GetModuleBase()->UnregisterObjectFactories();
+
+			Omega::Uninitialize();
+
+			ret = EXIT_SUCCESS;
+		}
+		catch (IException* pE)
 		{
 			ObjectPtr<IException> ptrE = pE;
 			LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-		}
-		else
-		{
-			try
-			{
-				GetModuleBase()->RegisterObjectFactory(oid);
-
-				OOBase::ThreadPool pool;
-				int err = pool.run(&worker,NULL,2);
-				if (err)
-					LOG_ERROR(("Failed to start thread pool: %s",OOBase::system_error_text(err)));
-				else
-					worker(NULL);
-
-				pool.join();
-
-				GetModuleBase()->UnregisterObjectFactories();
-
-				ret = EXIT_SUCCESS;
-			}
-			catch (IException* pE)
-			{
-				ObjectPtr<IException> ptrE = pE;
-				LOG_ERROR(("IException thrown: %s",recurse_log_exception(ptrE).c_str()));
-			}
-
-			Omega::Uninitialize();
 		}
 
 		return ret;

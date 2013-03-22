@@ -162,9 +162,7 @@ int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOB
 	try
 	{
 		// Start the OOCore, in hosted mode
-		IException* pE = OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),true);
-		if (pE)
-			throw pE;
+		OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),true);
 
 		// Get the local ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;

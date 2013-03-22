@@ -948,28 +948,13 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),Omega::bool_t,bHosted))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),Omega::bool_t,bHosted))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-		return Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
+		throw Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
-	try
-	{
-		USER_SESSION::instance().init(bHosted);
-	}
-	catch (IException* pE)
-	{
-		USER_SESSION::instance().term();
-		return pE;
-	}
-	catch (...)
-	{
-		USER_SESSION::instance().term();
-		return Omega::IInternalException::Create(OOCore::get_text("Unhandled C++ exception"),"Omega::Initialize");
-	}
-
-	return NULL;
+	USER_SESSION::instance().init(bHosted);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

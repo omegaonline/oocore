@@ -23,14 +23,7 @@ void normalise_path(Omega::string_t& strPath)
 
 bool init_tests()
 {
-	Omega::IException* pE = Omega::Initialize();
-	if (pE)
-	{
-		output("[Omega::IException]\n");
-		output_exception(pE);
-		pE->Release();
-		return false;
-	}
+	Omega::Initialize();
 
 	return true;
 }

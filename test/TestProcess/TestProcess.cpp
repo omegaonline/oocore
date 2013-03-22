@@ -105,25 +105,20 @@ static void exception_details(Omega::IException* pOrig)
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	Omega::IException* pE = Omega::Initialize();
-	if (pE)
-	{
-		report_exception(pE);
-		return EXIT_FAILURE;
-	}
-
 	int ret = EXIT_SUCCESS;
 	try
 	{
+		Omega::Initialize();
+
 		OTL::GetModule()->Run();
+
+		Omega::Uninitialize();
 	}
 	catch (Omega::IException* pE2)
 	{
 		report_exception(pE2);
 		ret = EXIT_FAILURE;
 	}
-
-	Omega::Uninitialize();
 
 	return ret;
 }

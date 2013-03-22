@@ -799,11 +799,5 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in
 	return NULL;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IObjectManager*,OOCore_CreateStdObjectManager,0,())
-{
-	ObjectPtr<ObjectImpl<OOCore::StdObjectManager> > ptrOM = ObjectImpl<OOCore::StdObjectManager>::CreateObject();
-	return static_cast<Remoting::IObjectManager*>(ptrOM.Detach());
-}
-
 const Omega::guid_t OOCore::OID_ProxyMarshalFactory("{69099DD8-A628-458a-861F-009E016DB81B}");
 const Omega::guid_t OOCore::OID_InterProcessService("{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");

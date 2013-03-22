@@ -152,12 +152,10 @@ static HRESULT CreateInstance(LCID lcid, DISPPARAMS* pDispParams, VARIANT* pVarR
 	
 	if (InterlockedCompareExchange(&s_bInitialised,0,1) == 0)
 	{
-		Omega::IException* pE = Omega::Initialize();
-		if (pE)
-			return FillExcepInfo("CreateInstance",pE,pExcepInfo);
-					
 		try
 		{
+			Omega::Initialize();
+
 			m_ptrCompt = OTL::ObjectPtr<Omega::Compartment::ICompartment>(Omega::Compartment::OID_Compartment);
 		}
 		catch (Omega::IException* pE2)

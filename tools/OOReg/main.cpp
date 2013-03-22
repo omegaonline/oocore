@@ -215,16 +215,11 @@ int main(int argc, char* argv[])
 	}
 	args.find("@2",param1);
 
-	Omega::IException* pE = Omega::Initialize();
-	if (pE)
-	{
-		report_exception(pE);
-		return EXIT_FAILURE;
-	}
-
 	int result = EXIT_FAILURE;
 	try
 	{
+		Omega::Initialize();
+
 		Omega::string_t key,value;
 
 		if (method == "set")

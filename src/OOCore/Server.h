@@ -63,6 +63,5 @@ OMEGA_DEFINE_INTERFACE
 )
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Omega::Remoting::IMessage*,pMessage,(in),Omega::IException*,pException));
-OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IObjectManager*,OOCore_CreateStdObjectManager,0,());
 
 #endif // OOCORE_SERVER_H_INCLUDED_

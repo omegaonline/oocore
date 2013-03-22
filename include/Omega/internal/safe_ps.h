@@ -277,9 +277,9 @@ namespace Omega
 						return m_pProxy->GetShim(iid);
 					}
 
-					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
+					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const Omega::guid_t& iid)
 					{
-						return m_pProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
+						return m_pProxy->CreateWireStub(shim_Controller,shim_MarshalContext,iid);
 					}
 
 					Safe_Proxy_Base* m_pProxy;
@@ -336,13 +336,13 @@ namespace Omega
 					return NULL;
 				}
 
-				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
+				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const Omega::guid_t& iid)
 				{
 					if (!static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe)
 						return NULL;
 
 					const SafeShim* ret = NULL;
-					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe(m_shim,shim_Controller,shim_Marshaller,&iid,&ret);
+					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe(m_shim,shim_Controller,shim_MarshalContext,&iid,&ret);
 					throw_correct_exception(except);
 
 					return ret;
@@ -511,7 +511,7 @@ namespace Omega
 					return create_safe_stub(ptr,iid);
 				}
 
-				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
+				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const guid_t& iid);
 
 			private:
 				Threading::AtomicRefCount m_refcount;
@@ -635,12 +635,12 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL CreateWireStub_Safe(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_base_t* piid, const SafeShim** retval)
+				static const SafeShim* OMEGA_CALL CreateWireStub_Safe(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const guid_base_t* piid, const SafeShim** retval)
 				{
 					const SafeShim* except = 0;
 					try
 					{
-						*retval = static_cast<Safe_Stub*>(shim->m_stub)->CreateWireStub(shim_Controller,shim_Marshaller,*piid);
+						*retval = static_cast<Safe_Stub*>(shim->m_stub)->CreateWireStub(shim_Controller,shim_MarshalContext,*piid);
 					}
 					catch (IException* pE)
 					{

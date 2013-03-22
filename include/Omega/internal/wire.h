@@ -49,7 +49,7 @@ namespace Omega
 
 		inline IMessage* CreateMemoryMessage();
 	
-		interface IMarshaller : public IObject
+		interface IMarshalContext : public IObject
 		{
 			virtual void MarshalInterface(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual void UnmarshalInterface(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
@@ -76,7 +76,7 @@ namespace Omega
 		{
 			virtual void WriteKey(IMessage* pMessage) = 0;
 			virtual void UnpackKey(IMessage* pMessage) = 0;
-			virtual IMarshaller* GetMarshaller() = 0;
+			virtual IMarshalContext* GetMarshalContext() = 0;
 			virtual bool_t IsAlive() = 0;
 			virtual bool_t RemoteQueryInterface(const guid_t& iid) = 0;
 		};
@@ -89,7 +89,7 @@ OMEGA_SET_GUIDOF(Omega::Remoting, IMessage, "{044E0896-8A60-49e8-9143-5B1F01D4AE
 OMEGA_SET_GUIDOF(Omega::Remoting, IStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
 OMEGA_SET_GUIDOF(Omega::Remoting, IStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
 OMEGA_SET_GUIDOF(Omega::Remoting, IProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
-OMEGA_SET_GUIDOF(Omega::Remoting, IMarshaller, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
+OMEGA_SET_GUIDOF(Omega::Remoting, IMarshalContext, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
 namespace Omega
 {
@@ -101,7 +101,7 @@ namespace Omega
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStub)
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStubController)
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IProxy)
-			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IMarshaller)
+			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IMarshalContext)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
@@ -149,14 +149,14 @@ namespace Omega
 
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Remoting::IMessage*,pMessage))
 				OMEGA_METHOD_VOID(UnpackKey,1,((in),Remoting::IMessage*,pMessage))
-				OMEGA_METHOD(Remoting::IMarshaller*,GetMarshaller,0,())
+				OMEGA_METHOD(Remoting::IMarshalContext*,GetMarshalContext,0,())
 				OMEGA_METHOD(bool_t,IsAlive,0,())
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
 			)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::Remoting, IMarshaller,
+				Omega::Remoting, IMarshalContext,
 
 				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
@@ -171,20 +171,20 @@ namespace Omega
 			{
 				typedef typename remove_const<T>::type type;
 
-				static void init(Remoting::IMarshaller*, type&)
+				static void init(Remoting::IMarshalContext*, type&)
 				{ }
 
-				static void read(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, type& val)
+				static void read(const string_t& strName, Remoting::IMarshalContext*, Remoting::IMessage* pMessage, type& val)
 				{
 					val = (pMessage->ReadValue(strName)).template cast<type>();
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void write(const string_t& strName, Remoting::IMarshalContext*, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
 					pMessage->WriteValue(strName,val);
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext*, Remoting::IMessage* pMessage, typename optimal_param<T>::type)
 				{
 					// Just read the value back, moving the read pointer correctly
 					pMessage->ReadValue(strName);
@@ -215,7 +215,7 @@ namespace Omega
 						}							
 					}
 
-					void init(Remoting::IMarshaller* /*pManager*/, size_t count)
+					void init(Remoting::IMarshalContext* /*pManager*/, size_t count)
 					{
 						// There is the potential for a remote DOS attack here
 						// By sending a very large buffer to underpowered remote server
@@ -224,7 +224,7 @@ namespace Omega
 						// The solution might be to have a throttling pool for allocation here...
 						// Use pManager to detect who is doing what...
 						//
-						// Or maybe implement IMarshaller::Allocate()...
+						// Or maybe implement IMarshalContext::Allocate()...
 						
 						
 						if (count)
@@ -258,12 +258,12 @@ namespace Omega
 					non_const_T* m_pVals;
 				};
 
-				static void init(Remoting::IMarshaller* pManager, type& val, size_t count)
+				static void init(Remoting::IMarshalContext* pManager, type& val, size_t count)
 				{
 					val.init(pManager,count);
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, size_t count)
+				static void read(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, T* pVals, size_t count)
 				{
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
@@ -280,7 +280,7 @@ namespace Omega
 					pMessage->ReadArrayEnd();
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, size_t count)
+				static void write(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, const T* pVals, size_t count)
 				{
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(count));
 
@@ -290,7 +290,7 @@ namespace Omega
 					pMessage->WriteArrayEnd();
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, size_t count)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, const T* pVals, size_t count)
 				{
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
@@ -304,7 +304,7 @@ namespace Omega
 					pMessage->ReadArrayEnd();
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, size_t)
+				static void read(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, type& val, size_t)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
 
@@ -316,7 +316,7 @@ namespace Omega
 					pMessage->ReadArrayEnd();
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, size_t count)
+				static void write(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, const type& val, size_t count)
 				{
 					// Only write out what we have allocated...
 					if (count > val.m_alloc_count)
@@ -330,7 +330,7 @@ namespace Omega
 					pMessage->WriteArrayEnd();
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, size_t count)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, const type& val, size_t count)
 				{
 					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
@@ -358,42 +358,42 @@ namespace Omega
 				typedef typename impl::type type;
 				typedef typename remove_const<T>::type raw_type;
 
-				static void init(Remoting::IMarshaller* pManager, type& val)
+				static void init(Remoting::IMarshalContext* pManager, type& val)
 				{
 					impl::init(pManager,val);
 				}
 
-				static void init(Remoting::IMarshaller* pManager, type& val, const guid_t& iid)
+				static void init(Remoting::IMarshalContext* pManager, type& val, const guid_t& iid)
 				{
 					impl::init(pManager,val,iid);
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val)
+				static void read(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, raw_type& val)
 				{
 					impl::read(strName,pManager,pMessage,val);
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val, const guid_t& iid)
+				static void read(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, raw_type& val, const guid_t& iid)
 				{
 					impl::read(strName,pManager,pMessage,val,iid);
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void write(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
 					impl::write(strName,pManager,pMessage,val);
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
+				static void write(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
 				{
 					impl::write(strName,pManager,pMessage,val,iid);
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
 					impl::unpack(strName,pManager,pMessage,val);
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
 				{
 					impl::unpack(strName,pManager,pMessage,val,iid);
 				}
@@ -431,22 +431,22 @@ namespace Omega
 					I* m_val;
 				};
 
-				static void init(Remoting::IMarshaller*, type&, const guid_t& = OMEGA_GUIDOF(I))
+				static void init(Remoting::IMarshalContext*, type&, const guid_t& = OMEGA_GUIDOF(I))
 				{ }
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void read(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					IObject* p = NULL;
 					pManager->UnmarshalInterface(strName,pMessage,iid,p);
 					pI = static_cast<I*>(p);
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void write(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					pManager->MarshalInterface(strName,pMessage,iid,pI);
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					pManager->ReleaseMarshalData(strName,pMessage,iid,pI);
 				}
@@ -626,39 +626,39 @@ namespace Omega
 			{
 				typedef Coll type;
 
-				static void init(Remoting::IMarshaller*, Coll&)
+				static void init(Remoting::IMarshalContext*, Coll&)
 				{
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				static void read(const string_t& strName, Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
 					for (uint32_t c = 0; c<count; ++c)
 					{
 						typename Coll::value_type v_val = default_value<typename Coll::value_type>::value();
-						marshal_info<typename Coll::value_type>::wire_type::read(string_t(),pMarshaller,pMessage,v_val);
+						marshal_info<typename Coll::value_type>::wire_type::read(string_t(),pMarshalContext,pMessage,v_val);
 						val.insert(val.end(),v_val);
 					}
 					pMessage->ReadArrayEnd();
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void write(const string_t& strName, Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(val.size()));
 
 					for (typename Coll::const_iterator i=val.begin(); i!=val.end(); ++i)
-						marshal_info<typename Coll::value_type>::wire_type::write(string_t(),pMarshaller,pMessage,*i);
+						marshal_info<typename Coll::value_type>::wire_type::write(string_t(),pMarshalContext,pMessage,*i);
 
 					pMessage->WriteStructEnd();
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
 					typename Coll::const_iterator i=val.begin();
 
 					for (uint32_t c = 0; c<count && i!=val.end(); ++i,++c)
-						marshal_info<typename Coll::value_type>::wire_type::unpack(string_t(),pMarshaller,pMessage,*i);
+						marshal_info<typename Coll::value_type>::wire_type::unpack(string_t(),pMarshalContext,pMessage,*i);
 
 					pMessage->ReadArrayEnd();
 				}
@@ -794,11 +794,11 @@ namespace Omega
 			{
 				typedef Coll type;
 
-				static void init(Remoting::IMarshaller*, Coll& val)
+				static void init(Remoting::IMarshalContext*, Coll& val)
 				{
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				static void read(const string_t& strName, Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
 					for (uint32_t c = 0; c<count; ++c)
@@ -806,10 +806,10 @@ namespace Omega
 						pMessage->ReadStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 
 						typename Coll::key_type v_k = default_value<typename Coll::key_type>::value();
-						marshal_info<typename Coll::key_type>::wire_type::read(string_t::constant("first"),pMarshaller,pMessage,v_k);
+						marshal_info<typename Coll::key_type>::wire_type::read(string_t::constant("first"),pMarshalContext,pMessage,v_k);
 
 						typename Coll::mapped_type v_m = default_value<typename Coll::mapped_type>::value();
-						marshal_info<typename Coll::mapped_type>::wire_type::read(string_t::constant("second"),pMarshaller,pMessage,v_m);
+						marshal_info<typename Coll::mapped_type>::wire_type::read(string_t::constant("second"),pMarshalContext,pMessage,v_m);
 
 						val.insert(val.end(),typename Coll::value_type(v_k,v_m));
 
@@ -818,7 +818,7 @@ namespace Omega
 					pMessage->ReadArrayEnd();
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void write(const string_t& strName, Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(val.size()));
 
@@ -826,15 +826,15 @@ namespace Omega
 					{
 						pMessage->WriteStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 
-						marshal_info<typename Coll::key_type>::wire_type::write(string_t::constant("first"),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::write(string_t::constant("second"),pMarshaller,pMessage,i->second);
+						marshal_info<typename Coll::key_type>::wire_type::write(string_t::constant("first"),pMarshalContext,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::write(string_t::constant("second"),pMarshalContext,pMessage,i->second);
 
 						pMessage->WriteStructEnd();
 					}
 					pMessage->WriteArrayEnd();
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					uint32_t count = pMessage->ReadArrayStart(strName);
 					typename Coll::const_iterator i=val.begin();
@@ -843,8 +843,8 @@ namespace Omega
 					{
 						pMessage->ReadStructStart(string_t::constant("pair"),string_t::constant("$pair_type"));
 
-						marshal_info<typename Coll::key_type>::wire_type::unpack(string_t::constant("first"),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::unpack(string_t::constant("second"),pMarshaller,pMessage,i->second);
+						marshal_info<typename Coll::key_type>::wire_type::unpack(string_t::constant("first"),pMarshalContext,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::unpack(string_t::constant("second"),pMarshalContext,pMessage,i->second);
 
 						pMessage->ReadStructEnd();
 					}
@@ -858,20 +858,20 @@ namespace Omega
 				typedef custom_wire_type<any_t> impl;
 				typedef any_t type;
 
-				static void init(Remoting::IMarshaller*, type&)
+				static void init(Remoting::IMarshalContext*, type&)
 				{ }
 
-				static void read(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, any_t& val)
+				static void read(const string_t& strName, Remoting::IMarshalContext*, Remoting::IMessage* pMessage, any_t& val)
 				{
 					val = pMessage->ReadValue(strName);
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, const any_t& val)
+				static void write(const string_t& strName, Remoting::IMarshalContext*, Remoting::IMessage* pMessage, const any_t& val)
 				{
 					pMessage->WriteValue(strName,val);
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, const any_t&)
+				static void unpack(const string_t& strName, Remoting::IMarshalContext*, Remoting::IMessage* pMessage, const any_t&)
 				{
 					pMessage->ReadValue(strName);
 				}

@@ -331,9 +331,9 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(ptrMarshaller__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(ptrMarshalContext__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_II(t,name)
@@ -355,8 +355,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_WRITE_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_II(t,name)
@@ -378,8 +378,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_II(t,name)
@@ -417,8 +417,8 @@
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
-		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
-		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
+		auto_iface_ptr<Remoting::IMarshalContext> ptrMarshalContext__wire__ = pThis__wire__->GetMarshalContext(); \
+		OMEGA_UNUSED_ARG(ptrMarshalContext__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		pThis__wire__->get_iface<iface >()->name( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
@@ -430,15 +430,15 @@
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
-		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
-		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
+		auto_iface_ptr<Remoting::IMarshalContext> ptrMarshalContext__wire__ = pThis__wire__->GetMarshalContext(); \
+		OMEGA_UNUSED_ARG(ptrMarshalContext__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
 		marshal_info<ret_type >::wire_type::type OMEGA_CONCAT(name,_RetVal); \
 		static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal)) = pThis__wire__->get_iface<iface >()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
 		try { OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
-			marshal_info<ret_type >::wire_type::write(string_t::constant("$retval"),ptrMarshaller__wire__,pParamsOut__wire__,OMEGA_CONCAT(name,_RetVal)); } \
+			marshal_info<ret_type >::wire_type::write(string_t::constant("$retval"),ptrMarshalContext__wire__,pParamsOut__wire__,OMEGA_CONCAT(name,_RetVal)); } \
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
 	}
 
@@ -485,13 +485,13 @@
 	class Wire_Stub<n_space::name > : public Wire_Stub<d_space::derived > \
 	{ \
 	public: \
-		static Remoting::IStub* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) \
+		static Remoting::IStub* create(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, IObject* pI) \
 		{ \
-			return new Wire_Stub(pController,pMarshaller,pI); \
+			return new Wire_Stub(pController,pMarshalContext,pI); \
 		} \
 	protected: \
-		Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) : \
-				Wire_Stub<d_space::derived >(pController,pMarshaller,pI) \
+		Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, IObject* pI) : \
+				Wire_Stub<d_space::derived >(pController,pMarshalContext,pI) \
 		{ } \
 		virtual bool_t SupportsInterface(const guid_t& iid) \
 		{ \
@@ -558,8 +558,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_READ_PROXY_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_II(t,name)
@@ -580,8 +580,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_READ_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_II
@@ -604,8 +604,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(string_t::constant(OMEGA_STRINGIZE(name)),ptrMarshalContext__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_II(t,name)
@@ -628,7 +628,7 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
-		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
+		auto_iface_ptr<Remoting::IMarshalContext> ptrMarshalContext__wire__ = this->GetMarshalContext(); \
 		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(OMEGA_CONCAT(name,_MethodId)); \
 		auto_iface_ptr<Remoting::IMessage> pParamsIn__wire__; \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
@@ -637,7 +637,7 @@
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 			pParamsOut__wire__->WriteStructEnd(); \
-			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__); \
+			OMEGA_CONCAT(name,_Exception) = ptrMarshalContext__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
@@ -651,7 +651,7 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
-		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
+		auto_iface_ptr<Remoting::IMarshalContext> ptrMarshalContext__wire__ = this->GetMarshalContext(); \
 		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(OMEGA_CONCAT(name,_MethodId)); \
 		auto_iface_ptr<Remoting::IMessage> pParamsIn__wire__; \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
@@ -660,7 +660,7 @@
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 			pParamsOut__wire__->WriteStructEnd(); \
-			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__); \
+			OMEGA_CONCAT(name,_Exception) = ptrMarshalContext__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
@@ -669,7 +669,7 @@
 		if (OMEGA_CONCAT(name,_Exception)) OMEGA_CONCAT(name,_Exception)->Rethrow(); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 		ret_type OMEGA_CONCAT(name,_RetVal) = default_value<ret_type >::value(); \
-		marshal_info<ret_type&>::wire_type::read(string_t::constant("$retval"),ptrMarshaller__wire__,pParamsIn__wire__,OMEGA_CONCAT(name,_RetVal)); \
+		marshal_info<ret_type&>::wire_type::read(string_t::constant("$retval"),ptrMarshalContext__wire__,pParamsIn__wire__,OMEGA_CONCAT(name,_RetVal)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +

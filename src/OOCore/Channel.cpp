@@ -119,13 +119,13 @@ guid_t OOCore::ChannelBase::GetUnmarshalFactoryOID(const guid_t&, Remoting::Mars
 	return OID_ChannelMarshalFactory;
 }
 
-void OOCore::ChannelBase::MarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::ChannelBase::MarshalInterface(Remoting::IMarshalContext*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->WriteValue(string_t::constant("m_channel_id"),m_channel_id);
 	pMessage->WriteValue(string_t::constant("m_message_oid"),m_message_oid);
 }
 
-void OOCore::ChannelBase::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::ChannelBase::ReleaseMarshalData(Remoting::IMarshalContext*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->ReadValue(string_t::constant("m_channel_id"));
 	pMessage->ReadValue(string_t::constant("m_message_oid"));
@@ -142,10 +142,10 @@ void OOCore::Channel::init(UserSession* pSession, Remoting::MarshalFlags_t flags
 
 	m_pSession = pSession;
 	
-	// QI for IMarshaller
-	m_ptrMarshaller = m_ptrOM.QueryInterface<Remoting::IMarshaller>();
-	if (!m_ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	// QI for IMarshalContext
+	m_ptrMarshalContext = m_ptrOM.QueryInterface<Remoting::IMarshalContext>();
+	if (!m_ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 }
 
 void OOCore::Channel::on_disconnect()
@@ -154,7 +154,7 @@ void OOCore::Channel::on_disconnect()
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	m_ptrMarshaller.Release();
+	m_ptrMarshalContext.Release();
 }
 
 void OOCore::Channel::shutdown(uint32_t closed_channel_id)
@@ -176,13 +176,13 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	if (!m_ptrOM)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("SendAndReceive() called on disconnected channel"));
 
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = m_ptrMarshalContext;
 	
 	guard.release();
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateObject();
-	ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+	ptrMarshalContext->MarshalInterface(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	OOBase::CDRStream response;
 	try
@@ -191,13 +191,13 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
-		ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+		ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		on_disconnect();
 		pE->Rethrow();
 	}
 	catch (...)
 	{
-		ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+		ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		throw;
 	}
 
@@ -211,7 +211,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 
 			// Unwrap the payload...
 			IObject* pObj = NULL;
-			ptrMarshaller->UnmarshalInterface(string_t::constant("payload"),ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pObj);
+			ptrMarshalContext->UnmarshalInterface(string_t::constant("payload"),ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pObj);
 			pRecv = static_cast<Remoting::IMessage*>(pObj);
 		}
 		catch (IException* pE)
@@ -280,7 +280,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 const Omega::guid_t OOCore::OID_ChannelMarshalFactory("{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
-void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
 	uint32_t channel_id = pMessage->ReadValue(string_t::constant("m_channel_id")).cast<uint32_t>();
 	guid_t message_oid = pMessage->ReadValue(string_t::constant("m_message_oid")).cast<guid_t>();
@@ -291,7 +291,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pM
 
 const Omega::guid_t OOCore::OID_CDRMessageMarshalFactory("{1455FCD0-A49B-4f2a-94A5-222949957123}");
 
-void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshalContext*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	uint32_t len = pMessage->ReadValue(string_t::constant("length")).cast<uint32_t>();
 

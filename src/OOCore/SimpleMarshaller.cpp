@@ -28,22 +28,22 @@ using namespace OTL;
 
 namespace
 {
-	class SimpleMarshaller :
+	class SimpleMarshalContext :
 			public ObjectBase,
-			public Remoting::IMarshaller
+			public Remoting::IMarshalContext
 	{
 	public:
-		SimpleMarshaller();
+		SimpleMarshalContext();
 		void init(Remoting::MarshalFlags_t marshal_flags);
 		
-		BEGIN_INTERFACE_MAP(SimpleMarshaller)
-			INTERFACE_ENTRY(Remoting::IMarshaller)
+		BEGIN_INTERFACE_MAP(SimpleMarshalContext)
+			INTERFACE_ENTRY(Remoting::IMarshalContext)
 		END_INTERFACE_MAP()
 
 	private:
 		Remoting::MarshalFlags_t m_marshal_flags;
 
-	// IMarshaller members
+	// IMarshalContext members
 	public:
 		void MarshalInterface(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
 		void ReleaseMarshalData(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
@@ -54,16 +54,16 @@ namespace
 	};
 }
 
-SimpleMarshaller::SimpleMarshaller() : m_marshal_flags(Remoting::Same)
+SimpleMarshalContext::SimpleMarshalContext() : m_marshal_flags(Remoting::Same)
 {
 }
 
-void SimpleMarshaller::init(Remoting::MarshalFlags_t marshal_flags)
+void SimpleMarshalContext::init(Remoting::MarshalFlags_t marshal_flags)
 {
 	m_marshal_flags = marshal_flags;
 }
 
-void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
+void SimpleMarshalContext::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	// Write a header
 	pMessage->WriteStructStart(strName,string_t::constant("$iface_marshal"));
@@ -86,11 +86,11 @@ void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMess
 
 		// See if custom marshalling is possible...
 		if (!ptrMarshal)
-			OMEGA_THROW("Attempting to marshal incompatible object via SimpleMarshaller");
+			OMEGA_THROW("Attempting to marshal incompatible object via SimpleMarshalContext");
 
 		guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(iid,m_marshal_flags);
 		if (oid == guid_t::Null())
-			OMEGA_THROW("Attempting to marshal incompatible object via SimpleMarshaller");
+			OMEGA_THROW("Attempting to marshal incompatible object via SimpleMarshalContext");
 
 		// Write the marshalling oid
 		pMessage->WriteValue(string_t::constant("$marshal_type"),byte_t(2));
@@ -114,7 +114,7 @@ void SimpleMarshaller::MarshalInterface(const string_t& strName, Remoting::IMess
 	pMessage->WriteStructEnd();
 }
 
-void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
+void SimpleMarshalContext::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	// Read the header
 	pMessage->ReadStructStart(strName,string_t::constant("$iface_marshal"));
@@ -126,7 +126,7 @@ void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMe
 	}
 	else if (flag == 1)
 	{
-		OMEGA_THROW("Invalid marshal flag for SimpleMarshaller");
+		OMEGA_THROW("Invalid marshal flag for SimpleMarshalContext");
 	}
 	else if (flag == 2)
 	{
@@ -151,22 +151,22 @@ void SimpleMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMe
 	pMessage->ReadStructEnd();
 }
 
-Remoting::IMessage* SimpleMarshaller::CreateMessage()
+Remoting::IMessage* SimpleMarshalContext::CreateMessage()
 {
-	OMEGA_THROW("Cannot call CreateMessage() on SimpleMarshaller");
+	OMEGA_THROW("Cannot call CreateMessage() on SimpleMarshalContext");
 }
 
-void SimpleMarshaller::UnmarshalInterface(const string_t& /*strName*/, Remoting::IMessage* /*pMessage*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
+void SimpleMarshalContext::UnmarshalInterface(const string_t& /*strName*/, Remoting::IMessage* /*pMessage*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
 {
-	OMEGA_THROW("Cannot call UnmarshalInterface() on SimpleMarshaller");
+	OMEGA_THROW("Cannot call UnmarshalInterface() on SimpleMarshalContext");
 }
 
-IException* SimpleMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* /*pSend*/, Remoting::IMessage*& /*pRecv*/)
+IException* SimpleMarshalContext::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* /*pSend*/, Remoting::IMessage*& /*pRecv*/)
 {
-	OMEGA_THROW("Cannot call SendAndReceive() on SimpleMarshaller");
+	OMEGA_THROW("Cannot call SendAndReceive() on SimpleMarshalContext");
 }
 
-uint32_t SimpleMarshaller::GetSource()
+uint32_t SimpleMarshalContext::GetSource()
 {
 	return 0;
 }
@@ -174,7 +174,7 @@ uint32_t SimpleMarshaller::GetSource()
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Remoting::IMessage*,pMessage,(in),IException*,pException))
 {
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateObject();
-	ObjectPtr<ObjectImpl<SimpleMarshaller> > ptrMarshaller = ObjectImpl<SimpleMarshaller>::CreateObject();
+	ObjectPtr<ObjectImpl<SimpleMarshalContext> > ptrMarshalContext = ObjectImpl<SimpleMarshalContext>::CreateObject();
 
 	ptrPayload->WriteStructStart(string_t::constant("ipc_response"),string_t::constant("$ipc_response_type"));
 	ptrPayload->WriteValue(string_t::constant("$throw"),true);
@@ -182,11 +182,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Remoting::IM
 	guid_t iid = pException->GetThrownIID();
 	ObjectPtr<IObject> ptrQI = pException->QueryInterface(iid);
 	if (ptrQI)
-		ptrMarshaller->MarshalInterface(string_t::constant("exception"),ptrPayload,iid,ptrQI);
+		ptrMarshalContext->MarshalInterface(string_t::constant("exception"),ptrPayload,iid,ptrQI);
 	else
-		ptrMarshaller->MarshalInterface(string_t::constant("exception"),ptrPayload,OMEGA_GUIDOF(IException),pException);
+		ptrMarshalContext->MarshalInterface(string_t::constant("exception"),ptrPayload,OMEGA_GUIDOF(IException),pException);
 
 	ptrPayload->WriteStructEnd();
 	
-	ptrMarshaller->MarshalInterface(string_t::constant("payload"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),static_cast<Remoting::IMessage*>(ptrPayload));
+	ptrMarshalContext->MarshalInterface(string_t::constant("payload"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),static_cast<Remoting::IMessage*>(ptrPayload));
 }

@@ -31,8 +31,8 @@ namespace OOCore
 {
 	interface IStdObjectManager : public Omega::Remoting::IObjectManager
 	{
-		virtual void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
-		virtual void ReleaseMarshalChannelData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
+		virtual void MarshalChannel(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
+		virtual void ReleaseMarshalChannelData(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 	};
 }
 
@@ -40,8 +40,8 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	OOCore, IStdObjectManager, Omega::Remoting, IObjectManager, "{AC019AD3-1E57-4641-A584-772F9604E31D}",
 
-	OMEGA_METHOD_VOID(MarshalChannel,3,((in),Omega::Remoting::IMarshaller*,pMarshaller,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
-	OMEGA_METHOD_VOID(ReleaseMarshalChannelData,3,((in),Omega::Remoting::IMarshaller*,pMarshaller,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(MarshalChannel,3,((in),Omega::Remoting::IMarshalContext*,pMarshalContext,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(ReleaseMarshalChannelData,3,((in),Omega::Remoting::IMarshalContext*,pMarshalContext,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
 )
 
 namespace OOCore
@@ -49,7 +49,7 @@ namespace OOCore
 	class StdObjectManager :
 			public OTL::ObjectBase,
 			public IStdObjectManager,
-			public Omega::Remoting::IMarshaller,
+			public Omega::Remoting::IMarshalContext,
 			public OOBase::NonCopyable
 	{
 	public:
@@ -58,14 +58,14 @@ namespace OOCore
 		BEGIN_INTERFACE_MAP(StdObjectManager)
 			INTERFACE_ENTRY(IStdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshaller)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalContext)
 		END_INTERFACE_MAP()
 
 		void RemoveProxy(Omega::uint32_t proxy_id);
 		void RemoveStub(Omega::uint32_t stub_id);
 		bool IsAlive();
-		void DoMarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pParamsOut);
-		void UndoMarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pParamsOut);
+		void DoMarshalChannel(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pParamsOut);
+		void UndoMarshalChannel(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pParamsOut);
 
 	private:
 		OOBase::RWMutex                           m_lock;
@@ -79,7 +79,7 @@ namespace OOCore
 		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pResponse);
 		bool CustomMarshalInterface(Omega::Remoting::IMarshal* pMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
 
-	// IMarshaller members
+	// IMarshalContext members
 	public:
 		void MarshalInterface(const Omega::string_t& name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
 		void ReleaseMarshalData(const Omega::string_t& name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
@@ -90,8 +90,8 @@ namespace OOCore
 
 	// IStdObjectManager members
 	public:
-		void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalChannelData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalChannel(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalChannelData(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
 
 	// IObjectManager members
 	public:

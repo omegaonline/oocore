@@ -68,8 +68,8 @@ namespace OOCore
 	// IMarshal members
 	public:
 		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		virtual void MarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		virtual void ReleaseMarshalData(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
 	class Channel :
@@ -89,7 +89,7 @@ namespace OOCore
 
 	private:
 		UserSession*                                 m_pSession;
-		OTL::ObjectPtr<Omega::Remoting::IMarshaller> m_ptrMarshaller;
+		OTL::ObjectPtr<Omega::Remoting::IMarshalContext> m_ptrMarshalContext;
 
 	public:
 		Omega::bool_t IsConnected();
@@ -112,7 +112,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class CDRMessageMarshalFactory :
@@ -127,7 +127,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 }
 

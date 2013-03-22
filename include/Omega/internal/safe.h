@@ -1151,7 +1151,7 @@ namespace Omega
 				virtual void Pin() = 0;
 				virtual void Unpin() = 0;
 				virtual const SafeShim* GetShim(const Omega::guid_t& iid) = 0;
-				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid) = 0;
+				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const Omega::guid_t& iid) = 0;
 			};
 
 			void throw_correct_exception(const SafeShim* except);
@@ -1164,7 +1164,7 @@ namespace Omega
 				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid);
 				const SafeShim* (OMEGA_CALL* pfnPin_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_base_t* piid, const SafeShim** retval);
+				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const guid_base_t* piid, const SafeShim** retval);
 				const SafeShim* (OMEGA_CALL* pfnGetWireProxy_Safe)(const SafeShim* shim, const SafeShim** retval);
 			};
 

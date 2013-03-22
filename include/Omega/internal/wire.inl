@@ -62,7 +62,7 @@ inline void Omega::System::Internal::wire_holder::remove(IObject* pProxy)
 
 inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::Internal::Wire_Proxy_Base::CreateMessage(const guid_t& iid, uint32_t method_id)
 {
-	auto_iface_ptr<Remoting::IMessage> ptrMessage = m_ptrMarshaller->CreateMessage();
+	auto_iface_ptr<Remoting::IMessage> ptrMessage = m_ptrMarshalContext->CreateMessage();
 	bool unpack = false;
 	try
 	{
@@ -142,21 +142,21 @@ inline Omega::IObject* Omega::System::Internal::create_wire_proxy(Remoting::IPro
 	return (*pRtti->pfnCreateWireProxy)(pProxy);
 }
 
-inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const guid_t& iid)
 {
 	// Proxy the incoming params
 	auto_iface_ptr<Remoting::IStubController> ptrController = create_safe_proxy<Remoting::IStubController>(shim_Controller);
-	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = create_safe_proxy<Remoting::IMarshaller>(shim_Marshaller);
+	auto_iface_ptr<Remoting::IMarshalContext> ptrMarshalContext = create_safe_proxy<Remoting::IMarshalContext>(shim_MarshalContext);
 
-	auto_iface_ptr<Remoting::IStub> ptrStub = create_wire_stub(ptrController,ptrMarshaller,iid,m_pI);
+	auto_iface_ptr<Remoting::IStub> ptrStub = create_wire_stub(ptrController,ptrMarshalContext,iid,m_pI);
 
 	return create_safe_stub(ptrStub,OMEGA_GUIDOF(Remoting::IStub));
 }
 
-inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
+inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, const guid_t& iid, IObject* pObj)
 {
 	if (iid == OMEGA_GUIDOF(IObject))
-		return Wire_Stub<IObject>::create(pController,pMarshaller,pObj);
+		return Wire_Stub<IObject>::create(pController,pMarshalContext,pObj);
 
 	// Check that pObj supports the interface...
 	auto_iface_ptr<IObject> ptrQI = pObj->QueryInterface(iid);
@@ -168,7 +168,7 @@ inline Omega::Remoting::IStub* Omega::System::Internal::create_wire_stub(Remotin
 	if (!pRtti)
 		throw OOCore_INotFoundException_MissingRTTI(iid);
 
-	return (*pRtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
+	return (*pRtti->pfnCreateWireStub)(pController,pMarshalContext,ptrQI);
 }
 
 #if !defined(DOXYGEN)

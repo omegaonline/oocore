@@ -35,7 +35,7 @@ private:
 		
 	OTL::ObjectPtr<Omega::Remoting::IProxy>         m_ptrProxy;
 	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> m_ptrInfo;
-	OTL::ObjectPtr<Omega::Remoting::IMarshaller>    m_ptrMarshaller;
+	OTL::ObjectPtr<Omega::Remoting::IMarshalContext>    m_ptrMarshalContext;
 
 	void ReadArgByType(LCID lcid, const Omega::string_t& strName, Omega::Remoting::IMessage* pMsg, Omega::Remoting::IMessage* pType, VARIANTARG* pArg);
 	void ReadArg(LCID lcid, Omega::Remoting::IMessage* pMsg, Omega::uint32_t method, Omega::byte_t param, VARIANTARG* pArg);

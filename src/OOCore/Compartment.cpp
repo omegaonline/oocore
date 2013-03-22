@@ -210,10 +210,10 @@ void OOCore::Compartment::process_request(const Message& msg)
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(msg.m_src_channel_id);
 
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
-	if (!ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	// QI for IMarshalContext
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrOM.QueryInterface<Remoting::IMarshalContext>();
+	if (!ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
 	// Wrap up the request
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateObject();
@@ -221,7 +221,7 @@ void OOCore::Compartment::process_request(const Message& msg)
 
 	// Unpack the payload
 	ObjectPtr<Remoting::IMessage> ptrRequest;
-	ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
+	ptrRequest.Unmarshal(ptrMarshalContext,string_t::constant("payload"),ptrEnvelope);
 
 	// Make the call
 	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest);
@@ -230,7 +230,7 @@ void OOCore::Compartment::process_request(const Message& msg)
 	{
 		// Wrap the response...
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateObject();
-		ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+		ptrMarshalContext->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 		// Send it back...
 		try
@@ -239,7 +239,7 @@ void OOCore::Compartment::process_request(const Message& msg)
 		}
 		catch (...)
 		{
-			ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+			ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 			throw;
 		}
 	}

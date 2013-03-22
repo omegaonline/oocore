@@ -38,21 +38,21 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
+		virtual void UnmarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
+			baseClass::UnmarshalInterface(pMarshalContext,pMessage,flags);
 			m_errno = pMessage->ReadValue(Omega::string_t::constant("m_errno")).cast<Omega::uint32_t>();
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void MarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
+			baseClass::MarshalInterface(pMarshalContext,pMessage,iid,flags);
 			pMessage->WriteValue(Omega::string_t::constant("m_errno"),m_errno);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void ReleaseMarshalData(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
+			baseClass::ReleaseMarshalData(pMarshalContext,pMessage,iid,flags);
 			pMessage->ReadValue(Omega::string_t::constant("m_errno"));
 		}
 
@@ -82,21 +82,21 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
+		virtual void UnmarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
+			baseClass::UnmarshalInterface(pMarshalContext,pMessage,flags);
 			m_strSource = pMessage->ReadValue(Omega::string_t::constant("m_strSource")).cast<Omega::string_t>();
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void MarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
+			baseClass::MarshalInterface(pMarshalContext,pMessage,iid,flags);
 			pMessage->WriteValue(Omega::string_t::constant("m_strSource"),m_strSource);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void ReleaseMarshalData(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
+			baseClass::ReleaseMarshalData(pMarshalContext,pMessage,iid,flags);
 			pMessage->ReadValue(Omega::string_t::constant("m_strSource"));
 		}
 

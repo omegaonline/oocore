@@ -255,10 +255,10 @@ namespace OTL
 			return *this;
 		}
 
-		void Unmarshal(Omega::Remoting::IMarshaller* pMarshaller, const Omega::string_t& strName, Omega::Remoting::IMessage* pMessage)
+		void Unmarshal(Omega::Remoting::IMarshalContext* pMarshalContext, const Omega::string_t& strName, Omega::Remoting::IMessage* pMessage)
 		{
 			Omega::IObject* pObj = NULL;
-			pMarshaller->UnmarshalInterface(strName,pMessage,OMEGA_GUIDOF(OBJECT),pObj);
+			pMarshalContext->UnmarshalInterface(strName,pMessage,OMEGA_GUIDOF(OBJECT),pObj);
 			this->replace(static_cast<OBJECT*>(pObj),false);
 		}
 	};

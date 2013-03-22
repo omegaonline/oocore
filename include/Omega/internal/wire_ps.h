@@ -54,7 +54,7 @@ namespace Omega
 					m_ptrProxy->AddRef();
 					m_internal.m_pProxy = this;
 
-					m_ptrMarshaller = m_ptrProxy->GetMarshaller();
+					m_ptrMarshalContext = m_ptrProxy->GetMarshalContext();
 
 					static const IObject_Safe_VTable vt =
 					{
@@ -93,9 +93,9 @@ namespace Omega
 
 				virtual IObject* QueryInterface(const guid_t& iid);
 
-				auto_iface_ptr<Remoting::IMarshaller> GetMarshaller()
+				auto_iface_ptr<Remoting::IMarshalContext> GetMarshalContext()
 				{
-					return m_ptrMarshaller;
+					return m_ptrMarshalContext;
 				}
 
 				auto_iface_ptr<Remoting::IMessage> CreateMessage(const guid_t& iid, uint32_t method_id);
@@ -110,7 +110,7 @@ namespace Omega
 				Wire_Proxy_Base& operator =(const Wire_Proxy_Base&);
 
 				auto_iface_ptr<Remoting::IProxy>      m_ptrProxy;
-				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
+				auto_iface_ptr<Remoting::IMarshalContext> m_ptrMarshalContext;
 				SafeShim                              m_shim;
 
 				struct Internal : public ISafeProxy
@@ -145,9 +145,9 @@ namespace Omega
 						return m_pProxy->GetShim(iid);
 					}
 
-					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
+					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_MarshalContext, const Omega::guid_t& iid)
 					{
-						return m_pProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
+						return m_pProxy->CreateWireStub(shim_Controller,shim_MarshalContext,iid);
 					}
 
 					Wire_Proxy_Base* m_pProxy;
@@ -175,7 +175,7 @@ namespace Omega
 					return &m_shim;
 				}
 
-				const SafeShim* CreateWireStub(const SafeShim* /*shim_Controller*/, const SafeShim* /*shim_Marshaller*/, const Omega::guid_t& /*iid*/)
+				const SafeShim* CreateWireStub(const SafeShim* /*shim_Controller*/, const SafeShim* /*shim_MarshalContext*/, const Omega::guid_t& /*iid*/)
 				{
 					return NULL;
 				}
@@ -335,18 +335,18 @@ namespace Omega
 					return static_cast<I*>(static_cast<IObject*>(m_ptrI));
 				}
 
-				auto_iface_ptr<Remoting::IMarshaller>& GetMarshaller()
+				auto_iface_ptr<Remoting::IMarshalContext>& GetMarshalContext()
 				{
-					return m_ptrMarshaller;
+					return m_ptrMarshalContext;
 				}
 
 			protected:
-				Wire_Stub_Base(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
-						m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController)
+				Wire_Stub_Base(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, IObject* pI) :
+						m_ptrMarshalContext(pMarshalContext), m_ptrI(pI), m_pController(pController)
 				{
 					m_unpin = PinObjectPointer(m_pController);
 
-					m_ptrMarshaller->AddRef();
+					m_ptrMarshalContext->AddRef();
 					m_ptrI->AddRef();
 
 					m_refcount.AddRef();
@@ -365,7 +365,7 @@ namespace Omega
 				static const uint32_t MethodCount = 3;  // This must match the proxy
 
 			private:
-				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
+				auto_iface_ptr<Remoting::IMarshalContext> m_ptrMarshalContext;
 				auto_iface_ptr<IObject>               m_ptrI;
 				Remoting::IStubController*            m_pController;
 				Threading::AtomicRefCount             m_refcount;
@@ -436,14 +436,14 @@ namespace Omega
 			class Wire_Stub<IObject> : public Wire_Stub_Base
 			{
 			public:
-				static IStub* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI)
+				static IStub* create(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, IObject* pI)
 				{
-					return new Wire_Stub(pController,pMarshaller,pI);
+					return new Wire_Stub(pController,pMarshalContext,pI);
 				}
 
 			protected:
-				Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
-						Wire_Stub_Base(pController,pMarshaller,pI)
+				Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, IObject* pI) :
+						Wire_Stub_Base(pController,pMarshalContext,pI)
 				{
 				}
 
@@ -460,12 +460,12 @@ namespace Omega
 				static const uint32_t MethodCount = Wire_Stub_Base::MethodCount;
 			};
 
-			inline Remoting::IStub* create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj);
+			inline Remoting::IStub* create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, const guid_t& iid, IObject* pObj);
 
 			struct wire_rtti
 			{
 				IObject* (*pfnCreateWireProxy)(Remoting::IProxy* pProxy);
-				Remoting::IStub* (*pfnCreateWireStub)(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI);
+				Remoting::IStub* (*pfnCreateWireStub)(Remoting::IStubController* pController, Remoting::IMarshalContext* pMarshalContext, IObject* pI);
 			};
 
 			inline static const wire_rtti* get_wire_rtti_info(const guid_t& iid);
@@ -542,7 +542,7 @@ namespace Omega
 			OMEGA_QI_MAGIC(Omega::Remoting,IStub)
 			OMEGA_QI_MAGIC(Omega::Remoting,IStubController)
 			OMEGA_QI_MAGIC(Omega::Remoting,IProxy)
-			OMEGA_QI_MAGIC(Omega::Remoting,IMarshaller)
+			OMEGA_QI_MAGIC(Omega::Remoting,IMarshalContext)
 
 		}
 	}

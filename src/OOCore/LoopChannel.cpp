@@ -28,24 +28,24 @@ using namespace OTL;
 
 namespace
 {
-	class LoopMarshaller :
+	class LoopMarshalContext :
 			public ObjectBase,
-			public Remoting::IMarshaller
+			public Remoting::IMarshalContext
 	{
 	public:
-		LoopMarshaller() : m_pChannel(0)
+		LoopMarshalContext() : m_pChannel(0)
 		{}
 
 		void init(OOCore::LoopChannel* pChannel);
 
-		BEGIN_INTERFACE_MAP(LoopMarshaller)
-			INTERFACE_ENTRY(Remoting::IMarshaller)
+		BEGIN_INTERFACE_MAP(LoopMarshalContext)
+			INTERFACE_ENTRY(Remoting::IMarshalContext)
 		END_INTERFACE_MAP()
 
 	private:
 		OOCore::LoopChannel* m_pChannel;
 
-	// IMarshaller members
+	// IMarshalContext members
 	public:
 		void MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
 		void ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
@@ -56,12 +56,12 @@ namespace
 	};
 }
 
-void LoopMarshaller::init(OOCore::LoopChannel* pChannel)
+void LoopMarshalContext::init(OOCore::LoopChannel* pChannel)
 {
 	m_pChannel = pChannel;
 }
 
-void LoopMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
+void LoopMarshalContext::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
 	pMessage->WriteStructStart(strName,string_t::constant("$loop_marshal"));
 	pMessage->WriteValue(string_t::constant("ptr"),any_t(reinterpret_cast<ptrdiff_t>(pObject)));
@@ -71,7 +71,7 @@ void LoopMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessag
 	pObject->AddRef();
 }
 
-void LoopMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
+void LoopMarshalContext::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
 	// Make sure we Release()
 	pObject->Release();
@@ -81,7 +81,7 @@ void LoopMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMess
 	pMessage->ReadStructEnd();
 }
 
-void LoopMarshaller::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject*& pObject)
+void LoopMarshalContext::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject*& pObject)
 {
 	pMessage->ReadStructStart(strName,string_t::constant("$loop_marshal"));
 
@@ -90,17 +90,17 @@ void LoopMarshaller::UnmarshalInterface(const string_t& strName, Remoting::IMess
 	pMessage->ReadStructEnd();
 }
 
-Remoting::IMessage* LoopMarshaller::CreateMessage()
+Remoting::IMessage* LoopMarshalContext::CreateMessage()
 {
 	return m_pChannel->CreateMessage();
 }
 
-IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
+IException* LoopMarshalContext::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv)
 {
 	return m_pChannel->SendAndReceive(attribs,pSend,pRecv);
 }
 
-uint32_t LoopMarshaller::GetSource()
+uint32_t LoopMarshalContext::GetSource()
 {
 	return m_pChannel->GetSource();
 }
@@ -126,10 +126,10 @@ IException* OOCore::LoopChannel::SendAndReceive(TypeInfo::MethodAttributes_t, Re
 
 void OOCore::LoopChannel::GetManager(const guid_t& iid, IObject*& pObject)
 {
-	ObjectPtr<ObjectImpl<LoopMarshaller> > ptrMarshaller = ObjectImpl<LoopMarshaller>::CreateObject();
-	ptrMarshaller->init(this);
+	ObjectPtr<ObjectImpl<LoopMarshalContext> > ptrMarshalContext = ObjectImpl<LoopMarshalContext>::CreateObject();
+	ptrMarshalContext->init(this);
 
-	pObject = ptrMarshaller->QueryInterface(iid);
+	pObject = ptrMarshalContext->QueryInterface(iid);
 }
 
 uint32_t OOCore::LoopChannel::GetSource()

@@ -179,12 +179,12 @@ void User::RemoteChannel::send_away(OOBase::CDRStream& msg, uint32_t src_channel
 
 			ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
-			// QI for IMarshaller
-			ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
-			if (!ptrMarshaller)
-				throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+			// QI for IMarshalContext
+			ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrOM.QueryInterface<Remoting::IMarshalContext>();
+			if (!ptrMarshalContext)
+				throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
-			ptrPayload.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrInput);
+			ptrPayload.Unmarshal(ptrMarshalContext,string_t::constant("payload"),ptrInput);
 		}
 	}
 
@@ -212,12 +212,12 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 	// Get the source channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
-	if (!ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	// QI for IMarshalContext
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrOM.QueryInterface<Remoting::IMarshalContext>();
+	if (!ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
-	ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+	ptrMarshalContext->MarshalInterface(string_t::constant("payload"),ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 
 	try
 	{
@@ -237,7 +237,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, uint32_t src
 		ptrMessage->ReadValue(string_t::constant("dest_thread_id"));
 		ptrMessage->ReadValue(string_t::constant("src_thread_id"));
 		ptrMessage->ReadValue(string_t::constant("type"));
-		ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+		ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		throw;
 	}
 }
@@ -282,14 +282,14 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
-	if (!ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	// QI for IMarshalContext
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrOM.QueryInterface<Remoting::IMarshalContext>();
+	if (!ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload;
-	ptrPayload.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrMsg);
+	ptrPayload.Unmarshal(ptrMarshalContext,string_t::constant("payload"),ptrMsg);
 
 	ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrPayload);
 
@@ -316,14 +316,14 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// Get the dest channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
 
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
-	if (!ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	// QI for IMarshalContext
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrOM.QueryInterface<Remoting::IMarshalContext>();
+	if (!ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload;
-	ptrPayload.Unmarshal(ptrMarshaller,string_t::constant("payload"),pMsg);
+	ptrPayload.Unmarshal(ptrMarshalContext,string_t::constant("payload"),pMsg);
 
 	pMsg->ReadStructEnd();
 
@@ -406,7 +406,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateObject();
 			ptrMsg->init(output);
 
-			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+			ptrMarshalContext->MarshalInterface(string_t::constant("payload"),ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
 			AddRef();
 
@@ -417,7 +417,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			{
 				Release();
 
-				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+				ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 				OMEGA_THROW("Failed to queue message");
 			}
 		}
@@ -464,7 +464,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		else
 		{
 			// Marshal the message onto the CDR message
-			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+			ptrMarshalContext->MarshalInterface(string_t::constant("payload"),ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 		}
 
 		// Translate channel ids
@@ -511,7 +511,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		if (res != OOServer::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & OOServer::Message_t::system_message))
-				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+				ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
 			if (res == OOServer::MessageHandler::io_result::channel_closed)
 				throw Remoting::IChannelClosedException::Create();

@@ -51,9 +51,9 @@ void OOCore::Proxy::init(uint32_t proxy_id, StdObjectManager* pManager)
 	static_cast<Remoting::IObjectManager*>(m_pManager)->AddRef();
 }
 
-Remoting::IMarshaller* OOCore::Proxy::GetMarshaller()
+Remoting::IMarshalContext* OOCore::Proxy::GetMarshalContext()
 {
-	Remoting::IMarshaller* pRet = static_cast<Remoting::IMarshaller*>(m_pManager);
+	Remoting::IMarshalContext* pRet = static_cast<Remoting::IMarshalContext*>(m_pManager);
 	pRet->AddRef();
 	return pRet;
 }
@@ -154,7 +154,7 @@ void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 	pMessage->ReadValue(string_t::constant("$method_id"));
 }
 
-Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* pMarshaller, const guid_t& iid)
+Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshalContext* pMarshalContext, const guid_t& iid)
 {
 	ObjectPtr<Remoting::IMessage> ptrParamsOut = m_pManager->CreateMessage();
 
@@ -167,7 +167,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 
 	try
 	{
-		m_pManager->DoMarshalChannel(pMarshaller,ptrParamsOut);
+		m_pManager->DoMarshalChannel(pMarshalContext,ptrParamsOut);
 		ptrParamsOut->WriteStructEnd();
 
 		pERet = m_pManager->SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,ptrParamsIn);
@@ -176,7 +176,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	{
 		ReadStubInfo(ptrParamsOut);
 		ptrParamsOut->ReadValue(string_t::constant("iid"));
-		m_pManager->UndoMarshalChannel(pMarshaller,ptrParamsOut);	
+		m_pManager->UndoMarshalChannel(pMarshalContext,ptrParamsOut);	
 		throw;
 	}
 
@@ -208,46 +208,46 @@ void OOCore::Proxy::CallRemoteRelease()
 	}
 }
 
-void OOCore::Proxy::MarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t)
+void OOCore::Proxy::MarshalInterface(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t)
 {
 	// Tell the stub to expect incoming requests from a different channel...
-	ObjectPtr<Remoting::IMessage> ptrReflect = CallRemoteStubMarshal(pMarshaller,iid);
+	ObjectPtr<Remoting::IMessage> ptrReflect = CallRemoteStubMarshal(pMarshalContext,iid);
 
-	pMarshaller->MarshalInterface(string_t::constant("pReflect"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
+	pMarshalContext->MarshalInterface(string_t::constant("pReflect"),pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
-void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags)
+void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags)
 {
 	// Undo the effects of CallRemoteStubMarshal() by reading the new proxy and releasing it...
 	ObjectPtr<Remoting::IMarshalFactory> ptrMF(OID_ProxyMarshalFactory);
 
 	IObject* pObject = NULL;
-	ptrMF->UnmarshalInterface(pMarshaller,pMessage,iid,flags,pObject);
+	ptrMF->UnmarshalInterface(pMarshalContext,pMessage,iid,flags,pObject);
 	if (pObject)
 		pObject->Release();
 }
 
-void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	// Unmarshal the reflect package
 	ObjectPtr<Remoting::IMessage> ptrReflect;
-	ptrReflect.Unmarshal(pMarshaller,string_t::constant("pReflect"),pMessage);
+	ptrReflect.Unmarshal(pMarshalContext,string_t::constant("pReflect"),pMessage);
 	if (!ptrReflect)
 		OMEGA_THROW("No package");
 
 	// Unmarshal the manager
 	ObjectPtr<Remoting::IChannel> ptrChannel;
-	ptrChannel.Unmarshal(pMarshaller,string_t::constant("m_ptrChannel"),ptrReflect);
+	ptrChannel.Unmarshal(pMarshalContext,string_t::constant("m_ptrChannel"),ptrReflect);
 	if (!ptrChannel)
 		OMEGA_THROW("No channel");
 
-	// Get the IMarshaller
+	// Get the IMarshalContext
 	IObject* pObj = NULL;
-	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshaller),pObj);
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(pObj);
-	if (!ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshalContext),pObj);
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = static_cast<Remoting::IMarshalContext*>(pObj);
+	if (!ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
 	// Unmarshal the new proxy on the new manager
-	ptrMarshaller->UnmarshalInterface(string_t::constant("stub"),ptrReflect,iid,pObject);
+	ptrMarshalContext->UnmarshalInterface(string_t::constant("stub"),ptrReflect,iid,pObject);
 }

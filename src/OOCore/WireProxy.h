@@ -43,7 +43,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class Proxy :
@@ -77,7 +77,7 @@ namespace OOCore
 			pMessage->ReadValue(Omega::string_t::constant("$stub_id"));
 		}
 
-		Omega::Remoting::IMarshaller* GetMarshaller();
+		Omega::Remoting::IMarshalContext* GetMarshalContext();
 		Omega::bool_t IsAlive();
 		Omega::bool_t RemoteQueryInterface(const Omega::guid_t& iid);
 
@@ -88,8 +88,8 @@ namespace OOCore
 			return OID_ProxyMarshalFactory;
 		}
 
-		void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IMarshalContext* pMarshalContext, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
 	private:
 		OOBase::SpinLock                      m_lock;
@@ -100,7 +100,7 @@ namespace OOCore
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
 		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);
-		Omega::Remoting::IMessage* CallRemoteStubMarshal(Omega::Remoting::IMarshaller* pMarshaller, const Omega::guid_t& iid);
+		Omega::Remoting::IMessage* CallRemoteStubMarshal(Omega::Remoting::IMarshalContext* pMarshalContext, const Omega::guid_t& iid);
 		void CallRemoteRelease();
 	};
 }

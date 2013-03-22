@@ -319,8 +319,8 @@ HRESULT IDispatchObjImpl::init()
 		if (!m_ptrInfo)
 			return E_INVALIDARG;
 		
-		m_ptrMarshaller = m_ptrProxy->GetMarshaller();
-		if (!m_ptrMarshaller)
+		m_ptrMarshalContext = m_ptrProxy->GetMarshalContext();
+		if (!m_ptrMarshalContext)
 			return E_INVALIDARG;
 	}
 	catch (Omega::IException* pE)
@@ -475,7 +475,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 	try
 	{
 		// Now build the message
-		ptrMsg = m_ptrMarshaller->CreateMessage();
+		ptrMsg = m_ptrMarshalContext->CreateMessage();
 	}
 	catch (Omega::IException* pE)
 	{
@@ -546,7 +546,7 @@ STDMETHODIMP IDispatchObjImpl::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		ptrMsg->WriteStructEnd();
 			
 		// Now make the call...
-		Omega::IException* pE = m_ptrMarshaller->SendAndReceive(attribs,ptrMsg,ptrResult);
+		Omega::IException* pE = m_ptrMarshalContext->SendAndReceive(attribs,ptrMsg,ptrResult);
 		if (pE)
 			return FillExcepInfo(strName.c_str(),pE,pExcepInfo);			
 	}

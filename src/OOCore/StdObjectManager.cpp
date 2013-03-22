@@ -651,25 +651,25 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 	pMessage->ReadStructEnd();
 }
 
-void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pParamsOut)
+void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pParamsOut)
 {
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
-	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshaller);
+	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshalContext);
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 
-void OOCore::StdObjectManager::UndoMarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pParamsOut)
+void OOCore::StdObjectManager::UndoMarshalChannel(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pParamsOut)
 {
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
-	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshaller);
+	ObjectPtr<IStdObjectManager> ptrOM = OTL::QueryInterface<IStdObjectManager>(pMarshalContext);
 	ptrOM->ReleaseMarshalChannelData(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 
-void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
+void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
 	if (!m_ptrChannel)
 		throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("MarshalChannel() called on disconnected ObjectManager"));
@@ -688,12 +688,12 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 
 	pMessage->WriteValue(string_t::constant("$oid"),oid);
 
-	ptrMarshal->MarshalInterface(pMarshaller,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
+	ptrMarshal->MarshalInterface(pMarshalContext,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 
 	pMessage->WriteStructEnd();
 }
 
-void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
+void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
 	if (!m_ptrChannel)
 		return;
@@ -707,7 +707,7 @@ void OOCore::StdObjectManager::ReleaseMarshalChannelData(Remoting::IMarshaller* 
 	pMessage->ReadValue(string_t::constant("$marshal_type"));
 	pMessage->ReadValue(string_t::constant("$oid"));
 
-	ptrMarshal->ReleaseMarshalData(pMarshaller,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
+	ptrMarshal->ReleaseMarshalData(pMarshalContext,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 
 	pMessage->ReadStructEnd();
 }
@@ -744,9 +744,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(uint32_t,OOCore_Remoting_GetSource,1,((in),IObjec
 		ObjectPtr<Remoting::IProxy> ptrProxy = Remoting::GetProxy(pObject);
 		if (ptrProxy)
 		{
-			ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrProxy->GetMarshaller();
+			ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrProxy->GetMarshalContext();
 
-			ret = ptrMarshaller->GetSource();
+			ret = ptrMarshalContext->GetSource();
 		}
 	}
 
@@ -763,10 +763,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInte
 		if (ptrProxy)
 		{
 			// Get the other ends' object manager
-			ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrProxy->GetMarshaller();
-			if (ptrMarshaller)
+			ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrProxy->GetMarshalContext();
+			if (ptrMarshalContext)
 			{
-				ObjectPtr<Remoting::IObjectManager> ptrOM = ptrMarshaller.QueryInterface<Remoting::IObjectManager>();
+				ObjectPtr<Remoting::IObjectManager> ptrOM = ptrMarshalContext.QueryInterface<Remoting::IObjectManager>();
 				if (ptrOM)
 				{
 					// Ask it for the TypeInfo

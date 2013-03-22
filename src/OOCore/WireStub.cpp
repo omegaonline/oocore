@@ -105,9 +105,9 @@ Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 	{
 		// Create the stubs for the controllers
 		System::Internal::auto_safe_shim shim_Controller = System::Internal::create_safe_stub(static_cast<Remoting::IStubController*>(this),OMEGA_GUIDOF(Remoting::IStubController));
-		System::Internal::auto_safe_shim shim_Marshaller = System::Internal::create_safe_stub(static_cast<Remoting::IMarshaller*>(m_pManager),OMEGA_GUIDOF(Remoting::IMarshaller));
+		System::Internal::auto_safe_shim shim_MarshalContext = System::Internal::create_safe_stub(static_cast<Remoting::IMarshalContext*>(m_pManager),OMEGA_GUIDOF(Remoting::IMarshalContext));
 
-		System::Internal::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
+		System::Internal::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_MarshalContext,iid);
 
 		return System::Internal::create_safe_proxy<Remoting::IStub>(wire_stub);
 	}
@@ -157,12 +157,12 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Get the channel marshal flags
 	Remoting::MarshalFlags_t flags = ptrChannel->GetMarshalFlags();
 
-	// Get the channel's IMarshaller
+	// Get the channel's IMarshalContext
 	IObject* pObj = NULL;
-	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshaller),pObj);
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(pObj);
-	if (!ptrMarshaller)
-		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+	ptrChannel->GetManager(OMEGA_GUIDOF(Remoting::IMarshalContext),pObj);
+	ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = static_cast<Remoting::IMarshalContext*>(pObj);
+	if (!ptrMarshalContext)
+		throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
 	// QI for iid
 	ObjectPtr<IObject> ptrObject = m_ptrObj->QueryInterface(iid);
@@ -170,7 +170,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 		throw OOCore_INotFoundException_MissingIID(iid);
 
 	// Marshal the stub
-	ptrMarshaller->MarshalInterface(string_t::constant("stub"),ptrMessage,iid,ptrObject);
+	ptrMarshalContext->MarshalInterface(string_t::constant("stub"),ptrMessage,iid,ptrObject);
 
 	try
 	{
@@ -181,7 +181,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	}
 	catch (...)
 	{
-		ptrMarshaller->ReleaseMarshalData(string_t::constant("stub"),ptrMessage,iid,m_ptrObj);
+		ptrMarshalContext->ReleaseMarshalData(string_t::constant("stub"),ptrMessage,iid,m_ptrObj);
 		throw;
 	}
 }

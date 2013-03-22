@@ -326,10 +326,10 @@ void User::Manager::do_quit()
 		if (!ptrOM)
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find or create object manager for channel"));
 
-		// QI for IMarshaller
-		ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrOM.QueryInterface<Remoting::IMarshaller>();
-		if (!ptrMarshaller)
-			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshaller));
+		// QI for IMarshalContext
+		ObjectPtr<Remoting::IMarshalContext> ptrMarshalContext = ptrOM.QueryInterface<Remoting::IMarshalContext>();
+		if (!ptrMarshalContext)
+			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Remoting::IMarshalContext));
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
@@ -338,7 +338,7 @@ void User::Manager::do_quit()
 
 		// Unpack the payload
 		ObjectPtr<Remoting::IMessage> ptrRequest;
-		ptrRequest.Unmarshal(ptrMarshaller,string_t::constant("payload"),ptrEnvelope);
+		ptrRequest.Unmarshal(ptrMarshalContext,string_t::constant("payload"),ptrEnvelope);
 
 		// Make the call
 		ObjectPtr<Remoting::IMessage> ptrResult = ptrOM->Invoke(ptrRequest);
@@ -347,12 +347,12 @@ void User::Manager::do_quit()
 		{
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateObject();
-			ptrMarshaller->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+			ptrMarshalContext->MarshalInterface(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
 			OOServer::MessageHandler::io_result::type res = send_response(src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),attribs);
 			if (res != OOServer::MessageHandler::io_result::success)
-				ptrMarshaller->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+				ptrMarshalContext->ReleaseMarshalData(string_t::constant("payload"),ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
 	}
 	catch (IException* pE)

@@ -144,12 +144,16 @@ void OOCore::UserSession::start(bool bHosted)
 
 	guard.release();
 
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMessage;
 	if (!bHosted)
 	{
-		OOBase::StackAllocator<128> allocator;
-
 		OOBase::CDRStream stream;
-		connect_root(stream,allocator);
+		connect_root(stream);
+
+		// Wrap the response in a CDRMessage
+	//	ptrMessage = ObjectImpl<OOCore::CDRMessage>::CreateObject();
+	//	ptrMessage->init(stream);
+
 
 		// Now read back all the bits we need... Don't throw yet, there may be an embedded fd
 		OOCore::pid_t stream_id = 0;

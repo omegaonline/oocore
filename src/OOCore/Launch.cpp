@@ -106,8 +106,10 @@ namespace
 	}
 }
 
-void OOCore::UserSession::connect_root(OOBase::CDRStream& response, OOBase::AllocatorInstance& allocator)
+void OOCore::UserSession::connect_root(OOBase::CDRStream& response)
 {
+	OOBase::StackAllocator<128> allocator;
+
 #if defined(NDEBUG)
 	OOBase::Timeout timeout(15,0);
 #else

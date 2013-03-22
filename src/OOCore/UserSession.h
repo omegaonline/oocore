@@ -146,7 +146,7 @@ namespace OOCore
 		// Proper private members
 		void start(bool bHosted);
 		void stop();
-		void connect_root(OOBase::CDRStream& response, OOBase::AllocatorInstance& allocator);
+		void connect_root(OOBase::CDRStream& response);
 
 		// Our object factory members
 		OOBase::Stack<Omega::uint32_t> m_rot_cookies;

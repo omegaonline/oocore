@@ -63,6 +63,8 @@ namespace OOCore
 		void process_compartment_close(Omega::uint16_t src_compt_id);
 		bool is_channel_open(Omega::uint32_t channel_id);
 
+		Omega::Remoting::IObjectManager* unmarshal_om(Omega::Remoting::IMessage* pMessage);
+
 		Omega::Remoting::IObjectManager* get_channel_om(Omega::uint32_t src_channel_id);
 		OTL::ObjectImpl<Channel>* create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid, Omega::Remoting::MarshalFlags_t flags);
 		void process_request(const Message& msg);
@@ -88,7 +90,7 @@ namespace OOCore
 
 		struct ChannelInfo
 		{
-			OTL::ObjectPtr<OTL::ObjectImpl<Channel> > m_ptrChannel;
+			OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
 			bool                                      m_bOpen;
 		};
 

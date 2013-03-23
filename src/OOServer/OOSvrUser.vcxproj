@@ -195,7 +195,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="UserChannel.cpp" />
     <ClCompile Include="MessageConnection.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </PrecompiledHeader>
@@ -222,7 +221,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UserManager.cpp" />
-    <ClCompile Include="UserNet.cpp" />
+    <ClCompile Include="UserNet.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="UserProcessUnix.cpp" />
     <ClCompile Include="UserProcessWin32.cpp" />
     <ClCompile Include="UserRegistry.cpp" />
@@ -232,7 +233,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OOCore\CDRMessage.h" />
-    <ClInclude Include="UserChannel.h" />
     <ClInclude Include="MessageConnection.h" />
     <ClInclude Include="OOServer_User.h" />
     <ClInclude Include="Protocol.h" />

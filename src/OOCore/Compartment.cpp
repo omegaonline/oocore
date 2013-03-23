@@ -24,6 +24,7 @@
 #include "UserSession.h"
 #include "StdObjectManager.h"
 #include "Activation.h"
+#include "SimpleMarshaller.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -66,14 +67,14 @@ void OOCore::Compartment::shutdown()
 	ChannelInfo info;
 	while (m_mapChannels.pop(NULL,&info))
 	{
-		guard.release();
+/*		guard.release();
 
 		if (info.m_bOpen)
 			info.m_ptrChannel->shutdown(our_channel_id);
 		else
 			info.m_ptrChannel->on_disconnect();
 
-		guard.acquire();
+		guard.acquire();*/
 	}
 
 	ObjectPtr<ObjectImpl<ComptChannel> > ptrCompt;
@@ -156,8 +157,6 @@ bool OOCore::Compartment::is_channel_open(uint32_t channel_id)
 
 Remoting::IObjectManager* OOCore::Compartment::get_channel_om(uint32_t src_channel_id)
 {
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
-
 	// Lookup existing..
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
@@ -165,7 +164,7 @@ Remoting::IObjectManager* OOCore::Compartment::get_channel_om(uint32_t src_chann
 	if (!m_mapChannels.find(src_channel_id,info))
 		OMEGA_THROW(EEXIST);
 
-	ptrChannel = info.m_ptrChannel;
+	ObjectPtr<Remoting::IChannel> ptrChannel = info.m_ptrChannel;
 
 	read_guard.release();
 
@@ -201,6 +200,33 @@ ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_ch
 		else if (err != 0)
 			OMEGA_THROW(err);
 	}
+		
+	return info.m_ptrChannel->AddRef();
+}
+
+Remoting::IObjectManager* OOCore::Compartment::unmarshal_om(Omega::Remoting::IMessage* pMessage)
+{
+	// Create a simple marshal context
+	ObjectPtr<ObjectImpl<SimpleMarshalContext> > ptrMarshalContext = ObjectImpl<SimpleMarshalContext>::CreateObject();
+	ptrMarshalContext->init(Remoting::Same);
+
+	// Unmarshal the embedded channel
+	ObjectPtr<Remoting::IChannel> ptrChannel;
+	ptrChannel.Unmarshal(ptrMarshalContext,string_t::constant("channel"),pMessage);
+
+	// Create a new OM
+	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateObject();
+
+	ChannelInfo info;
+	info.m_bOpen = true;
+	info.m_ptrChannel = ptrChannel;
+
+	// And add to the map
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	int err = m_mapChannels.insert(ptrChannel->GetSource(),info);
+	if (err)
+		OMEGA_THROW(err);
 		
 	return info.m_ptrChannel.AddRef();
 }

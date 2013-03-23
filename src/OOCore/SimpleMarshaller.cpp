@@ -21,49 +21,22 @@
 
 #include "OOCore_precomp.h"
 
+#include "SimpleMarshaller.h"
 #include "CDRMessage.h"
 
 using namespace Omega;
 using namespace OTL;
 
-namespace
-{
-	class SimpleMarshalContext :
-			public ObjectBase,
-			public Remoting::IMarshalContext
-	{
-	public:
-		SimpleMarshalContext();
-		void init(Remoting::MarshalFlags_t marshal_flags);
-		
-		BEGIN_INTERFACE_MAP(SimpleMarshalContext)
-			INTERFACE_ENTRY(Remoting::IMarshalContext)
-		END_INTERFACE_MAP()
-
-	private:
-		Remoting::MarshalFlags_t m_marshal_flags;
-
-	// IMarshalContext members
-	public:
-		void MarshalInterface(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
-		void ReleaseMarshalData(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
-		void UnmarshalInterface(const string_t& name, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
-		Remoting::IMessage* CreateMessage();
-		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv);
-		uint32_t GetSource();
-	};
-}
-
-SimpleMarshalContext::SimpleMarshalContext() : m_marshal_flags(Remoting::Same)
+OOCore::SimpleMarshalContext::SimpleMarshalContext() : m_marshal_flags(Remoting::Same)
 {
 }
 
-void SimpleMarshalContext::init(Remoting::MarshalFlags_t marshal_flags)
+void OOCore::SimpleMarshalContext::init(Remoting::MarshalFlags_t marshal_flags)
 {
 	m_marshal_flags = marshal_flags;
 }
 
-void SimpleMarshalContext::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
+void OOCore::SimpleMarshalContext::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	// Write a header
 	pMessage->WriteStructStart(strName,string_t::constant("$iface_marshal"));
@@ -114,7 +87,7 @@ void SimpleMarshalContext::MarshalInterface(const string_t& strName, Remoting::I
 	pMessage->WriteStructEnd();
 }
 
-void SimpleMarshalContext::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
+void OOCore::SimpleMarshalContext::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	// Read the header
 	pMessage->ReadStructStart(strName,string_t::constant("$iface_marshal"));
@@ -151,22 +124,22 @@ void SimpleMarshalContext::ReleaseMarshalData(const string_t& strName, Remoting:
 	pMessage->ReadStructEnd();
 }
 
-Remoting::IMessage* SimpleMarshalContext::CreateMessage()
+Remoting::IMessage* OOCore::SimpleMarshalContext::CreateMessage()
 {
 	OMEGA_THROW("Cannot call CreateMessage() on SimpleMarshalContext");
 }
 
-void SimpleMarshalContext::UnmarshalInterface(const string_t& /*strName*/, Remoting::IMessage* /*pMessage*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
+void OOCore::SimpleMarshalContext::UnmarshalInterface(const string_t& /*strName*/, Remoting::IMessage* /*pMessage*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
 {
 	OMEGA_THROW("Cannot call UnmarshalInterface() on SimpleMarshalContext");
 }
 
-IException* SimpleMarshalContext::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* /*pSend*/, Remoting::IMessage*& /*pRecv*/)
+IException* OOCore::SimpleMarshalContext::SendAndReceive(TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* /*pSend*/, Remoting::IMessage*& /*pRecv*/)
 {
 	OMEGA_THROW("Cannot call SendAndReceive() on SimpleMarshalContext");
 }
 
-uint32_t SimpleMarshalContext::GetSource()
+uint32_t OOCore::SimpleMarshalContext::GetSource()
 {
 	return 0;
 }
@@ -174,7 +147,7 @@ uint32_t SimpleMarshalContext::GetSource()
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RespondException,2,((in),Remoting::IMessage*,pMessage,(in),IException*,pException))
 {
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrPayload = ObjectImpl<OOCore::CDRMessage>::CreateObject();
-	ObjectPtr<ObjectImpl<SimpleMarshalContext> > ptrMarshalContext = ObjectImpl<SimpleMarshalContext>::CreateObject();
+	ObjectPtr<ObjectImpl<OOCore::SimpleMarshalContext> > ptrMarshalContext = ObjectImpl<OOCore::SimpleMarshalContext>::CreateObject();
 
 	ptrPayload->WriteStructStart(string_t::constant("ipc_response"),string_t::constant("$ipc_response_type"));
 	ptrPayload->WriteValue(string_t::constant("$throw"),true);

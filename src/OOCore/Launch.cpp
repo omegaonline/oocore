@@ -106,8 +106,9 @@ namespace
 	}
 }
 
-void OOCore::UserSession::connect_root(OOBase::CDRStream& response)
+ObjectPtr<ObjectImpl<OOCore::CDRMessage> > OOCore::UserSession::connect_root()
 {
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMessage;
 	OOBase::StackAllocator<128> allocator;
 
 #if defined(NDEBUG)
@@ -138,6 +139,7 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& response)
 	OOBase::LocalString strSid(allocator);
 	get_session_id(strSid);
 
+	OOBase::CDRStream response;
 	size_t mark = response.buffer()->mark_wr_ptr();
 
 	response.write(Omega::uint16_t(0));
@@ -162,6 +164,8 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& response)
 
 	// Align everything, ready for the Omega_Initialize call
 	response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+
+	ptrMessage->init(response);
 #else
 
 #if defined(SO_PASSCRED)
@@ -216,7 +220,11 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& response)
 	if (!response.write(static_cast<int>(passed_fd)))
 		OMEGA_THROW(response.last_error());
 
+	ptrMessage->init(response);
+
 	// Don't close the fd
 	passed_fd.detach();
 #endif
+
+	return ptrMessage;
 }

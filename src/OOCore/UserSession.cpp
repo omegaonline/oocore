@@ -67,7 +67,7 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-void OOCore::UserSession::init(bool bHosted)
+void OOCore::UserSession::init(Remoting::IMessage* pMessage)
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -92,7 +92,7 @@ void OOCore::UserSession::init(bool bHosted)
 
 				try
 				{
-					start(bHosted);
+					start(pMessage);
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -122,7 +122,7 @@ void OOCore::UserSession::init(bool bHosted)
 	}
 }
 
-void OOCore::UserSession::start(bool bHosted)
+void OOCore::UserSession::start(Remoting::IMessage* pMessage)
 {
 	void* TODO;
 
@@ -144,60 +144,35 @@ void OOCore::UserSession::start(bool bHosted)
 
 	guard.release();
 
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMessage;
-	if (!bHosted)
+	// Get the message from the root if we don't already have one
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrCDRMessage;
+	if (!pMessage)
 	{
-		OOBase::CDRStream stream;
-		connect_root(stream);
+		ptrCDRMessage = connect_root();
+		pMessage = static_cast<Remoting::IMessage*>(ptrCDRMessage);
+	}
+		
+	// And unmarshal the new ObjectManager
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->unmarshal_om(pMessage);
 
-		// Wrap the response in a CDRMessage
-	//	ptrMessage = ObjectImpl<OOCore::CDRMessage>::CreateObject();
-	//	ptrMessage->init(stream);
+	// Create a proxy to the server interface
+	IObject* pIPS = NULL;
+	ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
+	ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
 
+	// And register the Registry
+	ObjectPtr<Registry::IKey> ptrReg;
+	ptrReg.GetObject(Registry::OID_Registry_Instance);
+	if (ptrReg)
+	{
+		// Re-register the proxy locally.. it saves a lot of time!
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
 
-		// Now read back all the bits we need... Don't throw yet, there may be an embedded fd
-		OOCore::pid_t stream_id = 0;
-		stream.read(stream_id);
+		guard.acquire();
 
-		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
-
-#if defined(_WIN32)
-		OOBase::LocalString strPipe(allocator);
-		stream.read_string(strPipe);
-
-#elif defined(HAVE_UNISTD_H)
-		// And read the embedded fd
-		OOBase::POSIX::SmartFD fd;
-		stream.read(static_cast<int&>(fd));
-#endif
-		if (stream.last_error())
-			OMEGA_THROW(stream.last_error());
-
-		// Now do the connect/attach
-
-
-
-
-		// Create a proxy to the server interface
-		IObject* pIPS = NULL;
-		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->get_channel_om(m_channel_id & 0xFF000000);
-		ptrOM->GetRemoteInstance(OID_InterProcessService,Activation::Library | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
-		ObjectPtr<IInterProcessService> ptrIPS = static_cast<IInterProcessService*>(pIPS);
-
-		// And register the Registry
-		ObjectPtr<Registry::IKey> ptrReg;
-		ptrReg.GetObject(Registry::OID_Registry_Instance);
-		if (ptrReg)
-		{
-			// Re-register the proxy locally.. it saves a lot of time!
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.GetObject(Activation::OID_RunningObjectTable_Instance);
-
-			guard.acquire();
-
-			m_rot_cookies.push(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
-			m_rot_cookies.push(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
-		}
+		m_rot_cookies.push(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
+		m_rot_cookies.push(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
 	}
 }
 
@@ -952,13 +927,13 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),Omega::bool_t,bHosted))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),Omega::Remoting::IMessage*,pMessage))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 		throw Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
-	USER_SESSION::instance().init(bHosted);
+	USER_SESSION::instance().init(pMessage);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

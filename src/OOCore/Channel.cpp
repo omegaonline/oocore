@@ -280,7 +280,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 const Omega::guid_t OOCore::OID_ChannelMarshalFactory("{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
-void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshalContext* pMarshalContext, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshalContext* /*pMarshalContext*/, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
 	uint32_t channel_id = pMessage->ReadValue(string_t::constant("m_channel_id")).cast<uint32_t>();
 	guid_t message_oid = pMessage->ReadValue(string_t::constant("m_message_oid")).cast<guid_t>();

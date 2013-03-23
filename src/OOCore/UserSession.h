@@ -78,7 +78,7 @@ namespace OOCore
 		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
 
 	public:
-		void init(bool bHosted);
+		void init(Omega::Remoting::IMessage* pMessage);
 		void term();
 
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
@@ -144,9 +144,9 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void start(bool bHosted);
+		void start(Omega::Remoting::IMessage* pMessage);
 		void stop();
-		void connect_root(OOBase::CDRStream& response);
+		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::CDRMessage> > connect_root();
 
 		// Our object factory members
 		OOBase::Stack<Omega::uint32_t> m_rot_cookies;

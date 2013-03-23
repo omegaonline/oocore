@@ -250,6 +250,7 @@
     <ClInclude Include="OOCore_precomp.h" />
     <ClInclude Include="RunningObjectTable.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="SimpleMarshaller.h" />
     <ClInclude Include="StdObjectManager.h" />
     <ClInclude Include="UserSession.h" />
     <ClInclude Include="WireProxy.h" />

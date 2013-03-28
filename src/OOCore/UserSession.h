@@ -78,7 +78,7 @@ namespace OOCore
 		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
 
 	public:
-		void init(Omega::Remoting::IMessage* pMessage);
+		void init(const void* data, size_t len);
 		void term();
 
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
@@ -102,6 +102,7 @@ namespace OOCore
 		OOBase::Thread                   m_worker_thread;
 		OOBase::RefPtr<OOBase::Socket>   m_stream;
 		Omega::uint32_t                  m_channel_id;
+		OOBase::Proactor*                m_proactor;
 
 		// Startup/shutdown data
 		OOBase::Condition                m_cond;
@@ -121,7 +122,7 @@ namespace OOCore
 			OOBase::BoundedQueue<Message> m_msg_queue;
 
 			// 'Private' thread-local data
-			OOBase::Atomic<size_t>        m_usage_count;
+			size_t                        m_usage_count;
 			Omega::uint16_t               m_current_cmpt;
 
 			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
@@ -144,9 +145,9 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void start(Omega::Remoting::IMessage* pMessage);
+		void start(const void* data, size_t len);
 		void stop();
-		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::CDRMessage> > connect_root();
+		void connect_root(OOBase::CDRStream& stream);
 
 		// Our object factory members
 		OOBase::Stack<Omega::uint32_t> m_rot_cookies;

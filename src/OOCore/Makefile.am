@@ -20,6 +20,8 @@ common = \
 	Formatting.h \
 	IO.cpp \
 	Launch.cpp \
+	LocalTransport.cpp \
+	LocalTransport.h \
 	LoopChannel.cpp \
 	LoopChannel.h \
 	OOCore.cpp \

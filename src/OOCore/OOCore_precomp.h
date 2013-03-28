@@ -98,6 +98,14 @@ namespace OOCore
 	};
 	extern const throwing_t throwing;
 
+	struct StringHash
+	{
+		static size_t hash(const Omega::string_t& v)
+		{
+			return OOBase::Hash<const char*>::hash(v.c_str());
+		}
+	};
+
 	struct GuidHash
 	{
 		static size_t hash(const Omega::guid_base_t& v)

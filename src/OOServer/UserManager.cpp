@@ -162,7 +162,7 @@ int User::Manager::start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOB
 	try
 	{
 		// Start the OOCore, in hosted mode
-		OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),true);
+		OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),stream.buffer()->rd_ptr(),stream.buffer()->length());
 
 		// Get the local ROT
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;

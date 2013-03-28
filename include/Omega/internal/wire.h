@@ -24,6 +24,45 @@
 
 namespace Omega
 {
+	namespace Storage
+	{
+		enum OpenFlags
+		{
+			OpenExisting = 0,
+			OpenCreate = 1,
+			CreateNew = 2
+		};
+		typedef uint16_t OpenFlags_t;
+
+		interface IRecord;
+
+		interface ISet : public IObject
+		{
+			virtual uint32_t GetCount() = 0;
+
+			virtual any_t GetValue(uint32_t position) = 0;
+			virtual void SetValue(uint32_t position, const any_t& val) = 0;
+
+			virtual IRecord* OpenRecord(uint32_t position, OpenFlags_t flags = OpenExisting) = 0;
+			virtual IRecord* DeleteRecord(uint32_t position) = 0;
+
+			virtual ISet* OpenSet(uint32_t position, OpenFlags_t flags = OpenExisting) = 0;
+			virtual ISet* DeleteSet(uint32_t position) = 0;
+		};
+
+		interface IRecord : public IObject
+		{
+			virtual any_t GetValue(const string_t& name) = 0;
+			virtual void SetValue(const string_t& name, const any_t& val) = 0;
+
+			virtual IRecord* OpenRecord(const string_t& name, OpenFlags_t flags = OpenExisting) = 0;
+			virtual IRecord* DeleteRecord(const string_t& name) = 0;
+
+			virtual ISet* OpenSet(const string_t& name, OpenFlags_t flags = OpenExisting) = 0;
+			virtual ISet* DeleteSet(const string_t& name) = 0;
+		};
+	}
+
 	namespace Remoting
 	{
 		interface IMessage : public IObject
@@ -85,6 +124,9 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
+OMEGA_SET_GUIDOF(Omega::Storage, ISet, "{DE51A509-E291-2524-8D1B-512976176ED8}")
+OMEGA_SET_GUIDOF(Omega::Storage, IRecord, "{821704A2-4F79-AAEB-1D52-C621FF5CB825}")
+
 OMEGA_SET_GUIDOF(Omega::Remoting, IMessage, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
 OMEGA_SET_GUIDOF(Omega::Remoting, IStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
 OMEGA_SET_GUIDOF(Omega::Remoting, IStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
@@ -97,6 +139,34 @@ namespace Omega
 	{
 		namespace Internal
 		{
+			OMEGA_DECLARE_FORWARDS(Omega::Storage,ISet)
+			OMEGA_DECLARE_FORWARDS(Omega::Storage,IRecord)
+
+			OMEGA_DEFINE_INTERNAL_INTERFACE
+			(
+				Omega::Storage, ISet,
+
+				OMEGA_METHOD(uint32_t,GetCount,0,())
+				OMEGA_METHOD(any_t,GetValue,1,((in),uint32_t,position))
+				OMEGA_METHOD_VOID(SetValue,2,((in),uint32_t,position,(in),const any_t&,val))
+				OMEGA_METHOD(Storage::IRecord*,OpenRecord,2,((in),uint32_t,position,(in),Storage::OpenFlags_t,flags))
+				OMEGA_METHOD(Storage::IRecord*,DeleteRecord,1,((in),uint32_t,position))
+				OMEGA_METHOD(Storage::ISet*,OpenSet,2,((in),uint32_t,position,(in),Storage::OpenFlags_t,flags))
+				OMEGA_METHOD(Storage::ISet*,DeleteSet,1,((in),uint32_t,position))
+			)
+
+			OMEGA_DEFINE_INTERNAL_INTERFACE
+			(
+				Omega::Storage, IRecord,
+
+				OMEGA_METHOD(any_t,GetValue,1,((in),const string_t&,name))
+				OMEGA_METHOD_VOID(SetValue,2,((in),const string_t&,name,(in),const any_t&,val))
+				OMEGA_METHOD(Storage::IRecord*,OpenRecord,2,((in),const string_t&,name,(in),Storage::OpenFlags_t,flags))
+				OMEGA_METHOD(Storage::IRecord*,DeleteRecord,1,((in),const string_t&,name))
+				OMEGA_METHOD(Storage::ISet*,OpenSet,2,((in),const string_t&,name,(in),Storage::OpenFlags_t,flags))
+				OMEGA_METHOD(Storage::ISet*,DeleteSet,1,((in),const string_t&,name))
+			)
+
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IMessage)
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStub)
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStubController)

@@ -25,6 +25,7 @@
 #include "Activation.h"
 #include "StdObjectManager.h"
 #include "LoopChannel.h"
+#include "LocalTransport.h"
 
 #include <signal.h>
 
@@ -49,6 +50,7 @@ template class OOBase::Singleton<OOCore::UserSession,OOCore::DLL>;
 OOCore::UserSession::UserSession() :
 		m_worker_thread(false),
 		m_channel_id(0),
+		m_proactor(NULL),
 		m_init_count(0),
 		m_init_state(eStopped),
 		m_usage_count(0),
@@ -67,7 +69,7 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-void OOCore::UserSession::init(Remoting::IMessage* pMessage)
+void OOCore::UserSession::init(const void* data, size_t len)
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -92,7 +94,7 @@ void OOCore::UserSession::init(Remoting::IMessage* pMessage)
 
 				try
 				{
-					start(pMessage);
+					start(data,len);
 
 					guard.acquire();
 					m_init_state = eStarted;
@@ -122,12 +124,27 @@ void OOCore::UserSession::init(Remoting::IMessage* pMessage)
 	}
 }
 
-void OOCore::UserSession::start(Remoting::IMessage* pMessage)
+void OOCore::UserSession::start(const void* data, size_t len)
 {
-	void* TODO;
+	OOBase::CDRStream stream;
+	if (!data)
+		connect_root(stream);
+	else
+	{
+		memcpy(stream.buffer()->wr_ptr(),data,len);
+		stream.buffer()->wr_ptr(len);
+	}
 
-	// Spawn off the io worker thread
-	//m_worker_thread.run(io_worker_fn,this);
+	int err = 0;
+	m_proactor = OOBase::Proactor::create(err);
+	if (err)
+		OMEGA_THROW(err);
+
+	// Load up the raw transport from the stream
+	ObjectPtr<NoLockObjectImpl<OOCore::LocalTransport> > ptrTransport = NoLockObjectImpl<OOCore::LocalTransport>::CreateObject();
+	ptrTransport->init(stream,m_proactor);
+
+
 
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
@@ -135,7 +152,7 @@ void OOCore::UserSession::start(Remoting::IMessage* pMessage)
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	int err = m_mapCompartments.force_insert(0,ptrZeroCompt);
+	err = m_mapCompartments.force_insert(0,ptrZeroCompt);
 	if (err)
 		OMEGA_THROW(err);
 
@@ -144,16 +161,16 @@ void OOCore::UserSession::start(Remoting::IMessage* pMessage)
 
 	guard.release();
 
-	// Get the message from the root if we don't already have one
-	ObjectPtr<ObjectImpl<CDRMessage> > ptrCDRMessage;
-	if (!pMessage)
-	{
-		ptrCDRMessage = connect_root();
-		pMessage = static_cast<Remoting::IMessage*>(ptrCDRMessage);
-	}
+
+
+	void* TODO;
+
+	// Spawn off the io worker thread
+	//m_worker_thread.run(io_worker_fn,this);
+
 		
 	// And unmarshal the new ObjectManager
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroCompt->unmarshal_om(pMessage);
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
 
 	// Create a proxy to the server interface
 	IObject* pIPS = NULL;
@@ -841,10 +858,9 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment(const 
 
 ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i(const guid_t& channel_oid)
 {
-	// Create the new object
-	OOBase::SmartPtr<Compartment> ptrCompt = new (OOCore::throwing) Compartment(this);
-	
 	// Create a new Compartment object
+	OOBase::SmartPtr<Compartment> ptrCompt = new (OOCore::throwing) Compartment(this);
+
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);
 
 	// Select a new compartment id
@@ -853,9 +869,9 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i(cons
 	if (err != 0)
 		OMEGA_THROW(err);
 
-	ptrCompt->set_id(cmpt_id);
-
 	write_guard.release();
+
+	ptrCompt->set_id(cmpt_id);
 	
 	return ptrCompt->create_compartment_channel(ThreadContext::instance()->m_current_cmpt,channel_oid);
 }
@@ -927,13 +943,13 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,2,((in),uint32_t,version,(in),Omega::Remoting::IMessage*,pMessage))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,3,((in),uint32_t,version,(in),const void*,data,(in),size_t,len))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 		throw Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
-	USER_SESSION::instance().init(pMessage);
+	USER_SESSION::instance().init(data,len);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

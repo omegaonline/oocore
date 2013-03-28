@@ -28,10 +28,17 @@ namespace Omega
 {
 	namespace Remoting
 	{
+		interface ITransport : public IObject
+		{
+			virtual IMessage* CreateMessage() = 0;
+			virtual void SendMessage(IMessage* pMessage) = 0;
+			virtual string_t GetURI() = 0;
+		};
+
 		enum MarshalFlags
 		{
 			Same = 0,              ///< Objects are in the same context
-			Compartment = 1,       ///< Objects share address space, but not thread
+			Compartment = 1,       ///< Objects share address space, but not context
 			InterProcess = 2,      ///< Objects share user id, but not address space
 			InterUser = 3,         ///< Objects share machine, but not user id or address space
 			RemoteMachine = 4      ///< Objects on separate machines and share nothing
@@ -110,6 +117,15 @@ namespace Omega
 }
 
 #if !defined(DOXYGEN)
+
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
+	Omega::Remoting, ITransport, "{9451F968-6F22-71A5-96D5-C91654C95029}",
+
+	OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
+	OMEGA_METHOD_VOID(SendMessage,1,((in),Remoting::IMessage*,pMessage))
+	OMEGA_METHOD(string_t,GetURI,0,())
+)
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (

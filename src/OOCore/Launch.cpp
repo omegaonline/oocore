@@ -106,9 +106,8 @@ namespace
 	}
 }
 
-ObjectPtr<ObjectImpl<OOCore::CDRMessage> > OOCore::UserSession::connect_root()
+void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
 {
-	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMessage;
 	OOBase::StackAllocator<128> allocator;
 
 #if defined(NDEBUG)
@@ -139,33 +138,31 @@ ObjectPtr<ObjectImpl<OOCore::CDRMessage> > OOCore::UserSession::connect_root()
 	OOBase::LocalString strSid(allocator);
 	get_session_id(strSid);
 
-	OOBase::CDRStream response;
-	size_t mark = response.buffer()->mark_wr_ptr();
+	size_t mark = stream.buffer()->mark_wr_ptr();
 
-	response.write(Omega::uint16_t(0));
-	response.write(version);
-	response.write_string(strSid);
+	stream.write(Omega::uint16_t(0));
+	stream.write(version);
+	stream.write_string(strSid);
 
 #if defined(_WIN32)
-	response.write(GetCurrentProcessId());
+	stream.write(GetCurrentProcessId());
 #elif defined(HAVE_UNISTD_H)
-	response.write(getpid());
+	stream.write(getpid());
 #endif
-	response.replace(static_cast<Omega::uint16_t>(response.length()),mark);
-	if (response.last_error())
-		OMEGA_THROW(response.last_error());
+	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	if (stream.last_error())
+		OMEGA_THROW(stream.last_error());
 
 #if !defined(HAVE_UNISTD_H)
-	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(response,root_socket);
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(stream,root_socket);
 	if (err)
 		OMEGA_THROW(err);
 
 	// Read early stuff...
 
 	// Align everything, ready for the Omega_Initialize call
-	response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+	stream.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
-	ptrMessage->init(response);
 #else
 
 #if defined(SO_PASSCRED)
@@ -177,7 +174,7 @@ ObjectPtr<ObjectImpl<OOCore::CDRMessage> > OOCore::UserSession::connect_root()
 	if (!ctl_buffer)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
 
-	err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(response,ctl_buffer,root_socket);
+	err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,root_socket);
 	if (err)
 		OMEGA_THROW(err);
 
@@ -211,20 +208,16 @@ ObjectPtr<ObjectImpl<OOCore::CDRMessage> > OOCore::UserSession::connect_root()
 	}
 
 	// Align everything, ready for the Omega_Initialize call
-	response.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
-	err = response.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+	stream.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+	err = stream.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 	if (err)
 		OMEGA_THROW(err);
 
 	// Append fd to response
-	if (!response.write(static_cast<int>(passed_fd)))
-		OMEGA_THROW(response.last_error());
-
-	ptrMessage->init(response);
+	if (!stream.write(static_cast<int>(passed_fd)))
+		OMEGA_THROW(stream.last_error());
 
 	// Don't close the fd
 	passed_fd.detach();
 #endif
-
-	return ptrMessage;
 }

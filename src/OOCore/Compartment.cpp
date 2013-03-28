@@ -168,7 +168,7 @@ Remoting::IObjectManager* OOCore::Compartment::get_channel_om(uint32_t src_chann
 
 	read_guard.release();
 
-	return ptrChannel->GetObjectManager();
+	return NULL;//ptrChannel->GetObjectManager();
 }
 
 ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid, Remoting::MarshalFlags_t flags)
@@ -201,7 +201,7 @@ ObjectImpl<OOCore::Channel>* OOCore::Compartment::create_channel(uint32_t src_ch
 			OMEGA_THROW(err);
 	}
 		
-	return info.m_ptrChannel->AddRef();
+	return NULL;//info.m_ptrChannel.AddRef();
 }
 
 Remoting::IObjectManager* OOCore::Compartment::unmarshal_om(Omega::Remoting::IMessage* pMessage)
@@ -228,7 +228,7 @@ Remoting::IObjectManager* OOCore::Compartment::unmarshal_om(Omega::Remoting::IMe
 	if (err)
 		OMEGA_THROW(err);
 		
-	return info.m_ptrChannel.AddRef();
+	return NULL;//info.m_ptrChannel.AddRef();
 }
 
 void OOCore::Compartment::process_request(const Message& msg)

@@ -430,10 +430,8 @@ inline int Omega::guid_t::Compare(const guid_t& rhs) const
 		return (Data2 < rhs.Data2 ? -1 : 1);
 	else if (Data3 != rhs.Data3)
 		return (Data3 < rhs.Data3 ? -1 : 1);
-	else
-		return memcmp(&Data4,&rhs.Data4,sizeof(Data4));
-
-	return 0;
+	
+	return memcmp(&Data4,&rhs.Data4,sizeof(Data4));
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,2,((in),const Omega::guid_t&,guid,(in),const Omega::string_t&,strFormat));

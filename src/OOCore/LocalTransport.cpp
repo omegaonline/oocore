@@ -144,22 +144,22 @@ void LocalTransportSet::SetValue(uint32_t position, const any_t& val)
 
 Storage::IRecord* LocalTransportSet::OpenRecord(uint32_t position, Storage::OpenFlags_t)
 {
-
+	return NULL;
 }
 
 Storage::IRecord* LocalTransportSet::DeleteRecord(uint32_t position)
 {
-
+	return NULL;
 }
 
 Storage::ISet* LocalTransportSet::OpenSet(uint32_t position, Storage::OpenFlags_t flags)
 {
-
+	return NULL;
 }
 
 Storage::ISet* LocalTransportSet::DeleteSet(uint32_t position)
 {
-
+	return NULL;
 }
 
 any_t LocalTransportRecord::GetValue(const string_t& name)
@@ -364,7 +364,7 @@ void OOCore::LocalTransport::SendMessage(Remoting::IMessage* pMessage)
 
 string_t OOCore::LocalTransport::GetURI()
 {
-
+	return "local://pidfile";
 }
 
 const guid_t OOCore::OID_LocalTransportMarshalFactory("{EEBD74BA-1C47-F582-BF49-92DFC17D83DE}");

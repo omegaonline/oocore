@@ -132,7 +132,6 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 		stream.write(Omega::uint16_t(0));
 		stream.write(response_id);
 
-		OOBase::StackAllocator<256> allocator;
 		OOBase::LocalString pipe(allocator);
 
 		int ret_err = 0;

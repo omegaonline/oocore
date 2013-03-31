@@ -150,7 +150,7 @@ namespace OOCore
 		void connect_root(OOBase::CDRStream& stream);
 
 		// Our object factory members
-		OOBase::Stack<Omega::uint32_t> m_rot_cookies;
+		OOBase::Vector<Omega::uint32_t> m_rot_cookies;
 
 		// Message pumping
 		int run_read_loop();

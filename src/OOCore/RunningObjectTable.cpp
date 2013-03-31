@@ -104,7 +104,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	}
 
 	OOBase::StackAllocator<128> allocator;
-	OOBase::Stack<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
+	OOBase::Vector<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
 	uint32_t nCookie = 0;
 
 	try
@@ -119,7 +119,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 			{
 				// Check its still alive...
 				if (!Remoting::IsAlive(pInfo->m_ptrObject))
-					revoke_list.push(*m_mapServicesByOid.at(i));
+					revoke_list.push_back(*m_mapServicesByOid.at(i));
 				else
 				{
 					if (!(pInfo->m_flags & Activation::MultipleRegistration) || pInfo->m_flags == flags)
@@ -147,7 +147,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 	}
 		
 	// Revoke the revoke_list BEFORE we notify of the new entry
-	for (uint32_t i = 0;revoke_list.pop(&i);)
+	for (uint32_t i = 0;revoke_list.pop_back(&i);)
 		RevokeObject(i);
 
 	if (!info.m_rot_cookie)
@@ -159,7 +159,7 @@ uint32_t OOCore::LocalROT::RegisterObject(const any_t& oid, IObject* pObject, Ac
 void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	OOBase::StackAllocator<128> allocator;
-	OOBase::Stack<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
+	OOBase::Vector<uint32_t,OOBase::AllocatorInstance> revoke_list(allocator);
 	string_t strOid = oid.cast<string_t>();
 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -182,7 +182,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 			// Check its still alive...
 			if (!Remoting::IsAlive(pInfo->m_ptrObject))
 			{
-				int err = revoke_list.push(*m_mapServicesByOid.at(i));
+				int err = revoke_list.push_back(*m_mapServicesByOid.at(i));
 				if (err != 0)
 					OMEGA_THROW(err);
 			}
@@ -200,7 +200,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 				// Remove the entry if Activation::SingleUse
 				if (pInfo->m_flags & Activation::SingleUse)
 				{
-					int err = revoke_list.push(*m_mapServicesByOid.at(i));
+					int err = revoke_list.push_back(*m_mapServicesByOid.at(i));
 					if (err != 0)
 						OMEGA_THROW(err);
 				}
@@ -212,7 +212,7 @@ void OOCore::LocalROT::GetObject(const any_t& oid, const guid_t& iid, IObject*& 
 	guard.release();
 
 	// Revoke the revoke_list
-	for (uint32_t i = 0;revoke_list.pop(&i);)
+	for (uint32_t i = 0;revoke_list.pop_back(&i);)
 		RevokeObject(i);
 	
 	// If we have an object, get out now
@@ -258,7 +258,7 @@ void OOCore::LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFl
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	OOBase::Stack<uint32_t> stackRemove;
+	OOBase::Vector<uint32_t> stackRemove;
 
 	for (size_t pos = m_mapNotify.begin(); pos != m_mapNotify.npos; pos = m_mapNotify.next(pos))
 	{
@@ -266,7 +266,7 @@ void OOCore::LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFl
 		{
 			ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = *m_mapNotify.at(pos);
 			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
-				stackRemove.push(*m_mapNotify.key_at(pos));
+				stackRemove.push_back(*m_mapNotify.key_at(pos));
 			else
 				ptrNotify->OnRegisterObject(oid,flags);
 		}
@@ -282,7 +282,7 @@ void OOCore::LocalROT::OnRegisterObject(const any_t& oid, Activation::RegisterFl
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (uint32_t i = 0;stackRemove.pop(&i);)
+		for (uint32_t i = 0;stackRemove.pop_back(&i);)
 			m_mapNotify.remove(i,NULL);
 	}
 }
@@ -291,7 +291,7 @@ void OOCore::LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlag
 {
 	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-	OOBase::Stack<uint32_t> stackRemove;
+	OOBase::Vector<uint32_t> stackRemove;
 
 	for (size_t pos = m_mapNotify.begin(); pos != m_mapNotify.npos; pos = m_mapNotify.next(pos))
 	{
@@ -299,7 +299,7 @@ void OOCore::LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlag
 		{
 			ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = *m_mapNotify.at(pos);
 			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
-				stackRemove.push(*m_mapNotify.key_at(pos));
+				stackRemove.push_back(*m_mapNotify.key_at(pos));
 			else
 				ptrNotify->OnRevokeObject(oid,flags);
 		}
@@ -315,7 +315,7 @@ void OOCore::LocalROT::OnRevokeObject(const any_t& oid, Activation::RegisterFlag
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (uint32_t i = 0;stackRemove.pop(&i);)
+		for (uint32_t i = 0;stackRemove.pop_back(&i);)
 			m_mapNotify.remove(i,NULL);
 	}
 }

@@ -1560,8 +1560,8 @@ namespace
 
 	struct format_state_t
 	{
-		OOBase::Bag<insert_t> m_inserts;
-		string_t              m_strPrefix;
+		OOBase::Vector<insert_t> m_inserts;
+		string_t                 m_strPrefix;
 	};
 
 	size_t find_brace(const string_t& strIn, size_t start, char brace)
@@ -1635,7 +1635,7 @@ namespace
 		return true;
 	}
 
-	void parse_format(const string_t& strIn, string_t& strPrefix, OOBase::Bag<insert_t>& inserts)
+	void parse_format(const string_t& strIn, string_t& strPrefix, OOBase::Vector<insert_t>& inserts)
 	{
 		// Prefix first
 		size_t pos = find_brace(strIn,0,'{');
@@ -1664,7 +1664,7 @@ namespace
 
 			merge_braces(ins.strSuffix);
 
-			int err = inserts.add(ins);
+			int err = inserts.push_back(ins);
 			if (err != 0)
 				OMEGA_THROW(err);
 
@@ -1713,16 +1713,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	s_new->m_strPrefix = s->m_strPrefix;
 
 	bool pushed = false;
-	for (size_t i=0; i!=s->m_inserts.size(); ++i)
+	for (OOBase::Vector<insert_t>::const_iterator i=s->m_inserts.begin(); i!=s->m_inserts.end(); ++i)
 	{
-		const insert_t* ins = s->m_inserts.at(i);
-		if (!pushed && ins->index == (unsigned long)-1)
+		if (!pushed && i->index == (unsigned long)-1)
 		{
-			s_new->m_strPrefix += ins->strFormat + ins->strSuffix;
+			s_new->m_strPrefix += i->strFormat + i->strSuffix;
 		}
 		else
 		{
-			int err = s_new->m_inserts.add(*ins);
+			int err = s_new->m_inserts.push_back(*i);
 			if (err != 0)
 				OMEGA_THROW(err);
 
@@ -1749,13 +1748,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const voi
 	if (s)
 	{
 		// Find the lowest index (from left to right)
-		for (size_t i=0; i!=s->m_inserts.size(); ++i)
+		for (OOBase::Vector<insert_t>::const_iterator i=s->m_inserts.begin(); i!=s->m_inserts.end(); ++i)
 		{
-			const insert_t* ins = s->m_inserts.at(i);
-			if (ins->index < index)
+			if (i->index < index)
 			{
-				index = ins->index;
-				fmt = ins->strFormat;
+				index = i->index;
+				fmt = i->strFormat;
 			}
 		}
 	}
@@ -1767,13 +1765,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 	if (s)
 	{
 		// Update 'index'
-		for (size_t i=0;i<s->m_inserts.size();++i)
+		for (OOBase::Vector<insert_t>::iterator i=s->m_inserts.begin(); i!=s->m_inserts.end(); ++i)
 		{
-			insert_t* ins = s->m_inserts.at(i);
-			if (ins->index == index)
+			if (i->index == index)
 			{
-				ins->strFormat = align(arg,ins->alignment);
-				ins->index = (unsigned long)-1;
+				i->strFormat = align(arg,i->alignment);
+				i->index = (unsigned long)-1;
 				return;
 			}
 		}
@@ -1784,7 +1781,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_set_arg,3,((in),void*,han
 		ins2.index = (unsigned long)-1;
 		ins2.strFormat = " " + arg;
 
-		int err = s->m_inserts.add(ins2);
+		int err = s->m_inserts.push_back(ins2);
 		if (err != 0)
 			OMEGA_THROW(err);
 	}
@@ -1794,25 +1791,24 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_formatter_t_cast,1,((in),c
 {
 	string_t strPrefix;
 
-	format_state_t* s = const_cast<format_state_t*>(static_cast<const format_state_t*>(handle));
+	const format_state_t* s = static_cast<const format_state_t*>(handle);
 	if (s)
 	{
 		strPrefix += s->m_strPrefix;
 
-		for (size_t i=0;i<s->m_inserts.size();++i)
+		for (OOBase::Vector<insert_t>::const_iterator i=s->m_inserts.begin(); i!=s->m_inserts.end(); ++i)
 		{
-			insert_t* ins = s->m_inserts.at(i);
-			if (ins->index != (unsigned long)-1)
+			if (i->index != (unsigned long)-1)
 			{
-				strPrefix += '{' + Formatting::ToString(ins->index);
-				if (ins->alignment != 0)
-					strPrefix += ',' + Formatting::ToString(ins->alignment);
+				strPrefix += '{' + Formatting::ToString(i->index);
+				if (i->alignment != 0)
+					strPrefix += ',' + Formatting::ToString(i->alignment);
 
-				strPrefix += ins->strFormat + '}';
+				strPrefix += i->strFormat + '}';
 			}
 			else
 			{
-				strPrefix += ins->strFormat + ins->strSuffix;
+				strPrefix += i->strFormat + i->strSuffix;
 			}
 		}
 	}

@@ -30,7 +30,7 @@
 #include <OOBase/Timeout.h>
 #include <OOBase/Environment.h>
 #include <OOBase/Thread.h>
-#include <OOBase/Stack.h>
+#include <OOBase/Vector.h>
 #include <OOBase/Socket.h>
 #include <OOBase/BoundedQueue.h>
 #include <OOBase/HandleTable.h>

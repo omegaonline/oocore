@@ -76,7 +76,7 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 			else
 			{
 				// Insert an entry with a NULL pointer, we later update it
-				int err2 = m_mapServices.push(entry);
+				int err2 = m_mapServices.push_back(entry);
 				if (err2)
 				{
 					LOG_ERROR(("Failed to insert service entry: %s",OOBase::system_error_text(err2)));
@@ -123,11 +123,11 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 						guard.acquire();
 
 						// Remove any entries from the map
-						for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+						for (OOBase::Vector<ServiceEntry>::iterator i=m_mapServices.begin(); i!=m_mapServices.end(); ++i)
 						{
-							if (m_mapServices.at(pos)->strName == entry.strName)
+							if (i->strName == entry.strName)
 							{
-								m_mapServices.remove_at(pos);
+								m_mapServices.remove_at(i);
 								break;
 							}
 						}
@@ -146,7 +146,7 @@ OOServer::RootErrCode_t User::Manager::stop_all_services()
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	ServiceEntry entry;
-	while (m_mapServices.pop(&entry))
+	while (m_mapServices.pop_back(&entry))
 	{
 		if (entry.ptrService && Remoting::IsAlive(entry.ptrService))
 		{
@@ -206,12 +206,11 @@ void User::Manager::stop_service(OOBase::CDRStream& request, OOBase::CDRStream& 
 
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+			for (OOBase::Vector<ServiceEntry>::iterator i=m_mapServices.begin(); i!=m_mapServices.end(); ++i)
 			{
-				if (m_mapServices.at(pos)->strName == strName)
+				if (i->strName == strName)
 				{
-					entry = *m_mapServices.at(pos);
-					m_mapServices.remove_at(pos);
+					m_mapServices.remove_at(i,&entry);
 					break;
 				}
 			}
@@ -260,15 +259,14 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 		{
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+			for (OOBase::Vector<ServiceEntry>::iterator i=m_mapServices.begin(); i!=m_mapServices.end(); ++i)
 			{
-				const ServiceEntry* entry = m_mapServices.at(pos);
-				if (entry->strName == strName)
+				if (i->strName == strName)
 				{
-					if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
+					if (!i->ptrService || Remoting::IsAlive(i->ptrService))
 						found = true;
 					else
-						m_mapServices.remove_at(pos--);
+						m_mapServices.remove_at(i);
 					break;
 				}
 			}
@@ -293,16 +291,16 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (size_t pos = 0;pos < m_mapServices.size(); ++pos)
+		OOBase::Vector<ServiceEntry>::iterator i = m_mapServices.end();
+		while ( --i != m_mapServices.begin())
 		{
-			const ServiceEntry* entry = m_mapServices.at(pos);
-			if (!entry->ptrService || Remoting::IsAlive(entry->ptrService))
+			if (!i->ptrService || Remoting::IsAlive(i->ptrService))
 			{
-				if (!response.write_string(m_mapServices.at(pos)->strName))
+				if (!response.write_string(i->strName))
 					break;
 			}
 			else
-				m_mapServices.remove_at(pos--);
+				m_mapServices.remove_at(i);
 		}
 
 		guard.release();

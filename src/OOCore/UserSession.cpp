@@ -157,7 +157,7 @@ void OOCore::UserSession::start(const void* data, size_t len)
 		OMEGA_THROW(err);
 
 	// Register our local channel factory
-	m_rot_cookies.push(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
+	m_rot_cookies.push_back(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
 
 	guard.release();
 
@@ -188,8 +188,8 @@ void OOCore::UserSession::start(const void* data, size_t len)
 
 		guard.acquire();
 
-		m_rot_cookies.push(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
-		m_rot_cookies.push(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
+		m_rot_cookies.push_back(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
+		m_rot_cookies.push_back(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
 	}
 }
 
@@ -241,7 +241,7 @@ void OOCore::UserSession::stop()
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		uint32_t cookie;
-		while (m_rot_cookies.pop(&cookie))
+		while (m_rot_cookies.pop_back(&cookie))
 			ptrROT->RevokeObject(cookie);
 
 		// Now close Initialise singletons
@@ -278,13 +278,13 @@ void OOCore::UserSession::close_compartments()
 
 	// Do these in reverse order...
 	OOBase::StackAllocator<128> allocator;
-	OOBase::Stack<OOBase::SmartPtr<Compartment>,OOBase::AllocatorInstance> vecCompts(allocator);
+	OOBase::Vector<OOBase::SmartPtr<Compartment>,OOBase::AllocatorInstance> vecCompts(allocator);
 	for (size_t i = m_mapCompartments.begin();i!=m_mapCompartments.npos;i=m_mapCompartments.next(i))
-		vecCompts.push(*m_mapCompartments.at(i));
+		vecCompts.push_back(*m_mapCompartments.at(i));
 
 	guard.release();
 
-	for (OOBase::SmartPtr<Compartment> ptrCmpt;vecCompts.pop(&ptrCmpt);)
+	for (OOBase::SmartPtr<Compartment> ptrCmpt;vecCompts.pop_back(&ptrCmpt);)
 	{
 		try
 		{

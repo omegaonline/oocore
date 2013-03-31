@@ -71,7 +71,7 @@ namespace User
 			OOBase::String strName;
 			OTL::ObjectPtr<Omega::System::IService> ptrService;
 		};
-		OOBase::Stack<ServiceEntry> m_mapServices;
+		OOBase::Vector<ServiceEntry> m_mapServices;
 
 		bool notify_started();
 		void start_service(OOBase::CDRStream& request, OOBase::CDRStream* response);

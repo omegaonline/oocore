@@ -24,7 +24,7 @@
 
 #include <OOBase/SmartPtr.h>
 #include <OOBase/String.h>
-#include <OOBase/Stack.h>
+#include <OOBase/Vector.h>
 #include <OOBase/Set.h>
 #include <OOBase/Timeout.h>
 #include <OOBase/Mutex.h>

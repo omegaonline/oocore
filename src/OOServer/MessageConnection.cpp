@@ -40,7 +40,7 @@
 #include <OOBase/BoundedQueue.h>
 #include <OOBase/HandleTable.h>
 #include <OOBase/HashTable.h>
-#include <OOBase/Stack.h>
+#include <OOBase/Vector.h>
 #include <OOBase/Logger.h>
 #include <OOBase/Thread.h>
 #include <OOBase/StackAllocator.h>
@@ -571,7 +571,7 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 	if (bReport)
 	{
 		OOBase::StackAllocator<256> allocator;
-		OOBase::Stack<Omega::uint32_t,OOBase::AllocatorInstance> send_to(allocator);
+		OOBase::Vector<Omega::uint32_t,OOBase::AllocatorInstance> send_to(allocator);
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -581,12 +581,12 @@ void OOServer::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega:
 			// Always route upstream, and/or follow routing rules
 			Omega::uint32_t k = *m_mapChannelIds.key_at(i);
 			if (k != src_channel_id && (k == m_uUpstreamChannel || can_route(channel_id,k)))
-				send_to.push(k);
+				send_to.push_back(k);
 		}
 
 		guard.release();
 
-		for (Omega::uint32_t i = 0;send_to.pop(&i);)
+		for (Omega::uint32_t i = 0;send_to.pop_back(&i);)
 			send_channel_close(i,channel_id);
 				
 		// Inform derived classes that the channel has gone...

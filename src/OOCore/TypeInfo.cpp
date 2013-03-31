@@ -59,12 +59,12 @@ namespace
 			string_t                       strName;
 			TypeInfo::MethodAttributes_t   attribs;
 			ObjectPtr<Remoting::IMessage>  return_type;
-			OOBase::Stack<ParamInfo>*      params;
+			OOBase::Vector<ParamInfo>*     params;
 		};
 
 		string_t                              m_strName;
 		guid_t                                m_iid;
-		OOBase::Stack<MethodInfo>             m_methods;
+		OOBase::Vector<MethodInfo>            m_methods;
 		uint32_t                              m_base_methods;
 		ObjectPtr<TypeInfo::IInterfaceInfo>   m_ptrBase;
 
@@ -273,7 +273,7 @@ TypeInfoImpl::TypeInfoImpl() :
 
 TypeInfoImpl::~TypeInfoImpl()
 {
-	for (MethodInfo mi;m_methods.pop(&mi);)
+	for (MethodInfo mi;m_methods.pop_back(&mi);)
 		delete mi.params;
 }
 
@@ -298,7 +298,7 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 		mi.return_type = Remoting::CreateMemoryMessage();
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
-		mi.params = new (OOCore::throwing) OOBase::Stack<ParamInfo>();
+		mi.params = new (OOCore::throwing) OOBase::Vector<ParamInfo>();
 		
 		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)(); ppi->pszName!=0; ++ppi)
 		{
@@ -310,12 +310,12 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 
 			BuildTypeDetail(pi.type,ppi->type);
 
-			int err = mi.params->push(pi);
+			int err = mi.params->push_back(pi);
 			if (err != 0)
 				OMEGA_THROW(err);
 		}
 
-		int err = m_methods.push(mi);
+		int err = m_methods.push_back(mi);
 		if (err != 0)
 			OMEGA_THROW(err);
 	}

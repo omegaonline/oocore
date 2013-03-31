@@ -53,7 +53,7 @@ namespace
 		};
 
 		OOBase::SpinLock m_lock;
-		OOBase::Bag<Tag,OOBase::CrtAllocator> m_bagIndex;
+		OOBase::Vector<Tag,OOBase::CrtAllocator> m_vecIndex;
 		OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator> m_mapValues;
 		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportSet> >,OOBase::CrtAllocator> m_mapSets;
 		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportRecord> >,OOBase::CrtAllocator> m_mapRecords;
@@ -115,14 +115,14 @@ uint32_t LocalTransportSet::GetCount()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	return m_bagIndex.size();
+	return m_vecIndex.size();
 }
 
 any_t LocalTransportSet::GetValue(uint32_t position)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag* tag = m_bagIndex.at(position);
+	Tag* tag = m_vecIndex.at(position);
 	if (!tag)
 		return any_t();
 	else if (tag->m_tag == Tag::eRecord)
@@ -346,7 +346,28 @@ Storage::ISet* LocalTransportRecord::DeleteSet(const string_t& name)
 	return static_cast<Storage::ISet*>(ptrSet->QueryInterface(OMEGA_GUIDOF(Storage::ISet)));
 }
 
-const Omega::guid_t OOCore::OID_LocalTransportMarshalFactory("{EEBD74BA-1C47-F582-BF49-92DFC17D83DE}");
+void OOCore::LocalTransport::init(OOBase::CDRStream& stream, OOBase::Proactor* proactor)
+{
+
+}
+
+Remoting::IMessage* OOCore::LocalTransport::CreateMessage()
+{
+	ObjectPtr<ObjectImpl<LocalTransportRecord> > ptrRecord = ObjectImpl<LocalTransportRecord>::CreateObject();
+	return static_cast<Remoting::IMessage*>(ptrRecord->QueryInterface(OMEGA_GUIDOF(Remoting::IMessage)));
+}
+
+void OOCore::LocalTransport::SendMessage(Remoting::IMessage* pMessage)
+{
+
+}
+
+string_t OOCore::LocalTransport::GetURI()
+{
+
+}
+
+const guid_t OOCore::OID_LocalTransportMarshalFactory("{EEBD74BA-1C47-F582-BF49-92DFC17D83DE}");
 
 void OOCore::LocalTransportMarshalFactory::UnmarshalInterface(Remoting::IMarshalContext* /*pMarshalContext*/, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {

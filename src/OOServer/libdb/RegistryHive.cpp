@@ -442,7 +442,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	}
 
 	// Get the set of subkeys
-	OOBase::Stack<Omega::int64_t,OOBase::AllocatorInstance> ids(strFullKeyName.get_allocator());
+	OOBase::Vector<Omega::int64_t,OOBase::AllocatorInstance> ids(strFullKeyName.get_allocator());
 	{
 		Resetter resetter(m_EnumKeyIds_Stmt);
 		
@@ -455,7 +455,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 			if (err2 == SQLITE_ROW)
 			{
 				// Add to stack
-				int res = ids.push(m_EnumKeyIds_Stmt.column_int64(0));
+				int res = ids.push_back(m_EnumKeyIds_Stmt.column_int64(0));
 				if (res != 0)
 					LOG_ERROR_RETURN(("Failed to stack push: %s",OOBase::system_error_text(res)),HIVE_ERRORED);
 			}
@@ -469,7 +469,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	OOBase::LocalString strSubKey(strFullKeyName.get_allocator());
 	if (!ids.empty())
 	{
-		for (Omega::int64_t id;ids.pop(&id);)
+		for (Omega::int64_t id;ids.pop_back(&id);)
 		{
 			err = delete_subkeys(id,channel_id,strSubKey);
 			if (err)

@@ -127,7 +127,7 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 						{
 							if (i->strName == entry.strName)
 							{
-								m_mapServices.remove_at(i);
+								m_mapServices.remove(i);
 								break;
 							}
 						}
@@ -210,7 +210,7 @@ void User::Manager::stop_service(OOBase::CDRStream& request, OOBase::CDRStream& 
 			{
 				if (i->strName == strName)
 				{
-					m_mapServices.remove_at(i,&entry);
+					m_mapServices.remove(i,&entry);
 					break;
 				}
 			}
@@ -266,7 +266,7 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 					if (!i->ptrService || Remoting::IsAlive(i->ptrService))
 						found = true;
 					else
-						m_mapServices.remove_at(i);
+						m_mapServices.remove(i);
 					break;
 				}
 			}
@@ -300,7 +300,7 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 					break;
 			}
 			else
-				m_mapServices.remove_at(i);
+				m_mapServices.remove(i);
 		}
 
 		guard.release();

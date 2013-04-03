@@ -30,14 +30,14 @@ namespace
 {
 	class LocalTransportRecord;
 
-	class LocalTransportSet :
+	class LocalTransportArray :
 			public OTL::ObjectBase,
 			public OOBase::NonCopyable,
-			public Storage::ISet
+			public Storage::IArray
 	{
 	public:
-		BEGIN_INTERFACE_MAP(LocalTransportSet)
-			INTERFACE_ENTRY(Storage::ISet)
+		BEGIN_INTERFACE_MAP(LocalTransportArray)
+			INTERFACE_ENTRY(Storage::IArray)
 		END_INTERFACE_MAP()
 
 	private:
@@ -47,7 +47,7 @@ namespace
 			{
 				eValue,
 				eRecord,
-				eSet
+				eArray
 			} m_tag;
 			size_t m_idx;
 		};
@@ -55,7 +55,7 @@ namespace
 		OOBase::SpinLock m_lock;
 		OOBase::Vector<Tag,OOBase::CrtAllocator> m_vecIndex;
 		OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator> m_mapValues;
-		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportSet> >,OOBase::CrtAllocator> m_mapSets;
+		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportArray> >,OOBase::CrtAllocator> m_mapArrays;
 		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportRecord> >,OOBase::CrtAllocator> m_mapRecords;
 
 	public:
@@ -67,8 +67,8 @@ namespace
 		Storage::IRecord* OpenRecord(uint32_t position, Storage::OpenFlags_t flags = Storage::OpenExisting);
 		Storage::IRecord* DeleteRecord(uint32_t position);
 
-		Storage::ISet* OpenSet(uint32_t position, Storage::OpenFlags_t flags = Storage::OpenExisting);
-		Storage::ISet* DeleteSet(uint32_t position);
+		Storage::IArray* OpenArray(uint32_t position, Storage::OpenFlags_t flags = Storage::OpenExisting);
+		Storage::IArray* DeleteArray(uint32_t position);
 	};
 
 	class LocalTransportRecord :
@@ -88,7 +88,7 @@ namespace
 			{
 				eValue,
 				eRecord,
-				eSet
+				eArray
 			} m_tag;
 			size_t m_idx;
 		};
@@ -96,7 +96,7 @@ namespace
 		OOBase::SpinLock m_lock;
 		OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash> m_mapIndex;
 		OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator> m_mapValues;
-		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportSet> >,OOBase::CrtAllocator> m_mapSets;
+		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportArray> >,OOBase::CrtAllocator> m_mapArrays;
 		OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<LocalTransportRecord> >,OOBase::CrtAllocator> m_mapRecords;
 
 	public:
@@ -106,19 +106,19 @@ namespace
 		Storage::IRecord* OpenRecord(const string_t& name, Storage::OpenFlags_t flags = Storage::OpenExisting);
 		Storage::IRecord* DeleteRecord(const string_t& name);
 
-		Storage::ISet* OpenSet(const string_t& name, Storage::OpenFlags_t flags = Storage::OpenExisting);
-		Storage::ISet* DeleteSet(const string_t& name);
+		Storage::IArray* OpenArray(const string_t& name, Storage::OpenFlags_t flags = Storage::OpenExisting);
+		Storage::IArray* DeleteArray(const string_t& name);
 	};
 }
 
-uint32_t LocalTransportSet::GetCount()
+uint32_t LocalTransportArray::GetCount()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	return m_vecIndex.size();
 }
 
-any_t LocalTransportSet::GetValue(uint32_t position)
+any_t LocalTransportArray::GetValue(uint32_t position)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -127,37 +127,37 @@ any_t LocalTransportSet::GetValue(uint32_t position)
 		return any_t();
 	else if (tag->m_tag == Tag::eRecord)
 		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get a sub-record using GetValue"));
-	else if (tag->m_tag == Tag::eSet)
-		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get a set using GetValue"));
+	else if (tag->m_tag == Tag::eArray)
+		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get an array using GetValue"));
 
 	any_t result;
 	if (!m_mapValues.find(tag->m_idx,result))
-		OMEGA_THROW("Set index out of sync");
+		OMEGA_THROW("Array index out of sync");
 
 	return result;
 }
 
-void LocalTransportSet::SetValue(uint32_t position, const any_t& val)
+void LocalTransportArray::SetValue(uint32_t position, const any_t& val)
 {
 
 }
 
-Storage::IRecord* LocalTransportSet::OpenRecord(uint32_t position, Storage::OpenFlags_t)
-{
-	return NULL;
-}
-
-Storage::IRecord* LocalTransportSet::DeleteRecord(uint32_t position)
+Storage::IRecord* LocalTransportArray::OpenRecord(uint32_t position, Storage::OpenFlags_t)
 {
 	return NULL;
 }
 
-Storage::ISet* LocalTransportSet::OpenSet(uint32_t position, Storage::OpenFlags_t flags)
+Storage::IRecord* LocalTransportArray::DeleteRecord(uint32_t position)
 {
 	return NULL;
 }
 
-Storage::ISet* LocalTransportSet::DeleteSet(uint32_t position)
+Storage::IArray* LocalTransportArray::OpenArray(uint32_t position, Storage::OpenFlags_t flags)
+{
+	return NULL;
+}
+
+Storage::IArray* LocalTransportArray::DeleteArray(uint32_t position)
 {
 	return NULL;
 }
@@ -171,8 +171,8 @@ any_t LocalTransportRecord::GetValue(const string_t& name)
 		return any_t();
 	else if (tag.m_tag == Tag::eRecord)
 		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get a sub-record using GetValue"));
-	else if (tag.m_tag == Tag::eSet)
-		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get a set using GetValue"));
+	else if (tag.m_tag == Tag::eArray)
+		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get an array using GetValue"));
 
 	any_t result;
 	if (!m_mapValues.find(tag.m_idx,result))
@@ -190,8 +190,8 @@ void LocalTransportRecord::SetValue(const string_t& name, const any_t& val)
 	{
 		if (tag.m_tag == Tag::eRecord)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A sub-record with the name {0} already exists") % name);
-		else if (tag.m_tag == Tag::eSet)
-			throw IAlreadyExistsException::Create(OOCore::get_text("A set with the name {0} already exists") % name);
+		else if (tag.m_tag == Tag::eArray)
+			throw IAlreadyExistsException::Create(OOCore::get_text("An array with the name {0} already exists") % name);
 		else if (val.GetType() == TypeInfo::typeVoid)
 			m_mapValues.remove(tag.m_idx);
 		else
@@ -251,8 +251,8 @@ Storage::IRecord* LocalTransportRecord::OpenRecord(const string_t& name, Storage
 	{
 		if (tag.m_tag == Tag::eValue)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A value with the name {0} already exists") % name);
-		else if (tag.m_tag == Tag::eSet)
-			throw IAlreadyExistsException::Create(OOCore::get_text("A set with the name {0} already exists") % name);
+		else if (tag.m_tag == Tag::eArray)
+			throw IAlreadyExistsException::Create(OOCore::get_text("An array with the name {0} already exists") % name);
 		else if (flags == Storage::CreateNew)
 			throw IAlreadyExistsException::Create(OOCore::get_text("The record already contains a sub-record named {0}") % name);
 		else if (!m_mapRecords.find(tag.m_idx,ptrRecord))
@@ -273,8 +273,8 @@ Storage::IRecord* LocalTransportRecord::DeleteRecord(const string_t& name)
 	{
 		if (tag.m_tag == Tag::eValue)
 			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a value using DeleteRecord"));
-		else if (tag.m_tag == Tag::eSet)
-			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a set using DeleteRecord"));
+		else if (tag.m_tag == Tag::eArray)
+			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete an array using DeleteRecord"));
 		else if (!m_mapRecords.find(tag.m_idx,ptrRecord))
 			OMEGA_THROW("Record index out of sync");
 	}
@@ -282,12 +282,12 @@ Storage::IRecord* LocalTransportRecord::DeleteRecord(const string_t& name)
 	return static_cast<Storage::IRecord*>(ptrRecord->QueryInterface(OMEGA_GUIDOF(Storage::IRecord)));
 }
 
-Storage::ISet* LocalTransportRecord::OpenSet(const string_t& name, Storage::OpenFlags_t flags)
+Storage::IArray* LocalTransportRecord::OpenArray(const string_t& name, Storage::OpenFlags_t flags)
 {
 	if (flags < Storage::OpenExisting || flags > Storage::CreateNew)
 		OMEGA_THROW("Invalid value for flags in call to IRecord::OpenRecord");
 
-	ObjectPtr<ObjectImpl<LocalTransportSet> > ptrSet;
+	ObjectPtr<ObjectImpl<LocalTransportArray> > ptrArray;
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -295,19 +295,19 @@ Storage::ISet* LocalTransportRecord::OpenSet(const string_t& name, Storage::Open
 	if (!m_mapIndex.find(name,tag))
 	{
 		if (flags == Storage::OpenExisting)
-			throw INotFoundException::Create(OOCore::get_text("The record contains no set named {0}") % name);
+			throw INotFoundException::Create(OOCore::get_text("The record contains no array named {0}") % name);
 
-		ptrSet = ObjectImpl<LocalTransportSet>::CreateObject();
+		ptrArray = ObjectImpl<LocalTransportArray>::CreateObject();
 
-		tag.m_tag = Tag::eSet;
-		int err = m_mapSets.insert(ptrSet,tag.m_idx);
+		tag.m_tag = Tag::eArray;
+		int err = m_mapArrays.insert(ptrArray,tag.m_idx);
 		if (err)
 			OMEGA_THROW(err);
 
 		err = m_mapIndex.insert(name,tag);
 		if (err)
 		{
-			m_mapSets.remove(tag.m_idx);
+			m_mapArrays.remove(tag.m_idx);
 			OMEGA_THROW(err);
 		}
 	}
@@ -318,17 +318,17 @@ Storage::ISet* LocalTransportRecord::OpenSet(const string_t& name, Storage::Open
 		else if (tag.m_tag == Tag::eRecord)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A sub-record with the name {0} already exists") % name);
 		else if (flags == Storage::CreateNew)
-			throw IAlreadyExistsException::Create(OOCore::get_text("The record already contains a set named {0}") % name);
-		else if (!m_mapSets.find(tag.m_idx,ptrSet))
+			throw IAlreadyExistsException::Create(OOCore::get_text("The record already contains an array named {0}") % name);
+		else if (!m_mapArrays.find(tag.m_idx,ptrArray))
 			OMEGA_THROW("Record index out of sync");
 	}
 
-	return static_cast<Storage::ISet*>(ptrSet->QueryInterface(OMEGA_GUIDOF(Storage::ISet)));
+	return static_cast<Storage::IArray*>(ptrArray->QueryInterface(OMEGA_GUIDOF(Storage::IArray)));
 }
 
-Storage::ISet* LocalTransportRecord::DeleteSet(const string_t& name)
+Storage::IArray* LocalTransportRecord::DeleteArray(const string_t& name)
 {
-	ObjectPtr<ObjectImpl<LocalTransportSet> > ptrSet;
+	ObjectPtr<ObjectImpl<LocalTransportArray> > ptrArray;
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -336,14 +336,14 @@ Storage::ISet* LocalTransportRecord::DeleteSet(const string_t& name)
 	if (m_mapIndex.find(name,tag))
 	{
 		if (tag.m_tag == Tag::eValue)
-			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a value using DeleteSet"));
+			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a value using DeleteArray"));
 		else if (tag.m_tag == Tag::eRecord)
-			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a sub-record using DeleteSet"));
-		else if (!m_mapSets.find(tag.m_idx,ptrSet))
+			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a sub-record using DeleteArray"));
+		else if (!m_mapArrays.find(tag.m_idx,ptrArray))
 			OMEGA_THROW("Record index out of sync");
 	}
 
-	return static_cast<Storage::ISet*>(ptrSet->QueryInterface(OMEGA_GUIDOF(Storage::ISet)));
+	return static_cast<Storage::IArray*>(ptrArray->QueryInterface(OMEGA_GUIDOF(Storage::IArray)));
 }
 
 void OOCore::LocalTransport::init(OOBase::CDRStream& stream, OOBase::Proactor* proactor)

@@ -538,7 +538,7 @@ namespace Omega
 				OMEGA_METHOD(string_t,GetDescription,0,())
 			)
 
-			OMEGA_QI_MAGIC(Omega::Storage,ISet)
+			OMEGA_QI_MAGIC(Omega::Storage,IArray)
 			OMEGA_QI_MAGIC(Omega::Storage,IRecord)
 
 			OMEGA_QI_MAGIC(Omega::Remoting,IMessage)

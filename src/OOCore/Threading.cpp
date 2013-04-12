@@ -174,7 +174,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_remove,3,((in),void*
 		OOBase::Guard<OOBase::SpinLock> guard(h->m_lock);
 
 		destruct_entry_t e = { pfn_dctor, param };
-		h->m_stack.remove(h->m_stack.find(e));
+		h->m_stack.remove(e);
 	}
 }
 
@@ -260,7 +260,7 @@ void SingletonHolder::remove_uninit_call(Threading::DestructorCallback pfn, void
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	Uninit uninit = { pfn, param };
-	m_stackUninitCalls.remove(m_stackUninitCalls.find(uninit));
+	m_stackUninitCalls.remove(uninit);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),Omega::Threading::DestructorCallback,pfn_dctor,(in),void*,param))

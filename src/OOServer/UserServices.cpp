@@ -127,7 +127,7 @@ void User::Manager::start_service(OOBase::CDRStream& request, OOBase::CDRStream*
 						{
 							if (i->strName == entry.strName)
 							{
-								m_mapServices.remove(i);
+								m_mapServices.remove_at(i);
 								break;
 							}
 						}
@@ -210,7 +210,8 @@ void User::Manager::stop_service(OOBase::CDRStream& request, OOBase::CDRStream& 
 			{
 				if (i->strName == strName)
 				{
-					m_mapServices.remove(i,&entry);
+					entry = *i;
+					m_mapServices.remove_at(i);
 					break;
 				}
 			}
@@ -266,7 +267,7 @@ void User::Manager::service_is_running(OOBase::CDRStream& request, OOBase::CDRSt
 					if (!i->ptrService || Remoting::IsAlive(i->ptrService))
 						found = true;
 					else
-						m_mapServices.remove(i);
+						m_mapServices.remove_at(i);
 					break;
 				}
 			}
@@ -291,16 +292,18 @@ void User::Manager::list_services(OOBase::CDRStream& response)
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::Vector<ServiceEntry>::iterator i = m_mapServices.end();
-		while ( --i != m_mapServices.begin())
+		for (OOBase::Vector<ServiceEntry>::iterator i = m_mapServices.begin();i != m_mapServices.begin();)
 		{
 			if (!i->ptrService || Remoting::IsAlive(i->ptrService))
 			{
 				if (!response.write_string(i->strName))
 					break;
+				++i;
 			}
 			else
-				m_mapServices.remove(i);
+			{
+				m_mapServices.remove_at(i);
+			}
 		}
 
 		guard.release();

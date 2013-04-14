@@ -29,10 +29,10 @@
 #include <OOBase/Timeout.h>
 #include <OOBase/Mutex.h>
 
-#include "../../include/Omega/internal/base_types.h"
-
 #if !defined(_MSC_VER)
 #include <oocore-autoconf.h>
 #endif
+
+#include "../../include/Omega/internal/base_types.h"
 
 #endif // OOCORE_LIBDB_COMMON_H_INCLUDED_

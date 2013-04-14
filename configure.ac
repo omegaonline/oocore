@@ -133,7 +133,7 @@ OO_LIB_SQLITE3([3.5.0])
 AS_IF([test -z "$SQLITE3_LIBS"],[AC_MSG_ERROR([Need a valid sqlite3 library])])
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h unistd.h uuid/uuid.h inttypes.h])
+AC_CHECK_HEADERS([unistd.h uuid/uuid.h inttypes.h])
 
 # Check for specifics of Unix cred passing
 AC_CHECK_TYPES([struct cmsgcred])

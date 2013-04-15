@@ -33,6 +33,13 @@
 #include <oocore-autoconf.h>
 #endif
 
+#if defined(_WIN32)
+	// Remove the unistd include - we are windows
+	#if defined(HAVE_UNISTD_H)
+	#undef HAVE_UNISTD_H
+	#endif
+#endif
+
 #include "../../include/Omega/internal/base_types.h"
 
 #endif // OOCORE_LIBDB_COMMON_H_INCLUDED_

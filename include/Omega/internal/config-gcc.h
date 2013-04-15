@@ -22,7 +22,7 @@
 #ifndef OMEGA_CONFIG_GCC_H_INCLUDED_
 #define OMEGA_CONFIG_GCC_H_INCLUDED_
 
-#if !defined(HAVE_STDINT_H)
+#if (defined(__STDC__) && __STDC__ && __STDC_VERSION__ >= 199901L) && !defined(HAVE_STDINT_H)
 #define HAVE_STDINT_H 1
 #endif
 

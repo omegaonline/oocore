@@ -163,7 +163,7 @@ LT_PREREQ([2.2.6])
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
-AC_CHECK_PROG([SQLITE3],[sqlite3],[])
+AC_PATH_PROG([SQLITE3],[sqlite3])
 AS_IF([test "x$SQLITE3" == "x"],[AC_MSG_ERROR([Need sqlite3 command])])
 
 AC_OUTPUT

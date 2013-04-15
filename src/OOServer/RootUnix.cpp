@@ -60,7 +60,7 @@ namespace
 		pid_t get_pid() const;
 		const uid_t& get_uid() const;
 
-		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
+		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
 		RootProcessUnix(uid_t id);
@@ -409,7 +409,7 @@ bool RootProcessUnix::same_user(const uid_t& uid) const
 	return (m_uid == uid);
 }
 
-OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
+OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
 {
 	// Create a new socket
 	OOBase::POSIX::SmartFD fd(::socket(AF_UNIX,SOCK_STREAM,0));
@@ -473,7 +473,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 		LOG_ERROR_RETURN(("Failed to listen on pipe: %s",OOBase::system_error_text()),OOServer::Errored);
 
 	OOBase::CDRStream response;
-	//OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<Omega::uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
+	//OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
 	//if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),OOServer::Errored);
 

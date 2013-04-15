@@ -43,7 +43,7 @@ namespace OOServer
 	public:
 		MessageConnection(MessageHandler* pHandler, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 		
-		void set_channel_id(Omega::uint32_t channel_id);
+		void set_channel_id(uint32_t channel_id);
 
 		void shutdown();
 		int recv();
@@ -57,7 +57,7 @@ namespace OOServer
 		OOBase::SpinLock                    m_lock;
 		MessageHandler*                     m_pHandler;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
-		Omega::uint32_t                     m_channel_id;
+		uint32_t                            m_channel_id;
 
 		static void on_recv1(void* param, OOBase::Buffer* buffer, int err);
 		static void on_recv2(void* param, OOBase::Buffer* buffer, int err);
@@ -115,47 +115,47 @@ namespace OOServer
 			};
 		};
 
-		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type, OOBase::CDRStream& message);
-		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, Omega::uint32_t attribs);
+		io_result::type forward_message(uint32_t src_channel_id, uint32_t dest_channel_id, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, Message_t::Type type, OOBase::CDRStream& message);
+		io_result::type send_request(uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::CDRStream* response, uint32_t attribs);
 
-		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
+		void channel_closed(uint32_t channel_id, uint32_t src_channel_id);
 
 	protected:
-		io_result::type send_response(Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, Omega::uint32_t attribs);
+		io_result::type send_response(uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream& response, uint32_t attribs);
 
 		bool start_request_threads(size_t threads);
 		void shutdown_channels();
 		void stop_request_threads();
 
-		Omega::uint32_t register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
+		uint32_t register_channel(OOBase::RefPtr<MessageConnection>& ptrMC, uint32_t channel_id);
 
-		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t attribs) = 0;
-		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
-		virtual void on_channel_closed(Omega::uint32_t channel) = 0;
-		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Message_t::Type type);
+		virtual void process_request(OOBase::CDRStream& request, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t attribs) = 0;
+		virtual bool can_route(uint32_t src_channel, uint32_t dest_channel);
+		virtual void on_channel_closed(uint32_t channel) = 0;
+		virtual io_result::type route_off(const OOBase::CDRStream& msg, uint32_t src_channel_id, uint32_t dest_channel_id, uint32_t attribs, uint16_t dest_thread_id, uint16_t src_thread_id, Message_t::Type type);
 
-		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
-		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
+		void set_channel(uint32_t channel_id, uint32_t mask_id, uint32_t child_mask_id, uint32_t upstream_id);
+		uint16_t classify_channel(uint32_t channel_id);
 
-		Omega::uint32_t      m_uUpstreamChannel;
+		uint32_t      m_uUpstreamChannel;
 
 	private:
 		MessageHandler(const MessageHandler&);
 		MessageHandler& operator = (const MessageHandler&);
 
 		OOBase::RWMutex      m_lock;
-		Omega::uint32_t      m_uChannelId;
-		Omega::uint32_t      m_uChannelMask;
-		Omega::uint32_t      m_uChildMask;
-		Omega::uint32_t      m_uNextChannelId;
-		Omega::uint32_t      m_uNextChannelMask;
-		Omega::uint32_t      m_uNextChannelShift;
+		uint32_t      m_uChannelId;
+		uint32_t      m_uChannelMask;
+		uint32_t      m_uChildMask;
+		uint32_t      m_uNextChannelId;
+		uint32_t      m_uNextChannelMask;
+		uint32_t      m_uNextChannelShift;
 		OOBase::ThreadPool   m_threadpool;
 
 		struct ChannelHash
 		{
 			const MessageHandler* m_p;
-			size_t hash(Omega::uint32_t v) const
+			size_t hash(uint32_t v) const
 			{
 				return ((v & ~m_p->m_uChannelId) >> m_p->m_uNextChannelShift);
 			}
@@ -163,7 +163,7 @@ namespace OOServer
 		friend struct ChannelHash;
 		ChannelHash m_hash;
 
-		OOBase::HashTable<Omega::uint32_t,OOBase::RefPtr<MessageConnection>,OOBase::CrtAllocator,ChannelHash> m_mapChannelIds;
+		OOBase::HashTable<uint32_t,OOBase::RefPtr<MessageConnection>,OOBase::CrtAllocator,ChannelHash> m_mapChannelIds;
 
 		struct Message
 		{
@@ -197,10 +197,10 @@ namespace OOServer
 			~Message() {}
 
 			// This is the order for I/O as well
-			Omega::uint32_t   m_src_channel_id;
-			Omega::uint32_t   m_attribs;
-			Omega::uint16_t   m_dest_thread_id;
-			Omega::uint16_t   m_src_thread_id;
+			uint32_t   m_src_channel_id;
+			uint32_t   m_attribs;
+			uint16_t   m_dest_thread_id;
+			uint16_t   m_src_thread_id;
 			Message_t::Type   m_type;
 			OOBase::CDRStream m_payload;
 		};
@@ -213,12 +213,12 @@ namespace OOServer
 
 		struct ThreadContext
 		{
-			Omega::uint16_t               m_thread_id;
+			uint16_t               m_thread_id;
 			OOBase::BoundedQueue<Message> m_msg_queue;
 			MessageHandler*               m_pHandler;
 
 			// 'Private' thread-local data
-			OOBase::HashTable<Omega::uint32_t,Omega::uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
+			OOBase::HashTable<uint32_t,uint16_t,OOBase::ThreadLocalAllocator> m_mapChannelThreads;
 
 			static ThreadContext* instance(MessageHandler* pHandler);
 
@@ -231,17 +231,17 @@ namespace OOServer
 			ThreadContext(const ThreadContext&);
 			ThreadContext& operator = (const ThreadContext&);
 		};
-		OOBase::HandleTable<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
+		OOBase::HandleTable<uint16_t,ThreadContext*> m_mapThreadContexts;
 		
 		// Accessors for ThreadContext
-		Omega::uint16_t insert_thread_context(ThreadContext* pContext);
+		uint16_t insert_thread_context(ThreadContext* pContext);
 		void remove_thread_context(ThreadContext* pContext);
 
-		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
+		void send_channel_close(uint32_t dest_channel_id, uint32_t closed_channel_id);
 		io_result::type queue_message(const Message& msg);
 		io_result::type handle_message(Message& msg);
-		io_result::type wait_for_response(OOBase::CDRStream& response, Omega::uint32_t from_channel_id);
-		io_result::type send_message(Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, Message& msg);
+		io_result::type wait_for_response(OOBase::CDRStream& response, uint32_t from_channel_id);
+		io_result::type send_message(uint32_t actual_dest_channel_id, uint32_t dest_channel_id, Message& msg);
 		bool process_request_context(ThreadContext* pContext, Message& msg);
 
 		io_result::type process_channel_close(Message& msg);

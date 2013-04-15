@@ -50,9 +50,6 @@
 
 //////////////////////////////////////////////
 
-#include "../../include/Omega/internal/base_types.h"
-
-
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define APPNAME "OOSvrReg"
 #else

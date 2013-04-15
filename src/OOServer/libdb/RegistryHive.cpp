@@ -78,7 +78,7 @@ void Db::Hive::prepare_statement(Statement& stmt, const char* pszSql)
 		throw err;
 }
 
-Db::hive_errors Db::Hive::access_check(Omega::uint32_t channel_id, access_rights_t access_mask, access_rights_t check)
+Db::hive_errors Db::Hive::access_check(uint32_t channel_id, access_rights_t access_mask, access_rights_t check)
 {
 	if (access_mask & check)
 	{
@@ -98,7 +98,7 @@ Db::hive_errors Db::Hive::access_check(Omega::uint32_t channel_id, access_rights
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
+Db::hive_errors Db::Hive::check_key_exists(const int64_t& uKey, access_rights_t& access_mask)
 {
 	// Lock must be held first...
 
@@ -129,7 +129,7 @@ Db::hive_errors Db::Hive::check_key_exists(const Omega::int64_t& uKey, access_ri
 	}
 }
 
-Db::hive_errors Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink)
+Db::hive_errors Db::Hive::get_key_info(const int64_t& uParent, int64_t& uKey, const OOBase::LocalString& strSubKey, uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink)
 {
 	// Lock must be held first...
 	
@@ -152,7 +152,7 @@ Db::hive_errors Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int
 		case SQLITE_ROW:
 			{
 				// We have a .links subkey
-				Omega::int64_t uLinksKey = m_GetKeyInfo_Stmt.column_int64(0);
+				int64_t uLinksKey = m_GetKeyInfo_Stmt.column_int64(0);
 
 				// Check access
 				access_mask = static_cast<access_rights_t>(m_GetKeyInfo_Stmt.column_int(1));
@@ -203,7 +203,7 @@ Db::hive_errors Db::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int
 	}
 }
 
-Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::find_key(int64_t uParent, int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
 {
 	// Lock must be held first...
 
@@ -295,7 +295,7 @@ Db::hive_errors Db::Hive::find_key(Omega::int64_t uParent, Omega::int64_t& uKey,
 	}
 }
 
-Db::hive_errors Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, access_rights_t access_mask)
+Db::hive_errors Db::Hive::insert_key(const int64_t& uParent, int64_t& uKey, const OOBase::LocalString& strSubKey, access_rights_t access_mask)
 {
 	// Lock must be held first...
 
@@ -328,7 +328,7 @@ Db::hive_errors Db::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKey, OOBase::LocalString& strSubKey, Omega::uint16_t flags, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::create_key(int64_t uParent, int64_t& uKey, OOBase::LocalString& strSubKey, uint16_t flags, uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -420,7 +420,7 @@ Db::hive_errors Db::Hive::create_key(Omega::int64_t uParent, Omega::int64_t& uKe
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::delete_subkeys(const int64_t& uKey, uint32_t channel_id, OOBase::LocalString& strFullKeyName)
 {
 	// This one is recursive, within a transaction and a lock...
 
@@ -442,7 +442,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	}
 
 	// Get the set of subkeys
-	OOBase::Vector<Omega::int64_t,OOBase::AllocatorInstance> ids(strFullKeyName.get_allocator());
+	OOBase::Vector<int64_t,OOBase::AllocatorInstance> ids(strFullKeyName.get_allocator());
 	{
 		Resetter resetter(m_EnumKeyIds_Stmt);
 		
@@ -469,7 +469,7 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	OOBase::LocalString strSubKey(strFullKeyName.get_allocator());
 	if (!ids.empty())
 	{
-		for (Omega::int64_t id;ids.pop_back(&id);)
+		for (int64_t id;ids.pop_back(&id);)
 		{
 			err = delete_subkeys(id,channel_id,strSubKey);
 			if (err)
@@ -505,12 +505,12 @@ Db::hive_errors Db::Hive::delete_subkeys(const Omega::int64_t& uKey, Omega::uint
 	}
 }
 
-Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::LocalString& strSubKey, Omega::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
+Db::hive_errors Db::Hive::delete_key(const int64_t& uParent, OOBase::LocalString& strSubKey, uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	// Get the start key
-	Omega::int64_t uKey;
+	int64_t uKey;
 	access_rights_t access_mask;
 	hive_errors err = find_key(uParent,uKey,strSubKey,access_mask,channel_id,strLink,strFullKeyName);
 	if (err)
@@ -572,7 +572,7 @@ Db::hive_errors Db::Hive::delete_key(const Omega::int64_t& uParent, OOBase::Loca
 	return HIVE_OK;
 }
 
-Db::hive_errors Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setSubKeys)
+Db::hive_errors Db::Hive::enum_subkeys(const int64_t& uKey, uint32_t channel_id, registry_set_t& setSubKeys)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -650,7 +650,7 @@ Db::hive_errors Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32
 	}
 }
 
-void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Db::Hive::enum_subkeys(const int64_t& uKey, uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -681,7 +681,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 	}
 
 	// Write out success first
-	if (!response.write(Omega::uint16_t(HIVE_OK)))
+	if (!response.write(uint16_t(HIVE_OK)))
 	{
 		LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 		return;
@@ -692,7 +692,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 	if (m_EnumKeys_Stmt.bind_int64(1,uKey) != SQLITE_OK)
 	{
 		response.reset();
-		response.write(Omega::uint16_t(HIVE_ERRORED));
+		response.write(uint16_t(HIVE_ERRORED));
 		return;
 	}
 
@@ -725,7 +725,7 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 					{
 						LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 						response.reset();
-						response.write(Omega::uint16_t(HIVE_ERRORED));
+						response.write(uint16_t(HIVE_ERRORED));
 						return;
 					}
 				}
@@ -738,19 +738,19 @@ void Db::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_
 			{
 				LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 				response.reset();
-				response.write(Omega::uint16_t(HIVE_ERRORED));
+				response.write(uint16_t(HIVE_ERRORED));
 			}
 			return;
 
 		default:
 			response.reset();
-			response.write(Omega::uint16_t(HIVE_ERRORED));
+			response.write(uint16_t(HIVE_ERRORED));
 			return;
 		}
 	}
 }
 
-Db::hive_errors Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, registry_set_t& setValues)
+Db::hive_errors Db::Hive::enum_values(const int64_t& uKey, uint32_t channel_id, registry_set_t& setValues)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -804,7 +804,7 @@ Db::hive_errors Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_
 	}
 }
 
-void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Db::Hive::enum_values(const int64_t& uKey, uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -830,7 +830,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 	}
 
 	// Write out success first
-	if (!response.write(Omega::uint16_t(HIVE_OK)))
+	if (!response.write(uint16_t(HIVE_OK)))
 	{
 		LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 		return;
@@ -841,7 +841,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 	if (m_EnumValues_Stmt.bind_int64(1,uKey) != SQLITE_OK)
 	{
 		response.reset();
-		response.write(Omega::uint16_t(HIVE_ERRORED));
+		response.write(uint16_t(HIVE_ERRORED));
 		return;
 	}
 
@@ -856,7 +856,7 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 				{
 					LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 					response.reset();
-					response.write(Omega::uint16_t(HIVE_ERRORED));
+					response.write(uint16_t(HIVE_ERRORED));
 					return;
 				}
 			}
@@ -868,19 +868,19 @@ void Db::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_i
 			{
 				LOG_ERROR(("Failed to write to response: %s",OOBase::system_error_text(response.last_error())));
 				response.reset();
-				response.write(Omega::uint16_t(HIVE_ERRORED));
+				response.write(uint16_t(HIVE_ERRORED));
 			}
 			return;
 
 		default:
 			response.reset();
-			response.write(Omega::uint16_t(HIVE_ERRORED));
+			response.write(uint16_t(HIVE_ERRORED));
 			return;
 		}
 	}
 }
 
-Db::hive_errors Db::Hive::delete_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::delete_value(const int64_t& uKey, const char* pszName, uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -916,7 +916,7 @@ Db::hive_errors Db::Hive::delete_value(const Omega::int64_t& uKey, const char* p
 	}
 }
 
-Db::hive_errors Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char* pszValue)
+Db::hive_errors Db::Hive::value_exists_i(const int64_t& uKey, const char* pszValue)
 {
 	// Lock must be held first...
 
@@ -942,7 +942,7 @@ Db::hive_errors Db::Hive::value_exists_i(const Omega::int64_t& uKey, const char*
 	}
 }
 
-Db::hive_errors Db::Hive::value_exists(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id)
+Db::hive_errors Db::Hive::value_exists(const int64_t& uKey, const char* pszValue, uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -960,7 +960,7 @@ Db::hive_errors Db::Hive::value_exists(const Omega::int64_t& uKey, const char* p
 	return value_exists_i(uKey,pszValue);
 }
 
-Db::hive_errors Db::Hive::get_value_i(const Omega::int64_t& uKey, const char* pszValue, OOBase::LocalString& val)
+Db::hive_errors Db::Hive::get_value_i(const int64_t& uKey, const char* pszValue, OOBase::LocalString& val)
 {
 	// Lock must be held first...
 
@@ -995,7 +995,7 @@ Db::hive_errors Db::Hive::get_value_i(const Omega::int64_t& uKey, const char* ps
 	}
 }
 
-Db::hive_errors Db::Hive::get_value(const Omega::int64_t& uKey, const char* pszValue, Omega::uint32_t channel_id, OOBase::LocalString& val)
+Db::hive_errors Db::Hive::get_value(const int64_t& uKey, const char* pszValue, uint32_t channel_id, OOBase::LocalString& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -1012,7 +1012,7 @@ Db::hive_errors Db::Hive::get_value(const Omega::int64_t& uKey, const char* pszV
 	return get_value_i(uKey,pszValue,val);
 }
 
-Db::hive_errors Db::Hive::set_value_i(const Omega::int64_t& uKey, const char* pszName, const char* pszValue)
+Db::hive_errors Db::Hive::set_value_i(const int64_t& uKey, const char* pszName, const char* pszValue)
 {
 	// Lock must be held first...
 
@@ -1048,7 +1048,7 @@ Db::hive_errors Db::Hive::set_value_i(const Omega::int64_t& uKey, const char* ps
 	}
 }
 
-Db::hive_errors Db::Hive::set_value(const Omega::int64_t& uKey, const char* pszName, Omega::uint32_t channel_id, const char* pszValue)
+Db::hive_errors Db::Hive::set_value(const int64_t& uKey, const char* pszName, uint32_t channel_id, const char* pszValue)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 

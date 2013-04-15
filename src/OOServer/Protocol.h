@@ -28,13 +28,13 @@ namespace OOServer
 	{
 		Root2Reg_NewConnection = 1
 	};
-	typedef Omega::uint16_t Root2Reg_OpCode_t;
+	typedef uint16_t Root2Reg_OpCode_t;
 
 	enum Root2User_OpCode
 	{
 		Root2User_NewConnection = 1
 	};
-	typedef Omega::uint16_t Root2User_OpCode_t;
+	typedef uint16_t Root2User_OpCode_t;
 
 	enum RootOpCode
 	{
@@ -59,7 +59,7 @@ namespace OOServer
 		Registry_EnumValues,
 		Registry_DeleteValue
 	};
-	typedef Omega::uint16_t RootOpCode_t;
+	typedef uint16_t RootOpCode_t;
 
 	enum RootErrCode
 	{
@@ -75,7 +75,7 @@ namespace OOServer
 		BadName,
 		Linked
 	};
-	typedef Omega::uint16_t RootErrCode_t;
+	typedef uint16_t RootErrCode_t;
 }
 
 #endif // OOSERVER_PROTOCOL_H_INCLUDED_

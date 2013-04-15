@@ -24,69 +24,11 @@
 
 #if defined(_MSC_VER)
 	#include "../oocore-msvc.h"
-#else
+#elif defined(HAVE_CONFIG_H)
 	// Autoconf
 	#include <oocore-autoconf.h>
-#endif
-
-////////////////////////////////////////
-// Try to work out what's going on with MS Windows
-#if defined(HAVE_WINDOWS_H)
-	#if !defined(_WIN32)
-	#error No _WIN32 ?!?
-	#endif
-
-	// Prevent inclusion of old winsock
-	#define _WINSOCKAPI_
-
-	// Reduce the amount of windows we include
-	#define WIN32_LEAN_AND_MEAN
-	#define STRICT
-
-	// We support Vista API's
-	#if !defined(_WIN32_WINNT)
-	#define _WIN32_WINNT 0x0500
-	#elif _WIN32_WINNT < 0x0500
-	#error OOBase requires _WIN32_WINNT >= 0x0500!
-	#endif
-
-	// We require IE 5 or later
-	#if !defined(_WIN32_IE)
-	#define _WIN32_IE 0x0500
-	#elif _WIN32_IE < 0x0500
-	#error OOBase requires _WIN32_IE >= 0x0500!
-	#endif
-
-	#if !defined(WINVER)
-	#define WINVER _WIN32_WINNT
-	#endif
-
-	#include <windows.h>
-
-	// Check for obsolete windows versions
-	#if defined(_WIN32_WINDOWS)
-	#error You cannot build Omega Online for Windows 95/98/Me!
-	#endif
-
-#endif // HAVE_WINDOWS_H
-
-#if defined(_WIN32)
-	// Remove the unistd include - we are windows
-	#if defined(HAVE_UNISTD_H)
-	#undef HAVE_UNISTD_H
-	#endif
-#endif
-
-////////////////////////////////////////
-// Bring in POSIX if possible
-#if defined(HAVE_UNISTD_H)
-	#include <unistd.h>
-
-	// check for POSIX.1 IEEE 1003.1
-	#if !defined(_POSIX_VERSION)
-	#error <unistd.h> is not POSIX compliant?
-	#endif
-
+#else
+#error Need some kind of configure scipt!
 #endif
 
 #endif // OOCORE_CONFIG_H_INCLUDED_

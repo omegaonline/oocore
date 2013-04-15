@@ -155,7 +155,7 @@ bool Root::ClientConnection::start()
 {
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync<Omega::uint16_t>(128,m_socket,this,&ClientConnection::on_message_win32);
+	int err = OOBase::CDRIO::recv_with_header_sync<uint16_t>(128,m_socket,this,&ClientConnection::on_message_win32);
 	if (err)
 	{
 		release();
@@ -217,11 +217,11 @@ bool Root::ClientConnection::send_response(const OOBase::String& strUser, pid_t 
 {
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 	stream.write(pid);
 	stream.write_string(strUser);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -257,7 +257,7 @@ bool Root::ClientConnection::start()
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_msg_with_header_sync<Omega::uint16_t>(128,m_socket,this,&ClientConnection::on_message_posix,ctl_buffer);
+	int err = OOBase::CDRIO::recv_msg_with_header_sync<uint16_t>(128,m_socket,this,&ClientConnection::on_message_posix,ctl_buffer);
 	if (err)
 	{
 		release();
@@ -361,10 +361,10 @@ bool Root::ClientConnection::send_response(OOBase::POSIX::SmartFD& fd, pid_t pid
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 	stream.write(pid);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -450,7 +450,7 @@ void Root::ClientConnection::on_message(OOBase::CDRStream& stream, int err)
 	else
 	{
 		// Check the versions are correct
-		Omega::uint32_t version = 0;
+		uint32_t version = 0;
 		if (!stream.read(version) || version < ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
 			LOG_WARNING(("Unsupported version received: %u",version));
 		else

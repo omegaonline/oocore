@@ -38,7 +38,6 @@
 
 #include "libdb/RegistryHive.h"
 
-#include "MessageConnection.h"
 #include "RootProcess.h"
 #include "RootClientConn.h"
 #include "RootRegistryConn.h"
@@ -112,26 +111,26 @@ namespace Root
 		// Service handling
 		bool start_services();
 		bool stop_services();
-		void start_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void service_is_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& response);
+		void start_service(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void stop_service(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void service_is_running(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void service_list_running(uint32_t channel_id, OOBase::CDRStream& response);
 
 		// Registry members
 		OOBase::SmartPtr<Db::Hive> m_registry;
 
-		Db::hive_errors registry_open_key(Omega::int64_t& uKey, const OOBase::LocalString& strSubKey, Omega::uint32_t channel_id);
-		bool registry_access_check(const char* pszDb, Omega::uint32_t channel_id, Db::access_rights_t access_mask, int& err);
-		OOServer::RootErrCode_t registry_open_hive(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
-		OOServer::RootErrCode_t registry_open_link(Omega::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
-		void registry_open_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_value_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_get_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_set_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		Db::hive_errors registry_open_key(int64_t& uKey, const OOBase::LocalString& strSubKey, uint32_t channel_id);
+		bool registry_access_check(const char* pszDb, uint32_t channel_id, Db::access_rights_t access_mask, int& err);
+		OOServer::RootErrCode_t registry_open_hive(uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, int64_t& uKey, uint8_t& nType);
+		OOServer::RootErrCode_t registry_open_link(uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
+		void registry_open_key(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_delete_key(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_enum_subkeys(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_value_exists(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_enum_values(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_delete_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 	};
 }
 

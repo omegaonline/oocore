@@ -79,17 +79,17 @@ void Root::UserConnection::on_response(OOBase::Buffer* buffer, int err)
 		err = -1;
 	}
 
-	while (!err && buffer->length() >= sizeof(Omega::uint16_t))
+	while (!err && buffer->length() >= sizeof(uint16_t))
 	{
 		OOBase::CDRStream response(buffer);
 
-		Omega::uint16_t len = 0;
+		uint16_t len = 0;
 		if (!response.read(len))
 		{
 			err = response.last_error();
 			LOG_ERROR(("Failed to receive from user process: %s",OOBase::system_error_text(err)));
 		}
-		else if (buffer->length() < len - sizeof(Omega::uint16_t))
+		else if (buffer->length() < len - sizeof(uint16_t))
 		{
 			// Read the rest of the message
 			err = m_ptrSocket->recv(this,&UserConnection::on_response,buffer,len);
@@ -145,7 +145,7 @@ bool Root::UserConnection::start(pid_t client_id, const OOBase::String& fd_user,
 	params.strUserFd = fd_user;
 	params.strRootFd = fd_root;
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_start,params,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
@@ -161,7 +161,7 @@ bool Root::UserConnection::on_start(OOBase::CDRStream& response, const user_para
 	if (!m_pManager->get_user_process(params.user_id,ptrUser))
 		return true;
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -171,7 +171,7 @@ bool Root::UserConnection::on_start(OOBase::CDRStream& response, const user_para
 	if (!response.read_string(strSboxFd))
 		LOG_ERROR_RETURN(("Failed to read start client response: %s",OOBase::system_error_text(response.last_error())),true);
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,params.client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
@@ -191,9 +191,9 @@ bool Root::UserConnection::do_start(pid_t client_id, const OOBase::String& fd_us
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
@@ -210,7 +210,7 @@ bool Root::UserConnection::do_start(pid_t client_id, const OOBase::String& fd_us
 
 	// Other stuff here!
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -230,7 +230,7 @@ bool Root::UserConnection::do_start(pid_t client_id, const OOBase::String& fd_us
 
 bool Root::UserConnection::add_client(pid_t client_id)
 {
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_add_client,client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
@@ -246,7 +246,7 @@ bool Root::UserConnection::on_add_client(OOBase::CDRStream& response, pid_t clie
 
 	ClientConnection::AutoDrop drop(m_pManager,client_id);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read add client response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -263,7 +263,7 @@ bool Root::UserConnection::on_add_client(OOBase::CDRStream& response, pid_t clie
 	return true;
 }
 
-bool Root::UserConnection::new_connection(pid_t client_id, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+bool Root::UserConnection::new_connection(pid_t client_id, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id)
 {
 	OOBase::RefPtr<ClientConnection> ptrClient;
 	if (!m_pManager->get_client(client_id,ptrClient))
@@ -282,14 +282,14 @@ bool Root::UserConnection::new_connection(pid_t client_id, OOBase::AsyncResponse
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
 	stream.write(static_cast<OOServer::Root2User_OpCode_t>(OOServer::Root2User_NewConnection));
 	response_id.write(stream);
 	stream.write(client_id);
 	stream.write_string(strSID);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -336,7 +336,7 @@ bool Root::UserConnection::start(pid_t client_id, OOBase::POSIX::SmartFD& fd_use
 	params.root_fd = static_cast<int>(fd_root);
 	params.sbox_fd = static_cast<int>(fds[0]);
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	err = ptrSbox->m_async_dispatcher.add_response(this,&UserConnection::on_start,params,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
@@ -363,13 +363,13 @@ bool Root::UserConnection::on_start(OOBase::CDRStream& response, const user_para
 	if (!m_pManager->get_user_process(params.user_id,ptrUser))
 		return true;
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
 		LOG_WARNING_RETURN(("User refused client connection: %s",OOBase::system_error_text(ret_err)),true);
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,params.client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
@@ -423,9 +423,9 @@ bool Root::UserConnection::do_start(pid_t client_id, OOBase::POSIX::SmartFD& fd_
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&UserConnection::on_started,client_id,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
@@ -439,7 +439,7 @@ bool Root::UserConnection::do_start(pid_t client_id, OOBase::POSIX::SmartFD& fd_
 
 	// Other stuff here!
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -469,7 +469,7 @@ bool Root::UserConnection::add_client(pid_t client_id)
 	if (err)
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	err = m_async_dispatcher.add_response(this,&UserConnection::on_add_client,client_id,static_cast<int>(fds[0]),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
@@ -481,7 +481,7 @@ bool Root::UserConnection::add_client(pid_t client_id)
 	return true;
 }
 
-bool Root::UserConnection::new_connection(pid_t client_id, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+bool Root::UserConnection::new_connection(pid_t client_id, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id)
 {
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -500,13 +500,13 @@ bool Root::UserConnection::new_connection(pid_t client_id, OOBase::POSIX::SmartF
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
 	stream.write(static_cast<OOServer::Root2User_OpCode_t>(OOServer::Root2User_NewConnection));
 	response_id.write(stream);
 	stream.write(client_id);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -538,7 +538,7 @@ bool Root::UserConnection::on_add_client(OOBase::CDRStream& response, pid_t clie
 
 	ClientConnection::AutoDrop drop(m_pManager,client_id);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read add client response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -581,7 +581,7 @@ bool Root::UserConnection::on_started(OOBase::CDRStream& stream, pid_t client_id
 
 	ClientConnection::AutoDrop drop(m_pManager,client_id);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!stream.read(ret_err))
 		LOG_ERROR(("Failed to read start response from user process: %s",OOBase::system_error_text(stream.last_error())));
 	else if (ret_err)
@@ -612,8 +612,8 @@ void Root::UserConnection::on_sent(OOBase::Buffer* buffer, int err)
 
 		OOBase::CDRStream stream(buffer);
 
-		Omega::uint16_t len = 0;
-		Omega::uint16_t trans_id = 0;
+		uint16_t len = 0;
+		uint16_t trans_id = 0;
 		if (stream.read(len) && stream.read(trans_id) && trans_id)
 			m_async_dispatcher.drop_response(trans_id);
 

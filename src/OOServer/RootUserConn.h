@@ -80,15 +80,15 @@ namespace Root
 		OOBase::SmartPtr<Process>           m_ptrProcess;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 
-		OOBase::AsyncResponseDispatcher<Omega::uint16_t> m_async_dispatcher;
+		OOBase::AsyncResponseDispatcher<uint16_t> m_async_dispatcher;
 
 		bool start();
 		bool on_started(OOBase::CDRStream& stream, pid_t client_id);
 
 #if defined(_WIN32)
-		bool new_connection(pid_t client_id, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
+		bool new_connection(pid_t client_id, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id);
 #elif defined(HAVE_UNISTD_H)
-		bool new_connection(pid_t client_id, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id);
+		bool new_connection(pid_t client_id, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id);
 		void on_sent_msg(OOBase::Buffer* data, OOBase::Buffer* ctl, int err);
 #endif
 		void on_sent(OOBase::Buffer* buffer, int err);

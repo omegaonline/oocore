@@ -26,9 +26,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(_MSC_VER)
-#include <oocore-autoconf.h>
-#endif
+#include "../../oocore-config.h"
 
 #ifdef HAVE_SQLITE3_AMALGAMATION
 

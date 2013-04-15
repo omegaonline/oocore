@@ -50,14 +50,14 @@
 
 namespace
 {
-	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const Omega::int64_t key, const OOBase::LocalString& strName, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
+	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const int64_t key, const OOBase::LocalString& strName, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
 		OOBase::LocalString strSubKey(queueNames.get_allocator()),strLink(queueNames.get_allocator()),strFullKeyName(queueNames.get_allocator());
 		int err2 = strSubKey.assign(strName.c_str(),strName.length());
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
 
-		Omega::int64_t subkey = key;
+		int64_t subkey = key;
 		Db::hive_errors err = ptrRegistry->create_key(key,subkey,strSubKey,0,0,strLink,strFullKeyName);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to open the '/System/Services/%s' key in the registry",strName.c_str()),false);
@@ -75,7 +75,7 @@ namespace
 		if (err2)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err2)),false);
 
-		Omega::int64_t depskey = subkey;
+		int64_t depskey = subkey;
 		err = ptrRegistry->create_key(subkey,depskey,strSubKey,0,0,strLink,strFullKeyName);
 		if (err && err != Db::HIVE_NOTFOUND)
 			LOG_ERROR_RETURN(("Failed to open the '/System/Services/%s/Dependencies' key in the registry",strName.c_str()),false);
@@ -96,9 +96,9 @@ namespace
 		return true;
 	}
 
-	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance>& queueKeys)
+	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
-		Omega::int64_t key = 0;
+		int64_t key = 0;
 		OOBase::LocalString strSubKey(queueNames.get_allocator()),strLink(queueNames.get_allocator()),strFullKeyName(queueNames.get_allocator());
 		int err2 = strSubKey.assign("/System/Services");
 		if (err2)
@@ -128,7 +128,7 @@ namespace
 		return true;
 	}
 
-	OOServer::RootErrCode find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, Omega::int64_t& key)
+	OOServer::RootErrCode find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, int64_t& key)
 	{
 		OOBase::LocalString strSubKey(strName.get_allocator()),strLink(strName.get_allocator()),strFullKeyName(strName.get_allocator());
 		int err2 = strSubKey.printf("/System/Services/%s",strName.c_str());
@@ -356,9 +356,9 @@ namespace
 		}
 
 		// Send to service
-		err = ptrSocket->send(Omega::uint32_t(strSocketName.length()));
+		err = ptrSocket->send(uint32_t(strSocketName.length()));
 		if (!err)
-			ptrSocket->send(strSocketName.c_str(),Omega::uint32_t(strSocketName.length()),err);
+			ptrSocket->send(strSocketName.c_str(),uint32_t(strSocketName.length()),err);
 		if (!err)
 #if defined(_WIN32)
 			//err = ptrSocket->send_socket(new_sock,pid);
@@ -373,7 +373,7 @@ namespace
 		return true;
 	}
 
-	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const Omega::int64_t& key)
+	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const int64_t& key)
 	{
 #if defined(_WIN32)
 		DWORD pid = 0;
@@ -385,7 +385,7 @@ namespace
 		}
 #endif
 
-		Omega::int64_t sub_key = 0;
+		int64_t sub_key = 0;
 		OOBase::LocalString strSubKey(strName.get_allocator()),strLink(strName.get_allocator()),strFullKeyName(strName.get_allocator());
 		int err2 = strSubKey.assign("Connections");
 		if (err2)
@@ -435,7 +435,7 @@ namespace
 		}
 
 		// Write terminating NULL
-		ptrSocket->send(Omega::uint32_t(0));
+		ptrSocket->send(uint32_t(0));
 		if (err2)
 			LOG_ERROR(("Failed to send connection data to service: %s",OOBase::system_error_text(err2)));
 	}
@@ -455,12 +455,12 @@ bool Root::Manager::start_services()
 	// Get the list of services, ordered by dependency
 	OOBase::StackAllocator<512> allocator;
 	OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance> queueNames(allocator);
-	OOBase::Queue<Omega::int64_t,OOBase::AllocatorInstance> queueKeys(allocator);
+	OOBase::Queue<int64_t,OOBase::AllocatorInstance> queueKeys(allocator);
 	if (!enum_services(m_registry,queueNames,queueKeys))
 		return false;
 
 	OOBase::LocalString strName(allocator);
-	Omega::int64_t key;
+	int64_t key;
 	while (queueNames.pop(&strName) && queueKeys.pop(&key))
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Starting service: %s",strName.c_str());
@@ -508,7 +508,7 @@ bool Root::Manager::stop_services()
 	return true;
 }
 
-void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::start_service(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
@@ -542,7 +542,7 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 
 			if (!err)
 			{
-				Omega::int64_t key = 0;
+				int64_t key = 0;
 				err = static_cast<OOServer::RootErrCode_t>(find_service(m_registry,strName,key));
 				if (!err)
 				{
@@ -574,7 +574,7 @@ void Root::Manager::start_service(Omega::uint32_t channel_id, OOBase::CDRStream&
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::stop_service(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
@@ -624,7 +624,7 @@ void Root::Manager::stop_service(Omega::uint32_t channel_id, OOBase::CDRStream& 
 	}
 }
 
-void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::service_is_running(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;
@@ -671,7 +671,7 @@ void Root::Manager::service_is_running(Omega::uint32_t channel_id, OOBase::CDRSt
 	}
 }
 
-void Root::Manager::service_list_running(Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Root::Manager::service_list_running(uint32_t channel_id, OOBase::CDRStream& response)
 {
 	// Check for permissions
 	OOServer::RootErrCode_t err;

@@ -15,22 +15,9 @@
  * will fill a supplied 16-byte array with the digest.
  */
 
-#if defined(HAVE_CONFIG_H)
-#include <oocore-autoconf.h>
-#elif defined(_MSC_VER)
-#include "../oocore-msvc.h"
-#endif
+#include <OOBase/Base.h>
 
 #include <string.h>
-
-#if defined(HAVE_STDINT_H)
-#include <stdint.h>
-#elif defined(_MSC_VER)
-// MS Visual Studio
-typedef unsigned __int32 uint32_t;
-#else
-#error Failed to guess your compiler.  Please contact the omegaonline developers.
-#endif
 
 struct Context {
   uint32_t buf[4];

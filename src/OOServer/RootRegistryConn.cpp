@@ -63,17 +63,17 @@ void Root::RegistryConnection::on_response(OOBase::Buffer* buffer, int err)
 		err = -1;
 	}
 
-	while (!err && buffer->length() >= sizeof(Omega::uint16_t))
+	while (!err && buffer->length() >= sizeof(uint16_t))
 	{
 		OOBase::CDRStream response(buffer);
 
-		Omega::uint16_t len = 0;
+		uint16_t len = 0;
 		if (!response.read(len))
 		{
 			err = response.last_error();
 			LOG_ERROR(("Failed to receive from user registry: %s",OOBase::system_error_text(err)));
 		}
-		else if (buffer->length() < len - sizeof(Omega::uint16_t))
+		else if (buffer->length() < len - sizeof(uint16_t))
 		{
 			// Read the rest of the message
 			err = m_ptrSocket->recv(this,&RegistryConnection::on_response,buffer,len);
@@ -119,8 +119,8 @@ void Root::RegistryConnection::on_sent(OOBase::Buffer* buffer, int err)
 
 		OOBase::CDRStream stream(buffer);
 
-		Omega::uint16_t len = 0;
-		Omega::uint16_t trans_id = 0;
+		uint16_t len = 0;
+		uint16_t trans_id = 0;
 		if (stream.read(len) && stream.read(trans_id) && trans_id)
 			m_async_dispatcher.drop_response(trans_id);
 
@@ -135,7 +135,7 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 	if (!start(id))
 		return false;
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_started,ptrClient->get_pid(),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to add async response: %s",OOBase::system_error_text(err)),false);
@@ -143,20 +143,20 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 	// Write initial message
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 	response_id.write(stream);
 	stream.write_string(strRegPath);
 
 	OOBase::LocalString strThreads(strRegPath.get_allocator());
 	m_pManager->get_config_arg("registry_concurrency",strThreads);
-	Omega::byte_t threads = static_cast<Omega::byte_t>(strtoul(strThreads.c_str(),NULL,10));
+	uint8_t threads = static_cast<uint8_t>(strtoul(strThreads.c_str(),NULL,10));
 	if (threads < 1 || threads > 8)
 		threads = 2;
 
 	stream.write(threads);
 	stream.write("");
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -181,7 +181,7 @@ bool Root::RegistryConnection::on_started(OOBase::CDRStream& stream, pid_t clien
 
 	ClientConnection::AutoDrop drop(m_pManager,client_id);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!stream.read(ret_err))
 		LOG_ERROR(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())));
 	else if (ret_err)
@@ -225,7 +225,7 @@ bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrC
 	if (ptrClient)
 		client_id = ptrClient->get_pid();
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user,client_id,ptrUser->get_pid(),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
@@ -243,7 +243,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 
 	UserConnection::AutoDrop drop2(m_pManager,user_id);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -281,7 +281,7 @@ bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<U
 	params.user_id = ptrUser->get_pid();
 	params.strUserFd = strUserFd;
 	
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	int err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,params,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),true);
@@ -298,7 +298,7 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 	if (!m_pManager->get_user_process(params.user_id,ptrUser))
 		return true;
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -317,7 +317,7 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 	return true;
 }
 
-bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id)
 {
 	OOBase::StackAllocator<256> allocator;
 	OOBase::TempPtr<void> ptrSIDLogon(allocator);
@@ -332,14 +332,14 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
 	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
 	response_id.write(stream);
 	stream.write(ptrUser->get_pid());
 	stream.write_string(strSID);
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -374,7 +374,7 @@ bool Root::RegistryConnection::start_user(OOBase::RefPtr<ClientConnection>& ptrC
 	if (ptrClient)
 		client_id = ptrClient->get_pid();
 
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user,client_id,ptrUser->get_pid(),static_cast<int>(fds[0]),response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),false);
@@ -398,7 +398,7 @@ bool Root::RegistryConnection::on_start_user(OOBase::CDRStream& response, pid_t 
 
 	UserConnection::AutoDrop drop2(m_pManager,user_id);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -438,7 +438,7 @@ bool Root::RegistryConnection::new_connection2(pid_t client_id, OOBase::RefPtr<U
 	params.user_fd = static_cast<int>(ptrUserFd);
 	params.root_fd = static_cast<int>(fds[0]);
 	
-	OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop response_id(m_async_dispatcher);
+	OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop response_id(m_async_dispatcher);
 	err = m_async_dispatcher.add_response(this,&RegistryConnection::on_start_user2,params,response_id);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to enqueue response: %s",OOBase::system_error_text(err)),true);
@@ -465,7 +465,7 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 	if (!m_pManager->get_user_process(params.user_id,ptrUser))
 		return true;
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!response.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start user response: %s",OOBase::system_error_text(response.last_error())),true);
 	if (ret_err)
@@ -480,7 +480,7 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 	return true;
 }
 
-bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<Omega::uint16_t>::AutoDrop& response_id)
+bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::POSIX::SmartFD& fd, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id)
 {
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -499,13 +499,13 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
 	stream.write(static_cast<OOServer::Root2Reg_OpCode_t>(OOServer::Root2Reg_NewConnection));
 	response_id.write(stream);
 	stream.write(ptrUser->get_uid());
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -558,9 +558,9 @@ bool Root::RegistryConnection::get_environment(const char* key, OOBase::Environm
 	// Get user environment from user registry
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -568,7 +568,7 @@ bool Root::RegistryConnection::get_environment(const char* key, OOBase::Environm
 	/*if (err)
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 
-	Omega::int32_t ret_err = 0;
+	int32_t ret_err = 0;
 	if (!stream.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read registry response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
 	if (ret_err)
@@ -622,13 +622,13 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 	// Write initial message
 	OOBase::CDRStream stream;
 	size_t mark = stream.buffer()->mark_wr_ptr();
-	stream.write(Omega::uint16_t(0));
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
+	stream.write(uint16_t(0));
 	stream.write_string(strRegPath);
 
 	OOBase::LocalString strThreads(allocator);
 	get_config_arg("registry_concurrency",strThreads);
-	Omega::byte_t threads = static_cast<Omega::byte_t>(strtoul(strThreads.c_str(),NULL,10));
+	uint8_t threads = static_cast<uint8_t>(strtoul(strThreads.c_str(),NULL,10));
 	if (threads < 1 || threads > 8)
 		threads = 2;
 	stream.write(threads);
@@ -640,7 +640,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 	}
 	stream.write("");
 
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -662,12 +662,12 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to create new registry connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
 	// Send the start data - blocking is OK as we have background proactor threads waiting
-	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(stream,ptrSocket);
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<uint16_t>(stream,ptrSocket);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to send registry start data: %s",OOBase::system_error_text(err)),false);
 
-	Omega::uint16_t trans_id = 0;
-	Omega::int32_t ret_err = 0;
+	uint16_t trans_id = 0;
+	int32_t ret_err = 0;
 	if (!stream.read(trans_id) || !stream.read(ret_err))
 		LOG_ERROR_RETURN(("Failed to read start response from registry: %s",OOBase::system_error_text(stream.last_error())),false);
 	if (ret_err)

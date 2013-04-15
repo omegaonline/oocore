@@ -19,9 +19,6 @@
 /* Define to 1 if the system has the type `struct sockcred'. */
 #undef HAVE_STRUCT_SOCKCRED
 
-/* Define to 1 if you have the <stdint.h> header file. */
-#undef HAVE_STDINT_H
-
 /* Define to 1 if you have the `strtoll' function. */
 #undef HAVE_STRTOLL
 
@@ -33,9 +30,6 @@
 
 /* Define to 1 if you have the `_strtoui64' function. */
 #undef HAVE__STRTOUI64
-
-/* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
 
 /* Define to 1 if you have the <uuid/uuid.h> header file. */
 #undef HAVE_UUID_UUID_H

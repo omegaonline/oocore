@@ -21,7 +21,6 @@
 
 #include "OOServer_User.h"
 #include "UserManager.h"
-#include "MessageConnection.h"
 
 using namespace Omega;
 using namespace OTL;

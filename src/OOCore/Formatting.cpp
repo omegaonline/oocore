@@ -248,7 +248,7 @@ namespace
 
 		OOBase::TempPtr<wchar_t> wval(val.get_allocator());
 		if (!wval.reallocate(len))
-			OMEGA_THROW(ERROR_OUTOFMEMORY);
+			ISystemException::ThrowOutOfMemory();
 
 		len = GetLocaleInfoW(Locale,LCType,wval,len);
 		if (!len)

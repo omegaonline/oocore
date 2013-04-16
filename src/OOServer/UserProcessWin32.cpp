@@ -127,7 +127,7 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 {
 	OOBase::LocalPtr<UserProcessWin32> ptrProcess(new (std::nothrow) UserProcessWin32());
 	if (!ptrProcess)
-		OMEGA_THROW(ERROR_OUTOFMEMORY);
+		ISystemException::ThrowOutOfMemory();
 
 	Omega::string_t strProcess;
 	get_root_config_arg("binary_path",strProcess);

@@ -113,7 +113,13 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__ctor,1,((in),void**
 {
 	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
 	if (!pCur)
-		*phandle = new (OOBase::critical) mod_destruct_t();
+	{
+		mod_destruct_t* m = NULL;
+		if (!OOBase::CrtAllocator::allocate_new(m))
+			OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+
+		*phandle = m;
+	}
 
 	while (pCur == (void*)1)
 	{
@@ -148,7 +154,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct__dctor,1,((in),void*
 		}
 	}
 
-	delete h;
+	OOBase::CrtAllocator::delete_free(h);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_mod_destruct_add,3,((in),void*,handle,(in),Threading::DestructorCallback,pfn_dctor,(in),void*,param))

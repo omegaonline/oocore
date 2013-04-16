@@ -88,7 +88,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 				break;
 
 			if (!ptrName.reallocate(len))
-				OMEGA_THROW(ERROR_OUTOFMEMORY);
+				ISystemException::ThrowOutOfMemory();
 
 			ptrSocket->recv(ptrName,len,true,err);
 			if (err)

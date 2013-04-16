@@ -42,7 +42,11 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder__ctor,2,((in),void**,
 	void* pCur = OOBase::Atomic<void*>::CompareAndSwap(*phandle,NULL,(void*)1);
 	if (!pCur)
 	{
-		*phandle = new (OOCore::throwing) QIRttiHolder;
+		QIRttiHolder* qi = NULL;
+		if (!OOBase::CrtAllocator::allocate_new(qi))
+			OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+
+		*phandle = qi;
 		
 		try
 		{
@@ -50,7 +54,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder__ctor,2,((in),void**,
 		}
 		catch (...)
 		{
-			delete static_cast<QIRttiHolder*>(*phandle);
+			OOBase::CrtAllocator::delete_free(static_cast<QIRttiHolder*>(*phandle));
 			*phandle = NULL;
 			throw;
 		}
@@ -65,7 +69,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder__ctor,2,((in),void**,
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder__dctor,1,((in),void*,handle))
 {
-	delete static_cast<QIRttiHolder*>(handle);
+	OOBase::CrtAllocator::delete_free(static_cast<QIRttiHolder*>(handle));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::qi_rtti*,OOCore_rtti_holder_find_qi,2,((in),void*,handle,(in),const guid_base_t*,iid))
@@ -135,12 +139,15 @@ namespace
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_holder__ctor,0,())
 {
-	return new (OOBase::critical) SafeHolder;
+	SafeHolder* s = NULL;
+	if (!OOBase::CrtAllocator::allocate_new(s))
+		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+	return s;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_holder__dctor,1,((in),void*,handle))
 {
-	delete static_cast<SafeHolder*>(handle);
+	OOBase::CrtAllocator::delete_free(static_cast<SafeHolder*>(handle));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_safe_holder_add1,3,((in),void*,handle,(in),const System::Internal::SafeShim*,shim,(in),IObject*,pObject))
@@ -228,12 +235,15 @@ namespace
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_wire_holder__ctor,0,())
 {
-	return new (OOBase::critical) WireHolder;
+	WireHolder* w = NULL;
+	if (!OOBase::CrtAllocator::allocate_new(w))
+		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+	return w;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_wire_holder__dctor,1,((in),void*,handle))
 {
-	delete static_cast<WireHolder*>(handle);
+	OOBase::CrtAllocator::delete_free(static_cast<WireHolder*>(handle));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_wire_holder_add,3,((in),void*,handle,(in),IObject*,pProxy,(in),IObject*,pObject))

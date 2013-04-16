@@ -106,6 +106,8 @@ namespace Omega
 		virtual uint32_t GetErrorCode() = 0;
 
 		static ISystemException* Create(uint32_t errno_val, IException* pCause = NULL);
+
+		static void ThrowOutOfMemory();
 	};
 
 	interface ITimeoutException : public IException

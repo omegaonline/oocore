@@ -216,6 +216,7 @@ OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 #define OMEGA_FUNCNAME "(No function information)"
 #endif
 
+// TODO: Move this out of here, along with OMEGA_FUNCNAME
 #define OMEGA_THROW(e) throw Omega::IInternalException::Create(e,__FILE__,__LINE__,OMEGA_FUNCNAME)
 
 #endif // OMEGA_BASE_H_INCLUDED_

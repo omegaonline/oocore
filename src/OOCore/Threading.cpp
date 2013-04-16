@@ -198,8 +198,8 @@ namespace
 				return (pfn_dctor == rhs.pfn_dctor && param == rhs.param);
 			}
 		};
-		OOBase::SpinLock       m_lock;
-		OOBase::Vector<Uninit> m_stackUninitCalls;
+		OOBase::SpinLock     m_lock;
+		OOBase::List<Uninit> m_stackUninitCalls;
 	};
 
 	typedef OOBase::Singleton<SingletonHolder,OOCore::DLL> SINGLETON_HOLDER;
@@ -245,7 +245,8 @@ void SingletonHolder::add_uninit_call(Threading::DestructorCallback pfn, void* p
 
 	Uninit uninit = { pfn, param };
 
-	int err = m_stackUninitCalls.push_back(uninit);
+	int err = 0;
+	m_stackUninitCalls.push_back(uninit,err);
 	if (err != 0)
 		OMEGA_THROW(err);
 }

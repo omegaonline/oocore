@@ -248,7 +248,7 @@ namespace
 
 		OOBase::TempPtr<wchar_t> wval(val.get_allocator());
 		if (!wval.reallocate(len))
-			ISystemException::ThrowOutOfMemory();
+			throw ISystemException::OutOfMemory();
 
 		len = GetLocaleInfoW(Locale,LCType,wval,len);
 		if (!len)
@@ -1694,7 +1694,11 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Omega::string_t&,format))
 {
-	OOBase::LocalPtr<format_state_t> s(new (OOCore::throwing) format_state_t());
+	format_state_t* s_p = NULL;
+	if (!OOBase::CrtAllocator::allocate_new(s_p))
+		throw ISystemException::OutOfMemory();
+
+	OOBase::LocalPtr<format_state_t> s(s_p);
 
 	// Split up the string
 	parse_format(format,s->m_strPrefix,s->m_inserts);
@@ -1708,7 +1712,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	if (!s)
 		return NULL;
 
-	OOBase::LocalPtr<format_state_t> s_new(new (OOCore::throwing) format_state_t());
+	format_state_t* s_new_p = NULL;
+	if (!OOBase::CrtAllocator::allocate_new(s_new_p))
+		throw ISystemException::OutOfMemory();
+
+	OOBase::LocalPtr<format_state_t> s_new(s_new_p);
 
 	s_new->m_strPrefix = s->m_strPrefix;
 
@@ -1734,9 +1742,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,handle))
 {
-	format_state_t* s = static_cast<format_state_t*>(handle);
-	if (s)
-		delete s;
+	OOBase::CrtAllocator::delete_free(static_cast<format_state_t*>(handle));
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t_get_arg,3,((in),const void*,handle,(out),unsigned long&,index,(out),Omega::string_t&,fmt))

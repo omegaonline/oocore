@@ -172,7 +172,7 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
 #endif
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
-		ISystemException::ThrowOutOfMemory();
+		throw ISystemException::OutOfMemory();
 
 	err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,root_socket);
 	if (err)

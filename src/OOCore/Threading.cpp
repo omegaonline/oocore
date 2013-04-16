@@ -56,12 +56,16 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
-	return new (OOCore::throwing) OOBase::Mutex();
+	OOBase::Mutex* m = NULL;
+	if (!OOBase::CrtAllocator::allocate_new(m))
+		throw ISystemException::OutOfMemory();
+
+	return m;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 {
-	delete static_cast<OOBase::Mutex*>(m1);
+	OOBase::CrtAllocator::delete_free(static_cast<OOBase::Mutex*>(m1));
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))

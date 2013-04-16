@@ -101,15 +101,15 @@ const Omega::guid_t OOCore::OID_TimeoutExceptionMarshalFactory("{8FA37F2C-8252-4
 const Omega::guid_t OOCore::OID_ChannelClosedExceptionMarshalFactory("{029B38C5-CC76-4d13-98A4-83A65D40710A}");
 const Omega::guid_t OOCore::OID_AlreadyExistsExceptionMarshalFactory("{BA90E55F-E0B6-0528-C45F-32DD9C3A414E}");
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ISystemException_ThrowNoMem,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_ThrowNoMem,0,())
 {
-	OutOfMemoryException::s_instance.Rethrow();
+	return &OutOfMemoryException::s_instance;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),IException*,pCause))
 {
 	if (e == ERROR_OUTOFMEMORY)
-		OutOfMemoryException::s_instance.Rethrow();
+		return &OutOfMemoryException::s_instance;
 
 	ObjectPtr<ObjectImpl<OOCore::SystemException> > pExcept = ObjectImpl<OOCore::SystemException>::CreateObject();
 	pExcept->m_strDesc = OOBase::system_error_text(e);

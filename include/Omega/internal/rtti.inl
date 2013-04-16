@@ -67,10 +67,10 @@ inline Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_v
 	return OOCore_ISystemException_Create_errno(errno_val,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ISystemException_ThrowNoMem,0,())
-inline void Omega::ISystemException::ThrowOutOfMemory()
+OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_ThrowNoMem,0,())
+inline Omega::ISystemException* Omega::ISystemException::OutOfMemory()
 {
-	OOCore_ISystemException_ThrowNoMem();
+	return OOCore_ISystemException_ThrowNoMem();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IInternalException*,OOCore_IInternalException_Create_errno,4,((in),Omega::int32_t,e,(in),const char*,pszFile,(in),size_t,nLine,(in),const char*,pszFunc))

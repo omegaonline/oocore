@@ -274,7 +274,7 @@ TypeInfoImpl::TypeInfoImpl() :
 TypeInfoImpl::~TypeInfoImpl()
 {
 	for (MethodInfo mi;m_methods.pop_back(&mi);)
-		delete mi.params;
+		OOBase::CrtAllocator::delete_free(mi.params);
 }
 
 void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System::Internal::typeinfo_rtti* type_info)
@@ -298,7 +298,9 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 		mi.return_type = Remoting::CreateMemoryMessage();
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
-		mi.params = new (OOCore::throwing) OOBase::Vector<ParamInfo>();
+		mi.params = NULL;
+		if (!OOBase::CrtAllocator::allocate_new(mi.params))
+			throw ISystemException::OutOfMemory();
 		
 		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)(); ppi->pszName!=0; ++ppi)
 		{
@@ -312,12 +314,18 @@ void TypeInfoImpl::init(const guid_t& iid, const string_t& strName, const System
 
 			int err = mi.params->push_back(pi);
 			if (err != 0)
+			{
+				OOBase::CrtAllocator::delete_free(mi.params);
 				OMEGA_THROW(err);
+			}
 		}
 
 		int err = m_methods.push_back(mi);
 		if (err != 0)
+		{
+			OOBase::CrtAllocator::delete_free(mi.params);
 			OMEGA_THROW(err);
+		}
 	}
 }
 

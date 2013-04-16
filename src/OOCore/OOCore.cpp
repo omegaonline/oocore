@@ -70,7 +70,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_allocate,1,((in),size_t,bytes))
 {
 	void* p = OOBase::CrtAllocator::allocate(bytes);
 	if (!p)
-		ISystemException::ThrowOutOfMemory();
+		throw ISystemException::OutOfMemory();
 
 	return p;
 }
@@ -86,7 +86,7 @@ void* operator new(size_t size, const OOCore::throwing_t&)
 {
 	void* p = ::operator new(size,std::nothrow);
 	if (!p)
-		ISystemException::ThrowOutOfMemory();
+		throw ISystemException::OutOfMemory();
 
 	return p;
 }
@@ -95,7 +95,7 @@ void* operator new[](size_t size, const OOCore::throwing_t&)
 {
 	void* p = ::operator new [] (size,std::nothrow);
 	if (!p)
-		ISystemException::ThrowOutOfMemory();
+		throw ISystemException::OutOfMemory();
 
 	return p;
 }

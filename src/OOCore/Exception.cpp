@@ -64,7 +64,7 @@ namespace
 	public:
 		void Rethrow()
 		{
-			throw static_cast<IException*>(this);
+			throw static_cast<ISystemException*>(this);
 		}
 
 		guid_t GetThrownIID()

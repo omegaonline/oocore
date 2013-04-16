@@ -24,7 +24,6 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/GlobalNew.h>
 #include <OOBase/CmdArgs.h>
 #include <OOBase/Thread.h>
 #include <OOBase/Logger.h>

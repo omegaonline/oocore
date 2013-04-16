@@ -24,7 +24,6 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/GlobalNew.h>
 #include <OOBase/CmdArgs.h>
 #include <OOBase/Singleton.h>
 #include <OOBase/SmartPtr.h>

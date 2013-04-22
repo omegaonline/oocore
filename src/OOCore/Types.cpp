@@ -43,7 +43,6 @@ namespace
 
 	struct string_vtbl
 	{
-		char* (*grow)(void* p, size_t extra, int& err);
 		const char* (*buffer)(const void* p);
 		size_t (*length)(const void* p);
 		void (*addref)(string_handle* p, int own);
@@ -56,11 +55,10 @@ namespace
 		void*              m_ptr;
 	};
 
-	class StringNode
+	class StringNode : public System::Internal::ThrowingNew
 	{
 	public:
-		StringNode() :
-			m_refcount(1), m_len(0)
+		StringNode() : m_refcount(1), m_len(0)
 		{
 			m_u.m_local_buffer[0] = '\0';
 		}
@@ -71,14 +69,14 @@ namespace
 				OOBase::CrtAllocator::free(m_u.m_alloc_buffer);
 		}
 
-		char* grow(size_t extra, int& err);
+		char* alloc_buffer(size_t len);
 
 		const char* buffer() const
 		{
-			if (m_len < sizeof(m_u.m_local_buffer))
-				return m_u.m_local_buffer;
+			if (m_len >= sizeof(m_u.m_local_buffer))
+				return m_u.m_alloc_buffer;
 
-			return m_u.m_alloc_buffer;
+			return m_u.m_local_buffer;
 		}
 
 		size_t length() const
@@ -144,7 +142,6 @@ namespace
 		return 0;
 	}
 
-	char* sn_grow(void* p, size_t extra, int& err) { return static_cast<StringNode*>(p)->grow(extra,err); }
 	const char* sn_buffer(const void* p) { return static_cast<const StringNode*>(p)->buffer(); }
 	size_t sn_length(const void* p) { return static_cast<const StringNode*>(p)->length(); }
 	void sn_addref(string_handle* h, int) { static_cast<StringNode*>(h->m_ptr)->addref(); }
@@ -152,7 +149,6 @@ namespace
 
 	const struct string_vtbl s_string_vtbl =
 	{
-		&sn_grow,
 		&sn_buffer,
 		&sn_length,
 		&sn_addref,
@@ -170,75 +166,31 @@ namespace
 
 	const struct string_vtbl s_const_string_vtbl =
 	{
-		NULL,
 		&const_buffer,
 		&const_length,
 		&const_addref,
 		NULL
 	};
-
-	char* string_grow(void* s, size_t extra, int& err)
-	{
-		err = 0;
-		string_handle* h = static_cast<string_handle*>(s);
-		if (h && h->m_ptr && h->m_vtbl && h->m_vtbl->grow)
-			return (*h->m_vtbl->grow)(h->m_ptr,extra,err);
-		return NULL;
-	}
 }
 
-char* StringNode::grow(size_t extra, int& err)
+char* StringNode::alloc_buffer(size_t len)
 {
 	char* buffer = NULL;
 
-	// This is not race-safe... don't do it
-	void* WRONG;
-
-	if (++m_refcount == 2)
+	if (len >= sizeof(m_u.m_local_buffer))
 	{
-		// We have only one reference, so we can grow
-		if (m_len < sizeof(m_u.m_local_buffer))
-		{
-			if (m_len + extra < sizeof(m_u.m_local_buffer))
-				buffer = m_u.m_local_buffer + m_len;
-			else
-			{
-				char local_buffer[sizeof(m_u.m_local_buffer)] = {0};
-				if (m_len)
-					memcpy(local_buffer,m_u.m_local_buffer,m_len);
-
-				m_u.m_alloc_buffer = static_cast<char*>(OOBase::CrtAllocator::allocate(m_len + extra + 1));
-				if (!m_u.m_alloc_buffer)
-					err = ERROR_OUTOFMEMORY;
-				else
-				{
-					if (m_len)
-						memcpy(m_u.m_alloc_buffer,local_buffer,m_len);
-
-					buffer = m_u.m_alloc_buffer + m_len;
-				}
-			}
-		}
-		else
-		{
-			// Reallocate
-			char* new_buffer = static_cast<char*>(OOBase::CrtAllocator::reallocate(m_u.m_alloc_buffer,m_len + extra + 1));
-			if (!new_buffer)
-				err = ERROR_OUTOFMEMORY;
-			else
-			{
-				m_u.m_alloc_buffer = new_buffer;
-				buffer = m_u.m_alloc_buffer + m_len;
-			}
-		}
-
-		if (buffer)
-		{
-			m_len += extra;
-			buffer[extra] = '\0';
-		}
+		m_u.m_alloc_buffer = static_cast<char*>(OOBase::CrtAllocator::allocate(len + 1));
+		if (m_u.m_alloc_buffer)
+			buffer = m_u.m_alloc_buffer;
 	}
-	--m_refcount;
+	else
+		buffer = m_u.m_local_buffer;
+
+	if (buffer)
+	{
+		m_len = len;
+		buffer[len] = '\0';
+	}
 
 	return buffer;
 }
@@ -258,13 +210,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__ctor,3,((in),void*,s,(i
 		}
 		else
 		{
-			StringNode* pNode = new (OOCore::throwing) StringNode();
-			int err = 0;
-			char* buffer = pNode->grow(len,err);
-			if (!buffer || err != 0)
+			StringNode* pNode = new StringNode();
+			char* buffer = pNode->alloc_buffer(len);
+			if (!buffer)
 			{
 				delete pNode;
-				OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
+				throw ISystemException::OutOfMemory();
 			}
 
 			memcpy(buffer,sz,len);
@@ -346,35 +297,25 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_append1,2,((in),void*,s1
 		const char* add_buffer = OOCore_string_t_cast(s2,&add_len);
 		if (add_len > 0)
 		{
-			int err = 0;
-			char* buffer = string_grow(s1,add_len,err);
-			if (err != 0)
-				OMEGA_THROW(err);
+			size_t orig_len = 0;
+			const char* orig_buffer = OOCore_string_t_cast(s1,&orig_len);
 
-			if (buffer)
-				memcpy(buffer,add_buffer,add_len);
-			else
+			StringNode* pNode = new StringNode();
+			char* buffer = pNode->alloc_buffer(orig_len + add_len);
+			if (!buffer)
 			{
-				size_t orig_len = 0;
-				const char* orig_buffer = OOCore_string_t_cast(s1,&orig_len);
-
-				StringNode* pNode = new (OOCore::throwing) StringNode();
-				buffer = pNode->grow(orig_len + add_len,err);
-				if (!buffer || err != 0)
-				{
-					delete pNode;
-					OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
-				}
-
-				memcpy(buffer,orig_buffer,orig_len);
-				memcpy(buffer+orig_len,add_buffer,add_len);
-
-				OOCore_string_t_release(s1);
-
-				string_handle* h = static_cast<string_handle*>(s1);
-				h->m_vtbl = &s_string_vtbl;
-				h->m_ptr = pNode;
+				delete pNode;
+				throw ISystemException::OutOfMemory();
 			}
+
+			memcpy(buffer,orig_buffer,orig_len);
+			memcpy(buffer+orig_len,add_buffer,add_len);
+
+			OOCore_string_t_release(s1);
+
+			string_handle* h = static_cast<string_handle*>(s1);
+			h->m_vtbl = &s_string_vtbl;
+			h->m_ptr = pNode;
 		}
 	}
 }
@@ -390,35 +331,25 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_append2,3,((in),void*,s,
 			OOCore_string_t__ctor(s,sz,len);
 		else
 		{
-			int err = 0;
-			char* buffer = string_grow(s,len,err);
-			if (err != 0)
-				OMEGA_THROW(err);
+			size_t orig_len = 0;
+			const char* orig_buffer = OOCore_string_t_cast(s,&orig_len);
 
-			if (buffer)
-				memcpy(buffer,sz,len);
-			else
+			StringNode* pNode = new StringNode();
+			char* buffer = pNode->alloc_buffer(orig_len + len);
+			if (!buffer)
 			{
-				size_t orig_len = 0;
-				const char* orig_buffer = OOCore_string_t_cast(s,&orig_len);
-
-				StringNode* pNode = new (OOCore::throwing) StringNode();
-				buffer = pNode->grow(orig_len + len,err);
-				if (!buffer || err != 0)
-				{
-					delete pNode;
-					OMEGA_THROW(err ? err : ERROR_OUTOFMEMORY);
-				}
-
-				memcpy(buffer,orig_buffer,orig_len);
-				memcpy(buffer+orig_len,sz,len);
-
-				OOCore_string_t_release(s);
-
-				string_handle* h = static_cast<string_handle*>(s);
-				h->m_vtbl = &s_string_vtbl;
-				h->m_ptr = pNode;
+				delete pNode;
+				throw ISystemException::OutOfMemory();
 			}
+
+			memcpy(buffer,orig_buffer,orig_len);
+			memcpy(buffer+orig_len,sz,len);
+
+			OOCore_string_t_release(s);
+
+			string_handle* h = static_cast<string_handle*>(s);
+			h->m_vtbl = &s_string_vtbl;
+			h->m_ptr = pNode;
 		}
 	}
 }

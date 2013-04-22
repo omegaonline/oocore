@@ -93,7 +93,7 @@ void User::InterProcessService::init(Remoting::IObjectManager* pOMSB)
 {
 	if (pOMSB)
 	{
-		void* TODO; // Get this another way!
+		void* TODO; // TODO, Get this another way!
 
 		// Create a proxy to the server interface
 		IObject* pIPS = NULL;

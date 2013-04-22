@@ -564,7 +564,7 @@ bool Root::RegistryConnection::get_environment(const char* key, OOBase::Environm
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write string: %s",OOBase::system_error_text(stream.last_error())),false);
 
-	void* TODO;
+	void* TODO; // TODO
 	/*if (err)
 		LOG_ERROR_RETURN(("Failed to send registry data: %s",OOBase::system_error_text(err)),false);
 

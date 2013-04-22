@@ -135,7 +135,7 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream)
 		OOBase::LocalString pipe(allocator);
 
 		int ret_err = 0;
-		void* TODO; // Omega_ConnectChannel(passed_fd,pid) ?!?!
+		void* TODO; // TODO, Omega_ConnectChannel(passed_fd,pid) ?!?!
 
 		stream.write(static_cast<Omega::int32_t>(ret_err));
 		if (!ret_err)
@@ -339,7 +339,7 @@ void User::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POS
 		stream.write(Omega::uint16_t(0));
 		stream.write(response_id);
 
-		void* TODO; // Omega_ConnectChannel(passed_fd,pid) ?!?!
+		void* TODO; // TODO, Omega_ConnectChannel(passed_fd,pid) ?!?!
 		int ret_err = 0;
 
 		if (ret_err)

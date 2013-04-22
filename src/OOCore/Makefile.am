@@ -26,6 +26,8 @@ common = \
 	LoopChannel.h \
 	OOCore.cpp \
 	OOCore_precomp.h \
+	Record.h \
+	Record.cpp \
 	RunningObjectTable.h \
 	RunningObjectTable.cpp \
 	Safe.cpp \

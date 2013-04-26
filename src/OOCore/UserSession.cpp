@@ -163,7 +163,7 @@ void OOCore::UserSession::start(const void* data, size_t len)
 
 
 
-	void* TODO;
+	void* TODO; // Finish this off!
 
 	// Spawn off the io worker thread
 	//m_worker_thread.run(io_worker_fn,this);

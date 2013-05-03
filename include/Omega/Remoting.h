@@ -35,6 +35,12 @@ namespace Omega
 			virtual string_t GetURI() = 0;
 		};
 
+		interface ITransportNotify : public IObject
+		{
+			virtual void OnMessage(IMessage* pMessage) = 0;
+			virtual void OnClose() = 0;
+		};
+
 		enum MarshalFlags
 		{
 			Same = 0,              ///< Objects are in the same context
@@ -125,6 +131,14 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 	OMEGA_METHOD_VOID(SendMessage,1,((in),Remoting::IMessage*,pMessage))
 	OMEGA_METHOD(string_t,GetURI,0,())
+)
+
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
+	Omega::Remoting, ITransportNotify, "{9451F968-6FB2-71A5-91D5-F91634C95029}",
+
+	OMEGA_EVENT(OnMessage,1,((in),Remoting::IMessage*,pMessage))
+	OMEGA_EVENT(OnClose,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL

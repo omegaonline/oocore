@@ -126,6 +126,22 @@ void OOCore::UserSession::init(const void* data, size_t len)
 
 void OOCore::UserSession::start(const void* data, size_t len)
 {
+	// Create the zero compartment
+	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
+	ptrZeroCompt->set_id(0);
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	int err = m_mapCompartments.force_insert(0,ptrZeroCompt);
+	if (err)
+		OMEGA_THROW(err);
+
+	// Register our local channel factory
+	m_rot_cookies.push_back(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
+
+	guard.release();
+
+	// Now connect to the root process
 	OOBase::CDRStream stream;
 	if (!data)
 		connect_root(stream);
@@ -146,20 +162,7 @@ void OOCore::UserSession::start(const void* data, size_t len)
 
 
 
-	// Create the zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
-	ptrZeroCompt->set_id(0);
 
-	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-	err = m_mapCompartments.force_insert(0,ptrZeroCompt);
-	if (err)
-		OMEGA_THROW(err);
-
-	// Register our local channel factory
-	m_rot_cookies.push_back(OTL::GetModule()->RegisterAutoObjectFactory<OOCore::ChannelMarshalFactory>());
-
-	guard.release();
 
 
 

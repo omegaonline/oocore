@@ -65,8 +65,6 @@ namespace Omega
 	typedef float float4_t;
 	typedef double float8_t;
 }
-#else
-#error Failed to guess your compiler.  Please contact the omegaonline developers.
 #endif
 
 #endif // OMEGA_BASE_TYPES_H_INCLUDED_

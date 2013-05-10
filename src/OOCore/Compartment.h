@@ -52,7 +52,9 @@ namespace OOCore
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv);
 	};
 
-	class Compartment
+	class Compartment :
+			public Omega::System::Internal::ThrowingNew,
+			public OOBase::NonCopyable
 	{
 	public:
 		Compartment(UserSession* pSession);

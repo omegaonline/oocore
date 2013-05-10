@@ -71,16 +71,6 @@ OOCore::UserSession::~UserSession()
 
 void OOCore::UserSession::init(const void* data, size_t len)
 {
-#if defined(_WIN32)
-	// If this event exists, then we are being debugged
-	OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
-	if (hDebugEvent)
-	{
-		// Wait for a bit, letting the caller attach a debugger
-		WaitForSingleObject(hDebugEvent,5000);
-	}
-#endif
-
 	OOBase::Guard<OOBase::Condition::Mutex> guard(m_cond_mutex);
 
 	for (;;)
@@ -126,8 +116,18 @@ void OOCore::UserSession::init(const void* data, size_t len)
 
 void OOCore::UserSession::start(const void* data, size_t len)
 {
+#if defined(_WIN32)
+	// If this event exists, then we are being debugged
+	OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
+	if (hDebugEvent)
+	{
+		// Wait for a bit, letting the caller attach a debugger
+		WaitForSingleObject(hDebugEvent,5000);
+	}
+#endif
+
 	// Create the zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCompt = new (OOCore::throwing) Compartment(this);
+	OOBase::SmartPtr<Compartment> ptrZeroCompt = new Compartment(this);
 	ptrZeroCompt->set_id(0);
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -151,7 +151,6 @@ void OOCore::UserSession::start(const void* data, size_t len)
 		stream.buffer()->wr_ptr(len);
 	}
 
-	int err = 0;
 	m_proactor = OOBase::Proactor::create(err);
 	if (err)
 		OMEGA_THROW(err);
@@ -862,7 +861,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment(const 
 ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i(const guid_t& channel_oid)
 {
 	// Create a new Compartment object
-	OOBase::SmartPtr<Compartment> ptrCompt = new (OOCore::throwing) Compartment(this);
+	OOBase::SmartPtr<Compartment> ptrCompt = new Compartment(this);
 
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);
 

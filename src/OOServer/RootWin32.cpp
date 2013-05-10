@@ -63,7 +63,7 @@ namespace
 		pid_t get_pid() const;
 		const uid_t& get_uid() const;
 
-		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
+		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
 		RootProcessWin32();
@@ -798,7 +798,7 @@ bool RootProcessWin32::same_user(const uid_t& hToken) const
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const Omega::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
+OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
 {
 	// Create the named pipe name
 	UUID guid = {0};
@@ -807,7 +807,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 
 	OOBase::LocalString strPipe(strName.get_allocator());
 	int err = strPipe.printf("OOV-%.8X-%.4X-%.4X-%.2X%.2X-%.2X%.2X%.2X%.2X%.2X%.2X",
-		(Omega::uint32_t)guid.Data1,guid.Data2,guid.Data3,
+		(uint32_t)guid.Data1,guid.Data2,guid.Data3,
 		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
 		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);
 
@@ -820,7 +820,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 
 	OOBase::LocalString strSecret(strName.get_allocator());
 	err = strSecret.printf("%.8X%.4X%.4X%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
-		(Omega::uint32_t)guid.Data1,guid.Data2,guid.Data3,
+		(uint32_t)guid.Data1,guid.Data2,guid.Data3,
 		guid.Data4[0],guid.Data4[1],guid.Data4[2],guid.Data4[3],
 		guid.Data4[4],guid.Data4[5],guid.Data4[6],guid.Data4[7]);
 
@@ -844,7 +844,7 @@ OOServer::RootErrCode RootProcessWin32::LaunchService(Root::Manager* pManager, c
 	}
 
 	OOBase::CDRStream response;
-	//OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<Omega::uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
+	//OOServer::MessageHandler::io_result::type res = pManager->sendrecv_sandbox(request,async ? NULL : &response,static_cast<uint16_t>(async ? OOServer::Message_t::asynchronous : OOServer::Message_t::synchronous));
 	//if (res != OOServer::MessageHandler::io_result::success)
 		LOG_ERROR_RETURN(("Failed to send service request to sandbox"),OOServer::Errored);
 

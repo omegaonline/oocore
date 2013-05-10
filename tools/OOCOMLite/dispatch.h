@@ -27,8 +27,6 @@
 #include <objbase.h>
 #include <oleauto.h>
 
-#include <new>
-
 #if !defined(DISPATCH_H_INCLUDED_)
 #define DISPATCH_H_INCLUDED_
 

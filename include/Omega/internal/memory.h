@@ -22,6 +22,12 @@
 #ifndef OMEGA_MEMORY_H_INCLUDED_
 #define OMEGA_MEMORY_H_INCLUDED_
 
+#if defined(_MSC_VER)
+#define OMEGA_BAD_ALLOC_DECL
+#else
+#define OMEGA_BAD_ALLOC_DECL throw (std::bad_alloc)
+#endif
+
 namespace Omega
 {
 	namespace System
@@ -35,22 +41,22 @@ namespace Omega
 			{
 			public:
 				// Custom new and delete
-				void* operator new(size_t size)
+				static void* operator new(std::size_t size) OMEGA_BAD_ALLOC_DECL
 				{
 					return Omega::System::Allocate(size);
 				}
 
-				void* operator new[](size_t size)
+				static void* operator new[](std::size_t size) OMEGA_BAD_ALLOC_DECL
 				{
 					return Omega::System::Allocate(size);
 				}
 
-				void operator delete(void* p)
+				static void operator delete(void* p) throw()
 				{
 					Omega::System::Free(p);
 				}
 
-				void operator delete[](void* p)
+				static void operator delete[](void* p) throw()
 				{
 					Omega::System::Free(p);
 				}

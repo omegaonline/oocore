@@ -91,12 +91,6 @@ namespace OOCore
 		int unused;
 	};
 
-	struct throwing_t 
-	{ 
-		int unused; 
-	};
-	extern const throwing_t throwing;
-
 	struct StringHash
 	{
 		static size_t hash(const Omega::string_t& v)
@@ -134,12 +128,6 @@ namespace OOCore
 	using ::pid_t;
 #endif
 }
-
-// Operator new that throws Omega::ISystemException
-void* operator new(size_t size, const OOCore::throwing_t&);
-void* operator new[](size_t size, const OOCore::throwing_t&);
-void operator delete(void* p, const OOCore::throwing_t&);
-void operator delete[](void* p, const OOCore::throwing_t&);
 
 #include "Formatting.h"
 

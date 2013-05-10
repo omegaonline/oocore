@@ -80,36 +80,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_free,1,((in),void*,mem))
 	OOBase::CrtAllocator::free(mem);
 }
 
-const OOCore::throwing_t OOCore::throwing = {0};
-
-void* operator new(size_t size, const OOCore::throwing_t&)
-{
-	void* p = ::operator new(size,std::nothrow);
-	if (!p)
-		throw ISystemException::OutOfMemory();
-
-	return p;
-}
-
-void* operator new[](size_t size, const OOCore::throwing_t&)
-{
-	void* p = ::operator new [] (size,std::nothrow);
-	if (!p)
-		throw ISystemException::OutOfMemory();
-
-	return p;
-}
-
-void operator delete(void* p, const OOCore::throwing_t&)
-{
-	::operator delete(p);
-}
-
-void operator delete[](void* p, const OOCore::throwing_t&)
-{
-	::operator delete[](p);
-}
-
 // {F67F5A41-BA32-48C9-BFD2-7B3701984DC8}
 OMEGA_DEFINE_OID(Activation,OID_RunningObjectTable_Instance,"{F67F5A41-BA32-48C9-BFD2-7B3701984DC8}");
 

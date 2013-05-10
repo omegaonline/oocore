@@ -129,7 +129,7 @@ void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int e
 	release();
 }
 
-void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObject, bool /*bTimedout*/, int err)
+void Registry::RootConnection::PipeConnection::on_wait(void* param, HANDLE hObject, bool /*bTimedout*/, int err)
 {
 	PipeConnection* pThis = static_cast<PipeConnection*>(param);
 	OOBase::Win32::SmartHandle hProcess(hObject);
@@ -155,7 +155,7 @@ void Registry::RootConnection::PipeConnection::onWait(void* param, HANDLE hObjec
 	pThis->release();
 }
 
-void Registry::RootConnection::PipeConnection::onAccept(void* param, OOBase::AsyncSocket* pSocket, int err)
+void Registry::RootConnection::PipeConnection::on_accept(void* param, OOBase::AsyncSocket* pSocket, int err)
 {
 	PipeConnection* pThis = static_cast<PipeConnection*>(param);
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket(pSocket);
@@ -206,7 +206,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 	m_parent->addref();
 
 	int err = 0;
-	m_wait = m_parent->m_pManager->m_proactor->wait_for_object(this,&onWait,hProcess,err);
+	m_wait = m_parent->m_pManager->m_proactor->wait_for_object(this,&on_wait,hProcess,err);
 	if (err)
 	{
 		LOG_ERROR(("Failed to wait on process handle: %s",OOBase::system_error_text(err)));
@@ -221,7 +221,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 	m_parent->addref();
 
 	char szPipe[64] = {0};
-	m_pipe = m_parent->m_pManager->m_proactor->accept_unique_pipe(this,&onAccept,szPipe,err,pszSID);
+	m_pipe = m_parent->m_pManager->m_proactor->accept_unique_pipe(this,&on_accept,szPipe,err,pszSID);
 	if (err)
 	{
 		LOG_ERROR(("Failed to create unique pipe: %s",OOBase::system_error_text(err)));

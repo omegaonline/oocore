@@ -57,8 +57,8 @@ namespace Registry
 			{
 				OOBase::CrtAllocator::delete_free(this);
 			}
-			static void onWait(void* param, HANDLE hObject, bool bTimedout, int err);
-			static void onAccept(void* param, OOBase::AsyncSocket* pSocket, int err);
+			static void on_wait(void* param, HANDLE hObject, bool bTimedout, int err);
+			static void on_accept(void* param, OOBase::AsyncSocket* pSocket, int err);
 		};
 		friend class PipeConnection;
 

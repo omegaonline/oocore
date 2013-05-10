@@ -29,7 +29,8 @@ namespace OOCore
 	class LocalTransport :
 			public OTL::ObjectBase,
 			public OOBase::NonCopyable,
-			public Omega::Remoting::ITransport
+			public Omega::Remoting::ITransport,
+			public Omega::Notify::INotifier
 	{
 	public:
 		LocalTransport() {}
@@ -40,10 +41,22 @@ namespace OOCore
 			INTERFACE_ENTRY(Omega::Remoting::ITransport)
 		END_INTERFACE_MAP()
 
+	private:
+		OOBase::SpinLock m_lock;
+
+		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Remoting::ITransportNotify> > m_mapNotify;
+
+	// ITransport members
 	public:
 		Omega::Remoting::IMessage* CreateMessage();
 		void SendMessage(Omega::Remoting::IMessage* pMessage);
 		Omega::string_t GetURI();
+
+	// INotifier members
+	public:
+		uint32_t RegisterNotify(const Omega::guid_t& iid, Omega::IObject* pObject);
+		void UnregisterNotify(const Omega::guid_t& iid, Omega::uint32_t cookie);
+		iid_list_t ListNotifyInterfaces();
 	};
 
 	// {EEBD74BA-1C47-F582-BF49-92DFC17D83DE}

@@ -159,7 +159,7 @@ void UserProcessUnix::kill()
 
 User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Environment::env_table_t& tabEnv)
 {
-	OOBase::LocalPtr<UserProcessUnix> ptrProcess(new (std::nothrow) UserProcessUnix());
+	OOBase::LocalPtr<UserProcessUnix> ptrProcess(new UserProcessUnix());
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 

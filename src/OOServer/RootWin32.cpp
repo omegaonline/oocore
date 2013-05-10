@@ -660,7 +660,7 @@ Cleanup:
 
 RootProcessWin32* RootProcessWin32::spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
-	RootProcessWin32* pSpawn = new (std::nothrow) RootProcessWin32();
+	RootProcessWin32* pSpawn = new RootProcessWin32();
 	if (!pSpawn)
 		LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
 

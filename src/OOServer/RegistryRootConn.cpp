@@ -268,8 +268,8 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 		int ret_err = 0;
 		OOBase::LocalString strPipe(allocator);
 
-		PipeConnection* pConn = NULL;
-		if (!OOBase::CrtAllocator::allocate_new(pConn,this))
+		PipeConnection* pConn = new PipeConnection(this);
+		if (!pConn)
 		{
 			ret_err = ERROR_OUTOFMEMORY;
 			LOG_ERROR(("Failed to allocate connection: %s",OOBase::system_error_text(ret_err)));

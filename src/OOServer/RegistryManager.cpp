@@ -112,7 +112,7 @@ bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 #endif
 
-	OOBase::RefPtr<Registry::RootConnection> conn = new (std::nothrow) Registry::RootConnection(this,ptrSocket);
+	OOBase::RefPtr<Registry::RootConnection> conn = new Registry::RootConnection(this,ptrSocket);
 	if (!conn)
 		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
 

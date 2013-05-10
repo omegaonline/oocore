@@ -24,7 +24,9 @@
 
 namespace User
 {
-	class Process : public OOBase::NonCopyable
+	class Process :
+			public OOBase::NonCopyable,
+			public OOBase::AllocatorNew<OOBase::CrtAllocator>
 	{
 	public:
 		virtual ~Process() {}

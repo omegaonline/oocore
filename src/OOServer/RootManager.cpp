@@ -285,7 +285,7 @@ void Root::Manager::accept_client(void* pThis, OOBase::AsyncSocket* pSocket, int
 		LOG_ERROR(("Client acceptor failed: %s",OOBase::system_error_text(err)));
 	else
 	{
-		OOBase::RefPtr<ClientConnection> ptrConn = new (std::nothrow) ClientConnection(static_cast<Manager*>(pThis),ptrSocket);
+		OOBase::RefPtr<ClientConnection> ptrConn = new ClientConnection(static_cast<Manager*>(pThis),ptrSocket);
 		if (!ptrConn)
 			LOG_ERROR(("Failed to allocate client connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)));
 		else

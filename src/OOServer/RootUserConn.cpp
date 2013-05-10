@@ -725,7 +725,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 	if (!res)
 		return false;
 
-	m_sandbox_process = new (std::nothrow) UserConnection(this,ptrProcess,ptrSocket);
+	m_sandbox_process = new UserConnection(this,ptrProcess,ptrSocket);
 	if (!m_sandbox_process)
 		LOG_ERROR_RETURN(("Failed to create new user connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
@@ -822,7 +822,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 	if (!platform_spawn(strBinPath,ptrClient->get_uid(),ptrClient->get_session_id(),tabSysEnv,ptrProcess,ptrSocket,bAgain))
 		return false;
 
-	OOBase::RefPtr<UserConnection> ptrUser = new (std::nothrow) UserConnection(this,ptrProcess,ptrSocket);
+	OOBase::RefPtr<UserConnection> ptrUser = new UserConnection(this,ptrProcess,ptrSocket);
 	if (!ptrUser)
 		LOG_ERROR_RETURN(("Failed to create new user connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 

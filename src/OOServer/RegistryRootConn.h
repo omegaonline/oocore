@@ -26,7 +26,9 @@ namespace Registry
 {
 	class Manager;
 
-	class RootConnection : public OOBase::RefCounted
+	class RootConnection :
+			public OOBase::RefCounted,
+			public OOBase::AllocatorNew<OOBase::CrtAllocator>
 	{
 	public:
 		RootConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock);
@@ -40,7 +42,9 @@ namespace Registry
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
 #if defined(_WIN32)
-		class PipeConnection : public OOBase::RefCounted
+		class PipeConnection :
+				public OOBase::RefCounted,
+				public OOBase::AllocatorNew<OOBase::CrtAllocator>
 		{
 		public:
 			PipeConnection(RootConnection* parent) : m_parent(parent)
@@ -49,14 +53,10 @@ namespace Registry
 			int start(DWORD pid, OOBase::LocalString& strPipe, const char* pszSID);
 
 		private:
-			RootConnection* m_parent;
+			RootConnection*                  m_parent;
 			OOBase::RefPtr<OOBase::Acceptor> m_wait;
 			OOBase::RefPtr<OOBase::Acceptor> m_pipe;
 
-			void destroy()
-			{
-				OOBase::CrtAllocator::delete_free(this);
-			}
 			static void on_wait(void* param, HANDLE hObject, bool bTimedout, int err);
 			static void on_accept(void* param, OOBase::AsyncSocket* pSocket, int err);
 		};

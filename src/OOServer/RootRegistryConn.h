@@ -38,7 +38,9 @@
 
 namespace Root
 {
-	class RegistryConnection : public OOBase::RefCounted
+	class RegistryConnection :
+			public OOBase::RefCounted,
+			public OOBase::AllocatorNew<OOBase::CrtAllocator>
 	{
 	public:
 		RegistryConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);

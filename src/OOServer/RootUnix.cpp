@@ -185,7 +185,7 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 		// We are the parent
 		pass_fd.close();
 
-		RootProcessUnix* pSpawn = new (std::nothrow) RootProcessUnix(uid);
+		RootProcessUnix* pSpawn = new RootProcessUnix(uid);
 		if (!pSpawn)
 			LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
 

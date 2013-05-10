@@ -423,7 +423,7 @@ bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
 
 #endif
 
-	m_root_connection = new (std::nothrow) User::RootConnection(this,ptrSocket);
+	m_root_connection = new User::RootConnection(this,ptrSocket);
 	if (!m_root_connection)
 		LOG_ERROR_RETURN(("Failed to create root connection: %s",OOBase::system_error_text()),false);
 

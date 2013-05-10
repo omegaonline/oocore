@@ -657,7 +657,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 	if (!platform_spawn(strBinPath,uid,NULL,OOBase::Environment::env_table_t(allocator),ptrProcess,ptrSocket,bAgain))
 		return false;
 
-	OOBase::RefPtr<RegistryConnection> ptrRegistry = new (std::nothrow) RegistryConnection(this,ptrProcess,ptrSocket);
+	OOBase::RefPtr<RegistryConnection> ptrRegistry = new RegistryConnection(this,ptrProcess,ptrSocket);
 	if (!ptrRegistry)
 		LOG_ERROR_RETURN(("Failed to create new registry connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 
@@ -734,7 +734,7 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 	if (!platform_spawn(strBinPath,ptrClient->get_uid(),NULL,OOBase::Environment::env_table_t(allocator),ptrProcess,ptrSocket,bAgain))
 		return false;
 
-	OOBase::RefPtr<RegistryConnection> ptrRegistry = new (std::nothrow) RegistryConnection(this,ptrProcess,ptrSocket);
+	OOBase::RefPtr<RegistryConnection> ptrRegistry = new RegistryConnection(this,ptrProcess,ptrSocket);
 	if (!ptrRegistry)
 		LOG_ERROR_RETURN(("Failed to create new registry connection: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 

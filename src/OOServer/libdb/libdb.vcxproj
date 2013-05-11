@@ -117,7 +117,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;__MSVCCONF__</PreprocessorDefinitions>
       <EnablePREfast>true</EnablePREfast>
       <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite3</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -148,7 +148,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_SQLITE3_AMALGAMATION;__MSVCCONF__</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
       <AdditionalIncludeDirectories>..\..\..\include;..\..\..\oobase\include;C:\Work\sqlite3</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>

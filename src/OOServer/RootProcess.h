@@ -60,7 +60,7 @@ namespace Root
 		virtual pid_t get_pid() const = 0;
 		virtual const uid_t& get_uid() const = 0;
 
-		virtual OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const = 0;
+		virtual OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const OOBase::int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const = 0;
 
 	protected:
 		Process() {}

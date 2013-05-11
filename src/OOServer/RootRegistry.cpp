@@ -35,7 +35,7 @@
 #include "RootManager.h"
 #include "RootProcess.h"
 
-bool Root::Manager::registry_access_check(const char* pszDb, uint32_t channel_id, Db::access_rights_t access_mask, int& err)
+bool Root::Manager::registry_access_check(const char* pszDb, OOBase::uint32_t channel_id, Db::access_rights_t access_mask, int& err)
 {
 	// Zero channel always has access...
 	if (channel_id == 0)
@@ -64,7 +64,7 @@ bool Root::Manager::registry_access_check(const char* pszDb, uint32_t channel_id
 	return false;
 }
 
-OOServer::RootErrCode_t Root::Manager::registry_open_hive(uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, int64_t& uKey, uint8_t& nType)
+OOServer::RootErrCode_t Root::Manager::registry_open_hive(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, OOBase::int64_t& uKey, OOBase::uint8_t& nType)
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
@@ -99,7 +99,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_hive(uint32_t channel_id, O
 	return OOServer::Ok;
 }
 
-Db::hive_errors Root::Manager::registry_open_key(int64_t& uKey, const OOBase::LocalString& strSubKey, uint32_t channel_id)
+Db::hive_errors Root::Manager::registry_open_key(OOBase::int64_t& uKey, const OOBase::LocalString& strSubKey, OOBase::uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -107,7 +107,7 @@ Db::hive_errors Root::Manager::registry_open_key(int64_t& uKey, const OOBase::Lo
 	return m_registry->create_key(0,uKey,strSubKey2,0,channel_id,strLink,strFullKeyName);
 }
 
-OOServer::RootErrCode_t Root::Manager::registry_open_link(uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
+OOServer::RootErrCode_t Root::Manager::registry_open_link(OOBase::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, OOBase::uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
 {
 	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
 	{
@@ -150,12 +150,12 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(uint32_t channel_id, c
 	return (strncmp(strLink.c_str(),"system:",7) == 0 ? OOServer::RootErrCode_t(OOServer::NotFound) : OOServer::RootErrCode_t(OOServer::Linked));
 }
 
-void Root::Manager::registry_open_key(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_open_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey = 0;
-	uint8_t nType;
-	int64_t uSubKey;
+	OOBase::int64_t uKey = 0;
+	OOBase::uint8_t nType;
+	OOBase::int64_t uSubKey;
 	OOBase::StackAllocator<512> allocator;
 	OOBase::LocalString strLink(allocator);
 	OOBase::LocalString strSubKey(allocator);
@@ -171,7 +171,7 @@ void Root::Manager::registry_open_key(uint32_t channel_id, OOBase::CDRStream& re
 		}
 		else
 		{
-			uint16_t flags = 0;
+			OOBase::uint16_t flags = 0;
 			if (!request.read(flags))
 			{
 				LOG_ERROR(("Failed to read open flags from request: %s",OOBase::system_error_text(request.last_error())));
@@ -214,11 +214,11 @@ void Root::Manager::registry_open_key(uint32_t channel_id, OOBase::CDRStream& re
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void Root::Manager::registry_delete_key(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_delete_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 	OOBase::StackAllocator<512> allocator;
 	OOBase::LocalString strLink(allocator);
 	OOBase::LocalString strSubKey(allocator);
@@ -263,11 +263,11 @@ void Root::Manager::registry_delete_key(uint32_t channel_id, OOBase::CDRStream& 
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void Root::Manager::registry_enum_subkeys(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_enum_subkeys(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err)
@@ -279,11 +279,11 @@ void Root::Manager::registry_enum_subkeys(uint32_t channel_id, OOBase::CDRStream
 		ptrHive->enum_subkeys(uKey,channel_id,response);
 }
 
-void Root::Manager::registry_value_exists(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_value_exists(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
@@ -303,13 +303,13 @@ void Root::Manager::registry_value_exists(uint32_t channel_id, OOBase::CDRStream
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void Root::Manager::registry_get_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_get_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::StackAllocator<512> allocator;
 	OOBase::LocalString val(allocator);
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
@@ -332,11 +332,11 @@ void Root::Manager::registry_get_value(uint32_t channel_id, OOBase::CDRStream& r
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void Root::Manager::registry_set_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_set_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)
@@ -367,11 +367,11 @@ void Root::Manager::registry_set_value(uint32_t channel_id, OOBase::CDRStream& r
 		LOG_ERROR(("Failed to write response: %s",OOBase::system_error_text(response.last_error())));
 }
 
-void Root::Manager::registry_enum_values(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_enum_values(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err)
@@ -383,11 +383,11 @@ void Root::Manager::registry_enum_values(uint32_t channel_id, OOBase::CDRStream&
 		ptrHive->enum_values(uKey,channel_id,response);
 }
 
-void Root::Manager::registry_delete_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
+void Root::Manager::registry_delete_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
 	OOBase::SmartPtr<Db::Hive> ptrHive;
-	int64_t uKey;
-	uint8_t nType;
+	OOBase::int64_t uKey;
+	OOBase::uint8_t nType;
 
 	OOServer::RootErrCode_t err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (!err)

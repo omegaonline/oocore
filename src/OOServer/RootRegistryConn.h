@@ -60,7 +60,7 @@ namespace Root
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 		size_t                              m_id;
 
-		OOBase::AsyncResponseDispatcher<uint16_t> m_async_dispatcher;
+		OOBase::AsyncResponseDispatcher<OOBase::uint16_t> m_async_dispatcher;
 
 		void on_sent(OOBase::Buffer* buffer, int err);
 		void on_response(OOBase::Buffer* buffer, int err);
@@ -68,7 +68,7 @@ namespace Root
 		bool on_started(OOBase::CDRStream& stream, pid_t client_id);
 
 #if defined(_WIN32)
-		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<uint16_t>::AutoDrop& response_id);
+		bool new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<OOBase::uint16_t>::AutoDrop& response_id);
 		bool new_connection2(pid_t client_id, OOBase::RefPtr<UserConnection>& ptrUser, const OOBase::String& strUserFd);
 		bool on_start_user(OOBase::CDRStream& response, pid_t client_id, pid_t user_id);
 		struct user2_params_t

@@ -39,11 +39,11 @@ bool Registry::RootConnection::start()
 {
 	// Read start-up params
 	OOBase::CDRStream stream;
-	int err = OOBase::CDRIO::recv_with_header_blocking<uint16_t>(stream,m_socket);
+	int err = OOBase::CDRIO::recv_with_header_blocking<OOBase::uint16_t>(stream,m_socket);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to read root request: %s",OOBase::system_error_text(err)),false);
 
-	uint16_t response_id = 0;
+	OOBase::uint16_t response_id = 0;
 	stream.read(response_id);
 
 	// Read DB name and root settings
@@ -51,7 +51,7 @@ bool Registry::RootConnection::start()
 	OOBase::LocalString strDb(allocator);
 	stream.read_string(strDb);
 
-	uint8_t nThreads = 0;
+	OOBase::uint8_t nThreads = 0;
 	stream.read(nThreads);
 
 	OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance> tabSettings(allocator);
@@ -75,11 +75,11 @@ bool Registry::RootConnection::start()
 	
 	size_t mark = stream.buffer()->mark_wr_ptr();
 
-	stream.write(uint16_t(0));
+	stream.write(OOBase::uint16_t(0));
 	stream.write(response_id);
-	stream.write(static_cast<int32_t>(ret_err));
+	stream.write(static_cast<OOBase::int32_t>(ret_err));
 
-	stream.replace(static_cast<uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<OOBase::uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		LOG_ERROR_RETURN(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())),false);
 
@@ -96,7 +96,7 @@ bool Registry::RootConnection::recv_next()
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_with_header_sync<uint16_t>(128,m_socket,this,&RootConnection::on_message_win32);
+	int err = OOBase::CDRIO::recv_with_header_sync<OOBase::uint16_t>(128,m_socket,this,&RootConnection::on_message_win32);
 #elif defined(HAVE_UNISTD_H)
 	OOBase::RefPtr<OOBase::Buffer> ctl_buffer = OOBase::Buffer::create(CMSG_SPACE(sizeof(int)),sizeof(size_t));
 	if (!ctl_buffer)
@@ -104,7 +104,7 @@ bool Registry::RootConnection::recv_next()
 
 	addref();
 
-	int err = OOBase::CDRIO::recv_msg_with_header_sync<uint16_t>(128,m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
+	int err = OOBase::CDRIO::recv_msg_with_header_sync<OOBase::uint16_t>(128,m_socket,this,&RootConnection::on_message_posix,ctl_buffer);
 #endif
 	if (err)
 	{
@@ -244,7 +244,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 {
-	uint16_t response_id = 0;
+	OOBase::uint16_t response_id = 0;
 	stream.read(response_id);
 
 	pid_t pid = 0;
@@ -262,7 +262,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 		
 		size_t mark = stream.buffer()->mark_wr_ptr();
 
-		stream.write(uint16_t(0));
+		stream.write(OOBase::uint16_t(0));
 		stream.write(response_id);
 
 		int ret_err = 0;
@@ -294,11 +294,11 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream)
 			}
 		}
 
-		stream.write(static_cast<int32_t>(ret_err));
+		stream.write(static_cast<OOBase::int32_t>(ret_err));
 		if (!ret_err)
 			stream.write_string(strPipe);
 
-		stream.replace(static_cast<uint16_t>(stream.length()),mark);
+		stream.replace(static_cast<OOBase::uint16_t>(stream.length()),mark);
 		if (stream.last_error())
 			LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 		else
@@ -375,7 +375,7 @@ void Registry::RootConnection::on_message_posix(OOBase::CDRStream& stream, OOBas
 
 void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase::POSIX::SmartFD& passed_fd)
 {
-	uint16_t response_id;
+	OOBase::uint16_t response_id;
 	stream.read(response_id);
 	uid_t uid;
 	stream.read(uid);
@@ -401,11 +401,11 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 
 		size_t mark = stream.buffer()->mark_wr_ptr();
 
-		stream.write(uint16_t(0));
+		stream.write(OOBase::uint16_t(0));
 		stream.write(response_id);
 		stream.write(static_cast<int32_t>(ret_err));
 
-		stream.replace(static_cast<uint16_t>(stream.length()),mark);
+		stream.replace(static_cast<OOBase::uint16_t>(stream.length()),mark);
 		if (stream.last_error())
 			LOG_ERROR(("Failed to write response for root: %s",OOBase::system_error_text(stream.last_error())));
 		else

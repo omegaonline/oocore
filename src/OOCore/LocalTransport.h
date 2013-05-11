@@ -54,7 +54,7 @@ namespace OOCore
 
 	// INotifier members
 	public:
-		uint32_t RegisterNotify(const Omega::guid_t& iid, Omega::IObject* pObject);
+		Omega::uint32_t RegisterNotify(const Omega::guid_t& iid, Omega::IObject* pObject);
 		void UnregisterNotify(const Omega::guid_t& iid, Omega::uint32_t cookie);
 		iid_list_t ListNotifyInterfaces();
 	};

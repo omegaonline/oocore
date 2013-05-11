@@ -36,7 +36,7 @@ namespace Db
 		// Not used for access checks
 		protect_key = 4
 	};
-	typedef uint16_t access_rights_t;
+	typedef OOBase::uint16_t access_rights_t;
 
 	enum hive_errors
 	{
@@ -61,17 +61,17 @@ namespace Db
 
 		typedef OOBase::Set<OOBase::LocalString,OOBase::AllocatorInstance> registry_set_t;
 
-		hive_errors access_check(uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
-		hive_errors create_key(int64_t uParent, int64_t& uKey, OOBase::LocalString& strSubKey, uint16_t flags, uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
-		hive_errors delete_key(const int64_t& uKey, OOBase::LocalString& strSubKey, uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
-		hive_errors enum_subkeys(const int64_t& uKey, uint32_t channel_id, registry_set_t& setSubKeys);
-		void enum_subkeys(const int64_t& uKey, uint32_t channel_id, OOBase::CDRStream& response);
-		hive_errors value_exists(const int64_t& uKey, const char* pszValue, uint32_t channel_id);
-		hive_errors enum_values(const int64_t& uKey, uint32_t channel_id, registry_set_t& setValues);
-		void enum_values(const int64_t& uKey, uint32_t channel_id, OOBase::CDRStream& response);
-		hive_errors delete_value(const int64_t& uKey, const char* pszValue, uint32_t channel_id);
-		hive_errors get_value(const int64_t& uKey, const char* pszValue, uint32_t channel_id, OOBase::LocalString& val);
-		hive_errors set_value(const int64_t& uKey, const char* pszValue, uint32_t channel_id, const char* val);
+		hive_errors access_check(OOBase::uint32_t channel_id, access_rights_t access_mask, access_rights_t check);
+		hive_errors create_key(OOBase::int64_t uParent, OOBase::int64_t& uKey, OOBase::LocalString& strSubKey, OOBase::uint16_t flags, OOBase::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
+		hive_errors delete_key(const OOBase::int64_t& uKey, OOBase::LocalString& strSubKey, OOBase::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
+		hive_errors enum_subkeys(const OOBase::int64_t& uKey, OOBase::uint32_t channel_id, registry_set_t& setSubKeys);
+		void enum_subkeys(const OOBase::int64_t& uKey, OOBase::uint32_t channel_id, OOBase::CDRStream& response);
+		hive_errors value_exists(const OOBase::int64_t& uKey, const char* pszValue, OOBase::uint32_t channel_id);
+		hive_errors enum_values(const OOBase::int64_t& uKey, OOBase::uint32_t channel_id, registry_set_t& setValues);
+		void enum_values(const OOBase::int64_t& uKey, OOBase::uint32_t channel_id, OOBase::CDRStream& response);
+		hive_errors delete_value(const OOBase::int64_t& uKey, const char* pszValue, OOBase::uint32_t channel_id);
+		hive_errors get_value(const OOBase::int64_t& uKey, const char* pszValue, OOBase::uint32_t channel_id, OOBase::LocalString& val);
+		hive_errors set_value(const OOBase::int64_t& uKey, const char* pszValue, OOBase::uint32_t channel_id, const char* val);
 		
 	private:
 		Manager*               m_pManager;
@@ -97,14 +97,14 @@ namespace Db
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
 
-		hive_errors get_value_i(const int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
-		hive_errors get_key_info(const int64_t& uParent, int64_t& uKey, const OOBase::LocalString& strSubKey, uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink);
-		hive_errors find_key(int64_t uParent, int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
-		hive_errors insert_key(const int64_t& uParent, int64_t& uKey, const OOBase::LocalString& strSubKey, access_rights_t access_mask);
-		hive_errors check_key_exists(const int64_t& uKey, access_rights_t& access_mask);
-		hive_errors delete_subkeys(const int64_t& uKey, uint32_t channel_id, OOBase::LocalString& strFullKeyName);
-		hive_errors value_exists_i(const int64_t& uKey, const char* pszValue);
-		hive_errors set_value_i(const int64_t& uKey, const char* pszName, const char* pszValue);
+		hive_errors get_value_i(const OOBase::int64_t& uKey, const char* pszValue, OOBase::LocalString& val);
+		hive_errors get_key_info(const OOBase::int64_t& uParent, OOBase::int64_t& uKey, const OOBase::LocalString& strSubKey, OOBase::uint32_t channel_id, access_rights_t& access_mask, OOBase::LocalString& strLink);
+		hive_errors find_key(OOBase::int64_t uParent, OOBase::int64_t& uKey, OOBase::LocalString& strSubKey, access_rights_t& access_mask, OOBase::uint32_t channel_id, OOBase::LocalString& strLink, OOBase::LocalString& strFullKeyName);
+		hive_errors insert_key(const OOBase::int64_t& uParent, OOBase::int64_t& uKey, const OOBase::LocalString& strSubKey, access_rights_t access_mask);
+		hive_errors check_key_exists(const OOBase::int64_t& uKey, access_rights_t& access_mask);
+		hive_errors delete_subkeys(const OOBase::int64_t& uKey, OOBase::uint32_t channel_id, OOBase::LocalString& strFullKeyName);
+		hive_errors value_exists_i(const OOBase::int64_t& uKey, const char* pszValue);
+		hive_errors set_value_i(const OOBase::int64_t& uKey, const char* pszName, const char* pszValue);
 		void prepare_statement(Statement& stmt, const char* pszSql);
 	};
 
@@ -112,7 +112,7 @@ namespace Db
 	{
 	public:
 		virtual ~Manager() {}
-		virtual bool registry_access_check(const char* pszDb, uint32_t channel_id, access_rights_t access_mask, int& err) = 0;
+		virtual bool registry_access_check(const char* pszDb, OOBase::uint32_t channel_id, access_rights_t access_mask, int& err) = 0;
 	};
 }
 

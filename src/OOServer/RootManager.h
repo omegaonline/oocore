@@ -111,26 +111,26 @@ namespace Root
 		// Service handling
 		bool start_services();
 		bool stop_services();
-		void start_service(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void stop_service(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void service_is_running(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void service_list_running(uint32_t channel_id, OOBase::CDRStream& response);
+		void start_service(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void stop_service(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void service_is_running(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void service_list_running(OOBase::uint32_t channel_id, OOBase::CDRStream& response);
 
 		// Registry members
 		OOBase::SmartPtr<Db::Hive> m_registry;
 
-		Db::hive_errors registry_open_key(int64_t& uKey, const OOBase::LocalString& strSubKey, uint32_t channel_id);
-		bool registry_access_check(const char* pszDb, uint32_t channel_id, Db::access_rights_t access_mask, int& err);
-		OOServer::RootErrCode_t registry_open_hive(uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, int64_t& uKey, uint8_t& nType);
-		OOServer::RootErrCode_t registry_open_link(uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
-		void registry_open_key(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_delete_key(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_enum_subkeys(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_value_exists(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_get_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_set_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_enum_values(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
-		void registry_delete_value(uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		Db::hive_errors registry_open_key(OOBase::int64_t& uKey, const OOBase::LocalString& strSubKey, OOBase::uint32_t channel_id);
+		bool registry_access_check(const char* pszDb, OOBase::uint32_t channel_id, Db::access_rights_t access_mask, int& err);
+		OOServer::RootErrCode_t registry_open_hive(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, OOBase::int64_t& uKey, OOBase::uint8_t& nType);
+		OOServer::RootErrCode_t registry_open_link(OOBase::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, OOBase::uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
+		void registry_open_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_delete_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_enum_subkeys(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_value_exists(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_enum_values(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_delete_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 	};
 }
 

@@ -23,7 +23,7 @@
 #define OOCORE_CONFIG_H_INCLUDED_
 
 #if defined(_MSC_VER)
-	#include "../oocore-msvc.h"
+	#include "oocore-msvc.h"
 #elif defined(HAVE_CONFIG_H)
 	// Autoconf
 	#include <oocore-autoconf.h>

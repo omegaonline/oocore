@@ -651,10 +651,11 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 		return false;
 
 	// Spawn the process
+	OOBase::Environment::env_table_t tabEnv(allocator);
 	OOBase::SmartPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool bAgain;
-	if (!platform_spawn(strBinPath,uid,NULL,OOBase::Environment::env_table_t(allocator),ptrProcess,ptrSocket,bAgain))
+	if (!platform_spawn(strBinPath,uid,NULL,tabEnv,ptrProcess,ptrSocket,bAgain))
 		return false;
 
 	OOBase::RefPtr<RegistryConnection> ptrRegistry = new RegistryConnection(this,ptrProcess,ptrSocket);
@@ -728,10 +729,11 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 	// Spawn the process
+	OOBase::Environment::env_table_t tabEnv(allocator);
 	OOBase::SmartPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool bAgain;
-	if (!platform_spawn(strBinPath,ptrClient->get_uid(),NULL,OOBase::Environment::env_table_t(allocator),ptrProcess,ptrSocket,bAgain))
+	if (!platform_spawn(strBinPath,ptrClient->get_uid(),NULL,tabEnv,ptrProcess,ptrSocket,bAgain))
 		return false;
 
 	OOBase::RefPtr<RegistryConnection> ptrRegistry = new RegistryConnection(this,ptrProcess,ptrSocket);

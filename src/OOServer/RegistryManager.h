@@ -33,12 +33,14 @@ namespace Registry
 	class Manager : public OOBase::Server
 	{
 		friend class RootConnection;
-
+		
 	public:
 		Manager();
 		virtual ~Manager();
 
 		int run(const OOBase::LocalString& pszPipe);
+
+		int new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, const uid_t& uid);
 
 	private:
 		Manager(const Manager&);
@@ -57,8 +59,6 @@ namespace Registry
 		bool connect_root(const OOBase::LocalString& strPipe);
 
 		int on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings);
-
-		int new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, const uid_t& uid);
 	};
 }
 

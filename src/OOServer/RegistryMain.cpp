@@ -22,7 +22,6 @@
 #include "OOServer_Registry.h"
 #include "RegistryManager.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #ifdef HAVE_VLD_H

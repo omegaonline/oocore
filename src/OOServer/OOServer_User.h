@@ -22,6 +22,11 @@
 #ifndef OOSERVER_USER_H_INCLUDED_
 #define OOSERVER_USER_H_INCLUDED_
 
+// Mingw can include pid_t etc, which we don't want
+#if defined(__MINGW32__)
+#define _NO_OLDNAMES
+#endif
+
 //////////////////////////////////////////////
 
 #include <OOBase/CmdArgs.h>

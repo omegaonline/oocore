@@ -65,6 +65,7 @@ namespace Registry
 		OOBase::SpinLock m_lock;
 		OOBase::HashTable<const PipeConnection*,OOBase::RefPtr<PipeConnection> > m_mapConns;
 
+		OOBase::Proactor* get_proactor();
 		void on_message_win32(OOBase::CDRStream& stream, int err);
 		void on_message(OOBase::CDRStream& stream);
 		void new_connection(OOBase::CDRStream& stream);

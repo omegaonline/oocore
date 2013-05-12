@@ -115,6 +115,11 @@ bool Registry::RootConnection::recv_next()
 	return true;
 }
 
+OOBase::Proactor* Registry::RootConnection::get_proactor()
+{
+	return m_pManager->m_proactor;
+}
+
 #if defined(_WIN32)
 
 void Registry::RootConnection::on_message_win32(OOBase::CDRStream& stream, int err)
@@ -206,7 +211,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 	m_parent->addref();
 
 	int err = 0;
-	m_wait = m_parent->m_pManager->m_proactor->wait_for_object(this,&on_wait,hProcess,err);
+	m_wait = m_parent->get_proactor()->wait_for_object(this,&on_wait,hProcess,err);
 	if (err)
 	{
 		LOG_ERROR(("Failed to wait on process handle: %s",OOBase::system_error_text(err)));
@@ -221,7 +226,7 @@ int Registry::RootConnection::PipeConnection::start(DWORD pid, OOBase::LocalStri
 	m_parent->addref();
 
 	char szPipe[64] = {0};
-	m_pipe = m_parent->m_pManager->m_proactor->accept_unique_pipe(this,&on_accept,szPipe,err,pszSID);
+	m_pipe = m_parent->get_proactor()->accept_unique_pipe(this,&on_accept,szPipe,err,pszSID);
 	if (err)
 	{
 		LOG_ERROR(("Failed to create unique pipe: %s",OOBase::system_error_text(err)));
@@ -386,7 +391,7 @@ void Registry::RootConnection::new_connection(OOBase::CDRStream& stream, OOBase:
 	{
 		// Attach to the pipe
 		int ret_err = 0;
-		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_pManager->m_proactor->attach(passed_fd,ret_err);
+		OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = get_proactor()->attach(passed_fd,ret_err);
 		if (ret_err)
 			LOG_ERROR(("Failed to attach to user pipe: %s",OOBase::system_error_text(ret_err)));
 		else

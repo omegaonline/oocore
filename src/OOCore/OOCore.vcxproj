@@ -223,6 +223,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Record.cpp" />
     <ClCompile Include="RunningObjectTable.cpp" />
     <ClCompile Include="Safe.cpp" />
     <ClCompile Include="SimpleMarshaller.cpp" />
@@ -250,6 +251,7 @@
     <ClInclude Include="..\oocore-config.h" />
     <ClInclude Include="..\oocore-msvc.h" />
     <ClInclude Include="OOCore_precomp.h" />
+    <ClInclude Include="Record.h" />
     <ClInclude Include="RunningObjectTable.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="SimpleMarshaller.h" />

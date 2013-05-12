@@ -32,6 +32,11 @@
 #ifndef OOSERVER_ROOT_H_INCLUDED_
 #define OOSERVER_ROOT_H_INCLUDED_
 
+// Mingw can include pid_t etc, which we don't want
+#if defined(__MINGW32__)
+#define _NO_OLDNAMES
+#endif
+
 //////////////////////////////////////////////
 
 #include <OOBase/Singleton.h>

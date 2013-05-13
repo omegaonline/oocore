@@ -282,7 +282,7 @@ OMEGA_DEFINE_INTERFACE
 #pragma warning(pop)
 #endif
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,3,((in),Omega::uint32_t,version,(in),const void*,data,(in),size_t,len))
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,3,((in),Omega::uint32_t,version,(in),const Omega::byte_t*,data,(in),size_t,len))
 inline void Omega::Initialize()
 {
 	OOCore_Omega_Initialize((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16),NULL,0);

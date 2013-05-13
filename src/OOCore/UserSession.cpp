@@ -69,7 +69,7 @@ OOCore::UserSession::~UserSession()
 		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
 }
 
-void OOCore::UserSession::init(const void* data, size_t len)
+void OOCore::UserSession::init(const byte_t* data, size_t len)
 {
 	OOBase::Guard<OOBase::Condition::Mutex> guard(m_cond_mutex);
 
@@ -114,7 +114,7 @@ void OOCore::UserSession::init(const void* data, size_t len)
 	}
 }
 
-void OOCore::UserSession::start(const void* data, size_t len)
+void OOCore::UserSession::start(const byte_t* data, size_t len)
 {
 #if defined(_WIN32)
 	// If this event exists, then we are being debugged
@@ -126,13 +126,24 @@ void OOCore::UserSession::start(const void* data, size_t len)
 	}
 #endif
 
+	// Create the proactor
+	int err = 0;
+	m_proactor = OOBase::Proactor::create(err);
+	if (err)
+		OMEGA_THROW(err);
+
+	// Spool off some threads to service the proactor
+	err = m_thread_pool.run(&UserSession::io_worker_fn,this,2);
+	if (err)
+		OMEGA_THROW(err);
+
 	// Create the zero compartment
 	OOBase::SmartPtr<Compartment> ptrZeroCompt = new Compartment(this);
 	ptrZeroCompt->set_id(0);
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	int err = m_mapCompartments.force_insert(0,ptrZeroCompt);
+	err = m_mapCompartments.force_insert(0,ptrZeroCompt);
 	if (err)
 		OMEGA_THROW(err);
 
@@ -145,23 +156,11 @@ void OOCore::UserSession::start(const void* data, size_t len)
 	OOBase::CDRStream stream;
 	if (!data)
 		connect_root(stream);
-	else
-	{
-		memcpy(stream.buffer()->wr_ptr(),data,len);
-		stream.buffer()->wr_ptr(len);
-	}
-
-	m_proactor = OOBase::Proactor::create(err);
-	if (err)
-		OMEGA_THROW(err);
+	else if (!stream.write_bytes(data,len))
+		OMEGA_THROW(stream.last_error());
 
 	// Load up the raw transport from the stream
-	ObjectPtr<NoLockObjectImpl<OOCore::LocalTransport> > ptrTransport = NoLockObjectImpl<OOCore::LocalTransport>::CreateObject();
-	ptrTransport->init(stream,m_proactor);
-
-
-
-
+	ObjectPtr<Remoting::ITransport> ptrTransport = create_local_transport(stream);
 
 
 
@@ -193,6 +192,27 @@ void OOCore::UserSession::start(const void* data, size_t len)
 		m_rot_cookies.push_back(ptrROT->RegisterObject(Registry::OID_Registry_Instance,ptrReg,Activation::ProcessScope));
 		m_rot_cookies.push_back(ptrROT->RegisterObject(string_t::constant("Omega.Registry"),ptrReg,Activation::ProcessScope));
 	}
+}
+
+int OOCore::UserSession::io_worker_fn(void* pParam)
+{
+#if defined(HAVE_UNISTD_H)
+
+	// Block all signals here...
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGQUIT);
+	sigaddset(&set, SIGTERM);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGCHLD);
+	sigaddset(&set, SIGPIPE);
+
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+#endif
+
+	int err = 0;
+	return (static_cast<UserSession*>(pParam)->m_proactor->run(err) == 1 ? 0 : err);
 }
 
 void OOCore::UserSession::term()
@@ -304,24 +324,13 @@ uint32_t OOCore::UserSession::get_channel_id() const
 	return m_channel_id;
 }
 
-int OOCore::UserSession::io_worker_fn(void* pParam)
+Remoting::ITransport* OOCore::UserSession::create_local_transport(OOBase::CDRStream& stream)
 {
-#if defined(HAVE_UNISTD_H)
+	// Load up the raw transport from the stream
+	ObjectPtr<NoLockObjectImpl<OOCore::LocalTransport> > ptrTransport = NoLockObjectImpl<OOCore::LocalTransport>::CreateObject();
+	ptrTransport->init(stream,m_proactor);
 
-	// Block all signals here...
-	sigset_t set;
-	sigemptyset(&set);
-	sigaddset(&set, SIGQUIT);
-	sigaddset(&set, SIGTERM);
-	sigaddset(&set, SIGHUP);
-	sigaddset(&set, SIGCHLD);
-	sigaddset(&set, SIGPIPE);
-
-	pthread_sigmask(SIG_BLOCK, &set, NULL);
-
-#endif
-
-	return static_cast<UserSession*>(pParam)->run_read_loop();
+	return ptrTransport.AddRef();
 }
 
 void OOCore::UserSession::wait_or_alert(const OOBase::Atomic<size_t>& usage)
@@ -945,7 +954,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,3,((in),uint32_t,version,(in),const void*,data,(in),size_t,len))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,3,((in),uint32_t,version,(in),const byte_t*,data,(in),size_t,len))
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
@@ -966,4 +975,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_
 		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
 
 	return USER_SESSION::instance().pump_request(timeout);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ITransport*,OOCore_CreateLocalTransport,2,((in),const byte_t*,data,(in),size_t,len))
+{
+	OOBase::CDRStream stream;
+	if (!stream.write_bytes(data,len))
+		OMEGA_THROW(stream.last_error());
+
+	return USER_SESSION::instance().create_local_transport(stream);
 }

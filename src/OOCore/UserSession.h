@@ -78,8 +78,10 @@ namespace OOCore
 		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
 
 	public:
-		void init(const void* data, size_t len);
+		void init(const Omega::byte_t* data, size_t len);
 		void term();
+
+		Omega::Remoting::ITransport* create_local_transport(OOBase::CDRStream& stream);
 
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
 		
@@ -102,6 +104,7 @@ namespace OOCore
 		OOBase::Thread                   m_worker_thread;
 		OOBase::RefPtr<OOBase::Socket>   m_stream;
 		Omega::uint32_t                  m_channel_id;
+		OOBase::ThreadPool               m_thread_pool;
 		OOBase::Proactor*                m_proactor;
 
 		// Startup/shutdown data
@@ -145,7 +148,7 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void start(const void* data, size_t len);
+		void start(const Omega::byte_t* data, size_t len);
 		void stop();
 		void connect_root(OOBase::CDRStream& stream);
 

@@ -533,7 +533,7 @@ void Root::RegistryConnection::on_sent_msg(OOBase::Buffer* data, OOBase::Buffer*
 	ctl_buffer->mark_rd_ptr(0);
 
 	struct msghdr msgh = {0};
-	msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+	msgh.msg_control = const_cast<OOBase::uint8_t*>(ctl_buffer->rd_ptr());
 	msgh.msg_controllen = ctl_buffer->length();
 
 	for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))

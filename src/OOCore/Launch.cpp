@@ -182,7 +182,7 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
 
 	// Read struct cmsg
 	struct msghdr msgh = {0};
-	msgh.msg_control = const_cast<char*>(ctl_buffer->rd_ptr());
+	msgh.msg_control = const_cast<uint8_t*>(ctl_buffer->rd_ptr());
 	msgh.msg_controllen = ctl_buffer->length();
 
 	for (struct cmsghdr* msg = CMSG_FIRSTHDR(&msgh);msg;msg = CMSG_NXTHDR(&msgh,msg))

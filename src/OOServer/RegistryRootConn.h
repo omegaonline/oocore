@@ -41,6 +41,7 @@ namespace Registry
 		Manager*                            m_pManager;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_socket;
 
+		OOBase::Proactor* get_proactor();
 #if defined(_WIN32)
 		class PipeConnection :
 				public OOBase::RefCounted,
@@ -65,7 +66,6 @@ namespace Registry
 		OOBase::SpinLock m_lock;
 		OOBase::HashTable<const PipeConnection*,OOBase::RefPtr<PipeConnection> > m_mapConns;
 
-		OOBase::Proactor* get_proactor();
 		void on_message_win32(OOBase::CDRStream& stream, int err);
 		void on_message(OOBase::CDRStream& stream);
 		void new_connection(OOBase::CDRStream& stream);

@@ -313,9 +313,9 @@ uint32_t User::RunningObjectTable::RegisterNotify(const guid_t& iid, IObject* pO
 	return nCookie;
 }
 
-void User::RunningObjectTable::UnregisterNotify(const guid_t& iid, uint32_t cookie)
+void User::RunningObjectTable::UnregisterNotify(uint32_t cookie)
 {
-	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify) && cookie)
+	if (cookie)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 

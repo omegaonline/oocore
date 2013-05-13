@@ -81,7 +81,7 @@ namespace User
 	// INotifier members
 	public:
 		Omega::uint32_t RegisterNotify(const Omega::guid_t& iid, Omega::IObject* pObject);
-		void UnregisterNotify(const Omega::guid_t& iid, Omega::uint32_t cookie);
+		void UnregisterNotify(Omega::uint32_t cookie);
 		Omega::Notify::INotifier::iid_list_t ListNotifyInterfaces();
 	};
 }

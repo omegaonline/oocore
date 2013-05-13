@@ -33,7 +33,7 @@ namespace Omega
 			typedef std::vector<guid_t,System::STLAllocator<guid_t> > iid_list_t;
 
 			virtual uint32_t RegisterNotify(const guid_t& iid, IObject* pObject) = 0;
-			virtual void UnregisterNotify(const guid_t& iid, uint32_t cookie) = 0;
+			virtual void UnregisterNotify(uint32_t cookie) = 0;
 
 			virtual iid_list_t ListNotifyInterfaces() = 0;
 		};
@@ -48,7 +48,7 @@ OMEGA_DEFINE_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(uint32_t,RegisterNotify,2,((in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
-	OMEGA_METHOD_VOID(UnregisterNotify,2,((in),const guid_t&,iid,(in),uint32_t,cookie))
+	OMEGA_METHOD_VOID(UnregisterNotify,1,((in),uint32_t,cookie))
 	OMEGA_METHOD(Notify::INotifier::iid_list_t,ListNotifyInterfaces,0,())
 )
 

@@ -65,7 +65,7 @@ void OOCore::LocalROT::SetUpstreamROT(Omega::Activation::IRunningObjectTable* pR
 
 		ObjectPtr<Notify::INotifier> ptrNotify = ptrROT.QueryInterface<Notify::INotifier>();
 		if (ptrNotify)
-			ptrNotify->UnregisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),cookie);
+			ptrNotify->UnregisterNotify(cookie);
 	}
 }
 
@@ -339,9 +339,9 @@ uint32_t OOCore::LocalROT::RegisterNotify(const guid_t& iid, IObject* pObject)
 	return nCookie;
 }
 
-void OOCore::LocalROT::UnregisterNotify(const guid_t& iid, uint32_t cookie)
+void OOCore::LocalROT::UnregisterNotify(uint32_t cookie)
 {
-	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify) && cookie)
+	if (cookie)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 

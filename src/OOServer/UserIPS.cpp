@@ -42,7 +42,7 @@ namespace
 		virtual ~ROTNotifier()
 		{
 			if (m_cookie)
-				m_ptrNotify->UnregisterNotify(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify),m_cookie);
+				m_ptrNotify->UnregisterNotify(m_cookie);
 		}
 
 		bool wait(const OOBase::Timeout& timeout)

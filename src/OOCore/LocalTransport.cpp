@@ -65,9 +65,9 @@ uint32_t OOCore::LocalTransport::RegisterNotify(const guid_t& iid, IObject* pObj
 	return nCookie;
 }
 
-void OOCore::LocalTransport::UnregisterNotify(const guid_t& iid, uint32_t cookie)
+void OOCore::LocalTransport::UnregisterNotify(uint32_t cookie)
 {
-	if (iid == OMEGA_GUIDOF(Remoting::ITransportNotify) && cookie)
+	if (cookie)
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 

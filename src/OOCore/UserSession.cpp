@@ -53,9 +53,7 @@ OOCore::UserSession::UserSession() :
 		m_proactor(NULL),
 		m_init_count(0),
 		m_init_state(eStopped),
-		m_usage_count(0),
-		m_mapThreadContexts(1),
-		m_mapCompartments(0)
+		m_usage_count(0)
 {
 }
 

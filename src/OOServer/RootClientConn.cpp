@@ -483,7 +483,6 @@ bool Root::Manager::get_client(pid_t id, OOBase::RefPtr<ClientConnection>& ptrCl
 	return true;
 }
 
-
 void Root::Manager::drop_client(pid_t id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);

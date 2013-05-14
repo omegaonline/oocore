@@ -75,8 +75,7 @@ Remoting::MarshalFlags_t StdCallContext::SourceType()
 	return m_cc.m_flags;
 }
 
-OOCore::StdObjectManager::StdObjectManager() :
-		m_mapStubIds(1)
+OOCore::StdObjectManager::StdObjectManager()
 {
 }
 

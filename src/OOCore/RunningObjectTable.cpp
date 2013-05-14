@@ -27,9 +27,7 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::LocalROT::LocalROT() :
-		m_notify_cookie(0),
-		m_mapServicesByCookie(1),
-		m_mapNotify(1)
+		m_notify_cookie(0)
 {
 }
 

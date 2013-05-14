@@ -81,7 +81,7 @@ namespace OOCore
 		void init(const Omega::byte_t* data, size_t len);
 		void term();
 
-		Omega::Remoting::ITransport* create_local_transport(OOBase::CDRStream& stream);
+		Omega::Remoting::ITransport* create_local_transport(OOBase::CDRStream& stream, OOBase::Timeout& timeout);
 
 		bool pump_request(const OOBase::Timeout& timeout = OOBase::Timeout());
 		
@@ -150,7 +150,7 @@ namespace OOCore
 		// Proper private members
 		void start(const Omega::byte_t* data, size_t len);
 		void stop();
-		void connect_root(OOBase::CDRStream& stream);
+		void connect_root(OOBase::CDRStream& stream, OOBase::Timeout& timeout);
 
 		// Our object factory members
 		OOBase::Vector<Omega::uint32_t> m_rot_cookies;

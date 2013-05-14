@@ -152,15 +152,21 @@ void OOCore::UserSession::start(const byte_t* data, size_t len)
 
 	guard.release();
 
+#if defined(NDEBUG)
+	OOBase::Timeout timeout(15,0);
+#else
+	OOBase::Timeout timeout;
+#endif
+
 	// Now connect to the root process
 	OOBase::CDRStream stream;
 	if (!data)
-		connect_root(stream);
+		connect_root(stream,timeout);
 	else if (!stream.write_bytes(data,len))
 		OMEGA_THROW(stream.last_error());
 
 	// Load up the raw transport from the stream
-	ObjectPtr<Remoting::ITransport> ptrTransport = create_local_transport(stream);
+	ObjectPtr<Remoting::ITransport> ptrTransport = create_local_transport(stream,timeout);
 
 
 
@@ -324,11 +330,11 @@ uint32_t OOCore::UserSession::get_channel_id() const
 	return m_channel_id;
 }
 
-Remoting::ITransport* OOCore::UserSession::create_local_transport(OOBase::CDRStream& stream)
+Remoting::ITransport* OOCore::UserSession::create_local_transport(OOBase::CDRStream& stream, OOBase::Timeout& timeout)
 {
 	// Load up the raw transport from the stream
 	ObjectPtr<NoLockObjectImpl<OOCore::LocalTransport> > ptrTransport = NoLockObjectImpl<OOCore::LocalTransport>::CreateObject();
-	ptrTransport->init(stream,m_proactor);
+	ptrTransport->init(stream,m_proactor,timeout);
 
 	return ptrTransport.AddRef();
 }
@@ -369,7 +375,7 @@ int OOCore::UserSession::run_read_loop()
 		header.read_endianess();
 
 		// Read the version byte
-		byte_t version;
+		byte_t version = 1;
 		header.read(version);
 		if (version != 1)
 			OOBase_CallCriticalFailure("Invalid protocol version");
@@ -991,11 +997,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_
 	return USER_SESSION::instance().pump_request(timeout);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ITransport*,OOCore_CreateLocalTransport,2,((in),const byte_t*,data,(in),size_t,len))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ITransport*,OOCore_CreateLocalTransport,3,((in),const byte_t*,data,(in),size_t,len,(in),uint32_t,millisecs))
 {
 	OOBase::CDRStream stream;
 	if (!stream.write_bytes(data,len))
 		OMEGA_THROW(stream.last_error());
 
-	return USER_SESSION::instance().create_local_transport(stream);
+	OOBase::Timeout timeout;
+	if (millisecs != 0)
+		timeout = OOBase::Timeout(millisecs/1000,(millisecs % 1000) * 1000);
+
+	return USER_SESSION::instance().create_local_transport(stream,timeout);
 }

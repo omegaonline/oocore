@@ -106,15 +106,9 @@ namespace
 	}
 }
 
-void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
+void OOCore::UserSession::connect_root(OOBase::CDRStream& stream, OOBase::Timeout& timeout)
 {
 	OOBase::StackAllocator<128> allocator;
-
-#if defined(NDEBUG)
-	OOBase::Timeout timeout(15,0);
-#else
-	OOBase::Timeout timeout;
-#endif
 
 	int err = 0;
 	OOBase::RefPtr<OOBase::Socket> root_socket;
@@ -140,7 +134,7 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
 
 	size_t mark = stream.buffer()->mark_wr_ptr();
 
-	stream.write(Omega::uint16_t(0));
+	stream.write(uint16_t(0));
 	stream.write(version);
 	stream.write_string(strSid);
 
@@ -149,16 +143,14 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
 #elif defined(HAVE_UNISTD_H)
 	stream.write(getpid());
 #endif
-	stream.replace(static_cast<Omega::uint16_t>(stream.length()),mark);
+	stream.replace(static_cast<uint16_t>(stream.length()),mark);
 	if (stream.last_error())
 		OMEGA_THROW(stream.last_error());
 
 #if !defined(HAVE_UNISTD_H)
-	err = OOBase::CDRIO::send_and_recv_with_header_blocking<Omega::uint16_t>(stream,root_socket);
+	err = OOBase::CDRIO::send_and_recv_with_header_blocking<uint16_t>(stream,root_socket);
 	if (err)
 		OMEGA_THROW(err);
-
-	// Read early stuff...
 
 	// Align everything, ready for the Omega_Initialize call
 	stream.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
@@ -174,7 +166,7 @@ void OOCore::UserSession::connect_root(OOBase::CDRStream& stream)
 	if (!ctl_buffer)
 		throw ISystemException::OutOfMemory();
 
-	err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<Omega::uint16_t>(stream,ctl_buffer,root_socket);
+	err = OOBase::CDRIO::send_and_recv_msg_with_header_blocking<uint16_t>(stream,ctl_buffer,root_socket);
 	if (err)
 		OMEGA_THROW(err);
 

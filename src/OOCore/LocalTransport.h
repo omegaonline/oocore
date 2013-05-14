@@ -35,16 +35,24 @@ namespace OOCore
 	public:
 		LocalTransport() {}
 
-		void init(OOBase::CDRStream& stream, OOBase::Proactor* proactor);
+		void init(OOBase::CDRStream& stream, OOBase::Proactor* proactor, const OOBase::Timeout& timeout);
 
 		BEGIN_INTERFACE_MAP(LocalTransport)
 			INTERFACE_ENTRY(Omega::Remoting::ITransport)
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SpinLock m_lock;
+		OOBase::SpinLock                    m_lock;
+		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
+		Omega::string_t                     m_strName;
 
 		OOBase::HandleTable<Omega::uint32_t,OTL::ObjectPtr<Omega::Remoting::ITransportNotify> > m_mapNotify;
+
+		void on_recv1(OOBase::Buffer* buffer, int err);
+		void on_recv2(OOBase::Buffer* buffer, int err);
+		void on_close(int err);
+
+		static const size_t s_header_length = sizeof(Omega::uint32_t) * 2;
 
 	// ITransport members
 	public:

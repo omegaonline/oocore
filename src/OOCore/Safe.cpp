@@ -79,8 +79,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::qi_rtti*,OOCore_rtti_
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	const System::Internal::qi_rtti* pRet = NULL;
-
-	pThis->m_qi_map.find(*iid,pRet);
+	OOBase::HashTable<guid_t,const System::Internal::qi_rtti*,OOBase::CrtAllocator,OOCore::GuidHash>::iterator i = pThis->m_qi_map.find(*iid);
+	if (i != pThis->m_qi_map.end())
+		pRet = i->value;
 
 	return pRet;
 }
@@ -92,8 +93,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::wire_rtti*,OOCore_rtt
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	const System::Internal::wire_rtti* pRet = NULL;
-
-	pThis->m_wi_map.find(*iid,pRet);
+	OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::CrtAllocator,OOCore::GuidHash>::iterator i = pThis->m_wi_map.find(*iid);
+	if (i != pThis->m_wi_map.end())
+		pRet = i->value;
 
 	return pRet;
 }
@@ -156,9 +158,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_safe_holder_add1,3,((in),void
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_shim_map.insert(shim,pObject);
+	int err = 0;
+	OOBase::HashTable<const System::Internal::SafeShim*,IObject*>::iterator i = pThis->m_shim_map.insert(shim,pObject,err);
 	if (err == EEXIST)
-		return *pThis->m_shim_map.find(shim);
+		return i->value;
 
 	if (err == 0)
 		err = pThis->m_obj_map.insert(pObject,shim);
@@ -175,9 +178,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::SafeShim*,OOCore_safe
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_obj_map.insert(pObject,shim);
+	int err = 0;
+	OOBase::HashTable<IObject*,const System::Internal::SafeShim*>::iterator i = pThis->m_obj_map.insert(pObject,shim,err);
 	if (err == EEXIST)
-		return *pThis->m_obj_map.find(pObject);
+		return i->value;
 	
 	if (err == 0)
 		err = pThis->m_shim_map.insert(shim,pObject);
@@ -195,8 +199,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::SafeShim*,OOCore_safe
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	const System::Internal::SafeShim* ret = NULL;
-	
-	pThis->m_obj_map.find(pObject,ret);
+	OOBase::HashTable<IObject*,const System::Internal::SafeShim*>::iterator i = pThis->m_obj_map.find(pObject);
+	if (i != pThis->m_obj_map.end())
+		ret = i->value;
 	
 	return ret;
 }
@@ -252,9 +257,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_wire_holder_add,3,((in),void*
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	int err = pThis->m_map.insert(pProxy,pObject);
+	int err = 0;
+	OOBase::HashTable<IObject*,IObject*>::iterator i = pThis->m_map.insert(pProxy,pObject,err);
 	if (err == EEXIST)
-		return *pThis->m_map.find(pProxy);
+		return i->value;
 
 	if (err != 0)
 		OMEGA_THROW(err);
@@ -269,8 +275,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(IObject*,OOCore_wire_holder_find,2,((in),void
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	IObject* pObj = NULL;
-
-	pThis->m_map.find(pProxy,pObj);
+	OOBase::HashTable<IObject*,IObject*>::iterator i = pThis->m_map.find(pProxy);
+	if (i != pThis->m_map.end())
+		pObj = i->value;
 	
 	return pObj;
 }

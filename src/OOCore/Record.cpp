@@ -32,11 +32,10 @@ uint32_t OOCore::Array::GetCount()
 
 	if (!m_max)
 	{
-		for (size_t p=m_mapIndex.begin();p!=m_mapIndex.npos;p=m_mapIndex.next(p))
+		for (OOBase::HashTable<uint32_t,Tag,OOBase::CrtAllocator>::iterator i=m_mapIndex.begin();i!=m_mapIndex.end();++i)
 		{
-			uint32_t k = *m_mapIndex.key_at(p);
-			if (k > m_max)
-				m_max = k;
+			if (i->key > m_max)
+				m_max = i->key;
 		}
 	}
 
@@ -47,49 +46,50 @@ any_t OOCore::Array::GetValue(uint32_t position)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (!m_mapIndex.find(position,tag))
+	OOBase::HashTable<uint32_t,Tag,OOBase::CrtAllocator>::iterator i = m_mapIndex.find(position);
+	if (i == m_mapIndex.end())
 		return any_t();
-	else if (tag.m_tag == Tag::eRecord)
+	else if (i->value.m_tag == Tag::eRecord)
 		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get a sub-record using GetValue"));
-	else if (tag.m_tag == Tag::eArray)
+	else if (i->value.m_tag == Tag::eArray)
 		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get an array using GetValue"));
 
-	any_t result;
-	if (!m_mapValues.find(tag.m_idx,result))
+	OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator>::iterator j = m_mapValues.find(i->value.m_idx);
+	if (j == m_mapValues.end())
 		OMEGA_THROW("Array index out of sync");
 
-	return result;
+	return j->value;
 }
 
 void OOCore::Array::SetValue(uint32_t position, const any_t& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (m_mapIndex.find(position,tag))
+	OOBase::HashTable<uint32_t,Tag,OOBase::CrtAllocator>::iterator i = m_mapIndex.find(position);
+	if (i != m_mapIndex.end())
 	{
-		if (tag.m_tag == Tag::eRecord)
+		if (i->value.m_tag == Tag::eRecord)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A sub-record at position {0} already exists") % position);
-		else if (tag.m_tag == Tag::eArray)
+		else if (i->value.m_tag == Tag::eArray)
 			throw IAlreadyExistsException::Create(OOCore::get_text("An array at position {0} already exists") % position);
 		else if (val.GetType() == TypeInfo::typeVoid)
 		{
-			m_mapValues.remove(tag.m_idx);
+			m_mapValues.remove(i->value.m_idx);
 
 			if (position == m_max)
 				m_max = 0;
 		}
 		else
 		{
-			any_t* pv = m_mapValues.find(tag.m_idx);
-			if (!pv)
+			OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator>::iterator j = m_mapValues.find(i->value.m_idx);
+			if (j == m_mapValues.end())
 				OMEGA_THROW("Record index out of sync");
-			*pv = val;
+			j->value = val;
 		}
 	}
 	else
 	{
+		Tag tag;
 		tag.m_tag = Tag::eValue;
 		int err = m_mapValues.insert(val,tag.m_idx);
 		if (err)
@@ -131,44 +131,45 @@ any_t OOCore::Record::GetValue(const string_t& name)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (!m_mapIndex.find(name,tag))
+	OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash>::iterator i = m_mapIndex.find(name);
+	if (i == m_mapIndex.end())
 		return any_t();
-	else if (tag.m_tag == Tag::eRecord)
+	else if (i->value.m_tag == Tag::eRecord)
 		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get a sub-record using GetValue"));
-	else if (tag.m_tag == Tag::eArray)
+	else if (i->value.m_tag == Tag::eArray)
 		throw IAccessDeniedException::Create(OOCore::get_text("Attempt to get an array using GetValue"));
 
-	any_t result;
-	if (!m_mapValues.find(tag.m_idx,result))
+	OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator>::iterator j = m_mapValues.find(i->value.m_idx);
+	if (j == m_mapValues.end())
 		OMEGA_THROW("Record index out of sync");
 
-	return result;
+	return j->value;
 }
 
 void OOCore::Record::SetValue(const string_t& name, const any_t& val)
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (m_mapIndex.find(name,tag))
+	OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash>::iterator i = m_mapIndex.find(name);
+	if (i != m_mapIndex.end())
 	{
-		if (tag.m_tag == Tag::eRecord)
+		if (i->value.m_tag == Tag::eRecord)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A sub-record with the name {0} already exists") % name);
-		else if (tag.m_tag == Tag::eArray)
+		else if (i->value.m_tag == Tag::eArray)
 			throw IAlreadyExistsException::Create(OOCore::get_text("An array with the name {0} already exists") % name);
 		else if (val.GetType() == TypeInfo::typeVoid)
-			m_mapValues.remove(tag.m_idx);
+			m_mapValues.remove(i->value.m_idx);
 		else
 		{
-			any_t* pv = m_mapValues.find(tag.m_idx);
-			if (!pv)
+			OOBase::HandleTable<size_t,any_t,OOBase::CrtAllocator>::iterator j = m_mapValues.find(i->value.m_idx);
+			if (j == m_mapValues.end())
 				OMEGA_THROW("Record index out of sync");
-			*pv = val;
+			j->value = val;
 		}
 	}
 	else
 	{
+		Tag tag;
 		tag.m_tag = Tag::eValue;
 		int err = m_mapValues.insert(val,tag.m_idx);
 		if (err)
@@ -192,14 +193,15 @@ Storage::IRecord* OOCore::Record::OpenRecord(const string_t& name, Storage::Open
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (!m_mapIndex.find(name,tag))
+	OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash>::iterator i = m_mapIndex.find(name);
+	if (i == m_mapIndex.end())
 	{
 		if (flags == Storage::OpenExisting)
 			throw INotFoundException::Create(OOCore::get_text("The record contains no sub-record named {0}") % name);
 
 		ptrRecord = ObjectImpl<Record>::CreateObject();
 
+		Tag tag;
 		tag.m_tag = Tag::eRecord;
 		int err = m_mapRecords.insert(ptrRecord,tag.m_idx);
 		if (err)
@@ -214,14 +216,20 @@ Storage::IRecord* OOCore::Record::OpenRecord(const string_t& name, Storage::Open
 	}
 	else
 	{
-		if (tag.m_tag == Tag::eValue)
+		if (i->value.m_tag == Tag::eValue)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A value with the name {0} already exists") % name);
-		else if (tag.m_tag == Tag::eArray)
+		else if (i->value.m_tag == Tag::eArray)
 			throw IAlreadyExistsException::Create(OOCore::get_text("An array with the name {0} already exists") % name);
 		else if (flags == Storage::CreateNew)
 			throw IAlreadyExistsException::Create(OOCore::get_text("The record already contains a sub-record named {0}") % name);
-		else if (!m_mapRecords.find(tag.m_idx,ptrRecord))
-			OMEGA_THROW("Record index out of sync");
+		else
+		{
+			OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<Record> >,OOBase::CrtAllocator>::iterator j = m_mapRecords.find(i->value.m_idx);
+			if (j == m_mapRecords.end())
+				OMEGA_THROW("Record index out of sync");
+
+			ptrRecord = j->value;
+		}
 	}
 
 	return static_cast<Storage::IRecord*>(ptrRecord->QueryInterface(OMEGA_GUIDOF(Storage::IRecord)));
@@ -233,15 +241,21 @@ Storage::IRecord* OOCore::Record::DeleteRecord(const string_t& name)
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (m_mapIndex.find(name,tag))
+	OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash>::iterator i = m_mapIndex.find(name);
+	if (i != m_mapIndex.end())
 	{
-		if (tag.m_tag == Tag::eValue)
+		if (i->value.m_tag == Tag::eValue)
 			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a value using DeleteRecord"));
-		else if (tag.m_tag == Tag::eArray)
+		else if (i->value.m_tag == Tag::eArray)
 			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete an array using DeleteRecord"));
-		else if (!m_mapRecords.find(tag.m_idx,ptrRecord))
-			OMEGA_THROW("Record index out of sync");
+		else
+		{
+			OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<Record> >,OOBase::CrtAllocator>::iterator j = m_mapRecords.find(i->value.m_idx);
+			if (j == m_mapRecords.end())
+				OMEGA_THROW("Record index out of sync");
+
+			ptrRecord = j->value;
+		}
 	}
 
 	return static_cast<Storage::IRecord*>(ptrRecord->QueryInterface(OMEGA_GUIDOF(Storage::IRecord)));
@@ -256,14 +270,15 @@ Storage::IArray* OOCore::Record::OpenArray(const string_t& name, Storage::OpenFl
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (!m_mapIndex.find(name,tag))
+	OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash>::iterator i = m_mapIndex.find(name);
+	if (i == m_mapIndex.end())
 	{
 		if (flags == Storage::OpenExisting)
 			throw INotFoundException::Create(OOCore::get_text("The record contains no array named {0}") % name);
 
 		ptrArray = ObjectImpl<Array>::CreateObject();
 
+		Tag tag;
 		tag.m_tag = Tag::eArray;
 		int err = m_mapArrays.insert(ptrArray,tag.m_idx);
 		if (err)
@@ -278,14 +293,20 @@ Storage::IArray* OOCore::Record::OpenArray(const string_t& name, Storage::OpenFl
 	}
 	else
 	{
-		if (tag.m_tag == Tag::eValue)
+		if (i->value.m_tag == Tag::eValue)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A value with the name {0} already exists") % name);
-		else if (tag.m_tag == Tag::eRecord)
+		else if (i->value.m_tag == Tag::eRecord)
 			throw IAlreadyExistsException::Create(OOCore::get_text("A sub-record with the name {0} already exists") % name);
 		else if (flags == Storage::CreateNew)
 			throw IAlreadyExistsException::Create(OOCore::get_text("The record already contains an array named {0}") % name);
-		else if (!m_mapArrays.find(tag.m_idx,ptrArray))
-			OMEGA_THROW("Record index out of sync");
+		else
+		{
+			OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<Array> >,OOBase::CrtAllocator>::iterator j = m_mapArrays.find(i->value.m_idx);
+			if (j == m_mapArrays.end())
+				OMEGA_THROW("Record index out of sync");
+
+			ptrArray = j->value;
+		}
 	}
 
 	return static_cast<Storage::IArray*>(ptrArray->QueryInterface(OMEGA_GUIDOF(Storage::IArray)));
@@ -297,15 +318,21 @@ Storage::IArray* OOCore::Record::DeleteArray(const string_t& name)
 
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	Tag tag;
-	if (m_mapIndex.find(name,tag))
+	OOBase::HashTable<string_t,Tag,OOBase::CrtAllocator,OOCore::StringHash>::iterator i = m_mapIndex.find(name);
+	if (i != m_mapIndex.end())
 	{
-		if (tag.m_tag == Tag::eValue)
+		if (i->value.m_tag == Tag::eValue)
 			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a value using DeleteArray"));
-		else if (tag.m_tag == Tag::eRecord)
+		else if (i->value.m_tag == Tag::eRecord)
 			throw IAccessDeniedException::Create(OOCore::get_text("Attempt to delete a sub-record using DeleteArray"));
-		else if (!m_mapArrays.find(tag.m_idx,ptrArray))
-			OMEGA_THROW("Record index out of sync");
+		else
+		{
+			OOBase::HandleTable<size_t,ObjectPtr<ObjectImpl<Array> >,OOBase::CrtAllocator>::iterator j = m_mapArrays.find(i->value.m_idx);
+			if (j == m_mapArrays.end())
+				OMEGA_THROW("Record index out of sync");
+
+			ptrArray = j->value;
+		}
 	}
 
 	return static_cast<Storage::IArray*>(ptrArray->QueryInterface(OMEGA_GUIDOF(Storage::IArray)));

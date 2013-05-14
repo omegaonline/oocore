@@ -475,7 +475,12 @@ bool Root::Manager::get_client(pid_t id, OOBase::RefPtr<ClientConnection>& ptrCl
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	return m_clients.find(id,ptrClient);
+	OOBase::HashTable<pid_t,OOBase::RefPtr<ClientConnection> >::iterator i = m_clients.find(id);
+	if (i == m_clients.end())
+		return false;
+
+	ptrClient = i->value;
+	return true;
 }
 
 

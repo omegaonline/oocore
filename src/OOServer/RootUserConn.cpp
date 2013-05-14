@@ -758,12 +758,14 @@ bool Root::Manager::spawn_user_process(pid_t client_id, OOBase::RefPtr<RegistryC
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::RefPtr<ClientConnection> ptrClient;
-	if (!m_clients.find(client_id,ptrClient))
+	OOBase::HashTable<pid_t,OOBase::RefPtr<ClientConnection> >::iterator i = m_clients.find(client_id);
+	if (i == m_clients.end())
 	{
 		// No client?  No worries...
 		return true;
 	}
+
+	OOBase::RefPtr<ClientConnection> ptrClient = i->value;
 
 	guard.release();
 
@@ -852,7 +854,12 @@ bool Root::Manager::get_user_process(pid_t user_id, OOBase::RefPtr<UserConnectio
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	return m_user_processes.find(user_id,ptrUser);
+	OOBase::HashTable<pid_t,OOBase::RefPtr<UserConnection> >::iterator i = m_user_processes.find(user_id);
+	if (i == m_user_processes.end())
+		return false;
+
+	ptrUser = i->value;
+	return true;
 }
 
 void Root::Manager::drop_user_process(pid_t id)

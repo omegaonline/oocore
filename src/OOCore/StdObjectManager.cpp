@@ -99,14 +99,16 @@ void OOCore::StdObjectManager::Shutdown()
 	m_mapProxyIds.clear();
 
 	// Clear the stub map
-	Omega::uint32_t stub_id = 0;
+	uint32_t stub_id = 0;
 	ObjectPtr<ObjectImpl<Stub> > ptrStub;
 	while (m_mapStubIds.pop(&stub_id,&ptrStub))
 	{
-		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
+		for (OOBase::HashTable<IObject*,uint32_t>::iterator i=m_mapStubObjs.begin();i!=m_mapStubObjs.end();)
 		{
-			if (*m_mapStubObjs.at(i) == stub_id)
+			if (i->value == stub_id)
 				m_mapStubObjs.remove_at(i);
+			else
+				++i;
 		}
 
 		guard.release();
@@ -193,7 +195,8 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 				ObjectPtr<ObjectImpl<Stub> > ptrStub;
-				if (!m_mapStubIds.find(stub_id,ptrStub))
+				OOBase::HandleTable<uint32_t,ObjectPtr<ObjectImpl<Stub> > >::iterator i = m_mapStubIds.find(stub_id);
+				if (i == m_mapStubIds.end())
 					OMEGA_THROW("Proxy references an object that has gone");
 
 				guard.release();
@@ -400,10 +403,12 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 
 	if (m_mapStubIds.remove(stub_id))
 	{
-		for (size_t i=m_mapStubObjs.begin();i!=m_mapStubObjs.npos;i=m_mapStubObjs.next(i))
+		for (OOBase::HashTable<IObject*,uint32_t>::iterator i=m_mapStubObjs.begin();i!=m_mapStubObjs.end();)
 		{
-			if (*m_mapStubObjs.at(i) == stub_id)
+			if (i->value == stub_id)
 				m_mapStubObjs.remove_at(i);
+			else
+				++i;
 		}
 	}
 }
@@ -461,9 +466,13 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		Omega::uint32_t i = 0;
-		if (m_mapStubObjs.find(ptrObj,i))
-			m_mapStubIds.find(i,ptrStub);
+		OOBase::HashTable<IObject*,uint32_t>::iterator i = m_mapStubObjs.find(ptrObj);
+		if (i != m_mapStubObjs.end())
+		{
+			OOBase::HandleTable<uint32_t,ObjectPtr<ObjectImpl<Stub> > >::iterator j = m_mapStubIds.find(i->value);
+			if (j != m_mapStubIds.end())
+				ptrStub = j->value;
+		}
 	}
 
 	if (!ptrStub)
@@ -487,9 +496,16 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		uint32_t stub_id;
-		if (m_mapStubObjs.find(ptrObj,stub_id))
-			m_mapStubIds.find(stub_id,ptrStub);
-		else
+		OOBase::HashTable<IObject*,uint32_t>::iterator i = m_mapStubObjs.find(ptrObj);
+		if (i != m_mapStubObjs.end())
+		{
+			stub_id = i->value;
+			OOBase::HandleTable<uint32_t,ObjectPtr<ObjectImpl<Stub> > >::iterator j = m_mapStubIds.find(stub_id);
+			if (j != m_mapStubIds.end())
+				ptrStub = j->value;
+		}
+
+		if (!ptrStub)
 		{
 			// Add to the map...
 			ptrStub = ObjectImpl<Stub>::CreateObject();
@@ -539,10 +555,10 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			OTL::ObjectImpl<Proxy>* p = NULL;
-			if (m_mapProxyIds.find(proxy_id,p))
+			OOBase::HashTable<uint32_t,ObjectImpl<Proxy>*>::iterator i = m_mapProxyIds.find(proxy_id);
+			if (i != m_mapProxyIds.end())
 			{
-				ptrProxy = p;
+				ptrProxy = i->value;
 				ptrProxy.AddRef();
 			}
 		}
@@ -554,13 +570,14 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			int err = m_mapProxyIds.insert(proxy_id,ptrProxy);
+			int err = 0;
+			OOBase::HashTable<uint32_t,ObjectImpl<Proxy>*>::iterator i = m_mapProxyIds.insert(proxy_id,ptrProxy,err);
 			if (err == EEXIST)
 			{
-				ptrProxy = *m_mapProxyIds.find(proxy_id);
+				ptrProxy = i->value;
 				ptrProxy.AddRef();
 			}
-			else if (err != 0)
+			else if (err)
 				OMEGA_THROW(err);
 		}
 
@@ -611,9 +628,14 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			ObjectPtr<ObjectImpl<Stub> > ptrStub;
-			uint32_t stub_id = 0;
-			if (m_mapStubObjs.find(ptrObj,stub_id))
-				m_mapStubIds.find(stub_id,ptrStub);
+
+			OOBase::HashTable<IObject*,uint32_t>::iterator i = m_mapStubObjs.find(ptrObj);
+			if (i != m_mapStubObjs.end())
+			{
+				OOBase::HandleTable<uint32_t,ObjectPtr<ObjectImpl<Stub> > >::iterator j = m_mapStubIds.find(i->value);
+				if (j != m_mapStubIds.end())
+					ptrStub = j->value;
+			}
 
 			guard.release();
 
@@ -799,5 +821,5 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IProxy*,OOCore_Remoting_GetProxy,1,((in
 	return NULL;
 }
 
-const Omega::guid_t OOCore::OID_ProxyMarshalFactory("{69099DD8-A628-458a-861F-009E016DB81B}");
-const Omega::guid_t OOCore::OID_InterProcessService("{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");
+const guid_t OOCore::OID_ProxyMarshalFactory("{69099DD8-A628-458a-861F-009E016DB81B}");
+const guid_t OOCore::OID_InterProcessService("{7E9E22E8-C0B0-43F9-9575-BFB1665CAE4A}");

@@ -65,8 +65,8 @@ OOCore::UserSession::~UserSession()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Tell every thread context that we have gone...
-	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
-		(*m_mapThreadContexts.at(i))->m_thread_id = 0;
+	for (OOBase::HandleTable<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		i->value->m_thread_id = 0;
 }
 
 void OOCore::UserSession::init(const byte_t* data, size_t len)
@@ -301,8 +301,8 @@ void OOCore::UserSession::close_compartments()
 	// Do these in reverse order...
 	OOBase::StackAllocator<128> allocator;
 	OOBase::Vector<OOBase::SmartPtr<Compartment>,OOBase::AllocatorInstance> vecCompts(allocator);
-	for (size_t i = m_mapCompartments.begin();i!=m_mapCompartments.npos;i=m_mapCompartments.next(i))
-		vecCompts.push_back(*m_mapCompartments.at(i));
+	for (OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.begin();i!=m_mapCompartments.end();++i)
+		vecCompts.push_back(i->value);
 
 	guard.release();
 
@@ -465,13 +465,13 @@ int OOCore::UserSession::run_read_loop()
 			// Find the right queue to send it to...
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			ThreadContext* pContext = NULL;
-			if (m_mapThreadContexts.find(msg.m_dest_thread_id,pContext))
+			OOBase::HandleTable<uint16_t,ThreadContext*>::iterator i = m_mapThreadContexts.find(msg.m_dest_thread_id);
+			if (i != m_mapThreadContexts.end())
 			{
-				OOBase::BoundedQueue<Message>::Result res = pContext->m_msg_queue.push(msg);
+				OOBase::BoundedQueue<Message>::Result res = i->value->m_msg_queue.push(msg);
 				if (res == OOBase::BoundedQueue<Message>::error)
 				{
-					err = pContext->m_msg_queue.last_error();
+					err = i->value->m_msg_queue.last_error();
 					break;
 				}
 			}
@@ -501,8 +501,8 @@ int OOCore::UserSession::run_read_loop()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	// Tell all worker threads that we are done with them...
-	for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
-		(*m_mapThreadContexts.at(i))->m_msg_queue.close();
+	for (OOBase::HandleTable<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+		i->value->m_msg_queue.close();
 
 	// Stop the default message queue
 	m_default_msg_queue.close();
@@ -557,16 +557,16 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	bool bPulse = false;
-	for (size_t j=m_mapCompartments.begin(); j!=m_mapCompartments.npos; j=m_mapCompartments.next(j))
+	for (OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
-		if ((*m_mapCompartments.at(j))->process_channel_close(closed_channel_id))
+		if (j->value->process_channel_close(closed_channel_id))
 			bPulse = true;
 	}
 
 	if (bPulse)
 	{
-		for (size_t i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.npos; i=m_mapThreadContexts.next(i))
-			(*m_mapThreadContexts.at(i))->m_msg_queue.pulse();
+		for (OOBase::HandleTable<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin(); i!=m_mapThreadContexts.end(); ++i)
+			i->value->m_msg_queue.pulse();
 	}
 }
 
@@ -578,7 +578,9 @@ void OOCore::UserSession::wait_for_response(ThreadContext* pContext, OOBase::CDR
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		OOBase::SmartPtr<Compartment> ptrCompt;
-		m_mapCompartments.find(pContext->m_current_cmpt,ptrCompt);
+		OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(pContext->m_current_cmpt);
+		if (i != m_mapCompartments.end())
+			ptrCompt = i->value;
 
 		guard.release();
 
@@ -672,7 +674,10 @@ void OOCore::UserSession::send_request(uint32_t dest_channel_id, OOBase::CDRStre
 
 	// Determine dest_thread_id
 	uint16_t dest_thread_id = 0;
-	pContext->m_mapChannelThreads.find(dest_channel_id,dest_thread_id);
+
+	OOBase::HashTable<uint32_t,uint16_t,OOBase::ThreadLocalAllocator>::iterator i = pContext->m_mapChannelThreads.find(dest_channel_id);
+	if (i != pContext->m_mapChannelThreads.end())
+		dest_thread_id = i->value;
 
 	// Write the header info
 	OOBase::CDRStream header;
@@ -789,7 +794,9 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::SmartPtr<Compartment> ptrCompt;
-	m_mapCompartments.find(msg.m_dest_cmpt_id,ptrCompt);
+	OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(msg.m_dest_cmpt_id);
+	if (i != m_mapCompartments.end())
+		ptrCompt = i->value;
 
 	guard.release();
 
@@ -805,12 +812,14 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	}
 
 	// Set per channel thread id
+	bool prev_thread_id = false;
 	uint16_t old_thread_id = 0;
-	uint16_t* v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
-	if (v)
+	OOBase::HashTable<uint32_t,uint16_t,OOBase::ThreadLocalAllocator>::iterator j = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
+	if (j != pContext->m_mapChannelThreads.end())
 	{
-		old_thread_id = *v;
-		*v = msg.m_src_thread_id;
+		prev_thread_id = true;
+		old_thread_id = j->value;
+		j->value = msg.m_src_thread_id;
 	}
 	else
 	{
@@ -850,11 +859,11 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 	}
 
 	// Restore old context
-	if (v)
+	if (prev_thread_id)
 	{
-		v = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
-		if (v)
-			*v = old_thread_id;
+		j = pContext->m_mapChannelThreads.find(msg.m_src_channel_id);
+		if (j != pContext->m_mapChannelThreads.end())
+			j->value = old_thread_id;
 	}
 	else
 		pContext->m_mapChannelThreads.remove(msg.m_src_channel_id);
@@ -892,7 +901,9 @@ OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint1
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::SmartPtr<OOCore::Compartment> ptrCompt;
-	m_mapCompartments.find(id,ptrCompt);
+	OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
+	if (i != m_mapCompartments.end())
+		ptrCompt = i->value;
 
 	return ptrCompt;
 }
@@ -928,11 +939,14 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		if (!m_mapCompartments.find(pContext->m_current_cmpt,ptrCompt))
+		OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(pContext->m_current_cmpt);
+		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment for new channel"));
 		}
+
+		ptrCompt = i->value;
 	}
 
 	switch (flags)
@@ -958,7 +972,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Initialize,3,((in),uint32_t,ver
 {
 	// Check the versions are correct
 	if (version > ((OOCORE_MAJOR_VERSION << 24) | (OOCORE_MINOR_VERSION << 16)))
-		throw Omega::IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
+		throw IInternalException::Create(OOCore::get_text("This component requires a later version of OOCore"),"Omega::Initialize");
 
 	USER_SESSION::instance().init(data,len);
 }

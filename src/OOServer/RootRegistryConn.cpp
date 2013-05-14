@@ -688,7 +688,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 	{
 		guard.acquire();
 
-		m_registry_processes.remove(1);
+		m_registry_processes.remove(size_t(1));
 
 		return false;
 	}
@@ -768,7 +768,9 @@ OOBase::RefPtr<Root::RegistryConnection> Root::Manager::get_root_registry()
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	OOBase::RefPtr<RegistryConnection> ptr;
-	m_registry_processes.find(1,ptr);
+	OOBase::HandleTable<size_t,OOBase::RefPtr<RegistryConnection> >::iterator i = m_registry_processes.find(size_t(1));
+	if (i != m_registry_processes.end())
+		ptr = i->value;
 
 	return ptr;
 }
@@ -777,7 +779,12 @@ bool Root::Manager::get_registry_process(size_t id, OOBase::RefPtr<RegistryConne
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	return m_registry_processes.find(id,ptrReg);
+	OOBase::HandleTable<size_t,OOBase::RefPtr<RegistryConnection> >::iterator i = m_registry_processes.find(id);
+	if (i == m_registry_processes.end())
+		return false;
+
+	ptrReg = i->value;
+	return true;
 }
 
 void Root::Manager::drop_registry_process(size_t id)

@@ -301,11 +301,12 @@ bool Root::Manager::connect_client(ClientConnection* client)
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	// Look for the matching user process
-	for (size_t i=m_user_processes.begin(); i!=m_user_processes.npos; i=m_user_processes.next(i))
+	for (OOBase::HashTable<pid_t,OOBase::RefPtr<UserConnection> >::iterator i=m_user_processes.begin(); i!=m_user_processes.end(); ++i)
 	{
-		OOBase::RefPtr<UserConnection> p = *m_user_processes.at(i);
-		if (p->same_login(ptrClient->get_uid(),ptrClient->get_session_id()))
+		if (i->value->same_login(ptrClient->get_uid(),ptrClient->get_session_id()))
 		{
+			OOBase::RefPtr<UserConnection> p = i->value;
+
 			guard.release();
 
 			return p->add_client(ptrClient->get_pid());
@@ -319,12 +320,11 @@ bool Root::Manager::connect_client(ClientConnection* client)
 
 	// Spawn correct registry if not existing
 	OOBase::RefPtr<RegistryConnection> ptrRegistry;
-	for (size_t i=m_registry_processes.begin(); i!=m_registry_processes.npos; i=m_registry_processes.next(i))
+	for (OOBase::HandleTable<size_t,OOBase::RefPtr<RegistryConnection> >::iterator i=m_registry_processes.begin(); i!=m_registry_processes.end(); ++i)
 	{
-		OOBase::RefPtr<RegistryConnection> r = *m_registry_processes.at(i);
-		if (r->same_user(ptrClient->get_uid()))
+		if (i->value->same_user(ptrClient->get_uid()))
 		{
-			ptrRegistry = r;
+			ptrRegistry = i->value;
 			break;
 		}
 	}

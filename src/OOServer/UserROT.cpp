@@ -81,14 +81,14 @@ uint32_t User::RunningObjectTable::RegisterObject(const any_t& oid, IObject* pOb
 		for (size_t i=m_mapObjectsByOid.find_first(info.m_oid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==info.m_oid; ++i)
 		{
 			// Check its still alive...
-			Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
-			if (pInfo)
+			OOBase::HandleTable<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
+			if (j != m_mapObjectsByCookie.end())
 			{
-				if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+				if (!Remoting::IsAlive(j->value.m_ptrObject))
 					revoke_list.push_back(*m_mapObjectsByOid.at(i));
 				else
 				{
-					if (!(pInfo->m_flags & Activation::MultipleRegistration) || pInfo->m_flags == flags)
+					if (!(j->value.m_flags & Activation::MultipleRegistration) || j->value.m_flags == flags)
 						throw IAlreadyExistsException::Create(string_t::constant("The OID {0} has already been registered") % oid);
 				}
 			}
@@ -143,27 +143,27 @@ void User::RunningObjectTable::GetObject(const any_t& oid, const guid_t& iid, IO
 	ObjectPtr<IObject> ptrObject;
 	for (size_t i=m_mapObjectsByOid.find_first(strOid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==strOid;++i)
 	{
-		Info* pInfo = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
-		if (pInfo && (pInfo->m_flags & search_flags))
+		OOBase::HandleTable<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*m_mapObjectsByOid.at(i));
+		if (j != m_mapObjectsByCookie.end() && (j->value.m_flags & search_flags))
 		{
 			// Check its still alive...
-			if (!Omega::Remoting::IsAlive(pInfo->m_ptrObject))
+			if (!Remoting::IsAlive(j->value.m_ptrObject))
 			{
 				revoke_list.push_back(*m_mapObjectsByOid.at(i));
 			}
 			else
 			{
 				if (iid == OMEGA_GUIDOF(IObject))
-					ptrObject = pInfo->m_ptrObject;
+					ptrObject = j->value.m_ptrObject;
 				else
 				{
-					ptrObject = pInfo->m_ptrObject->QueryInterface(iid);
+					ptrObject = j->value.m_ptrObject->QueryInterface(iid);
 					if (!ptrObject)
 						throw OOCore_INotFoundException_MissingIID(iid);
 				}
 
 				// Remove the entry if Activation::SingleUse
-				if (pInfo->m_flags & Activation::SingleUse)
+				if (j->value.m_flags & Activation::SingleUse)
 				{
 					int err = revoke_list.push_back(*m_mapObjectsByOid.at(i));
 					if (err != 0)
@@ -193,10 +193,10 @@ void User::RunningObjectTable::RevokeObject_i(uint32_t cookie, uint32_t src_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	Info* pInfo = m_mapObjectsByCookie.find(cookie);
-	if (pInfo && (!src_id || pInfo->m_source == src_id))
+	OOBase::HandleTable<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(cookie);
+	if (j != m_mapObjectsByCookie.end() && (!src_id || j->value.m_source == src_id))
 	{
-		Info info = *pInfo;
+		Info info = j->value;
 
 		for (size_t i=m_mapObjectsByOid.find_first(info.m_oid); i<m_mapObjectsByOid.size() && *m_mapObjectsByOid.key_at(i)==info.m_oid; ++i)
 		{
@@ -230,15 +230,14 @@ void User::RunningObjectTable::OnRegisterObject(const any_t& oid, Activation::Re
 
 	OOBase::Vector<uint32_t> stackRemove;
 
-	for (size_t pos = m_mapNotify.begin(); pos != m_mapNotify.npos; pos = m_mapNotify.next(pos))
+	for (OOBase::HandleTable<uint32_t,ObjectPtr<Activation::IRunningObjectTableNotify> >::iterator i = m_mapNotify.begin(); i != m_mapNotify.end(); ++i)
 	{
 		try
 		{
-			ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = *m_mapNotify.at(pos);
-			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
-				stackRemove.push_back(*m_mapNotify.key_at(pos));
+			if (!Remoting::IsAlive(i->value))
+				stackRemove.push_back(i->key);
 			else
-				ptrNotify->OnRegisterObject(oid,flags);
+				i->value->OnRegisterObject(oid,flags);
 		}
 		catch (IException* pE)
 		{
@@ -265,15 +264,14 @@ void User::RunningObjectTable::OnRevokeObject(const any_t& oid, Activation::Regi
 
 	OOBase::Vector<uint32_t> stackRemove;
 
-	for (size_t pos = m_mapNotify.begin(); pos != m_mapNotify.npos; pos = m_mapNotify.next(pos))
+	for (OOBase::HandleTable<uint32_t,ObjectPtr<Activation::IRunningObjectTableNotify> >::iterator i = m_mapNotify.begin(); i != m_mapNotify.end(); ++i)
 	{
 		try
 		{
-			ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = *m_mapNotify.at(pos);
-			if (!ptrNotify || !Remoting::IsAlive(ptrNotify))
-				stackRemove.push_back(*m_mapNotify.key_at(pos));
+			if (!Remoting::IsAlive(i->value))
+				stackRemove.push_back(i->key);
 			else
-				ptrNotify->OnRevokeObject(oid,flags);
+				i->value->OnRevokeObject(oid,flags);
 		}
 		catch (IException* pE)
 		{
@@ -298,10 +296,11 @@ uint32_t User::RunningObjectTable::RegisterNotify(const guid_t& iid, IObject* pO
 {
 	uint32_t nCookie = 0;
 
-	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify) && pObject)
+	if (iid == OMEGA_GUIDOF(Activation::IRunningObjectTableNotify))
 	{
-		ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify(static_cast<Activation::IRunningObjectTableNotify*>(pObject));
-		ptrNotify.AddRef();
+		ObjectPtr<Activation::IRunningObjectTableNotify> ptrNotify = OTL::QueryInterface<Activation::IRunningObjectTableNotify>(pObject);
+		if (!ptrNotify)
+			throw OOCore_INotFoundException_MissingIID(OMEGA_GUIDOF(Activation::IRunningObjectTableNotify));
 
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 

@@ -73,15 +73,17 @@ Remoting::IStub* OOCore::Stub::FindStub(const guid_t& iid)
 
 	// See if we have a stub for this interface already...
 	ObjectPtr<Remoting::IStub> ptrStub;
-	if (!m_iid_map.find(iid,ptrStub))
+	OOBase::HashTable<guid_t,ObjectPtr<Remoting::IStub>,OOBase::CrtAllocator,GuidHash>::iterator i = m_iid_map.find(iid);
+	if (i != m_iid_map.end())
+		ptrStub = i->value;
+	else
 	{
 		// See if any known interface supports the new interface
-		for (size_t i=m_iid_map.begin(); i!=m_iid_map.npos; i=m_iid_map.next(i))
+		for (i=m_iid_map.begin(); i!=m_iid_map.end(); ++i)
 		{
-			ObjectPtr<Remoting::IStub> ptrStub2 = *m_iid_map.at(i);
-			if (ptrStub2 && ptrStub2->SupportsInterface(iid))
+			if (i->value && i->value->SupportsInterface(iid))
 			{
-				ptrStub = ptrStub2;
+				ptrStub = i->value;
 				break;
 			}
 		}

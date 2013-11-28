@@ -45,4 +45,4 @@ TESTS_ENVIRONMENT = OMEGA_DEBUG=true
 endif
 
 TESTS = \
-	$(srcdir)/coretests.sh
+	@srcdir@/coretests.sh

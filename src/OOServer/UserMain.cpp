@@ -71,7 +71,7 @@ bool User::is_debug()
 int main(int argc, char* argv[])
 {
 	// Start the logger - use OOServer again...
-	OOBase::Logger::open("OOServer",__FILE__);
+	OOBase::Logger::open_system_log("OOServer",__FILE__);
 
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);

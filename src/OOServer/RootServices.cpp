@@ -86,7 +86,7 @@ namespace
 			if (err)
 				LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services/%s/Dependencies' values in the user registry",strName.c_str()),false);
 
-			for (OOBase::LocalString strDep(names.get_allocator());names.pop(&strDep);)
+			for (OOBase::LocalString strDep(names.get_allocator());names.pop_back(&strDep);)
 			{
 				if (!queueNames.find(strDep) && !get_service_dependencies(ptrRegistry,key,strDep,queueNames,queueKeys))
 					return false;
@@ -119,7 +119,7 @@ namespace
 		if (err)
 			LOG_ERROR_RETURN(("Failed to enumerate the '/System/Services' values in the registry"),false);
 
-		for (OOBase::LocalString strName(keys.get_allocator());keys.pop(&strName);)
+		for (OOBase::LocalString strName(keys.get_allocator());keys.pop_back(&strName);)
 		{
 			if (!queueNames.find(strName) && !get_service_dependencies(ptrRegistry,key,strName,queueNames,queueKeys))
 				return false;
@@ -408,7 +408,7 @@ namespace
 				else
 				{
 					OOBase::LocalString strSocketName(strName.get_allocator());
-					for (unsigned long idx = 0;values.pop(&strSocketName);)
+					for (unsigned long idx = 0;values.pop_back(&strSocketName);)
 					{
 						// Make sure we have some kind of name!
 						if (strSocketName.empty())

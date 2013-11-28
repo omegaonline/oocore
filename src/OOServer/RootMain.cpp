@@ -174,7 +174,7 @@ int main(int argc, const char* argv[])
 		return Failure(allocator,APPNAME " is already running\n");
 
 	// Start the logger - delayed because we may have forked
-	OOBase::Logger::open("OOServer",__FILE__);
+	OOBase::Logger::open_system_log("OOServer",__FILE__);
 
 	// Set critical failure handler to the logging handler
 	OOBase::SetCriticalFailure(&CriticalFailure);

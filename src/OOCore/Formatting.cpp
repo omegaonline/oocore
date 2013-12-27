@@ -250,11 +250,11 @@ namespace
 		if (!wval.reallocate(len))
 			throw ISystemException::OutOfMemory();
 
-		len = GetLocaleInfoW(Locale,LCType,wval,len);
+		len = GetLocaleInfoW(Locale,LCType,wval.get(),len);
 		if (!len)
 			OMEGA_THROW(GetLastError());
 
-		int err = OOBase::Win32::wchar_t_to_utf8(wval,val);
+		int err = OOBase::Win32::wchar_t_to_utf8(wval.get(),val);
 		if (err)
 			OMEGA_THROW(err);
 	}
@@ -286,7 +286,7 @@ namespace
 		char grouping_trans[128] = {0};
 		const char* grouping = grouping_trans;
 		size_t g = 0;
-		for (const char* c = grouping_buf; *c != '\0' && g<sizeof(grouping_trans)-1; ++g)
+		for (const char* c = grouping_buf.get(); *c != '\0' && g<sizeof(grouping_trans)-1; ++g)
 		{
 			grouping_trans[g] = static_cast<char>(atoi(c));
 			if (!grouping_trans[g])
@@ -317,7 +317,7 @@ namespace
 		}
 #endif
 
-		size_t pos = replace(str,src_decimal_point,decimal_point);
+		size_t pos = replace(str,src_decimal_point,decimal_point.get());
 		if (pos == str.npos)
 			pos = str.length();
 
@@ -337,7 +337,7 @@ namespace
 				break;
 
 			pos -= grp;
-			insert(str,pos,thousands_sep);
+			insert(str,pos,thousands_sep.get());
 		}
 
 		bool cs_precedes = false;
@@ -390,7 +390,7 @@ namespace
 		switch (posn)
 		{
 		case 0:
-			ret = string_t((char*)currency);
+			ret = string_t(currency.get());
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -407,7 +407,7 @@ namespace
 			break;
 
 		case 1:
-			ret = string_t((char*)currency);
+			ret = string_t(currency.get());
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -420,11 +420,11 @@ namespace
 					ret = ' ' + ret;
 				ret = str.c_str() + ret;
 			}
-			ret = sign + ret;
+			ret = sign.get() + ret;
 			break;
 
 		case 2:
-			ret = string_t((char*)currency);
+			ret = string_t(currency.get());
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -437,11 +437,11 @@ namespace
 					ret = ' ' + ret;
 				ret = str.c_str() + ret;
 			}
-			ret += sign;
+			ret += sign.get();
 			break;
 
 		case 3:
-			ret = string_t(sign) + currency;
+			ret = string_t(sign.get()) + currency.get();
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -458,7 +458,7 @@ namespace
 
 		case 4:
 		default:
-			ret = string_t(currency) + sign;
+			ret = string_t(currency.get()) + sign.get();
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -487,7 +487,7 @@ namespace
 		OOBase::TempPtr<char> decimal_point(str.get_allocator());
 		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point);
 
-		size_t dp = replace(str,src_decimal_point,decimal_point);
+		size_t dp = replace(str,src_decimal_point,decimal_point.get());
 
 		OOBase::TempPtr<char> thousands_sep(str.get_allocator());
 		char trans_grouping[128] = {0};
@@ -501,7 +501,7 @@ namespace
 			// Build a crt style grouping
 
 			size_t g = 0;
-			for (const char* c = grouping_buf; *c != '\0' && g<sizeof(trans_grouping)-1; ++g)
+			for (const char* c = grouping_buf.get(); *c != '\0' && g<sizeof(trans_grouping)-1; ++g)
 			{
 				trans_grouping[g] = static_cast<char>(atoi(c));
 				if (!trans_grouping[g])
@@ -554,7 +554,7 @@ namespace
 					break;
 
 				pos -= grp;
-				insert(str,pos,thousands_sep);
+				insert(str,pos,thousands_sep.get());
 			}
 		}
 
@@ -570,7 +570,7 @@ namespace
 		OOBase::TempPtr<char> decimal_point(str.get_allocator());
 		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point);
 
-		replace(str,decimal_point,".");
+		replace(str,decimal_point.get(),".");
 #endif
 	}
 
@@ -1108,7 +1108,7 @@ namespace
 		if (lc)
 			decimal_char = lc->decimal_point;
 #endif
-		size_t dp = strNumber.find(decimal_char);
+		size_t dp = strNumber.find(decimal_char.get());
 
 		if (sci != string_t::npos || dp != strNumber.npos)
 		{
@@ -1116,7 +1116,7 @@ namespace
 			if (dp == strNumber.npos)
 			{
 				dp = strNumber.length();
-				int err = strNumber.append(decimal_char);
+				int err = strNumber.append(decimal_char.get());
 				if (err != 0)
 					OMEGA_THROW(err);
 			}
@@ -1238,8 +1238,8 @@ namespace
 					if (numpos < dp)
 						res += string_t(strNumber.c_str()+numpos,dp-numpos);
 
-					res += decimal_char;
-					numpos = dp + strlen(decimal_char);
+					res += decimal_char.get();
+					numpos = dp + strlen(decimal_char.get());
 
 					sig_zero = true;
 					seen_decimal = true;
@@ -1698,12 +1698,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Ome
 	if (!OOBase::CrtAllocator::allocate_new(s_p))
 		throw ISystemException::OutOfMemory();
 
-	OOBase::LocalPtr<format_state_t> s(s_p);
+	OOBase::UniquePtr<format_state_t> s(s_p);
 
 	// Split up the string
 	parse_format(format,s->m_strPrefix,s->m_inserts);
 
-	return s.detach();
+	return s.release();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle))
@@ -1716,7 +1716,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	if (!OOBase::CrtAllocator::allocate_new(s_new_p))
 		throw ISystemException::OutOfMemory();
 
-	OOBase::LocalPtr<format_state_t> s_new(s_new_p);
+	OOBase::UniquePtr<format_state_t> s_new(s_new_p);
 
 	s_new->m_strPrefix = s->m_strPrefix;
 
@@ -1737,7 +1737,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 		}
 	}
 
-	return s_new.detach();
+	return s_new.release();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,handle))

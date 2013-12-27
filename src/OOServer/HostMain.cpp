@@ -195,8 +195,8 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 	SHELLEXECUTEINFOW sei = {0};
 	sei.cbSize = sizeof(sei);
 	sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
-	sei.lpFile = wszAppName;
-	sei.lpParameters = wszCmdLine;
+	sei.lpFile = wszAppName.get();
+	sei.lpParameters = wszCmdLine.get();
 	sei.nShow = SW_SHOWDEFAULT;
 
 	if (!ShellExecuteExW(&sei))

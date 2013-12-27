@@ -326,7 +326,7 @@ bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& pt
 		LOG_ERROR_RETURN(("Failed to get logon SID: %s",OOBase::system_error_text(dwErr)),false);
 
 	OOBase::LocalString strSID(allocator);
-	dwErr = OOBase::Win32::SIDToString(static_cast<void*>(ptrSIDLogon),strSID);
+	dwErr = OOBase::Win32::SIDToString(ptrSIDLogon.get(),strSID);
 	if (dwErr)
 		LOG_ERROR_RETURN(("Failed to format logon SID: %s",OOBase::system_error_text(dwErr)),false);
 

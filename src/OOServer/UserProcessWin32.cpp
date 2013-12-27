@@ -125,7 +125,7 @@ void UserProcessWin32::kill()
 
 User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Environment::env_table_t& tabEnv)
 {
-	OOBase::LocalPtr<UserProcessWin32> ptrProcess(new UserProcessWin32());
+	OOBase::UniquePtr<UserProcessWin32> ptrProcess(new UserProcessWin32());
 	if (!ptrProcess)
 		throw Omega::ISystemException::OutOfMemory();
 

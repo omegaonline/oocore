@@ -70,7 +70,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
 
-	OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDSystem(pSID);
+	OOBase::UniquePtr<void,OOBase::Win32::SIDDestructor> pSIDSystem(pSID);
 
 	// Set full control for the creating process SID
 	ea[0].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -78,7 +78,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)pSIDSystem;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDSystem.get();  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
 
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
@@ -90,7 +90,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	if (OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
 	{
 		// Use logon sid instead...
-		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
+		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.get();  // Don't use CREATOR/OWNER, it doesn't work with multiple pipe instances...
 	}
 
 	// Create a SID for the EVERYONE group.
@@ -102,7 +102,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDEveryone(pSID);
+	OOBase::UniquePtr<void,OOBase::Win32::SIDDestructor> pSIDEveryone(pSID);
 
 	// Set read/write access for EVERYONE
 	ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
@@ -110,7 +110,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDEveryone;
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDEveryone.get();
 
 	// Create a SID for the Network group.
 	if (!AllocateAndInitializeSid(&SIDAuthNT, 1,
@@ -120,7 +120,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	{
 		LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),false);
 	}
-	OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDNetwork(pSID);
+	OOBase::UniquePtr<void,OOBase::Win32::SIDDestructor> pSIDNetwork(pSID);
 
 	// Deny all to NETWORK
 	ea[2].grfAccessPermissions = FILE_ALL_ACCESS;
@@ -128,7 +128,7 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 	ea[2].grfInheritance = NO_INHERITANCE;
 	ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[2].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[2].Trustee.ptstrName = (LPWSTR)pSIDNetwork;
+	ea[2].Trustee.ptstrName = (LPWSTR)pSIDNetwork.get();
 
 	// Create a new ACL
 	OOBase::Win32::sec_descript_t sd;

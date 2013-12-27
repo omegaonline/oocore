@@ -26,9 +26,7 @@ namespace Registry
 {
 	class Manager;
 
-	class RootConnection :
-			public OOBase::RefCounted,
-			public OOBase::AllocatorNew<OOBase::CrtAllocator>
+	class RootConnection : public OOBase::RefCounted
 	{
 	public:
 		RootConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock);
@@ -43,9 +41,7 @@ namespace Registry
 
 		OOBase::Proactor* get_proactor();
 #if defined(_WIN32)
-		class PipeConnection :
-				public OOBase::RefCounted,
-				public OOBase::AllocatorNew<OOBase::CrtAllocator>
+		class PipeConnection : public OOBase::RefCounted
 		{
 		public:
 			PipeConnection(RootConnection* parent) : m_parent(parent)

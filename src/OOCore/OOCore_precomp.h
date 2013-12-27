@@ -24,6 +24,7 @@
 
 #include <OOBase/Singleton.h>
 #include <OOBase/TLSSingleton.h>
+#include <OOBase/UniquePtr.h>
 #include <OOBase/SmartPtr.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/Timeout.h>

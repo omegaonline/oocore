@@ -36,9 +36,7 @@
 
 namespace Root
 {
-	class ClientConnection :
-			public OOBase::RefCounted,
-			public OOBase::AllocatorNew<OOBase::CrtAllocator>
+	class ClientConnection : public OOBase::RefCounted
 	{
 	public:
 		ClientConnection(Manager* pManager, OOBase::RefPtr<OOBase::AsyncSocket>& sock);

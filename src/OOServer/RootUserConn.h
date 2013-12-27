@@ -36,9 +36,7 @@
 
 namespace Root
 {
-	class UserConnection :
-			public OOBase::RefCounted,
-			public OOBase::AllocatorNew<OOBase::CrtAllocator>
+	class UserConnection : public OOBase::RefCounted
 	{
 	public:
 		UserConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);

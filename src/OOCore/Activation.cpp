@@ -52,7 +52,7 @@ using namespace OTL;
 
 namespace
 {
-	typedef OOBase::SmartPtr<OOBase::DLL,OOBase::DeleteDestructor<OOBase::CrtAllocator> > DLL_ptr_t;
+	typedef OOBase::SmartPtr<OOBase::DLL,OOBase::Deleter<OOBase::CrtAllocator> > DLL_ptr_t;
 
 	class DLLManagerImpl : public OOBase::NonCopyable
 	{
@@ -105,7 +105,7 @@ namespace
 		if (err)
 			OMEGA_THROW(err);
 
-		return (PathIsRelativeW(wpath) != FALSE);
+		return (PathIsRelativeW(wpath.get()) != FALSE);
 #else
 		// Allow PATH-based paths
 		return (strPath[0] != '/' && strPath.Find('/') != string_t::npos);

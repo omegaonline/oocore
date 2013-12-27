@@ -94,7 +94,7 @@ namespace
 		va_end(args);
 
 		if (err == 0)
-			OOBase::stderr_write(msg);
+			OOBase::stderr_write(msg.get());
 
 		return EXIT_FAILURE;
 	}

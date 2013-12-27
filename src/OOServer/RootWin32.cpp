@@ -90,7 +90,7 @@ namespace
 		if (strPipe.empty())
 		{
 			wchar_t* pszSid = NULL;
-			if (!ConvertSidToStringSidW(ptrSIDLogon,&pszSid))
+			if (!ConvertSidToStringSidW(ptrSIDLogon.get(),&pszSid))
 				LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 
 			OOBase::LocalString strSid(strPipe.get_allocator());
@@ -115,7 +115,7 @@ namespace
 		{
 			LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text()),INVALID_HANDLE_VALUE);
 		}
-		OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor> pSIDOwner(pSID);
+		OOBase::UniquePtr<void,OOBase::Win32::SIDDestructor> pSIDOwner(pSID);
 
 		static const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0} };
@@ -126,7 +126,7 @@ namespace
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-		ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner;
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDOwner.get();
 
 		// Set read/write control for Specific logon.
 		ea[1].grfAccessPermissions = FILE_GENERIC_READ | FILE_WRITE_DATA;
@@ -134,7 +134,7 @@ namespace
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
-		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
+		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.get();
 
 		OOBase::Win32::sec_descript_t sd;
 		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea);
@@ -158,7 +158,7 @@ namespace
 		if (err)
 			LOG_ERROR_RETURN(("Failed to convert strings: %s",OOBase::system_error_text(err)),INVALID_HANDLE_VALUE);
 
-		HANDLE hPipe = CreateNamedPipeW(wname,
+		HANDLE hPipe = CreateNamedPipeW(wname.get(),
 										PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
 										PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
 										1,0,0,0,
@@ -203,19 +203,19 @@ namespace
 		size_t vallen = (pszVal->Length+1) / sizeof(wchar_t);
 		if (!ptrPwd.reallocate(vallen))
 		{
-			memcpy(ptrPwd,pszVal->Buffer,pszVal->Length);
-			ptrPwd[vallen-1] = L'\0';
+			memcpy(ptrPwd.get(),pszVal->Buffer,pszVal->Length);
+			ptrPwd.get()[vallen-1] = L'\0';
 		}
 
-		BOOL bRes = LogonUserW(ptrUName,NULL,ptrPwd,LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken);
+		BOOL bRes = LogonUserW(ptrUName.get(),NULL,ptrPwd.get(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken);
 		if (!bRes)
 			dwErr = GetLastError();
 
 #if defined(_MSC_VER)
-		SecureZeroMemory(ptrPwd,pszVal->Length);
+		SecureZeroMemory(ptrPwd.get(),pszVal->Length);
 		SecureZeroMemory(pszVal->Buffer,pszVal->Length);
 #else
-		memset(ptrPwd,0,pszVal->Length);
+		memset(ptrPwd.get(),0,pszVal->Length);
 		memset(pszVal->Buffer,0,pszVal->Length);
 #endif
 		LsaFreeMemory(pszVal);
@@ -325,7 +325,7 @@ namespace
 			LOG_ERROR_RETURN(("OOBase::Win32::GetLogonSID failed: %s",OOBase::system_error_text(dwRes)),false);
 
 		char* pszSid = 0;
-		if (!ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
+		if (!ConvertSidToStringSidA(ptrSIDLogon.get(),&pszSid))
 			LOG_ERROR_RETURN(("ConvertSidToStringSidA failed: %s",OOBase::system_error_text()),false);
 
 		int err = strWindowStation.assign(pszSid);
@@ -359,7 +359,7 @@ namespace
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
-		OOBase::LocalPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::AllocatorInstance> > ptrProcessUser(strWindowStation.get_allocator());
+		OOBase::UniquePtr<TOKEN_USER,OOBase::DeleterInstance> ptrProcessUser(strWindowStation.get_allocator());
 		if ((err = OOBase::Win32::GetTokenInfo(hProcessToken,TokenUser,ptrProcessUser)) != 0)
 			LOG_ERROR_RETURN(("OOBase::Win32::GetTokenInfo failed: %s",OOBase::system_error_text()),false);
 
@@ -374,7 +374,7 @@ namespace
 				LOG_ERROR_RETURN(("OpenWindowStationA failed: %s",OOBase::system_error_text(dwRes)),false);
 
 			OOBase::Win32::sec_descript_t sd;
-			dwRes = CreateWindowStationSD(ptrProcessUser,ptrSIDLogon,sd);
+			dwRes = CreateWindowStationSD(ptrProcessUser.get(),ptrSIDLogon.get(),sd);
 			if (dwRes != ERROR_SUCCESS)
 				LOG_ERROR_RETURN(("CreateWindowStationSD failed: %s",OOBase::system_error_text(dwRes)),false);
 
@@ -420,7 +420,7 @@ namespace
 			}
 
 			OOBase::Win32::sec_descript_t sd;
-			dwRes = CreateDesktopSD(ptrProcessUser,ptrSIDLogon,sd);
+			dwRes = CreateDesktopSD(ptrProcessUser.get(),ptrSIDLogon.get(),sd);
 			if (dwRes != ERROR_SUCCESS)
 			{
 				SetProcessWindowStation(hOldWinsta);
@@ -561,14 +561,14 @@ DWORD RootProcessWin32::spawn_from_token(OOBase::LocalString& strAppName, const 
 		if (OOBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
 		{
 			if (bSandbox)
-				err = strTitle.printf("%s - %ls\\%ls [Sandbox]",strAppName.c_str(),static_cast<const wchar_t*>(strDomainName),static_cast<const wchar_t*>(strUserName));
+				err = strTitle.printf("%s - %ls\\%ls [Sandbox]",strAppName.c_str(),strDomainName.get(),strUserName.get());
 			else
-				err = strTitle.printf("%s - %ls\\%ls",strAppName.c_str(),static_cast<const wchar_t*>(strDomainName),static_cast<const wchar_t*>(strUserName));
+				err = strTitle.printf("%s - %ls\\%ls",strAppName.c_str(),strDomainName.get(),strUserName.get());
 
 			if (err == 0)
 			{
 				OOBase::Win32::utf8_to_wchar_t(strTitle.c_str(),ptrTitle);
-				startup_info.lpTitle = ptrTitle;
+				startup_info.lpTitle = ptrTitle.get();
 			}
 		}
 	}
@@ -585,13 +585,13 @@ DWORD RootProcessWin32::spawn_from_token(OOBase::LocalString& strAppName, const 
 			goto Cleanup;
 		}
 
-		startup_info.lpDesktop = ptrWS;
+		startup_info.lpDesktop = ptrWS.get();
 		startup_info.wShowWindow = SW_HIDE;
 	}
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,static_cast<LPCWSTR>(static_cast<void*>(ptrAppName)),static_cast<LPWSTR>(static_cast<void*>(ptrCmdLine)),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,ptrAppName.get(),ptrCmdLine.get(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		LOG_ERROR(("CreateProcessAsUserW: %s",OOBase::system_error_text(dwRes)));
@@ -713,11 +713,11 @@ int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 
 	for (;;)
 	{
-		pSD = static_cast<SECURITY_DESCRIPTOR*>(allocator.allocate(cbNeeded,16));
+		pSD.reset(static_cast<SECURITY_DESCRIPTOR*>(allocator.allocate(cbNeeded,16)));
 		if (!pSD)
 			LOG_ERROR_RETURN(("CheckAccess failed: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
 
-		if (GetFileSecurityW(wszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
+		if (GetFileSecurityW(wszFName.get(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD.get(),cbNeeded,&cbNeeded))
 			break;
 
 		err = GetLastError();
@@ -748,7 +748,7 @@ int RootProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite,
 	DWORD dwPrivSetSize = sizeof(privilege_set);
 	DWORD dwAccessGranted = 0;
 	BOOL bAllowedVal = FALSE;
-	BOOL bRes = ::AccessCheck(pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
+	BOOL bRes = ::AccessCheck(pSD.get(),m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 
 	err = GetLastError();
 	if (!bRes && err != ERROR_SUCCESS)
@@ -766,7 +766,7 @@ bool RootProcessWin32::same_login(const uid_t& hToken, const char* /*session_id*
 
 	// Check the SIDs and priviledges are the same..
 	OOBase::StackAllocator<256> allocator;
-	OOBase::LocalPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<OOBase::AllocatorInstance> > pStats1(allocator),pStats2(allocator);
+	OOBase::UniquePtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::DeleterInstance> pStats1(allocator),pStats2(allocator);
 	if (OOBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges,pStats1) != ERROR_SUCCESS ||
 			OOBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges,pStats2) != ERROR_SUCCESS)
 	{
@@ -788,7 +788,7 @@ bool RootProcessWin32::same_user(const uid_t& hToken) const
 		return false;
 
 	OOBase::StackAllocator<256> allocator;
-	OOBase::LocalPtr<TOKEN_USER,OOBase::FreeDestructor<OOBase::AllocatorInstance> > ptrUserInfo1(allocator),ptrUserInfo2(allocator);
+	OOBase::UniquePtr<TOKEN_USER,OOBase::DeleterInstance> ptrUserInfo1(allocator),ptrUserInfo2(allocator);
 	if (OOBase::Win32::GetTokenInfo(hToken,TokenUser,ptrUserInfo1) != ERROR_SUCCESS ||
 			OOBase::Win32::GetTokenInfo(m_hToken,TokenUser,ptrUserInfo2) != ERROR_SUCCESS)
 	{
@@ -928,11 +928,11 @@ bool Root::Manager::get_registry_hive(const uid_t& hToken, OOBase::LocalString s
 			LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::system_error_text(err)),false);
 
 		OOBase::LocalString strUserName(strHive.get_allocator()),strDomainName(strHive.get_allocator());
-		err = OOBase::Win32::wchar_t_to_utf8(ptrUsersDir,strUsersDir);
+		err = OOBase::Win32::wchar_t_to_utf8(ptrUsersDir.get(),strUsersDir);
 		if (!err)
-			err = OOBase::Win32::wchar_t_to_utf8(ptrUserName,strUserName);
+			err = OOBase::Win32::wchar_t_to_utf8(ptrUserName.get(),strUserName);
 		if (!err && ptrDomainName)
-			err = OOBase::Win32::wchar_t_to_utf8(ptrDomainName,strDomainName);
+			err = OOBase::Win32::wchar_t_to_utf8(ptrDomainName.get(),strDomainName);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to convert strings: %s",OOBase::system_error_text(err)),false);
 
@@ -950,7 +950,7 @@ bool Root::Manager::get_registry_hive(const uid_t& hToken, OOBase::LocalString s
 	if ((err = OOBase::Win32::utf8_to_wchar_t(strHive.c_str(),ptrHive)) != 0)
 		LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
 
-	if (!PathFileExistsW(ptrHive))
+	if (!PathFileExistsW(ptrHive.get()))
 	{
 		if ((err = strSysDir.append("user_template.regdb")) != 0)
 			LOG_ERROR_RETURN(("Failed to append strings: %s",OOBase::system_error_text(err)),false);
@@ -959,10 +959,10 @@ bool Root::Manager::get_registry_hive(const uid_t& hToken, OOBase::LocalString s
 		if ((err = OOBase::Win32::utf8_to_wchar_t(strSysDir.c_str(),ptrSysDir)) != 0)
 			LOG_ERROR_RETURN(("MultiByteToWideChar failed: %s",OOBase::system_error_text(err)),false);
 
-		if (!CopyFileW(ptrSysDir,ptrHive,TRUE))
+		if (!CopyFileW(ptrSysDir.get(),ptrHive.get(),TRUE))
 			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",strSysDir.c_str(),strHive.c_str(),OOBase::system_error_text()),false);
 
-		::SetFileAttributesW(ptrHive,FILE_ATTRIBUTE_NORMAL);
+		::SetFileAttributesW(ptrHive.get(),FILE_ATTRIBUTE_NORMAL);
 
 		void* ISSUE_11;
 	}
@@ -989,7 +989,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 
 	// Spawn the process
 	OOBase::Win32::SmartHandle hPipe;
-	ptrSpawn = RootProcessWin32::spawn(strAppName,uid,env_block,hPipe,session_id == NULL,bAgain);
+	ptrSpawn = RootProcessWin32::spawn(strAppName,uid,env_block.get(),hPipe,session_id == NULL,bAgain);
 	if (!ptrSpawn)
 		return false;
 
@@ -1019,9 +1019,9 @@ bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
 		LOG_ERROR_RETURN(("OOBase::Win32::GetNameFromToken failed: %s",OOBase::system_error_text(dwRes)),false);
 
 	if (!ptrDomainName)
-		dwRes = strUName.printf("%ls",static_cast<const wchar_t*>(ptrUserName));
+		dwRes = strUName.printf("%ls",ptrUserName.get());
 	else
-		dwRes = strUName.printf("%ls\\%ls",static_cast<const wchar_t*>(ptrDomainName),static_cast<const wchar_t*>(ptrUserName));
+		dwRes = strUName.printf("%ls\\%ls",ptrDomainName.get(),ptrUserName.get());
 
 	if (dwRes != 0)
 		LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(dwRes)),false);
@@ -1062,7 +1062,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
-    OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
+    OOBase::UniquePtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
     const int NUM_ACES  = 2;
     EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
@@ -1100,7 +1100,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
     if (dwErr != 0)
         LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::system_error_text(dwErr).c_str()),false);
 
-    OOBase::LocalPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
+    OOBase::UniquePtr<ACL,OOBase::Win32::LocalAllocDeleter<ACL> > ptrACL = pACL;
 
     // Try to modify the object's DACL.
     dwErr = SetNamedSecurityInfoA(

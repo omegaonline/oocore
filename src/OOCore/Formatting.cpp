@@ -329,7 +329,7 @@ namespace
 		}
 #endif
 
-		size_t pos = replace(str,src_decimal_point,decimal_point);
+		size_t pos = replace(str,src_decimal_point,decimal_point.get());
 		if (pos == str.npos)
 			pos = str.length();
 
@@ -349,7 +349,7 @@ namespace
 				break;
 
 			pos -= grp;
-			insert(str,pos,thousands_sep);
+			insert(str,pos,thousands_sep.get());
 		}
 
 		bool cs_precedes = false;
@@ -404,7 +404,7 @@ namespace
 		switch (posn)
 		{
 		case 0:
-			ret = string_t((char*)currency);
+			ret = string_t(currency.get());
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -421,7 +421,7 @@ namespace
 			break;
 
 		case 1:
-			ret = string_t((char*)currency);
+			ret = string_t(currency.get());
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -434,11 +434,11 @@ namespace
 					ret = ' ' + ret;
 				ret = str.c_str() + ret;
 			}
-			ret = sign + ret;
+			ret = sign.get() + ret;
 			break;
 
 		case 2:
-			ret = string_t((char*)currency);
+			ret = string_t(currency.get());
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -451,11 +451,11 @@ namespace
 					ret = ' ' + ret;
 				ret = str.c_str() + ret;
 			}
-			ret += sign;
+			ret += sign.get();
 			break;
 
 		case 3:
-			ret = string_t(sign) + currency;
+			ret = string_t(sign.get()) + currency.get();
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -472,7 +472,7 @@ namespace
 
 		case 4:
 		default:
-			ret = string_t(currency) + sign;
+			ret = string_t(currency.get()) + sign.get();
 			if (cs_precedes)
 			{
 				if (sep_by_space)
@@ -555,7 +555,7 @@ namespace
 					break;
 
 				pos -= grp;
-				insert(str,pos,thousands_sep);
+				insert(str,pos,thousands_sep.get());
 			}
 		}
 
@@ -1110,7 +1110,7 @@ namespace
 		if (lc)
 			decimal_char = lc->decimal_point;
 #endif
-		size_t dp = strNumber.find(decimal_char);
+		size_t dp = strNumber.find(decimal_char.get());
 
 		if (sci != string_t::npos || dp != strNumber.npos)
 		{
@@ -1118,7 +1118,7 @@ namespace
 			if (dp == strNumber.npos)
 			{
 				dp = strNumber.length();
-				int err = strNumber.append(decimal_char);
+				int err = strNumber.append(decimal_char.get());
 				if (err != 0)
 					OMEGA_THROW(err);
 			}
@@ -1240,8 +1240,8 @@ namespace
 					if (numpos < dp)
 						res += string_t(strNumber.c_str()+numpos,dp-numpos);
 
-					res += decimal_char;
-					numpos = dp + strlen(decimal_char);
+					res += decimal_char.get();
+					numpos = dp + strlen(decimal_char.get());
 
 					sig_zero = true;
 					seen_decimal = true;

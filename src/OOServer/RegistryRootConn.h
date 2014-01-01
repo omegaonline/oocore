@@ -41,9 +41,7 @@ namespace Registry
 
 		OOBase::Proactor* get_proactor();
 #if defined(_WIN32)
-		class PipeConnection :
-				public OOBase::RefCounted,
-				public OOBase::AllocatorNew<OOBase::CrtAllocator>
+		class PipeConnection : public OOBase::RefCounted
 		{
 		public:
 			PipeConnection(RootConnection* parent) : m_parent(parent)

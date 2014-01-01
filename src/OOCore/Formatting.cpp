@@ -240,21 +240,21 @@ namespace
 	}
 
 #if defined(_WIN32)
-	void get_locale_info(LCID Locale, LCTYPE LCType, OOBase::TempPtr<char>& val)
+	void get_locale_info(LCID Locale, LCTYPE LCType, OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8>& val)
 	{
 		int len = GetLocaleInfoW(Locale,LCType,NULL,0);
 		if (len <= 0)
 			OMEGA_THROW(GetLastError());
 
-		OOBase::TempPtr<wchar_t> wval(val.get_allocator());
+		OOBase::ScopedArrayPtr<wchar_t,OOBase::ThreadLocalAllocator,8> wval;
 		if (!wval.reallocate(len))
 			throw ISystemException::OutOfMemory();
 
-		len = GetLocaleInfoW(Locale,LCType,wval,len);
+		len = GetLocaleInfoW(Locale,LCType,wval.get(),len);
 		if (!len)
 			OMEGA_THROW(GetLastError());
 
-		int err = OOBase::Win32::wchar_t_to_utf8(wval,val);
+		int err = OOBase::Win32::wchar_t_to_utf8(wval.get(),val);
 		if (err)
 			OMEGA_THROW(err);
 	}
@@ -269,6 +269,29 @@ namespace
 	}
 #endif
 
+#if defined(_WIN32)
+	void build_crt_grouping(OOBase::Vector<char,OOBase::AllocatorInstance>& grouping_trans, const char* grouping_buf)
+	{
+		int err = 0;
+		for (; grouping_buf && *grouping_buf != '\0'; ++grouping_buf)
+		{
+			char g = static_cast<char>(atoi(grouping_buf));
+			if (!g)
+				break;
+
+			err = grouping_trans.push_back(g);
+			if (err)
+				OMEGA_THROW(err);
+
+			grouping_buf = strchr(grouping_buf,';');
+		}
+
+		err = grouping_trans.push_back(CHAR_MAX);
+		if (err)
+			OMEGA_THROW(err);
+	}
+#endif
+
 	string_t do_intl_mon(OOBase::LocalString& str, bool negative, EXTRA_LCID)
 	{
 		const char* src_decimal_point = ".";
@@ -276,32 +299,21 @@ namespace
 			src_decimal_point = lc->decimal_point;
 
 #if defined(_WIN32)
-		OOBase::TempPtr<char> decimal_point(str.get_allocator());
-		get_locale_info(lcid,LOCALE_SMONDECIMALSEP,decimal_point);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> decimal_point_ptr(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SMONDECIMALSEP,decimal_point_ptr);
+		const char* decimal_point = decimal_point_ptr.get();
 
-		OOBase::TempPtr<char> grouping_buf(str.get_allocator());
-		get_locale_info(lcid,LOCALE_SMONGROUPING,grouping_buf);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> grouping_buf_ptr(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SMONGROUPING,grouping_buf_ptr);
 
 		// Build a crt style grouping
-		char grouping_trans[128] = {0};
-		const char* grouping = grouping_trans;
-		size_t g = 0;
-		for (const char* c = grouping_buf; *c != '\0' && g<sizeof(grouping_trans)-1; ++g)
-		{
-			grouping_trans[g] = static_cast<char>(atoi(c));
-			if (!grouping_trans[g])
-				break;
+		OOBase::Vector<char,OOBase::AllocatorInstance> grouping_trans(str.get_allocator());
+		build_crt_grouping(grouping_trans,grouping_buf_ptr.get());
+		const char* grouping = grouping_trans.data();
 
-			c = strchr(c,';');
-			if (!c)
-				break;
-			++c;
-		}
-
-		grouping_trans[g+1] = CHAR_MAX;
-
-		OOBase::TempPtr<char> thousands_sep(str.get_allocator());
-		get_locale_info(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> thousands_sep_ptr(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep_ptr);
+		const char* thousands_sep = thousands_sep_ptr.get();
 #else
 		const char* decimal_point = src_decimal_point;
 		const char* grouping = "\x03\x00";
@@ -345,7 +357,7 @@ namespace
 		int posn = 0;
 
 #if defined(_WIN32)
-		OOBase::TempPtr<char> sign(str.get_allocator());
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> sign_ptr(str.get_allocator());
 
 		if (negative)
 		{
@@ -353,7 +365,7 @@ namespace
 			cs_precedes = (get_locale_dword(lcid,LOCALE_INEGSYMPRECEDES) == 1);
 			posn = static_cast<int>(get_locale_dword(lcid,LOCALE_INEGSIGNPOSN));
 
-			get_locale_info(lcid,LOCALE_SNEGATIVESIGN,sign);
+			get_locale_info(lcid,LOCALE_SNEGATIVESIGN,sign_ptr);
 		}
 		else
 		{
@@ -361,12 +373,14 @@ namespace
 			cs_precedes = (get_locale_dword(lcid,LOCALE_IPOSSYMPRECEDES) == 1);
 			posn = static_cast<int>(get_locale_dword(lcid,LOCALE_IPOSSIGNPOSN));
 
-			get_locale_info(lcid,LOCALE_SPOSITIVESIGN,sign);
+			get_locale_info(lcid,LOCALE_SPOSITIVESIGN,sign_ptr);
 		}
 
-		OOBase::TempPtr<char> currency(str.get_allocator());
-		get_locale_info(lcid,LOCALE_SCURRENCY,currency);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> currency_ptr(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SCURRENCY,currency_ptr);
 
+		const char* sign = sign_ptr.get();
+		const char* currency = currency_ptr.get();
 #else
 		const char* sign;
 		if (negative)
@@ -484,39 +498,26 @@ namespace
 		if (lc)
 			src_decimal_point = lc->decimal_point;
 
-		OOBase::TempPtr<char> decimal_point(str.get_allocator());
-		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> decimal_point_ptr(str.get_allocator());
+		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point_ptr);
 
-		size_t dp = replace(str,src_decimal_point,decimal_point);
+		size_t dp = replace(str,src_decimal_point,decimal_point_ptr.get());
 
-		OOBase::TempPtr<char> thousands_sep(str.get_allocator());
-		char trans_grouping[128] = {0};
-		const char* grouping = trans_grouping;
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> thousands_sep_ptr(str.get_allocator());
+		OOBase::Vector<char,OOBase::AllocatorInstance> grouping_trans(str.get_allocator());
 
 		if (bThou)
 		{
-			OOBase::TempPtr<char> grouping_buf(str.get_allocator());
-			get_locale_info(lcid,LOCALE_SGROUPING,grouping_buf);
+			OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> grouping_buf_ptr(str.get_allocator());
+			get_locale_info(lcid,LOCALE_SGROUPING,grouping_buf_ptr);
 
 			// Build a crt style grouping
+			build_crt_grouping(grouping_trans,grouping_buf_ptr.get());
 
-			size_t g = 0;
-			for (const char* c = grouping_buf; *c != '\0' && g<sizeof(trans_grouping)-1; ++g)
-			{
-				trans_grouping[g] = static_cast<char>(atoi(c));
-				if (!trans_grouping[g])
-					break;
-
-				c = strchr(c,';');
-				if (!c)
-					break;
-				++c;
-			}
-
-			trans_grouping[g+1] = CHAR_MAX;
-
-			get_locale_info(lcid,LOCALE_STHOUSAND,thousands_sep);
+			get_locale_info(lcid,LOCALE_STHOUSAND,thousands_sep_ptr);
 		}
+		const char* grouping = grouping_trans.data();
+		const char* thousands_sep = thousands_sep_ptr.get();
 #else
 		const char* decimal_point = ".";
 		const char* grouping = "\x03\x00";
@@ -567,10 +568,10 @@ namespace
 			replace(str,lc->decimal_point,".");
 
 #if defined(_WIN32)
-		OOBase::TempPtr<char> decimal_point(str.get_allocator());
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> decimal_point(str.get_allocator());
 		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_point);
 
-		replace(str,decimal_point,".");
+		replace(str,decimal_point.get(),".");
 #endif
 	}
 
@@ -1101,8 +1102,9 @@ namespace
 			fmt_decimal_i(strNumber,abs_val,width);
 
 #if defined(_WIN32)
-		OOBase::TempPtr<char> decimal_char(allocator);
-		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_char);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance,8> decimal_char_ptr(allocator);
+		get_locale_info(lcid,LOCALE_SDECIMAL,decimal_char_ptr);
+		const char* decimal_char = decimal_char_ptr.get();
 #else
 		const char* decimal_char = ".";
 		if (lc)
@@ -1690,20 +1692,26 @@ namespace
 		else
 			return strFill + str;
 	}
+
+	void new_format_state(OOBase::UniquePtr<format_state_t,OOBase::CrtAllocator>& ptr)
+	{
+		format_state_t* p = NULL;
+		if (!OOBase::CrtAllocator::allocate_new(p))
+			throw ISystemException::OutOfMemory();
+
+		ptr.reset(p);
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor1,1,((in),const Omega::string_t&,format))
 {
-	format_state_t* s_p = NULL;
-	if (!OOBase::CrtAllocator::allocate_new(s_p))
-		throw ISystemException::OutOfMemory();
-
-	OOBase::LocalPtr<format_state_t> s(s_p);
+	OOBase::UniquePtr<format_state_t,OOBase::CrtAllocator> s;
+	new_format_state(s);
 
 	// Split up the string
 	parse_format(format,s->m_strPrefix,s->m_inserts);
 
-	return s.detach();
+	return s.release();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const void*,handle))
@@ -1712,11 +1720,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 	if (!s)
 		return NULL;
 
-	format_state_t* s_new_p = NULL;
-	if (!OOBase::CrtAllocator::allocate_new(s_new_p))
-		throw ISystemException::OutOfMemory();
-
-	OOBase::LocalPtr<format_state_t> s_new(s_new_p);
+	OOBase::UniquePtr<format_state_t,OOBase::CrtAllocator> s_new;
+	new_format_state(s_new);
 
 	s_new->m_strPrefix = s->m_strPrefix;
 
@@ -1737,7 +1742,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,OOCore_formatter_t__ctor2,1,((in),const voi
 		}
 	}
 
-	return s_new.detach();
+	return s_new.release();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_formatter_t__dctor,1,((in),void*,handle))

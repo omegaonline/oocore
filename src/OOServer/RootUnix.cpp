@@ -49,7 +49,9 @@ namespace
 	class RootProcessUnix : public Root::Process
 	{
 	public:
-		static RootProcessUnix* spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[]);
+		static OOBase::SharedPtr<RootProcessUnix> spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[]);
+
+		RootProcessUnix(uid_t id);
 		virtual ~RootProcessUnix();
 
 		int CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) const;
@@ -63,7 +65,7 @@ namespace
 		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
-		RootProcessUnix(uid_t id);
+
 
 		OOBase::String m_sid;
 		bool           m_bUnique;
@@ -76,13 +78,13 @@ namespace
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::TempPtr<char> msg(allocator);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance> msg(allocator);
 		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
 
 		if (err == 0)
-			OOBase::stderr_write(msg);
+			OOBase::stderr_write(msg.get());
 
 		_exit(127);
 	}
@@ -151,8 +153,10 @@ RootProcessUnix::~RootProcessUnix()
 	}
 }
 
-RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[])
+OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[])
 {
+	OOBase::SharedPtr<RootProcessUnix> ptrSpawn;
+
 	char* rpath = realpath(strAppName.c_str(),NULL);
 	if (rpath)
 	{
@@ -164,7 +168,7 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 
 	// Check the file exists
 	if (access(strAppName.c_str(),X_OK) != 0)
-		LOG_ERROR_RETURN(("User process %s is not executable: %s",strAppName.c_str(),OOBase::system_error_text()),(RootProcessUnix*)NULL);
+		LOG_ERROR_RETURN(("User process %s is not executable: %s",strAppName.c_str(),OOBase::system_error_text()),ptrSpawn);
 
 	// Check our uid
 	uid_t our_uid = getuid();
@@ -173,32 +177,32 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 	if (bChangeUid && our_uid != 0)
 	{
 		bAgain = true;
-		return NULL;
+		return ptrSpawn;
 	}
 
 	pid_t child_id = fork();
 	if (child_id == -1)
-		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text()),(RootProcessUnix*)NULL);
+		LOG_ERROR_RETURN(("fork() failed: %s",OOBase::system_error_text()),ptrSpawn);
 
 	if (child_id != 0)
 	{
 		// We are the parent
 		pass_fd.close();
 
-		RootProcessUnix* pSpawn = new RootProcessUnix(uid);
-		if (!pSpawn)
-			LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
+		ptrSpawn = OOBase::allocate_shared<RootProcessUnix,OOBase::CrtAllocator>(uid);
+		if (!ptrSpawn)
+			LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ptrSpawn);
 
-		pSpawn->m_bUnique = (session_id == NULL);
-		int err = pSpawn->m_sid.assign(session_id);
+		ptrSpawn->m_bUnique = (session_id == NULL);
+		int err = ptrSpawn->m_sid.assign(session_id);
 		if (err != 0)
 		{
-			delete pSpawn;
-			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),(RootProcessUnix*)NULL);
+			ptrSpawn.reset();
+			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),ptrSpawn);
 		}
 
-		pSpawn->m_pid = child_id;
-		return pSpawn;
+		ptrSpawn->m_pid = child_id;
+		return ptrSpawn;
 	}
 
 	// We are the child...
@@ -290,7 +294,7 @@ RootProcessUnix* RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t u
 
 	err = errno;
 	exit_msg(allocator,"Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
-	return NULL;
+	return ptrSpawn;
 }
 
 bool RootProcessUnix::IsRunning() const
@@ -365,14 +369,13 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(err)),err);
 		}
 
-		OOBase::TempPtr<gid_t> ptrGroups(allocator);
-		int ngroups = 8;
-		do
+		OOBase::ScopedArrayPtr<gid_t,OOBase::AllocatorInstance> ptrGroups(allocator);
+		int ngroups = ptrGroups.count();
+		while (getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups.get(),&ngroups) == -1)
 		{
 			if (!ptrGroups.reallocate(ngroups))
 				LOG_ERROR_RETURN(("Failed to allocate groups: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ERROR_OUTOFMEMORY);
 		}
-		while (getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups,&ngroups) == -1);
 
 		for (int i = 0; i< ngroups && !bAllowed; ++i)
 		{
@@ -630,9 +633,9 @@ bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strS
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
-	OOBase::TempPtr<char*> ptrEnv(strAppName.get_allocator());
+	OOBase::ScopedArrayPtr<char*,OOBase::AllocatorInstance> ptrEnv(strAppName.get_allocator());
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
@@ -644,7 +647,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 		LOG_ERROR_RETURN(("socketpair() failed: %s",OOBase::system_error_text(err)),false);
 
 	// Spawn the process
-	ptrProcess = RootProcessUnix::spawn(strAppName,uid,session_id,fds[1],bAgain,ptrEnv);
+	ptrProcess = OOBase::static_pointer_cast<Process>(RootProcessUnix::spawn(strAppName,uid,session_id,fds[1],bAgain,ptrEnv.get()));
 	if (!ptrProcess)
 		return false;
 

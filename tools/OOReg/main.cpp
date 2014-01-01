@@ -20,6 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include <OOBase/CmdArgs.h>
+#include <OOBase/StackAllocator.h>
 
 #include "../../include/Omega/Omega.h"
 #include "../../include/Omega/OOCore_version.h"

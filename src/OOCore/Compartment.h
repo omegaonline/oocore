@@ -36,7 +36,7 @@ namespace OOCore
 			public ChannelBase
 	{
 	public:
-		void init(Omega::uint16_t src_compt_id, const OOBase::SmartPtr<Compartment>& ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		void init(Omega::uint16_t src_compt_id, const OOBase::SharedPtr<Compartment>& ptrCompt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
 		void shutdown();
 		
 		BEGIN_INTERFACE_MAP(ComptChannel)
@@ -44,8 +44,8 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		Omega::uint16_t               m_src_compt_id;
-		OOBase::SmartPtr<Compartment> m_ptrCompt;
+		Omega::uint16_t                m_src_compt_id;
+		OOBase::SharedPtr<Compartment> m_ptrCompt;
 
 	public:
 		Omega::bool_t IsConnected();

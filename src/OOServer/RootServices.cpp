@@ -50,7 +50,7 @@
 
 namespace
 {
-	bool get_service_dependencies(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::int64_t key, const OOBase::LocalString& strName, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<OOBase::int64_t,OOBase::AllocatorInstance>& queueKeys)
+	bool get_service_dependencies(const OOBase::SharedPtr<Db::Hive>& ptrRegistry, const OOBase::int64_t key, const OOBase::LocalString& strName, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<OOBase::int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
 		OOBase::LocalString strSubKey(queueNames.get_allocator()),strLink(queueNames.get_allocator()),strFullKeyName(queueNames.get_allocator());
 		int err2 = strSubKey.assign(strName.c_str(),strName.length());
@@ -96,7 +96,7 @@ namespace
 		return true;
 	}
 
-	bool enum_services(OOBase::SmartPtr<Db::Hive> ptrRegistry, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<OOBase::int64_t,OOBase::AllocatorInstance>& queueKeys)
+	bool enum_services(const OOBase::SharedPtr<Db::Hive>& ptrRegistry, OOBase::Queue<OOBase::LocalString,OOBase::AllocatorInstance>& queueNames, OOBase::Queue<OOBase::int64_t,OOBase::AllocatorInstance>& queueKeys)
 	{
 		OOBase::int64_t key = 0;
 		OOBase::LocalString strSubKey(queueNames.get_allocator()),strLink(queueNames.get_allocator()),strFullKeyName(queueNames.get_allocator());
@@ -128,7 +128,7 @@ namespace
 		return true;
 	}
 
-	OOServer::RootErrCode find_service(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, OOBase::int64_t& key)
+	OOServer::RootErrCode find_service(const OOBase::SharedPtr<Db::Hive>& ptrRegistry, const OOBase::LocalString& strName, OOBase::int64_t& key)
 	{
 		OOBase::LocalString strSubKey(strName.get_allocator()),strLink(strName.get_allocator()),strFullKeyName(strName.get_allocator());
 		int err2 = strSubKey.printf("/System/Services/%s",strName.c_str());
@@ -373,7 +373,7 @@ namespace
 		return true;
 	}
 
-	void enum_sockets(OOBase::SmartPtr<Db::Hive> ptrRegistry, const OOBase::LocalString& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const OOBase::int64_t& key)
+	void enum_sockets(const OOBase::SharedPtr<Db::Hive>& ptrRegistry, const OOBase::LocalString& strName, OOBase::RefPtr<OOBase::Socket> ptrSocket, const OOBase::int64_t& key)
 	{
 #if defined(_WIN32)
 		DWORD pid = 0;

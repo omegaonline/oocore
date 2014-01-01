@@ -51,7 +51,7 @@ namespace
 	class RootProcessWin32 : public Root::Process
 	{
 	public:
-		static RootProcessWin32* spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
+		static OOBase::SharedPtr<RootProcessWin32> spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain);
 
 		virtual ~RootProcessWin32();
 
@@ -658,23 +658,20 @@ Cleanup:
 	return dwRes;
 }
 
-RootProcessWin32* RootProcessWin32::spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
+OOBase::SharedPtr<RootProcessWin32> RootProcessWin32::spawn(OOBase::LocalString& strAppName, const uid_t& hToken, LPVOID lpEnv, OOBase::Win32::SmartHandle& hPipe, bool bSandbox, bool& bAgain)
 {
-	RootProcessWin32* pSpawn = new RootProcessWin32();
-	if (!pSpawn)
-		LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),pSpawn);
+	OOBase::SharedPtr<RootProcessWin32> ptrSpawn = OOBase::allocate_shared<RootProcessWin32,OOBase::CrtAllocator>();
+	if (!ptrSpawn)
+		LOG_ERROR_RETURN(("Failed to allocate: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),ptrSpawn);
 
-	pSpawn->m_bSandbox = bSandbox;
+	ptrSpawn->m_bSandbox = bSandbox;
 
-	DWORD dwRes = pSpawn->spawn_from_token(strAppName,hToken,lpEnv,hPipe,bSandbox);
+	DWORD dwRes = ptrSpawn->spawn_from_token(strAppName,hToken,lpEnv,hPipe,bSandbox);
 	if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
 		bAgain = true;
 
 	if (dwRes != ERROR_SUCCESS)
-	{
-		delete pSpawn;
-		pSpawn = NULL;
-	}
+		ptrSpawn.reset();
 
 	return pSpawn;
 }
@@ -970,7 +967,7 @@ bool Root::Manager::get_registry_hive(const uid_t& hToken, OOBase::LocalString s
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SharedPtr<Root::Process>& ptrSpawn, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
 	int err = 0;
 	if (strAppName.length() >= MAX_PATH)
@@ -1051,7 +1048,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
-    OOBase::SmartPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
+    OOBase::UniquePtr<SID,OOBase::Win32::SIDDestructor<void> > pSIDUsers(pSid);
 
     // Create a SID for the BUILTIN\Administrators group.
     if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
@@ -1062,7 +1059,7 @@ bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& 
     {
         LOG_ERROR_RETURN(("AllocateAndInitializeSid failed: %s",OOBase::system_error_text().c_str()),false);
     }
-    OOBase::LocalPtr<void,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
+    OOBase::UniquePtr<SID,OOBase::Win32::SIDDestructor<void> > pSIDAdmin(pSid);
 
     const int NUM_ACES  = 2;
     EXPLICIT_ACCESSW ea[NUM_ACES] = {0};

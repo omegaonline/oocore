@@ -43,7 +43,7 @@ namespace User
 		OTL::ObjectPtr<OOCore::IInterProcessService>          m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
 
-		OOBase::Table<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
+		OOBase::Table<Omega::string_t,OOBase::SharedPtr<User::Process> > m_mapInProgress;
 
 		Omega::string_t GetSurrogateProcess(const Omega::guid_t& oid);
 

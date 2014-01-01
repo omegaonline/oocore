@@ -34,7 +34,7 @@ Db::Hive::Hive(Manager* pManager, const char* db_name) :
 
 bool Db::Hive::open(int flags)
 {
-	m_db = new (std::nothrow) Database();
+	m_db = OOBase::allocate_shared<Database,OOBase::CrtAllocator>();
 	if (!m_db)
 		LOG_ERROR_RETURN(("Failed to allocate database: %s",OOBase::system_error_text(ERROR_OUTOFMEMORY)),false);
 

@@ -96,7 +96,7 @@ namespace Root
 		OOBase::HashTable<pid_t,OOBase::RefPtr<UserConnection> > m_user_processes;
 		OOBase::RefPtr<UserConnection>                           m_sandbox_process;
 
-		bool platform_spawn(OOBase::LocalString strBinPath, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain);
+		bool platform_spawn(OOBase::LocalString strBinPath, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain);
 		bool spawn_sandbox_process(OOBase::AllocatorInstance& allocator);
 		bool get_our_uid(uid_t& uid, OOBase::LocalString& strUName);
 		bool get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain);
@@ -117,12 +117,12 @@ namespace Root
 		void service_list_running(OOBase::uint32_t channel_id, OOBase::CDRStream& response);
 
 		// Registry members
-		OOBase::SmartPtr<Db::Hive> m_registry;
+		OOBase::SharedPtr<Db::Hive> m_registry;
 
 		Db::hive_errors registry_open_key(OOBase::int64_t& uKey, const OOBase::LocalString& strSubKey, OOBase::uint32_t channel_id);
 		bool registry_access_check(const char* pszDb, OOBase::uint32_t channel_id, Db::access_rights_t access_mask, int& err);
-		OOServer::RootErrCode_t registry_open_hive(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, OOBase::int64_t& uKey, OOBase::uint8_t& nType);
-		OOServer::RootErrCode_t registry_open_link(OOBase::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, OOBase::uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive);
+		OOServer::RootErrCode_t registry_open_hive(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SharedPtr<Db::Hive>& ptrHive, OOBase::int64_t& uKey, OOBase::uint8_t& nType);
+		OOServer::RootErrCode_t registry_open_link(OOBase::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, OOBase::uint8_t& nType, OOBase::SharedPtr<Db::Hive>& ptrHive);
 		void registry_open_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_delete_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_enum_subkeys(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);

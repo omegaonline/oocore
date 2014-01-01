@@ -33,7 +33,7 @@
 
 //////////////////////////////////////////////
 
-#include <OOBase/SmartPtr.h>
+#include <OOBase/SharedPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/CDRStream.h>
 #include <OOBase/BoundedQueue.h>

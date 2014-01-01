@@ -290,7 +290,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::Compartment::create_compartment_channe
 	if (!ptrChannel)
 	{
 		// Get the compartment
-		OOBase::SmartPtr<Compartment> ptrCompt = m_pSession->get_compartment(compartment_id);
+		OOBase::SharedPtr<Compartment> ptrCompt = m_pSession->get_compartment(compartment_id);
 		if (!ptrCompt)
 			throw Remoting::IChannelClosedException::Create(OMEGA_CREATE_INTERNAL("Failed to find compartment in session"));
 
@@ -337,7 +337,7 @@ IException* OOCore::Compartment::compartment_message(uint16_t src_cmpt_id, Remot
 	return pRet;
 }
 
-void OOCore::ComptChannel::init(uint16_t src_compt_id, const OOBase::SmartPtr<Compartment>& ptrCompt, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+void OOCore::ComptChannel::init(uint16_t src_compt_id, const OOBase::SharedPtr<Compartment>& ptrCompt, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
 {
 	ChannelBase::init(channel_id,Remoting::Compartment,pOM,message_oid);
 

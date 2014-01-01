@@ -136,7 +136,7 @@ void OOCore::UserSession::start(const byte_t* data, size_t len)
 		OMEGA_THROW(err);
 
 	// Create the zero compartment
-	OOBase::SmartPtr<Compartment> ptrZeroCompt = new Compartment(this);
+	OOBase::SharedPtr<Compartment> ptrZeroCompt = OOBase::allocate_shared<Compartment,OOBase::CrtAllocator>(this);
 	ptrZeroCompt->set_id(0);
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
@@ -304,13 +304,13 @@ void OOCore::UserSession::close_compartments()
 
 	// Do these in reverse order...
 	OOBase::StackAllocator<128> allocator;
-	OOBase::Vector<OOBase::SmartPtr<Compartment>,OOBase::AllocatorInstance> vecCompts(allocator);
-	for (OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.begin();i!=m_mapCompartments.end();++i)
+	OOBase::Vector<OOBase::SharedPtr<Compartment>,OOBase::AllocatorInstance> vecCompts(allocator);
+	for (OOBase::HandleTable<uint16_t,OOBase::SharedPtr<Compartment> >::iterator i = m_mapCompartments.begin();i!=m_mapCompartments.end();++i)
 		vecCompts.push_back(i->value);
 
 	guard.release();
 
-	for (OOBase::SmartPtr<Compartment> ptrCmpt;vecCompts.pop_back(&ptrCmpt);)
+	for (OOBase::SharedPtr<Compartment> ptrCmpt;vecCompts.pop_back(&ptrCmpt);)
 	{
 		try
 		{
@@ -561,7 +561,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 	bool bPulse = false;
-	for (OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
+	for (OOBase::HandleTable<uint16_t,OOBase::SharedPtr<Compartment> >::iterator j=m_mapCompartments.begin(); j!=m_mapCompartments.end(); ++j)
 	{
 		if (j->value->process_channel_close(closed_channel_id))
 			bPulse = true;
@@ -581,8 +581,8 @@ void OOCore::UserSession::wait_for_response(ThreadContext* pContext, OOBase::CDR
 		// Check if the channel we are waiting on is still valid...
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::SmartPtr<Compartment> ptrCompt;
-		OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(pContext->m_current_cmpt);
+		OOBase::SharedPtr<Compartment> ptrCompt;
+		OOBase::HandleTable<uint16_t,OOBase::SharedPtr<Compartment> >::iterator i = m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i != m_mapCompartments.end())
 			ptrCompt = i->value;
 
@@ -797,8 +797,8 @@ void OOCore::UserSession::process_request(ThreadContext* pContext, const Message
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::SmartPtr<Compartment> ptrCompt;
-	OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(msg.m_dest_cmpt_id);
+	OOBase::SharedPtr<Compartment> ptrCompt;
+	OOBase::HandleTable<uint16_t,OOBase::SharedPtr<Compartment> >::iterator i = m_mapCompartments.find(msg.m_dest_cmpt_id);
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->value;
 
@@ -883,7 +883,7 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment(const 
 ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i(const guid_t& channel_oid)
 {
 	// Create a new Compartment object
-	OOBase::SmartPtr<Compartment> ptrCompt = new Compartment(this);
+	OOBase::SharedPtr<Compartment> ptrCompt = OOBase::allocate_shared<Compartment,OOBase::CrtAllocator>(this);
 
 	OOBase::Guard<OOBase::RWMutex> write_guard(m_lock);
 
@@ -900,12 +900,12 @@ ObjectImpl<OOCore::ComptChannel>* OOCore::UserSession::create_compartment_i(cons
 	return ptrCompt->create_compartment_channel(ThreadContext::instance()->m_current_cmpt,channel_oid);
 }
 
-OOBase::SmartPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
+OOBase::SharedPtr<OOCore::Compartment> OOCore::UserSession::get_compartment(uint16_t id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	OOBase::SmartPtr<OOCore::Compartment> ptrCompt;
-	OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
+	OOBase::SharedPtr<OOCore::Compartment> ptrCompt;
+	OOBase::HandleTable<uint16_t,OOBase::SharedPtr<Compartment> >::iterator i = m_mapCompartments.find(id);
 	if (i != m_mapCompartments.end())
 		ptrCompt = i->value;
 
@@ -939,11 +939,11 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	// Create a channel in the context of the current compartment
 	const ThreadContext* pContext = ThreadContext::instance();
 
-	OOBase::SmartPtr<Compartment> ptrCompt;
+	OOBase::SharedPtr<Compartment> ptrCompt;
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		OOBase::HandleTable<uint16_t,OOBase::SmartPtr<Compartment> >::iterator i = m_mapCompartments.find(pContext->m_current_cmpt);
+		OOBase::HandleTable<uint16_t,OOBase::SharedPtr<Compartment> >::iterator i = m_mapCompartments.find(pContext->m_current_cmpt);
 		if (i == m_mapCompartments.end())
 		{
 			// Compartment has gone!

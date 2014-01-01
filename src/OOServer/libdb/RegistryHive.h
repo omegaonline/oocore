@@ -78,7 +78,7 @@ namespace Db
 		OOBase::SpinLock       m_lock;
 		OOBase::String         m_strdb;
 		
-		OOBase::SmartPtr<Database> m_db;
+		OOBase::SharedPtr<Database> m_db;
 
 		// Stashed prepared statements...
 		Statement m_InsertKey_Stmt;

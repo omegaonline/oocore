@@ -24,7 +24,7 @@
 
 #include <stdlib.h>
 
-Root::RegistryConnection::RegistryConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket) :
+Root::RegistryConnection::RegistryConnection(Manager* pManager, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket) :
 	m_pManager(pManager),
 	m_ptrProcess(ptrProcess),
 	m_ptrSocket(ptrSocket),
@@ -652,7 +652,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 
 	// Spawn the process
 	OOBase::Environment::env_table_t tabEnv(allocator);
-	OOBase::SmartPtr<Process> ptrProcess;
+	OOBase::SharedPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool bAgain;
 	if (!platform_spawn(strBinPath,uid,NULL,tabEnv,ptrProcess,ptrSocket,bAgain))
@@ -730,7 +730,7 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 
 	// Spawn the process
 	OOBase::Environment::env_table_t tabEnv(allocator);
-	OOBase::SmartPtr<Process> ptrProcess;
+	OOBase::SharedPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool bAgain;
 	if (!platform_spawn(strBinPath,ptrClient->get_uid(),NULL,tabEnv,ptrProcess,ptrSocket,bAgain))

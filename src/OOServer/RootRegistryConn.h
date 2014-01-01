@@ -38,12 +38,10 @@
 
 namespace Root
 {
-	class RegistryConnection :
-			public OOBase::RefCounted,
-			public OOBase::AllocatorNew<OOBase::CrtAllocator>
+	class RegistryConnection : public OOBase::RefCounted
 	{
 	public:
-		RegistryConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
+		RegistryConnection(Manager* pManager, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 
 		bool start(size_t id);
 		bool start(const OOBase::LocalString& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id);
@@ -56,7 +54,7 @@ namespace Root
 
 	private:
 		Manager*                            m_pManager;
-		OOBase::SmartPtr<Process>           m_ptrProcess;
+		OOBase::SharedPtr<Process>          m_ptrProcess;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 		size_t                              m_id;
 

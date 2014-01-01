@@ -91,7 +91,7 @@ namespace OOCore
 		Omega::uint32_t get_channel_id() const;
 
 		static OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment(const Omega::guid_t& channel_oid);
-		OOBase::SmartPtr<Compartment> get_compartment(Omega::uint16_t id);
+		OOBase::SharedPtr<Compartment> get_compartment(Omega::uint16_t id);
 		void remove_compartment(Omega::uint16_t id);
 		Omega::uint16_t update_state(Omega::uint16_t compartment_id);
 
@@ -168,7 +168,7 @@ namespace OOCore
 		static int io_worker_fn(void* pParam);
 
 		// Compartment members
-		OOBase::HandleTable<Omega::uint16_t,OOBase::SmartPtr<Compartment> > m_mapCompartments;
+		OOBase::HandleTable<Omega::uint16_t,OOBase::SharedPtr<Compartment> > m_mapCompartments;
 
 		void close_compartments();
 		OTL::ObjectImpl<OOCore::ComptChannel>* create_compartment_i(const Omega::guid_t& channel_oid);

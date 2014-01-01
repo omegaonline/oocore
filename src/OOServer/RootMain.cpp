@@ -88,13 +88,13 @@ namespace
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::TempPtr<char> msg(allocator);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance> msg(allocator);
 		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
 
 		if (err == 0)
-			OOBase::stderr_write(msg);
+			OOBase::stderr_write(msg.get());
 
 		return EXIT_FAILURE;
 	}

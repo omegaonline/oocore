@@ -49,13 +49,13 @@ namespace
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::TempPtr<char> msg(allocator);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance> msg(allocator);
 		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
 
 		if (err == 0)
-			OOBase::stderr_write(msg);
+			OOBase::stderr_write(msg.get());
 
 		_exit(127);
 	}
@@ -157,21 +157,21 @@ void UserProcessUnix::kill()
 	}
 }
 
-User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Environment::env_table_t& tabEnv)
+OOBase::SharedPtr<User::Process> User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool /*is_host_process*/, const OOBase::Environment::env_table_t& tabEnv)
 {
-	OOBase::LocalPtr<UserProcessUnix> ptrProcess(new UserProcessUnix());
+	OOBase::SharedPtr<UserProcessUnix> ptrProcess = OOBase::allocate_shared<UserProcessUnix,OOBase::CrtAllocator>();
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	OOBase::TempPtr<char*> ptrEnv(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<char*,OOBase::AllocatorInstance> ptrEnv(tabEnv.get_allocator());
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		OMEGA_THROW(err);
 
 	OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
 
-	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),ptrEnv);
-	return ptrProcess.detach();
+	ptrProcess->exec(strExeName.c_str(),strWorkingDir.IsEmpty() ? NULL : strWorkingDir.c_str(),ptrEnv.get());
+	return OOBase::static_pointer_cast<Process>(ptrProcess);
 }
 
 #endif // HAVE_UNISTD_H

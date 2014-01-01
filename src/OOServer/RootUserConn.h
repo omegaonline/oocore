@@ -36,12 +36,10 @@
 
 namespace Root
 {
-	class UserConnection :
-			public OOBase::RefCounted,
-			public OOBase::AllocatorNew<OOBase::CrtAllocator>
+	class UserConnection : public OOBase::RefCounted
 	{
 	public:
-		UserConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
+		UserConnection(Manager* pManager, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 
 		bool same_login(const uid_t& uid, const char* session_id) const;
 		const uid_t& get_uid() const;
@@ -79,7 +77,7 @@ namespace Root
 
 	private:
 		Manager*                            m_pManager;
-		OOBase::SmartPtr<Process>           m_ptrProcess;
+		OOBase::SharedPtr<Process>          m_ptrProcess;
 		OOBase::RefPtr<OOBase::AsyncSocket> m_ptrSocket;
 
 		OOBase::AsyncResponseDispatcher<OOBase::uint16_t> m_async_dispatcher;

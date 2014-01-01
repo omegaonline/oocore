@@ -43,7 +43,7 @@ namespace User
 		void close_socket(Omega::uint32_t id);
 		
 		void get_root_config_arg(const char* key, Omega::string_t& strValue);
-		Process* exec(const Omega::string_t& strProcess, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Environment::env_table_t& tabEnv);
+		OOBase::SharedPtr<Process> exec(const Omega::string_t& strProcess, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Environment::env_table_t& tabEnv);
 		
 	private:
 		static Manager* s_instance; //  This is a poor-mans singleton

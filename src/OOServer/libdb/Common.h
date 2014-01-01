@@ -22,7 +22,7 @@
 #ifndef OOCORE_LIBDB_COMMON_H_INCLUDED_
 #define OOCORE_LIBDB_COMMON_H_INCLUDED_
 
-#include <OOBase/SmartPtr.h>
+#include <OOBase/SharedPtr.h>
 #include <OOBase/String.h>
 #include <OOBase/Vector.h>
 #include <OOBase/Set.h>

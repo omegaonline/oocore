@@ -217,11 +217,11 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	int exit_code = 0;
-	OOBase::SmartPtr<User::Process> ptrProcess;
+	OOBase::SharedPtr<User::Process> ptrProcess;
 	if (m_mapInProgress.find(strProcess,ptrProcess) && !ptrProcess->is_running(exit_code))
 	{
 		m_mapInProgress.remove(strProcess);
-		ptrProcess = NULL;
+		ptrProcess.reset();
 	}
 
 	if (!ptrProcess)

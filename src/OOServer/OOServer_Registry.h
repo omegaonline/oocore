@@ -30,7 +30,7 @@
 #endif
 
 #include <OOBase/Singleton.h>
-#include <OOBase/SmartPtr.h>
+#include <OOBase/SharedPtr.h>
 #include <OOBase/TLSSingleton.h>
 #include <OOBase/Environment.h>
 #include <OOBase/Posix.h>

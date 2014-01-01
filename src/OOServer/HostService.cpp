@@ -76,7 +76,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 	try
 	{
 		// Now loop reading socket handles from ptrSocket
-		OOBase::TempPtr<char> ptrName(allocator);
+		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance> ptrName(allocator);
 		for (;;)
 		{
 			uint32_t len = 0;
@@ -90,7 +90,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			if (!ptrName.reallocate(len))
 				throw ISystemException::OutOfMemory();
 
-			ptrSocket->recv(ptrName,len,true,err);
+			ptrSocket->recv(ptrName.get(),len,true,err);
 			if (err)
 				OMEGA_THROW(err);
 
@@ -99,7 +99,7 @@ void Host::StartService(System::IService* pService, const string_t& strName, con
 			if (err)
 				OMEGA_THROW(err);
 
-			socket_map.insert(System::IService::socket_map_t::value_type(string_t(ptrName,len),sock));
+			socket_map.insert(System::IService::socket_map_t::value_type(string_t(ptrName.get(),len),sock));
 		}
 
 		// Now run the service (this need not return for some time)

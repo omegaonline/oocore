@@ -22,7 +22,7 @@
 #include "OOServer_Root.h"
 #include "RootManager.h"
 
-Root::UserConnection::UserConnection(Manager* pManager, OOBase::SmartPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket) :
+Root::UserConnection::UserConnection(Manager* pManager, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket) :
 		m_pManager(pManager),
 		m_ptrProcess(ptrProcess),
 		m_ptrSocket(ptrSocket)
@@ -704,7 +704,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 	// Spawn the process
-	OOBase::SmartPtr<Process> ptrProcess;
+	OOBase::SharedPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,ptrProcess,ptrSocket,bAgain);
 	if (!res && bAgain && bUnsafe && !strUName.empty())
@@ -819,7 +819,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 
 	// Spawn the process
 	bool bAgain = false;
-	OOBase::SmartPtr<Process> ptrProcess;
+	OOBase::SharedPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	if (!platform_spawn(strBinPath,ptrClient->get_uid(),ptrClient->get_session_id(),tabSysEnv,ptrProcess,ptrSocket,bAgain))
 		return false;

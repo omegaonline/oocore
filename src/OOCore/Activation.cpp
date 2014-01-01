@@ -52,8 +52,6 @@ using namespace OTL;
 
 namespace
 {
-	typedef OOBase::SmartPtr<OOBase::DLL,OOBase::DeleteDestructor<OOBase::CrtAllocator> > DLL_ptr_t;
-
 	class DLLManagerImpl : public OOBase::NonCopyable
 	{
 	public:
@@ -62,13 +60,13 @@ namespace
 
 		~DLLManagerImpl();
 
-		DLL_ptr_t load_dll(const string_t& name, bool allow_null);
+		OOBase::SharedPtr<OOBase::DLL> load_dll(const string_t& name, bool allow_null);
 		void unload_unused();
 		bool can_unload();
 
 	private:
-		OOBase::Mutex                     m_lock;
-		OOBase::Table<string_t,DLL_ptr_t> m_dll_map;
+		OOBase::Mutex                                           m_lock;
+		OOBase::Table<string_t,OOBase::SharedPtr<OOBase::DLL> > m_dll_map;
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
@@ -78,7 +76,7 @@ namespace
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
 
-		DLL_ptr_t dll = DLLManager::instance()->load_dll(dll_name,allow_null);
+		OOBase::SharedPtr<OOBase::DLL> dll = DLLManager::instance()->load_dll(dll_name,allow_null);
 		if (!dll)
 			return NULL;
 
@@ -99,13 +97,12 @@ namespace
 	bool IsInvalidPath(const string_t& strPath)
 	{
 #if defined(_WIN32)
-		OOBase::StackAllocator<512> allocator;
-		OOBase::TempPtr<wchar_t> wpath(allocator);
+		OOBase::ScopedArrayPtr<wchar_t> wpath;
 		int err = OOBase::Win32::utf8_to_wchar_t(strPath.c_str(),wpath);
 		if (err)
 			OMEGA_THROW(err);
 
-		return (PathIsRelativeW(wpath) != FALSE);
+		return (PathIsRelativeW(wpath.get()) != FALSE);
 #else
 		// Allow PATH-based paths
 		return (strPath[0] != '/' && strPath.Find('/') != string_t::npos);
@@ -276,30 +273,27 @@ DLLManagerImpl::~DLLManagerImpl()
 	m_dll_map.clear();
 }
 
-DLL_ptr_t DLLManagerImpl::load_dll(const string_t& name, bool allow_null)
+OOBase::SharedPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name, bool allow_null)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// See if we have it already
-	DLL_ptr_t dll;
+	OOBase::SharedPtr<OOBase::DLL> dll;
 	if (m_dll_map.find(name,dll))
 		return dll;
 
 	// Try to unload any unused dlls
 	unload_unused();
 
-	OOBase::DLL* pdll = NULL;
-	if (!OOBase::CrtAllocator::allocate_new(pdll))
+	if (!(dll = OOBase::allocate_shared<OOBase::DLL,OOBase::CrtAllocator>()))
 		throw ISystemException::OutOfMemory();
-
-	dll = pdll;
 
 	// Load the new DLL
 	int err = dll->load(name.c_str());
 
 #if defined(_WIN32)
 	if (allow_null && err == ERROR_BAD_EXE_FORMAT)
-		return DLL_ptr_t();
+		return OOBase::SharedPtr<OOBase::DLL>();
 #endif
 
 	if (err != 0)
@@ -324,7 +318,7 @@ void DLLManagerImpl::unload_unused()
 	for (size_t i=0; i<m_dll_map.size();)
 	{
 		string_t name = *m_dll_map.key_at(i);
-		DLL_ptr_t dll = *m_dll_map.at(i);
+		OOBase::SharedPtr<OOBase::DLL> dll = *m_dll_map.at(i);
 
 		guard.release();
 
@@ -366,7 +360,7 @@ bool DLLManagerImpl::can_unload()
 
 	for (size_t i=0; i<m_dll_map.size(); ++i)
 	{
-		DLL_ptr_t dll = *m_dll_map.at(i);
+		OOBase::SharedPtr<OOBase::DLL> dll = *m_dll_map.at(i);
 
 		try
 		{

@@ -123,9 +123,9 @@ void UserProcessWin32::kill()
 	}
 }
 
-User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Environment::env_table_t& tabEnv)
+OOBase::SharedPtr<User::Process> User::Manager::exec(const Omega::string_t& strExeName, const Omega::string_t& strWorkingDir, bool is_host_process, const OOBase::Environment::env_table_t& tabEnv)
 {
-	OOBase::LocalPtr<UserProcessWin32> ptrProcess(new UserProcessWin32());
+	OOBase::SharedPtr<UserProcessWin32> ptrProcess = OOBase::allocate_shared<UserProcessWin32,OOBase::CrtAllocator>();
 	if (!ptrProcess)
 		throw Omega::ISystemException::OutOfMemory();
 
@@ -139,7 +139,7 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 #endif
 
 	int err = 0;
-	OOBase::TempPtr<wchar_t> cmd_line(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> cmd_line(tabEnv.get_allocator());
 	if (!is_host_process)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
@@ -157,7 +157,7 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 			OMEGA_THROW(err);
 	}
 	
-	OOBase::TempPtr<wchar_t> wd(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> wd(tabEnv.get_allocator());
 	if (!strWorkingDir.IsEmpty())
 	{
 		err = OOBase::Win32::utf8_to_wchar_t(strWorkingDir.c_str(),wd);
@@ -165,18 +165,18 @@ User::Process* User::Manager::exec(const Omega::string_t& strExeName, const Omeg
 			OMEGA_THROW(err);
 	}
 
-	OOBase::TempPtr<wchar_t> env_block(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> env_block(tabEnv.get_allocator());
 	err = OOBase::Environment::get_block(tabEnv,env_block);
 	if (err)
 		OMEGA_THROW(err);
 
-	OOBase::TempPtr<wchar_t> exe(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> exe(tabEnv.get_allocator());
 	err = OOBase::Win32::utf8_to_wchar_t(strProcess.c_str(),exe);
 	if (err)
 		OMEGA_THROW(err);
 
-	ptrProcess->exec(exe,cmd_line,wd,env_block);
-	return ptrProcess.detach();
+	ptrProcess->exec(exe.get(),cmd_line.get(),wd.get(),env_block.get());
+	return OOBase::static_pointer_cast<Process>(ptrProcess);
 }
 
 #endif // _WIN32

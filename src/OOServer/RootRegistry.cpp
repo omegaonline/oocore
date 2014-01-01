@@ -64,7 +64,7 @@ bool Root::Manager::registry_access_check(const char* pszDb, OOBase::uint32_t ch
 	return false;
 }
 
-OOServer::RootErrCode_t Root::Manager::registry_open_hive(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Db::Hive>& ptrHive, OOBase::int64_t& uKey, OOBase::uint8_t& nType)
+OOServer::RootErrCode_t Root::Manager::registry_open_hive(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::SharedPtr<Db::Hive>& ptrHive, OOBase::int64_t& uKey, OOBase::uint8_t& nType)
 {
 	// Read uKey && nType
 	if (!request.read(uKey) || !request.read(nType))
@@ -107,7 +107,7 @@ Db::hive_errors Root::Manager::registry_open_key(OOBase::int64_t& uKey, const OO
 	return m_registry->create_key(0,uKey,strSubKey2,0,channel_id,strLink,strFullKeyName);
 }
 
-OOServer::RootErrCode_t Root::Manager::registry_open_link(OOBase::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, OOBase::uint8_t& nType, OOBase::SmartPtr<Db::Hive>& ptrHive)
+OOServer::RootErrCode_t Root::Manager::registry_open_link(OOBase::uint32_t channel_id, const OOBase::LocalString& strLink, OOBase::LocalString& strSubKey, OOBase::uint8_t& nType, OOBase::SharedPtr<Db::Hive>& ptrHive)
 {
 	if (nType == 0 && strncmp(strLink.c_str(),"system:user/",12) == 0)
 	{
@@ -152,7 +152,7 @@ OOServer::RootErrCode_t Root::Manager::registry_open_link(OOBase::uint32_t chann
 
 void Root::Manager::registry_open_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey = 0;
 	OOBase::uint8_t nType;
 	OOBase::int64_t uSubKey;
@@ -216,7 +216,7 @@ void Root::Manager::registry_open_key(OOBase::uint32_t channel_id, OOBase::CDRSt
 
 void Root::Manager::registry_delete_key(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 	OOBase::StackAllocator<512> allocator;
@@ -265,7 +265,7 @@ void Root::Manager::registry_delete_key(OOBase::uint32_t channel_id, OOBase::CDR
 
 void Root::Manager::registry_enum_subkeys(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 
@@ -281,7 +281,7 @@ void Root::Manager::registry_enum_subkeys(OOBase::uint32_t channel_id, OOBase::C
 
 void Root::Manager::registry_value_exists(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 
@@ -307,7 +307,7 @@ void Root::Manager::registry_get_value(OOBase::uint32_t channel_id, OOBase::CDRS
 {
 	OOBase::StackAllocator<512> allocator;
 	OOBase::LocalString val(allocator);
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 
@@ -334,7 +334,7 @@ void Root::Manager::registry_get_value(OOBase::uint32_t channel_id, OOBase::CDRS
 
 void Root::Manager::registry_set_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 
@@ -369,7 +369,7 @@ void Root::Manager::registry_set_value(OOBase::uint32_t channel_id, OOBase::CDRS
 
 void Root::Manager::registry_enum_values(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 
@@ -385,7 +385,7 @@ void Root::Manager::registry_enum_values(OOBase::uint32_t channel_id, OOBase::CD
 
 void Root::Manager::registry_delete_value(OOBase::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)
 {
-	OOBase::SmartPtr<Db::Hive> ptrHive;
+	OOBase::SharedPtr<Db::Hive> ptrHive;
 	OOBase::int64_t uKey;
 	OOBase::uint8_t nType;
 

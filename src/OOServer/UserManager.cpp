@@ -101,7 +101,7 @@ User::Manager::~Manager()
 	s_instance = NULL;
 }
 
-int User::Manager::run(const OOBase::LocalString& strPipe)
+int User::Manager::run(const char* szPipe)
 {
 	int ret = EXIT_FAILURE;
 	int err = 0;
@@ -116,7 +116,7 @@ int User::Manager::run(const OOBase::LocalString& strPipe)
 		else
 		{
 			// Start the handler
-			if (connect_root(strPipe))
+			if (connect_root(szPipe))
 			{
 				OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 

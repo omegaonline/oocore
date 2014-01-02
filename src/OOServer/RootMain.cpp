@@ -117,13 +117,13 @@ int main(int argc, const char* argv[])
 
 	// Get the debug ENV var
 	{
-		OOBase::LocalString str(allocator);
+		OOBase::ScopedArrayPtr<char> str;
 		OOBase::Environment::getenv("OMEGA_DEBUG",str);
-		s_is_debug = (str == "true");
+		s_is_debug = (strcmp(str.get(),"true") == 0);
 	}
 
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args(allocator);
+	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("conf-file",'f',true);
@@ -131,11 +131,11 @@ int main(int argc, const char* argv[])
 	cmd_args.add_option("debug");
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args(allocator);
+	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::LocalString strErr(allocator);
+		OOBase::String strErr;
 		if (args.find("missing",strErr))
 			return Failure(allocator,"Missing value for option %s\n",strErr.c_str());
 		else if (args.find("unknown",strErr))
@@ -153,7 +153,7 @@ int main(int argc, const char* argv[])
 	if (args.exists("version"))
 		return Version();
 
-	OOBase::LocalString strPidfile(allocator);
+	OOBase::String strPidfile;
 	if (!args.find("pidfile",strPidfile))
 	{
 		err = strPidfile.assign("/var/run/" APPNAME ".pid");
@@ -164,9 +164,9 @@ int main(int argc, const char* argv[])
 	// Daemonize if not debug
 	bool already_running = false;
 	if (!s_is_debug)
-		err = OOBase::Server::daemonize(strPidfile,already_running);
+		err = OOBase::Server::daemonize(strPidfile.c_str(),already_running);
 	else
-		err = OOBase::Server::create_pid_file(strPidfile,already_running);
+		err = OOBase::Server::create_pid_file(strPidfile.c_str(),already_running);
 
 	if (err)
 		return Failure(allocator,"Failed to create pid_file: %s\n",OOBase::system_error_text(err));

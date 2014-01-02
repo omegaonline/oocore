@@ -399,21 +399,21 @@ bool User::RootConnection::recv_next()
 	return true;
 }
 
-bool User::Manager::connect_root(const OOBase::LocalString& strPipe)
+bool User::Manager::connect_root(const char* szPipe)
 {
 	int err = 0;
 
 #if defined(_WIN32)
 	// Use a named pipe
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(strPipe.c_str(),err,timeout);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(szPipe,err,timeout);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
 #else
 
 	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
+	int fd = atoi(szPipe);
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->attach(fd,err);
 	if (err != 0)
 	{

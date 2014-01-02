@@ -1004,7 +1004,7 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 	return true;
 }
 
-bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
+bool Root::Manager::get_our_uid(uid_t& uid, OOBase::ScopedArrayPtr<char>& strUName)
 {
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);

@@ -130,7 +130,7 @@ void Root::RegistryConnection::on_sent(OOBase::Buffer* buffer, int err)
 	release();
 }
 
-bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id)
+bool Root::RegistryConnection::start(const OOBase::String& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id)
 {
 	if (!start(id))
 		return false;
@@ -147,7 +147,7 @@ bool Root::RegistryConnection::start(const OOBase::LocalString& strRegPath, OOBa
 	response_id.write(stream);
 	stream.write_string(strRegPath);
 
-	OOBase::LocalString strThreads(strRegPath.get_allocator());
+	OOBase::String strThreads;
 	m_pManager->get_config_arg("registry_concurrency",strThreads);
 	OOBase::uint8_t threads = static_cast<OOBase::uint8_t>(strtoul(strThreads.c_str(),NULL,10));
 	if (threads < 1 || threads > 8)
@@ -593,12 +593,12 @@ bool Root::RegistryConnection::get_environment(const char* key, OOBase::Environm
 	return true;
 }
 
-bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
+bool Root::Manager::start_system_registry()
 {
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting system registry...");
 
 	// Get dir from config
-	OOBase::LocalString strRegPath(allocator);
+	OOBase::String strRegPath;
 	if (!get_config_arg("regdb_path",strRegPath) || strRegPath.empty())
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
@@ -607,7 +607,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),false);
 
 	// Get the binary path
-	OOBase::LocalString strBinPath(allocator);
+	OOBase::String strBinPath;
 	if (!get_config_arg("binary_path",strBinPath))
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
 
@@ -626,7 +626,7 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 	stream.write(OOBase::uint16_t(0));
 	stream.write_string(strRegPath);
 
-	OOBase::LocalString strThreads(allocator);
+	OOBase::String strThreads;
 	get_config_arg("registry_concurrency",strThreads);
 	OOBase::uint8_t threads = static_cast<OOBase::uint8_t>(strtoul(strThreads.c_str(),NULL,10));
 	if (threads < 1 || threads > 8)
@@ -646,12 +646,12 @@ bool Root::Manager::start_system_registry(OOBase::AllocatorInstance& allocator)
 
 	// Get our uid
 	uid_t uid;
-	OOBase::LocalString strOurUName(allocator);
+	OOBase::ScopedArrayPtr<char> strOurUName;
 	if (!get_our_uid(uid,strOurUName))
 		return false;
 
 	// Spawn the process
-	OOBase::Environment::env_table_t tabEnv(allocator);
+	OOBase::Environment::env_table_t tabEnv;
 	OOBase::SharedPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool bAgain;
@@ -702,21 +702,19 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 {
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting user registry...");
 
-	OOBase::StackAllocator<512> allocator;
-
-	OOBase::LocalString strRegPath(allocator);
+	OOBase::String strRegPath;
 	if (!get_config_arg("regdb_path",strRegPath))
 		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
-	OOBase::LocalString strUsersPath(allocator);
+	OOBase::String strUsersPath;
 	get_config_arg("users_path",strUsersPath);
 
-	OOBase::LocalString strHive(allocator);
+	OOBase::String strHive;
 	if (!get_registry_hive(ptrClient->get_uid(),strRegPath,strUsersPath,strHive))
 		return false;
 
 	// Get the binary path
-	OOBase::LocalString strBinPath(allocator);
+	OOBase::String strBinPath;
 	if (!get_config_arg("binary_path",strBinPath))
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
 
@@ -729,7 +727,7 @@ bool Root::Manager::spawn_user_registry(OOBase::RefPtr<ClientConnection>& ptrCli
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
 
 	// Spawn the process
-	OOBase::Environment::env_table_t tabEnv(allocator);
+	OOBase::Environment::env_table_t tabEnv;
 	OOBase::SharedPtr<Process> ptrProcess;
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket;
 	bool bAgain;

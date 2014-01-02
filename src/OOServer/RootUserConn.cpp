@@ -623,17 +623,17 @@ void Root::UserConnection::on_sent(OOBase::Buffer* buffer, int err)
 	release();
 }
 
-bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
+bool Root::Manager::spawn_sandbox_process()
 {
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting system sandbox...");
 
-	OOBase::LocalString strUnsafe(allocator);
+	OOBase::String strUnsafe;
 	bool bUnsafe = false;
 	if (Root::is_debug() && get_config_arg("unsafe",strUnsafe))
 		bUnsafe = (strUnsafe == "true");
 
 	// Get username from config
-	OOBase::LocalString strUName(allocator);
+	OOBase::String strUName;
 	if (!get_config_arg("sandbox_uname",strUName) && !bUnsafe)
 		LOG_ERROR_RETURN(("Failed to find the 'sandbox_uname' setting in the config"),false);
 
@@ -641,7 +641,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 	uid_t uid;
 	if (strUName.empty())
 	{
-		OOBase::LocalString strOurUName(allocator);
+		OOBase::ScopedArrayPtr<char> strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
@@ -649,13 +649,13 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		OOBase::Logger::log(OOBase::Logger::Warning,
 			"Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-			strOurUName.c_str());
+			strOurUName.get());
 	}
-	else if (!get_sandbox_uid(strUName,uid,bAgain))
+	else if (!get_sandbox_uid(strUName.c_str(),uid,bAgain))
 	{
 		if (bAgain && bUnsafe)
 		{
-			OOBase::LocalString strOurUName(allocator);
+			OOBase::ScopedArrayPtr<char> strOurUName;
 			if (!get_our_uid(uid,strOurUName))
 				return false;
 
@@ -663,14 +663,14 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 								   APPNAME " is running under a user account that does not have the privileges required to impersonate a different user.\n\n"
 								   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 								   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-								   strOurUName.c_str());
+								   strOurUName.get());
 		}
 		else
 			return false;
 	}
 
 	// Get the environment settings
-	OOBase::Environment::env_table_t tabSysEnv(allocator);
+	OOBase::Environment::env_table_t tabSysEnv;
 #if defined(_WIN32)
 	int err = OOBase::Environment::get_user(uid,tabSysEnv);
 #else
@@ -682,7 +682,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 	// Get sandbox environment from root registry
 	OOBase::RefPtr<RegistryConnection> ptrRoot = get_root_registry();
 
-	OOBase::Environment::env_table_t tabEnv(allocator);
+	OOBase::Environment::env_table_t tabEnv;
 	if (!ptrRoot->get_environment("/System/Sandbox/Environment",tabEnv))
 		return false;
 
@@ -691,7 +691,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
 	// Get the binary path
-	OOBase::LocalString strBinPath(allocator);
+	OOBase::String strBinPath;
 	if (!get_config_arg("binary_path",strBinPath))
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
 
@@ -709,7 +709,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 	bool res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,ptrProcess,ptrSocket,bAgain);
 	if (!res && bAgain && bUnsafe && !strUName.empty())
 	{
-		OOBase::LocalString strOurUName(allocator);
+		OOBase::ScopedArrayPtr<char> strOurUName;
 		if (!get_our_uid(uid,strOurUName))
 			return false;
 
@@ -717,7 +717,7 @@ bool Root::Manager::spawn_sandbox_process(OOBase::AllocatorInstance& allocator)
 							   APPNAME " is running under a user account that does not have the privileges required to create new processes as a different user.\n\n"
 							   "Because the 'unsafe' mode is set the sandbox process will be started under the current user account '%s'.\n\n"
 							   "This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.\n",
-							   strOurUName.c_str());
+							   strOurUName.get());
 
 
 		res = platform_spawn(strBinPath,uid,NULL,tabSysEnv,ptrProcess,ptrSocket,bAgain);
@@ -786,8 +786,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 	OOBase::Logger::log(OOBase::Logger::Information,"Starting user process...");
 
 	// Get the environment settings
-	OOBase::StackAllocator<1024> allocator;
-	OOBase::Environment::env_table_t tabSysEnv(allocator);
+	OOBase::Environment::env_table_t tabSysEnv;
 #if defined(_WIN32)
 	int err = OOBase::Environment::get_user(ptrClient->get_uid(),tabSysEnv);
 #else
@@ -796,7 +795,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 	if (err)
 		LOG_ERROR_RETURN(("Failed to load environment variables: %s",OOBase::system_error_text(err)),false);
 
-	OOBase::Environment::env_table_t tabEnv(allocator);
+	OOBase::Environment::env_table_t tabEnv;
 	if (!ptrRegistry->get_environment("/Environment",tabEnv))
 		return false;
 
@@ -805,7 +804,7 @@ bool Root::Manager::spawn_user_process(OOBase::RefPtr<ClientConnection>& ptrClie
 		LOG_ERROR_RETURN(("Failed to substitute environment variables: %s",OOBase::system_error_text(err)),false);
 
 	// Get the binary path
-	OOBase::LocalString strBinPath(allocator);
+	OOBase::String strBinPath;
 	if (!get_config_arg("binary_path",strBinPath))
 		LOG_ERROR_RETURN(("Failed to find binary_path configuration parameter"),false);
 

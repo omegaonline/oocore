@@ -119,7 +119,7 @@ static int help()
 	return EXIT_SUCCESS;
 }
 
-static bool key_path(const OOBase::LocalString& str, Omega::string_t& key)
+static bool key_path(const OOBase::String& str, Omega::string_t& key)
 {
 	if (str == "/")
 		return true;
@@ -131,7 +131,7 @@ static bool key_path(const OOBase::LocalString& str, Omega::string_t& key)
 	return true;
 }
 
-static bool value_path(const OOBase::LocalString& str, Omega::string_t& key, Omega::string_t& value)
+static bool value_path(const OOBase::String& str, Omega::string_t& key, Omega::string_t& value)
 {
 	if (str.empty() || str[str.length()-1] == '/')
 		return false;
@@ -153,21 +153,18 @@ static bool value_path(const OOBase::LocalString& str, Omega::string_t& key, Ome
 
 int main(int argc, char* argv[])
 {
-	// Declare a local stack allocator
-	OOBase::StackAllocator<1024> allocator;
-
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args(allocator);
+	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("args",0,true);
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args(allocator);
+	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::LocalString strErr(allocator);
+		OOBase::String strErr;
 		if (args.find("missing",strErr))
 		{
 			OOBase::stderr_write("Missing value for option ");
@@ -192,14 +189,14 @@ int main(int argc, char* argv[])
 	if (args.exists("version"))
 		return version();
 
-	OOBase::LocalString method(allocator);
+	OOBase::String method;
 	if (!args.find("@0",method))
 	{
 		OOBase::stderr_write("Mode expected, use --help for information.");
 		return EXIT_FAILURE;
 	}
 
-	OOBase::LocalString param0(allocator),param1(allocator),param2(allocator);
+	OOBase::String param0,param1,param2;
 	if (!args.find("@1",param0))
 	{
 		OOBase::stderr_write("Too few arguments to '");

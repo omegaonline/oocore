@@ -64,7 +64,7 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 			LOG_ERROR(("Failed to create proactor: %s",OOBase::system_error_text(err)));
 		else
 		{
-			OOBase::LocalString strThreads(cmd_args.get_allocator());
+			OOBase::String strThreads;
 			get_config_arg("concurrency",strThreads);
 			size_t threads = atoi(strThreads.c_str());
 			if (threads < 1 || threads > 8)
@@ -76,13 +76,13 @@ int Root::Manager::run(const OOBase::CmdArgs::results_t& cmd_args)
 			else
 			{
 				// Start the registry process
-				if (start_system_registry(cmd_args.get_allocator()))
+				if (start_system_registry())
 				{
 					// Spawn the sandbox
-					if (spawn_sandbox_process(cmd_args.get_allocator()))
+					if (spawn_sandbox_process())
 					{
 						// Start listening for clients
-						if (start_client_acceptor(cmd_args.get_allocator()))
+						if (start_client_acceptor())
 						{
 							ret = EXIT_SUCCESS;
 
@@ -133,7 +133,7 @@ int Root::Manager::run_proactor(void* p)
 	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
-bool Root::Manager::get_config_arg(const char* name, OOBase::LocalString& val)
+bool Root::Manager::get_config_arg(const char* name, OOBase::String& val)
 {
 	OOBase::String val2;
 	if (m_config_args.find(name,val2))

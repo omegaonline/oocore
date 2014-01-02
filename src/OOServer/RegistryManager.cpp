@@ -39,7 +39,7 @@ Registry::Manager::~Manager()
 {
 }
 
-int Registry::Manager::run(const OOBase::LocalString& strPipe)
+int Registry::Manager::run(const char* szPipe)
 {
 	int ret = EXIT_FAILURE;
 	int err = 0;
@@ -54,7 +54,7 @@ int Registry::Manager::run(const OOBase::LocalString& strPipe)
 			LOG_ERROR(("Thread pool create failed: %s",OOBase::system_error_text(err)));
 		else
 		{
-			if (connect_root(strPipe))
+			if (connect_root(szPipe))
 			{
 				OOBase::Logger::log(OOBase::Logger::Information,APPNAME " started successfully");
 
@@ -88,21 +88,21 @@ int Registry::Manager::run_proactor(void* p)
 	return static_cast<OOBase::Proactor*>(p)->run(err);
 }
 
-bool Registry::Manager::connect_root(const OOBase::LocalString& strPipe)
+bool Registry::Manager::connect_root(const char* szPipe)
 {
 	int err = 0;
 
 #if defined(_WIN32)
 	// Use a named pipe
 	OOBase::Timeout timeout(20,0);
-	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(strPipe.c_str(),err,timeout);
+	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->connect(szPipe,err,timeout);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOBase::system_error_text(err)),false);
 
 #else
 
 	// Use the passed fd
-	int fd = atoi(strPipe.c_str());
+	int fd = atoi(szPipe);
 	OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket = m_proactor->attach(fd,err);
 	if (err != 0)
 	{

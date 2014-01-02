@@ -381,7 +381,7 @@ bool Root::ClientConnection::send_response(OOBase::POSIX::SmartFD& fd, pid_t pid
 	return true;
 }
 
-bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance&)
+bool Root::Manager::start_client_acceptor()
 {
 #if defined(__linux__)
 	#define ROOT_NAME "\0/org/omegaonline"

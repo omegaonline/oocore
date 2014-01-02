@@ -44,12 +44,12 @@ namespace
 		pid_t m_pid;
 	};
 
-	void exit_msg(OOBase::AllocatorInstance& allocator, const char* fmt, ...)
+	void exit_msg(const char* fmt, ...)
 	{
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance> msg(allocator);
+		OOBase::ScopedArrayPtr<char> msg;
 		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
@@ -82,14 +82,11 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 
 	// We are the child...
 
-	// Need a new stack
-	OOBase::StackAllocator<512> allocator;
-
 	// Close all open handles except the standard ones and fd[1]
 	int except[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 	int err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
 	if (err)
-		exit_msg(allocator,"close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 
 	// Reset the environment
 	::environ = env;
@@ -99,31 +96,31 @@ void UserProcessUnix::exec(const char* pszExeName, const char* pszWorkingDir, ch
 	{
 		int err = ::chdir(pszWorkingDir);
 		if (err)
-			exit_msg(allocator,"chdir(%s): %s\n",pszWorkingDir,OOBase::system_error_text(err));
+			exit_msg("chdir(%s): %s\n",pszWorkingDir,OOBase::system_error_text(err));
 	}
 
 	if (User::is_debug())
 	{
-		OOBase::LocalString display(allocator);
+		OOBase::ScopedArrayPtr<char> display;
 		OOBase::Environment::getenv("DISPLAY",display);
-		if (!display.empty())
+		if (display[0] != '\0')
 		{
 #if 0
-			OOBase::LocalString valgrind(allocator);
-			valgrind.printf("xterm -T '%s' -e 'libtool --mode=execute valgrind --leak-check=full --log-file=valgrind_log%d.txt %s'",pszExeName,getpid(),pszExeName);
-			execlp("/bin/sh","sh","-c",valgrind.c_str(),(char*)NULL);
+			OOBase::ScopedArrayPtr<char> valgrind;
+			OOBase::temp_printf(valgrind,"xterm -T '%s' -e 'libtool --mode=execute valgrind --leak-check=full --log-file=valgrind_log%d.txt %s'",pszExeName,getpid(),pszExeName);
+			execlp("/bin/sh","sh","-c",valgrind.get(),(char*)NULL);
 #endif
 
-			OOBase::LocalString ex(allocator);
-			ex.printf("xterm -T '%s' -e '%s'",pszExeName,pszExeName);
-			execlp("/bin/sh","sh","-c",ex.c_str(),(char*)NULL);
+			OOBase::ScopedArrayPtr<char> ex;
+			OOBase::temp_printf(ex,"xterm -T '%s' -e '%s'",pszExeName,pszExeName);
+			execlp("/bin/sh","sh","-c",ex.get(),(char*)NULL);
 		}
 	}
 
 	execlp("/bin/sh","sh","-c",pszExeName,(char*)NULL);
 
 	err = errno;
-	exit_msg(allocator,"execlp(/bin/sh -c %s): %s\n",pszExeName,OOBase::system_error_text(err));
+	exit_msg("execlp(/bin/sh -c %s): %s\n",pszExeName,OOBase::system_error_text(err));
 }
 
 bool UserProcessUnix::is_running(int& exit_code)
@@ -163,7 +160,7 @@ OOBase::SharedPtr<User::Process> User::Manager::exec(const Omega::string_t& strE
 	if (!ptrProcess)
 		OMEGA_THROW(ENOMEM);
 
-	OOBase::ScopedArrayPtr<char*,OOBase::AllocatorInstance> ptrEnv(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<char*> ptrEnv;
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		OMEGA_THROW(err);

@@ -80,11 +80,8 @@ int main(int argc, char* argv[])
 	// Set critical failure handler
 	OOBase::SetCriticalFailure(&CriticalFailure);
 
-	// Declare a local stack allocator
-	OOBase::StackAllocator<1024> allocator;
-
 	// Set up the command line args
-	OOBase::CmdArgs cmd_args(allocator);
+	OOBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("debug");
@@ -96,11 +93,11 @@ int main(int argc, char* argv[])
 #endif
 
 	// Parse command line
-	OOBase::CmdArgs::results_t args(allocator);
+	OOBase::CmdArgs::results_t args;
 	int err = cmd_args.parse(argc,argv,args);
 	if (err	!= 0)
 	{
-		OOBase::LocalString strErr(allocator);
+		OOBase::String strErr;
 		if (args.find("missing",strErr))
 			OOBase::Logger::log(OOBase::Logger::Error,APPNAME " - Missing value for option %s",strErr.c_str());
 		else if (args.find("unknown",strErr))

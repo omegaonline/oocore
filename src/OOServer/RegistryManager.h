@@ -38,7 +38,7 @@ namespace Registry
 		Manager();
 		virtual ~Manager();
 
-		int run(const OOBase::LocalString& pszPipe);
+		int run(const char* szPipe);
 
 		int new_connection(OOBase::RefPtr<OOBase::AsyncSocket> ptrSocket, const uid_t& uid);
 
@@ -56,7 +56,7 @@ namespace Registry
 
 		int open_database();
 
-		bool connect_root(const OOBase::LocalString& strPipe);
+		bool connect_root(const char* szPipe);
 
 		int on_start(const OOBase::LocalString& strDb, size_t nThreads, const OOBase::Table<OOBase::LocalString,OOBase::LocalString,OOBase::AllocatorInstance>& tabSettings);
 	};

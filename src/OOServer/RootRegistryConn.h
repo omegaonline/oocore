@@ -44,7 +44,7 @@ namespace Root
 		RegistryConnection(Manager* pManager, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket);
 
 		bool start(size_t id);
-		bool start(const OOBase::LocalString& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id);
+		bool start(const OOBase::String& strRegPath, OOBase::RefPtr<ClientConnection>& ptrClient, size_t id);
 
 		bool same_user(const uid_t& uid) const;
 

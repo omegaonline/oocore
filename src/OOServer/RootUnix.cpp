@@ -49,7 +49,7 @@ namespace
 	class RootProcessUnix : public Root::Process
 	{
 	public:
-		static OOBase::SharedPtr<RootProcessUnix> spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[]);
+		static OOBase::SharedPtr<RootProcessUnix> spawn(OOBase::String& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[]);
 
 		RootProcessUnix(uid_t id);
 		virtual ~RootProcessUnix();
@@ -62,7 +62,7 @@ namespace
 		pid_t get_pid() const;
 		const uid_t& get_uid() const;
 
-		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
+		OOServer::RootErrCode LaunchService(Root::Manager* pManager, const char* szName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const;
 
 	private:
 
@@ -73,12 +73,12 @@ namespace
 		pid_t          m_pid;
 	};
 
-	void exit_msg(OOBase::AllocatorInstance& allocator, const char* fmt, ...)
+	void exit_msg(const char* fmt, ...)
 	{
 		va_list args;
 		va_start(args,fmt);
 
-		OOBase::ScopedArrayPtr<char,OOBase::AllocatorInstance> msg(allocator);
+		OOBase::ScopedArrayPtr<char> msg;
 		int err = OOBase::temp_vprintf(msg,fmt,args);
 
 		va_end(args);
@@ -153,7 +153,7 @@ RootProcessUnix::~RootProcessUnix()
 	}
 }
 
-OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::LocalString& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[])
+OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::String& strAppName, uid_t uid, const char* session_id, OOBase::POSIX::SmartFD& pass_fd, bool& bAgain, char* const envp[])
 {
 	OOBase::SharedPtr<RootProcessUnix> ptrSpawn;
 
@@ -206,43 +206,41 @@ OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::LocalString& s
 	}
 
 	// We are the child...
-	OOBase::StackAllocator<512> allocator;
-
 	if (bChangeUid)
 	{
 		// get our pw_info
-		OOBase::POSIX::pw_info pw(allocator,uid);
+		OOBase::POSIX::pw_info pw(uid);
 		if (!pw)
-			exit_msg(allocator,"getpwuid() failed: %s\n",OOBase::system_error_text());
+			exit_msg("getpwuid() failed: %s\n",OOBase::system_error_text());
 
 		// Set our gid...
 		if (setgid(pw->pw_gid) != 0)
-			exit_msg(allocator,"setgid() failed: %s\n",OOBase::system_error_text());
+			exit_msg("setgid() failed: %s\n",OOBase::system_error_text());
 
 		// Init our groups...
 		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-			exit_msg(allocator,"initgroups() failed: %s\n",OOBase::system_error_text());
+			exit_msg("initgroups() failed: %s\n",OOBase::system_error_text());
 
 		// Stop being privileged!
 		if (setuid(uid) != 0)
-			exit_msg(allocator,"setuid() failed: %s\n",OOBase::system_error_text());
+			exit_msg("setuid() failed: %s\n",OOBase::system_error_text());
 	}
 
 	// Build the pipe name
-	OOBase::LocalString strPipe(allocator);
-	int err = strPipe.printf("--pipe=%u",(int)pass_fd);
+	OOBase::ScopedArrayPtr<char> strPipe;
+	int err = OOBase::temp_printf(strPipe,"--pipe=%u",(int)pass_fd);
 	if (err)
-		exit_msg(allocator,"Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
+		exit_msg("Failed to concatenate strings: %s\n",OOBase::system_error_text(err));
 
 	// Close all open handles
 	int except[] = { STDERR_FILENO, pass_fd };
 	err = OOBase::POSIX::close_file_descriptors(except,sizeof(except)/sizeof(except[0]));
 	if (err)
-		exit_msg(allocator,"close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
+		exit_msg("close_file_descriptors() failed: %s\n",OOBase::system_error_text(err));
 
 	int n = OOBase::POSIX::open("/dev/null",O_RDONLY);
 	if (n == -1)
-		exit_msg(allocator,"Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
+		exit_msg("Failed to open /dev/null: %s\n",OOBase::system_error_text(err));
 
 	// Now close off stdin/stdout/stderr
 	dup2(n,STDIN_FILENO);
@@ -252,17 +250,17 @@ OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::LocalString& s
 
 	if (Root::is_debug())
 	{
-		OOBase::LocalString display(allocator);
+		OOBase::ScopedArrayPtr<char> display;
 		OOBase::Environment::getenv("DISPLAY",display);
-		if (!display.empty())
+		if (display[0] != '\0')
 		{
-			OOBase::LocalString strTitle(allocator);
+			OOBase::ScopedArrayPtr<char> strTitle;
 			if (session_id == NULL)
-				strTitle.printf("%s - system",strAppName.c_str());
+				OOBase::temp_printf(strTitle,"%s - system",strAppName.c_str());
 			else
-				strTitle.printf("%s - %s",strAppName.c_str(),session_id);
+				OOBase::temp_printf(strTitle,"%s - %s",strAppName.c_str(),session_id);
 
-			const char* argv[] = { "xterm","-T",strTitle.c_str(),"-e",strAppName.c_str(),strPipe.c_str(),"--debug",NULL };
+			const char* argv[] = { "xterm","-T",strTitle.get(),"-e",strAppName.c_str(),strPipe.get(),"--debug",NULL };
 
 			//OOBase::LocalString valgrind(allocator);
 			//valgrind.printf("--log-file=valgrind_log%d.txt",getpid());
@@ -281,7 +279,7 @@ OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::LocalString& s
 		}
 	}
 
-	const char* argv[] = { strAppName.c_str(), strPipe.c_str(), NULL, NULL };
+	const char* argv[] = { strAppName.c_str(), strPipe.get(), NULL, NULL };
 	if (Root::is_debug())
 		argv[2] = "--debug";
 
@@ -293,7 +291,7 @@ OOBase::SharedPtr<RootProcessUnix> RootProcessUnix::spawn(OOBase::LocalString& s
 		execv(strAppName.c_str(),(char* const*)argv);
 
 	err = errno;
-	exit_msg(allocator,"Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
+	exit_msg("Failed to launch '%s', cwd '%s': %s\n",strAppName.c_str(),get_current_dir_name(),OOBase::system_error_text(err));
 	return ptrSpawn;
 }
 
@@ -361,15 +359,14 @@ int RootProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, 
 	if (!bAllowed)
 	{
 		// Get the supplied user's group see if that is the same as the file's group
-		OOBase::StackAllocator<512> allocator;
-		OOBase::POSIX::pw_info pw(allocator,m_uid);
+		OOBase::POSIX::pw_info pw(m_uid);
 		if (!pw)
 		{
 			int err = errno;
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text(err)),err);
 		}
 
-		OOBase::ScopedArrayPtr<gid_t,OOBase::AllocatorInstance> ptrGroups(allocator);
+		OOBase::ScopedArrayPtr<gid_t> ptrGroups;
 		int ngroups = ptrGroups.count();
 		while (getgrouplist(pw->pw_name,pw->pw_gid,ptrGroups.get(),&ngroups) == -1)
 		{
@@ -412,7 +409,7 @@ bool RootProcessUnix::same_user(const uid_t& uid) const
 	return (m_uid == uid);
 }
 
-OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, const OOBase::LocalString& strName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
+OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, const char* szName, const int64_t& key, unsigned long wait_secs, bool async, OOBase::RefPtr<OOBase::Socket>& ptrSocket) const
 {
 	// Create a new socket
 	OOBase::POSIX::SmartFD fd(::socket(AF_UNIX,SOCK_STREAM,0));
@@ -452,19 +449,19 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	if (err)
 		LOG_ERROR_RETURN(("Failed to read random bytes: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
-	OOBase::LocalString strPipe(strName.get_allocator());
+	OOBase::ScopedArrayPtr<char> strPipe;
 	if (addr.sun_path[0] == '\0')
-		err = strPipe.concat(" ",addr.sun_path+1);
+		err = OOBase::temp_printf(strPipe," %s",addr.sun_path+1);
 	else
-		err = strPipe.append(addr.sun_path);
+		err = OOBase::temp_printf(strPipe,"%s",addr.sun_path);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),OOServer::Errored);
 
 	// Send the pipe name and the rest of the service info to the sandbox oosvruser process
 	OOBase::CDRStream request;
 	if (!request.write(static_cast<OOServer::RootOpCode_t>(OOServer::Service_Start)) ||
-			!request.write_string(strPipe) ||
-			!request.write_string(strName) ||
+			!request.write(strPipe.get()) ||
+			!request.write(szName) ||
 			!request.write(key) ||
 			!request.write(secret))
 	{
@@ -488,7 +485,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 
 		if (err2)
 		{
-			OOBase::Logger::log(OOBase::Logger::Error,"Failed to start service '%s'.  Check error log for details.",strName.c_str());
+			OOBase::Logger::log(OOBase::Logger::Error,"Failed to start service '%s'.  Check error log for details.",szName);
 			return static_cast<OOServer::RootErrCode>(err2);
 		}
 	}
@@ -502,7 +499,7 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	err = OOBase::Net::accept(fd,new_fd,timeout);
 	if (err == ETIMEDOUT)
 	{
-		OOBase::Logger::log(OOBase::Logger::Error,"Timed out waiting for service '%s' to start",strName.c_str());
+		OOBase::Logger::log(OOBase::Logger::Error,"Timed out waiting for service '%s' to start",szName);
 		return OOServer::Errored;
 	}
 	else if (err)
@@ -531,17 +528,18 @@ OOServer::RootErrCode RootProcessUnix::LaunchService(Root::Manager* pManager, co
 	return OOServer::Errored;
 }
 
-bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strSysDir, OOBase::LocalString strUsersDir, OOBase::LocalString& strHive)
+bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::String strSysDir, OOBase::String strUsersDir, OOBase::String& strHive)
 {
 	int err = 0;
-	OOBase::POSIX::pw_info pw(strSysDir.get_allocator(),uid);
+	OOBase::POSIX::pw_info pw(uid);
 	if (!pw)
 		LOG_ERROR_RETURN(("getpwuid() failed: %s",OOBase::system_error_text()),false);
 
 	bool bAddDot = false;
 	if (strUsersDir.empty())
 	{
-		OOBase::LocalString strHome(strSysDir.get_allocator());
+		OOBase::StackAllocator<256> allocator;
+		OOBase::LocalString strHome(allocator);
 		err = strHome.assign(pw->pw_dir);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text(err)),false);
@@ -633,9 +631,9 @@ bool Root::Manager::get_registry_hive(const uid_t& uid, OOBase::LocalString strS
 	return true;
 }
 
-bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
+bool Root::Manager::platform_spawn(OOBase::String strAppName, const uid_t& uid, const char* session_id, const OOBase::Environment::env_table_t& tabEnv, OOBase::SharedPtr<Process>& ptrProcess, OOBase::RefPtr<OOBase::AsyncSocket>& ptrSocket, bool& bAgain)
 {
-	OOBase::ScopedArrayPtr<char*,OOBase::AllocatorInstance> ptrEnv(strAppName.get_allocator());
+	OOBase::ScopedArrayPtr<char*> ptrEnv;
 	int err = OOBase::Environment::get_envp(tabEnv,ptrEnv);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to get environment block: %s",OOBase::system_error_text(err)),false);
@@ -661,11 +659,11 @@ bool Root::Manager::platform_spawn(OOBase::LocalString strAppName, const uid_t& 
 	return true;
 }
 
-bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
+bool Root::Manager::get_our_uid(uid_t& uid, OOBase::ScopedArrayPtr<char>& strUName)
 {
 	uid = getuid();
 
-	OOBase::POSIX::pw_info pw(strUName.get_allocator(),uid);
+	OOBase::POSIX::pw_info pw(uid);
 	if (!pw)
 	{
 		if (errno)
@@ -674,25 +672,25 @@ bool Root::Manager::get_our_uid(uid_t& uid, OOBase::LocalString& strUName)
 			LOG_ERROR_RETURN(("There is no account for uid %d",uid),false);
 	}
 
-	int err = strUName.assign(pw->pw_name);
+	int err = OOBase::temp_printf(strUName,"%s",pw->pw_name);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to assign string: %s",OOBase::system_error_text()),false);
 
 	return true;
 }
 
-bool Root::Manager::get_sandbox_uid(const OOBase::LocalString& strUName, uid_t& uid, bool& bAgain)
+bool Root::Manager::get_sandbox_uid(const char* szUName, uid_t& uid, bool& bAgain)
 {
 	bAgain = false;
 
 	// Resolve to uid
-	OOBase::POSIX::pw_info pw(strUName.get_allocator(),strUName.c_str());
+	OOBase::POSIX::pw_info pw(szUName);
 	if (!pw)
 	{
 		if (errno)
-			LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOBase::system_error_text()),false);
+			LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",szUName,OOBase::system_error_text()),false);
 		else
-			LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),false);
+			LOG_ERROR_RETURN(("There is no account for the user '%s'",szUName),false);
 	}
 
 	uid = pw->pw_uid;

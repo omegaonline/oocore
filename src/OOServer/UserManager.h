@@ -38,7 +38,7 @@ namespace User
 
 		static Manager* instance() { return s_instance; }
 
-		int run(const OOBase::LocalString& pszPipe);
+		int run(const char* szPipe);
 		void sendrecv_root(const OOBase::CDRStream& request, OOBase::CDRStream* response, Omega::TypeInfo::MethodAttributes_t attribs);
 		void close_socket(Omega::uint32_t id);
 		
@@ -54,7 +54,7 @@ namespace User
 		bool                                 m_bIsSandbox;
 		OOBase::RefPtr<User::RootConnection> m_root_connection;
 
-		bool connect_root(const OOBase::LocalString& strPipe);
+		bool connect_root(const char* szPipe);
 		int start(OOBase::RefPtr<OOBase::AsyncSocket>& ptrUserSocket, OOBase::RefPtr<OOBase::AsyncSocket>& ptrRootSocket, OOBase::CDRStream& stream);
 
 		static int run_proactor(void* param);

@@ -47,13 +47,12 @@ namespace
 
 bool User::Process::is_invalid_path(const Omega::string_t& strPath)
 {
-	OOBase::StackAllocator<256> allocator;
-	OOBase::TempPtr<wchar_t> path(allocator);
+	OOBase::ScopedArrayPtr<wchar_t> path;
 	int err = OOBase::Win32::utf8_to_wchar_t(strPath.c_str(),path);
 	if (err)
 		OMEGA_THROW(err);
 
-	return (PathIsRelativeW(path) != FALSE);
+	return (PathIsRelativeW(path.get()) != FALSE);
 }
 
 void UserProcessWin32::exec(const wchar_t* app_name, wchar_t* cmd_line, const wchar_t* working_dir, LPVOID env_block)
@@ -139,7 +138,7 @@ OOBase::SharedPtr<User::Process> User::Manager::exec(const Omega::string_t& strE
 #endif
 
 	int err = 0;
-	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> cmd_line(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t> cmd_line;
 	if (!is_host_process)
 	{
 		OOBase::Logger::log(OOBase::Logger::Information,"Executing process %s",strExeName.c_str());
@@ -157,7 +156,7 @@ OOBase::SharedPtr<User::Process> User::Manager::exec(const Omega::string_t& strE
 			OMEGA_THROW(err);
 	}
 	
-	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> wd(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t> wd;
 	if (!strWorkingDir.IsEmpty())
 	{
 		err = OOBase::Win32::utf8_to_wchar_t(strWorkingDir.c_str(),wd);
@@ -165,12 +164,12 @@ OOBase::SharedPtr<User::Process> User::Manager::exec(const Omega::string_t& strE
 			OMEGA_THROW(err);
 	}
 
-	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> env_block(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t> env_block;
 	err = OOBase::Environment::get_block(tabEnv,env_block);
 	if (err)
 		OMEGA_THROW(err);
 
-	OOBase::ScopedArrayPtr<wchar_t,OOBase::AllocatorInstance> exe(tabEnv.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t> exe;
 	err = OOBase::Win32::utf8_to_wchar_t(strProcess.c_str(),exe);
 	if (err)
 		OMEGA_THROW(err);

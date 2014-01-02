@@ -270,7 +270,7 @@ bool Root::UserConnection::new_connection(pid_t client_id, OOBase::AsyncResponse
 		return true;
 
 	OOBase::StackAllocator<256> allocator;
-	OOBase::TempPtr<void> ptrSIDLogon(allocator);
+	OOBase::UniquePtr<SID,OOBase::AllocatorInstance> ptrSIDLogon(allocator);
 	DWORD dwErr = OOBase::Win32::GetLogonSID(ptrClient->get_uid(),ptrSIDLogon);
 	if (dwErr)
 		LOG_ERROR_RETURN(("Failed to get logon SID: %s",OOBase::system_error_text(dwErr)),false);

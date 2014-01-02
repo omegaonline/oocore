@@ -79,7 +79,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::qi_rtti*,OOCore_rtti_
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	const System::Internal::qi_rtti* pRet = NULL;
-	OOBase::HashTable<guid_t,const System::Internal::qi_rtti*,OOBase::CrtAllocator,OOCore::GuidHash>::iterator i = pThis->m_qi_map.find(*iid);
+	OOBase::HashTable<guid_t,const System::Internal::qi_rtti*,OOBase::CrtAllocator,OOCore::GuidHash>::iterator i = pThis->m_qi_map.find(guid_t(*iid));
 	if (i != pThis->m_qi_map.end())
 		pRet = i->value;
 
@@ -93,7 +93,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const System::Internal::wire_rtti*,OOCore_rtt
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
 	const System::Internal::wire_rtti* pRet = NULL;
-	OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::CrtAllocator,OOCore::GuidHash>::iterator i = pThis->m_wi_map.find(*iid);
+	OOBase::HashTable<guid_t,const System::Internal::wire_rtti*,OOBase::CrtAllocator,OOCore::GuidHash>::iterator i = pThis->m_wi_map.find(guid_t(*iid));
 	if (i != pThis->m_wi_map.end())
 		pRet = i->value;
 
@@ -106,9 +106,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder_insert_qi,3,((in),voi
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	if (!pThis->m_qi_map.exists(*iid))
+	if (!pThis->m_qi_map.exists(guid_t(*iid)))
 	{
-		int err = pThis->m_qi_map.insert(*iid,pRtti);
+		int err = pThis->m_qi_map.insert(guid_t(*iid),pRtti);
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
 	}
@@ -120,9 +120,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rtti_holder_insert_wi,3,((in),voi
 
 	OOBase::Guard<OOBase::SpinLock> guard(pThis->m_lock);
 
-	if (!pThis->m_wi_map.exists(*iid))
+	if (!pThis->m_wi_map.exists(guid_t(*iid)))
 	{
-		int err = pThis->m_wi_map.insert(*iid,pRtti);
+		int err = pThis->m_wi_map.insert(guid_t(*iid),pRtti);
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
 	}

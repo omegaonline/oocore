@@ -231,7 +231,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,cmd_args.get_allocator())) != 0)
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v)) != 0)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
 		err = v.assign(REGDB_PATH);
@@ -260,7 +260,7 @@ bool Root::Manager::load_config(const OOBase::CmdArgs::results_t& cmd_args)
 		if (!PathAddBackslashW(wszPath))
 			LOG_ERROR_RETURN(("PathAddBackslash failed: %s",OOBase::system_error_text()),false);
 
-		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v,cmd_args.get_allocator())) != 0)
+		if ((err = OOBase::Win32::wchar_t_to_utf8(wszPath,v)) != 0)
 			LOG_ERROR_RETURN(("WideCharToMultiByte failed: %s",OOBase::system_error_text(err)),false);
 #else
 		err = v.assign(LIBEXEC_DIR);

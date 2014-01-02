@@ -149,25 +149,25 @@ int main(int argc, char* argv[])
 
 int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 {
-	OOBase::LocalString strAppName(args.get_allocator());
+	OOBase::String strAppName;
 	if (!args.find("@0",strAppName))
 		LOG_ERROR_RETURN(("No arguments passed with --shellex"),EXIT_FAILURE);
 
-	OOBase::TempPtr<wchar_t> wszAppName(args.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t> wszAppName;
 	int err = OOBase::Win32::utf8_to_wchar_t(strAppName.c_str(),wszAppName);
 	if (err)
 		LOG_ERROR_RETURN(("Failed to convert string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
-	OOBase::LocalString strCmdLine(args.get_allocator());
+	OOBase::String strCmdLine;
 	for (size_t i = 1;;++i)
 	{
-		OOBase::LocalString strId(args.get_allocator());
-		int err = strId.printf("@%u",i);
+		OOBase::ScopedArrayPtr<char> strId;
+		int err = OOBase::temp_printf(strId,"@%u",i);
 		if (err)
 			LOG_ERROR_RETURN(("Failed to format string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 
-		OOBase::LocalString strArg(args.get_allocator());
-		if (!args.find(strId,strArg))
+		OOBase::String strArg;
+		if (!args.find(strId.get(),strArg))
 			break;
 
 		err = strCmdLine.append(strArg.c_str());
@@ -177,7 +177,7 @@ int Host::ShellEx(const OOBase::CmdArgs::results_t& args)
 			LOG_ERROR_RETURN(("Failed to append string: %s",OOBase::system_error_text(err)),EXIT_FAILURE);
 	}
 
-	OOBase::TempPtr<wchar_t> wszCmdLine(args.get_allocator());
+	OOBase::ScopedArrayPtr<wchar_t> wszCmdLine;
 	if (!strCmdLine.empty())
 	{
 		err = OOBase::Win32::utf8_to_wchar_t(strCmdLine.c_str(),wszCmdLine);

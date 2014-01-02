@@ -55,7 +55,7 @@ Root::ClientConnection::AutoDrop::~AutoDrop()
 
 #if defined(_WIN32)
 
-bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
+bool Root::Manager::start_client_acceptor()
 {
 	const int NUM_ACES = 3;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = { {0}, {0}, {0} };
@@ -86,7 +86,8 @@ bool Root::Manager::start_client_acceptor(OOBase::AllocatorInstance& allocator)
 		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::system_error_text()),false);
 
 	// Get the logon SID of the Token
-	OOBase::TempPtr<void> ptrSIDLogon(allocator);
+	OOBase::StackAllocator<256> allocator;
+	OOBase::UniquePtr<SID,OOBase::AllocatorInstance> ptrSIDLogon(allocator);
 	if (OOBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon) == ERROR_SUCCESS)
 	{
 		// Use logon sid instead...

@@ -320,7 +320,7 @@ bool Root::RegistryConnection::on_start_user2(OOBase::CDRStream& response, const
 bool Root::RegistryConnection::new_connection(OOBase::RefPtr<UserConnection>& ptrUser, OOBase::AsyncResponseDispatcher<OOBase::uint16_t>::AutoDrop& response_id)
 {
 	OOBase::StackAllocator<256> allocator;
-	OOBase::TempPtr<void> ptrSIDLogon(allocator);
+	OOBase::UniquePtr<SID,OOBase::AllocatorInstance> ptrSIDLogon(allocator);
 	DWORD dwErr = OOBase::Win32::GetLogonSID(ptrUser->get_uid(),ptrSIDLogon);
 	if (dwErr)
 		LOG_ERROR_RETURN(("Failed to get logon SID: %s",OOBase::system_error_text(dwErr)),false);

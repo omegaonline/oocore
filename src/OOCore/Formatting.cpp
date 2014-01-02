@@ -286,7 +286,7 @@ namespace
 			grouping_buf = strchr(grouping_buf,';');
 		}
 
-		err = grouping_trans.push_back(CHAR_MAX);
+		err = grouping_trans.push_back(static_cast<char>(CHAR_MAX));
 		if (err)
 			OMEGA_THROW(err);
 	}

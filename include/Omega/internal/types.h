@@ -48,12 +48,6 @@ namespace Omega
 		guid_t(const char* wsz);
 		guid_t(const string_t& str);
 
-		bool operator == (const guid_t& rhs) const { return Compare(rhs) == 0; }
-		bool operator != (const guid_t& rhs) const { return Compare(rhs) != 0; }
-		bool operator < (const guid_t& rhs) const { return Compare(rhs) < 0; }
-		bool operator <= (const guid_t& rhs) const { return Compare(rhs) <= 0; }
-		bool operator > (const guid_t& rhs) const { return Compare(rhs) > 0; }
-		bool operator >= (const guid_t& rhs) const { return Compare(rhs) >= 0; }
 		int Compare(const guid_t& rhs) const;
 
 		static guid_t Create();
@@ -70,6 +64,13 @@ namespace Omega
 
 		string_t ToString(const string_t& strFormat = string_t()) const;
 	};
+
+	inline bool operator == (const guid_t& lhs,  const guid_t& rhs) { return lhs.Compare(rhs) == 0; }
+	inline bool operator != (const guid_t& lhs,  const guid_t& rhs) { return lhs.Compare(rhs) != 0; }
+	inline bool operator < (const guid_t& lhs,  const guid_t& rhs) { return lhs.Compare(rhs) < 0; }
+	inline bool operator <= (const guid_t& lhs,  const guid_t& rhs) { return lhs.Compare(rhs) <= 0; }
+	inline bool operator > (const guid_t& lhs,  const guid_t& rhs) { return lhs.Compare(rhs) > 0; }
+	inline bool operator >= (const guid_t& lhs,  const guid_t& rhs) { return lhs.Compare(rhs) >= 0; }
 
 	namespace System
 	{
